@@ -62,16 +62,23 @@ You can assign a new, already existing token to the user. Just start typing
 the token serial number in the field *Assign Token to User*. The system will search for tokens, that are not
 assigned yet and present you a list to choose from.
 
-View Audit Log
-..............
+View Audit and Authentication Log
+.................................
 
-You can also click the button *Show audit log of user*, which takes you to the
+The audit log and the authentication log of the user are opened with the icon
+buttons next to the user name and realm at the top of the page.
+
+The icon button *Show audit log of user* (a receipt) takes you to the
 :ref:`audit` log filtered on the login name of this user. The filter matches
 every entry whose user contains this name, in every realm: for the user ``ann``
 it also lists the entries of ``ann`` in other realms and of ``joanna``. For an
 exact match in one realm, change the filter to ``user: =ann realm: =<realm>``.
-The button *Show authentication log of user* next to it (policy action
-``authentication_log_read``) filters by user and realm.
+
+The icon button *Show authentication log of user* (a list with a lock) takes
+you to the :ref:`authentication_log` filtered on this user. Unlike the audit log
+filter, it matches the login name and the realm exactly, so it lists only the
+authentication attempts of this user in this realm. The button is only shown to
+administrators with the admin policy action ``authentication_log_read``.
 
 Edit user
 .........

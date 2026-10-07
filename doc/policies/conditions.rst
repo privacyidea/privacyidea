@@ -1,9 +1,9 @@
 .. _policy_conditions:
 
-Extended Policy Conditions
---------------------------
+Additional Policy Conditions
+----------------------------
 
-*Extended policy conditions* allow defining more advanced
+*Additional policy conditions* allow defining more advanced
 rules for policy matching, i.e. for determining which policies are valid for a
 specific request.
 
@@ -183,7 +183,7 @@ endpoint like ``/validate/check`` or ``/auth``.
 
 .. note:: privacyIDEA raises an error if ``Key`` refers to an unknown environment key.
    The log file then contains information about the available keys.
-   The behavior is similar to the extended conditions of ``HTTP Request header``.
+   The behavior is similar to the additional conditions of ``HTTP Request header``.
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
 
 Container
@@ -259,12 +259,12 @@ The following comparators can be used in definitions of policy conditions:
 
 If you want to define a policy that e.g. only matches users from Active Directory that are in a
 VPN User group, you would first need to map the ``memberOf`` attribute in the LDAP resolver to a certain
-attribute like ``"groups": "memberOf"``. Then you need to define the extended condition::
+attribute like ``"groups": "memberOf"``. Then you need to define the additional condition::
 
    "groups" contains "CN=VPN Users,OU=Groups,DC=example,DC=com"
 
 If you however want to define a policy that matches e.g. a certain username from a list,
-you would have to define an extended condition like::
+you would have to define an additional condition like::
 
    "username" in "alice,bob,charlie"
 

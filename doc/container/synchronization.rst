@@ -138,7 +138,7 @@ After scanning the QR code with the pi authenticator, the app creates an asymmet
 ``(k_priv, k_pub)`` with the curve ``secp384r1`` and signs a message concatenating at least the nonce, time (ISO 8601
 format), serial, and scope. Optionally, the passphrase response and device information are included in the signature:
 
-``sign(k_priv, nonce|time|serial|scope|device_brand|device_model|passphrase_response|public_key)``
+``sign(k_priv, nonce|time|serial|scope|device_brand|device_model|passphrase_response)``
 
 To complete the registration the endpoint :http:post:`/container/register/finalize` is called with the following
 parameters:
