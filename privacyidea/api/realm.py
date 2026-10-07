@@ -50,7 +50,8 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          get_realms,
-                         delete_realm)
+                         delete_realm,
+                         normalize_realm_name)
 from ..api.lib.prepolicy import prepolicy, check_base_action, realm_membership_access, default_realm_access
 from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
@@ -130,6 +131,7 @@ def set_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
+    realm = normalize_realm_name(realm)
     param = request.all_data
     resolvers = get_required(param, "resolvers")
     priority = get_priority_from_param(param)
@@ -565,6 +567,7 @@ def set_realm_node_api(realm, nodeid):
 
     .. versionadded:: 3.10 Node specific realm configuration
     """
+    realm = normalize_realm_name(realm)
     if not check_node_uuid_exists(nodeid):
         log.warning(f"Node with UUID {nodeid} does not exist in the database!")
         raise ParameterError(_("The given node does not exist!"))

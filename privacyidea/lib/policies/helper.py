@@ -325,27 +325,27 @@ def realms_granted(policy_realms: list[str] | None, granted_realms: list[str] | 
     Whether an admin with *granted_realms* may act on an object bound to *policy_realms*, like a policy by its realm
     field.
 
-    The rules of the token actions apply (see :func:`~privacyidea.api.lib.policyhelper.check_token_action_allowed`):
-    an object in several realms needs one of them to be granted, and an object bound to no particular realm is only
-    for an admin without a realm restriction. A realm field that is empty, or ``"*"`` without exclusions, binds the
-    object to every realm rather than to particular ones.
+    Reading an object needs it to apply to one of the granted realms. A realm field that is empty, or ``"*"`` without
+    exclusions, applies to every realm, so to the granted ones as well. Changing it needs it to apply to granted
+    realms only (*every_realm*).
 
     :param policy_realms: a realm field, read like :func:`policy_realm_names`
     :param granted_realms: the result of :func:`admin_granted_realms`
     :param every_realm: every realm of the field has to be granted, as
-        :func:`~privacyidea.api.lib.prepolicy.check_base_action` requires for the realms a request sets
-    :return: True if the admin is unrestricted or the field names granted realms; nothing is granted by an empty grant
+        :func:`~privacyidea.api.lib.prepolicy.check_base_action` requires for the realms a request sets. An empty
+        field and a field with ``"*"`` are never granted entirely, as they also cover the realms created later.
+    :return: True if the admin is unrestricted or the field applies to granted realms as required; nothing is granted
+        by an empty grant
     """
     if granted_realms is None:
         return True
     if not granted_realms:
         return False
     realm_names = policy_realm_names(policy_realms)
-    if realm_names is None:
-        return False
     if every_realm:
-        return set(realm_names) <= set(granted_realms)
-    return bool(set(realm_names) & set(granted_realms))
+        return (bool(realm_names) and "*" not in policy_realms
+                and set(realm_names) <= set(granted_realms))
+    return realm_names is None or bool(set(realm_names) & set(granted_realms))
 
 
 def policy_change_granted(name: str, new_realms: list[str] | None, granted_realms: list[str] | None,
@@ -353,8 +353,8 @@ def policy_change_granted(name: str, new_realms: list[str] | None, granted_realm
     """
     Whether an admin with *granted_realms* may change, create or delete the policy *name*.
 
-    The stored policy needs one granted realm, see :func:`realms_granted`. Realms set by the change all have to be
-    granted. *new_realms* None keeps the stored realms; a new policy (*creates*) without realms applies to every realm.
+    The stored policy and the realms set by the change may only apply to granted realms, see :func:`realms_granted`.
+    *new_realms* None keeps the stored realms; a new policy (*creates*) without realms applies to every realm.
 
     :param name: the name of the policy
     :param new_realms: the realm names the change sets, or None if it keeps them
@@ -364,7 +364,7 @@ def policy_change_granted(name: str, new_realms: list[str] | None, granted_realm
     if granted_realms is None:
         return True
     existing = get_policies(name=name) if name else []
-    if any(not realms_granted(policy.get("realm"), granted_realms) for policy in existing):
+    if any(not realms_granted(policy.get("realm"), granted_realms, every_realm=True) for policy in existing):
         return False
     if new_realms is None and creates and not existing:
         new_realms = []

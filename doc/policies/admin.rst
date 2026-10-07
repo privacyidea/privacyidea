@@ -41,8 +41,9 @@ do not name the administrator, but the users the administrator may act on.
    privacyIDEA servers, SMS gateways, CA connectors, the system configuration,
    event handlers and periodic tasks, serve every realm. The user realm of an
    admin policy does not restrict them: an administrator with ``smtpserver_write``
-   changes the SMTP servers of all realms, whatever realm the policy names. Do not
-   give such actions to administrators who should only act in some realms.
+   changes the SMTP servers of all realms, whatever realm the policy names. The
+   same holds for ``system_documentation``. Do not give such actions to
+   administrators who should only act in some realms.
 
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
@@ -840,12 +841,12 @@ type: ``bool``
 
 Allow the administrator to write, read or delete policies.
 
-If the admin policy is bound to user realms, the administrator only sees and changes
-the policies of these realms, the same way as tokens: a policy needs one of these realms.
-A policy without a realm applies to every realm and stays out of reach. The realms a
-change sets must all be granted, so a new policy needs a realm. Importing a policy file
-skips the policies the administrator may not write. An admin policy that names users or
-resolvers but no realm does not restrict the policies.
+If the admin policy is bound to user realms, the administrator sees the policies that
+apply to one of these realms, also those without a realm, which apply to every realm.
+The administrator only changes the policies that apply to none but these realms, so a
+policy without a realm stays out of reach and a new policy needs a realm. Importing a
+policy file skips the policies the administrator may not write. An admin policy that
+names users or resolvers but no realm does not restrict the policies.
 
 .. note:: An administrator who may write policies can grant rights to themselves
    within their realms. Give ``policywrite`` only to administrators you trust with
