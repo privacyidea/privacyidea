@@ -872,7 +872,8 @@ that is part of no realm, and so a new resolver, needs a policy without a realm.
 
 Adding a resolver to a realm or removing it from a realm needs the right for the
 resolver as well. Changing or removing the default realm needs the right for the
-current default realm. Deleting a realm removes all of its resolvers and, for the
+whole current default realm: a policy for the realm that also names resolvers or
+users does not grant it. Deleting a realm removes all of its resolvers and, for the
 default realm, the default realm, so it needs these rights as well.
 
 .. versionchanged:: 3.14 The realm of the admin policy restricts the resolvers.

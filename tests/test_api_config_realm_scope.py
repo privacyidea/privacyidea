@@ -33,6 +33,10 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
     def tearDown(self):
         for policy in get_policies():
             delete_policy(policy.get("name"))
+        node = db.session.get(NodeName, NODE_UUID)
+        if node:
+            db.session.delete(node)
+            db.session.commit()
         super().tearDown()
 
     def _request(self, url, method="GET", data=None, json=None):
@@ -141,9 +145,19 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual(REALM_B, get_default_realm())
 
         set_default_realm(REALM_A)
+        res = self._request(f"/defaultrealm/{REALM_B}", "POST")
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(REALM_A, get_default_realm())
         res = self._request("/defaultrealm", "DELETE")
         self.assertEqual(200, res.status_code, res.json)
         self.assertIsNone(get_default_realm())
+
+        # The default realm needs a policy for the whole realm, not for some of its resolvers
+        set_default_realm(REALM_A)
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
+        res = self._request("/defaultrealm", "DELETE")
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(REALM_A, get_default_realm())
 
     def test_05_read_policies(self):
         set_policy(name="pol_a", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore", realm=REALM_A)
@@ -244,12 +258,15 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
     def test_08_import_policies(self):
         auth_action = PolicyAction.OTPPIN + "=userstore"
         set_policy(name="imp_a", scope=SCOPE.AUTH, action=auth_action, realm=REALM_A)
-        set_policy(name="imp_b", scope=SCOPE.AUTH, action=auth_action, realm=REALM_B)
+        set_policy(name="imp_b", scope=SCOPE.AUTH, action=auth_action, realm=REALM_A)
+        set_policy(name="imp_c", scope=SCOPE.AUTH, action=auth_action, realm=REALM_B)
         set_policy(name="imp_all", scope=SCOPE.AUTH, action=auth_action)
-        policy_file = export_policies(get_policies(name="imp_a") + get_policies(name="imp_b")
-                                      + get_policies(name="imp_all"))
-        for name in ("imp_a", "imp_b", "imp_all"):
+        policy_file = export_policies([policy for name in ("imp_a", "imp_b", "imp_c", "imp_all")
+                                       for policy in get_policies(name=name)])
+        for name in ("imp_a", "imp_c", "imp_all"):
             delete_policy(name)
+        # The file puts imp_b into realm_a, but the stored imp_b belongs to realm_b
+        set_policy(name="imp_b", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=none", realm=REALM_B)
         self._restrict_to_realm_a()
 
         # As with tokens added to a container, the policies the admin may not write are skipped
@@ -259,7 +276,10 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(1, res.json["result"]["value"])
-        self.assertEqual(["imp_a"], [p["name"] for p in get_policies() if p["name"].startswith("imp_")])
+        self.assertEqual({"imp_a", "imp_b"}, {p["name"] for p in get_policies() if p["name"].startswith("imp_")})
+        imp_b = get_policies(name="imp_b")[0]
+        self.assertEqual([REALM_B], imp_b["realm"])
+        self.assertEqual({PolicyAction.OTPPIN: "none"}, imp_b["action"])
 
     def test_09_delete_realm(self):
         # Deleting a realm removes its resolvers, so each of them needs to be granted
@@ -311,3 +331,29 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         set_policy(name="admin_no_realm", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, resolver=RESO_A, user="")
         res = self._request("/resolver/")
         self.assertEqual({RESO_A}, set(res.json["result"]["value"]))
+
+    def test_11_realm_wildcard_and_empty_grant(self):
+        auth_action = PolicyAction.OTPPIN + "=userstore"
+        set_policy(name="pol_a", scope=SCOPE.AUTH, action=auth_action, realm=REALM_A)
+        set_policy(name="pol_b", scope=SCOPE.AUTH, action=auth_action, realm=REALM_B)
+        set_policy(name="pol_all", scope=SCOPE.AUTH, action=auth_action)
+
+        # Every realm but realm_b grants the policies and resolvers of all other realms
+        set_policy(name="admin_but_b", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=f"*,!{REALM_B}")
+        res = self._request("/policy/")
+        self.assertEqual({"pol_a", "admin_but_b"}, {p["name"] for p in res.json["result"]["value"]})
+        res = self._request("/resolver/")
+        self.assertEqual({RESO_A}, set(res.json["result"]["value"]))
+        res = self._request("/policy/pol_b", "POST", {"scope": SCOPE.AUTH, "action": auth_action})
+        self.assertEqual(403, res.status_code, res.json)
+
+        # A realm field of nothing but an exclusion matches no realm, so it grants nothing
+        set_policy(name="admin_but_b", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=f"!{REALM_B}")
+        res = self._request("/policy/")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual([], res.json["result"]["value"])
+        res = self._request("/resolver/")
+        self.assertEqual({}, res.json["result"]["value"])
+        res = self._request("/policy/pol_new", "POST", {"scope": SCOPE.AUTH, "action": auth_action,
+                                                        "realm": REALM_A})
+        self.assertEqual(403, res.status_code, res.json)
