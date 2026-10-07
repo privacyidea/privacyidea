@@ -94,7 +94,8 @@ jobs:
     # Release notes are taken from the matching "Version <x.y.z>" section of the
     # Changelog. The section is filled from the GitHub milestone before the
     # release. Fail if no matching section exists so a tag/Changelog mismatch
-    # can never publish an empty release.
+    # can never publish an empty release. The notes start with a link to
+    # READ_BEFORE_UPDATE.md as of the tag.
     - name: Extract release notes from Changelog
       id: release_notes
       run: |
@@ -109,6 +110,12 @@ jobs:
           echo "::error::No Changelog section found for version ${version}"
           exit 1
         fi
+        update_notes_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/READ_BEFORE_UPDATE.md"
+        {
+          echo "**Please read [READ_BEFORE_UPDATE.md](${update_notes_url}) before updating.** It describes the changes that may need action on your side."
+          cat release_notes.md
+        } > release_notes_full.md
+        mv release_notes_full.md release_notes.md
     - name: Create GitHub release
       env:
         GH_TOKEN: ${{ github.token }}
