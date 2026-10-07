@@ -11,7 +11,7 @@ import unittest
 import flask
 import inspect
 import logging
-import mock
+from unittest import mock
 from testfixtures import Comparison, compare, OutputCapture
 from contextlib import contextmanager
 

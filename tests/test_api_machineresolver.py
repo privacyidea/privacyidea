@@ -1,4 +1,3 @@
-import json
 from .base import MyApiTestCase
 
 HOSTSFILE = "tests/testdata/hosts"

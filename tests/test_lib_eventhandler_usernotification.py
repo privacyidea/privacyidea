@@ -7,7 +7,7 @@ import email
 import os
 from datetime import datetime, timedelta
 
-import mock
+from unittest import mock
 from dateutil.tz import tzlocal
 from flask import Request, Response
 from werkzeug.test import EnvironBuilder
@@ -83,8 +83,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
 
-        tok = init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         g = FakeFlaskG()
         audit_object = FakeAudit()
@@ -466,8 +466,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -512,8 +512,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -539,8 +539,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -1240,8 +1240,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=user)
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=user)
 
         env = builder.get_environ()
         req = Request(env)
@@ -1486,13 +1486,13 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                         "user": "cornelius"}
         req.User = User("cornelius", self.realm1)
         resp = Response()
-        resp.data = """
+        resp.data = f"""
 {{
     "detail": {{
         "googleurl": {{
             "description": "URL for google Authenticator",
-            "img": "{0!s}",
-            "value": "{1!s}"
+            "img": "{PNG_IMAGE!s}",
+            "value": "{OAUTH_URL!s}"
         }},
         "rollout_state": "",
         "serial": "OATH0001D8B6",
@@ -1508,7 +1508,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
     "time": 1561549651.093083,
     "version": "privacyIDEA 3.0.1.dev2",
     "versionnumber": "3.0.1.dev2"
-}}""".format(PNG_IMAGE, OAUTH_URL)
+}}"""
         resp.content_type = "application/json"
         options = {"g": g,
                    "request": req,
@@ -1526,7 +1526,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         payload = to_unicode(parsed_email.get_payload(decode=True))
         self.assertEqual(parsed_email.get_content_type(), "text/html")
         # Check that the base64-encoded image does not get mangled
-        self.assertEqual(payload, "<img src='{0!s}' />".format(PNG_IMAGE))
+        self.assertEqual(payload, f"<img src='{PNG_IMAGE!s}' />")
 
     @smtpmock.activate
     def test_21_sendmail_attachment(self):
@@ -1560,12 +1560,12 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                         "user": "cornelius"}
         req.User = User("cornelius", self.realm1)
         resp = Response()
-        resp.data = """{{
+        resp.data = f"""{{
             "detail": {{
                 "googleurl": {{
                     "description": "URL for google Authenticator",
-                    "img": "{0!s}",
-                    "value": "{1!s}"
+                    "img": "{PNG_IMAGE!s}",
+                    "value": "{OAUTH_URL!s}"
                 }},
                 "rollout_state": "",
                 "serial": "OATH0001D8B6",
@@ -1582,7 +1582,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
             "version": "privacyIDEA 3.0.1.dev2",
             "versionnumber": "3.0.1.dev2"
         }}
-        """.format(PNG_IMAGE, OAUTH_URL)
+        """
         resp.content_type = "application/json"
         options = {"g": g,
                    "request": req,
@@ -1659,8 +1659,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertTrue(res)
         # check, if the file was written with the correct contents
         with open("tests/testdata/testOATH123456.txt") as f:
-            l = f.read()
-        self.assertEqual(l, "OATH123456, Cornelius")
+            content = f.read()
+        self.assertEqual(content, "OATH123456, Cornelius")
         os.remove("tests/testdata/testOATH123456.txt")
 
         # Check what happens if we try to write outside of spooldir

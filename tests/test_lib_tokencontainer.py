@@ -1,8 +1,8 @@
 import base64
 import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
-import mock
+from unittest import mock
 from sqlalchemy import select
 
 from privacyidea.lib.challenge import get_challenges, delete_challenges
@@ -94,7 +94,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertIn("creation_date", yubikey.get_container_info_dict().keys())
 
         # Check creation Date
-        create_now = datetime.now(tz=timezone.utc)
+        create_now = datetime.now(tz=UTC)
         with mock.patch("privacyidea.lib.container.datetime", wraps=datetime) as mock_datetime:
             mock_datetime.now.return_value = create_now
             container_serial = init_container({"type": "generic"})["container_serial"]
@@ -1061,16 +1061,16 @@ class TokenContainerManagementTestCase(MyTestCase):
         # ---- last_auth ----
         # Add last_auth
         container_3 = find_container_by_serial(container_serials[3])
-        container_3._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+        container_3._db_container.last_seen = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=2)
         container_4 = find_container_by_serial(container_serials[4])
-        container_4._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=300)
+        container_4._db_container.last_seen = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=300)
 
         # within last hour
         container_data = get_all_containers(last_auth_delta="1h", pagesize=15)
         self.assertEqual(0, len(container_data["containers"]))
 
         # within last 7 days
-        container_3._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+        container_3._db_container.last_seen = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=2)
         container_data = get_all_containers(last_auth_delta="7d", pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual(container_serials[3], container_data["containers"][0].serial)
@@ -1082,15 +1082,15 @@ class TokenContainerManagementTestCase(MyTestCase):
                             {container.serial for container in container_data["containers"]})
 
         # within last minute
-        container_3._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
+        container_3._db_container.last_seen = datetime.now(UTC).replace(tzinfo=None)
         container_data = get_all_containers(last_auth_delta="1m", pagesize=15)
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual(container_serials[3], container_data["containers"][0].serial)
 
         # ---- last_sync ----
         # Add last_sync
-        container_3._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
-        container_4._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=300)
+        container_3._db_container.last_updated = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=5)
+        container_4._db_container.last_updated = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=300)
 
         # within last minute
         container_data = get_all_containers(last_sync_delta="1m", pagesize=15)
@@ -1614,7 +1614,7 @@ class TokenContainerSynchronization(MyTestCase):
 
         # Mock smartphone with guessed params (no prepare)
         nonce = geturandom(20, hex=True)
-        time_stamp = datetime.now(timezone.utc)
+        time_stamp = datetime.now(UTC)
         params = mock_smph.register_finalize(nonce, time_stamp, scope, smartphone_serial)
 
         # Try to finalize registration with invalid params
@@ -1862,7 +1862,7 @@ class TokenContainerSynchronization(MyTestCase):
         # check challenge
         challenge = get_challenges(serial=container_serial)[0]
         self.assertEqual(res["nonce"], challenge.challenge)
-        self.assertEqual(res["time_stamp"], challenge.timestamp.replace(tzinfo=timezone.utc).isoformat())
+        self.assertEqual(res["time_stamp"], challenge.timestamp.replace(tzinfo=UTC).isoformat())
         self.assertEqual(scope, json.loads(challenge.data)["scope"])
 
     def test_07_create_endpoint_url(self):
@@ -1894,7 +1894,7 @@ class TokenContainerSynchronization(MyTestCase):
         # check challenge
         challenge = get_challenges(serial=smartphone_serial)[0]
         self.assertEqual(result["nonce"], challenge.challenge)
-        self.assertEqual(result["time_stamp"], challenge.timestamp.replace(tzinfo=timezone.utc).isoformat())
+        self.assertEqual(result["time_stamp"], challenge.timestamp.replace(tzinfo=UTC).isoformat())
         data = json.loads(challenge.data)
         self.assertEqual(scope, data["scope"])
 
@@ -1987,7 +1987,7 @@ class TokenContainerSynchronization(MyTestCase):
         hotp_otps = list(otp_dict["otp"].values())[1:]
         totp_token = init_token({"genkey": "1", "type": "totp"})
         # the function uses the local time, hence we have to pass the utc time
-        time_now = datetime.now(timezone.utc)
+        time_now = datetime.now(UTC)
         _, _, otp_dict = totp_token.get_multi_otp(2, curTime=time_now)
         totp_otps = [otp["otpval"] for otp in list(otp_dict["otp"].values())]
 

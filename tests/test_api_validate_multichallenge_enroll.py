@@ -1,70 +1,34 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
-import json
 import logging
 import re
 import time
-from base64 import b32encode
-from datetime import timezone
-from urllib.parse import quote
 
-import mock
+from unittest import mock
 import responses
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from dateutil.tz import tzlocal
-from passlib.hash import argon2
-from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
-from privacyidea.lib import _
-from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.config import (set_privacyidea_config,
-                                    get_inc_fail_count_on_false_pin,
-                                    delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
+from privacyidea.lib.container import (find_container_by_serial, create_container_template,
                                        delete_container_by_serial, delete_container_template)
-from privacyidea.lib.error import Error
-from privacyidea.lib.event import delete_event
-from privacyidea.lib.event import set_event
-from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
-from privacyidea.lib.radiusserver import add_radius
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
-from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, enable_token, revoke_token,
-                                   set_pin, get_one_token, unassign_token)
-from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
-                                        FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
-                                        AUTH_DATE_FORMAT)
-from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, strip_pem_headers
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
-from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
-from privacyidea.lib.tokens.smstoken import SmsTokenClass
-from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
+                                   get_one_token)
+from privacyidea.lib.tokenclass import (ClientMode)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
-from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
-                                NodeName)
-from . import smtpmock, ldap3mock, radiusmock
+from . import smtpmock, ldap3mock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
-from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
+from .api_validate_common import LDAPDirectory, setup_sms_gateway
 
 
 class MultiChallengeEnrollTest(MyApiTestCase):
@@ -74,7 +38,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
     # container in the container tests
 
     def setUp(self):
-        super(MultiChallengeEnrollTest, self).setUp()
+        super().setUp()
         # The requests in this class must not rely on request-local data another request left behind: every
         # blueprint's before_request has to initialize its own. Hence, g is reset here and after each request.
         self.reset_flask_g()
@@ -128,11 +92,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
 
         # Set force_app_pin
         set_policy("pol_forcepin", scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}=True".format(PolicyAction.FORCE_APP_PIN))
+                   action=f"hotp_{PolicyAction.FORCE_APP_PIN!s}=True")
         # Set token default
         set_privacyidea_config("hotp.hashlib", "sha256")
         # Now we should get an authentication Challenge
@@ -190,7 +154,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.assertIn('HIDDEN', log_msg, log_msg)
         # Verify that the force_pin enrollment policy worked for validate-check-enrollment
         self.assertIn(
-            'Exiting get_init_tokenlabel_parameters with result {\'force_app_pin\': True, \'app_force_unlock\': \'pin\'}',
+            'Exiting get_init_tokenlabel_parameters with result '
+            '{\'force_app_pin\': True, \'app_force_unlock\': \'pin\'}',
             log_msg, log_msg)
         logging.getLogger('privacyidea').setLevel(logging.INFO)
         """
@@ -241,7 +206,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=totp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=totp")
 
         # Set totp_hashlib=sha256 user policy
         set_policy("pol_sha256", scope=SCOPE.USER,
@@ -347,12 +312,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=email")
         # Challenge header and footer should not disturb the enrollment text
         set_policy("pol_challengetext_head", scope=SCOPE.AUTH,
-                   action="{0!s}=challenge-head".format(PolicyAction.CHALLENGETEXT_HEADER))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}=challenge-head")
         set_policy("pol_challengetext_foot", scope=SCOPE.AUTH,
-                   action="{0!s}=challenge-foot".format(PolicyAction.CHALLENGETEXT_FOOTER))
+                   action=f"{PolicyAction.CHALLENGETEXT_FOOTER!s}=challenge-foot")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -443,7 +408,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=email")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -517,10 +482,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=sms".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=sms")
         # Set an individual text
         set_policy("pol_multienroll_text", scope=SCOPE.AUTH,
-                   action="{0!s}='Phone number enter you must!'".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT!s}='Phone number enter you must!'")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -597,7 +562,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # 1. set policies.
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_validator", scope=SCOPE.ENROLL,
-                   action="{0!s}=tests.testdata.gmailvalidator".format(PolicyAction.EMAILVALIDATION))
+                   action=f"{PolicyAction.EMAILVALIDATION!s}=tests.testdata.gmailvalidator")
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -614,7 +579,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=email")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1021,9 +986,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # passthru + enroll a HOTP token via multichallenge, but make the enrollment optional so it can be cancelled
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
         set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
-                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL!s}=true")
 
         # Authenticate via passthru, which triggers the enrollment challenge
         with self.app.test_request_context('/validate/check',
@@ -1081,7 +1046,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # passthru + enroll a HOTP token via multichallenge, but without the optional flag the enrollment is mandatory
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
 
         # Authenticate via passthru, which triggers the enrollment challenge
         with self.app.test_request_context('/validate/check',
@@ -1128,9 +1093,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
         set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
-                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL!s}=true")
 
         # alice starts her own optional enrollment and receives the transaction
         with self.app.test_request_context('/validate/check', method='POST',

@@ -28,7 +28,7 @@ from collections.abc import Sequence, Sized
 
 from pyrad import packet
 from pyrad.client import Timeout
-from pyrad.packet import AccessReject, AccessAccept, AccessChallenge
+from pyrad.packet import AccessReject, AccessAccept, AccessChallenge  # noqa: F401 re-exported for tests
 
 from .smtpmock import get_wrapped
 
@@ -61,7 +61,7 @@ class CallList(Sequence, Sized):
         self._calls = []
 
 
-class RadiusMock(object):
+class RadiusMock:
 
     def __init__(self):
         self._calls = CallList()
@@ -97,7 +97,7 @@ class RadiusMock(object):
 
     def _on_request(self, client_instance, pkt):
         # mangle request packet
-        request = pkt.RequestPacket()
+        pkt.RequestPacket()
         if pkt.code == packet.AccessRequest:
             # This is a request
             pass
@@ -121,7 +121,7 @@ class RadiusMock(object):
         return reply
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_send(Client, pkt, *a, **kwargs):
             return self._on_request(Client, pkt,  *a, **kwargs)

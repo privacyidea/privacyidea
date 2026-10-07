@@ -4,11 +4,11 @@
 import hmac
 import urllib
 from base64 import b32encode, b64encode, b64decode
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from hashlib import sha1
 from zoneinfo import ZoneInfo
 
-import mock
+from unittest import mock
 import responses
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
@@ -222,10 +222,8 @@ class TtypePushAPITestCase(MyApiTestCase):
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PushAction.FIREBASE_CONFIG, self.firebase_config_name,
-                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
-                       PushAction.TTL, TTL))
+                   action=f"{PushAction.FIREBASE_CONFIG!s}={self.firebase_config_name!s},"
+                          f"{PushAction.REGISTRATION_URL!s}={REGISTRATION_URL!s},{PushAction.TTL!s}={TTL!s}")
 
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -355,12 +353,12 @@ class TtypePushAPITestCase(MyApiTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with("Failed to submit message to push gateway for token {0!s}."
-                                                .format(serial))
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial!s}."
+                                                )
 
         # first create a signature
         ts = datetime.utcnow().isoformat()
-        sign_string = "{serial}|{timestamp}".format(serial=serial, timestamp=ts)
+        sign_string = f"{serial}|{ts}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
                                                hashes.SHA256())
@@ -382,7 +380,7 @@ class TtypePushAPITestCase(MyApiTestCase):
             challenge = chall["nonce"]
             # This is what the smartphone answers.
             # create the signature:
-            sign_data = "{0!s}|{1!s}".format(challenge, serial)
+            sign_data = f"{challenge!s}|{serial!s}"
             signature = b32encode_and_unicode(
                 self.smartphone_private_key.sign(sign_data.encode("utf-8"),
                                                  padding.PKCS1v15(),
@@ -404,10 +402,8 @@ class TtypePushAPITestCase(MyApiTestCase):
         self.authenticate()
         # Set policy for poll only
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
-                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
-                       PushAction.TTL, TTL))
+                   action=f"{PushAction.FIREBASE_CONFIG!s}={POLL_ONLY!s},{PushAction.REGISTRATION_URL!s}="
+                          f"{REGISTRATION_URL!s},{PushAction.TTL!s}={TTL!s}")
 
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -553,7 +549,7 @@ class TtypePushAPITestCase(MyApiTestCase):
         # So when we check later, if the challenge is still sent, we can be sure, that the
         # challenge was not answered.
         # First we check with a naive timestamp in UTC
-        timestamp = datetime.now(tz=timezone.utc).replace(tzinfo=None).isoformat()
+        timestamp = datetime.now(tz=UTC).replace(tzinfo=None).isoformat()
         sign_string = f"{tokenobj.token.serial}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -572,7 +568,7 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertEqual("Do you want to confirm the login?", value[0].get("question"))
 
         # Check the challenge again, this time with a timezone-aware timestamp (still UTC)
-        timestamp = datetime.now(tz=timezone.utc).isoformat()
+        timestamp = datetime.now(tz=UTC).isoformat()
         sign_string = f"{tokenobj.token.serial}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),

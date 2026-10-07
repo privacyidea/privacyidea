@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 import responses
 
 from privacyidea.lib.resolvers.EntraIDResolver import (AUTHORITY, CLIENT_ID, CLIENT_CREDENTIAL_TYPE,
@@ -141,7 +141,7 @@ class APIResolverTestCase(MyApiTestCase):
     def test_02_create_realm(self):
         realm = "realm1"
         resolvers = "r1, r2"
-        with self.app.test_request_context('/realm/{0!s}'.format(realm),
+        with self.app.test_request_context(f'/realm/{realm!s}',
                                            data={"resolvers": resolvers},
                                            method='POST',
                                            headers={"Authorization": self.at}):

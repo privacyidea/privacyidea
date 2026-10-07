@@ -21,7 +21,7 @@
 Mock module for testing the handling of hardware security modules
 """
 import sys
-import mock
+from unittest import mock
 
 try:
     import PyKCS11
@@ -69,7 +69,7 @@ def fake_decrypt(data):
     return [(c - 1) % 256 for c in data]
 
 
-class PKCS11Mock(object):
+class PKCS11Mock:
     """
     Mock helper to simulate a HSM. Usage::
 
@@ -93,7 +93,7 @@ class PKCS11Mock(object):
         if slot not in SLOT_IDS:
             raise PyKCS11Error(PyKCS11.CKR_SLOT_ID_INVALID)
         slot_info = PyKCS11.CK_SLOT_INFO()
-        slot_info.slotDescription = "slot {!s} description".format(slot)
+        slot_info.slotDescription = f"slot {slot!s} description"
         return slot_info
 
     @contextmanager

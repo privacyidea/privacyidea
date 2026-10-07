@@ -57,7 +57,7 @@ This depends on lib.tokenclass
 import os
 import unittest
 
-from mock import patch
+from unittest.mock import patch
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
@@ -75,7 +75,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyTestCase
 
-TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
+TRUST_ANCHOR_DIR = f"{os.path.abspath(os.path.dirname(__file__))}/testdata/trusted_attestation_roots"
 REGISTRATION_RESPONSE_TMPL = {
     'clientData': b'eyJ0eXBlIjogIndlYmF1dGhuLmNyZWF0ZSIsICJjbGllbnRFeHRlbnNpb25zIjoge30sICJjaGFsbGVu'
                   b'Z2UiOiAiYlB6cFgzaEhRdHNwOWV2eUtZa2FadFZjOVVOMDdQVWRKMjJ2WlVkRHA5NCIsICJvcmlnaW4i'
@@ -533,7 +533,6 @@ class WebAuthnTokenTestCase(MyTestCase):
         This test inserts challenge rows using the old "user_verification" key and goes through
         verify_fido2_challenge() to confirm it can still be loaded correctly.
         """
-        import json
         from privacyidea.lib.fido2.challenge import verify_fido2_challenge
         from privacyidea.models import Challenge
 
@@ -568,11 +567,14 @@ class WebAuthnTokenTestCase(MyTestCase):
             transaction_id=failing_transaction_id,
             token=self.token,
             params={
-                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsC"
+                                 "A",
                 "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcBAAAATQ",
-                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJdndQ"
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJ"
+                              "dndQ"
                               "aklFeDNmbXgtOCIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
-                "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZPM6"
+                "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZ"
+                                 "PM6"
                                  "0iWyPNtX",
                 "HTTP_ORIGIN": "https://cool.nils:5000",
             }
@@ -594,12 +596,14 @@ class WebAuthnTokenTestCase(MyTestCase):
             transaction_id=working_transaction_id,
             token=self.token,
             params={
-                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsC"
+                                 "A",
                 "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcFAAAATw",
-                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFLRUVz"
-                              "R0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
-                "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9GbHT"
-                                 "-mBQrM",
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFL"
+                              "RUVzR0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFs"
+                              "c2V9",
+                "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9"
+                                 "GbHT-mBQrM",
                 "HTTP_ORIGIN": "https://cool.nils:5000",
             }
         )
@@ -767,10 +771,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
     def setUp(self):
         self.setUp_user_realms()
         set_policy(name="WebAuthn", scope=SCOPE.ENROLL,
-                   action='{0!s}={1!s},{2!s}={3!s}'.format(FIDO2PolicyAction.RELYING_PARTY_NAME,
-                                                           self.rp_name,
-                                                           FIDO2PolicyAction.RELYING_PARTY_ID,
-                                                           self.rp_id))
+                   action=f'{FIDO2PolicyAction.RELYING_PARTY_NAME!s}={self.rp_name!s},{FIDO2PolicyAction.RELYING_PARTY_ID!s}={self.rp_id!s}')
         self.user = User(login='hans', realm=self.realm1,
                          resolver=self.resolvername1)
         # TODO: extract token enrollment into a local function
@@ -829,7 +830,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
 
     # TODO: also test challenge-response with different tokens (webauthn + totp)
     def test_01_multiple_webauthntoken_auth(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN!s}=none")
         res, reply = check_user_pass(self.user, '', options=self.auth_options)
         self.assertFalse(res)
         self.assertIn('transaction_id', reply, reply)

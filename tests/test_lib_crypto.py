@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, 
 from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey, Ed448PrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.x448 import X448PublicKey, X448PrivateKey
-from mock import call
+from unittest.mock import call
 import binascii
 
 from privacyidea.config import TestingConfig
@@ -30,7 +30,8 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
                                     encrypt, decrypt, Sign, get_sign_object, generate_keypair,
-                                    generate_password, pass_hash, verify_pass_hash, build_pass_context, generate_keypair_ecc,
+                                    generate_password, pass_hash, verify_pass_hash, build_pass_context,
+                                    generate_keypair_ecc,
                                     ecc_key_pair_to_b64url_str, b64url_str_key_pair_to_ecc_obj, sign_ecc,
                                     ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc)
 from privacyidea.lib.utils import to_bytes, to_unicode
@@ -191,7 +192,7 @@ class CryptoTestCase(MyTestCase):
         self.assertEqual(decryptPin(pin3), '1234')
 
     def test_01_encrypt_decrypt_pass(self):
-        r = encryptPassword("passwörd".encode('utf8'))
+        r = encryptPassword("passwörd".encode())
         # encryptPassword returns unicode
         self.assertTrue(isinstance(r, str))
         pin = decryptPassword(r)
@@ -276,7 +277,7 @@ class CryptoTestCase(MyTestCase):
         # TODO: add checks for broken paddings/encrypted values and malformed enc_data
 
         # check some data generated with 2.23
-        s = 'passwörd'.encode('utf8')
+        s = 'passwörd'.encode()
         iv_hex = 'cd5245a2875007d30cc049c2e7eca0c5'
         enc_data_hex = '7ea55168952b33131077f4249cf9e52b5f2b572214ace13194c436451fe3788c'
         self.assertEqual(s, decrypt(binascii.unhexlify(enc_data_hex),
@@ -440,11 +441,13 @@ class EllipticCurveCryptoTestCase(MyTestCase):
 
         # Verify signature: Wrong pub_key
         wrong_keys = generate_keypair_ecc("secp384r1")
-        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], wrong_keys.public_key, hash_algorithm)
+        self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], wrong_keys.public_key,
+                          hash_algorithm)
 
         # Verify signature: Wrong message/signature
         another_message = b'Top Secret!'
-        self.assertRaises(InvalidSignature, verify_ecc, another_message, sign_res["signature"], wrong_keys.public_key, hash_algorithm)
+        self.assertRaises(InvalidSignature, verify_ecc, another_message, sign_res["signature"], wrong_keys.public_key,
+                          hash_algorithm)
 
         # Verify signature: Wrong hash_algorithm
         self.assertRaises(InvalidSignature, verify_ecc, message, sign_res["signature"], ecc_keys.public_key, "SHA512")
@@ -878,7 +881,7 @@ class SignObjectTestCase(MyTestCase):
         # now test a broken signature
         data = 'short text'
         sig = so.sign(data)
-        sig_broken = sig[:-1] + '{:x}'.format((int(sig[-1], 16) + 1) % 16)
+        sig_broken = sig[:-1] + f'{(int(sig[-1], 16) + 1) % 16:x}'
         self.assertFalse(so.verify(data, sig_broken))
 
         # test with non hex string
@@ -887,12 +890,12 @@ class SignObjectTestCase(MyTestCase):
 
         # now try to verify old signatures
         # first without enabling old signatures in config
-        short_text_sig = 15197717811878792093921885389298262311612396877333963031070812155820116863657342817645537537961773450510020137791036591085713379948816070430789598146539509027948592633362217308056639775153575635684961642110792013775709164803544619582232081442445758263838942315386909453927493644845757192298617925455779136340217255670113943560463286896994555184188496806420559078552626485909484729552861477888246423469461421103010299470836507229490718177625822972845024556897040292571751452383573549412451282884349017186147757238775308192484937929135306435242403555592741059466194258607967889051881221759976135386624406095324595765010
+        short_text_sig = 15197717811878792093921885389298262311612396877333963031070812155820116863657342817645537537961773450510020137791036591085713379948816070430789598146539509027948592633362217308056639775153575635684961642110792013775709164803544619582232081442445758263838942315386909453927493644845757192298617925455779136340217255670113943560463286896994555184188496806420559078552626485909484729552861477888246423469461421103010299470836507229490718177625822972845024556897040292571751452383573549412451282884349017186147757238775308192484937929135306435242403555592741059466194258607967889051881221759976135386624406095324595765010  # noqa: E501
         data = 'short text'
         self.assertFalse(so.verify(data, short_text_sig))
 
         # now we enable the checking of old signatures
-        short_text_sig = 15197717811878792093921885389298262311612396877333963031070812155820116863657342817645537537961773450510020137791036591085713379948816070430789598146539509027948592633362217308056639775153575635684961642110792013775709164803544619582232081442445758263838942315386909453927493644845757192298617925455779136340217255670113943560463286896994555184188496806420559078552626485909484729552861477888246423469461421103010299470836507229490718177625822972845024556897040292571751452383573549412451282884349017186147757238775308192484937929135306435242403555592741059466194258607967889051881221759976135386624406095324595765010
+        short_text_sig = 15197717811878792093921885389298262311612396877333963031070812155820116863657342817645537537961773450510020137791036591085713379948816070430789598146539509027948592633362217308056639775153575635684961642110792013775709164803544619582232081442445758263838942315386909453927493644845757192298617925455779136340217255670113943560463286896994555184188496806420559078552626485909484729552861477888246423469461421103010299470836507229490718177625822972845024556897040292571751452383573549412451282884349017186147757238775308192484937929135306435242403555592741059466194258607967889051881221759976135386624406095324595765010  # noqa: E501
         data = 'short text'
         self.assertTrue(so.verify(data, short_text_sig, verify_old_sigs=True))
 
@@ -900,7 +903,7 @@ class SignObjectTestCase(MyTestCase):
         broken_short_text_sig = short_text_sig + 1
         self.assertFalse(so.verify(data, broken_short_text_sig, verify_old_sigs=True))
 
-        long_data_sig = 991763198885165486007338893972384496025563436289154190056285376683148093829644985815692167116166669178171916463844829424162591848106824431299796818231239278958776853940831433819576852350691126984617641483209392489383319296267416823194661791079316704545017249491961092046751201670544843607206698682190381208022128216306635574292359600514603728560982584561531193227312370683851459162828981766836503134221347324867936277484738573153562229478151744446530191383660477390958159856842222437156763388859923477183453362567547792824054461704970820770533637185477922709297916275611571003099205429044820469679520819043851809079
+        long_data_sig = 991763198885165486007338893972384496025563436289154190056285376683148093829644985815692167116166669178171916463844829424162591848106824431299796818231239278958776853940831433819576852350691126984617641483209392489383319296267416823194661791079316704545017249491961092046751201670544843607206698682190381208022128216306635574292359600514603728560982584561531193227312370683851459162828981766836503134221347324867936277484738573153562229478151744446530191383660477390958159856842222437156763388859923477183453362567547792824054461704970820770533637185477922709297916275611571003099205429044820469679520819043851809079  # noqa: E501
         long_data = b'\x01\x02' * 5000
         self.assertTrue(so.verify(long_data, long_data_sig, verify_old_sigs=True))
 
@@ -1176,7 +1179,8 @@ class BuildPassContextTestCase(unittest.TestCase):
         for hash_algo_params in [{"argon2id__rounds": 5}, {"bcrypt__rounds": 5}, {"admin__argon2id__rounds": 5},
                                  {"argon2id.rounds": 5}]:
             with self.subTest(hash_algo_params=hash_algo_params):
-                with self.assertRaisesRegex(RuntimeError, f"PI_HASH_ALGO_PARAMS.*{re.escape(next(iter(hash_algo_params)))}"):
+                with self.assertRaisesRegex(RuntimeError, f"PI_HASH_ALGO_PARAMS.*"
+                                                          f"{re.escape(next(iter(hash_algo_params)))}"):
                     self._build(PI_HASH_ALGO_PARAMS=hash_algo_params)
 
     def test_12_default_parameter_for_unlisted_scheme(self):

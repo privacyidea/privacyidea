@@ -1,81 +1,36 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Tests for token-enrollment prepolicies (privacyidea.api.lib.prepolicy)."""
-import json
-import logging
-from datetime import datetime, timedelta
 
-import jwt
-from dateutil.tz import tzlocal
-from flask import Request, g, current_app, jsonify
-from passlib.hash import pbkdf2_sha512
-from testfixtures import log_capture, LogCapture
-from werkzeug.datastructures.headers import Headers
+from flask import Request, g
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.lib.policyhelper import get_realm_for_authentication
-from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
-                                            check_tokeninfo,
-                                            no_detail_on_success,
-                                            no_detail_on_fail, autoassign,
-                                            offline_info, sign_response,
-                                            get_webui_settings,
-                                            save_pin_change,
-                                            add_user_detail_to_response,
-                                            mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode,
-                                            multichallenge_enroll_via_validate)
 from privacyidea.api.lib.prepolicy import (check_token_upload,
-                                           check_base_action, check_token_init,
+                                           check_token_init,
                                            check_max_token_user,
-                                           check_anonymous_user,
                                            check_max_token_realm, set_realm,
                                            init_tokenlabel, init_random_pin, set_random_pin,
-                                           init_token_defaults, _generate_pin_from_policy,
-                                           encrypt_pin, check_otp_pin,
-                                           enroll_pin,
+                                           _generate_pin_from_policy,
+                                           check_otp_pin,
                                            init_token_length_contents,
-                                           check_external, api_key_required,
-                                           mangle, is_remote_user_allowed,
-                                           required_email, auditlog_age, hide_audit_columns,
                                            papertoken_count,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
-                                           check_admin_tokenlist, pushtoken_disable_wait,
-                                           fido2_auth, webauthntoken_authz,
-                                           fido2_enroll, webauthntoken_request,
+                                           pushtoken_disable_wait,
                                            check_application_tokentype,
-                                           required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo, init_ca_template, init_ca_connector,
+                                           required_piv_attestation, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, check_container_action,
-                                           check_token_action, check_user_params,
-                                           check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key, verify_enrollment)
+                                           require_description)
 from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       get_all_containers, delete_container_template)
-from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import ParameterError, PolicyError, RegistrationError, ValidateError
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.machine import attach_token
-from privacyidea.lib.machineresolver import save_resolver
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
+from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE)
 from privacyidea.lib.realm import delete_realm
 from privacyidea.lib.realm import set_realm as create_realm
-from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms, check_user_pass, unassign_token,
+                                   set_realms, unassign_token,
                                    enable_token)
-from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.papertoken import PAPERACTION
@@ -83,26 +38,11 @@ from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.tokens.tantoken import TANAction
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
-                                             AttestationLevel, AttestationForm,
-                                             UserVerificationLevel)
-from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
-                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.user import User
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
-from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
+from privacyidea.lib.utils import (generate_charlists_from_pin_policy,
                                    CHARLIST_CONTENTPOLICY, check_pin_contents)
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from .api_lib_policy_common import PrePolicyHelperMixin
 from .base import (MyApiTestCase)
-from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
-                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN)
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -136,8 +76,6 @@ XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
 tA==
 -----END CERTIFICATE REQUEST-----"""
 
-from .api_lib_policy_common import PrePolicyHelperMixin
-
 
 class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
@@ -163,19 +101,15 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines a default PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PolicyAction.OTPPINMAXLEN, "10",
-                       PolicyAction.OTPPINMINLEN, "4",
-                       PolicyAction.OTPPINCONTENTS, "cn"),
+                   action=f"{PolicyAction.OTPPINMAXLEN}=10,{PolicyAction.OTPPINMINLEN}=4,"
+                          f"{PolicyAction.OTPPINCONTENTS}=cn",
                    realm="home")
 
         # Set a policy that defines a SPASS PIN policy
         set_policy(name="pol2",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       "spass_otp_pin_maxlength", "11",
-                       "spass_otp_pin_minlength", "8",
-                       "spass_otp_pin_contents", "n"),
+                   action="spass_otp_pin_maxlength=11,spass_otp_pin_minlength=8,"
+                          "spass_otp_pin_contents=n",
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -271,7 +205,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy, that does allow the action
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="enrollTOTP, enrollHOTP, {0!s}".format(PolicyAction.IMPORT),
+                   action=f"enrollTOTP, enrollHOTP, {PolicyAction.IMPORT!s}",
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -307,7 +241,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy, that allows one active token per user
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.MAXACTIVETOKENUSER, 1))
+                   action=f"{PolicyAction.MAXACTIVETOKENUSER!s}={1!s}")
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         init_token({"serial": "NEW001", "type": "hotp",
@@ -344,7 +278,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy to limit active HOTP tokens to 1
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}={1!s}".format(PolicyAction.MAXACTIVETOKENUSER, 1))
+                   action=f"hotp_{PolicyAction.MAXACTIVETOKENUSER!s}={1!s}")
         # we try to enroll a new HOTP token, this would fail.
         req.all_data = {"user": "cornelius",
                         "realm": self.realm1,
@@ -408,7 +342,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy, that allows two tokens per user
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.MAXTOKENUSER, 2))
+                   action=f"{PolicyAction.MAXTOKENUSER!s}={2!s}")
         g.policy_object = PolicyClass()
         # The user has one token, everything is fine.
         self.setUp_user_realms()
@@ -447,7 +381,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # are two policies matching for the user and the maximum is 12.
         set_policy(name="pol_max_12",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.MAXTOKENUSER, 12))
+                   action=f"{PolicyAction.MAXTOKENUSER!s}={12!s}")
         g.policy_object = PolicyClass()
         # new check_max_token_user should not raise an error!
         self.assertTrue(check_max_token_user(req))
@@ -469,7 +403,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Now we set a policy specifically for HOTP tokens:
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}={1!s}".format(PolicyAction.MAXTOKENUSER, 2))
+                   action=f"hotp_{PolicyAction.MAXTOKENUSER!s}={2!s}")
         g.policy_object = PolicyClass()
         # and fail to enroll a new token
         req.all_data = {"user": "cornelius",
@@ -542,7 +476,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertTrue(len(tokenobject_list) == 2)
 
         # request with a user object, not with a realm
-        req.all_data = {"user": "cornelius@{0!s}".format(self.realm1)}
+        req.all_data = {"user": f"cornelius@{self.realm1!s}"}
 
         # Now a new policy check will fail, since there are already two
         # tokens in the realm
@@ -635,10 +569,10 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines the tokenlabel
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.TOKENLABEL, "<u>@<r>"))
+                   action=f"{PolicyAction.TOKENLABEL}=<u>@<r>")
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.TOKENISSUER, "myPI"))
+                   action=f"{PolicyAction.TOKENISSUER}=myPI")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -656,7 +590,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # reset the request data and start again with force_app_pin policy
         set_policy(name="pol3",
                    scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}=True".format(PolicyAction.FORCE_APP_PIN))
+                   action=f"hotp_{PolicyAction.FORCE_APP_PIN!s}=True")
         req.all_data = {"user": "cornelius",
                         "realm": "home"}
         init_tokenlabel(req)
@@ -696,14 +630,13 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         size_policy = 12
         set_policy(name="pinsize",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINRANDOM, size_policy))
+                   action=f"{PolicyAction.OTPPINRANDOM!s}={size_policy!s}")
         set_policy(name="pincontent",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, contents_policy))
+                   action=f"{PolicyAction.OTPPINCONTENTS!s}={contents_policy!s}")
         set_policy(name="pinhandling",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=privacyidea.lib.pinhandling.base.PinHandler".format(
-                       PolicyAction.PINHANDLING))
+                   action=f"{PolicyAction.PINHANDLING!s}=privacyidea.lib.pinhandling.base.PinHandler")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -784,10 +717,10 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         size_policy = 12
         set_policy(name="pinsize",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINSETRANDOM, size_policy))
+                   action=f"{PolicyAction.OTPPINSETRANDOM!s}={size_policy!s}")
         set_policy(name="pincontent",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, contents_policy))
+                   action=f"{PolicyAction.OTPPINCONTENTS!s}={contents_policy!s}")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -882,7 +815,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req = Request(env)
         set_policy(name="paperpol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=10".format(PAPERACTION.PAPERTOKEN_COUNT))
+                   action=f"{PAPERACTION.PAPERTOKEN_COUNT!s}=10")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -908,7 +841,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req = Request(env)
         set_policy(name="tanpol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=10".format(TANAction.TANTOKEN_COUNT))
+                   action=f"{TANAction.TANTOKEN_COUNT!s}=10")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1020,7 +953,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Now we use the policy, to set the otpkey
         set_policy(name="Indexed", scope=SCOPE.USER,
-                   action="indexedsecret_{0!s}=username".format(PIIXACTION.FORCE_ATTRIBUTE))
+                   action=f"indexedsecret_{PIIXACTION.FORCE_ATTRIBUTE!s}=username")
         req.all_data = {"type": "indexedsecret"}
         g.policy_object = PolicyClass()
         indexedsecret_force_attribute(req, None)
@@ -1075,7 +1008,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy, that the application is allowed to specify tokentype
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
+                   action=f"{ACTION.REQUIRE_ATTESTATION!s}={REQUIRE_ACTIONS.REQUIRE_AND_VERIFY!s}")
         g.policy_object = PolicyClass()
 
         # provide an empty attestation
@@ -1106,10 +1039,10 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # now create a policy for the length of the registration code
         set_policy(name="reg_length",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.REGISTRATIONCODE_LENGTH, 6))
+                   action=f"{PolicyAction.REGISTRATIONCODE_LENGTH!s}={6!s}")
         set_policy(name="reg_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.REGISTRATIONCODE_CONTENTS, "+n"))
+                   action=f"{PolicyAction.REGISTRATIONCODE_CONTENTS}=+n")
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
         init_token_length_contents(req)
@@ -1141,10 +1074,10 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # now create a policy for the length of the registration code
         set_policy(name="pw_length",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.PASSWORD_LENGTH, 6))
+                   action=f"{PolicyAction.PASSWORD_LENGTH!s}={6!s}")
         set_policy(name="pw_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.PASSWORD_CONTENTS, "+n"))
+                   action=f"{PolicyAction.PASSWORD_CONTENTS}=+n")
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "pw"}
         init_token_length_contents(req)
@@ -1184,18 +1117,14 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # now create a policy for the CA connector and the template
         set_policy(name="ca",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s},{2!s}={3!s}".format(
-                       CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
-                       CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
-                   ))
+                   action=f"{CERTIFICATE_ACTION.CA_CONNECTOR}=caconnector,"
+                          f"{CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE}=catemplate")
         set_policy(name="sub1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=email".format(
-                       CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT))
+                   action=f"{CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT!s}=email")
         set_policy(name="sub2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=email realm".format(
-                       CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT))
+                   action=f"{CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT!s}=email realm")
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "certificate", "genkey": 1}
         # check that the parameters were added
@@ -1267,7 +1196,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set policy
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
-                   action=["{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION)])
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION!s}=hotp"])
         req = Request(env)
         req.User = User("cornelius")
 
@@ -1334,8 +1263,8 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
     def test_01_sms_identifier(self):
         # every admin is allowed to enroll sms token with gw1 or gw2
-        set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSAction.GATEWAYS))
-        set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSAction.GATEWAYS))
+        set_policy("sms1", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS!s}=gw1 gw2")
+        set_policy("sms2", scope=SCOPE.ADMIN, action=f"{SMSAction.GATEWAYS!s}=gw3")
 
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -1358,7 +1287,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertRaises(PolicyError, sms_identifiers, req)
 
         # Users are allowed to choose gw4
-        set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSAction.GATEWAYS))
+        set_policy("sms1", scope=SCOPE.USER, action=f"{SMSAction.GATEWAYS!s}=gw4")
 
         g.logged_in_user = {"username": "root",
                             "realm": "",
@@ -1408,11 +1337,9 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy for the firebase config to use.
         set_policy(name="push_pol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=some-fb-config,"
-                          "{1!s}=https://privacyidea.com/enroll,"
-                          "{2!s}=10".format(PushAction.FIREBASE_CONFIG,
-                                            PushAction.REGISTRATION_URL,
-                                            PushAction.TTL))
+                   action=f"{PushAction.FIREBASE_CONFIG!s}=some-fb-config,"
+                          f"{PushAction.REGISTRATION_URL!s}=https://privacyidea.com/enroll,"
+                          f"{PushAction.TTL!s}=10")
         g.policy_object = PolicyClass()
         g.policies = {}
         req.all_data = {"type": "push"}
@@ -1436,7 +1363,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # set sslverify="0"
         set_policy(name="push_pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=0".format(PushAction.SSL_VERIFY))
+                   action=f"{PushAction.SSL_VERIFY!s}=0")
         g.policy_object = PolicyClass()
         g.policies = {}
         req.all_data = {"type": "push"}
@@ -1476,7 +1403,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertEqual(req.all_data.get(PushAction.WAIT), False)
 
         # Now we use the policy, to set the push_wait seconds
-        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PushAction.WAIT))
+        set_policy(name="push1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT!s}=10")
         req.all_data = {}
         g.policy_object = PolicyClass()
         pushtoken_validate(req, None)
@@ -1486,7 +1413,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
     def test_24b_push_disable_wait_policy(self):
         # We send a fake push_wait that is not in the policies
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         req = RequestMock()
@@ -1495,7 +1422,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertEqual(req.all_data.get(PushAction.WAIT), False)
 
         # But even with a policy, the function still sets PUSH_ACTION.WAIT to False
-        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PushAction.WAIT))
+        set_policy(name="push1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT!s}=10")
         req = RequestMock()
         req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)

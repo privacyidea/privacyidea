@@ -17,7 +17,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
         # check that we have an entry in the audit log
@@ -38,7 +37,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
@@ -49,7 +47,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "myGateway")
             self.assertEqual(sms_gw.get("name"), "myGW")
@@ -74,7 +71,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the gateway
@@ -85,7 +81,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             sms_gw = result.get("value")[0]
             self.assertEqual(sms_gw.get("description"), "new description")
 
@@ -97,7 +92,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty gateways
@@ -107,7 +101,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_02_test_options(self):
@@ -158,7 +151,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertEqual(sms_gw.get("headers").get("header2"), "headervalue2")
 
         # delete option "URL"
-        with self.app.test_request_context('/smsgateway/option/{0!s}/option.URL'.format(smsgw_id),
+        with self.app.test_request_context(f'/smsgateway/option/{smsgw_id!s}/option.URL',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -166,7 +159,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
 
         # try to delete header "header1" at the wrong endpoint
-        with self.app.test_request_context('/smsgateway/option/{0!s}/option.header1'.format(smsgw_id),
+        with self.app.test_request_context(f'/smsgateway/option/{smsgw_id!s}/option.header1',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -174,7 +167,7 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 404, res)
 
         # delete header "header1"
-        with self.app.test_request_context('/smsgateway/option/{0!s}/header.header1'.format(smsgw_id),
+        with self.app.test_request_context(f'/smsgateway/option/{smsgw_id!s}/header.header1',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -376,7 +369,6 @@ class APISmsGatewayTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            gw_id = res.json["result"]["value"]
 
         # Now update the gateway, sending CENSORED as the password (simulating UI re-save)
         param_update = {

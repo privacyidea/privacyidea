@@ -23,7 +23,7 @@ from datetime import datetime
 from datetime import timedelta
 from typing import Any
 
-from mock import mock
+from unittest import mock
 from sqlalchemy import func, delete, select
 from sqlalchemy.exc import IntegrityError
 
@@ -151,7 +151,6 @@ class TokenModelTestCase(MyTestCase):
         # userid=1009
         # resolver=resolver1
         # realm=realm1
-        otpkey = "123456"
 
         # create token and also assign the user and realm
         init_token({"type": "hotp", "serial": "serial2"},
@@ -225,7 +224,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertEqual("value", t3.get_info().get("info"))
 
         # test the string representation
-        s = "{0!s}".format(t3)
+        s = f"{t3!s}"
         self.assertEqual("serial2", s)
 
         # update token type
@@ -267,7 +266,7 @@ class TokenModelTestCase(MyTestCase):
 
         cid = c.save()
         self.assertTrue(cid == "splitRealm", cid)
-        self.assertTrue("{0!s}".format(c) == "<splitRealm (string)>", c)
+        self.assertTrue(f"{c!s}" == "<splitRealm (string)>", c)
 
         # delete the config
         config = Config.query.filter_by(Key="splitRealm").first()

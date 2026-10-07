@@ -20,7 +20,7 @@ import uuid
 from contextlib import contextmanager
 
 import ldap3
-import mock
+from unittest import mock
 import responses
 from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
@@ -353,7 +353,7 @@ class SQLResolverTestCase(MyTestCase):
         resolver = SQLResolver()
         result = resolver.testconnection(self.parameters)
         self.assertEqual(result[0], self.num_users)
-        self.assertTrue('Found {0!s} users.'.format(self.num_users) in result[1])
+        self.assertTrue(f'Found {self.num_users!s} users.' in result[1])
 
     def test_05_add_user_update_delete(self):
         resolver = SQLResolver()
@@ -909,7 +909,8 @@ class SCIMResolverTestCase(MyTestCase):
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
         rid = resolver.getResolverId()
@@ -928,7 +929,8 @@ class SCIMResolverTestCase(MyTestCase):
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
         r = resolver.checkPass("uid", "password")
@@ -944,7 +946,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_SINGLE_USER)
 
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{username: 'userName'}"})
 
         r = resolver.get_user_info("bjensen")
@@ -981,7 +984,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_USERS)
 
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
         users = resolver.getUserList()
@@ -1133,8 +1137,7 @@ class LDAPResolverTestCase(MyTestCase):
             def _search_with_ref(*args, **kwargs):
                 results = original_search(*args, **kwargs)
                 # paged_search returns an iterator
-                for result in results:
-                    yield result
+                yield from results
                 yield {'type': 'searchResRef', 'foo': 'bar'}
 
             mock_search.side_effect = _search_with_ref
@@ -1284,7 +1287,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = "bob"
         user_id = resolver.getUserId(user)
-        self.assertTrue(user_id == "3", "{0!s}".format(user_id))
+        self.assertTrue(user_id == "3", f"{user_id!s}")
 
         rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1333,7 +1336,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 })
 
         self.assertTrue(res[0], res)
-        self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1], res[1])
+        self.assertTrue(f"{len(LDAPDirectory)!s}" in res[1], res[1])
         # 'Your LDAP config seems to be OK, 3 user objects found.'
 
     @ldap3mock.activate
@@ -1356,7 +1359,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 })
 
         self.assertTrue(res[0], res)
-        self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1])
+        self.assertTrue(f"{len(LDAPDirectory)!s}" in res[1])
         self.assertTrue(res[1].startswith("Your LDAP config seems to be OK,"), res)
 
     @ldap3mock.activate
@@ -2016,7 +2019,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = "kölbel".encode('utf8')
+        user = "kölbel".encode()
         user_id = resolver.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
@@ -2349,7 +2352,7 @@ class LDAPResolverTestCase(MyTestCase):
             mock_search.assert_not_called()
         self.assertIn('bob', CACHE[resolver.getResolverId()]['getUserId'])
         # assert requests later than CACHE_TIMEOUT seconds query the directory again
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             # we now live CACHE_TIMEOUT + 2 seconds in the future
@@ -2531,7 +2534,8 @@ class LDAPResolverTestCase(MyTestCase):
                   'UIDTYPE': 'DN',
                   'CACHE_TIMEOUT': '0',  # to disable the per-process cache
                   'recursive_group_search': True,
-                  'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                  'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn'
+                                         '={username},{base_dn}))',
                   'group_name_attribute': 'distinguishedName',
                   'group_attribute_mapping_key': 'groups',
                   'resolver': 'testpool',
@@ -2747,7 +2751,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'objectGUID',
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -2806,7 +2811,8 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("Alice", user_info["givenname"])
 
         # specify attributes to receive, unknown attributes are ignored
-        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "phone", "groups", "unknown"])
+        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "phone", "groups",
+                                                                       "unknown"])
         self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
                             user_info)
         self.assertEqual("alice", user_info["username"])
@@ -2875,7 +2881,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'CACHE_TIMEOUT': 0,
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -2928,7 +2935,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'CACHE_TIMEOUT': 120,
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -2990,7 +2998,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'CACHE_TIMEOUT': 0,
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -3139,7 +3148,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("keule", user_info_map["1"]["surname"], user_info_map)
 
         # An entry that sat in the cache for longer than the timeout is fetched again
-        expired = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=240)
+        expired = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(seconds=240)
         CACHE[resolver.getResolverId()]["get_user_info"]["1"]["timestamp"] = expired
         with self._count_searches() as search_filters:
             user_info_map = resolver.get_user_info_batch(["1"], attributes=["username"])
@@ -3539,7 +3548,9 @@ class ResolverTestCase(MyTestCase):
         with mock.patch("logging.Logger.warning") as mock_log:
             save_resolver({"resolver": "EntraID", "type": "entraidresolver",
                            CONFIG_GET_USER_BY_ID: "{'method': 'GET', 'endpoint': '/new/users/{userid}'}",
-                           CLIENT_CERTIFICATE: "{'PRIVATE_KEY_FILE': 'tests/new_cert.pem', 'PRIVATE_KEY_PASSWORD': 'Test123', 'CERTIFICATE_FINGERPRINT': '123456'}",
+                           CLIENT_CERTIFICATE: "{'PRIVATE_KEY_FILE': 'tests/new_cert.pem', "
+                                               "'PRIVATE_KEY_PASSWORD': 'Test123', "
+                                               "'CERTIFICATE_FINGERPRINT': '123456'}",
                            CLIENT_ID: "56789"})
             mock_log.assert_any_call("Config entry %s is not a dict. Cannot be stored.", CLIENT_CERTIFICATE)
         reso_list = get_resolver_list(filter_resolver_name="EntraID")

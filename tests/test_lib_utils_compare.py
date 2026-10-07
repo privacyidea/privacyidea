@@ -153,14 +153,14 @@ class UtilsCompareTestCase(MyTestCase):
 
     def test_09_date_after(self):
         # Test with datetime objects
-        condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
-        true_date = datetime.datetime(2025, 2, 1, 12, 0, tzinfo=datetime.timezone.utc)
+        condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.UTC)
+        true_date = datetime.datetime(2025, 2, 1, 12, 0, tzinfo=datetime.UTC)
         self.assertTrue(compare_values(true_date, PrimaryComparators.DATE_AFTER, condition_date))
-        true_date = datetime.datetime(2025, 1, 1, 12, 0, 1, tzinfo=datetime.timezone.utc)
+        true_date = datetime.datetime(2025, 1, 1, 12, 0, 1, tzinfo=datetime.UTC)
         self.assertTrue(compare_values(true_date, PrimaryComparators.DATE_AFTER, condition_date))
-        true_date = datetime.datetime(2024, 1, 2, 12, 0, tzinfo=datetime.timezone.utc)
+        true_date = datetime.datetime(2024, 1, 2, 12, 0, tzinfo=datetime.UTC)
         self.assertFalse(compare_values(true_date, PrimaryComparators.DATE_AFTER, condition_date))
-        true_date = datetime.datetime(2025, 1, 1, 11, 59, 59, tzinfo=datetime.timezone.utc)
+        true_date = datetime.datetime(2025, 1, 1, 11, 59, 59, tzinfo=datetime.UTC)
         self.assertFalse(compare_values(true_date, PrimaryComparators.DATE_AFTER, condition_date))
         # test with different time zones
         true_date = datetime.datetime(2025, 1, 1, 13, 0, 0,
@@ -200,14 +200,14 @@ class UtilsCompareTestCase(MyTestCase):
 
     def test_10_date_before(self):
         # Test with datetime objects
-        condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
-        true_date = datetime.datetime(2025, 2, 1, 12, 0, tzinfo=datetime.timezone.utc)
+        condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.UTC)
+        true_date = datetime.datetime(2025, 2, 1, 12, 0, tzinfo=datetime.UTC)
         self.assertFalse(compare_values(true_date, PrimaryComparators.DATE_BEFORE, condition_date))
-        true_date = datetime.datetime(2025, 1, 1, 12, 0, 1, tzinfo=datetime.timezone.utc)
+        true_date = datetime.datetime(2025, 1, 1, 12, 0, 1, tzinfo=datetime.UTC)
         self.assertFalse(compare_values(true_date, PrimaryComparators.DATE_BEFORE, condition_date))
-        true_date = datetime.datetime(2024, 1, 2, 12, 0, tzinfo=datetime.timezone.utc)
+        true_date = datetime.datetime(2024, 1, 2, 12, 0, tzinfo=datetime.UTC)
         self.assertTrue(compare_values(true_date, PrimaryComparators.DATE_BEFORE, condition_date))
-        true_date = datetime.datetime(2025, 1, 1, 11, 59, 59, tzinfo=datetime.timezone.utc)
+        true_date = datetime.datetime(2025, 1, 1, 11, 59, 59, tzinfo=datetime.UTC)
         self.assertTrue(compare_values(true_date, PrimaryComparators.DATE_BEFORE, condition_date))
         # test with different time zones
         true_date = datetime.datetime(2025, 1, 1, 13, 0, 0,
@@ -246,7 +246,7 @@ class UtilsCompareTestCase(MyTestCase):
 
     def test_11_date_within_last(self):
         # Test with datetime object
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         self.assertTrue(compare_values(now, PrimaryComparators.DATE_WITHIN_LAST, "1h"))
         self.assertTrue(compare_values(now - datetime.timedelta(days=120), PrimaryComparators.DATE_WITHIN_LAST, "3y"))
         self.assertFalse(
@@ -262,7 +262,7 @@ class UtilsCompareTestCase(MyTestCase):
             compare_values(now - datetime.timedelta(minutes=31), PrimaryComparators.DATE_WITHIN_LAST, "30m"))
 
         # Test with string
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         self.assertTrue(compare_values(now.isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "1h"))
         self.assertTrue(
             compare_values((now - datetime.timedelta(days=120)).isoformat(), PrimaryComparators.DATE_WITHIN_LAST, "3y"))
@@ -297,7 +297,7 @@ class UtilsCompareTestCase(MyTestCase):
 
     def test_12_date_not_within_last(self):
         # Test with datetime object
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         self.assertFalse(compare_values(now, PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
         self.assertFalse(
             compare_values(now - datetime.timedelta(days=120), PrimaryComparators.DATE_NOT_WITHIN_LAST, "3y"))
@@ -316,7 +316,7 @@ class UtilsCompareTestCase(MyTestCase):
             compare_values(now - datetime.timedelta(minutes=31), PrimaryComparators.DATE_NOT_WITHIN_LAST, "30m"))
 
         # Test with string
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         self.assertFalse(compare_values(now.isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST, "1h"))
         self.assertFalse(
             compare_values((now - datetime.timedelta(days=120)).isoformat(), PrimaryComparators.DATE_NOT_WITHIN_LAST,
@@ -432,10 +432,10 @@ class UtilsCompareTestCase(MyTestCase):
                     "b": "100",
                     "c": "1000",
                     "e": 1000,
-                    "now": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                    "now+10h": (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+                    "now": datetime.datetime.now(datetime.UTC).isoformat(),
+                    "now+10h": (datetime.datetime.now(datetime.UTC) + datetime.timedelta(
                         hours=10)).isoformat(),
-                    "time_as_datetime": datetime.datetime.now(datetime.timezone.utc),
+                    "time_as_datetime": datetime.datetime.now(datetime.UTC),
                     "past": "2017-04-20 11:30+0200",
                     "invalid_date": "16. März 2020",
                     "text": "ABC",
@@ -510,20 +510,20 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_generic("now 'date_before' 2017-01-01T10:00+02:00", mock_attribute, "Error {0!s}"))
         # The timestamp in 10 hours is bigger than the current time
         self.assertTrue(
-            compare_generic(f"now+10h>{datetime.datetime.now(datetime.timezone.utc).isoformat()}", mock_attribute,
+            compare_generic(f"now+10h>{datetime.datetime.now(datetime.UTC).isoformat()}", mock_attribute,
                             "Error {0!s}"))
 
-        self.assertFalse(compare_generic(f"past > {datetime.datetime.now(datetime.timezone.utc).isoformat()}",
+        self.assertFalse(compare_generic(f"past > {datetime.datetime.now(datetime.UTC).isoformat()}",
                                          mock_attribute, "Error {0!s}"))
-        self.assertFalse(compare_generic(f"past 'date_within_last' 1s", mock_attribute, "Error {0!s}"))
-        self.assertFalse(compare_generic(f"now '!date_within_last' 1h", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("past 'date_within_last' 1s", mock_attribute, "Error {0!s}"))
+        self.assertFalse(compare_generic("now '!date_within_last' 1h", mock_attribute, "Error {0!s}"))
 
-        past_date = datetime.datetime(2017, 4, 20, 9, 30, tzinfo=datetime.timezone.utc).isoformat()
+        past_date = datetime.datetime(2017, 4, 20, 9, 30, tzinfo=datetime.UTC).isoformat()
         self.assertTrue(compare_generic(f"past=={past_date}", mock_attribute, "Error {0!s}"))
 
         # Testing that one can be a string and one a datetime object
         self.assertTrue(compare_generic(
-            f"time_as_datetime>{(datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=10)).isoformat()}",
+            f"time_as_datetime>{(datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=10)).isoformat()}",
             mock_attribute, "Error {0!s}"))
 
         # unexpected result: The date string can not be parsed since dateutil.parser does not understand locale dates.
@@ -534,7 +534,7 @@ class UtilsCompareTestCase(MyTestCase):
 
     def test_17_compare_time(self):
         # Test with datetime object
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         self.assertTrue(compare_time("1h", now))
         self.assertTrue(compare_time("3y", now - datetime.timedelta(days=120)))
         self.assertFalse(compare_time("1y", now - datetime.timedelta(days=370, hours=1)))
@@ -546,7 +546,7 @@ class UtilsCompareTestCase(MyTestCase):
         self.assertFalse(compare_time("30m", now - datetime.timedelta(minutes=31)))
 
         # Test with string
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         self.assertTrue(compare_time("1h", now.isoformat()))
         self.assertTrue(compare_time("3y", (now - datetime.timedelta(days=120)).isoformat()))
         self.assertFalse(compare_time("1y", (now - datetime.timedelta(days=370, hours=1)).isoformat()))

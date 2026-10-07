@@ -1,88 +1,14 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Tests for WebAuthn/FIDO2 prepolicies (privacyidea.api.lib.prepolicy)."""
-import json
-import logging
-from datetime import datetime, timedelta
 
-import jwt
-from dateutil.tz import tzlocal
-from flask import Request, g, current_app, jsonify
-from passlib.hash import pbkdf2_sha512
-from testfixtures import log_capture, LogCapture
-from werkzeug.datastructures.headers import Headers
-from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.lib.policyhelper import get_realm_for_authentication
-from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
-                                            check_tokeninfo,
-                                            no_detail_on_success,
-                                            no_detail_on_fail, autoassign,
-                                            offline_info, sign_response,
-                                            get_webui_settings,
-                                            save_pin_change,
-                                            add_user_detail_to_response,
-                                            mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode,
-                                            multichallenge_enroll_via_validate)
-from privacyidea.api.lib.prepolicy import (check_token_upload,
-                                           check_base_action, check_token_init,
-                                           check_max_token_user,
-                                           check_anonymous_user,
-                                           check_max_token_realm, set_realm,
-                                           init_tokenlabel, init_random_pin, set_random_pin,
-                                           init_token_defaults, _generate_pin_from_policy,
-                                           encrypt_pin, check_otp_pin,
-                                           enroll_pin,
-                                           init_token_length_contents,
-                                           check_external, api_key_required,
-                                           mangle, is_remote_user_allowed,
-                                           required_email, auditlog_age, hide_audit_columns,
-                                           papertoken_count,
-                                           tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_validate,
-                                           indexedsecret_force_attribute,
-                                           check_admin_tokenlist, pushtoken_disable_wait,
-                                           fido2_auth, webauthntoken_authz,
-                                           fido2_enroll, webauthntoken_request,
-                                           check_application_tokentype,
-                                           required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, check_container_action,
-                                           check_token_action, check_user_params,
-                                           check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key, verify_enrollment)
-from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       get_all_containers, delete_container_template)
-from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
+from privacyidea.api.lib.prepolicy import (fido2_auth, webauthntoken_authz,
+                                           fido2_enroll, webauthntoken_request)
+from privacyidea.lib.error import PolicyError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.machine import attach_token
-from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
-from privacyidea.lib.realm import delete_realm
-from privacyidea.lib.realm import set_realm as create_realm
-from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
-from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms, check_user_pass, unassign_token,
-                                   enable_token)
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.smstoken import SMSAction
-from privacyidea.lib.tokens.tantoken import TANAction
+from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -95,11 +21,8 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
-from privacyidea.lib.user import User
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
-from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
-                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from privacyidea.lib.utils import hexlify_and_unicode
+from .api_lib_policy_common import PrePolicyHelperMixin
 from .base import (MyApiTestCase)
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
                                        ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN)
@@ -136,8 +59,6 @@ XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
 tA==
 -----END CERTIFICATE REQUEST-----"""
 
-from .api_lib_policy_common import PrePolicyHelperMixin
-
 
 class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
@@ -147,7 +68,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.setUp_user_realm3()
 
     def test_26a_webauthn_auth_validate_triggerchallenge(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -207,7 +128,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_26b_webauthn_auth_validate_check(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -272,7 +193,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_26c_webauthn_auth_auth(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -311,7 +232,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_27a_webauthn_authz_validate_check(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -364,7 +285,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_27b_webauthn_authz_auth(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -417,7 +338,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_28_webauthn_enroll(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         rp_id = RP_ID
@@ -566,7 +487,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn2")
 
     def test_29a_webauthn_request_token_init(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -676,7 +597,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29b_webauthn_request_validate_triggerchallenge(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -753,7 +674,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29c_webauthn_request_auth_authn(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -800,7 +721,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29d_webauthn_request_auth_authz(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -851,7 +772,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29e_webauthn_request_validate_check_authn(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -898,7 +819,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29f_webauthn_request_validate_check_authz(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request

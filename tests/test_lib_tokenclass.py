@@ -3,11 +3,11 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
 import responses
 from dateutil.tz import tzlocal
-from mock import mock
+from unittest import mock
 from sqlalchemy import select
 
 import privacyidea
@@ -56,13 +56,13 @@ class TokenBaseTestCase(MyTestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -84,7 +84,7 @@ class TokenBaseTestCase(MyTestCase):
         token.save()
 
         info = token.get_class_info()
-        self.assertTrue(info == {}, "{0!s}".format(info))
+        self.assertTrue(info == {}, f"{info!s}")
 
     def test_02_set_user(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -100,7 +100,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertTrue(user_object.resolver == self.resolvername1, user_object)
         assignment_date = token.get_tokeninfo("assignment_date")
         self.assertTrue(assignment_date, assignment_date)
-        current_date = datetime.now(timezone.utc)
+        current_date = datetime.now(UTC)
         delta = current_date - datetime.fromisoformat(assignment_date)
         self.assertTrue(delta.total_seconds() < 10, delta)
 
@@ -1191,12 +1191,12 @@ class TokenBaseTestCase(MyTestCase):
 
         # set last auth and check correct format
         last_auth = datetime(year=2025, month=3, day=21, hour=7, minute=24, second=12, microsecond=164578,
-                             tzinfo=timezone.utc)
+                             tzinfo=UTC)
         token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 07:24:12.164578+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
         # microseconds are also included if they are 0
         last_auth = datetime(year=2025, month=3, day=21, hour=16, minute=3, second=8, microsecond=0,
-                             tzinfo=timezone.utc)
+                             tzinfo=UTC)
         token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
         self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
 
@@ -1209,7 +1209,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # Old time format
         # lastauth_alt = datetime.utcnow().isoformat()
-        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc) - tdelta)
+        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(UTC) - tdelta)
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")

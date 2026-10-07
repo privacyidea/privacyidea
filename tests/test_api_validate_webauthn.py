@@ -503,7 +503,7 @@ class WebAuthn(MyApiTestCase):
             self.assertTrue(data.get("result").get("status"))
             self.assertTrue(data.get("result").get("value"))
         # We need a policy for HOTP trigger challenge
-        set_policy(name="trigpol", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy(name="trigpol", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         # Check if the challenge is triggered for the HOTP token
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -863,7 +863,7 @@ class WebAuthn(MyApiTestCase):
         serial = "WAN_REQ_ALLOW"
         set_policy("wan_req_allow",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=issuer/.*Yubico.*/".format(FIDO2PolicyAction.REQ))
+                   action=f"{FIDO2PolicyAction.REQ!s}=issuer/.*Yubico.*/")
         try:
             transaction_id = self._do_first_enrollment_step(serial)
             status_code, data = self._do_second_enrollment_step(serial, transaction_id)
@@ -884,7 +884,7 @@ class WebAuthn(MyApiTestCase):
         serial = "WAN_REQ_BLOCK"
         set_policy("wan_req_block",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=issuer/.*NonExistentVendor.*/".format(FIDO2PolicyAction.REQ))
+                   action=f"{FIDO2PolicyAction.REQ!s}=issuer/.*NonExistentVendor.*/")
         try:
             transaction_id = self._do_first_enrollment_step(serial)
             status_code, data = self._do_second_enrollment_step(serial, transaction_id)
@@ -906,8 +906,7 @@ class WebAuthn(MyApiTestCase):
         serial = "WAN_AAGUID_ALLOW"
         set_policy("wan_aaguid_allow",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                                               self._yubikey_aaguid))
+                   action=f"{FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST!s}={self._yubikey_aaguid!s}")
         try:
             transaction_id = self._do_first_enrollment_step(serial)
             status_code, data = self._do_second_enrollment_step(serial, transaction_id)
@@ -928,8 +927,7 @@ class WebAuthn(MyApiTestCase):
         serial = "WAN_AAGUID_BLOCK"
         set_policy("wan_aaguid_block",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=00000000-0000-0000-0000-000000000000".format(
-                       FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
+                   action=f"{FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST!s}=00000000-0000-0000-0000-000000000000")
         try:
             transaction_id = self._do_first_enrollment_step(serial)
             status_code, data = self._do_second_enrollment_step(serial, transaction_id)
@@ -1146,7 +1144,7 @@ class WebAuthn(MyApiTestCase):
         delete_policies(["wan1", "wan2", "uv_req"])
         try:
             remove_token(webauthn_serial)
-        except:
+        except ResourceNotFoundError:
             pass
 
 
@@ -1401,7 +1399,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
         self.setUp_user_realms()
 
         set_policy("wan1", scope=SCOPE.ENROLL,
-                   action=("webauthn_relying_party_id={0!s}".format(self.rp_id)))
+                   action=(f"webauthn_relying_party_id={self.rp_id!s}"))
         set_policy("wan2", scope=SCOPE.ENROLL,
                    action="webauthn_relying_party_name=privacyIDEA")
 
@@ -1579,7 +1577,7 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
     def test_03_authenticate_no_machine_name(self):
         token = get_one_token(serial=self.serial)
         if not token:
-            self.fail("No token found for serial {0!s}".format(self.serial))
+            self.fail(f"No token found for serial {self.serial!s}")
         # Set the sign count back to be able to use the same data for authentication again
         token.set_otp_count(0)
 

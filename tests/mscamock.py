@@ -21,39 +21,34 @@
 #
 
 
-class MyTemplateReply(object):
+class MyTemplateReply:
     def __init__(self, templates):
         self.templateNames = templates
 
 
-class MyCAReply(object):
+class MyCAReply:
     def __init__(self, ca_list=None):
         self.caNames = ca_list or []
 
 
-class MyCSRReply(object):
+class MyCSRReply:
     def __init__(self, disposition=0, request_id=None, message="CSR invalid"):
         self.disposition = disposition
         self.dispositionMessage = message
         self.requestId = request_id or 4711
 
 
-class MyCertReply(object):
-    def __init__(self, certificate):
-        self.cert = certificate
-
-
-class MyCSRStatusReply(object):
+class MyCSRStatusReply:
     def __init__(self, disposition):
         self.disposition = disposition
 
 
-class MyCertificateReply(object):
+class MyCertificateReply:
     def __init__(self, certificate):
         self.cert = certificate
 
 
-class CAServiceMock(object):
+class CAServiceMock:
 
     def __init__(self, config, mock_config=None):
         self.cas = mock_config.get("available_cas") or []
@@ -69,9 +64,6 @@ class CAServiceMock(object):
 
     def GetCAs(self, _carequest):
         return MyCAReply(self.cas)
-
-    def GetCertificate(self, _get_certificate_request):
-        return MyCertReply(certificate=self.certificate)
 
     def GetCSRStatus(self, _csr_status_request):
         return MyCSRStatusReply(disposition=self.disposition)

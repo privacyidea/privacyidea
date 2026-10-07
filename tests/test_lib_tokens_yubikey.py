@@ -208,14 +208,14 @@ class YubikeyTokenTestCase(MyTestCase):
         nonce = "random nonce"
         apiid = "hallo"
         apikey = "1YMEbMZijD3DzL21UfKGnOOI13c="
-        set_privacyidea_config("yubikey.apiid.{0!s}".format(apiid), apikey)
+        set_privacyidea_config(f"yubikey.apiid.{apiid!s}", apikey)
         req.all_data = {'id': apiid,
                         "otp": otps[0],
                         "nonce": nonce}
         text_type, result = YubikeyTokenClass.api_endpoint(req, g)
         self.assertEqual(text_type, "plain")
         self.assertTrue("status=OK" in result, result)
-        self.assertTrue("nonce={0!s}".format(nonce) in result, result)
+        self.assertTrue(f"nonce={nonce!s}" in result, result)
 
     def test_11_strip_whitespace(self):
         fixed = "ebedeeefegeheiej"
@@ -244,14 +244,14 @@ class YubikeyTokenTestCase(MyTestCase):
         nonce = "random nonce"
         apiid = "hallo"
         apikey = "1YMEbMZijD3DzL21UfKGnOOI13c="
-        set_privacyidea_config("yubikey.apiid.{0!s}".format(apiid), apikey)
+        set_privacyidea_config(f"yubikey.apiid.{apiid!s}", apikey)
         req.all_data = {'id': apiid,
                         "otp": otps[0],
                         "nonce": nonce}
         text_type, result = YubikeyTokenClass.api_endpoint(req, g)
         self.assertEqual(text_type, "plain")
         self.assertTrue("status=OK" in result, result)
-        self.assertTrue("nonce={0!s}".format(nonce) in result, result)
+        self.assertTrue(f"nonce={nonce!s}" in result, result)
 
     def test_12_yubico_spec_otp_test_vectors(self):
         """

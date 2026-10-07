@@ -6,7 +6,7 @@ This test file tests the lib.tokens.certificatetoken
 import base64
 import unittest
 
-import mock
+from unittest import mock
 import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import pkcs12
@@ -385,9 +385,9 @@ class CertificateTokenTestCase(MyTestCase):
         certificate = detail.get("certificate")
         # At each testrun, the certificate might get another serial number!
         x509obj = x509.load_pem_x509_certificate(certificate.encode())
-        self.assertEqual("{0!r}".format(x509obj.issuer),
+        self.assertEqual(f"{x509obj.issuer!r}",
                          "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
-        self.assertEqual("{0!r}".format(x509obj.subject),
+        self.assertEqual(f"{x509obj.subject!r}",
                          "<Name(CN=requester.localdomain,O=privacyidea,ST=Hessen,C=DE)>")
 
         # Test, if the certificate is also completely stored in the tokeninfo
@@ -430,9 +430,9 @@ class CertificateTokenTestCase(MyTestCase):
         certificate = detail.get("certificate")
         # At each testrun, the certificate might get another serial number!
         x509obj = x509.load_pem_x509_certificate(certificate.encode())
-        self.assertEqual("{0!r}".format(x509obj.issuer),
+        self.assertEqual(f"{x509obj.issuer!r}",
                          "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
-        self.assertEqual("{0!r}".format(x509obj.subject),
+        self.assertEqual(f"{x509obj.subject!r}",
                          "<Name(CN=cn=cornelius)>")
 
         # Check that the certificate is available in the tokeninfo as well
@@ -551,7 +551,7 @@ class CertificateTokenTestCase(MyTestCase):
                             "realm": "default",
                             "role": "user"}
         set_policy("pol1", scope=SCOPE.USER,
-                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+                   action=f"{ACTION.TRUSTED_CA_PATH!s}=tests/testdata/attestation/")
         g.policy_object = PolicyClass()
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["tests/testdata/attestation/"],
@@ -562,7 +562,7 @@ class CertificateTokenTestCase(MyTestCase):
                             "realm": "super",
                             "role": "admin"}
         set_policy("pol1", scope=SCOPE.ADMIN,
-                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+                   action=f"{ACTION.TRUSTED_CA_PATH!s}=tests/testdata/attestation/")
         g.policy_object = PolicyClass()
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["tests/testdata/attestation/"],
