@@ -98,6 +98,11 @@ stays in the realm of the original request (on ``/validate/check`` and ``/auth``
 :ref:`conditional_access` is checked for the user of the original request and again for the new user. Other policies
 that are checked before the event handlers run still apply to the user of the original request.
 
+
+A request mangler that can not set the parameter, e.g. because the value names more groups than the match pattern
+has, fails the request when the definition has *Abort the request if the handler fails* set, which new request
+mangler definitions have, see :ref:`event_abort_on_error`.
+
 Code
 ~~~~
 

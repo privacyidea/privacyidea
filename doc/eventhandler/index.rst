@@ -94,6 +94,34 @@ module can require additional options.
 
    *The event* sendmail *requires the option* emailconfig.
 
+.. _event_abort_on_error:
+
+Failing handlers
+----------------
+
+.. index:: Abort on error
+
+A handler fails when it raises an error or reports that it could not do what it is configured for, e.g. a
+notification without a recipient, a script that exits with an error, a webhook that is answered with an HTTP error or
+a response mangler with a JSON pointer it does not support. A handler whose conditions can not be evaluated, e.g.
+because the user store can not be reached, fails the same way. The audit entry of the handler records
+``success=False`` and, in the ``info`` column, the reason or the class of the error.
+
+By default a failing handler does not affect the request: the remaining handlers run and the request continues. The
+option *Abort the request if the handler fails* (API parameter ``abort_on_error``) of an event definition makes a
+failure of its handler fail the request instead. Use it for a handler whose result the request depends on:
+
+* a response mangler that removes data from the response - if it fails, the data would be sent to the client,
+* a request mangler that overwrites request parameters - if it fails, the endpoint would use the values the client
+  sent,
+* a federation handler, which replaces the response with the one of the remote privacyIDEA server.
+
+New request mangler and response mangler definitions start with the option enabled. A Script handler that is
+configured to raise an error fails the request whenever the script fails, whatever the option says.
+
+A post-event handler runs after the request has done its work, so failing the request there reports an error for an
+operation that already happened, e.g. a token that was enrolled.
+
 .. _handlerconditions:
 
 Conditions

@@ -43,6 +43,11 @@ This action takes the additional attributes ``type`` and ``value``.
 
 The value can be returned as a string, an integer or a boolean.
 
+
+A response mangler that can not do what it is configured for, e.g. with a JSON pointer it does not support, does
+not send the original response: new response mangler definitions fail the request in that case, see
+:ref:`event_abort_on_error`.
+
 Code
 ~~~~
 
