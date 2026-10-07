@@ -1038,11 +1038,16 @@ class BaseEventHandler:
                     return False
 
         # Evaluates the challenge either for a token or a container object
+        challenge_conditions = CONDITION.CHALLENGE_SESSION in conditions or CONDITION.CHALLENGE_EXPIRED in conditions
+        if challenge_conditions and not (token_obj or container):
+            # A challenge condition can only be fulfilled by the challenge of a token or a container
+            log.debug("Neither a token nor a container: the challenge conditions are not fulfilled.")
+            return False
         if token_obj or container:
             serial = token_obj.get_serial() if token_obj else None
             if not serial:
                 serial = container.serial
-            if CONDITION.CHALLENGE_SESSION in conditions or CONDITION.CHALLENGE_EXPIRED in conditions:
+            if challenge_conditions:
                 chals = get_challenges(serial=serial, transaction_id=transaction_id)
                 if not chals:
                     # A challenge condition can only be fulfilled by a challenge

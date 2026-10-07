@@ -33,7 +33,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
-from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.realm import realm_is_defined, get_ordered_resolvers
 from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.token import get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
@@ -412,6 +412,10 @@ def check_token_import_allowed(g, import_tokens: dict, user_attributes: UserAttr
             raise PolicyError(f"Admin actions are defined, but you are not allowed to import the token {serial}.")
         file_user = token_data.get("user") or {}
         user = User(file_user.get("username", ""), file_user.get("realm", ""), file_user.get("resolver", ""))
+        if user and user.resolver and user.resolver not in get_ordered_resolvers(user.realm):
+            # The user object takes the resolver of the file as it is, the policy is matched against the realm
+            raise PolicyError(f"The resolver {user.resolver} of the user of the token {serial} is not part of the "
+                              f"realm {user.realm}.")
         if user and not Match.generic(g, scope=user_attributes.role, action=PolicyAction.IMPORT, user_object=user,
                                       adminrealm=user_attributes.adminrealm,
                                       adminuser=user_attributes.adminuser).allowed():

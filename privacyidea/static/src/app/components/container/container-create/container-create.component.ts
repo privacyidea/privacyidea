@@ -193,11 +193,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.selectedUserRealm();
     }
-    const template = this.selectedTemplate();
-    if (template && template.template_options.tokens.length > 0) {
-      createData.name = template.name;
-      createData.template = template;
-    }
+    Object.assign(createData, this.templateCreateData());
 
     try {
       await firstValueFrom(this.containerService.createContainer(createData));

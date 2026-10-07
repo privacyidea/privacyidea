@@ -860,6 +860,18 @@ describe("ContainerCreateComponent", () => {
         expect(sentData().template).toBeUndefined();
       });
 
+      it("saving the wizard when leaving the page sends the template of container_wizard_template", async () => {
+        setWizard("wizard_template");
+        (pendingChangesService.registerSave as jest.Mock).mockClear();
+        TestBed.createComponent(ContainerCreateWizardComponent).componentInstance.ngOnInit();
+        const save = (pendingChangesService.registerSave as jest.Mock).mock.calls.at(-1)[0] as () => Promise<boolean>;
+
+        await save();
+
+        expect(sentData()).toEqual(expect.objectContaining({ type: "generic", template_name: "wizard_template" }));
+        expect(sentData().template).toBeUndefined();
+      });
+
       it("the wizard sends no template without container_wizard_template", () => {
         setWizard(null);
         TestBed.createComponent(ContainerCreateWizardComponent).componentInstance.createContainer();

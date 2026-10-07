@@ -684,6 +684,25 @@ class BaseEventHandlerTestCase(MyTestCase):
 
         remove_token(serial)
 
+    def test_10b_challenge_conditions_without_token_or_container(self):
+        # The user owns two tokens and the request names none, so the event has no token to take a challenge from
+        self.setUp_user_realms()
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tid = "7654321"
+        for serial in ["rs10a", "rs10b"]:
+            init_token({"serial": serial, "type": "pw", "otppin": "test", "otpkey": "secret"}, user=user)
+        Challenge(serial="rs10a", session=ChallengeSession.DECLINED, transaction_id=tid).save()
+        req_data = {"user": "cornelius@realm1", "pass": "wrongvalue", "transaction_id": tid}
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user,
+                                     resp_data="""{"result": {"value": false}}""")
+        for condition in [{CONDITION.CHALLENGE_SESSION: ChallengeSession.DECLINED},
+                          {CONDITION.CHALLENGE_EXPIRED: "False"}]:
+            with self.subTest(condition=condition):
+                options["handler_def"] = {"conditions": condition}
+                self.assertFalse(BaseEventHandler().check_condition(options))
+        remove_token(user=user)
+
     def test_11_check_challenge_expired(self):
         self.setUp_user_realms()
         serial = "rs01"

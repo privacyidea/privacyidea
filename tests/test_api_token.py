@@ -6575,6 +6575,13 @@ class TokenImportRealmTestCase(MyApiTestCase):
         self.assertEqual([], get_tokens(serial="IMPOK"))
         self.assertEqual([], get_tokens(serial="IMPREFUSED"))
 
+    def test_03b_version_2_user_with_a_resolver_outside_its_realm_is_refused(self):
+        self.setUp_user_realm3()
+        res = self._load(f"# version: 2\ncornelius, {self.resolvername3}, {self.realm1}, IMPFOREIGN, {self.file_key}, "
+                         f"hotp, 6\n", self.realm1)
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual([], get_tokens(serial="IMPFOREIGN"))
+
     def test_04_tokens_and_users_of_the_allowed_realm_are_imported(self):
         init_token({"serial": "IMPPOOL1", "type": "hotp", "otpkey": self.original_key}).set_realms([self.realm1])
         res = self._load(f"# version: 2\n"
