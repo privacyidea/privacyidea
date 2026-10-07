@@ -161,11 +161,13 @@ describe("EditActionTabComponent", () => {
     ).toBeTruthy();
   });
 
-  it("should leave the search field out while the header shows it", () => {
+  it("should hide the search field but keep its space while the header shows it", () => {
     fixture.componentRef.setInput("searchInHeader", true);
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent))).toBeNull();
+    const searchField = fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent));
+    expect(searchField).not.toBeNull();
+    expect(searchField.nativeElement.classList).toContain("search-hidden");
   });
 
   it("should hand the search term to both action lists", () => {

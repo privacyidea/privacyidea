@@ -19,10 +19,11 @@
 
 <div class="policy-flex-row">
   <div class="flex-body">
-    <!-- Left out while the pinned page header shows the field instead. -->
-    @if (!searchInHeader()) {
-      <app-policy-action-search [(actionFilter)]="actionFilter" />
-    }
+    <!-- Hidden rather than removed while the pinned header shows the field: dropping its height
+         could shrink the page below the pin threshold and bounce the scroll back to the top. -->
+    <app-policy-action-search
+      [class.search-hidden]="searchInHeader()"
+      [(actionFilter)]="actionFilter" />
 
     @if (actions().length > 0) {
       <app-added-actions-list
