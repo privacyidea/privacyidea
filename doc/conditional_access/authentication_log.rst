@@ -7,7 +7,7 @@ Authentication Log
 The authentication log records the outcome of every authentication request:
 what was attempted, by whom, from where, and how it ended. It is the data
 :ref:`conditional_access_policies` count, and it is readable on its own under
-*Logs → Authentication log*.
+*Audit → Authentication Log*.
 
 It is separate from the :ref:`audit` log. The audit log records *what the API
 did*, in free text, for every call. The authentication log records *how an

@@ -29,8 +29,8 @@ account twice, such as password spraying and user enumeration.
 In the WebUI you will find it here:
 
 * *Policies → Conditional Access* - create, order and enable the policies.
-* *Logs → Authentication Log* - the classified authentication events.
-* *Logs → Locked Users* and *Logs → IP Blocklist* - the restrictions in force,
+* *Audit → Authentication Log* - the classified authentication events.
+* *Audit → Locked Users* and *Audit → IP Blocklist* - the restrictions in force,
   and where to lift them.
 * The *Conditional Access* dashboard panel summarizes all of it, see
   :ref:`dashboard`.

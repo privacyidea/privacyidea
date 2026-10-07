@@ -32,7 +32,7 @@ cleared together with its expiry and cause. Such a restriction is silent unless
 Lifting locks and blocks
 ------------------------
 
-*Logs → Locked Users* and *Logs → IP Blocklist* show the restrictions in force,
+*Audit → Locked Users* and *Audit → IP Blocklist* show the restrictions in force,
 with the permanent ones marked. An entry can be lifted individually or in bulk.
 Expired records restrict nobody. They are listed until they are purged - from
 the same pages, or daily by the Ubuntu packages and the Docker image, see
@@ -150,7 +150,7 @@ identified differently, though, and it shows in a few places:
   against the one account and the lock is written under the name the table
   holds. Unlocking by name lifts every lock standing under a spelling of it,
   since each of them would bar the account from logging in.
-* On *Logs → Locked Users* such an entry carries an **internal admin** badge and
+* On *Audit → Locked Users* such an entry carries an **internal admin** badge and
   has no realm, resolver or link to a user page. It is lifted like any other,
   individually or in bulk.
 * On the command line they are addressed with ``--admin`` instead of

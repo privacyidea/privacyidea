@@ -146,7 +146,7 @@ written, and the restriction is then described from that copy. Two consequences:
 * Editing the error message on a conditional access policy's stage does not
   change what an already locked user is being told. The new wording applies from
   the next lock or block that stage writes.
-* *Logs → Locked Users* and *Logs → IP Blocklist* show the stored text of each
+* *Audit → Locked Users* and *Audit → IP Blocklist* show the stored text of each
   restriction, with ``{duration}`` unsubstituted - it is the template; when the
   restriction ends is shown in its own expiry column.
 
@@ -295,7 +295,7 @@ Whatever the user is told, the administrator sees the whole reason:
   anything else logs an outcome for it;
 * the :ref:`audit` entry, which names every restriction in force and whether each
   is permanent;
-* *Logs → Locked Users* and *Logs → IP Blocklist*, which list the restriction,
+* *Audit → Locked Users* and *Audit → IP Blocklist*, which list the restriction,
   whether a policy or an administrator imposed it (*Policy* or *Manual*), when it
   expires, and the wording it carries. Which policy wrote a lock or block is
   recorded on the request that tripped it, in the conditional access outcome of
