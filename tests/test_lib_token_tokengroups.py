@@ -144,9 +144,9 @@ class TokenGroupTestCase(MyTestCase):
         token = init_token({"serial": "s1", "type": "spass"})
 
         # create token groups
-        g1_id = set_tokengroup("g1", "Test A")
+        set_tokengroup("g1", "Test A")
         g2_id = set_tokengroup("g2", "Test B")
-        g3_id = set_tokengroup("g3", "Test C")
+        set_tokengroup("g3", "Test C")
 
         # Set two groups
         set_tokengroups("s1", ["g1", "g2"])

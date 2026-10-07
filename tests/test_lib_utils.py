@@ -643,7 +643,7 @@ class UtilsTestCase(MyTestCase):
         self.assertRaises(Exception, decode_base32check, client_component)
 
     def test_23_get_client_ip(self):
-        class RequestMock():
+        class RequestMock:
             blueprint = None
             remote_addr = None
             all_data = {}
@@ -954,11 +954,11 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(otp, "12345678")
 
     def test_31_create_tag_dict(self):
-        class UserAgentMock():
+        class UserAgentMock:
             string = "<b>hello world</b>"
             browser = "browser"
 
-        class RequestMock():
+        class RequestMock:
             user_agent = UserAgentMock()
             path = "/validate/check"
             # A spoofed Host header must never end up in the {url} tag (CWE-640).

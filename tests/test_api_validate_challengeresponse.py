@@ -1,67 +1,27 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
-import json
-import logging
-import re
-import time
-from base64 import b32encode
-from datetime import timezone
-from urllib.parse import quote
 
-import mock
+from unittest import mock
 import responses
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from dateutil.tz import tzlocal
-from passlib.hash import argon2
-from testfixtures import Replace, test_datetime
-from testfixtures import log_capture
 
 from privacyidea.lib import _
-from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
-                                    get_inc_fail_count_on_false_pin,
-                                    delete_privacyidea_config, SYSCONF)
-from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
-from privacyidea.lib.error import Error
-from privacyidea.lib.event import delete_event
-from privacyidea.lib.event import set_event
-from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
+                                    delete_privacyidea_config)
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.radiusserver import add_radius
-from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
-from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   reset_token, enable_token, revoke_token,
-                                   set_pin, get_one_token, unassign_token)
-from privacyidea.lib.tokenclass import (ChallengeSession, ClientMode, FAILCOUNTER_EXCEEDED,
-                                        FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
-                                        AUTH_DATE_FORMAT)
-from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, strip_pem_headers
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
-from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
-from privacyidea.lib.tokens.smstoken import SmsTokenClass
-from privacyidea.lib.tokens.totptoken import HotpTokenClass
-from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
+                                   enable_token, set_pin, get_one_token)
+from privacyidea.lib.tokenclass import (ChallengeSession)
 from privacyidea.lib.user import (User)
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
-from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
-                                NodeName)
-from . import smtpmock, ldap3mock, radiusmock
+from privacyidea.models import (Challenge, db)
+from . import smtpmock, radiusmock
 from .base import MyApiTestCase, force_expire_challenges
-from .test_lib_tokencontainer import MockSmartphone
 
-from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
+from .api_validate_common import OTPs, DICT_FILE, setup_sms_gateway
 
 
 class AChallengeResponse(MyApiTestCase):
@@ -77,7 +37,7 @@ class AChallengeResponse(MyApiTestCase):
         init_token({"type": "hotp", "serial": "hotp1", "otpkey": self.otpkey},
                    user=User(uid=1004, realm=self.realm1, resolver=self.resolvername1))
         # Define HOTP token to be challenge response
-        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         set_pin(self.serial, "pin")
 
         with self.app.test_request_context('/validate/check',
@@ -587,15 +547,15 @@ class AChallengeResponse(MyApiTestCase):
         # challenge response request with both tokens.
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:<ul>".format(PolicyAction.CHALLENGETEXT_HEADER))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}=These are your options:<ul>")
         # Set a policy for the footer
         set_policy(name="pol_footer",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(PolicyAction.CHALLENGETEXT_FOOTER))
+                   action=f"{PolicyAction.CHALLENGETEXT_FOOTER!s}=</ul>.<b>Authenticate Now!</b>")
         # make HOTP a challenge response token
         set_policy(name="pol_hotp",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
 
         init_token({"serial": "tok1",
                     "otpkey": self.otpkey,
@@ -628,7 +588,7 @@ class AChallengeResponse(MyApiTestCase):
         # make HOTP a challenge response token
         set_policy(name="pol_hotp",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         init_token({"serial": "tok1",
                     "otpkey": self.otpkey,
                     "pin": "pin"}, user=User("cornelius", self.realm1))
@@ -1641,7 +1601,7 @@ class AChallengeResponse(MyApiTestCase):
         # If we wait long enough, the challenge has expired,
         # while the HOTP value 287082 in itself would still be valid.
         # However, the authentication with the expired transaction_id has to fail
-        new_utcnow = datetime.datetime.now(tz=timezone.utc).replace(tzinfo=None) + datetime.timedelta(minutes=12)
+        new_utcnow = datetime.datetime.now(tz=datetime.UTC).replace(tzinfo=None) + datetime.timedelta(minutes=12)
         new_now = datetime.datetime.now().replace(tzinfo=None) + datetime.timedelta(minutes=12)
         with mock.patch('privacyidea.models.utils.datetime') as mock_datetime:
             mock_datetime.utcnow.return_value = new_utcnow

@@ -66,7 +66,7 @@ class PasswdResolverTest(MyTestCase):
         users = self.resolver.getUserList({"userid": "between 1001, 1000"})
         self.assertEqual(2, len(users), users)
         users = self.resolver.getUserList({"userid": "<=1000"})
-        self.assertEqual(1, len(users), "{0!s}".format(users))
+        self.assertEqual(1, len(users), f"{users!s}")
         users = self.resolver.getUserList({"userid": ">=1000"})
         self.assertGreater(len(users), 1, users)
 

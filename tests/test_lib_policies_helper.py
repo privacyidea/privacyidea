@@ -20,7 +20,7 @@ Unit tests for the policy helpers in :mod:`privacyidea.lib.policies.helper`. The
 enforced end-to-end in test_api_authentication_log.py; what is tested here is the identity resolution behind it,
 including the failure paths a request cannot produce on demand.
 """
-import mock
+from unittest import mock
 from flask import g
 
 from privacyidea.lib.auth import ROLE

@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
@@ -7,6 +7,7 @@ from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from . import smtpmock
@@ -115,7 +116,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the event
@@ -126,7 +126,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value")[0].get("action"), "sendmail")
             self.assertEqual(result.get("value")[0].get("conditions"),
                              {"blabla": "yes"})
@@ -148,7 +147,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # check the event
@@ -159,7 +157,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value")[0].get("action"),
                              "sendmail")
             self.assertEqual(result.get("value")[0].get("conditions"),
@@ -173,7 +170,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value")[0].get("action"),
                              "sendmail")
             self.assertEqual(result.get("value")[0].get("conditions"),
@@ -187,7 +183,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), 1)
 
         # list empty events
@@ -197,7 +192,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_02_test_options(self):
@@ -218,7 +212,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertGreaterEqual(result.get("value"), 1, result)
             ev1_id = result.get('value')
 
@@ -239,14 +232,13 @@ class APIEventsTestCase(MyApiTestCase):
                              "themis")
 
         # delete event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), ev1_id)
 
         # list empty events
@@ -256,7 +248,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_02b_reorder_keeps_options(self):
@@ -295,7 +286,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
 
         # The options and conditions must still be there
-        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+        with self.app.test_request_context(f'/event/{ev_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -321,7 +312,7 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
 
-        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+        with self.app.test_request_context(f'/event/{ev_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -331,7 +322,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event.get("conditions"), {})
 
         # cleanup
-        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+        with self.app.test_request_context(f'/event/{ev_id!s}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -344,7 +335,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertTrue("token_init" in result.get("value"))
             self.assertTrue("token_assign" in result.get("value"))
             self.assertTrue("token_unassign" in result.get("value"))
@@ -358,7 +348,6 @@ class APIEventsTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue("sendmail" in result.get("value"))
             self.assertTrue("sendsms" in result.get("value"))
-            detail = res.json.get("detail")
 
         with self.app.test_request_context('/event/actions/Token',
                                            method='GET',
@@ -379,7 +368,6 @@ class APIEventsTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue("logged_in_user" in result.get("value"))
             self.assertTrue("result_value" in result.get("value"))
-            detail = res.json.get("detail")
 
     def test_06_test_enable_disable(self):
         # create an event configuration
@@ -399,7 +387,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertGreaterEqual(result.get("value"), 1, result)
             ev1_id = result.get('value')
 
@@ -416,7 +403,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), True)
 
         # disable event
-        with self.app.test_request_context('/event/disable/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/disable/{ev1_id!s}',
                                            method='POST',
                                            headers={
                                                'Authorization': self.at}):
@@ -435,7 +422,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), False)
 
         # Enable event
-        with self.app.test_request_context('/event/enable/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/enable/{ev1_id!s}',
                                            method='POST',
                                            headers={
                                                'Authorization': self.at}):
@@ -454,14 +441,13 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), True)
 
         # delete event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), ev1_id, result)
 
         # list empty events
@@ -471,7 +457,6 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     def test_06b_module_defaults(self):
@@ -588,18 +573,16 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertGreaterEqual(result.get("value"), 1, result)
             ev1_id = result.get('value')
 
         # check the event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value")[0].get("position"), "post")
 
         # Update event with the position=pre
@@ -612,28 +595,25 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), ev1_id, result)
 
         # check the event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value")[0].get("position"), "pre")
 
         # delete event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), ev1_id, result)
 
         # list empty events
@@ -643,13 +623,11 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
-            detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
     @smtpmock.activate
     def test_08_create_token_for_user(self):
         smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, 'OK')})
-        transactionid = "123456098712"
         # send the email with the old configuration
         set_privacyidea_config("email.mailserver", "localhost")
         set_privacyidea_config("email.username", "user")
@@ -822,7 +800,7 @@ class EventParameterAllowlistTestCase(MyApiTestCase):
 
 class CustomUserAttributeHandlerTestCase(MyApiTestCase):
     def setUp(self):
-        super(CustomUserAttributeHandlerTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     def test_01_user_attribute_with_handler_tokenowner(self):
@@ -981,10 +959,6 @@ class CustomUserAttributeHandlerTestCase(MyApiTestCase):
 
         delete_event(eid)
         user.delete_attribute('foo')
-
-
-from privacyidea.lib.smtpserver import add_smtpserver
-from . import smtpmock
 
 
 class EventWrapperTestCase(MyApiTestCase):
@@ -1161,7 +1135,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         # Init rollover
         set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"},
                    priority=2)
-        result = self.request_assert_success(f'container/register/initialize',
+        result = self.request_assert_success('container/register/initialize',
                                              {"container_serial": container.serial, "rollover": True},
                                              self.at, 'POST')
         init_result = result["result"]["value"]
@@ -1171,7 +1145,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         self.assertFalse(totp.is_active())
 
         # Finalize rollover fails
-        self.request_assert_error(f'container/register/finalize',
+        self.request_assert_error('container/register/finalize',
                                   {"container_serial": container.serial},
                                   self.at, 'POST')
         # Check that tokens are disabled
@@ -1179,12 +1153,12 @@ class ContainerHandlerTestCase(MyApiTestCase):
         self.assertFalse(totp.is_active())
 
         # Finalize rollover success
-        scope = f"https://pi.net/container/register/finalize"
+        scope = "https://pi.net/container/register/finalize"
         mock_smph = MockSmartphone()
         params = mock_smph.register_finalize(init_result["nonce"], init_result["time_stamp"],
                                              scope, container.serial)
 
-        self.request_assert_success(f'container/register/finalize',
+        self.request_assert_success('container/register/finalize',
                                     params,
                                     self.at, 'POST')
 
@@ -1219,7 +1193,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                         position="post")
 
         # login with token
-        self.request_assert_success(f'/validate/check',
+        self.request_assert_success('/validate/check',
                                     {"serial": hotp.get_serial(),
                                      "pass": "1234"},
                                     None, 'POST')
@@ -1252,12 +1226,12 @@ class ContainerHandlerTestCase(MyApiTestCase):
                 Hello {user},
 
                 the administrator {admin}@{realm} initialized a registration for your container {container_serial}.
-                To complete the registration, please scan the attached QR code or click on this link 
+                To complete the registration, please scan the attached QR code or click on this link
                 {container_url_value} on your smartphone.
-                
-                The QR code allows you to synchronize the tokens on your smartphone with the server. 
-                Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
-                
+
+                The QR code allows you to synchronize the tokens on your smartphone with the server.
+                Be aware of no one else can see this QR code, otherwise your tokens might be compromised.
+
                 <img src={container_url_img}>
 
                 To check your container you may login to the Web UI:
@@ -1280,7 +1254,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                          support_tls=False)
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/register/initialize',
+            self.request_assert_success('/container/register/initialize',
                                         {"container_serial": container.serial},
                                         self.at, 'POST')
 
@@ -1312,10 +1286,10 @@ class ContainerHandlerTestCase(MyApiTestCase):
 
         msg = """
                 Hello {user},
-                
+
                 the administrator {admin}@{realm} performed the action
                 {action} on your container {container_serial}.
-                
+
                 To check your tokens you may login to the Web UI:
                 {url}
                 """
@@ -1429,12 +1403,12 @@ class ContainerHandlerTestCase(MyApiTestCase):
                 the administrator {admin}@{realm} initialized a rollover for your container {container_serial}.
                 To complete the rollover, please scan the attached QR code or click on this link {container_url_value}
                 on your smartphone.
-                
-                The QR code allows you to synchronize the tokens on your smartphone with the server. 
-                Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
-                
+
+                The QR code allows you to synchronize the tokens on your smartphone with the server.
+                Be aware of no one else can see this QR code, otherwise your tokens might be compromised.
+
                 <img src={container_url_img}>
-                
+
                 After the rollover is completed, the tokens and container on the old device are not valid anymore.
 
                 To check your container you may login to the Web UI:
@@ -1464,7 +1438,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         ContainerEventTestCase.register_smartphone(container)
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/register/initialize',
+            self.request_assert_success('/container/register/initialize',
                                         {"container_serial": container.serial, "rollover": True},
                                         self.at, 'POST')
 
@@ -1511,7 +1485,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                            PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/register/initialize',
+            self.request_assert_success('/container/register/initialize',
                                         {"container_serial": container.serial},
                                         self.at, 'POST')
 

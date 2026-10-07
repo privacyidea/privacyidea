@@ -197,12 +197,8 @@ class LibPolicyTestCase(MyTestCase):
         # Now we set a policy, that a non-existing user will authenticate
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0}, {1}, {2}, {3}=none".format(
-                       PolicyAction.RESETALLTOKENS,
-                       PolicyAction.PASSONNOUSER,
-                       PolicyAction.PASSONNOTOKEN,
-                       PolicyAction.OTPPIN
-                   ),
+                   action=f"{PolicyAction.RESETALLTOKENS}, {PolicyAction.PASSONNOUSER}, {PolicyAction.PASSONNOTOKEN}, "
+                          f"{PolicyAction.OTPPIN}=none",
                    realm="r1")
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -266,7 +262,7 @@ class LibPolicyTestCase(MyTestCase):
         # Now set a PASSTHRU policy to the userstore (new style)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=userstore".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=userstore")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -279,7 +275,7 @@ class LibPolicyTestCase(MyTestCase):
         radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=radiusconfig1".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=radiusconfig1")
         r = add_radius("radiusconfig1", "1.2.3.4", "testing123", dictionary=DICT_FILE)
         self.assertTrue(r > 0)
 
@@ -333,10 +329,8 @@ class LibPolicyTestCase(MyTestCase):
 
         set_policy(name="lost_pol2",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s, %s=%s,"
-                          "%s=%s" % (PolicyAction.LOSTTOKENPWCONTENTS, "C",
-                                     PolicyAction.LOSTTOKENVALID, 5,
-                                     PolicyAction.LOSTTOKENPWLEN, 3))
+                   action=f"{PolicyAction.LOSTTOKENPWCONTENTS}=C, {PolicyAction.LOSTTOKENVALID}=5,"
+                          f"{PolicyAction.LOSTTOKENPWLEN}=3")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -363,10 +357,10 @@ class LibPolicyTestCase(MyTestCase):
         # Now we set a policy with several tokentypes
         set_policy(name="pol_chal_resp_1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp tiqr totp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp tiqr totp")
         set_policy(name="pol_chal_resp_2",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp motp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp motp")
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
@@ -393,7 +387,7 @@ class LibPolicyTestCase(MyTestCase):
         # set time limit policy
         set_policy(name="pol_lastauth",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=1d".format(PolicyAction.LASTAUTH))
+                   action=f"{PolicyAction.LASTAUTH!s}=1d")
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         g.audit_object = FakeAudit()
@@ -440,7 +434,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm="myrealm",
                    resolver="reso002",
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, ACTIONVALUE.NONE))
+                   action=f"{PolicyAction.OTPPIN!s}={ACTIONVALUE.NONE!s}")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -490,7 +484,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "4h/5m"))
+                   action=f"{PolicyAction.AUTH_CACHE}=4h/5m")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -537,7 +531,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "4h"))
+                   action=f"{PolicyAction.AUTH_CACHE}=4h")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -559,7 +553,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "50s/2"))
+                   action=f"{PolicyAction.AUTH_CACHE}=50s/2")
 
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -591,7 +585,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "50s/2"))
+                   action=f"{PolicyAction.AUTH_CACHE}=50s/2")
 
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -629,7 +623,7 @@ class LibPolicyTestCase(MyTestCase):
         # Now set a PASSTHRU policy to the userstore
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=userstore".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=userstore")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -644,7 +638,7 @@ class LibPolicyTestCase(MyTestCase):
         radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol2",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=radiusconfig1".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=radiusconfig1")
         r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
                        dictionary=DICT_FILE)
         self.assertTrue(r > 0)
@@ -708,11 +702,11 @@ class LibPolicyTestCase(MyTestCase):
         my_user = User("cornelius", realm="r1")
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, ACTIONVALUE.NONE),
+                   action=f"{PolicyAction.OTPPIN!s}={ACTIONVALUE.NONE!s}",
                    priority=2)
         set_policy(name="pol2",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, ACTIONVALUE.TOKENPIN),
+                   action=f"{PolicyAction.OTPPIN!s}={ACTIONVALUE.TOKENPIN!s}",
                    priority=2)
         g = FakeFlaskG()
         P = PolicyClass()
@@ -803,7 +797,7 @@ class LibPolicyTestCase(MyTestCase):
     @radiusmock.activate
     def test_16_passthru_assign(self):
         user = User("cornelius", realm="r1")
-        passw = "{0!s}test".format(self.valid_otp_values[1])
+        passw = f"{self.valid_otp_values[1]!s}test"
         options = {}
         # remove all tokens of cornelius
         remove_token(user=user)
@@ -826,13 +820,13 @@ class LibPolicyTestCase(MyTestCase):
         radiusmock.setdata(response=radiusmock.AccessAccept)
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=radiusconfig1".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=radiusconfig1")
         r = add_radius("radiusconfig1", "1.2.3.4", "testing123",
                        dictionary=DICT_FILE)
         self.assertTrue(r > 0)
         set_policy(name="pol2",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=6:pin:1234".format(PolicyAction.PASSTHRU_ASSIGN))
+                   action=f"{PolicyAction.PASSTHRU_ASSIGN!s}=6:pin:1234")
 
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -845,7 +839,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertIn("auto-assigned TOKMATCH", rv[1].get("message"))
 
         # Check if the token is assigned and can authenticate
-        r = check_user_pass(User("cornelius", "r1"), "test{0!s}".format(self.valid_otp_values[2]))
+        r = check_user_pass(User("cornelius", "r1"), f"test{self.valid_otp_values[2]!s}")
         self.assertTrue(r[0])
         self.assertEqual(r[1].get("serial"), "TOKMATCH")
 
@@ -1054,7 +1048,7 @@ class LibPolicyTestCase(MyTestCase):
         # Set a PASSTHRU policy to the userstore
         set_policy(name="pol_passthru",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=userstore".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=userstore")
 
         # Assign a token with rollout_state=clientwait to the user
         tok1 = init_token({"serial": "ROLLOUT1",
@@ -1076,7 +1070,7 @@ class LibPolicyTestCase(MyTestCase):
         # Set PASSTHRU_IGNORE_ROLLOUT_STATE with a single value "clientwait"
         set_policy(name="pol_ignore_rollout",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait".format(PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE!s}=clientwait")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1091,7 +1085,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores only "verify" -> "clientwait" token is NOT ignored
         set_policy(name="pol_ignore_rollout",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=verify".format(PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE!s}=verify")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1111,7 +1105,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores only "clientwait" -> "verify" token still counted
         set_policy(name="pol_ignore_rollout",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait".format(PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE!s}=clientwait")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1123,8 +1117,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores "clientwait verify" (space-separated) -> both ignored
         set_policy(name="pol_ignore_rollout",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait verify".format(
-                       PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE!s}=clientwait verify")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1154,8 +1147,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores all three: "clientwait verify broken"
         set_policy(name="pol_ignore_rollout",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait verify broken".format(
-                       PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE!s}=clientwait verify broken")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1169,9 +1161,9 @@ class LibPolicyTestCase(MyTestCase):
         # Add a fully enrolled token (no rollout_state).
         # Even though all rollout states are ignored, the user still has
         # a real token, so passthru should NOT be used.
-        tok4 = init_token({"serial": "ENROLLED1",
-                           "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "ENROLLED1",
+                    "type": "spass", "pin": "Hallo"},
+                   user=user)
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1230,7 +1222,7 @@ class LibPolicyTestCase(MyTestCase):
         # Set PASSNOTOKEN_IGNORE_ROLLOUT_STATE to ignore "clientwait"
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait".format(PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE!s}=clientwait")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1245,7 +1237,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores only "verify" -> "clientwait" token is NOT ignored
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=verify".format(PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE!s}=verify")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1265,7 +1257,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores only "clientwait" -> "verify" token still counted
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait".format(PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE!s}=clientwait")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1277,8 +1269,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores "clientwait verify" -> both tokens ignored
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait verify".format(
-                       PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE!s}=clientwait verify")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1308,8 +1299,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores all three: "clientwait verify broken"
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait verify broken".format(
-                       PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE!s}=clientwait verify broken")
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1323,9 +1313,9 @@ class LibPolicyTestCase(MyTestCase):
         # Add a fully enrolled token (no rollout_state).
         # Even though all rollout states are ignored, the user still has
         # a real token, so passOnNoToken should NOT trigger.
-        tok4 = init_token({"serial": "NOTOKEN_ENROLLED1",
-                           "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "NOTOKEN_ENROLLED1",
+                    "type": "spass", "pin": "Hallo"},
+                   user=user)
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()

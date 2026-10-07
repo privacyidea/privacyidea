@@ -24,10 +24,10 @@ de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 import ipaddress
 from collections.abc import Sequence
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from email import message_from_string
 
-import mock
+from unittest import mock
 
 from privacyidea.lib.conditional_access import engine
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthLogUserRole,
@@ -1017,8 +1017,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=500))
         # This one request's own contribution: the success that resets the counter, plus three new failures
         # after it (own_row_ids names all four - the whole point being that the success is among them).
-        own_row_ids = list(self._seed_attempt("own-request", [AuthEventType.LOGIN_SUCCESS], timestamp=now - timedelta(seconds=200)))
-        own_row_ids += self._seed_attempt("own-request", [AuthEventType.MFA_FAIL] * 3, timestamp=now - timedelta(seconds=10))
+        own_row_ids = list(self._seed_attempt("own-request", [AuthEventType.LOGIN_SUCCESS],
+                                              timestamp=now - timedelta(seconds=200)))
+        own_row_ids += self._seed_attempt("own-request", [AuthEventType.MFA_FAIL] * 3,
+                                          timestamp=now - timedelta(seconds=10))
 
         # count is floored at the success (unaffected by exclusion): only the 3 new failures after it count,
         # crossing threshold 3 - a genuine, real crossing this evaluation is the one that caused.
@@ -1318,7 +1320,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
         # The recorded expiry is the one that ended up in the state row, so the history says how long the lock
         # lasted even after the row is gone - stored as an aware ISO-8601 string since `info` is a JSON column.
-        self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=timezone.utc).isoformat()},
+        self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=UTC).isoformat()},
                          outcomes[0].info)
 
     def test_enforced_permanent_lock_records_no_expiry(self):
@@ -2394,8 +2396,9 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
             self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL, priority=1,
-                              stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)],
-                                                      error_message="Permanent."),))
+                              stages=(StageDefinition(
+                                  3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)],
+                                  error_message="Permanent."),))
             self._make_policy(
                 name="timed", counter_type=AuthEventType.MFA_FAIL, priority=2,
                 stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600),
@@ -2407,7 +2410,8 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             self._seed_events(AuthEventType.MFA_FAIL, 3)
             outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
             # The declined lock recorded nothing, the mail that did go out did.
-            self.assertListEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER), str(ConditionalAccessAction.EMAIL_ADMIN)],
+            self.assertListEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER),
+                                  str(ConditionalAccessAction.EMAIL_ADMIN)],
                                  [outcome.action_type for outcome in outcomes])
             # And the surviving row still carries the higher-priority policy's wording, not the declined one's.
             self.assertEqual("Permanent.", self._state().error_message)
@@ -2926,7 +2930,8 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # A permanent lock is never downgraded to a timed one, so the timed stage's error message must not
         # overwrite the permanent one's either - the message would then describe a lock not in force.
         self._make_policy(name="permanent", counter_type=AuthEventType.MFA_FAIL, priority=1,
-                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)],
+                          stages=(StageDefinition(3,
+                                                  [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)],
                                                   error_message="Permanent."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
@@ -2965,7 +2970,8 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # would leave an admin wondering why their error message never appears.
         template = "Retry in about {duration}."
         self.assertEqual(template,
-                         render_error_message(template, RestrictionStatus(True, None, None, ConditionalAccessTarget.USER)))
+                         render_error_message(template, RestrictionStatus(True, None, None,
+                                                                          ConditionalAccessTarget.USER)))
         # A DENY or a notify-only stage leaves no restriction behind at all, so it behaves the same.
         self.assertEqual(template, render_error_message(template))
 
@@ -2973,8 +2979,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # Only the tag needs a duration; error message that does not use it is shown everywhere.
         message = "Your account has been locked. Please contact your administrator."
         self.assertEqual(message,
-                         render_error_message(message, RestrictionStatus(True, None, None, ConditionalAccessTarget.USER)))
-        self.assertEqual(message, render_error_message(message, RestrictionStatus(False, None, 90, ConditionalAccessTarget.USER)))
+                         render_error_message(message, RestrictionStatus(True, None, None,
+                                                                         ConditionalAccessTarget.USER)))
+        self.assertEqual(message, render_error_message(message, RestrictionStatus(False, None, 90,
+                                                                                  ConditionalAccessTarget.USER)))
         self.assertEqual(message, render_error_message(message))
 
     def test_render_error_message_is_none_without_a_message(self):

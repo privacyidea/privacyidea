@@ -2,6 +2,8 @@
 This test file tests the lib.importotp
 
 """
+# The token export fixtures below are line-oriented data that cannot be wrapped.
+# ruff: noqa: E501
 import gnupg
 import unittest
 
@@ -722,7 +724,7 @@ class ImportOTPTestCase(MyTestCase):
         # Only 3 tokens exported, the spass token does not get exported!
         self.assertEqual(token_num, 3)
         self.assertEqual(len(psk), 32)
-        export = "{0!s}".format(soup)
+        export = f"{soup!s}"
         # remote the tokens
         remove_token("t1")
         remove_token("t2")

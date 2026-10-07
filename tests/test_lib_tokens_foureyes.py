@@ -64,7 +64,7 @@ class FourEyesTokenTestCase(MyTestCase):
 
         tok = init_token({"serial": "eye1",
                           "type": "4eyes",
-                          "4eyes": "{0!s}:2".format(self.realm1),
+                          "4eyes": f"{self.realm1!s}:2",
                           "separator": " "})
 
         foureyes_log.setLevel(logging.DEBUG)
@@ -83,7 +83,7 @@ class FourEyesTokenTestCase(MyTestCase):
         # check false separator
         r = check_serial_pass("eye1", "pin1password1:pin2password2")
         self.assertFalse(r[0])
-        self.assertEqual(r[1].get("foureyes"), "Only found 0 tokens in realm {0!s}".format(self.realm1))
+        self.assertEqual(r[1].get("foureyes"), f"Only found 0 tokens in realm {self.realm1!s}")
 
         # check authentication also works if the 4eyes-token is in the same realm
         tok.add_user(User('cornelius', self.realm1))

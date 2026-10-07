@@ -214,7 +214,7 @@ class TokenFailCounterTestCase(MyTestCase):
         tok.set_pin("hotppin")
         tok.set_count_window(2)
 
-        res, reply = check_token_list([tok], "hotppin{0!s}".format(self.valid_otp_values[0]))
+        res, reply = check_token_list([tok], f"hotppin{self.valid_otp_values[0]!s}")
         self.assertTrue(res)
 
         # Now we set the failoucnter and the exceeded time.
@@ -224,11 +224,11 @@ class TokenFailCounterTestCase(MyTestCase):
         set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
 
         # authentication with otp value #3 will fail
-        res, reply = check_token_list([tok], "hotppin{0!s}".format(self.valid_otp_values[3]))
+        res, reply = check_token_list([tok], f"hotppin{self.valid_otp_values[3]!s}")
         self.assertFalse(res)
 
         # authentication with otp value #4 will resync and succeed
-        res, reply = check_token_list([tok], "hotppin{0!s}".format(self.valid_otp_values[4]))
+        res, reply = check_token_list([tok], f"hotppin{self.valid_otp_values[4]!s}")
         self.assertTrue(res)
         self.assertEqual(tok.get_failcount(), 0)
 

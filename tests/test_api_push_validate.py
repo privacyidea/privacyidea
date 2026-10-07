@@ -6,7 +6,7 @@ import threading
 import time
 from base64 import b32encode
 
-import mock
+from unittest import mock
 from flask import Flask
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
@@ -92,8 +92,8 @@ class _PushSmartphoneAnswer(threading.Thread):
     def run(self) -> None:
         nonce = None
         for _ in range(50):
-            timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-            poll_sig = self.private_key.sign(f"{self.serial}|{timestamp}".encode("utf8"),
+            timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
+            poll_sig = self.private_key.sign(f"{self.serial}|{timestamp}".encode(),
                                              padding.PKCS1v15(), hashes.SHA256())
             with self.app.test_request_context('/ttype/push', method='GET',
                                                query_string={"serial": self.serial,
@@ -243,7 +243,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
             # Now the smartphone gets a public key from the server
-            augmented_pubkey = f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n-----END RSA PUBLIC KEY-----\n"
+            augmented_pubkey = (f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n"
+                                "-----END RSA PUBLIC KEY-----\n")
             parsed_server_pubkey = serialization.load_pem_public_key(
                 to_bytes(augmented_pubkey),
                 default_backend())
@@ -350,7 +351,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
             # Now the smartphone gets a public key from the server
-            augmented_pubkey = f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n-----END RSA PUBLIC KEY-----\n"
+            augmented_pubkey = (f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n"
+                                "-----END RSA PUBLIC KEY-----\n")
             parsed_server_pubkey = serialization.load_pem_public_key(
                 to_bytes(augmented_pubkey),
                 default_backend())
@@ -579,7 +581,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(serial, detail.get("serial"))
             self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
             # Now the smartphone gets a public key from the server
-            augmented_pubkey = f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n-----END RSA PUBLIC KEY-----\n"
+            augmented_pubkey = (f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n"
+                                "-----END RSA PUBLIC KEY-----\n")
             parsed_server_pubkey = serialization.load_pem_public_key(
                 to_bytes(augmented_pubkey),
                 default_backend())
@@ -917,7 +920,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
 
         # Poll for the challenge; polling by itself does not create an auth-log entry.
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -1233,7 +1236,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
 
         # Step 1b: Smartphone polls for the challenge (polling creates no auth-log entry)
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -1417,7 +1420,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
 
         # Step 1b: Smartphone polls for the challenge (polling creates no auth-log entry)
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -1615,7 +1618,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
 
         # Smartphone polls for the challenge (polling creates no auth-log entry)
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -1729,8 +1732,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                                data={"user": "selfservice", "pass": "push_pin"}):
                 result = self.app.full_dispatch_request()
                 tid = result.json["detail"]["transaction_id"]
-            timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-            poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode("utf8"),
+            timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
+            poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode(),
                                                         padding.PKCS1v15(), hashes.SHA256())
             with self.app.test_request_context('/ttype/push', method='GET',
                                                query_string={"serial": self.serial_push,
@@ -1823,7 +1826,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 transaction_id = trigger.json["detail"]["transaction_id"]
             # Sign the wrong message: a well-formed signature that cannot verify
             # against the expected nonce|serial -> CHALLENGE_ANSWERED_FAIL.
-            signature = self.smartphone_private_key.sign(f"wrong|{self.serial_push}".encode("utf8"),
+            signature = self.smartphone_private_key.sign(f"wrong|{self.serial_push}".encode(),
                                                          padding.PKCS1v15(), hashes.SHA256())
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
@@ -1915,7 +1918,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             db.session.commit()
             self.assertTrue(is_user_locked(user))
             logs_before = db.session.query(AuthenticationLog).count()
-            signature = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
+            signature = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode(),
                                                          padding.PKCS1v15(), hashes.SHA256())
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
@@ -1964,7 +1967,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.app.full_dispatch_request()
             challenge = get_challenges(serial=self.serial_push)[0]
             signature = self.smartphone_private_key.sign(
-                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+                f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256())
 
             # An ordinary failed answer, for the shape a silent rejection has to match.
             with self.app.test_request_context('/ttype/push', method='POST',
@@ -2039,7 +2042,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.app.full_dispatch_request()
             challenge = get_challenges(serial=self.serial_push)[0]
             signature = self.smartphone_private_key.sign(
-                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+                f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256())
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(signature)}):
@@ -2082,7 +2085,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.app.full_dispatch_request()
             challenge = get_challenges(serial=self.serial_push)[0]
             signature = self.smartphone_private_key.sign(
-                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+                f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256())
 
             # Block the address the smartphone will answer from, with wording so the refusal is identifiable.
             db.session.add(BlockList(ip=blocked_ip, block_expires_at=utc_now() + datetime.timedelta(seconds=600),
@@ -2135,7 +2138,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.app.full_dispatch_request()
             challenge = get_challenges(serial=self.serial_push)[0]
             signature = self.smartphone_private_key.sign(
-                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+                f"{challenge.challenge}|{self.serial_push}".encode(), padding.PKCS1v15(), hashes.SHA256())
             # No {duration} in the wording: a DENY leaves no restriction behind, so there is no remaining time to
             # substitute and the tag would reach the smartphone as written.
             create_conditional_access_policy(
@@ -2251,7 +2254,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
 
         # Smartphone polls for the challenge
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
@@ -2644,7 +2647,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         # The smartphone now answers with a valid signature, but the challenge is already gone.
         self.assertIsNotNone(smartphone.nonce, "smartphone never observed the push_wait challenge")
-        answer_sig = self.smartphone_private_key.sign(f"{smartphone.nonce}|{self.serial_push}".encode("utf8"),
+        answer_sig = self.smartphone_private_key.sign(f"{smartphone.nonce}|{self.serial_push}".encode(),
                                                       padding.PKCS1v15(), hashes.SHA256())
         with self.app.test_request_context('/ttype/push', method='POST',
                                            data={"serial": self.serial_push, "signature": b32encode(answer_sig)}):
@@ -2725,7 +2728,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         nonce = challenges[0].challenge
         transaction_id = challenges[0].transaction_id
 
-        answer_sig = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
+        answer_sig = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode(),
                                                       padding.PKCS1v15(), hashes.SHA256())
         # Simulate the challenge row vanishing during the answer commit. The handler may hold
         # either a DB-backed Challenge or a cached ChallengeDTO (when PI_REDIS_CACHE_CHALLENGES
@@ -2793,8 +2796,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, res.status_code)
             self.assertFalse(res.json["result"]["value"])
 
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-        poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode("utf8"),
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
+        poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode(),
                                                     padding.PKCS1v15(), hashes.SHA256())
         with self.app.test_request_context('/ttype/push', method='GET',
                                            query_string={"serial": self.serial_push,
@@ -2977,7 +2980,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         transaction_id, nonce = self._trigger_challenge()
         self._post_decline(nonce, f"|{PushDeclineReason.CANCELLED}", {"decline_reason": PushDeclineReason.CANCELLED})
 
-        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(tz=datetime.UTC).isoformat()
         poll_signature = self._sign(f"{self.serial_push}|{timestamp}")
         with self.app.test_request_context('/ttype/push', method='GET',
                                            query_string={"serial": self.serial_push,

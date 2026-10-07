@@ -1919,7 +1919,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">859</context>
+          <context context-type="linenumber">858</context>
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.successfullyDeleted" datatype="html">
@@ -2327,11 +2327,11 @@
         <target>Configuração do sistema guardada com sucesso.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">148</context>
+          <context context-type="linenumber">144</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">169</context>
+          <context context-type="linenumber">165</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.failedSaveSystem" datatype="html">
@@ -2339,11 +2339,11 @@
         <target>Falha ao guardar a configuração do sistema.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">152</context>
+          <context context-type="linenumber">148</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">174</context>
+          <context context-type="linenumber">170</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.errorSavingSystem" datatype="html">
@@ -2351,11 +2351,11 @@
         <target>Erro ao guardar a configuração do sistema.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">158</context>
+          <context context-type="linenumber">154</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">181</context>
+          <context context-type="linenumber">177</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.userCacheDeleted" datatype="html">
@@ -2363,7 +2363,7 @@
         <target>Cache de utilizadores eliminada com sucesso.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">194</context>
+          <context context-type="linenumber">190</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.failedDeleteUser" datatype="html">
@@ -2371,7 +2371,7 @@
         <target>Falha ao eliminar a cache de utilizadores.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">197</context>
+          <context context-type="linenumber">193</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.errorDeleting" datatype="html">
@@ -2379,7 +2379,7 @@
         <target>Erro ao eliminar a cache de utilizadores.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">202</context>
+          <context context-type="linenumber">198</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.errorLoadingSystem" datatype="html">
@@ -2387,7 +2387,7 @@
         <target>Erro ao carregar a documentação do sistema.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">223</context>
+          <context context-type="linenumber">219</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.systemDocumentation" datatype="html">
@@ -2483,7 +2483,7 @@
         <target>Introduza um ID de cliente.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">304</context>
+          <context context-type="linenumber">302</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedGenerate" datatype="html">
@@ -2491,7 +2491,7 @@
         <target>Falha ao gerar a chave de API.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">323</context>
+          <context context-type="linenumber">321</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tokenConfiguration" datatype="html">
@@ -2499,7 +2499,7 @@
         <target>Configuração do token guardada com sucesso.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">371</context>
+          <context context-type="linenumber">369</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedSaveToken" datatype="html">
@@ -2507,7 +2507,7 @@
         <target>Falha ao guardar a configuração do token.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">378</context>
+          <context context-type="linenumber">376</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.errorSavingToken" datatype="html">
@@ -2515,7 +2515,7 @@
         <target>Erro ao guardar a configuração do token.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">383</context>
+          <context context-type="linenumber">381</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.daypassword" datatype="html">
@@ -3076,78 +3076,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/totp-config/totp-config.component.html</context>
           <context context-type="linenumber">60</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.defaultTimeShift" datatype="html">
-        <source>Default Time Shift</source>
-        <target>Desvio de tempo predefinido</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/totp-config/totp-config.component.html</context>
-          <context context-type="linenumber">90</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.u2f" datatype="html">
-        <source>U2F</source>
-        <target>U2F</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">21</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.u2fTokenHardware" datatype="html">
-        <source>The U2F token is a hardware token, that communicates with the browser.</source>
-        <target>O token U2F é um token de hardware que comunica com o navegador.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">25</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.youNeedSetCorrect" datatype="html">
-        <source>You need to set the correct appId, which in fact is the URL of your privacyIDEA installation.</source>
-        <target>Precisa de definir o appId correto, que na verdade é o URL da sua instalação privacyIDEA.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">28</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appid" datatype="html">
-        <source>AppID</source>
-        <target>AppID</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">35</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appidRequired" datatype="html">
-        <source>AppID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target>O AppID é <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obrigatório<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">45</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.urlYourPrivacyidea" datatype="html">
-        <source>The URL of your privacyIDEA installation.<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> This must be a valid FQDN with also a valid top level domain - otherwise you might receive a U2F Error 2 (Bad Request).<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/></source>
-        <target>O URL da sua instalação privacyIDEA.<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Este deve ser um FQDN válido, com também um domínio de topo válido - caso contrário poderá receber um U2F Error 2 (Bad Request).<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/></target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">52</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appidNeedsStart" datatype="html">
-        <source>The AppID needs to start with &quot;https&quot;.</source>
-        <target>O AppID precisa de começar por &quot;https&quot;.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">61</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appidMustNotEnd" datatype="html">
-        <source>The AppID must not end with a &quot;/&quot;.</source>
-        <target>O AppID não pode terminar com &quot;/&quot;.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.webauthn" datatype="html">
@@ -6490,20 +6418,12 @@
           <context context-type="linenumber">214</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="smtpServer.sendMailFromJob" datatype="html">
-        <source>Send mail from job queue</source>
-        <target>Enviar correio a partir da fila de tarefas</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">221</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="smtpServer.sMime" datatype="html">
         <source>S/MIME</source>
         <target>S/MIME</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">227</context>
+          <context context-type="linenumber">221</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.certificate" datatype="html">
@@ -6511,7 +6431,7 @@
         <target>Certificado</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">240</context>
+          <context context-type="linenumber">234</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.pathCertificate" datatype="html">
@@ -6519,7 +6439,7 @@
         <target>O caminho para o ficheiro do certificado</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">248</context>
+          <context context-type="linenumber">242</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sMimeSigning" datatype="html">
@@ -6527,7 +6447,7 @@
         <target>Assinatura S/MIME</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">258</context>
+          <context context-type="linenumber">252</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.donTSendSigning" datatype="html">
@@ -6535,7 +6455,7 @@
         <target>Não enviar em caso de erro de assinatura</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">264</context>
+          <context context-type="linenumber">258</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.privateKey" datatype="html">
@@ -6543,7 +6463,7 @@
         <target>Chave privada</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">266</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.pathPrivateKey" datatype="html">
@@ -6551,7 +6471,7 @@
         <target>O caminho para o ficheiro da chave privada</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">280</context>
+          <context context-type="linenumber">274</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.passwordPrivate" datatype="html">
@@ -6559,7 +6479,7 @@
         <target>Palavra-passe da chave privada</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">287</context>
+          <context context-type="linenumber">281</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -6571,7 +6491,7 @@
         <target>Destinatário para teste</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">306</context>
+          <context context-type="linenumber">300</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sendTestEmail" datatype="html">
@@ -6579,7 +6499,7 @@
         <target>Enviar e-mail de teste</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">321</context>
+          <context context-type="linenumber">315</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.filterSmtpServers" datatype="html">
@@ -11284,20 +11204,12 @@
           <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.youNeedConfirm" datatype="html">
-        <source>You need to confirm the registration with your token either by pushing the blinking button or by replugging your token. This depends on the actual token model.</source>
-        <target>Precisa de confirmar o registo com o seu token, premindo o botão intermitente ou voltando a ligar o seu token. Isto depende do modelo de token em questão.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
-          <context context-type="linenumber">51</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="token.yourTokenSerialNumber" datatype="html">
         <source>Your token with serial number <x id="INTERPOLATION" equiv-text="{{ data.enrollmentResponse.detail.serial }}"/> is not completely enrolled, yet. Please scan the QR code with the privacyIDEA Authenticator App or click <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.enrollmentResponse.detail.pushurl.value }}&quot;&gt;"/>this link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone. It will send the missing registration data to the configured endpoint. Please note, that your smartphone needs internet access during the authentication process.</source>
         <target>O seu token com o número de série <x id="INTERPOLATION" equiv-text="{{ data.enrollmentResponse.detail.serial }}"/> ainda não está totalmente registado. Por favor, leia o código QR com a aplicação privacyIDEA Authenticator ou clique <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.enrollmentResponse.detail.pushurl.value }}&quot;&gt;"/>nesta ligação<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> no seu smartphone. Serão enviados os dados de registo em falta para o endpoint configurado. Tenha em atenção que o seu smartphone precisa de acesso à internet durante o processo de autenticação.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
-          <context context-type="linenumber">67</context>
+          <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSuccessfullyRolled" datatype="html">
@@ -11345,7 +11257,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
-          <context context-type="linenumber">59</context>
+          <context context-type="linenumber">51</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component.html</context>
@@ -15439,7 +15351,7 @@
         <target>Servidor SMTP guardado com sucesso.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">115</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedSaveSmtp" datatype="html">
@@ -15447,7 +15359,7 @@
         <target state="new">Falha ao guardar o servidor SMTP.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">121</context>
+          <context context-type="linenumber">120</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.testEmailSent" datatype="html">
@@ -15455,7 +15367,7 @@
         <target>E-mail de teste enviado com sucesso.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">132</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedSendTest" datatype="html">
@@ -15463,7 +15375,7 @@
         <target state="new">Falha ao enviar o e-mail de teste.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">140</context>
+          <context context-type="linenumber">139</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.successfullyDeleted" datatype="html">
@@ -15471,7 +15383,7 @@
         <target state="new">Servidor SMTP eliminado com sucesso: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">156</context>
+          <context context-type="linenumber">155</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedDeleteSmtp" datatype="html">
@@ -15479,7 +15391,7 @@
         <target state="new">Falha ao eliminar o servidor SMTP.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">162</context>
+          <context context-type="linenumber">161</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenGroup.successfullySaved" datatype="html">
@@ -16050,20 +15962,12 @@
           <context context-type="linenumber">173</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.u2fTokenToken" datatype="html">
-        <source>The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.</source>
-        <target>O token U2F é um token definido pela Fido Alliance. É o antecessor do WebAuthn/Passkey, foi substituído por eles e, por isso, já não deve ser utilizado.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">180</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="token.vascoTokenProprietary" datatype="html">
         <source>The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format.</source>
         <target>O token VASCO é um token OTP proprietário. Pode colar o blob do token VASCO em formato hexadecimal.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">187</context>
+          <context context-type="linenumber">180</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.webauthnToken" datatype="html">
@@ -16071,7 +15975,7 @@
         <target>Um token WebAuthn é uma credencial resistente a phishing que usa criptografia de chave pública para comprovar a sua identidade sem partilhar um segredo. O token WebAuthn armazena a chave cifrada no servidor para permitir registos ilimitados.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">194</context>
+          <context context-type="linenumber">187</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.passkeyPhishing" datatype="html">
@@ -16079,7 +15983,7 @@
         <target>Uma passkey é uma credencial resistente a phishing que usa criptografia de chave pública para comprovar a sua identidade sem partilhar um segredo. A chave privada é armazenada de forma segura no seu autenticador (como um telemóvel ou token de hardware) e é desbloqueada em cada início de sessão através do PIN, da impressão digital ou do reconhecimento facial do seu dispositivo.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">201</context>
+          <context context-type="linenumber">194</context>
         </context-group>
       </trans-unit>
       <trans-unit id="nav.helpTranslate" datatype="html">
@@ -18059,7 +17963,7 @@
         <target state="new">Failed to unassign tokens. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">826</context>
+          <context context-type="linenumber">825</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokens" datatype="html">
@@ -18067,7 +17971,7 @@
         <target state="new">Failed to delete tokens. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">842</context>
+          <context context-type="linenumber">841</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOne" datatype="html">
@@ -18075,7 +17979,7 @@
         <target state="new">Successfully deleted 1 token.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">879</context>
+          <context context-type="linenumber">878</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOther" datatype="html">
@@ -18083,7 +17987,7 @@
         <target state="new">Successfully deleted <x id="COUNT" equiv-text="count_success"/> tokens.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">882</context>
+          <context context-type="linenumber">881</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.followingTokensFailedDelete" datatype="html">
@@ -18091,7 +17995,7 @@
         <target state="new">The following tokens failed to delete: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">889</context>
+          <context context-type="linenumber">888</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.notAuthorizedDelete" datatype="html">
@@ -18099,7 +18003,7 @@
         <target state="new">You are not authorized to delete the following tokens: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">895</context>
+          <context context-type="linenumber">894</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToToggleActive" datatype="html">
@@ -18111,7 +18015,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">930</context>
+          <context context-type="linenumber">929</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResetFailCount" datatype="html">
@@ -18119,7 +18023,7 @@
         <target state="new">Failed to reset fail count. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">946</context>
+          <context context-type="linenumber">945</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenDetail" datatype="html">
@@ -18127,7 +18031,7 @@
         <target state="new">Failed to set token detail. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">975</context>
+          <context context-type="linenumber">974</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetCount" datatype="html">
@@ -18135,7 +18039,7 @@
         <target state="new">Failed to get count. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">996</context>
+          <context context-type="linenumber">995</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenInfo" datatype="html">
@@ -18143,7 +18047,7 @@
         <target state="new">Failed to set token info. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1018</context>
+          <context context-type="linenumber">1017</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToRevokeToken" datatype="html">
@@ -18151,7 +18055,7 @@
         <target state="new">Failed to revoke token. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1077</context>
+          <context context-type="linenumber">1076</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokenInfo" datatype="html">
@@ -18159,7 +18063,7 @@
         <target state="new">Failed to delete token info. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1098</context>
+          <context context-type="linenumber">1097</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignUserFrom" datatype="html">
@@ -18167,7 +18071,7 @@
         <target state="new">Failed to unassign user from all tokens. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1118</context>
+          <context context-type="linenumber">1117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignUser" datatype="html">
@@ -18179,7 +18083,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1135</context>
+          <context context-type="linenumber">1134</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUserTo" datatype="html">
@@ -18187,7 +18091,7 @@
         <target state="new">Failed to assign user to all tokens. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1163</context>
+          <context context-type="linenumber">1162</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUser" datatype="html">
@@ -18199,7 +18103,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1194</context>
+          <context context-type="linenumber">1193</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetPin" datatype="html">
@@ -18207,7 +18111,7 @@
         <target state="new">Failed to set PIN. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1216</context>
+          <context context-type="linenumber">1215</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetRandomPin" datatype="html">
@@ -18215,7 +18119,7 @@
         <target state="new">Failed to set random PIN. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1237</context>
+          <context context-type="linenumber">1236</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResyncOtpToken" datatype="html">
@@ -18223,7 +18127,7 @@
         <target state="new">Failed to resync OTP token. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1261</context>
+          <context context-type="linenumber">1260</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToEnrollToken" datatype="html">
@@ -18231,7 +18135,7 @@
         <target state="new">Failed to enroll token. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1302</context>
+          <context context-type="linenumber">1301</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToVerifyToken" datatype="html">
@@ -18239,7 +18143,7 @@
         <target state="new">Failed to verify token. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1318</context>
+          <context context-type="linenumber">1317</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToMarkTokenAs" datatype="html">
@@ -18247,7 +18151,7 @@
         <target state="new">Failed to mark token as lost. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1334</context>
+          <context context-type="linenumber">1333</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToPollTokenState" datatype="html">
@@ -18255,7 +18159,7 @@
         <target state="new">Failed to poll token state. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1361</context>
+          <context context-type="linenumber">1360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenRealm" datatype="html">
@@ -18263,7 +18167,7 @@
         <target state="new">Failed to set token realm. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1385</context>
+          <context context-type="linenumber">1384</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetTokengroups" datatype="html">
@@ -18271,7 +18175,7 @@
         <target state="new">Failed to get tokengroups. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1399</context>
+          <context context-type="linenumber">1398</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenGroup" datatype="html">
@@ -18279,7 +18183,7 @@
         <target state="new">Failed to set token group. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1423</context>
+          <context context-type="linenumber">1422</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToImportTokens" datatype="html">
@@ -18287,7 +18191,7 @@
         <target state="new">Failed to import tokens. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1441</context>
+          <context context-type="linenumber">1440</context>
         </context-group>
       </trans-unit>
       <trans-unit id="validate.failedToTestToken" datatype="html">
@@ -19515,7 +19419,7 @@
         <target state="new">Delete Selected Tokens</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">854</context>
+          <context context-type="linenumber">853</context>
         </context-group>
       </trans-unit>
       <trans-unit id="nav.homeLink" datatype="html">
@@ -20363,7 +20267,7 @@
         <target state="new">Successfully deleted <x id="COUNT" equiv-text="count_success"/> tokens.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">880</context>
+          <context context-type="linenumber">879</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedMany" datatype="html">
@@ -20371,7 +20275,7 @@
         <target state="new">Successfully deleted <x id="COUNT" equiv-text="count_success"/> tokens.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">881</context>
+          <context context-type="linenumber">880</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enrollmentTokenCancelled" datatype="html">
@@ -20379,7 +20283,7 @@
         <target state="new">The enrollment of token <x id="PH" equiv-text="tokenSerial"/> was cancelled.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1056</context>
+          <context context-type="linenumber">1055</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedCancelEnrollment" datatype="html">
@@ -20387,7 +20291,7 @@
         <target state="new">Failed to cancel the enrollment. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1063</context>
+          <context context-type="linenumber">1062</context>
         </context-group>
       </trans-unit>
       <trans-unit id="valueLabel.off" datatype="html">
@@ -24643,7 +24547,7 @@
         <target state="new">Delete SMTP Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.ts</context>
-          <context context-type="linenumber">233</context>
+          <context context-type="linenumber">230</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.smtpServer" datatype="html">
@@ -24651,7 +24555,7 @@
         <target state="new">SMTP server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.ts</context>
-          <context context-type="linenumber">235</context>
+          <context context-type="linenumber">232</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokengroup.deleteTokengroup" datatype="html">

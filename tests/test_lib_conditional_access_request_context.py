@@ -19,7 +19,7 @@
 Unit tests for the per-request conditional-access buffer
 (:mod:`privacyidea.lib.conditional_access.request_context`).
 """
-import mock
+from unittest import mock
 from flask import has_request_context
 from sqlalchemy import select
 

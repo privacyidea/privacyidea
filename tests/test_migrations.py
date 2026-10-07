@@ -439,8 +439,10 @@ def test_full_downgrade_restores_baseline_schema(flask_app):
     ASPECT_HINTS = {
         "columns": "downgrade() in the chain forgot to drop a column it added (or dropped one it shouldn't have)",
         "indexes": "downgrade() in the chain forgot to drop an index it added (or dropped one it shouldn't have)",
-        "foreign_keys": "downgrade() in the chain forgot to drop a foreign key it added (or dropped one it shouldn't have)",
-        "unique_constraints": "downgrade() in the chain forgot to drop a unique constraint it added (or dropped one it shouldn't have)",
+        "foreign_keys": "downgrade() in the chain forgot to drop a foreign key it added (or dropped one it shouldn't "
+                        "have)",
+        "unique_constraints": "downgrade() in the chain forgot to drop a unique constraint it added (or dropped one "
+                              "it shouldn't have)",
     }
     for table in baseline_tables:
         for aspect, hint in ASPECT_HINTS.items():
@@ -570,11 +572,11 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     ]
 
     assert not filtered_diffs, (
-        f"The database schema does not match the SQLAlchemy models after upgrading "
-        f"to head. The following differences were detected:\n"
+        "The database schema does not match the SQLAlchemy models after upgrading "
+        "to head. The following differences were detected:\n"
         + "\n".join(str(d) for d in filtered_diffs)
         + "\n\nThis means either a migration is missing or incomplete. "
-        f"Run `flask db migrate` to generate the missing migration."
+        "Run `flask db migrate` to generate the missing migration."
     )
 
 
@@ -915,7 +917,7 @@ def test_all_down_revisions_point_to_existing_revisions():
         if down not in all_revisions
     ]
     assert not bad, (
-        f"The following migrations have a down_revision that does not exist:\n"
+        "The following migrations have a down_revision that does not exist:\n"
         + "\n".join(f"  {r} -> {d}" for r, d in bad)
     )
 
@@ -1058,7 +1060,8 @@ def test_each_migration_survives_round_trip(flask_app):
             "columns": "downgrade() likely forgot to drop a column, or upgrade() forgot to add one",
             "indexes": "downgrade() likely forgot to drop an index, or upgrade() forgot to recreate one",
             "foreign_keys": "downgrade() likely forgot to drop a foreign key, or upgrade() forgot to recreate one",
-            "unique_constraints": "downgrade() likely forgot to drop a unique constraint, or upgrade() forgot to recreate one",
+            "unique_constraints": "downgrade() likely forgot to drop a unique constraint, or upgrade() forgot to "
+                                  "recreate one",
         }
         for table in tables_first:
             for aspect, hint in ASPECT_HINTS.items():

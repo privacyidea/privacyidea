@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import base64
 import json
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 
-import mock
+from unittest import mock
 import passlib
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
@@ -94,7 +94,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(init_response_data["nonce"], challenge.challenge)
         # timestamp: we need to add the timezone for the challenge timestamp
         creation_time = datetime.fromisoformat(init_response_data["time_stamp"])
-        self.assertEqual(creation_time, challenge.timestamp.replace(tzinfo=timezone.utc))
+        self.assertEqual(creation_time, challenge.timestamp.replace(tzinfo=UTC))
         time_delta_challenge = (challenge.expiration - challenge.timestamp).total_seconds()
         self.assertAlmostEqual(24 * 60, time_delta_challenge, 0)
         challenge_data = json.loads(challenge.data)
@@ -386,13 +386,13 @@ class APIContainerSynchronization(APIContainerTest):
         result = result["result"]["value"]
         self.assertEqual(result["nonce"], challenge.challenge)
         # we need to set the timezone since the database can not store it
-        challenge_timestamp = challenge.timestamp.replace(tzinfo=timezone.utc)
+        challenge_timestamp = challenge.timestamp.replace(tzinfo=UTC)
         self.assertEqual(datetime.fromisoformat(result["time_stamp"]), challenge_timestamp)
         challenge_data = json.loads(challenge.data)
         self.assertEqual(scope, challenge_data["scope"])
         # expiration date: created a few microseconds after the creation date
         expiration_date = datetime.fromisoformat(result["time_stamp"]) + timedelta(seconds=180)
-        time_delta = (expiration_date - challenge.expiration.replace(tzinfo=timezone.utc)).total_seconds()
+        time_delta = (expiration_date - challenge.expiration.replace(tzinfo=UTC)).total_seconds()
         self.assertLessEqual(abs(time_delta), 1)
 
         delete_policy("challenge_ttl")
@@ -767,7 +767,7 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Sync
-        sync_time = datetime.now(timezone.utc)
+        sync_time = datetime.now(UTC)
         result = self.request_assert_success("container/synchronize",
                                              params, None, "POST")
         self.assert_audit_entry('POST /container/synchronize', success=1)
@@ -2000,7 +2000,7 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Initial Sync
-        sync_time = datetime.now(timezone.utc)
+        sync_time = datetime.now(UTC)
         with mock.patch("privacyidea.lib.containerclass.datetime") as mock_dt:
             mock_dt.now.return_value = sync_time
             result = self.request_assert_success("container/synchronize",
@@ -2085,7 +2085,7 @@ class APIContainerSynchronization(APIContainerTest):
         params = mock_smph.synchronize(result["result"]["value"], scope)
 
         # Initial Sync
-        sync_time = datetime.now(timezone.utc)
+        sync_time = datetime.now(UTC)
         result = self.request_assert_success("container/synchronize",
                                              params, None, "POST")
         self.assert_audit_entry('POST /container/synchronize', success=1)

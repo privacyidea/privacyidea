@@ -27,7 +27,7 @@ test_api_authentication_log.py.
 import datetime
 from typing import TYPE_CHECKING
 
-import mock
+from unittest import mock
 
 from flask import Response
 
@@ -554,7 +554,7 @@ class _AuthLogContractTests(_ContractHost):
         try:
             token = get_one_token(serial=self.serial)
             token.write_tokeninfo(PolicyAction.LASTAUTH,
-                                (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)).isoformat())
+                                (datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=2)).isoformat())
             self._assert_failed(self._authenticate(f"{self.pin}755224"))
         finally:
             delete_policy("authlog_lastauth")

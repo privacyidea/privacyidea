@@ -18,7 +18,7 @@ from privacyidea.lib.applications import (get_auth_item,
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
 import passlib.hash
-import mock
+from unittest import mock
 
 
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx377" \

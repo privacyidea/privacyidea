@@ -149,9 +149,7 @@ class APIMachinesTestCase(MyApiTestCase):
         self.assertEqual("count", token_obj.token.machine_list[0].option_list[0].mt_key)
 
         # Now detach the offline token. In this case we ignore the machine and resolver.
-        with self.app.test_request_context('/machine/token/{0!s}/{1!s}/{2!s}/offline'.format(serial,
-                                                                                             ANY_MACHINE,
-                                                                                             NO_RESOLVER),
+        with self.app.test_request_context(f'/machine/token/{serial!s}/{ANY_MACHINE!s}/{NO_RESOLVER!s}/offline',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -280,7 +278,7 @@ class APIMachinesTestCase(MyApiTestCase):
                              0].mt_value, "mailserver")
         # Delete machinetoken
         with self.app.test_request_context(
-                '/machine/token/S1/ssh/{}'.format(mtid),
+                f'/machine/token/S1/ssh/{mtid}',
                 method='DELETE',
                 headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -375,7 +373,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Remove everything that sounds like "SOMETHING\" in front of
         # the username
         set_policy(name="mangle1", scope=SCOPE.AUTH,
-                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(PolicyAction.MANGLE))
+                   action=f"{PolicyAction.MANGLE!s}=user/.*\\\\(.*)/\\1/")
         with self.app.test_request_context(
                 '/machine/authitem/ssh?hostname=gandalf&user=DOMAIN\\testuser',
                 method='GET',
@@ -414,7 +412,7 @@ class APIMachinesTestCase(MyApiTestCase):
             self.assertTrue(sshkey.startswith("ssh-rsa"), sshkey)
 
         # Detach the machinetoken via ID - this is used in the UI
-        with self.app.test_request_context("/machine/token/{0!s}/ssh/{1!s}".format(self.serial2, mtid),
+        with self.app.test_request_context(f"/machine/token/{self.serial2!s}/ssh/{mtid!s}",
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -475,7 +473,7 @@ class APIMachinesTestCase(MyApiTestCase):
         # Remove everything that sounds like "SOMETHING\" in front of
         # the username
         set_policy(name="mangle1", scope=SCOPE.AUTH,
-                   action="{0!s}=user/.*\\\\(.*)/\\1/".format(PolicyAction.MANGLE))
+                   action=f"{PolicyAction.MANGLE!s}=user/.*\\\\(.*)/\\1/")
         with self.app.test_request_context(
                 '/machine/authitem/ssh?hostname=gandalf&service_id=webserver&user=DOMAIN\\testuser',
                 method='GET',
@@ -690,7 +688,7 @@ class APIMachinesTestCase(MyApiTestCase):
         self.assertEqual("user", token_obj.token.machine_list[0].option_list[0].mt_key)
 
         # Now detach the ssh token from any machine
-        with self.app.test_request_context('/machine/token/{0!s}/any%20machine/no%20resolver/ssh'.format(serial),
+        with self.app.test_request_context(f'/machine/token/{serial!s}/any%20machine/no%20resolver/ssh',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -753,7 +751,7 @@ class APIMachinesTestCase(MyApiTestCase):
             self.assertIn("refilltoken", offline[0])
 
         # 5. Detach this token from the offline application and machine
-        with self.app.test_request_context('/machine/token/{0!s}/192.168.0.1/machineresolver1/offline'.format(serial),
+        with self.app.test_request_context(f'/machine/token/{serial!s}/192.168.0.1/machineresolver1/offline',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -771,7 +769,7 @@ class APIMachinesTestCase(MyApiTestCase):
     def test_35_delete_offline_token(self):
         # Delete an offline token with machine token options (Issue #4136)
         serial = "hotp01"
-        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": serial})
+        init_token({"type": "hotp", "otpkey": self.otpkey, "serial": serial})
         # Mark this token as "offline"
         with self.app.test_request_context('/machine/token',
                                            method='POST',

@@ -44,13 +44,13 @@ class IndexedSecretTokenTestCase(MyTestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -61,7 +61,6 @@ class IndexedSecretTokenTestCase(MyTestCase):
         token = IndexedSecretTokenClass(db_token)
         token.update({"otpkey": my_secret})
         token.save()
-        serial = token.get_serial()
         self.assertTrue(token.token.serial == self.serial1, token)
         self.assertTrue(token.token.tokentype == "indexedsecret", token.token)
         self.assertTrue(token.type == "indexedsecret", token.type)
@@ -109,7 +108,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
     def test_03_challenge_text_position_count(self):
         # test challenge text and position count
         my_secret = "mysimplesecret"
-        set_policy("pol1", scope=SCOPE.AUTH, action="indexedsecret_{0!s}=5".format(PIIXACTION.COUNT))
+        set_policy("pol1", scope=SCOPE.AUTH, action=f"indexedsecret_{PIIXACTION.COUNT!s}=5")
         set_policy("pol2", scope=SCOPE.AUTH,
                    action="indexedsecret_challenge_text=Hier sind die Positionen: {0!s}")
 

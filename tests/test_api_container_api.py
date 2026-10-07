@@ -584,7 +584,8 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/states',
                                   payload, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: The state list ['active', 'disabled'] contains exclusive states!")
+                                  error_message="ERR905: The state list ['active', 'disabled'] contains exclusive "
+                                                "states!")
         self.assert_audit_entry('POST /container/<string:container_serial>/states', success=0,
                                 info=self.contains('ERR905'))
 

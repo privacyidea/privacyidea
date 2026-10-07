@@ -1,108 +1,20 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Tests for generic prepolicy actions (privacyidea.api.lib.prepolicy)."""
-import json
-import logging
-from datetime import datetime, timedelta
 
-import jwt
-from dateutil.tz import tzlocal
-from flask import Request, g, current_app, jsonify
-from passlib.hash import pbkdf2_sha512
-from testfixtures import log_capture, LogCapture
-from werkzeug.datastructures.headers import Headers
+from flask import Request, g
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.lib.policyhelper import get_realm_for_authentication
-from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
-                                            check_tokeninfo,
-                                            no_detail_on_success,
-                                            no_detail_on_fail, autoassign,
-                                            offline_info, sign_response,
-                                            get_webui_settings,
-                                            save_pin_change,
-                                            add_user_detail_to_response,
-                                            mangle_challenge_response, is_authorized,
-                                            check_verify_enrollment, preferred_client_mode,
-                                            multichallenge_enroll_via_validate)
-from privacyidea.api.lib.prepolicy import (check_token_upload,
-                                           check_base_action, check_token_init,
-                                           check_max_token_user,
-                                           check_anonymous_user,
-                                           check_max_token_realm, set_realm,
-                                           init_tokenlabel, init_random_pin, set_random_pin,
-                                           init_token_defaults, _generate_pin_from_policy,
-                                           encrypt_pin, check_otp_pin,
-                                           enroll_pin,
-                                           init_token_length_contents,
-                                           check_external, api_key_required,
-                                           mangle, is_remote_user_allowed,
-                                           required_email, auditlog_age, hide_audit_columns,
-                                           papertoken_count,
-                                           tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_validate,
-                                           indexedsecret_force_attribute,
-                                           check_admin_tokenlist, pushtoken_disable_wait,
-                                           fido2_auth, webauthntoken_authz,
-                                           fido2_enroll, webauthntoken_request,
-                                           check_application_tokentype,
-                                           required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, check_container_action,
-                                           check_token_action, check_user_params,
-                                           check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key, verify_enrollment)
-from privacyidea.lib.auth import ROLE
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
-from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
-                                       get_all_containers, delete_container_template)
-from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.machine import attach_token
-from privacyidea.lib.machineresolver import save_resolver
+from privacyidea.api.lib.prepolicy import (check_anonymous_user,
+                                           required_email, check_custom_user_attributes,
+                                           check_token_action, check_user_params)
+from privacyidea.lib.error import PolicyError, RegistrationError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
-from privacyidea.lib.realm import delete_realm
-from privacyidea.lib.realm import set_realm as create_realm
-from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
-from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms, check_user_pass, unassign_token,
-                                   enable_token)
-from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
-from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.smstoken import SMSAction
-from privacyidea.lib.tokens.tantoken import TANAction
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
-                                             AttestationLevel, AttestationForm,
-                                             UserVerificationLevel)
-from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
-                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
+from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE)
+from privacyidea.lib.token import (init_token)
 from privacyidea.lib.user import User
-from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
-from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
-                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from .api_lib_policy_common import PrePolicyHelperMixin
 from .base import (MyApiTestCase)
-from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
-                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN)
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -136,8 +48,6 @@ XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
 tA==
 -----END CERTIFICATE REQUEST-----"""
 
-from .api_lib_policy_common import PrePolicyHelperMixin
-
 
 class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
@@ -162,7 +72,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="email1",
                    scope=SCOPE.REGISTER,
-                   action=r"{0!s}=/.*@mydomain\..*".format(PolicyAction.REQUIREDEMAIL))
+                   action=rf"{PolicyAction.REQUIREDEMAIL!s}=/.*@mydomain\..*")
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
@@ -197,7 +107,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="{0!s}".format(PolicyAction.RESYNC))
+                   action=f"{PolicyAction.RESYNC!s}")
         g.policy_object = PolicyClass()
         req.all_data = {"user": "cornelius", "realm": self.realm1}
         # There is a user policy without password reset, so an exception is
@@ -208,7 +118,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # The password reset is allowed
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="{0!s}".format(PolicyAction.PASSWORDRESET))
+                   action=f"{PolicyAction.PASSWORDRESET!s}")
         g.policy_object = PolicyClass()
         r = check_anonymous_user(req, PolicyAction.PASSWORDRESET)
         self.assertEqual(r, True)
@@ -232,7 +142,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # set to allow deleting the department
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=department sth".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=department sth")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         check_custom_user_attributes(req, "delete")
 
@@ -242,13 +152,13 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Allow to delete diffkey
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=difkey".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=difkey")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "difkey"}
         check_custom_user_attributes(req, "delete")
 
         # Now we set the policy to allow to delete any attribute
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=*")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         check_custom_user_attributes(req, "delete")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "anykey"}
@@ -262,8 +172,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "key": "department", "value": "finance"}
         self.assertRaises(PolicyError, check_custom_user_attributes, req, "set")
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:department: finance devel :color: * :*: 1 2 ".format(
-                       PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:department: finance devel :color: * :*: 1 2 ")
         # Allow to set to finance
         check_custom_user_attributes(req, "set")
         req.all_data = {"user": "cornelius", "realm": self.realm1,
@@ -295,7 +204,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Now you can set any key to any value
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*: *".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:*: *")
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "size", "value": "3"}
         check_custom_user_attributes(req, "set")
