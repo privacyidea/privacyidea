@@ -60,7 +60,11 @@ export const OTHER_PAGES: PageRoute[] = [
   { name: "news", path: "news" },
   { name: "smtp create", path: "external-services/smtp/new" },
   { name: "radius create", path: "external-services/radius/new" },
-  { name: "sms create", path: "external-services/sms/new" }
+  { name: "sms create", path: "external-services/sms/new" },
+  { name: "privacyidea server create", path: "external-services/privacyidea/new" },
+  { name: "ca connector create", path: "external-services/ca-connectors/new" },
+  { name: "tokengroup create", path: "external-services/tokengroups/new" },
+  { name: "service id create", path: "external-services/service-ids/new" }
 ];
 
 export const ALL_PAGES: PageRoute[] = [...TABLE_PAGES, ...OTHER_PAGES];

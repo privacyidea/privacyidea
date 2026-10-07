@@ -9,6 +9,9 @@
 
 .button-item {
   align-items: center;
+  // Without a background a native button wears the browser's ButtonFace, a mid grey (#6b6b6b) in the dark theme that
+  // leaves the on-surface label at 4.3:1.
+  background-color: transparent;
   border: 1px solid var(--mat-sys-outline);
   border-radius: 0;
   color: var(--mat-sys-on-surface);

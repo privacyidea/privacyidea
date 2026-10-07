@@ -43,6 +43,10 @@
     "light": [],
     "dark": []
   },
+  "authentication log": {
+    "light": [],
+    "dark": []
+  },
   "authentication log (empty)": {
     "light": [],
     "dark": []
@@ -68,6 +72,10 @@
     "dark": []
   },
   "blocklist (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "ca connector create": {
     "light": [],
     "dark": []
   },
@@ -160,15 +168,11 @@
   },
   "container template create": {
     "light": [],
-    "dark": [
-      "color-contrast"
-    ]
+    "dark": []
   },
   "container template details": {
     "light": [],
-    "dark": [
-      "color-contrast"
-    ]
+    "dark": []
   },
   "container templates": {
     "light": [],
@@ -360,17 +364,17 @@
   },
   "policy create": {
     "light": [],
-    "dark": [
-      "color-contrast"
-    ]
+    "dark": []
   },
   "policy details": {
     "light": [],
-    "dark": [
-      "color-contrast"
-    ]
+    "dark": []
   },
   "policy scope filter (menu)": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea server create": {
     "light": [],
     "dark": []
   },
@@ -459,6 +463,10 @@
     "dark": []
   },
   "resolvers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "service id create": {
     "light": [],
     "dark": []
   },
@@ -558,12 +566,8 @@
     "dark": []
   },
   "token enrollment": {
-    "light": [
-      "aria-input-field-name"
-    ],
-    "dark": [
-      "aria-input-field-name"
-    ]
+    "light": [],
+    "dark": []
   },
   "token get serial": {
     "light": [],
@@ -579,6 +583,10 @@
   "token type config": {
     "dark": [],
     "light": []
+  },
+  "tokengroup create": {
+    "light": [],
+    "dark": []
   },
   "tokengroups": {
     "light": [],
