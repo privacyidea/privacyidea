@@ -369,8 +369,8 @@ later run with ``--has-tokeninfo-key``. It takes these options:
     be given, one of them alone is ignored.
 
 These options only take effect together with ``--action mark``, every other action ignores them.
-Only a free-form tokeninfo can be set. A tokeninfo that the token type maintains itself, e.g.
-``last_auth`` or ``tokenkind``, is skipped with a message.
+The tokeninfo is also set if the token type maintains an entry of that key itself, e.g.
+``last_auth`` or ``tokenkind``, so a mark should use a key of its own.
 
 Example::
 
@@ -549,8 +549,11 @@ Update
 
     privacyidea-token-janitor update my-tokens.yaml
 
-The OTP keys are stored encrypted with the current encryption key, so this can be used to
-re-encrypt the token data, see :ref:`faq_reencryption`. A token that does not exist, and an entry
+The OTP key, the OTP length and the description of each entry are written to the token, and so are the
+token info entries that are stored encrypted (marked ``<key>.type: password`` in the file, e.g. the SSH
+key of an SSH key token). They are stored encrypted with the current encryption key, so this can be used
+to re-encrypt the token data, see :ref:`faq_reencryption`. The other values in the file are not written:
+the token keeps its other token info, its active state and its rollout state. A token that does not exist, and an entry
 without a serial, are skipped with a message on stderr. An entry the token can not be updated with,
 e.g. one with an invalid value, is reported on stderr with the cause. In each case the command goes
 on with the next entry. The command does not create tokens and does not change user assignments,
@@ -559,6 +562,10 @@ the owner in the file is ignored.
 The fail counter and the token kind (hardware or software) of a token are kept, and so is its
 OTP counter, unless the counter in the file is higher: then the token takes that one. So OTP
 values the token has already used do not become valid again.
+
+.. note:: The PIN of an mOTP token and PINs that are stored encrypted (enrollment
+   policy ``encrypt_pin``) are not part of the file in clear text and are not
+   re-encrypted, see :ref:`faq_reencryption`.
 
 .. _get_unused_tokens:
 
@@ -589,8 +596,8 @@ The script has four commands, each takes the age as its argument:
 ``mark AGE``
     Sets a description with ``-d``/``--description``, a tokeninfo with
     ``-t``/``--tokeninfo key=value`` or both on the found tokens. The value of the tokeninfo is
-    everything after the first ``=``. A tokeninfo that the token type maintains itself, e.g.
-    ``last_auth`` or ``tokenkind``, is skipped with a message.
+    everything after the first ``=``. The tokeninfo is also set if the token type maintains an
+    entry of that key itself, e.g. ``phone`` of an SMS token, so a mark should use a key of its own.
 
 Examples::
 
@@ -958,10 +965,8 @@ Adds a tokeninfo entry to the selected tokens or overwrites an existing entry wi
     digits and ``_``. The value is everything after the first ``=``, without the spaces around
     it, and may contain any character, e.g. ``'marked=to delete 2026-10-01'``.
 
-Only free-form entries can be set. An entry that the token type maintains itself is skipped with a
-message. Some of these entries can be changed with the ``/token/set`` endpoint, e.g.
-``validity_period_end``, ``count_auth_max`` or the phone number of an SMS token; others, like the
-public key of a passkey, are only written at enrollment.
+This includes the entries a token type maintains itself, e.g. ``hashlib``, ``next_pin_change`` or
+``timeWindow`` of a TOTP token, which the token info endpoints of the API do not write.
 
 Example::
 
@@ -975,10 +980,9 @@ Removes a tokeninfo entry from the selected tokens.
 ``--tokeninfo_key``
     The key of the entry to remove. Required.
 
-An entry that the token type maintains itself, e.g. the public key of a passkey, is skipped with a
-message, because the token needs it. The exceptions are the offline refill entries,
-``refilltoken`` of HOTP and TOTP tokens and ``refilltoken_<computer name>`` of passkeys and
-WebAuthn tokens: removing them stops the offline refill.
+This includes the entries a token type maintains itself. Removing one that the token needs to work,
+e.g. the public key of a passkey, makes the token unusable. Removing ``refilltoken`` stops the
+offline refill of OTP values.
 
 Example::
 
@@ -1225,8 +1229,11 @@ Update
 
 ``pi-tokenjanitor update YAML_FILE`` writes the token data from a YAML export, created with
 ``find ... export --format yaml`` without ``--b32``, into the existing tokens with the same serial.
-The OTP keys are stored encrypted with the current encryption key, so this can be used to
-re-encrypt the token data, see :ref:`faq_reencryption`.
+The OTP key, the OTP length and the description of each entry are written to the token, and so are the
+token info entries that are stored encrypted (marked ``<key>.type: password`` in the file, e.g. the SSH
+key of an SSH key token). They are stored encrypted with the current encryption key, so this can be used
+to re-encrypt the token data, see :ref:`faq_reencryption`. The other values in the file are not written:
+the token keeps its other token info, its active state and its rollout state.
 
 A token that does not exist, and an entry without a serial, are skipped with a message on stderr.
 An entry the token can not be updated with, e.g. one with an invalid value, is reported on stderr
@@ -1235,6 +1242,10 @@ The command does not create tokens and does not change the owners. The fail coun
 kind (hardware or software) of a token are kept, and so is its OTP counter, unless the counter in
 the file is higher: then the token takes that one. So OTP values that were already used do not
 become valid again.
+
+.. note:: The PIN of an mOTP token and PINs that are stored encrypted (enrollment
+   policy ``encrypt_pin``) are not part of the file in clear text and are not
+   re-encrypted, see :ref:`faq_reencryption`.
 
 Example::
 

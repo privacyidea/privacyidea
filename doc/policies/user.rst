@@ -49,10 +49,10 @@ assign
 type: ``bool``
 
 The user is allowed to assign an existing token that is
-located in their realm and that does not belong to any other user
-by entering the serial number.
+located in their realm or in no realm and that does not belong to any other user
+by entering the serial number. The realm of the user is then added to the token.
 
-Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+Note that for users the condition ``realm`` is matched against the realm of the user.
 
 .. versionadded:: 2.0
 
@@ -656,9 +656,10 @@ container_assign_user
 
 type: ``bool``
 
-This action allows users to assign themselves to containers without an owner.
+This action allows users to assign themselves to containers without an owner that are located in their
+realm or in no realm. The realm of the user is then added to the container.
 
-Note that the condition ``realm`` for this action is also evaluated to true if the container is in no realm.
+Note that for users the condition ``realm`` is matched against the realm of the user.
 
 .. versionadded:: 3.10
 

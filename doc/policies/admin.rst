@@ -37,6 +37,15 @@ means that the administrator *frank* in the admin-realm *helpdesk* is allowed
 to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
 do not name the administrator, but the users the administrator may act on.
 
+.. _admin_policies_global_configuration:
+
+Policies, conditional-access policies, event handlers and API clients belong to
+no realm and apply to all of them. To create, change or delete these, an
+administrator needs the action from a policy that does not restrict its target,
+meaning ``realm``, ``resolver`` and ``user`` are each empty or ``*``. A policy
+that restricts the action to named realms, resolvers or users does not grant
+it, whatever realm the request names, and the WebUI does not offer it.
+
 .. note:: As long as no admin policy is active, all administrators are allowed to do
    everything, except the actions that always need their policy:
    :ref:`policy_set_custom_user_attributes`, :ref:`policy_delete_custom_user_attributes`,
@@ -187,11 +196,12 @@ which gives it a new secret.
 ``POST /token/init`` updates a token when it is called with the serial of a
 token that already exists. While the enrollment of that token is still under
 way — the second request of a two-step or a FIDO2 enrollment, a token waiting
-to be verified — that is part of the enrollment and only needs the
+to be verified — that is part of the enrollment and needs the
 ``enroll<TOKENTYPE>`` action. Once the token is in use, the same request gives
-it a new secret, so it additionally requires this action, and the policy is
-matched against the realm of the existing token rather than against a realm
-passed in the request.
+it a new secret, so it additionally requires this action. In both cases the
+policy is matched against the existing token - its owner or one of its realms,
+as for the other token actions - rather than against a realm passed in the
+request. A user can only name a token they own.
 
 Enrolling a new token is unaffected and needs only the enrollment action of
 its token type.
@@ -423,9 +433,10 @@ If the ``importtokens`` action is defined, the administrator is
 allowed to import token seeds from a token file, thus
 creating many new token objects in the system's database.
 
-The right to upload tokens can be limited to certain realms.
-Thus the administrator could only upload tokens into the realms they are allowed to
-manage.
+The right to upload tokens can be limited to certain realms. Thus the administrator could only upload
+tokens into the realms they are allowed to manage. The restriction is checked against the realms selected for
+the import, against each token of the file that already exists, and against each user named in a version 2
+file; the file is refused if one of them is not allowed.
 
 .. versionadded:: 2.0
 
@@ -890,6 +901,9 @@ type: ``bool``
 
 Allow the administrator to configure :ref:`Event Handlers<eventhandler>`.
 
+.. note:: This action requires a policy that does not restrict its target,
+   see :ref:`admin_policies_global_configuration`.
+
 .. versionadded:: 2.12
 
 .. _policy_eventhandling_read:
@@ -963,6 +977,9 @@ type: ``bool``
 
 Allow the administrator to write, read or delete policies.
 
+.. note:: Writing and deleting policies require a policy that does not restrict
+   its target, see :ref:`admin_policies_global_configuration`.
+
 .. note:: Currently the policies do not take into account resolvers
    or realms. Having the right to read policies will allow the
    administrator to see all policies.
@@ -1021,6 +1038,9 @@ configwrite, configread, configdelete
 type: ``bool``
 
 Allow the administrator to write, read or delete system configuration.
+``configread`` also allows reading the *Certificate Health*, *Resolver
+Timing* and *Notification Delivery* panels of the dashboard
+(``GET /system/health/...``).
 
 .. versionadded:: 2.0 ``configwrite`` and ``configdelete``
 
@@ -1171,6 +1191,9 @@ type: ``bool``
 
 The administrators are allowed to create, edit, reorder and delete the policies
 of :ref:`conditional_access`.
+
+.. note:: This action requires a policy that does not restrict its target,
+   see :ref:`admin_policies_global_configuration`.
 
 .. versionadded:: 3.14
 
@@ -1805,6 +1828,9 @@ type: ``bool``
 The administrator is allowed to create API clients and generate their API key.
 The plaintext key is returned only once, on creation.
 
+.. note:: This action requires a policy that does not restrict its target,
+   see :ref:`admin_policies_global_configuration`.
+
 .. versionadded:: 3.14
 
 .. _policy_api_client_edit:
@@ -1816,6 +1842,9 @@ type: ``bool``
 
 The administrator is allowed to modify an existing API client (display name,
 status, configuration). The API key is not affected.
+
+.. note:: This action requires a policy that does not restrict its target,
+   see :ref:`admin_policies_global_configuration`.
 
 .. versionadded:: 3.14
 
@@ -1829,6 +1858,9 @@ type: ``bool``
 The administrator is allowed to rotate the API key of a client. The previous key
 stops working immediately and a new plaintext key is returned once.
 
+.. note:: This action requires a policy that does not restrict its target,
+   see :ref:`admin_policies_global_configuration`.
+
 .. versionadded:: 3.14
 
 .. _policy_api_client_delete:
@@ -1840,6 +1872,9 @@ type: ``bool``
 
 The administrator is allowed to delete an API client. Deleting a client also
 removes its remembered devices.
+
+.. note:: This action requires a policy that does not restrict its target,
+   see :ref:`admin_policies_global_configuration`.
 
 .. versionadded:: 3.14
 

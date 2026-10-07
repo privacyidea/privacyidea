@@ -83,8 +83,7 @@ Failure
    ``TOKEN_ONLY_FAIL``
      no PIN was required, and the OTP value was wrong.
    ``MFA_FAIL``
-     the first factor was correct but the second failed. Also used for a failed
-     passkey authentication, where the cause cannot be determined.
+     the first factor was correct but the second failed.
    ``USER_UNKNOWN``
      the login name was not found in any resolver of the given realm (or default realm if none were given).
    ``NO_TOKEN``
@@ -100,7 +99,8 @@ Failure
      the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
    ``CHALLENGE_ANSWERED_FAIL``
-     the challenge response was wrong or expired, or the transaction ID is unknown.
+     the challenge response was wrong or expired, or the transaction ID is unknown. A passkey or WebAuthn answer
+     that does not verify is one too.
    ``CHALLENGE_TRIGGER_FAIL``
      ``/validate/initialize`` could not create the passkey challenge, for
      example because the :ref:`policy_webauthn_enroll_relying_party_id` policy

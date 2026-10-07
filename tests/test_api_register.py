@@ -1,6 +1,7 @@
+import re
 from email import message_from_string
 
-from privacyidea.lib.resolver import delete_resolver, save_resolver
+from privacyidea.lib.resolver import delete_resolver, save_resolver, get_resolver_object
 from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
 from .base import MyApiTestCase, PristineSqliteFixtures
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, set_policy
@@ -8,9 +9,9 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.smtpserver import delete_smtpserver, add_smtpserver
 from . import smtpmock
-from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.passwordreset import create_recoverycode
-from privacyidea.lib.user import User
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
+from privacyidea.lib.passwordreset import create_recoverycode, check_recoverycode
+from privacyidea.lib.user import User, create_user
 from privacyidea.lib.error import Error
 from unittest import mock
 from privacyidea.api import register
@@ -294,3 +295,127 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
 
     def test_99_delete_users(self):
         self.test_00_delete_users()
+
+
+class RecoveryCodeResolverBindingTestCase(PristineSqliteFixtures, MyApiTestCase):
+    """
+    The password recovery endpoints act on the user the recovery code was issued for: the code is bound to the user
+    store of that user, and a resolver that is not part of the requested realm is refused.
+    """
+    pristine_fixtures = ["tests/testdata/testuser.sqlite", "tests/testdata/testuser-api.sqlite"]
+    sql_map = ('{"username": "username", "userid": "id", "email": "email", "surname": "name", '
+               '"givenname": "givenname", "password": "password", "phone": "phone", "mobile": "mobile"}')
+    login = "recovertarget"
+    old_password = "Old-Pass-1234"
+    new_password = "New-Pass-5678"
+    home_email = "home-recover@example.org"
+    other_email = "other-recover@example.org"
+
+    def _sql_resolver(self, name: str, database: str) -> dict:
+        return {"resolver": name, "type": "sqlresolver", "Driver": "sqlite", "Server": "/tests/testdata/",
+                "Database": database, "Table": "users", "Encoding": "utf8", "Editable": True, "Map": self.sql_map}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.assertGreater(save_resolver(self._sql_resolver("recover_home", "testuser.sqlite")), 0)
+        self.assertGreater(save_resolver(self._sql_resolver("recover_other", "testuser-api.sqlite")), 0)
+        set_realm("recover_home", [{"name": "recover_home"}])
+        set_realm("recover_other", [{"name": "recover_other"}])
+        # password_reset is granted to the users of recover_home only
+        set_policy("recover_password_reset", scope=SCOPE.USER, action=PolicyAction.PASSWORDRESET,
+                   realm="recover_home")
+        create_user("recover_home", {"username": self.login, "email": self.home_email}, password=self.old_password)
+        create_user("recover_other", {"username": self.login, "email": self.other_email}, password=self.old_password)
+        add_smtpserver(identifier="recover_smtp", server="1.2.3.4")
+        set_privacyidea_config("recovery.identifier", "recover_smtp")
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+
+    def tearDown(self) -> None:
+        self.app.config.pop("PI_BASE_URL", None)
+        delete_privacyidea_config("recovery.identifier")
+        delete_smtpserver("recover_smtp")
+        for resolver_name in ("recover_home", "recover_other"):
+            resolver = get_resolver_object(resolver_name)
+            uid = resolver.getUserId(self.login)
+            if uid:
+                resolver.delete_user(uid)
+        delete_policy("recover_password_reset")
+        delete_realm("recover_home")
+        delete_realm("recover_other")
+        delete_resolver("recover_home")
+        delete_resolver("recover_other")
+        super().tearDown()
+
+    def _post(self, path: str, data: dict):
+        with self.app.test_request_context(path, method="POST", data=data):
+            return self.app.full_dispatch_request()
+
+    def _sent_code(self) -> str:
+        body = message_from_string(smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+        return re.search(r"/#!/reset/[^/\s]+/([A-Za-z0-9]+)", body).group(1)
+
+    def _request_code_for_home_user(self) -> str:
+        smtpmock.setdata(response={self.home_email: (200, "OK")})
+        res = self._post("/recover", {"user": self.login, "realm": "recover_home", "email": self.home_email})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"], res.json)
+        return self._sent_code()
+
+    def _has_password(self, resolver_name: str, password: str) -> bool:
+        resolver = get_resolver_object(resolver_name)
+        return resolver.checkPass(resolver.getUserId(self.login), password)
+
+    @smtpmock.activate
+    def test_01_reset_naming_a_resolver_outside_the_realm_changes_no_password(self):
+        code = self._request_code_for_home_user()
+        res = self._post("/recover/reset", {"user": self.login, "realm": "recover_home", "resolver": "recover_other",
+                                            "recoverycode": code, "password": self.new_password})
+        self.assertNotEqual(True, res.json["result"].get("value"), res.json)
+        self.assertTrue(self._has_password("recover_other", self.old_password))
+
+    @smtpmock.activate
+    def test_02_no_recovery_code_for_a_resolver_outside_the_realm(self):
+        smtpmock.setdata(response={self.other_email: (200, "OK")})
+        res = self._post("/recover", {"user": self.login, "realm": "recover_home", "resolver": "recover_other",
+                                      "email": self.other_email})
+        self.assertFalse(res.json["result"]["status"], res.json)
+
+    @smtpmock.activate
+    def test_03_the_code_is_bound_to_the_resolver_of_the_user_inside_the_realm(self):
+        # Both user stores are in the realm; the login resolves to recover_home, which has the higher priority
+        set_realm("recover_home", [{"name": "recover_home", "priority": 1}, {"name": "recover_other", "priority": 2}])
+        code = self._request_code_for_home_user()
+        res = self._post("/recover/reset", {"user": self.login, "realm": "recover_home", "resolver": "recover_other",
+                                            "recoverycode": code, "password": self.new_password})
+        self.assertNotEqual(True, res.json["result"].get("value"), res.json)
+        self.assertTrue(self._has_password("recover_other", self.old_password))
+
+    @smtpmock.activate
+    def test_04_check_recoverycode_compares_the_resolver(self):
+        smtpmock.setdata(response={self.home_email: (200, "OK")})
+        self.assertTrue(create_recoverycode(User(self.login, "recover_home"), recoverycode="recovercode"))
+        self.assertFalse(check_recoverycode(User(self.login, "recover_home", resolver="recover_other"),
+                                            "recovercode"))
+        # The code is still valid for the user it was issued for, and only once
+        self.assertTrue(check_recoverycode(User(self.login, "recover_home"), "recovercode"))
+        self.assertFalse(check_recoverycode(User(self.login, "recover_home"), "recovercode"))
+
+    @smtpmock.activate
+    def test_05_the_user_of_the_realm_still_resets_the_password(self):
+        code = self._request_code_for_home_user()
+        res = self._post("/recover/reset", {"user": self.login, "realm": "recover_home", "recoverycode": code,
+                                            "password": self.new_password})
+        self.assertTrue(res.json["result"]["value"], res.json)
+        self.assertTrue(self._has_password("recover_home", self.new_password))
+        # Naming the user's own resolver is accepted
+        smtpmock.setdata(response={self.home_email: (200, "OK")})
+        res = self._post("/recover", {"user": self.login, "realm": "recover_home", "resolver": "recover_home",
+                                      "email": self.home_email})
+        self.assertTrue(res.json["result"]["value"], res.json)
+        code = self._sent_code()
+        res = self._post("/recover/reset", {"user": self.login, "realm": "recover_home", "resolver": "recover_home",
+                                            "recoverycode": code, "password": self.old_password})
+        self.assertTrue(res.json["result"]["value"], res.json)
+        self.assertTrue(self._has_password("recover_home", self.old_password))
+        self.assertTrue(self._has_password("recover_other", self.old_password))
+

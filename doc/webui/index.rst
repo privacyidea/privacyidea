@@ -189,6 +189,9 @@ Certificate health
 
 .. index:: certificate health, certificate expiry
 
+The *Certificate Health*, *Resolver Timing* and *Notification Delivery* panels
+need the admin right :ref:`configread`.
+
 The dashboard also shows a *Certificate Health* panel listing TLS certificates that are
 relevant to the running privacyIDEA instance:
 

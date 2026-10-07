@@ -816,7 +816,7 @@ def set_container_info(container_serial, key):
     :status 200: ``True`` on success in ``result.value``.
     :status 403: the key is reserved as ``PI_INTERNAL``.
     """
-    value = get_required(request.all_data, "value")
+    value = get_required(request.all_data, "value", allow_empty=True)
     res = add_container_info(container_serial, key, value)
 
     # Audit log
@@ -1516,8 +1516,8 @@ def create_template_with_name(container_type, template_name):
 @log_with(log)
 def delete_template(template_name):
     """
-    Delete a container template. Existing containers that were
-    created from this template are not affected.
+    Delete a container template. Existing containers that were created from this template keep their tokens, but are
+    no longer linked to a template.
 
     Requires authentication and the policy action
     :ref:`policy_container_template_delete`.

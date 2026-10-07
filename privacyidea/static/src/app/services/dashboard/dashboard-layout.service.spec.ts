@@ -538,7 +538,27 @@ describe("DashboardLayoutService", () => {
     it("should report a widget type that names no required action as allowed", () => {
       build([]);
       auth.actionAllowed.mockReturnValue(false);
-      expect(service.isWidgetTypeAllowed("certificate-health")).toBe(true);
+      expect(service.isWidgetTypeAllowed("news")).toBe(true);
+    });
+
+    it("should offer the health widgets only with configread", () => {
+      build([]);
+      auth.actionAllowed.mockImplementation((action: string) => action !== "configread");
+      for (const type of ["certificate-health", "resolver-timing", "notification-delivery"]) {
+        expect(service.isWidgetTypeAllowed(type)).toBe(false);
+      }
+      auth.actionAllowed.mockImplementation((action: string) => action === "configread");
+      for (const type of ["certificate-health", "resolver-timing", "notification-delivery"]) {
+        expect(service.isWidgetTypeAllowed(type)).toBe(true);
+      }
+    });
+
+    it("should leave the health widgets out of the default layout without configread", () => {
+      auth.actionAllowed.mockImplementation((action: string) => action !== "configread");
+      build();
+      expect(service.hasWidgetOfType("certificate-health")).toBe(false);
+      expect(service.hasWidgetOfType("resolver-timing")).toBe(false);
+      expect(service.hasWidgetOfType("notification-delivery")).toBe(false);
     });
 
     it("should report a widget type with several required actions as allowed on any one of them", () => {

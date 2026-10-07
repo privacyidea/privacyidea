@@ -212,8 +212,9 @@ template details page.
 Template Details
 ................
 
-At the top of the page, the name and the container type are displayed. The checkbox *Set as default template* uses
-the template as the default for creating new containers.
+At the top of the page, the name and the container type are displayed. The name of an existing template can not be
+changed; to save a template under another name, use *Copy* in the template list. The checkbox *Set as default
+template* uses the template as the default for creating new containers.
 For each container type, one template can be the default. Setting a template as default will remove the default setting
 from the previous default template.
 

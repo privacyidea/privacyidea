@@ -98,7 +98,7 @@ from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_ob
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
 from privacyidea.lib.event import event, EventConfiguration
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge
+from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge, ChallengeExpiredError
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -203,6 +203,19 @@ def _refuse_disabled_login(login_disabled_policies: list[str], user: User, seria
     raise PolicyError(_("The login for this user is disabled."))
 
 
+def _realm_parameter_fits_remote_user(remote_user: str) -> bool:
+    """
+    Whether the realm parameter the client sent is empty or names the realm of REMOTE_USER (the default realm if
+    REMOTE_USER contains none). The REMOTE_USER login is only for the account REMOTE_USER names; a realm parameter
+    for another realm does not move it there.
+    """
+    realm_parameter = get_optional(g.request_data, "realm")
+    if not realm_parameter:
+        return True
+    remote_user_realm = split_user(remote_user)[1] or get_default_realm()
+    return realm_parameter.lower() == (remote_user_realm or "").lower()
+
+
 @jwtauth.route('', methods=['POST'])
 # The conditional-access gate sits above the pre-policies (decorators run top-down) so it can refuse a locked user
 # before auth_timelimit logs a trackable event for them; see conditional_access_login_gate.
@@ -260,7 +273,8 @@ def get_auth_token():
         flow).
     :jsonparam realm: optional realm to scope the user lookup; defaults
         to the realm in ``username@realm`` syntax, otherwise the
-        default realm.
+        default realm. With a REMOTE_USER login it must be empty or the
+        realm of REMOTE_USER.
     :jsonparam credential_id: FIDO2 credential id (required for passkey
         flow).
     :jsonparam transaction_id: transaction id from a prior
@@ -425,10 +439,14 @@ def get_auth_token():
         try:
             passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data,
                                                           minimum_user_verification=minimum_user_verification)
-        except (ResourceNotFoundError, AuthError):
+        except (ResourceNotFoundError, AuthError) as error:
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure response, so log
-            # the failed attempt here.
-            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
+            # the failed attempt here. No first factor was checked, so it is a failed answer to a challenge.
+            reason = (AuthEventReason.CHALLENGE_EXPIRED if isinstance(error, ChallengeExpiredError)
+                      else AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION)
+            log_authentication(AuthEventType.CHALLENGE_ANSWERED_FAIL, request, user=token.user,
+                               serial=token.get_serial(), transaction_id=transaction_id, reasons=[reason],
+                               reason_detail=build_reason_detail(reasons={token.get_serial(): reason}))
             raise
         except PolicyError:
             # An authorization policy does not allow this authenticator. The refusal counts as a failed login.
@@ -451,7 +469,10 @@ def get_auth_token():
             if reset_all_user_tokens_active(g, user):
                 reset_token_failcounters(get_tokens(user=user))
         else:
-            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
+            reason = AuthEventReason.CHALLENGE_WRONG_RESPONSE
+            log_authentication(AuthEventType.CHALLENGE_ANSWERED_FAIL, request, user=token.user,
+                               serial=token.get_serial(), transaction_id=transaction_id, reasons=[reason],
+                               reason_detail=build_reason_detail(reasons={token.get_serial(): reason}))
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
@@ -513,7 +534,8 @@ def get_auth_token():
             "info": log_used_user(user)
         })
     # Check if the remote user is allowed
-    elif (request.remote_user == username) and is_remote_user_allowed(request) != REMOTE_USER.DISABLE:
+    elif (request.remote_user == username and _realm_parameter_fits_remote_user(request.remote_user)
+          and is_remote_user_allowed(request) != REMOTE_USER.DISABLE):
         # Authenticated by the Web Server
         # Check if the username exists
         # 1. in local admins
@@ -525,6 +547,8 @@ def get_auth_token():
             role = ROLE.ADMIN
             admin_auth = True
             internal_admin = True
+            # A local administrator is in no realm, as with the password login
+            realm = ""
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
             user = User()
         else:

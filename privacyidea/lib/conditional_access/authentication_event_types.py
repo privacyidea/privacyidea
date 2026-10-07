@@ -124,7 +124,6 @@ class AuthEventType(str, Enum):
     # PIN skipped (otppin=none / otponly=1) but the OTP itself is wrong.
     TOKEN_ONLY_FAIL = "TOKEN_ONLY_FAIL"
     # Correct first factor (pin / password), but the second factor failed, e.g. wrong OTP.
-    # Also used for a failed passkey authentication, since the exact cause of failure cannot be determined there.
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
@@ -148,7 +147,8 @@ class AuthEventType(str, Enum):
     CHALLENGE_TRIGGER_FAIL = "CHALLENGE_TRIGGER_FAIL"
     # Push challenge approved on the smartphone (out-of-band, signature verified).
     CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
-    # Challenge response is wrong, expired, or the transaction_id is unknown.
+    # Challenge response is wrong, expired, or the transaction_id is unknown. A FIDO2 answer (passkey, WebAuthn) that
+    # does not verify is one too.
     CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
     # Push challenge rejected on the smartphone without saying why: a legacy app that does not send a decline
     # reason at all, or one that sent a reason this server version does not know. The unspecified bucket, so an

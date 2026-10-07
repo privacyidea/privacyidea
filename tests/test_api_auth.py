@@ -13,7 +13,7 @@ from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
-from privacyidea.lib.error import ResourceNotFoundError, Error
+from privacyidea.lib.error import ResourceNotFoundError, Error, ResolverError
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.policies.actions import PolicyAction
@@ -28,7 +28,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import Audit, Realm, NodeName, db
 from . import ldap3mock
-from .base import MyApiTestCase, OverrideConfigTestCase
+from .base import MyApiTestCase, OverrideConfigTestCase, PWFILE as PASSWORDS_FILE, PWFILE2 as PASSWD_FILE
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
 
@@ -2304,3 +2304,102 @@ class EventHandlerTest(MyApiTestCase):
         )
 
         delete_event(eid)
+
+
+class RemoteUserAccountTestCase(MyApiTestCase):
+    """
+    The remote_user policy decides about the account that REMOTE_USER names: the realm parameter of the request cannot
+    move the login to another realm, and the resolver of the policy is evaluated.
+
+    ``mixedrealm`` (the default realm) = resolver1 (``tests/testdata/passwords``, priority 1) + reso3
+    (``tests/testdata/passwd``, priority 2). ``adminrealm`` = resolver1 and is the ``SUPERUSER_REALM`` of the
+    testing configuration. ``systemrealm`` = reso3. ``cornelius`` exists in both files as different entries,
+    ``selfservice`` only in resolver1 and ``daemon`` only in reso3. No request sends a password.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": PASSWORDS_FILE})
+        save_resolver({"resolver": self.resolvername3, "type": "passwdresolver", "fileName": PASSWD_FILE})
+        set_realm("mixedrealm", [{"name": self.resolvername1, "priority": 1},
+                                 {"name": self.resolvername3, "priority": 2}])
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        set_realm("systemrealm", [{"name": self.resolvername3}])
+        set_default_realm("mixedrealm")
+
+    def tearDown(self) -> None:
+        for policy_name in ["remote_mixed", "remote_any", "set_realm_policy"]:
+            try:
+                delete_policy(policy_name)
+            except Exception:  # nosec B110 # the policy was not created by this test
+                pass
+        for realm in ["mixedrealm", "adminrealm", "systemrealm"]:
+            delete_realm(realm)
+        super().tearDown()
+
+    def _remote_user_auth(self, remote_user: str, data: dict) -> tuple[int, dict]:
+        with self.app.test_request_context("/auth", method="POST", data=data,
+                                           environ_base={"REMOTE_USER": remote_user}):
+            res = self.app.full_dispatch_request()
+        return res.status_code, res.json.get("result", {}).get("value") or {}
+
+    def _config_remote_user(self, remote_user: str) -> str:
+        with self.app.test_request_context("/config", method="GET", environ_base={"REMOTE_USER": remote_user}):
+            res = self.app.full_dispatch_request()
+        return res.json["result"]["value"].get("remote_user")
+
+    def test_01_realm_parameter_does_not_move_the_login(self):
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        cases = [
+            # The intended login: name and realm from REMOTE_USER (default realm), with or without that realm given
+            ("cornelius", {"username": "cornelius"}, 200),
+            ("cornelius", {"username": "cornelius", "realm": "mixedrealm"}, 200),
+            # REMOTE_USER names a realm the policy does not cover
+            ("cornelius@adminrealm", {"username": "cornelius@adminrealm"}, 401),
+            # A realm parameter that names another realm than REMOTE_USER does not log the name in there
+            ("cornelius", {"username": "cornelius", "realm": "adminrealm"}, 401),
+            ("cornelius@mixedrealm", {"username": "cornelius@mixedrealm", "realm": "adminrealm"}, 401),
+            ("cornelius", {"username": "cornelius", "realm": "systemrealm"}, 401)]
+        for remote_user, data, expected in cases:
+            with self.subTest(remote_user=remote_user, data=data):
+                status, value = self._remote_user_auth(remote_user, data)
+                self.assertEqual(expected, status)
+                if expected == 200:
+                    self.assertEqual(("user", "mixedrealm"), (value["role"], value["realm"]))
+
+    def test_02_resolver_of_the_policy_is_evaluated(self):
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm", resolver=self.resolvername1,
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        selfservice_status, selfservice_value = self._remote_user_auth("selfservice", {"username": "selfservice"})
+        self.assertEqual(200, selfservice_status)
+        self.assertEqual(("user", "mixedrealm"), (selfservice_value["role"], selfservice_value["realm"]))
+        self.assertEqual("selfservice", self._config_remote_user("selfservice"))
+        # daemon resolves to reso3 in mixedrealm, which the policy does not name
+        daemon_status, _ = self._remote_user_auth("daemon", {"username": "daemon"})
+        self.assertEqual(401, daemon_status)
+        self.assertEqual("", self._config_remote_user("daemon"))
+
+    def test_03_set_realm_rewrite_keeps_working(self):
+        # The AUTH set_realm rewrite is server configuration and stays; the policy is matched for the account that
+        # REMOTE_USER names, before the rewrite.
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        set_policy("set_realm_policy", scope=SCOPE.AUTH, realm="mixedrealm",
+                   action=f"{PolicyAction.SET_REALM}=systemrealm")
+        status, value = self._remote_user_auth("cornelius", {"username": "cornelius"})
+        self.assertEqual(200, status)
+        self.assertEqual(("user", "systemrealm"), (value["role"], value["realm"]))
+
+    def test_04_local_admin_session_has_no_realm(self):
+        set_policy("remote_any", scope=SCOPE.WEBUI, action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        status, value = self._remote_user_auth(self.testadmin, {"username": self.testadmin})
+        self.assertEqual(200, status)
+        self.assertEqual(("admin", ""), (value["role"], value["realm"]))
+
+    def test_05_unreachable_user_store_falls_back_to_the_name_and_realm(self):
+        set_policy("remote_mixed", scope=SCOPE.WEBUI, realm="mixedrealm",
+                   action=f"{PolicyAction.REMOTE_USER}={REMOTE_USER.ACTIVE}")
+        with mock.patch("privacyidea.api.lib.prepolicy.User", side_effect=ResolverError("The user store is down")):
+            self.assertEqual("cornelius", self._config_remote_user("cornelius"))
+

@@ -33,6 +33,7 @@ from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.utils import to_bytes
 from hashlib import sha1, sha256, sha512
 import binascii
+import hmac
 import struct
 
 SHA_FUNC = {"SHA1": sha1,
@@ -328,7 +329,7 @@ class OCRA:
         """
         r = self.get_response(question, pin=pin, pin_hash=pin_hash,
                               counter=counter, timesteps=timesteps)
-        if r == response:
+        if response is not None and hmac.compare_digest(to_bytes(r), to_bytes(response)):
             return 1
         else:
             return -1

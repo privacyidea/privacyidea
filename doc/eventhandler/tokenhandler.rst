@@ -161,13 +161,11 @@ Here the count window of a token can be set. This requires an integer value.
 set tokeninfo
 .............
 
-Using the action ``set tokeninfo`` you can set a tokeninfo attribute of the
-token. You need to specify the ``key`` of the tokeninfo and the ``value``.
-Keys that the token type maintains itself, such as ``count_auth``,
-``count_auth_success``, ``last_auth``, ``creation_date``, ``assignment_date``,
-``failcounter_exceeded`` or ``next_pin_change``, can not be set: the action
-skips them and logs a warning. The attributes named in the notes below
-(``timeStep``, ``hashlib``, ``phone``, ``timeWindow``) can be set.
+Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
+attribute for the token. You need to specify the ``key`` of the
+tokeninfo and the ``value``. This includes the entries a token type maintains
+itself, e.g. ``next_pin_change``, which the token info endpoints of the API do
+not write.
 
 In the value field you can use the tag ``{now}`` to set the current timestamp.
 ``{current_time}`` is a deprecated alias for ``{now}``. In addition you can append
@@ -203,8 +201,8 @@ The tokeninfo is interpreted as an integer value.
 You can use a positive or a negative value as an *increment*. An increment like "-7" will
 decrease the current tokeninfo value by 7.
 If the tokeninfo does not exist, it will be created with the increment value.
-As with *set tokeninfo*, keys that the token type maintains itself can not be changed: the action skips them and
-logs a warning.
+If the current value or the increment is not an integer, the tokeninfo is left
+unchanged and the audit entry of the handler is marked as failed.
 
 set failcounter
 ...............
@@ -264,8 +262,8 @@ delete tokeninfo
 
 Using the action ``delete tokeninfo`` you can delete a tokeninfo attribute of the token.
 You need to specify the ``key`` of the tokeninfo that should be deleted.
-Keys that the token type maintains itself, including those that *set tokeninfo* can set (``timeStep``, ``hashlib``,
-``phone``, ``timeWindow``), can not be deleted: the action skips them and logs a warning.
+This includes the entries a token type maintains itself. Deleting one that the token needs to work,
+e.g. the public key of a passkey, makes the token unusable.
 
 attach application
 ..................
