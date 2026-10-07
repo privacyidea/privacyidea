@@ -156,6 +156,7 @@ describe("EditActionTabComponent", () => {
     const actionLists = fixture.debugElement.query(By.directive(MockAddedActionsListComponent));
 
     expect(searchField).not.toBeNull();
+    expect(searchField.nativeElement.classList).not.toContain("hidden");
     expect(
       searchField.nativeElement.compareDocumentPosition(actionLists.nativeElement) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
@@ -167,7 +168,7 @@ describe("EditActionTabComponent", () => {
 
     const searchField = fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent));
     expect(searchField).not.toBeNull();
-    expect(searchField.nativeElement.classList).toContain("search-hidden");
+    expect(searchField.nativeElement.classList).toContain("hidden");
   });
 
   it("should hand the search term to both action lists", () => {

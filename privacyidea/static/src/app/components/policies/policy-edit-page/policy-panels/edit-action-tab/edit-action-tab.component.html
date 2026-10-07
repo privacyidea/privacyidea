@@ -22,7 +22,7 @@
     <!-- Hidden rather than removed while the pinned header shows the field: dropping its height
          could shrink the page below the pin threshold and bounce the scroll back to the top. -->
     <app-policy-action-search
-      [class.search-hidden]="searchInHeader()"
+      [class.hidden]="searchInHeader()"
       [(actionFilter)]="actionFilter" />
 
     @if (actions().length > 0) {
