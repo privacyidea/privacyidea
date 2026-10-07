@@ -664,9 +664,9 @@ def _extract_backup(tf: tarfile.TarFile) -> None:
     :param tf: The opened backup file, whose entries were checked with _refused_member()
     """
     if hasattr(tarfile, "tar_filter"):
-        tf.extractall(path="/", filter="tar")
+        tf.extractall(path="/", filter="tar")  # nosec B202 # every entry was checked with _refused_member()
     else:
-        tf.extractall(path="/")
+        tf.extractall(path="/")  # nosec B202 # every entry was checked with _refused_member()
 
 
 def _quote_mysql_option(value: str) -> str:

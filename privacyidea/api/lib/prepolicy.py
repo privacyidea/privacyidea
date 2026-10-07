@@ -362,9 +362,9 @@ def resolver_realm_access(request=None, action=None):
 
     An admin policy grants an action in a realm, while these endpoints take the user store from the
     resolver in the request. The two are independent: creating and deleting a user carry no realm at all,
-    and where a realm is given nothing ties it to the resolver. Each resolver the request names, and the
-    resolver of the user it acts on, is therefore resolved to the realms containing it, and for each at
-    least one of them has to be granted by a matching policy.
+    and where a realm is given nothing ties it to the resolver. Each resolver the request names is therefore
+    resolved to the realms containing it, and for each at least one of them has to be granted by a matching
+    policy. The user the request acts on is matched by the policy check of the endpoint.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.ADDUSER
@@ -373,11 +373,9 @@ def resolver_realm_access(request=None, action=None):
         return True
 
     params = request.all_data
-    # Every resolver the request names, and the resolver of the user the request acts on
-    named_resolvers = {resolver for resolver in (get_optional(params, "resolver"), get_optional(params, "resolvername"))
-                       if resolver}
-    user_resolver = request.User.resolver if request.User else None
-    resolvers = sorted(named_resolvers | ({user_resolver} if user_resolver else set()))
+    # Every resolver the request names, e.g. a resolver parameter next to the resolver of the path
+    named_resolvers = (get_optional(params, "resolver"), get_optional(params, "resolvername"))
+    resolvers = sorted({resolver for resolver in named_resolvers if resolver})
     if not resolvers:
         return True
 
@@ -386,13 +384,9 @@ def resolver_realm_access(request=None, action=None):
         # Nothing restricts this admin: no admin policy at all, or one that carries no target scope
         return True
     if not granted_realms:
-        # Restricted along a dimension a realm list cannot carry. The policy check of the endpoint matches the
-        # resolver and the login name of the user the request acts on, but a resolver the request names cannot be
-        # shown to be inside the boundary. Refuse rather than widen it.
-        if named_resolvers:
-            raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(
-                sorted(named_resolvers)[0]))
-        return True
+        # Restricted along a dimension a realm list cannot carry, so this resolver cannot be shown to
+        # be inside the boundary. Refuse rather than widen it.
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolvers[0]))
 
     realms = get_realms()
     for resolver in resolvers:
