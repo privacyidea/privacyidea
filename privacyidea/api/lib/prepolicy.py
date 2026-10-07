@@ -77,6 +77,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
                                               check_token_action_allowed,
                                               check_container_action_allowed,
+                                              user_is_owner,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
@@ -91,12 +92,13 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.actions import PolicyAction, ADMIN_ACTIONS_WITHOUT_TARGET
 from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
-                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names)
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names,
+                                             get_policy_visibility_scopes)
 from privacyidea.lib.policy import Match, PolicyClass, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
-from privacyidea.lib.realm import get_realms, split_realms
+from privacyidea.lib.realm import get_realms, split_realms, get_ordered_resolvers
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -360,8 +362,9 @@ def resolver_realm_access(request=None, action=None):
 
     An admin policy grants an action in a realm, while these endpoints take the user store from the
     resolver in the request. The two are independent: creating and deleting a user carry no realm at all,
-    and where a realm is given nothing ties it to the resolver. The resolver is therefore resolved to the
-    realms containing it, and at least one of them has to be granted by a matching policy.
+    and where a realm is given nothing ties it to the resolver. Each resolver the request names, and the
+    resolver of the user it acts on, is therefore resolved to the realms containing it, and for each at
+    least one of them has to be granted by a matching policy.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.ADDUSER
@@ -370,8 +373,12 @@ def resolver_realm_access(request=None, action=None):
         return True
 
     params = request.all_data
-    resolver = get_optional(params, "resolver") or get_optional(params, "resolvername")
-    if not resolver:
+    # Every resolver the request names, and the resolver of the user the request acts on
+    named_resolvers = {resolver for resolver in (get_optional(params, "resolver"), get_optional(params, "resolvername"))
+                       if resolver}
+    user_resolver = request.User.resolver if request.User else None
+    resolvers = sorted(named_resolvers | ({user_resolver} if user_resolver else set()))
+    if not resolvers:
         return True
 
     granted_realms = admin_granted_realms(action)
@@ -379,14 +386,20 @@ def resolver_realm_access(request=None, action=None):
         # Nothing restricts this admin: no admin policy at all, or one that carries no target scope
         return True
     if not granted_realms:
-        # Restricted along a dimension a realm list cannot carry, so this resolver cannot be shown to
-        # be inside the boundary. Refuse rather than widen it.
-        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+        # Restricted along a dimension a realm list cannot carry. The policy check of the endpoint matches the
+        # resolver and the login name of the user the request acts on, but a resolver the request names cannot be
+        # shown to be inside the boundary. Refuse rather than widen it.
+        if named_resolvers:
+            raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(
+                sorted(named_resolvers)[0]))
+        return True
 
-    resolver_realms = {realm for realm, realm_config in get_realms().items()
-                       if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}
-    if not resolver_realms & set(granted_realms):
-        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+    realms = get_realms()
+    for resolver in resolvers:
+        resolver_realms = {realm for realm, realm_config in realms.items()
+                           if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}
+        if not resolver_realms & set(granted_realms):
+            raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
     return True
 
@@ -1363,6 +1376,9 @@ def check_anonymous_user(request=None, action=None):
 
     This is used with password_reset
 
+    A resolver named in the request has to be one of the resolvers of the realm, otherwise the policies of the realm
+    would be checked for a user who is not in it.
+
     :param request:
     :param action:
     :return: True otherwise raises an Exception
@@ -1370,6 +1386,8 @@ def check_anonymous_user(request=None, action=None):
     ERROR = "User actions are defined, but this action is not allowed!"
     params = request.all_data
     user_obj = get_user_from_param(params)
+    if user_obj.resolver and user_obj.resolver not in get_ordered_resolvers(user_obj.realm):
+        raise PolicyError(ERROR)
 
     action_allowed = Match.user(g, scope=SCOPE.USER, action=action, user_object=user_obj).allowed()
     if not action_allowed:
@@ -1493,6 +1511,32 @@ def check_admin_base_action(request=None, action=None, anonymous=False):
     return check_base_action(request=request, action=action, anonymous=anonymous)
 
 
+def check_global_config_action(request: Request = None, action: str = None) -> bool:
+    """
+    Verify the given action like :func:`check_base_action` for an endpoint that changes a configuration object that
+    applies to all realms: a policy, a conditional-access policy, an event handler or an API client. Such an object
+    belongs to no realm, resolver or user, which are the only targets an admin policy restricts an action to, so a
+    permission restricted to named targets does not cover it, whatever realm the request names.
+
+    The action must be one of :data:`~privacyidea.lib.policies.actions.ADMIN_ACTIONS_WITHOUT_TARGET`, which the
+    rights shown in the WebUI are reduced by in the same way.
+
+    :param request: the request
+    :param action: the policy action the endpoint requires
+    :return: True
+    :raises PolicyError: if the logged-in user does not hold the action, or holds it only for individual realms,
+        resolvers or users
+    """
+    if action not in ADMIN_ACTIONS_WITHOUT_TARGET:
+        raise ValueError(f"The action {action} is not in ADMIN_ACTIONS_WITHOUT_TARGET, so the WebUI would offer it to "
+                         f"administrators this endpoint refuses.")
+    check_base_action(request=request, action=action)
+    if get_policy_visibility_scopes(action) is not None:
+        raise PolicyError(f"The action {action} changes a configuration that applies to all realms. It requires an "
+                          "administrator permission that is not restricted to individual realms, resolvers or users.")
+    return True
+
+
 def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
@@ -1571,13 +1615,20 @@ def check_token_action(request: Request = None, action: str = None):
         else:
             not_authorized_serials.append(serial)
 
+    # The view of a route with the serial in the path acts on that token, whatever else the request names.
+    path_serial = (request.view_args or {}).get("serial")
+    if path_serial is not None and path_serial not in authorized_serials:
+        if path_serial in not_found_serials:
+            raise ResourceNotFoundError(f"No token found for serials: {path_serial}")
+        raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
+
     # If any serial was not authorized, and it was the only one provided, raise an error.
     # This preserves the behavior of failing hard on single-token operations.
     if not_authorized_serials and len(all_serials) == 1 and len(not_found_serials) == 0:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed!")
 
-    # All serials were unauthorized
-    if not authorized_serials and not not_found_serials and not_authorized_serials:
+    # None of the serials was authorized, and at least one of them exists
+    if not authorized_serials and not_authorized_serials:
         raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed for any "
                           f"of the serials provided!")
 
@@ -1907,8 +1958,10 @@ def check_token_init(request=None, action=None):
     of creating one. As long as the enrollment of that token is still under way, e.g. the second request of a
     two-step or a FIDO2 enrollment, that is part of the enrollment. Once the token is in use, the same request
     gives it a new secret, which is a modification of a token somebody may already authenticate with, so it
-    additionally requires the token_rollover action and is matched against the realm of that token rather than
-    against the realm passed in the request.
+    additionally requires the token_rollover action. The existing token is matched against its owner or one of its
+    realms, like for the other token actions, rather than against the realm passed in the request; a token in a
+    pending enrollment state is matched the same way with the enrollment action. A user only continues the
+    enrollment of, or rolls over, a token they own.
 
     :param request:
     :param action:
@@ -1938,19 +1991,31 @@ def check_token_init(request=None, action=None):
 
     serial = get_optional(params, "serial")
     existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
-    if existing_token and existing_token.token.rollout_state not in RolloutState.enrollment_pending_states():
+    if not existing_token:
+        return True
+
+    enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
+    token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
+    if role == ROLE.USER:
+        # A user continues the enrollment of, or rolls over, only a token they own
         token_owner = existing_token.user
-        rollover_allowed = Match.generic(g, action=PolicyAction.TOKENROLLOVER,
-                                         user=token_owner.login if token_owner else None,
-                                         resolver=token_owner.resolver if token_owner else None,
-                                         realm=token_owner.realm if token_owner else None,
-                                         scope=role,
-                                         adminrealm=adminrealm,
-                                         adminuser=adminuser,
-                                         user_object=token_owner or None).allowed()
-        if not rollover_allowed:
-            log.info(f"The {role} is not allowed to roll over the token {serial}, which is already enrolled.")
-            raise PolicyError(ROLLOVER_ERROR.get(role))
+        if not user_is_owner(request.User, token_owner):
+            log.info(f"The user is not the owner of the token {serial}.")
+            raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
+        allowed = enrollment_pending or Match.generic(g, action=PolicyAction.TOKENROLLOVER,
+                                                      user=token_owner.login,
+                                                      resolver=token_owner.resolver,
+                                                      realm=token_owner.realm,
+                                                      scope=role,
+                                                      user_object=token_owner).allowed()
+    else:
+        # The existing token is matched like for the other token actions: by its owner or one of its realms
+        allowed = check_token_action_allowed(g, token_action, serial,
+                                             UserAttributes(role=role, adminuser=adminuser, adminrealm=adminrealm))
+    if not allowed:
+        log.info(f"The {role} is not allowed to {'enroll' if enrollment_pending else 'roll over'} the existing "
+                 f"token {serial}.")
+        raise PolicyError(ERROR.get(role) if enrollment_pending else ROLLOVER_ERROR.get(role))
     return True
 
 
@@ -2096,11 +2161,20 @@ def is_remote_user_allowed(req, write_to_audit_log=True):
     if req.remote_user:
         loginname, realm = split_user(req.remote_user)
         realm = realm or get_default_realm()
-        ruser_active = Match.generic(g, scope=SCOPE.WEBUI,
-                                     action=PolicyAction.REMOTE_USER,
-                                     user=loginname,
-                                     realm=realm).action_values(unique=False,
-                                                                write_to_audit_log=write_to_audit_log)
+        try:
+            remote_user = User(loginname, realm)
+            remote_user = remote_user if remote_user.exist() else None
+        except Exception as error:  # the user store may be unreachable, the login page still has to work
+            log.warning(f"The REMOTE_USER {req.remote_user} could not be resolved: {error}")
+            remote_user = None
+        if remote_user:
+            # Match the account that REMOTE_USER names, so that the realm, the resolver, the user and the user
+            # conditions of the policy apply to it
+            match = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.REMOTE_USER, user_object=remote_user)
+        else:
+            # A local administrator or a name that does not exist in the realm
+            match = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.REMOTE_USER, user=loginname, realm=realm)
+        ruser_active = match.action_values(unique=False, write_to_audit_log=write_to_audit_log)
         # there should be only one action value here
         if ruser_active:
             return list(ruser_active)[0]
@@ -2401,15 +2475,20 @@ def fido2_auth(request, action):
         )
         for transport in allowed_transports_policy.split()
     )
-    # Challenge texts
+    # Challenge texts: authentication policies, matched with the user like every other one
     for t in [WebAuthnTokenClass, PasskeyTokenClass]:
         action = f"{t.get_class_type().lower()}_{PolicyAction.CHALLENGETEXT}"
-        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_auth(), scope=SCOPE.AUTH)
+        challenge_text = _first_policy_value_or_default(action, t.get_default_challenge_text_auth(), scope=SCOPE.AUTH,
+                                                        user=user_object)
         request.all_data[action] = challenge_text
 
     request.all_data[FIDO2PolicyAction.ALLOWED_TRANSPORTS] = list(allowed_transports)
 
-    rp_id = get_first_policy_value(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL)
+    # The relying party of the user's realm. A passkey authentication without a user reads it without one: policies
+    # of several realms that conflict then leave the passkey challenge without a relying party, instead of failing
+    # every request that runs this prepolicy.
+    rp_id = _first_policy_value_or_default(FIDO2PolicyAction.RELYING_PARTY_ID, "", scope=SCOPE.ENROLL,
+                                           user=user_object or None)
     if rp_id:
         request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id
     else:
@@ -2447,6 +2526,18 @@ def get_first_policy_value(policy_action: str, default: str, scope: str, user: U
     if allowed_values and policy_value not in allowed_values:
         raise PolicyError(f"{policy_value} must be one of {', '.join(allowed_values)}")
     return policy_value
+
+
+def _first_policy_value_or_default(policy_action: str, default: str, scope: str, user: User | None = None) -> str:
+    """
+    Like :func:`get_first_policy_value`, but policies with conflicting values of the same priority return the default
+    and log a warning instead of failing the request.
+    """
+    try:
+        return get_first_policy_value(policy_action, default, scope=scope, user=user)
+    except PolicyError as error:
+        log.warning(f"Conflicting policies for {policy_action}, using {default!r}: {error}")
+        return default
 
 
 def get_policy_value_set(policy_action: str, scope: str, user: User | None = None) -> list:
@@ -2550,15 +2641,16 @@ def fido2_enroll(request, action):
 
     authenticator_attestation_level = get_first_policy_value(
         policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL,
-        default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL, scope=SCOPE.ENROLL, allowed_values=ATTESTATION_LEVELS)
+        default=DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL, scope=SCOPE.ENROLL, user=user_object,
+        allowed_values=ATTESTATION_LEVELS)
 
     authenticator_attestation_form = get_first_policy_value(
         policy_action=FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM, default=DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-        scope=SCOPE.ENROLL, allowed_values=ATTESTATION_FORMS)
+        scope=SCOPE.ENROLL, user=user_object, allowed_values=ATTESTATION_FORMS)
 
     user_verification_requirement = get_first_policy_value(
         policy_action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, default=DEFAULT_USER_VERIFICATION_REQUIREMENT,
-        scope=SCOPE.ENROLL, allowed_values=USER_VERIFICATION_LEVELS)
+        scope=SCOPE.ENROLL, user=user_object, allowed_values=USER_VERIFICATION_LEVELS)
 
     avoid_double_registration_policy = Match.user(g,
                                                   scope=SCOPE.ENROLL,
@@ -2568,7 +2660,8 @@ def fido2_enroll(request, action):
     # Challenge texts
     for t in [PasskeyTokenClass, WebAuthnTokenClass]:
         action = f"{t.get_class_type().lower()}_{PolicyAction.CHALLENGETEXT}"
-        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL)
+        challenge_text = get_first_policy_value(action, t.get_default_challenge_text_register(), SCOPE.ENROLL,
+                                                user=user_object)
         request.all_data[action] = challenge_text
 
     request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID] = rp_id

@@ -7,8 +7,11 @@ from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.counter import read as read_counter
+from privacyidea.lib.token import init_token, remove_token, get_one_token
+from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.user import User
+from privacyidea.models import Challenge
 from . import smtpmock
 from .base import MyApiTestCase, FakeFlaskG
 from .test_lib_events import ContainerEventTestCase
@@ -476,12 +479,13 @@ class APIEventsTestCase(MyApiTestCase):
 
     def test_06b_module_defaults(self):
         # A handler whose result the request consumes is created as aborting on error
-        with self.app.test_request_context('/event/defaults/Federation',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            self.assertTrue(res.json.get("result").get("value").get("abort_on_error"))
+        for module in ["Federation", "RequestMangler", "ResponseMangler"]:
+            with self.app.test_request_context(f'/event/defaults/{module}',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertTrue(res.status_code == 200, res)
+                self.assertTrue(res.json.get("result").get("value").get("abort_on_error"), module)
 
         # Any other handler is best-effort
         with self.app.test_request_context('/event/defaults/UserNotification',
@@ -1520,3 +1524,85 @@ class ContainerHandlerTestCase(MyApiTestCase):
 
         delete_event(r)
         delete_policy("policy")
+
+
+class ChallengeConditionTestCase(MyApiTestCase):
+    """
+    The challenge conditions of an event definition need exactly one matching challenge, and definitions without a
+    challenge condition do not depend on the challenges of the token.
+    """
+    otp_key = "3132333435363738393031323334353637383930"
+    # HOTP values of otp_key for the counters 0, 1, 2
+    otps = ["755224", "287082", "359152"]
+    serial = "HOTP_CHAL_COND"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otp_key, "pin": "test"}, user=self.user)
+        self.event_ids = []
+
+    def tearDown(self) -> None:
+        for event_id in self.event_ids:
+            delete_event(event_id)
+        remove_token(self.serial)
+        super().tearDown()
+
+    def _add_event(self, name: str, handlermodule: str, action: str, conditions: dict,
+                   options: dict | None = None) -> None:
+        self.event_ids.append(set_event(name, event=["validate_check"], handlermodule=handlermodule,
+                                        action=action, conditions=conditions, options=options or {},
+                                        position="post"))
+
+    def _validate_check(self, password: str, transaction_id: str | None = None) -> dict:
+        data = {"user": "cornelius", "realm": self.realm1, "pass": password}
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        with self.app.test_request_context("/validate/check", method="POST", data=data):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json["result"]
+
+    def test_01_challenge_conditions_not_fulfilled_without_a_challenge(self):
+        # A successful login without any challenge does not match challenge_session or challenge_expired
+        self._add_event("disable_on_declined", "Token", "disable",
+                        {"challenge_session": ChallengeSession.DECLINED})
+        self._add_event("count_expired", "Counter", "increase_counter",
+                        {"challenge_expired": "True"}, {"counter_name": "challenge_expired_count"})
+        result = self._validate_check("test" + self.otps[0])
+        self.assertTrue(result["value"])
+        self.assertTrue(get_one_token(serial=self.serial).is_active())
+        self.assertIn(read_counter("challenge_expired_count"), (None, 0))
+
+    def test_02_declined_challenge_still_matches(self):
+        # With one declined challenge for the request's transaction the definition fires
+        self._add_event("disable_on_declined", "Token", "disable",
+                        {"challenge_session": ChallengeSession.DECLINED})
+        transaction_id = "123456789012345678901"
+        Challenge(serial=self.serial, transaction_id=transaction_id, session=ChallengeSession.DECLINED).save()
+        result = self._validate_check("000000", transaction_id=transaction_id)
+        self.assertFalse(result["value"])
+        self.assertFalse(get_one_token(serial=self.serial).is_active())
+
+    def test_03_definitions_without_challenge_conditions_fire_with_several_challenges(self):
+        self._add_event("count_all", "Counter", "increase_counter", {}, {"counter_name": "plain_count"})
+        self._add_event("count_hotp", "Counter", "increase_counter", {"tokentype": "hotp"},
+                        {"counter_name": "tokentype_count"})
+        self._add_event("count_declined", "Counter", "increase_counter",
+                        {"challenge_session": ChallengeSession.DECLINED}, {"counter_name": "declined_count"})
+        observed = []
+        # Before each request one more declined challenge (with its own transaction) is open: 0, 1, 2
+        for open_challenges in (0, 1, 2):
+            if open_challenges:
+                Challenge(serial=self.serial, transaction_id=f"10000000000000000000{open_challenges}",
+                          session=ChallengeSession.DECLINED).save()
+            result = self._validate_check("test" + self.otps[open_challenges])
+            self.assertTrue(result["value"])
+            observed.append((read_counter("plain_count"), read_counter("tokentype_count"),
+                             read_counter("declined_count")))
+        # Definitions without a challenge condition fire on every request
+        self.assertEqual([1, 2, 3], [entry[0] for entry in observed])
+        self.assertEqual([1, 2, 3], [entry[1] for entry in observed])
+        # A definition with a challenge condition does not fire when two challenges match (ambiguous)
+        self.assertEqual(observed[1][2], observed[2][2])

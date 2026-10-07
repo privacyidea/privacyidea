@@ -653,8 +653,11 @@ class BaseEventHandler:
         :return: Comma separated string of token serials
         """
         # Get single token serial
-        serial = (request.all_data.get("serial") or content.get("detail", {}).get("serial") or
-                  g.audit_object.audit_data.get("serial"))
+        serial = request.all_data.get("serial") or content.get("detail", {}).get("serial")
+        # The audit entry of a failed response to the challenges of several tokens names all of them, but the
+        # response is attributed to none of them, see /validate/check
+        if not serial and not g.get("audit_serial_unattributed"):
+            serial = g.audit_object.audit_data.get("serial")
 
         return serial
 
@@ -1039,8 +1042,13 @@ class BaseEventHandler:
             serial = token_obj.get_serial() if token_obj else None
             if not serial:
                 serial = container.serial
-            if CONDITION.CHALLENGE_SESSION or CONDITION.CHALLENGE_EXPIRED in conditions:
+            if CONDITION.CHALLENGE_SESSION in conditions or CONDITION.CHALLENGE_EXPIRED in conditions:
                 chals = get_challenges(serial=serial, transaction_id=transaction_id)
+                if not chals:
+                    # A challenge condition can only be fulfilled by a challenge
+                    log.debug(f"No challenge for {serial} and transaction_id {transaction_id}: "
+                              "the challenge conditions are not fulfilled.")
+                    return False
                 if len(chals) == 1:
                     chal = chals[0]
                     if CONDITION.CHALLENGE_SESSION in conditions:

@@ -89,9 +89,11 @@ will be modified to::
 privacyIDEA determines the user of a request before the event handlers run, and the authentication endpoints
 ``/validate/check`` and ``/auth`` work with that user. Setting the parameter ``user``, ``username`` or ``realm`` does
 not change it, unless the option *reset_user* is checked. The two examples above need it to change who
-authenticates. With *reset_user*, the user is determined again from the modified parameters, the same way as for any
-request: a ``user@realm`` login name is split according to the :ref:`splitatsign` setting, the ``realm`` parameter
-takes precedence over the realm in the login name, and without any realm the default realm is used.
+authenticates. With *reset_user*, the user is determined again from the modified parameters: a ``user@realm`` login
+name is split according to the :ref:`splitatsign` setting, and a ``realm`` parameter that the client sent or that a
+request mangler definition set takes precedence over the realm in the login name. A new login name without a realm
+stays in the realm of the original request (on ``/validate/check`` and ``/auth`` this includes a
+:ref:`policy_set_realm` rewrite); elsewhere the default realm is used.
 
 :ref:`conditional_access` is checked for the user of the original request and again for the new user. Other policies
 that are checked before the event handlers run still apply to the user of the original request.

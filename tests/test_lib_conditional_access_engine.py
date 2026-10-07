@@ -157,6 +157,22 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3, per_user=2)
         self.assertEqual(3, count_distinct_users_for_ip(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
+    def test_count_distinct_users_for_ip_without_some_rows(self):
+        ip = "10.0.0.12"
+        self._seed_ip_unknown_events(ip, AuthEventType.USER_UNKNOWN, ["ghost1", "ghost2", "ghost1", "ghost3"])
+        row_ids = {}
+        for row in db.session.query(AuthenticationLog).filter_by(source_ip=ip).order_by(AuthenticationLog.id):
+            row_ids.setdefault(row.username, []).append(row.id)
+        # ghost1 is still counted through its other row
+        self.assertEqual(3, count_distinct_users_for_ip(ip, [AuthEventType.USER_UNKNOWN], 300,
+                                                        exclude_row_ids=(row_ids["ghost1"][-1],)))
+        # ghost3 has no other row
+        self.assertEqual(2, count_distinct_users_for_ip(ip, [AuthEventType.USER_UNKNOWN], 300,
+                                                        exclude_row_ids=(row_ids["ghost3"][0],)))
+        self.assertEqual(2, count_distinct_users_for_ip(ip, [AuthEventType.USER_UNKNOWN], 300,
+                                                        exclude_row_ids=(row_ids["ghost1"][-1], row_ids["ghost3"][0])))
+        self.assertEqual(3, count_distinct_users_for_ip(ip, [AuthEventType.USER_UNKNOWN], 300, exclude_row_ids=()))
+
     def test_count_distinct_users_for_ip_filters_ip_and_type(self):
         self._seed_ip_events("10.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=4)
         # A different IP and a different event type must not contribute.

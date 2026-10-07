@@ -194,9 +194,10 @@ def backup_restore(backup_file, keep_db_uri):
     not created: the database and the role connecting to it have to exist
     already, as they do on a regular privacyIDEA installation.
 
-    Everything that can refuse the restore - a missing file in the archive, a
-    database engine other than the one the dump was taken with, a missing client
-    command - is checked before the first file is extracted.
+    Everything that can refuse the restore - a missing file in the archive, an
+    archive entry that is not a regular file, directory or link, a database engine
+    other than the one the dump was taken with, a missing client command - is
+    checked before the first file is extracted.
     """
     # TODO: Also allow to specify a target directory, otherwise it will always
     #  extract to the base /
@@ -208,11 +209,15 @@ def backup_restore(backup_file, keep_db_uri):
     sqlfile = None
     dump_family = None
     enckey_contained = False
+    refused_members = []
 
     try:
         with tarfile.open(backup_file, "r:gz") as tf:
             config_member = None
             for member in tf:
+                refusal = _refused_member(member)
+                if refusal:
+                    refused_members.append(refusal)
                 member_name = member.name
                 dump_match = DUMP_FILE_PATTERN.search(member_name)
                 if re.search(r"/pi.cfg$", member_name):
@@ -234,6 +239,11 @@ def backup_restore(backup_file, keep_db_uri):
         sys.exit(2)
     if not sqlfile:
         click.secho("Missing database dump in backup file.", fg="red")
+        sys.exit(2)
+    if refused_members:
+        click.secho("The backup file contains entries that are not restored, nothing was restored:", fg="red")
+        for refusal in refused_members:
+            click.secho(f"  {refusal}", fg="red")
         sys.exit(2)
 
     config_file = pathlib.Path(config_file)
@@ -287,10 +297,7 @@ def backup_restore(backup_file, keep_db_uri):
         _missing_client(restore_client, family)
 
     with tarfile.open(backup_file, "r:gz") as tf:
-        if sys.version_info >= (3, 12):
-            tf.extractall(path="/", filter="data")
-        else:
-            tf.extractall(path="/", members=_safe_members(tf, "/"))
+        _extract_backup(tf)
     click.echo(60 * "=")
 
     if keep_db_uri and current_sqluri:
@@ -622,38 +629,44 @@ def _restore_postgresql(url: URL, sqlfile: pathlib.Path) -> None:
     os.unlink(sqlfile)
 
 
-def _safe_members(tf, dest):
-    """Fallback member filter for Python < 3.12, which lacks ``tarfile``'s
-    ``filter='data'`` option.
-
-    Skips special files (devices, fifos, character/block specials) so a
-    malicious or corrupted archive can't create them on extraction. Only
-    regular files, directories, symlinks and hardlinks are yielded.
-
-    The path-traversal and link-target checks below are no-ops when ``dest``
-    is ``/`` (every resolved absolute path is contained in ``/``), but are
-    kept so the helper stays correct if a non-root extraction target is
-    introduced later (see TODOs in ``backup_restore``).
+def _refused_member(member: tarfile.TarInfo) -> str | None:
     """
-    dest = pathlib.Path(dest).resolve()
-    for member in tf.getmembers():
-        member_path = (dest / member.name).resolve()
-        if not str(member_path).startswith(str(dest)):
-            click.secho(f"Skipping unsafe path: {member.name}", fg="yellow")
-            continue
-        if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
-            click.secho(f"Skipping special file: {member.name}", fg="yellow")
-            continue
-        if member.issym() or member.islnk():
-            link_target = pathlib.Path(member.linkname)
-            if not link_target.is_absolute():
-                link_target = (member_path.parent / link_target).resolve()
-            else:
-                link_target = link_target.resolve()
-            if not str(link_target).startswith(str(dest)):
-                click.secho(f"Skipping link escaping destination: {member.name} -> {member.linkname}", fg="yellow")
-                continue
-        yield member
+    Return why the restore refuses the given archive entry, or None if it is restored.
+
+    A backup holds the configuration, the encryption key and the database dump, i.e. regular files, the directories
+    they are in and links, e.g. the certificates a FreeRADIUS configuration links to. Any other kind of entry, like
+    a device file or a FIFO, is refused. Where tarfile provides extraction filters, the entry also has to pass the
+    "tar" filter the extraction uses, so that the extraction does not stop halfway.
+
+    :param member: The archive entry
+    :return: A description of the refusal or None
+    """
+    if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
+        return f"{member.name}: not a regular file, directory or link"
+    if hasattr(tarfile, "tar_filter"):
+        try:
+            tarfile.tar_filter(member, "/")
+        except tarfile.FilterError as error:
+            return f"{member.name}: {error}"
+    return None
+
+
+def _extract_backup(tf: tarfile.TarFile) -> None:
+    """
+    Extract the backup to the paths it was taken from.
+
+    Owners and links are restored as they were archived, like "tar -xf" run as root does: a configuration directory
+    that only exists in the backup gets back the owner the privacyIDEA service needs, and a link to an absolute path
+    is kept. The "tar" filter only clears the set-user-ID, set-group-ID and sticky bits and the write permission of
+    group and others. The "data" filter, which is the default from Python 3.14 on, would also drop the owners and
+    refuse links to absolute paths, so it is not used.
+
+    :param tf: The opened backup file, whose entries were checked with _refused_member()
+    """
+    if hasattr(tarfile, "tar_filter"):
+        tf.extractall(path="/", filter="tar")
+    else:
+        tf.extractall(path="/")
 
 
 def _quote_mysql_option(value: str) -> str:

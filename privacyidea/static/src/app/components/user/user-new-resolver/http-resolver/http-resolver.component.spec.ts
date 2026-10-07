@@ -18,6 +18,7 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockPiResponse } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
@@ -185,5 +186,115 @@ describe("HttpResolverComponent", () => {
     fixture.detectChanges();
 
     expect(component.model().responseMapping).toBe("{\"custom\":\"mapping\"}");
+  });
+
+  describe("value posted to the server", () => {
+    const REQUEST_CONFIG_KEYS = [
+      "config_authorization",
+      "config_user_auth",
+      "config_get_user_list",
+      "config_get_user_by_id",
+      "config_get_user_by_name",
+      "config_create_user",
+      "config_edit_user",
+      "config_delete_user"
+    ];
+    const basicResolver = {
+      type: "httpresolver",
+      endpoint: "https://userstore.example/users/{userid}",
+      method: "GET",
+      headers: '{"Content-Type": "application/json"}',
+      requestMapping: '{"id": "{userid}"}',
+      responseMapping: '{"username": "{username}", "userid": "{userid}"}'
+    };
+
+    function specialErrorHandlingCheckbox() {
+      return fixture.debugElement
+        .queryAll(By.css("mat-checkbox"))
+        .find((checkbox) => checkbox.nativeElement.textContent.includes("Special Error Handling"))!;
+    }
+
+    it("posts the basic fields and {} for everything else of a basic resolver", () => {
+      componentRef.setInput("data", basicResolver);
+      fixture.detectChanges();
+      const value = component.getValue();
+      expect(value["endpoint"]).toBe(basicResolver.endpoint);
+      expect(value["responseMapping"]).toBe(basicResolver.responseMapping);
+      for (const key of REQUEST_CONFIG_KEYS) {
+        expect(value[key]).toEqual({});
+      }
+      expect(value["attribute_mapping"]).toEqual({});
+      expect(value["Editable"]).toBe(false);
+      expect(value).not.toHaveProperty("base_url");
+      expect(value).not.toHaveProperty("global_headers");
+      expect(value).not.toHaveProperty("verify_tls");
+    });
+
+    it("posts {} for every request without an endpoint of an advanced resolver", () => {
+      componentRef.setInput("data", {
+        base_url: "https://userstore.example",
+        headers: '{"X-Api-Key": "abc"}',
+        config_get_user_by_id: { method: "GET", endpoint: "/users/{userid}" }
+      });
+      fixture.detectChanges();
+      const value = component.getValue();
+      expect((value["config_get_user_by_id"] as { endpoint: string }).endpoint).toBe("/users/{userid}");
+      for (const key of REQUEST_CONFIG_KEYS.filter((key) => key !== "config_get_user_by_id")) {
+        expect(value[key]).toEqual({});
+      }
+      expect(value["headers"]).toBe('{"X-Api-Key": "abc"}');
+      expect(value).not.toHaveProperty("endpoint");
+    });
+
+    it("posts the edited global headers as headers", () => {
+      componentRef.setInput("data", { base_url: "https://userstore.example", headers: '{"X-Api-Key": "old"}' });
+      fixture.detectChanges();
+      component.model.update((model) => ({ ...model, global_headers: '{"X-Api-Key": "new"}' }));
+      expect(component.getValue()["headers"]).toBe('{"X-Api-Key": "new"}');
+    });
+
+    it("posts the user groups of the groups form", () => {
+      componentRef.setInput("data", { base_url: "https://userstore.example" });
+      fixture.detectChanges();
+      component.userGroupsModel.update((groups) => ({ ...groups, active: true, endpoint: "/users/{userid}/groups" }));
+      fixture.detectChanges();
+      expect(component.getValue()["config_get_user_groups"]).toEqual(
+        expect.objectContaining({ active: true, endpoint: "/users/{userid}/groups" })
+      );
+    });
+
+    it("basic mode: Special Error Handling sets hasSpecialErrorHandler and not Editable", () => {
+      componentRef.setInput("data", basicResolver);
+      fixture.detectChanges();
+      expect(component["basicSettings"]()).toBe(true);
+
+      specialErrorHandlingCheckbox().triggerEventHandler("change", { checked: true });
+      fixture.detectChanges();
+
+      expect(component.model().hasSpecialErrorHandler).toBe(true);
+      expect(component.model().Editable).toBe(false);
+      expect(fixture.nativeElement.textContent).toContain("Response contains (JSON Format)");
+      expect(component.getValue()).toEqual(expect.objectContaining({ hasSpecialErrorHandler: true, Editable: false }));
+    });
+
+    it("basic mode: a stored hasSpecialErrorHandler is shown as checked", () => {
+      componentRef.setInput("data", {
+        ...basicResolver,
+        // The server returns the stored value as a string
+        hasSpecialErrorHandler: "True" as unknown as boolean,
+        errorResponse: '{"success": false}'
+      });
+      fixture.detectChanges();
+
+      expect(component.model().hasSpecialErrorHandler).toBe(true);
+      expect(specialErrorHandlingCheckbox().componentInstance.checked).toBe(true);
+    });
+
+    it("keeps a response mapping typed in basic mode for a new resolver", () => {
+      expect(component["basicSettings"]()).toBe(true);
+      component.model.update((model) => ({ ...model, responseMapping: '{"username": "{username}"}' }));
+      fixture.detectChanges();
+      expect(component.model().responseMapping).toBe('{"username": "{username}"}');
+    });
   });
 });

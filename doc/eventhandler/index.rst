@@ -467,6 +467,11 @@ disabling the token or increasing a counter in the tokeninfo (see :ref:`tokenhan
 This is a boolean check if the challenge has expired. Each challenge has an expiration
 date. If this exceeded this condition evaluates to *True*.
 
+Both challenge conditions need exactly one challenge of the token (or container) of the event, for the
+``transaction_id`` of the request if it has one. If there is no such challenge - e.g. after a successful answer,
+which removes the challenge, or in the PUSH ``push_wait`` mode - or more than one, the condition is not fulfilled. To
+act on a declined PUSH in ``push_wait`` mode use the condition *result_authentication* ``DECLINED``.
+
 **token_is_in_container**
 
 The action is only triggered, if the token is or is not in a container.

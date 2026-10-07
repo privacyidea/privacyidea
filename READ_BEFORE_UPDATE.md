@@ -35,7 +35,7 @@
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
   key is fetched (e.g. by `privacyidea-authorizedkeys`), so manipulations of the database entries are detected and the
   key is refused. The database migration computes the checksum for all existing SSH key tokens — **run the schema
-  update** (`pi-manage setup update_db`), otherwise existing SSH key tokens will refuse to hand out their keys. Tokens
+  update** (`privacyidea-schema-upgrade`), otherwise existing SSH key tokens will refuse to hand out their keys. Tokens
   whose encrypted key cannot be decrypted are skipped by the migration and must be re-enrolled.
 
 * **Challenge table cleared** — The database migration deletes all rows from the `challenge` table. Challenge data is
@@ -139,13 +139,20 @@
   Importing an event configuration (`pi-manage config import`) is **not** affected — it does not
   go through this endpoint.
 
+  Updating an existing definition with `POST /event` keeps the conditions and the options that the request does not
+  send, and a changed `name` is stored. Previously a request without `conditions` or without any `option.*` cleared
+  them, and a rename was ignored. A script that cleared them by leaving them out has to send an empty dictionary as
+  `conditions`, or `clear_options=True` for the options.
+
 * **A new policy action `token_rollover` is required to roll a token over.** `POST /token/init` updates a token when it
   is called with the serial of a token that already exists. While the enrollment of that token is still under way — the
   second request of a two-step or a FIDO2 enrollment, a token waiting to be verified — that is part of the enrollment
   and keeps working with the `enroll<TOKENTYPE>` action alone. Once the token is in use, the same request gives it a
   new secret, and that now additionally requires the new `token_rollover` action in the `admin` or `user` scope. The
-  policy is matched against the realm of the **existing token**, not against a realm passed in the request, so a
-  realm-restricted admin can only roll over tokens of the realms they administrate.
+  policy is matched against the **existing token** - its owner or one of its realms, as for the other token
+  actions - not against a realm passed in the request, so a realm-restricted admin can only roll over tokens of the
+  realms they administrate. The second request of an enrollment is matched against the token in the same way, with
+  the `enroll<TOKENTYPE>` action. A user can only name a token they own.
 
   **If you have any admin or user policies defined**, rolling a token over will be refused after the upgrade until you
   grant the new action — review the policies of the administrators and of the self-service users who roll tokens over
@@ -173,8 +180,10 @@
   Such a token could never authenticate, because a service sends the service ID it belongs to and only a token with
   the same one answers for it. The service ID is now looked up among the defined ones — case-insensitively, the way
   the authentication compares it — and the request is refused with a 400 if it does not exist. **If you enroll these
-  tokens through a script**, make sure the service IDs it passes are defined under *Config -> Service IDs*. Rolling
-  such a token over needs a defined service ID as well. Existing tokens keep the service ID they were enrolled with.
+  tokens through a script or a token event handler** (*additional parameters* of the *enroll* action), make sure the
+  service IDs it passes are defined under *Config -> Service IDs*. A handler that names an undefined one enrolls no
+  token and records the failure in its audit entry. Rolling such a token over needs a defined service ID as well.
+  Existing tokens keep the service ID they were enrolled with.
 
   **Review your container templates** under *Config -> Container Templates* for an application specific password
   token: a container is created without any token that could not be initialized, and the reason is only written to
@@ -208,13 +217,11 @@
   of a passkey, the TANs of a TAN token, the public id a Yubikey is recognized by, the answers of a questionnaire
   token or the public key of an SSH key token. Those change by enrolling or rolling the token over.
 
-  A `set tokeninfo` or `delete tokeninfo` **event handler** keeps working for a free-form entry and for one the token
-  type declares settable — the handler writes the latter through the same path as `POST /token/set`. It only stops
-  working if it writes an entry of the last kind, in which case it logs the refusal, and fails the whole request if
-  you enabled *Abort on error* for that binding. **Review your handlers** under *Config -> Events* if any of them
-  writes a token info key that carries a secret. The same applies to scripts that call the token info endpoints, and
-  to `pi-tokenjanitor find ... set_tokeninfo` / `remove_tokeninfo` and `privacyidea-token-janitor`, which report and
-  skip such an entry and carry on with the remaining tokens.
+  The `set tokeninfo`, `increase tokeninfo` and `delete tokeninfo` actions of the token **event handler** are not
+  affected, and neither are `pi-tokenjanitor find ... set_tokeninfo` / `remove_tokeninfo`, `privacyidea-token-janitor`
+  and `privacyidea-get-unused-tokens mark`. They are configured or run by whoever operates the server and keep writing
+  every entry, e.g. `next_pin_change` to have a user change the PIN. **Review your scripts** that call the token info
+  endpoints if any of them writes an entry a token type maintains.
 
   Two further consequences: the SSH key of an SSH key token can no longer be changed through the token info endpoint —
   re-enroll the token with the new key instead — and a repeated `POST /token/init` for an already enrolled token no
@@ -290,6 +297,14 @@
   out, as an excluded realm or user always was. Check your policies with such resolver exclusions: they now apply to
   fewer users.
 
+* **Configuration that applies to all realms needs an admin policy without realm, resolver or user** — Policies,
+  conditional-access policies, event handlers and API clients belong to no realm. Creating, changing or deleting them
+  now requires an admin policy granting the action with `realm`, `resolver` and `user` each empty or `*`. A policy
+  that grants the action only for named realms, resolvers or users no longer does, whatever realm the request names:
+  the API refuses the request, and the rights the WebUI receives at login no longer contain the action. Reading this
+  configuration is not affected. If an administrator manages this configuration with a realm-restricted admin policy,
+  grant the actions in a policy without these fields.
+
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
   metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
@@ -339,6 +354,10 @@
   placeholder instead. Sending the placeholder back in a PUT/POST request preserves the existing stored value (it is not
   overwritten). To set a new secret, supply the actual new value.
 
+  The schema update also stores the options of an SMS gateway whose name contains `PASSWORD` or `SECRET` encrypted.
+  In a multi-node setup, do not keep a node of an earlier version serving the updated database: it would send the
+  encrypted value to the SMS gateway instead of the secret.
+
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
   dashboard panels. The schema migration creates the table empty. Without a cleanup the table grows unbounded, so
   `pi-manage config metrics cleanup` has to run regularly: it deletes the rows older than 24 hours, the most the
@@ -381,16 +400,24 @@
 
       pi-tokenjanitor deprecated delete u2f
 
+  The schema update also removes the policy actions of the `u2f` token type (`enrollU2F` and the actions starting with
+  `u2f_`) from the policies and logs the names of the policies it changed. A configuration exported from an earlier
+  version that still contains them is imported with `pi-manage config import --skip-invalid`, which drops these actions;
+  without the option, the import refuses such a policy.
+
 * The `rollout_state` of fully enrolled tokens has changed. Previously, tokens that completed enrollment could have an
   empty string (`""`) as their `rollout_state`. Now, fully enrolled tokens have the `rollout_state` set to `enrolled`. A
   database migration script updates all existing tokens with an empty or `NULL` `rollout_state` to `enrolled`. If you
   have custom code or external tools that check the `rollout_state` of tokens (e.g. by comparing against an empty
   string), you need to update those checks to also handle the value `enrolled`.
 
-  **Event handlers** that use the `rollout_state` condition with an empty string (`""`) to mean
-  "fully enrolled" will silently stop matching after the migration. Update any such conditions to use `enrolled`
-  instead. You can find affected event handlers in the WebUI under *Config -> Events*
-  by reviewing handlers whose conditions reference `rollout_state`.
+  For the `rollout_state` condition of an **event handler**, an empty string (`""`) and `enrolled` are treated alike,
+  so a condition that uses either one to mean "fully enrolled" keeps matching after the migration. Previously only
+  push, WebAuthn, passkey and certificate tokens were set to `enrolled`, now every token type is. A condition
+  `rollout_state` = `enrolled` therefore also matches HOTP, TOTP, SMS, email and all other tokens now, and a condition
+  with an empty string also matches the push, WebAuthn, passkey and certificate tokens. Add a `tokentype` condition to
+  a handler that is meant for particular token types. You can find these handlers under *Config -> Events* by
+  reviewing the handlers whose conditions reference `rollout_state`.
 
 * `GET /user/` now honours the `resolver` parameter. Previously, combining `realm` and `resolver`
   ignored the resolver and returned every user of the realm, and a `resolver`-only query fanned out
@@ -427,15 +454,89 @@
   **request mangler** that overwrites request parameters (if it does not run, the endpoint uses the values the client
   sent). Review your handlers under *Config -> Events* and decide for each whether a failure should fail the request.
 
-  The schema update sets `abort_on_error` for existing **Federation** handlers, because a federation handler replaces
-  the response with the one of the remote privacyIDEA: continuing without it would answer the client with the locally
-  generated response as if the remote server had produced it. All other existing handlers keep the new best-effort
-  behaviour. If you would rather have a failed federation request answered locally, clear the option for those handlers
-  after the update.
+  The schema update sets `abort_on_error` for the existing handlers whose result the request consumes: **Federation**
+  handlers, because a federation handler replaces the response with the one of the remote privacyIDEA, and **request
+  mangler** and **response mangler** handlers. It also sets it for **Script** handlers that are configured to raise an
+  error, because that option makes the script decide whether the request may go on. New request mangler and response
+  mangler bindings start with the option enabled. All other existing handlers keep the new best-effort behaviour.
+  Clear the option after the update for a handler whose failure should not fail the request.
+
+  A handler whose conditions can not be evaluated, e.g. because the user store can not be reached, counts as failed
+  the same way. A handler that could not do what it is configured for now also records `success=False` and the reason
+  in the `info` column of its audit entry instead of being audited as successful, e.g. a notification without a
+  recipient, a script that exits with an error, a webhook that is answered with an HTTP error, or a token action with a
+  misconfigured option such as a token group that does not exist.
 
   Note that a post-event handler runs after the API function has already done its work, so aborting the request there
   reports an error for an operation that partly happened — the local token was created, only the forwarded request
   failed.
+
+* **Request mangler with *reset user*** — The option now also takes effect when the handler sets a fixed value, i.e.
+  without a match parameter. A `user@realm` login name is split according to the Split@Sign setting and the user is
+  looked up in that realm, unless the client sent a `realm` parameter or a handler set one; a login name without a
+  realm stays in the realm of the original request. Previously only the match pattern branch reset the user, and a
+  `user@realm` login name was looked up unsplit in the realm of the original request. A pre-event handler on
+  `/validate/check` that sets `realm` with *reset user* now authenticates the user in that realm, so the policies and
+  the tokens of that realm apply. Review such handlers.
+
+* **Tags of the event handlers** — The texts of the event handlers render some tags differently:
+
+    * `{ua_browser}` is the name of the client application, e.g. `privacyidea-cp`. It rendered `None` before.
+    * A tag without a value renders an empty string instead of `None`, e.g. `{serial}` for an event without a token.
+    * In *set description* and *set tokeninfo* of the token handler, `{username}` and `{userrealm}` name the owner of
+      the token and `{admin}` and `{realm}` the acting administrator, so `{realm}` is empty for a `/validate/check`
+      request. `{username}` and `{realm}` rendered `N/A` before.
+    * The webhook handler sends JSON data with *replace* enabled completely. Previously only the first key of every
+      level was sent. A stored *replace* value of `False` no longer enables the replacement. `{serial}` and
+      `{token_serial}` name the token of the event — from the request, the response or the audit entry — and are
+      empty if there is none.
+    * The value of the custom user attributes handler and the description and info values of the container handler are
+      tag-rendered as well. Write `{{` and `}}` for a literal brace.
+
+* **A RADIUS token without a RADIUS user forwards the authenticating user.** As documented, the request to the RADIUS
+  server is sent for the user who authenticates, or for the owner of the token if it is used by its serial.
+  Previously such a token sent the request with an empty user name, so it could never authenticate. Existing RADIUS
+  tokens with an empty RADIUS user start to forward the authentication requests of their users after the update.
+
+* **Token janitor `update` writes only the secrets of an export entry.** `privacyidea-token-janitor update` and
+  `pi-tokenjanitor update` store the OTP key, the OTP length, the description and the encrypted token info of
+  each entry, encrypted with the current key, and keep everything else of the token. Other values in the file,
+  e.g. hand-edited token settings, are no longer written. The PIN of mOTP tokens and PINs stored encrypted are
+  not re-encrypted; set them again after a key change.
+
+* **Local CA: file names of requests and certificates.** The local CA connector stores each certificate request
+  and certificate in `CSRDir`/`CertificateDir` under a name chosen by the server, a readable part of the subject
+  plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
+  stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
+
+* **Event conditions `challenge_session` and `challenge_expired` need a challenge.** A definition with one of them
+  fires only if exactly one challenge of the token matches the request; without a challenge it no longer fires -
+  for example not on a normal successful login, and not after a successful answer, which removes the challenge.
+  To act on a declined PUSH in `push_wait` mode use the condition `result_authentication` `DECLINED`. Event
+  definitions without these conditions fire again for tokens with several open challenges.
+
+* **Realm-scoped WebAuthn and passkey policies apply to their realm only.** The enrollment actions
+  `webauthn_user_verification_requirement`, `webauthn_authenticator_attestation_form`,
+  `webauthn_authenticator_attestation_level` and the WebAuthn and passkey challenge texts are matched with the
+  user again, as documented: a policy restricted to a realm, resolver or user no longer applies to the users of
+  other realms, who get their own policy or the default. Check such policies if they were meant for everybody.
+
+* **Users assign only tokens and containers of their own realm.** As documented for the user actions `assign` and
+  `container_assign_user`, the token or container has to be in the user's realm or in no realm. A pool of spare
+  tokens kept in a separate realm can no longer be assigned by the users themselves; put such tokens into no
+  realm or into the users' realm.
+
+* **The `remote_user` WebUI policy is matched against the account REMOTE_USER names.** Its realm, resolver and
+  user apply to that account, so a policy restricted to a resolver now admits only users of that resolver. A
+  login request whose `realm` parameter names another realm than REMOTE_USER does not use the REMOTE_USER
+  login. Check `remote_user` policies that name a resolver.
+
+* **`/validate/check` with `otponly=1` checks the token like any other authentication.** This is the *test OTP*
+  action of the WebUI. A disabled, expired or revoked token, or one past its fail counter, is refused, and a
+  wrong value increases the fail counter of the token.
+
+* **`POST /token/lost` is restricted to administrators**, like its `losttoken` policy action. A user can no longer mark
+  a token as lost, and a token event handler bound to `token_lost` only runs for a request of an administrator.
 
 * **Machine `hostname` in `GET /machine/` is always a list.** The LDAP machine resolver previously returned a single
   string (e.g. `"dc01.example.test"`); it now returns a list (e.g. `["dc01.example.test"]`), consistent with the hosts
@@ -534,11 +635,30 @@
   encrypted with the key of its instance, and importing it stores them unusable: set them again after importing such
   a file.
 
+* **`pi-manage config import`** exits with status 1 if a type of configuration in the file could not be imported
+  completely. Previously it reported the error and exited with status 0. Every policy is imported on its own, so a
+  refused policy no longer stops the import of the policies after it. `--skip-invalid` drops the policy actions that
+  do not exist (any more) instead of refusing the policy.
+
+* **`pi-manage config policy create`** for the name of an existing policy keeps the settings that are not passed, e.g.
+  a disabled policy stays disabled and its description is kept. Previously the policy was enabled again and the other
+  settings were reset.
+
+* **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
+  because tokens are still assigned to it. A realm that still has custom user attributes asks for a confirmation to
+  delete them, which ends the command with status 1 without a terminal; pass `--delete-custom-attributes` in a script.
+
 * **Token janitors** — `privacyidea-token-janitor find --orphaned-on-error` now defaults to `False`: a token whose
   user lookup fails with an error, e.g. because the LDAP server cannot be reached, no longer counts as orphaned
   unless you pass `--orphaned-on-error True`. In both token janitors `--orphaned`, `--active` and `--assigned` accept
   `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off` and reject any other value instead of reading it as false.
   `update` keeps the OTP counter, the fail counter and the token kind of each token.
+
+  **Check your scripts and cron jobs that call `privacyidea-token-janitor`**: it read `1`, `yes` and `on` as **false**
+  for `--active` and `--assigned`, now they mean true. `find --assigned 1 --orphaned 1 --action delete` used to select
+  no token and now deletes the assigned orphaned tokens. `None` is refused now. Its banner is written to stderr, so the
+  output of `--action listuser` or `--action export` no longer starts with it, and `--action export --csv` writes the
+  time step of a TOTP token as a sixth column. In the output of `pi-tokenjanitor find ... list`, `realms` is a list.
 
 * **`pi-manage audit rotate`** with watermarks now keeps exactly `--lowwatermark` entries. It used to count back from
   the id of the newest entry, which kept one entry more, and on Galera, which increments the ids by more than one,

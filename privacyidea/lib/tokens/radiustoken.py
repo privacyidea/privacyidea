@@ -169,7 +169,7 @@ class RadiusTokenClass(RemoteTokenClass):
         TokenClass.update(self, param)
         val = get_optional(param, "radius.local_checkpin") or 0
         self.write_tokeninfo("radius.local_checkpin", val)
-        val = get_required(param, "radius.user")
+        val = get_required(param, "radius.user", allow_empty=True)
         self.write_tokeninfo("radius.user", val)
         self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
@@ -451,6 +451,25 @@ class RadiusTokenClass(RemoteTokenClass):
         else:
             return -1
 
+    def _radius_user(self, options: dict) -> str:
+        """
+        The user name the RADIUS request is sent for: the RADIUS user of the token, or, if that is empty, the user who
+        is authenticating. A token that is used without naming the user, e.g. by its serial, falls back to its owner.
+
+        :param options: The options of the authentication, which carry the authenticating user
+        :return: The user name, empty if the token has neither a RADIUS user nor an owner and no user authenticates
+        """
+        radius_user = self.get_tokeninfo("radius.user")
+        if radius_user:
+            return radius_user
+        user = options.get("user")
+        login = user if isinstance(user, str) else getattr(user, "login", "")
+        if not login and self.user:
+            login = self.user.login
+        if not login:
+            log.warning(f"The RADIUS token {self.token.serial} has no RADIUS user and no user is authenticating.")
+        return login or ""
+
     @log_with(log, hide_args=[1])
     @check_token_locked
     def _check_radius(self, otpval, options=None, radius_state=None):
@@ -469,7 +488,7 @@ class RadiusTokenClass(RemoteTokenClass):
             options = {}
 
         radius_identifier = self.get_tokeninfo("radius.identifier")
-        radius_user = self.get_tokeninfo("radius.user")
+        radius_user = self._radius_user(options)
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
         system_radius_dictfile = get_from_config("radius.dictfile",
                                                  default="/etc/privacyidea/dictionary")
@@ -499,7 +518,6 @@ class RadiusTokenClass(RemoteTokenClass):
                 dictionary=system_radius_dictfile
             )
 
-        # here we also need to check for radius.user
         log.debug(f"checking OTP len:{len(otpval)!s} on radius server: "
                   f"{radius_server_object.config.server!s}, user: {radius_user!r}")
 
