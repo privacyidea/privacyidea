@@ -22,6 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { Sort } from "@angular/material/sort";
 import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { EventHandler, EventService } from "@services/event/event.service";
@@ -859,6 +860,101 @@ describe("EventComponent", () => {
 
       expect(fixture.nativeElement.querySelector('input[aria-label="Ordering"]')).toBeNull();
       expect(fixture.nativeElement.textContent).toContain("first");
+    });
+  });
+
+  describe("toolbar actions", () => {
+    const setRights = (rights: string[]) => {
+      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
+    const showRows = () => {
+      mockEventService.eventHandlers.set([
+        {
+          id: 1,
+          name: "handler",
+          event: ["token_init"],
+          handlermodule: "Token",
+          position: "post",
+          action: "",
+          conditions: {},
+          options: {},
+          active: true,
+          ordering: 1,
+          abort_on_error: false
+        }
+      ]);
+    };
+
+    it("lists the create action and the detailed-view toggle in order", () => {
+      expect(component["toolbarActions"]().map((a) => a.id)).toEqual(["create", "detailed-view"]);
+    });
+
+    it("shows create only with the eventhandling_write right", () => {
+      setRights([]);
+      expect(action("create").visible).toBe(false);
+      setRights(["eventhandling_read"]);
+      expect(action("create").visible).toBe(false);
+      setRights(["eventhandling_write"]);
+      expect(action("create").visible).toBe(true);
+    });
+
+    it("never disables create", () => {
+      setRights(["eventhandling_write"]);
+      expect(action("create").disabled).toBeFalsy();
+    });
+
+    it("navigates to the new-handler route when the create action runs", () => {
+      const router = TestBed.inject(Router);
+      const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      setRights(["eventhandling_write"]);
+      action("create").run!();
+      expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS_NEW);
+    });
+
+    it("keeps the detailed-view toggle visible whatever the rights", () => {
+      setRights([]);
+      expect(action("detailed-view").visible).toBeUndefined();
+      expect(action("detailed-view").kind).toBe("toggle");
+    });
+
+    it("reflects the detailed view in the toggle and flips it when the action runs", () => {
+      const navigate = jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+      expect(action("detailed-view").checked).toBe(false);
+      action("detailed-view").run!();
+      expect(component.detailedView()).toBe(true);
+      expect(action("detailed-view").checked).toBe(true);
+      action("detailed-view").run!();
+      expect(component.detailedView()).toBe(false);
+      expect(action("detailed-view").checked).toBe(false);
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it("renders the toolbar and wires the create button and the toggle to the handlers", () => {
+      const router = TestBed.inject(Router);
+      const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      showRows();
+      setRights(["eventhandling_read", "eventhandling_write"]);
+      const root = fixture.nativeElement as HTMLElement;
+      const create = root.querySelector<HTMLButtonElement>("app-table-actions button.action-button-primary")!;
+      expect(create).toBeTruthy();
+      create.click();
+      expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS_NEW);
+
+      const toggle = root.querySelector<HTMLButtonElement>("app-table-actions mat-slide-toggle button")!;
+      expect(toggle).toBeTruthy();
+      toggle.click();
+      expect(component.detailedView()).toBe(true);
+    });
+
+    it("renders no create button without the write right", () => {
+      showRows();
+      setRights(["eventhandling_read"]);
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector("app-table-actions")).toBeTruthy();
+      expect(root.querySelector("app-table-actions button.action-button-primary")).toBeNull();
     });
   });
 });

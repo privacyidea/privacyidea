@@ -411,9 +411,9 @@ describe("ConditionalAccessComponent", () => {
 
     it("should swap Reorder Priorities for pinned Save Order and Cancel, with the hint, in the toolbar", () => {
       const toolbarLabels = (): string[] =>
-        Array.from(fixture.nativeElement.querySelectorAll("app-table-actions > div > button:not(.overflow-more-btn)")).map(
-          (button) => (button as HTMLElement).textContent!.replace(/\s+/g, " ").trim()
-        );
+        Array.from(
+          fixture.nativeElement.querySelectorAll("app-table-actions > div > button:not(.overflow-more-btn)")
+        ).map((button) => (button as HTMLElement).textContent!.replace(/\s+/g, " ").trim());
       const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["conditional_access_policy_write"] });
       fixture.detectChanges();
@@ -712,6 +712,219 @@ describe("ConditionalAccessComponent", () => {
       ]);
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelectorAll(".ca-stale-condition-icon").length).toBe(1);
+    });
+  });
+
+  describe("toolbar actions", () => {
+    const WRITE = "conditional_access_policy_write";
+    const otherPolicy: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second", priority: 2 };
+
+    const setRights = (rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
+    const ids = () => component["toolbarActions"]().map((a) => a.id);
+    const toolbarButton = (selector: string): HTMLButtonElement =>
+      fixture.nativeElement.querySelector(`app-table-actions button${selector}`);
+
+    beforeEach(() => {
+      policyServiceMock.policies.set([samplePolicy, otherPolicy]);
+      setRights([WRITE]);
+    });
+
+    it("lists every action in toolbar order", () => {
+      expect(ids()).toEqual([
+        "create",
+        "toggle-enabled",
+        "toggle-dry-run",
+        "delete",
+        "save-order",
+        "cancel-reorder",
+        "reorder"
+      ]);
+    });
+
+    it.each(["create", "toggle-enabled", "toggle-dry-run", "delete", "reorder"])(
+      "shows %s only with the conditional_access_policy_write right",
+      (id) => {
+        setRights([]);
+        expect(action(id).visible).toBe(false);
+        setRights(["conditional_access_policy_read"]);
+        expect(action(id).visible).toBe(false);
+        setRights([WRITE]);
+        expect(action(id).visible).toBe(true);
+      }
+    );
+
+    it.each(["save-order", "cancel-reorder"])("hides %s outside the reorder mode even with the write right", (id) => {
+      expect(action(id).visible).toBe(false);
+    });
+
+    it.each(["save-order", "cancel-reorder"])("shows %s in the reorder mode only with the write right", (id) => {
+      component.startReorder();
+      expect(action(id).visible).toBe(true);
+      setRights([]);
+      expect(action(id).visible).toBe(false);
+    });
+
+    it("hides reorder while the reorder mode is active", () => {
+      component.startReorder();
+      expect(action("reorder").visible).toBe(false);
+    });
+
+    it("pins only save-order and cancel-reorder", () => {
+      expect(
+        component["toolbarActions"]()
+          .filter((a) => a.pinned)
+          .map((a) => a.id)
+      ).toEqual(["save-order", "cancel-reorder"]);
+    });
+
+    it("never disables create", () => {
+      expect(action("create").disabled).toBeFalsy();
+      component.startReorder();
+      expect(action("create").disabled).toBeFalsy();
+    });
+
+    it.each(["toggle-enabled", "toggle-dry-run", "delete"])(
+      "disables %s without a selection and enables it with one",
+      (id) => {
+        expect(action(id).disabled).toBe(true);
+        component.toggleRow(samplePolicy);
+        expect(action(id).disabled).toBe(false);
+      }
+    );
+
+    it.each(["toggle-enabled", "toggle-dry-run", "delete"])("disables %s in the reorder mode", (id) => {
+      component.toggleRow(samplePolicy);
+      expect(action(id).disabled).toBe(false);
+      component.startReorder();
+      component.policySelection.set([samplePolicy]);
+      expect(action(id).disabled).toBe(true);
+    });
+
+    it("disables reorder with fewer than two policies", () => {
+      expect(action("reorder").disabled).toBe(false);
+      policyServiceMock.policies.set([samplePolicy]);
+      expect(action("reorder").disabled).toBe(true);
+      policyServiceMock.policies.set([]);
+      expect(action("reorder").disabled).toBe(true);
+    });
+
+    it("disables save-order until the order changes and while saving", () => {
+      component.startReorder();
+      expect(action("save-order").disabled).toBe(true);
+      component.moveDown(samplePolicy);
+      expect(action("save-order").disabled).toBe(false);
+      component.reorderSaving.set(true);
+      expect(action("save-order").disabled).toBe(true);
+    });
+
+    it("disables cancel-reorder only while saving", () => {
+      component.startReorder();
+      expect(action("cancel-reorder").disabled).toBe(false);
+      component.reorderSaving.set(true);
+      expect(action("cancel-reorder").disabled).toBe(true);
+    });
+
+    it("navigates to the create page when the create action runs", () => {
+      action("create").run!();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
+    });
+
+    it("opens the (de)activate dialog when the toggle-enabled action runs", () => {
+      component.policySelection.set([samplePolicy]);
+      action("toggle-enabled").run!();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ title: expect.stringContaining("(De)activate") })
+        })
+      );
+      dialogClosed.next("deactivate");
+      dialogClosed.complete();
+      expect(policyServiceMock.disablePolicy).toHaveBeenCalledWith(1);
+      expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
+    });
+
+    it("opens the dry-run dialog when the toggle-dry-run action runs", () => {
+      component.policySelection.set([samplePolicy]);
+      action("toggle-dry-run").run!();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ title: expect.stringContaining("Dry Run") })
+        })
+      );
+      expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
+      expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
+    });
+
+    it("deletes the selected policies when the delete action runs", async () => {
+      component.policySelection.set([samplePolicy, otherPolicy]);
+      action("delete").run!();
+      await Promise.resolve();
+      expect(policyServiceMock.deleteSelectedWithConfirmDialog).toHaveBeenCalledWith([
+        { id: 1, name: "Brute Force" },
+        { id: 2, name: "Second" }
+      ]);
+    });
+
+    it("enters the reorder mode when the reorder action runs", () => {
+      action("reorder").run!();
+      expect(component.reorderMode()).toBe(true);
+    });
+
+    it("saves the new order when the save-order action runs", async () => {
+      component.startReorder();
+      component.moveDown(samplePolicy);
+      action("save-order").run!();
+      await Promise.resolve();
+      expect(policyServiceMock.reorderPolicies).toHaveBeenCalledWith([2, 1], [2, 1]);
+    });
+
+    it("leaves the reorder mode when the cancel-reorder action runs", async () => {
+      component.startReorder();
+      action("cancel-reorder").run!();
+      await Promise.resolve();
+      expect(component.reorderMode()).toBe(false);
+      expect(policyServiceMock.reorderPolicies).not.toHaveBeenCalled();
+    });
+
+    it("renders the permitted buttons and wires their clicks to the handlers", async () => {
+      const buttonLabelled = (label: string): HTMLButtonElement =>
+        Array.from(
+          fixture.nativeElement.querySelectorAll<HTMLButtonElement>("app-table-actions button:not(.overflow-more-btn)")
+        ).find((button) => button.textContent!.includes(label))!;
+
+      const create = buttonLabelled("New Conditional Access");
+      expect(create).toBeTruthy();
+      create.click();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
+
+      const del = toolbarButton(".action-button-delete-secondary");
+      expect(del.disabled).toBe(true);
+      component.toggleRow(samplePolicy);
+      fixture.detectChanges();
+      expect(del.disabled).toBe(false);
+      del.click();
+      await Promise.resolve();
+      expect(policyServiceMock.deleteSelectedWithConfirmDialog).toHaveBeenCalledWith([{ id: 1, name: "Brute Force" }]);
+
+      buttonLabelled("Reorder Priorities").click();
+      fixture.detectChanges();
+      expect(component.reorderMode()).toBe(true);
+
+      component.moveDown(samplePolicy);
+      fixture.detectChanges();
+      buttonLabelled("Save Order").click();
+      await Promise.resolve();
+      expect(policyServiceMock.reorderPolicies).toHaveBeenCalledWith([2, 1], [2, 1]);
+    });
+
+    it("renders no action button without the write right", () => {
+      setRights(["conditional_access_policy_read"]);
+      expect(fixture.nativeElement.querySelectorAll("app-table-actions button").length).toBe(0);
     });
   });
 });

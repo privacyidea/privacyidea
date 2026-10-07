@@ -311,4 +311,112 @@ describe("PeriodicTaskComponent", () => {
       expect(periodicTaskService.periodicTasksResource.reload).toHaveBeenCalled();
     });
   });
+
+  describe("toolbar actions", () => {
+    const setRights = (rights: string[]) => {
+      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+    };
+    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
+    const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, id: 1, name: "nightly-stats" };
+
+    it("lists create, delete and the detailed-view toggle in order", () => {
+      expect(component["toolbarActions"]().map((a) => a.id)).toEqual(["create", "delete", "detailed-view"]);
+    });
+
+    it("shows create and delete only with the periodictask_write right", () => {
+      setRights([]);
+      expect(action("create").visible).toBe(false);
+      expect(action("delete").visible).toBe(false);
+      setRights(["periodictask_read"]);
+      expect(action("create").visible).toBe(false);
+      expect(action("delete").visible).toBe(false);
+      setRights(["periodictask_write"]);
+      expect(action("create").visible).toBe(true);
+      expect(action("delete").visible).toBe(true);
+    });
+
+    it("keeps the detailed-view toggle visible whatever the rights", () => {
+      setRights([]);
+      expect(action("detailed-view").visible).toBeUndefined();
+      expect(action("detailed-view").kind).toBe("toggle");
+    });
+
+    it("never disables create", () => {
+      setRights(["periodictask_write"]);
+      expect(action("create").disabled).toBeFalsy();
+    });
+
+    it("disables delete without a selection and enables it with one", async () => {
+      setRights(["periodictask_write"]);
+      periodicTaskService.setPeriodicTasks([task]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(action("delete").disabled).toBe(true);
+      component.selector.selectAllRows();
+      expect(action("delete").disabled).toBe(false);
+    });
+
+    it("navigates to the new-task route when the create action runs", () => {
+      const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      action("create").run!();
+      expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW);
+    });
+
+    it("deletes the selected tasks when the delete action runs", async () => {
+      periodicTaskService.setPeriodicTasks([task]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      component.selector.selectAllRows();
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(true) });
+      action("delete").run!();
+      await fixture.whenStable();
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ items: ["nightly-stats"] }) })
+      );
+      expect(periodicTaskService.deletePeriodicTask).toHaveBeenCalledWith(1);
+    });
+
+    it("reflects the detailed view in the toggle and flips it when the action runs", () => {
+      expect(action("detailed-view").checked).toBe(false);
+      action("detailed-view").run!();
+      expect(component.detailedView()).toBe(true);
+      expect(action("detailed-view").checked).toBe(true);
+      action("detailed-view").run!();
+      expect(component.detailedView()).toBe(false);
+      expect(action("detailed-view").checked).toBe(false);
+    });
+
+    it("renders the toolbar and wires the button clicks and the toggle to the handlers", async () => {
+      setRights(["periodictask_read", "periodictask_write"]);
+      periodicTaskService.setPeriodicTasks([task]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const root = fixture.nativeElement as HTMLElement;
+      const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>("app-table-actions button"));
+      const create = buttons.find((b) => b.classList.contains("action-button-primary"))!;
+      const del = buttons.find((b) => b.classList.contains("action-button-delete-secondary"))!;
+      expect(create).toBeTruthy();
+      expect(del).toBeTruthy();
+      expect(del.disabled).toBe(true);
+
+      const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+      create.click();
+      expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW);
+
+      component.selector.selectAllRows();
+      fixture.detectChanges();
+      expect(del.disabled).toBe(false);
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(true) });
+      del.click();
+      await fixture.whenStable();
+      expect(periodicTaskService.deletePeriodicTask).toHaveBeenCalledWith(1);
+
+      const toggle = root.querySelector<HTMLButtonElement>("app-table-actions mat-slide-toggle button")!;
+      expect(toggle).toBeTruthy();
+      toggle.click();
+      expect(component.detailedView()).toBe(true);
+    });
+  });
 });

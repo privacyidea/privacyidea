@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Observable, of, throwError } from "rxjs";
 
 import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
@@ -47,6 +47,7 @@ import { RealmTableComponent } from "./realm-table.component";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { TableAction } from "@components/shared/table-actions/table-actions.component";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -63,6 +64,7 @@ class LocalMockMatDialog {
 }
 
 describe("RealmTableComponent", () => {
+  let fixture: ComponentFixture<RealmTableComponent>;
   let component: RealmTableComponent;
   let realmService: MockRealmService;
   let notificationService: MockNotificationService;
@@ -90,7 +92,7 @@ describe("RealmTableComponent", () => {
       ]
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(RealmTableComponent);
+    fixture = TestBed.createComponent(RealmTableComponent);
     component = fixture.componentInstance;
 
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
@@ -752,6 +754,65 @@ describe("RealmTableComponent", () => {
     it("ngOnDestroy clears all pending-changes registrations", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    });
+  });
+
+  describe("toolbar actions", () => {
+    const toolbarActions = (): TableAction[] =>
+      (component as unknown as { toolbarActions: () => TableAction[] }).toolbarActions();
+    const openActionsMenu = (): void => {
+      (fixture.nativeElement.querySelector("app-table-actions-trigger button") as HTMLButtonElement).click();
+      fixture.detectChanges();
+    };
+    const menuItem = (label: string): HTMLButtonElement | undefined =>
+      (Array.from(document.querySelectorAll("button[mat-menu-item]")) as HTMLButtonElement[]).find((button) =>
+        button.textContent!.includes(label)
+      );
+
+    it("offers a single Node action", () => {
+      expect(toolbarActions().map((candidate) => candidate.id)).toEqual(["node"]);
+    });
+
+    it("offers the Node action in the menu only, as the node select already fills the toolbar", () => {
+      const node = toolbarActions()[0];
+      expect(node.placement).toBe("menu");
+      expect(
+        fixture.nativeElement.querySelectorAll("app-table-actions > div > button:not(.overflow-more-btn)").length
+      ).toBe(0);
+    });
+
+    it("keeps the Node action visible and enabled for every user", () => {
+      const node = toolbarActions()[0];
+      expect(node.visible).toBeUndefined();
+      expect(node.disabled).toBeUndefined();
+    });
+
+    it("opens the node submenu instead of running a handler", () => {
+      const node = toolbarActions()[0];
+      expect(node.submenu).toBeDefined();
+      expect(node.run).toBeUndefined();
+    });
+
+    it("lists the node choices as items of the Node submenu", () => {
+      openActionsMenu();
+      menuItem("Node")!.click();
+      fixture.detectChanges();
+
+      expect(menuItem("All nodes")).toBeDefined();
+      expect(menuItem("Node 1")).toBeDefined();
+      expect(menuItem("Node 2")).toBeDefined();
+    });
+
+    it("selects the node a submenu item names", () => {
+      expect(component.selectedNode()).toBe("__all_nodes__");
+      openActionsMenu();
+      menuItem("Node")!.click();
+      fixture.detectChanges();
+
+      menuItem("Node 2")!.click();
+      fixture.detectChanges();
+
+      expect(component.selectedNode()).toBe("node-2");
     });
   });
 });

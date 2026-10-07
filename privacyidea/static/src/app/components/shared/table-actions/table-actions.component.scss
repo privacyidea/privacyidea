@@ -8,3 +8,9 @@
 .icon-badge-spaced {
   margin-right: 6px;
 }
+
+// The spacer only marks where the overflow handling puts "More" and what it keeps in place after it. Taking no
+// space of its own, it adds no gap after the last button.
+.spacer {
+  display: none;
+}
