@@ -248,6 +248,12 @@ $bar-gradient-end-dark: #464646;
   font-weight: 500;
 }
 
+// The badge on a sub-nav icon (the gear on Details) is cut out of the bar the tab sits on, so it takes the bar's own
+// tone rather than the card tone of the global badge, which is near-black on this bar in dark mode.
+.secondary-toolbar .icon-badge .icon-badge-overlay {
+  background-color: light-dark($bar-gradient-start, $bar-gradient-start-dark);
+}
+
 .spacer {
   flex: 1 1 auto;
 }
