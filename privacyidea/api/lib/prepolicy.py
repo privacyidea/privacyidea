@@ -428,8 +428,8 @@ def realm_resolver_access(request=None, action=None):
     if g.logged_in_user.get("role") != ROLE.ADMIN:
         return True
     params = request.all_data
-    realm = params.get("realm")
-    node = params.get("nodeid")
+    realm = params.get("realm").lower().strip().replace(" ", "-")
+    node = params.get("nodeid") if "nodeid" in request.view_args else None
     if node:
         entries = params.get("resolver")
         requested = {entry.get("name") for entry in entries if isinstance(entry, dict)} \
@@ -474,8 +474,8 @@ def default_realm_access(request=None, action=None):
 def policy_config_access(request=None, action=None):
     """
     Bind changing a policy to the realms the admin's policies grant for *action*, see
-    :func:`~privacyidea.lib.policies.helper.policy_change_granted`: the existing policy (``name`` or ``old_name`` in
-    the request) needs one granted realm, as a token does, and for ``POST /policy/<name>`` every realm the request
+    :func:`~privacyidea.lib.policies.helper.policy_change_granted`: the existing policy (``name`` or ``old_name`` of
+    the path) needs one granted realm, as a token does, and for ``POST /policy/<name>`` every realm the request
     sets has to be granted, as :func:`check_base_action` requires for a realm parameter. An omitted realm keeps the
     stored one, and a new policy without one applies to every realm, which only an admin without a realm restriction
     may set.
@@ -489,7 +489,7 @@ def policy_config_access(request=None, action=None):
     if granted_realms is None:
         return True
     params = request.all_data
-    name = params.get("old_name") or params.get("name")
+    name = params.get("old_name") if "old_name" in request.view_args else params.get("name")
     new_realms = None
     if request.method == "POST" and "scope" in params:
         new_realms = split_realms(params.get("realm")) if "realm" in params else None

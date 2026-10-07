@@ -7,6 +7,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, get_policies, export_policies, SCOPE
 from privacyidea.lib.realm import set_realm, get_realms, set_default_realm, get_default_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_list
+from privacyidea.models import db, NodeName
 from .base import MyApiTestCase, PWFILE
 
 REALM_A = "realm_a"
@@ -14,6 +15,7 @@ REALM_B = "realm_b"
 RESO_A = "reso_a"
 RESO_B = "reso_b"
 RESO_FREE = "reso_free"
+NODE_UUID = "5b1e0f3c-7a43-4f0e-9a2d-1c6b8e2f4d71"
 CONFIG_ACTIONS = ", ".join([PolicyAction.RESOLVERREAD, PolicyAction.RESOLVERWRITE, PolicyAction.RESOLVERDELETE,
                             PolicyAction.POLICYREAD, PolicyAction.POLICYWRITE, PolicyAction.POLICYDELETE])
 
@@ -111,6 +113,23 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": f"{RESO_A},{RESO_FREE}"})
         self.assertEqual(200, res.status_code, res.json)
 
+        # Only the path names the realm and the node: a nodeid in the body or another spelling of the realm
+        # does not hide the removal
+        res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": RESO_A, "nodeid": "node_x"})
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request(f"/realm/{REALM_A.upper()}", "POST", {"resolvers": RESO_A})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual({RESO_A, RESO_FREE}, {r["name"] for r in get_realms(REALM_A)[REALM_A]["resolver"]})
+
+        # The resolvers of a node are checked the same way
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver="")
+        db.session.add(NodeName(id=NODE_UUID, name="realm_scope_node"))
+        db.session.commit()
+        res = self._request(f"/realm/{REALM_A}/node/{NODE_UUID}", "POST", json={"resolver": [{"name": RESO_B}]})
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request(f"/realm/{REALM_A}/node/{NODE_UUID}", "POST", json={"resolver": [{"name": RESO_A}]})
+        self.assertEqual(200, res.status_code, res.json)
+
     def test_04_default_realm(self):
         self._restrict_to_realm_a()
         set_default_realm(REALM_B)
@@ -161,7 +180,20 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual(403, res.status_code, res.json)
         res = self._request("/policy/pol_b", "DELETE")
         self.assertEqual(403, res.status_code, res.json)
-        self.assertEqual(1, len(get_policies(name="pol_b", active=True)))
+        # Only the path names the policy: an own policy as old_name in the query or body does not grant another one
+        res = self._request("/policy/pol_b?old_name=pol_a", "DELETE")
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request("/policy/disable/pol_b", "POST", {"old_name": "pol_a"})
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request("/policy/pol_b", "POST", {"scope": SCOPE.AUTH, "action": auth_action, "realm": REALM_A,
+                                                      "old_name": "pol_a"})
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request("/policy/pol_b", "POST", {"scope": SCOPE.AUTH, "action": PolicyAction.OTPPIN + "=none",
+                                                      "old_name": "pol_a"})
+        self.assertEqual(403, res.status_code, res.json)
+        pol_b = get_policies(name="pol_b", active=True)[0]
+        self.assertEqual([REALM_B], pol_b["realm"])
+        self.assertEqual({PolicyAction.OTPPIN: "userstore"}, pol_b["action"])
 
         # A new policy needs a realm the admin may administer
         res = self._request("/policy/pol_new", "POST", {"scope": SCOPE.AUTH, "action": auth_action})
@@ -180,7 +212,9 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual(403, res.status_code, res.json)
         res = self._request("/policy/disable/pol_a", "POST")
         self.assertEqual(200, res.status_code, res.json)
-        res = self._request("/policy/pol_a", "DELETE")
+        res = self._request("/policy/pol_a", "PATCH", {"name": "pol_a_renamed"})
+        self.assertEqual(200, res.status_code, res.json)
+        res = self._request("/policy/pol_a_renamed", "DELETE")
         self.assertEqual(200, res.status_code, res.json)
 
         # A policy of a granted and another realm can be changed, but the realms it sets must all be granted
@@ -191,6 +225,19 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
                                                        "realm": f"{REALM_A},{REALM_B}"})
         self.assertEqual(403, res.status_code, res.json)
         res = self._request("/policy/pol_ab", "POST", {"scope": SCOPE.AUTH, "action": auth_action, "realm": REALM_A})
+        self.assertEqual(200, res.status_code, res.json)
+
+    def test_07_unrestricted_admin(self):
+        # An admin policy without a realm keeps the configuration unrestricted
+        set_policy(name="admin_all", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS)
+        set_policy(name="pol_b", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore", realm=REALM_B)
+        res = self._request("/resolver/")
+        self.assertTrue({RESO_A, RESO_B, RESO_FREE} <= set(res.json["result"]["value"]))
+        res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": f"{RESO_A},{RESO_B}"})
+        self.assertEqual(200, res.status_code, res.json)
+        res = self._request("/policy/")
+        self.assertEqual({"admin_all", "pol_b"}, {p["name"] for p in res.json["result"]["value"]})
+        res = self._request("/policy/pol_b", "DELETE")
         self.assertEqual(200, res.status_code, res.json)
 
     def test_08_import_policies(self):
@@ -212,16 +259,3 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(1, res.json["result"]["value"])
         self.assertEqual(["imp_a"], [p["name"] for p in get_policies() if p["name"].startswith("imp_")])
-
-    def test_07_unrestricted_admin(self):
-        # An admin policy without a realm keeps the configuration unrestricted
-        set_policy(name="admin_all", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS)
-        set_policy(name="pol_b", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore", realm=REALM_B)
-        res = self._request("/resolver/")
-        self.assertTrue({RESO_A, RESO_B, RESO_FREE} <= set(res.json["result"]["value"]))
-        res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": f"{RESO_A},{RESO_B}"})
-        self.assertEqual(200, res.status_code, res.json)
-        res = self._request("/policy/")
-        self.assertEqual({"admin_all", "pol_b"}, {p["name"] for p in res.json["result"]["value"]})
-        res = self._request("/policy/pol_b", "DELETE")
-        self.assertEqual(200, res.status_code, res.json)
