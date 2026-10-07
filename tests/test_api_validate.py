@@ -1828,6 +1828,45 @@ class ValidateAPITestCase(MyApiTestCase):
             remove_token(serial)
         delete_policy("test26b")
 
+    def test_26c_logging_handler_on_wrong_response_to_several_challenges(self):
+        # A wrong response to the challenges of several tokens is attributed to none of them, so the Logging handler
+        # names the tokens of the user, like the UserNotification handler
+        self.setUp_user_realms()
+        user = User("multichal", self.realm1)
+        pin = "test26c"
+        challenged_serials = ["CR5A0001", "CR5B0002"]
+        init_token({"serial": challenged_serials[0], "type": "hotp", "otpkey": self.otpkey, "pin": pin}, user)
+        init_token({"serial": challenged_serials[1], "type": "hotp", "genkey": 1, "pin": pin}, user)
+        init_token({"serial": "CR5C0003", "type": "hotp", "genkey": 1, "pin": "other26c"}, user)
+        set_policy("test26c", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
+        event_id = set_event("log_reject", event=["validate_check"], handlermodule="Logging", action="logging",
+                             conditions={"result_authentication": "REJECT"},
+                             options={"name": "pi-eventlogger-test26c", "message": "serial={serial}"})
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1, "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            transaction_id = res.json.get("detail").get("transaction_id")
+
+        with self.assertLogs("pi-eventlogger-test26c", level="INFO") as captured:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "multichal", "realm": self.realm1,
+                                                     "transaction_id": transaction_id, "pass": "111111"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                self.assertEqual("REJECT", res.json.get("result").get("authentication"))
+
+        user_serials = {token.get_serial() for token in get_tokens(user=user)}
+        self.assertEqual(1, len(captured.records), captured.output)
+        logged_serials = set(captured.records[0].getMessage().removeprefix("serial=").split(","))
+        self.assertEqual(user_serials, logged_serials)
+
+        delete_event(event_id)
+        for serial in user_serials:
+            remove_token(serial)
+        delete_policy("test26c")
+
     def test_27_multiple_challenge_response_different_pin(self):
         # Test the challenges for multiple active tokens with different PINs
         # Test issue #649
