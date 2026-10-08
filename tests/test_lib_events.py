@@ -29,7 +29,7 @@ from privacyidea.lib.counter import increase as counter_increase
 from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
-                                   enable_event)
+                                   enable_event, import_event, _stage_event)
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
@@ -252,6 +252,135 @@ class EventHandlerLibTestCase(MyTestCase):
 
         delete_event(federation_id)
         delete_event(notification_id)
+
+
+class EventHandlerImportTestCase(MyTestCase):
+
+    def tearDown(self):
+        db.session.rollback()
+        for event_handler in db.session.scalars(select(EventHandler)).all():
+            delete_event(event_handler.id)
+        super().tearDown()
+
+    @staticmethod
+    def _export_entry(name, handlermodule="UserNotification", action="sendmail", event="token_init",
+                      export_id=1000):
+        return {"id": export_id, "name": name, "event": [event], "handlermodule": handlermodule, "action": action,
+                "ordering": 0, "active": True, "position": "post", "abort_on_error": False, "condition": "",
+                "options": {"emailconfig": event}, "conditions": {}}
+
+    @staticmethod
+    def _stored_handlers():
+        return sorted((e.name, e.handlermodule, e.event) for e in db.session.scalars(select(EventHandler)).all())
+
+    def test_01_import_keeps_event_handler_with_the_exported_id(self):
+        own_id = set_event("target_own", "token_unassign", "UserNotification", "sendmail")
+        import_event([self._export_entry("imported", export_id=own_id)])
+        self.assertEqual([("imported", "UserNotification", "token_init"),
+                          ("target_own", "UserNotification", "token_unassign")], self._stored_handlers())
+
+    def test_02_import_updates_event_handler_with_the_same_name(self):
+        event_id = set_event("mail_admin", "token_assign", "UserNotification", "sendmail",
+                             options={"emailconfig": "old", "subject": "old"})
+        import_event([self._export_entry("mail_admin", export_id=event_id + 100)])
+        event_handler = db.session.scalars(select(EventHandler)).one()
+        self.assertEqual(event_id, event_handler.id)
+        self.assertEqual("token_init", event_handler.event)
+        self.assertEqual({"emailconfig": "token_init"}, {o.Key: o.Value for o in event_handler.options})
+
+    def test_03_name_used_several_times_replaces_all_event_handlers_with_this_name(self):
+        def exported():
+            return [self._export_entry("mail_admin", event="token_init", export_id=4),
+                    self._export_entry("mail_admin", event="token_delete", export_id=7)]
+        expected = [("mail_admin", "UserNotification", "token_delete"),
+                    ("mail_admin", "UserNotification", "token_init")]
+        for existing in range(3):
+            for _ in range(existing):
+                set_event("mail_admin", "token_assign", "UserNotification", "sendmail")
+            import_event(exported())
+            self.assertEqual(expected, self._stored_handlers(), existing)
+            import_event(exported())
+            self.assertEqual(expected, self._stored_handlers(), existing)
+            for event_handler in db.session.scalars(select(EventHandler)).all():
+                delete_event(event_handler.id)
+
+    def test_04_event_handlers_are_matched_by_handler_module(self):
+        set_event("provisioning", "token_init", "Container", "init")
+        set_event("provisioning", "token_init", "Script", "provision.sh")
+        set_event("provisioning", "token_revoke", "Script", "provision.sh")
+
+        import_event([self._export_entry("provisioning", handlermodule="Container", action="init",
+                                         event="token_delete")])
+        expected = [("provisioning", "Container", "token_delete"),
+                    ("provisioning", "Script", "token_init"),
+                    ("provisioning", "Script", "token_revoke")]
+        self.assertEqual(expected, self._stored_handlers())
+
+        with self.assertRaises(ConfigAdminError) as context:
+            import_event([self._export_entry("provisioning", handlermodule="Script", action="provision.sh",
+                                             event="token_delete")])
+        self.assertEqual('Skipped ambiguous event handlers: "provisioning" with handler module "Script".',
+                         context.exception.message)
+        self.assertEqual(expected, self._stored_handlers())
+
+    def test_05_ambiguous_name_is_skipped(self):
+        for event in ("token_assign", "token_revoke", "token_disable"):
+            set_event("mail_admin", event, "UserNotification", "sendmail")
+        with self.assertRaises(ConfigAdminError) as context:
+            import_event([self._export_entry("mail_admin", event="token_init"),
+                          self._export_entry("mail_admin", event="token_delete"),
+                          self._export_entry("mail_helpdesk")])
+        self.assertEqual('Skipped ambiguous event handlers: 2 "mail_admin" with handler module "UserNotification".',
+                         context.exception.message)
+        self.assertEqual([("mail_admin", "UserNotification", "token_assign"),
+                          ("mail_admin", "UserNotification", "token_disable"),
+                          ("mail_admin", "UserNotification", "token_revoke"),
+                          ("mail_helpdesk", "UserNotification", "token_init")], self._stored_handlers())
+
+    def test_06_event_handler_without_name_is_skipped(self):
+        with self.assertRaises(ConfigAdminError) as context:
+            import_event([self._export_entry(""), self._export_entry("mail_helpdesk")])
+        self.assertEqual("Skipped ambiguous event handlers: one handler without a name.", context.exception.message)
+        self.assertEqual([("mail_helpdesk", "UserNotification", "token_init")], self._stored_handlers())
+
+    def test_07_failed_import_changes_no_event_handler(self):
+        set_event("mail_admin", "token_assign", "UserNotification", "sendmail")
+        calls = []
+
+        def fail_on_second_call(**kwargs):
+            calls.append(kwargs)
+            if len(calls) == 2:
+                raise RuntimeError("database connection lost")
+            return _stage_event(**kwargs)
+
+        with patch("privacyidea.lib.event._stage_event", side_effect=fail_on_second_call):
+            with self.assertRaises(RuntimeError):
+                import_event([self._export_entry("mail_admin", event="token_init"),
+                              self._export_entry("mail_admin", event="token_delete")])
+        # The first event handler was already written, a later commit of other code must not store it
+        db.session.commit()
+        self.assertEqual([("mail_admin", "UserNotification", "token_assign")], self._stored_handlers())
+
+    def test_08_create_event_handler_after_import(self):
+        # PostgreSQL, MariaDB and Oracle take the ids from a sequence, which an explicitly inserted id does not
+        # advance. Importing the next id of the sequence would make the next new event handler fail.
+        next_id = set_event("probe", "token_init", "UserNotification", "sendmail") + 1
+        delete_event(next_id - 1)
+        import_event([self._export_entry("imported", export_id=next_id)])
+        set_event("created", "token_init", "UserNotification", "sendmail")
+        self.assertEqual([("created", "UserNotification", "token_init"),
+                          ("imported", "UserNotification", "token_init")], self._stored_handlers())
+
+    def test_09_import_only_the_given_name(self):
+        import_event([self._export_entry("mail_admin"), self._export_entry("mail_helpdesk")], name="mail_helpdesk")
+        self.assertEqual([("mail_helpdesk", "UserNotification", "token_init")], self._stored_handlers())
+
+    def test_10_other_handler_module_does_not_replace_event_handler(self):
+        set_event("enrollment_audit", "token_init", "Counter", "increase_counter",
+                  options={"counter_name": "enrollments"})
+        import_event([self._export_entry("enrollment_audit", handlermodule="Logging", action="logging")])
+        self.assertEqual([("enrollment_audit", "Counter", "token_init"),
+                          ("enrollment_audit", "Logging", "token_init")], self._stored_handlers())
 
 
 class BaseEventHandlerTestCase(MyTestCase):

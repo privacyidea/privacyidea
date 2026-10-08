@@ -14,7 +14,7 @@ from sqlalchemy import select
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.periodictask import calculate_next_timestamp, set_periodic_task, get_periodic_tasks, \
     enable_periodic_task, delete_periodic_task, set_periodic_task_last_run, get_scheduled_periodic_tasks, \
-    get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id
+    get_periodic_task_by_name, TASK_MODULES, execute_task, get_periodic_task_by_id, import_periodictask
 from privacyidea.lib.task.base import BaseTask
 from privacyidea.models import PeriodicTask, db, PeriodicTaskLastRun, PeriodicTaskOption
 from .base import MyTestCase
@@ -623,3 +623,23 @@ class BasePeriodicTaskTestCase(MyTestCase):
         with mock.patch.dict(TASK_MODULES, values={"Test": _TestTask}):
             ret = execute_task("Test", {"key": "value"})
             self.assertTrue(ret)
+
+    def test_07_import_matches_by_name(self):
+        def exported(name, interval, export_id):
+            return {"id": export_id, "name": name, "interval": interval, "nodes": ["localhost"],
+                    "taskmodule": "some.module", "ordering": 0, "options": {}, "active": True,
+                    "retry_if_failed": True, "last_update": "2026-01-01T00:00+0000", "last_runs": {}}
+
+        cleanup_id = set_periodic_task("cleanup", "0 1 * * *", ["localhost"], "some.module")
+        report_id = set_periodic_task("report", "0 2 * * *", ["localhost"], "some.module")
+        import_periodictask([exported("report", "0 3 * * *", cleanup_id),
+                             exported("statistics", "0 4 * * *", report_id + 1000)])
+
+        tasks = {task["name"]: task for task in get_periodic_tasks()}
+        self.assertEqual(["cleanup", "report", "statistics"], sorted(tasks))
+        self.assertEqual((cleanup_id, "0 1 * * *"), (tasks["cleanup"]["id"], tasks["cleanup"]["interval"]))
+        self.assertEqual((report_id, "0 3 * * *"), (tasks["report"]["id"], tasks["report"]["interval"]))
+        self.assertEqual("0 4 * * *", tasks["statistics"]["interval"])
+
+        for task in tasks.values():
+            delete_periodic_task(task["id"])

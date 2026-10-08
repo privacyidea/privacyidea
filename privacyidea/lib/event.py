@@ -23,13 +23,15 @@
 import functools
 import logging
 import traceback
+from collections import defaultdict
+from itertools import zip_longest
 
 from sqlalchemy import select, delete
 
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.conditional_access.request_context import recheck_conditional_access_gate
 from privacyidea.lib.config import get_config_object
-from privacyidea.lib.error import HandlerAbortError
+from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import (EventHandler, db, save_config_timestamp, EventHandlerOption, EventHandlerCondition,
@@ -340,6 +342,20 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
     :type abort_on_error: bool
     :return: The id of the event.
     """
+    event_id = _stage_event(name=name, event=event, handlermodule=handlermodule, action=action,
+                            conditions=conditions, ordering=ordering, options=options, id=id, active=active,
+                            position=position, abort_on_error=abort_on_error)
+    save_config_timestamp()
+    db.session.commit()
+    return event_id
+
+
+def _stage_event(name=None, event=None, handlermodule=None, action=None, conditions: dict = None,
+                 ordering=0, options: dict = None, id=None, active=True, position="post", abort_on_error=None):
+    """
+    Write the event handler like :func:`set_event`, but neither save the config timestamp nor commit, so that several
+    event handlers can be written in one transaction.
+    """
     if isinstance(event, list):
         event = ",".join(event)
 
@@ -368,9 +384,12 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
             # not silently best-effort. Once stored, only the binding decides.
             handler_object = get_handler_object(handlermodule)
             abort_on_error = handler_object.default_abort_on_error if handler_object else False
-        id = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action, ordering=ordering,
-                          id=id, active=active, position=position, abort_on_error=abort_on_error).save()
-    save_config_timestamp()
+        event_handler = EventHandler(name=name, event=event, handlermodule=handlermodule, action=action,
+                                     ordering=ordering, id=id, active=active, position=position,
+                                     abort_on_error=abort_on_error)
+        db.session.add(event_handler)
+        db.session.flush()
+        id = event_handler.id
 
     # --- Event Handler Options ---
     # Only touch the options if a value was supplied. ``None`` means "keep the
@@ -394,7 +413,6 @@ def set_event(name=None, event=None, handlermodule=None, action=None, conditions
         for k, v in conditions.items():
             db.session.add(EventHandlerCondition(eventhandler_id=id, Key=k, Value=v))
 
-    db.session.commit()
     return id
 
 
@@ -469,13 +487,53 @@ def export_event(name=None):
 
 @register_import('event')
 def import_event(data, name=None):
-    """Import policy configuration"""
+    """
+    Import event handler configuration in one transaction. Event handlers are matched by name and handler module, not
+    by the id of the exporting system. If the imported data contains at least as many event handlers with a name and
+    handler module as this system, they replace all of them. Otherwise, or if an imported event handler has no name,
+    these event handlers are not imported and reported in a ConfigAdminError after the others were imported.
+    """
     log.debug(f'Import event config: {data!s}')
+    existing = defaultdict(list)
+    for handler_id, handler_name, handlermodule in db.session.execute(
+            select(EventHandler.id, EventHandler.name, EventHandler.handlermodule).order_by(EventHandler.id)):
+        existing[(handler_name, handlermodule)].append(handler_id)
+    imported = defaultdict(list)
+    without_name = 0
     for res_data in data:
         if name and name != res_data.get('name'):
             continue
+        res_data.pop('id', None)
         # condition is apparently not used anymore
         del res_data["condition"]
-        rid = set_event(**res_data)
-        log.info('Import of event "{!s}" finished,'
-                 ' id: {!s}'.format(res_data['name'], rid))
+        if res_data.get('name'):
+            imported[(res_data['name'], res_data.get('handlermodule'))].append(res_data)
+        else:
+            without_name += 1
+
+    conflicts = []
+    writes = []
+    for (event_name, handlermodule), entries in imported.items():
+        targets = existing[(event_name, handlermodule)]
+        if len(entries) < len(targets):
+            count = f"{len(entries)} " if len(entries) > 1 else ""
+            conflicts.append(f'{count}"{event_name}" with handler module "{handlermodule}"')
+            continue
+        writes.extend(zip_longest(targets, entries))
+    if without_name:
+        conflicts.append(f'{without_name} handlers without a name' if without_name > 1
+                         else 'one handler without a name')
+
+    try:
+        for target_id, res_data in writes:
+            rid = _stage_event(id=target_id, **res_data)
+            log.info(f'Importing event "{res_data["name"]}", id: {rid}')
+        save_config_timestamp()
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        log.warning("Import of event handlers failed, all changes were rolled back.")
+        raise
+    log.info(f"Import of {len(writes)} event handlers finished.")
+    if conflicts:
+        raise ConfigAdminError(f"Skipped ambiguous event handlers: {'; '.join(conflicts)}.")
