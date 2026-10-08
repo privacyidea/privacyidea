@@ -19,12 +19,12 @@
 
 import {
   afterNextRender,
+  afterRenderEffect,
   Component,
   computed,
   DestroyRef,
   effect,
   ElementRef,
-  HostListener,
   inject,
   Injector,
   OnDestroy,
@@ -85,6 +85,8 @@ export class PolicyEditPageComponent implements OnDestroy {
 
   private readonly stickyHeader = viewChild.required<ElementRef<HTMLElement>>("stickyHeader");
   private readonly panel = viewChild<PolicyPanelEditComponent>("panel");
+  private readonly panelElement = viewChild("panel", { read: ElementRef<HTMLElement> });
+  private readonly templatePicker = viewChild("templatePicker", { read: ElementRef<HTMLElement> });
   private readonly headerSearch = viewChild(PolicyActionSearchComponent);
   private readonly searchReached = signal(false);
 
@@ -134,12 +136,25 @@ export class PolicyEditPageComponent implements OnDestroy {
       }
     });
 
+    // Layout shifts move the field without a scroll event, and a recreated action tab brings a new
+    // anchor. Observing it fires once right away, so a returning tab is checked on arrival.
+    afterRenderEffect((onCleanup) => {
+      const elements = [
+        this.stickyHeader().nativeElement,
+        this.templatePicker()?.nativeElement,
+        this.panelElement()?.nativeElement,
+        this.panel()?.searchAnchor()
+      ];
+      const observer = new ResizeObserver(() => this.updateSearchReached());
+      elements.forEach((element) => element && observer.observe(element));
+      onCleanup(() => observer.disconnect());
+    });
+
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(() => this.canSave());
     this.pendingChangesService.registerSave(() => this.onSave());
   }
 
-  @HostListener("window:resize")
   updateSearchReached(): void {
     const anchor = this.panel()?.searchAnchor();
     const headerBottom = this.stickyHeader().nativeElement.getBoundingClientRect().bottom;

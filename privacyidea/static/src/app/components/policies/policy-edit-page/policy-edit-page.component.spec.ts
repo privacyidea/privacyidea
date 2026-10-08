@@ -140,12 +140,16 @@ describe("PolicyEditPageComponent – create mode", () => {
 
   const mockPanel = (): MockPanel => fixture.debugElement.query(By.directive(MockPanel)).componentInstance;
 
-  function scrollSearchAnchorTo(anchorTop: number) {
+  function anchorAt(top: number): HTMLElement {
     const header: HTMLElement = fixture.debugElement.query(By.directive(StickyHeaderDirective)).nativeElement;
     jest.spyOn(header, "getBoundingClientRect").mockReturnValue({ bottom: 100 } as DOMRect);
     const anchor = document.createElement("div");
-    jest.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: anchorTop } as DOMRect);
-    mockPanel().searchAnchor.set(anchor);
+    jest.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top } as DOMRect);
+    return anchor;
+  }
+
+  function scrollSearchAnchorTo(anchorTop: number) {
+    mockPanel().searchAnchor.set(anchorAt(anchorTop));
 
     fixture.debugElement.query(By.directive(ScrollToTopDirective)).nativeElement.dispatchEvent(new Event("scroll"));
     fixture.detectChanges();
@@ -176,6 +180,39 @@ describe("PolicyEditPageComponent – create mode", () => {
     component.activeTab.set("conditions");
     scrollSearchAnchorTo(40);
 
+    expect(headerSearchField()).toBeNull();
+  });
+
+  function latestResizeObserver(): { observe: jest.Mock; notify: () => void } {
+    const { mock } = ResizeObserver as unknown as jest.Mock;
+    return { observe: mock.results.at(-1)!.value.observe, notify: () => mock.calls.at(-1)![0]([]) };
+  }
+
+  it("re-checks when content above shifts the field without a scroll", () => {
+    scrollSearchAnchorTo(101);
+    jest.spyOn(mockPanel().searchAnchor()!, "getBoundingClientRect").mockReturnValue({ top: 100 } as DOMRect);
+
+    latestResizeObserver().notify();
+    fixture.detectChanges();
+
+    expect(headerSearchField()).not.toBeNull();
+  });
+
+  it("re-checks a returning actions tab against its new anchor", () => {
+    scrollSearchAnchorTo(40);
+    component.activeTab.set("conditions");
+    mockPanel().searchAnchor.set(undefined);
+    fixture.detectChanges();
+
+    const anchor = anchorAt(140);
+    component.activeTab.set("actions");
+    mockPanel().searchAnchor.set(anchor);
+    fixture.detectChanges();
+    const observer = latestResizeObserver();
+    observer.notify();
+    fixture.detectChanges();
+
+    expect(observer.observe).toHaveBeenCalledWith(anchor);
     expect(headerSearchField()).toBeNull();
   });
 

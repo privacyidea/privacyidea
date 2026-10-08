@@ -67,6 +67,7 @@
 
   @if (mode() === "create") {
     <app-policy-template-picker
+      #templatePicker
       [currentPriority]="editedPolicy().priority"
       (templateApplied)="addPolicyEdit($event)"></app-policy-template-picker>
   }
