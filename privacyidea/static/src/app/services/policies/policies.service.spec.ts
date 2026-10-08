@@ -27,7 +27,13 @@ import { NotificationService } from "@services/notification/notification.service
 import { MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
-import { policyActionMatchesFilter, PolicyActionDetail, PolicyDetail, PolicyService } from "./policies.service";
+import {
+  policyActionMatchesFilter,
+  PolicyActionDetail,
+  PolicyDetail,
+  policyNameCollides,
+  PolicyService
+} from "./policies.service";
 
 describe("PolicyService", () => {
   let service: PolicyService;
@@ -79,6 +85,81 @@ describe("PolicyService", () => {
       const edited = { ...original, description: "New Description" };
       expect(service.isPolicyEdited(edited, original)).toBeTruthy();
       expect(service.isPolicyEdited(original, original)).toBeFalsy();
+    });
+  });
+  describe("isPolicyNameTaken", () => {
+    beforeEach(() => {
+      service.allPolicies.set([
+        { ...service.getEmptyPolicy(), name: "helpdesk", priority: 1 },
+        { ...service.getEmptyPolicy(), name: "Admin_Policy", priority: 2 }
+      ]);
+    });
+
+    it("should report the name of a loaded policy as taken", () => {
+      expect(service.isPolicyNameTaken("helpdesk")).toBe(true);
+      expect(service.isPolicyNameTaken("Admin_Policy")).toBe(true);
+    });
+
+    it("should not report an unused name as taken", () => {
+      expect(service.isPolicyNameTaken("another-policy")).toBe(false);
+    });
+
+    it("should not report an empty name as taken", () => {
+      expect(service.isPolicyNameTaken("")).toBe(false);
+    });
+
+    it("should not report a missing name as taken, as a policy template without a name applies one", () => {
+      expect(() => service.isPolicyNameTaken(undefined as unknown as string)).not.toThrow();
+      expect(service.isPolicyNameTaken(undefined as unknown as string)).toBe(false);
+      expect(service.isPolicyNameTaken(null as unknown as string)).toBe(false);
+    });
+
+    it("should ignore the case, as MySQL and MariaDB do when they look up a policy name", () => {
+      expect(service.isPolicyNameTaken("HELPDESK")).toBe(true);
+      expect(service.isPolicyNameTaken("admin_policy")).toBe(true);
+    });
+
+    it("should not report a name that only contains the name of a policy, or differs in whitespace", () => {
+      expect(service.isPolicyNameTaken("helpdesk ")).toBe(false);
+      expect(service.isPolicyNameTaken("help")).toBe(false);
+      expect(service.isPolicyNameTaken("helpdesk2")).toBe(false);
+    });
+
+    it("should not count the policy being edited as a collision with itself", () => {
+      expect(service.isPolicyNameTaken("helpdesk", "helpdesk")).toBe(false);
+    });
+
+    it("should not count a change of the case of the own name as a collision", () => {
+      expect(service.isPolicyNameTaken("Helpdesk", "helpdesk")).toBe(false);
+    });
+
+    it("should report the case variant of the name of another policy while one is edited", () => {
+      expect(service.isPolicyNameTaken("ADMIN_POLICY", "helpdesk")).toBe(true);
+    });
+
+    it("should never report the unchanged name of the edited policy, even when a case variant of it exists", () => {
+      service.allPolicies.set([
+        { ...service.getEmptyPolicy(), name: "Foo" },
+        { ...service.getEmptyPolicy(), name: "foo" }
+      ]);
+
+      expect(service.isPolicyNameTaken("Foo", "Foo")).toBe(false);
+      expect(service.isPolicyNameTaken("foo", "foo")).toBe(false);
+      expect(service.isPolicyNameTaken("foo", "Foo")).toBe(true);
+    });
+
+    it("should still report the name of another policy while one is edited", () => {
+      expect(service.isPolicyNameTaken("Admin_Policy", "helpdesk")).toBe(true);
+    });
+
+    it("should treat a missing own name as editing no policy", () => {
+      expect(service.isPolicyNameTaken("helpdesk", null)).toBe(true);
+      expect(service.isPolicyNameTaken("helpdesk", undefined)).toBe(true);
+    });
+
+    it("should follow the loaded policy list", () => {
+      service.allPolicies.set([]);
+      expect(service.isPolicyNameTaken("helpdesk")).toBe(false);
     });
   });
   describe("Condition Checks", () => {
@@ -189,6 +270,7 @@ describe("PolicyService", () => {
       expect(result).toBe(true);
       expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Policy created successfully"));
       expect(reloadSpy).toHaveBeenCalled();
+      expect(service.allPolicies().map((p) => p.name)).toEqual([newPolicy.name]);
     });
 
     it("should return false and show error notification when response status is false", async () => {
@@ -208,6 +290,7 @@ describe("PolicyService", () => {
       );
       expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
       expect(reloadSpy).toHaveBeenCalled();
+      expect(service.allPolicies()).toEqual([]);
     });
 
     it("should handle HTTP error responses", async () => {
@@ -237,6 +320,7 @@ describe("PolicyService", () => {
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
       expect(reloadSpy).toHaveBeenCalled();
+      expect(service.allPolicies()).toEqual([]);
     });
 
     it("should handle errors without expected error structure", async () => {
@@ -254,6 +338,110 @@ describe("PolicyService", () => {
 
       expect(result).toBe(false);
       expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Creating policy failed"));
+      expect(service.allPolicies()).toEqual([]);
+    });
+
+    it("should list the new policy while the request is pending and keep the other policies on failure", async () => {
+      const existing = { ...service.getEmptyPolicy(), name: "existing-policy" };
+      service.allPolicies.set([existing]);
+
+      const savePromise = service.saveNewPolicy(newPolicy);
+      expect(service.allPolicies().map((p) => p.name)).toEqual(
+        expect.arrayContaining(["existing-policy", newPolicy.name])
+      );
+
+      httpTestingController
+        .expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`)
+        .flush(null, { status: 500, statusText: "Server Error" });
+
+      expect(await savePromise).toBe(false);
+      expect(service.allPolicies()).toEqual([existing]);
+    });
+  });
+
+  describe("createPolicy and copyPolicy", () => {
+    const policyUrl = (name: string) => `${service.policyBaseUrl}${encodeURIComponent(name)}`;
+    const namesInList = () => service.allPolicies().map((p) => p.name);
+    let source: PolicyDetail;
+
+    beforeEach(() => {
+      source = { ...service.getEmptyPolicy(), name: "source-policy", scope: "user", action: { "test-action": true } };
+      service.allPolicies.set([source]);
+    });
+
+    it("should list a created policy while the request is pending and keep it once the server created it", async () => {
+      const promise = service.createPolicy({ ...source, name: "created-policy" });
+      expect(namesInList()).toEqual(["source-policy", "created-policy"]);
+
+      httpTestingController.expectOne(policyUrl("created-policy")).flush(MockPiResponse.fromValue({ status: true }));
+
+      await promise;
+      expect(namesInList()).toEqual(["source-policy", "created-policy"]);
+    });
+
+    it("should unlist a created policy when the request fails", async () => {
+      const promise = service.createPolicy({ ...source, name: "created-policy" });
+
+      httpTestingController
+        .expectOne(policyUrl("created-policy"))
+        .flush(null, { status: 400, statusText: "Bad Request" });
+
+      await expect(promise).rejects.toBeDefined();
+      expect(namesInList()).toEqual(["source-policy"]);
+    });
+
+    it("should unlist a created policy when the response reports a failure", async () => {
+      const promise = service.createPolicy({ ...source, name: "created-policy" });
+
+      httpTestingController
+        .expectOne(policyUrl("created-policy"))
+        .flush(MockPiResponse.fromError({ message: "not created" }));
+
+      await promise;
+      expect(namesInList()).toEqual(["source-policy"]);
+    });
+
+    it("should unlist only the failed policy when other policies were created in the meantime", async () => {
+      const failing = service.createPolicy({ ...source, name: "failing-policy" });
+      const succeeding = service.createPolicy({ ...source, name: "succeeding-policy" });
+      expect(namesInList()).toEqual(["source-policy", "failing-policy", "succeeding-policy"]);
+
+      httpTestingController
+        .expectOne(policyUrl("failing-policy"))
+        .flush(null, { status: 500, statusText: "Server Error" });
+      await expect(failing).rejects.toBeDefined();
+      httpTestingController.expectOne(policyUrl("succeeding-policy")).flush(MockPiResponse.fromValue({ status: true }));
+      await succeeding;
+
+      expect(namesInList()).toEqual(["source-policy", "succeeding-policy"]);
+    });
+
+    it("should list a copy under the new name and keep it once the server created it", async () => {
+      const promise = service.copyPolicy("source-policy", "copied-policy");
+      expect(namesInList()).toEqual(["source-policy", "copied-policy"]);
+      expect(service.isPolicyNameTaken("copied-policy")).toBe(true);
+
+      const req = httpTestingController.expectOne(policyUrl("copied-policy"));
+      expect(req.request.body).toMatchObject({ ...source, name: "copied-policy" });
+      req.flush(MockPiResponse.fromValue({ status: true }));
+
+      await promise;
+      expect(namesInList()).toEqual(["source-policy", "copied-policy"]);
+    });
+
+    it("should unlist a copy that the server could not create, so that its name is free again", async () => {
+      const promise = service.copyPolicy("source-policy", "copied name");
+
+      httpTestingController.expectOne(policyUrl("copied name")).flush(null, { status: 400, statusText: "Bad Request" });
+
+      await expect(promise).rejects.toBeDefined();
+      expect(namesInList()).toEqual(["source-policy"]);
+      expect(service.isPolicyNameTaken("copied name")).toBe(false);
+    });
+
+    it("should reject copying a policy that is not loaded", async () => {
+      await expect(service.copyPolicy("unknown-policy", "copied-policy")).rejects.toBe("Policy not found");
+      expect(namesInList()).toEqual(["source-policy"]);
     });
   });
 
@@ -630,6 +818,25 @@ describe("PolicyService", () => {
       const flat = service.allPolicyActionsFlat();
       expect(Object.keys(flat).filter((k) => k === "container_add_token").length).toBe(1);
     });
+  });
+});
+
+describe("policyNameCollides", () => {
+  const policies = [{ name: "helpdesk" }, { name: "Admin" }] as PolicyDetail[];
+
+  it("should find a collision in the given list, ignoring the case", () => {
+    expect(policyNameCollides(policies, "HelpDesk")).toBe(true);
+    expect(policyNameCollides(policies, "admin")).toBe(true);
+    expect(policyNameCollides(policies, "other")).toBe(false);
+  });
+
+  it("should skip the policy that is being edited", () => {
+    expect(policyNameCollides(policies, "Helpdesk", "helpdesk")).toBe(false);
+    expect(policyNameCollides(policies, "admin", "helpdesk")).toBe(true);
+  });
+
+  it("should find nothing in an empty list", () => {
+    expect(policyNameCollides([], "helpdesk")).toBe(false);
   });
 });
 

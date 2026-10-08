@@ -62,6 +62,9 @@ export class PolicyPanelEditComponent {
   readonly activeTab = model<PolicyTab>("actions");
   readonly actionFilter = model<string>("");
 
+  /** Set while another policy already carries the edited name. */
+  readonly nameTaken = input<boolean>(false);
+
   /** Set while the page header has taken the search field over, so the tab leaves it out. */
   readonly searchInHeader = input<boolean>(false);
 

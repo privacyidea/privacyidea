@@ -22,6 +22,7 @@ import {
   PolicyActionDetail,
   PolicyActionGroups,
   PolicyDetail,
+  policyNameCollides,
   PolicyServiceInterface,
   ScopedPolicyActions
 } from "@services/policies/policies.service";
@@ -60,6 +61,9 @@ export class MockPolicyService implements PolicyServiceInterface {
   getScopeOfAction = jest.fn().mockReturnValue(null);
   allPolicies = signal<PolicyDetail[]>([]);
   canSavePolicy = jest.fn().mockReturnValue(true);
+  isPolicyNameTaken = jest.fn((name: string, ownName?: string | null) =>
+    policyNameCollides(this.allPolicies(), name, ownName)
+  );
   getDetailsOfAction = jest.fn().mockReturnValue(null);
   copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   createPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));

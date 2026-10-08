@@ -83,9 +83,28 @@ export class PolicyEditPageComponent implements OnDestroy {
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   readonly isDirty = this.isPolicyEdited;
+
+  /**
+   * The name being saved, from the save click until the save fails or the page is left. The service lists the
+   * saved policy under that name right away, which must not count as a collision.
+   */
+  private readonly savingName = signal<string | null>(null);
+
+  /** Another policy already carries the entered name; the policy being edited does not collide with itself. */
+  readonly nameTaken = computed(() => {
+    const name = this.editedPolicy().name;
+    return (
+      name !== this.savingName() &&
+      this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
+    );
+  });
   readonly canSave = computed(
     () =>
-      this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name)
+      this.savingName() === null &&
+      this.isPolicyEdited() &&
+      !!this.editedPolicy().name?.trim() &&
+      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
+      !this.nameTaken()
   );
   readonly title = computed(() =>
     this.mode() === "edit"
@@ -136,13 +155,26 @@ export class PolicyEditPageComponent implements OnDestroy {
   }
 
   async onSave(): Promise<boolean> {
-    const success =
-      this.mode() === "create"
-        ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
-        : await this.policyService.savePolicyEdits(this.policy().name, {
-            ...this.policy(),
-            ...this.policyEdits()
-          });
+    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
+    // the policy list revealed since then is caught here, and so is a second save while one is running.
+    if (this.nameTaken() || this.savingName() !== null) {
+      return false;
+    }
+    this.savingName.set(this.editedPolicy().name);
+    let success = false;
+    try {
+      success =
+        this.mode() === "create"
+          ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
+          : await this.policyService.savePolicyEdits(this.policy().name, {
+              ...this.policy(),
+              ...this.policyEdits()
+            });
+    } finally {
+      if (!success) {
+        this.savingName.set(null);
+      }
+    }
     if (success) {
       this._navigateBack();
     }

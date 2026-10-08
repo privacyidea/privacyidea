@@ -39,5 +39,8 @@
         hyphens are allowed.</mat-error
       >
     }
+    @if (nameField().errors().some(e => e.kind === 'nameTaken')) {
+      <mat-error i18n="@@policy.nameAlreadyExists">A policy with this name already exists.</mat-error>
+    }
   </mat-form-field>
 </div>

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, input, ViewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
@@ -28,6 +29,7 @@ import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-pol
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { lastValueFrom } from "rxjs";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
@@ -47,6 +49,7 @@ export class PoliciesTableActionsComponent {
   readonly dialogService = inject(DialogService);
   readonly authService = inject(AuthService);
   readonly policyService = inject(PolicyService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly router = inject(Router);
 
   createNewPolicy(): void {
@@ -88,8 +91,24 @@ export class PoliciesTableActionsComponent {
       );
 
       if (newName) {
-        this.policyService.copyPolicy(name, newName);
+        // Not awaited: the next dialog opens while the request runs, and the copy is listed right away.
+        this.copyPolicy(name, newName);
       }
     }
+  }
+
+  private async copyPolicy(name: string, newName: string): Promise<void> {
+    let message: string;
+    try {
+      const response = await this.policyService.copyPolicy(name, newName);
+      if (response?.result?.status) return;
+      message = response?.result?.error?.message ?? "";
+    } catch (error) {
+      message = (error as HttpErrorResponse)?.error?.result?.error?.message ?? "";
+    }
+    const detail = message ? `: ${message}` : "";
+    this.notificationService.error(
+      $localize`:@@policy.copyingPolicyFailed:Copying the policy to ${newName}:NAME: failed${detail}:DETAIL:`
+    );
   }
 }

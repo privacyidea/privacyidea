@@ -44,4 +44,76 @@ describe("PolicyNameEditComponent", () => {
     component.policyName.set("New Name");
     expect(spy).toHaveBeenCalledWith("New Name");
   });
+
+  describe("name collision", () => {
+    const errorKinds = () =>
+      component
+        .nameField()
+        .errors()
+        .map((e) => e.kind);
+
+    beforeEach(() => {
+      fixture.componentRef.setInput("policyName", "helpdesk");
+      fixture.detectChanges();
+    });
+
+    it("should report no collision by default", () => {
+      expect(errorKinds()).not.toContain("nameTaken");
+      expect(component.nameField().valid()).toBe(true);
+    });
+
+    it("should flag the name as invalid while the parent reports it as taken", () => {
+      fixture.componentRef.setInput("nameTaken", true);
+      fixture.detectChanges();
+
+      expect(errorKinds()).toContain("nameTaken");
+      expect(component.nameField().valid()).toBe(false);
+    });
+
+    it("should show the error message of the collision at once, without the field having been focused", () => {
+      expect(component.nameField().touched()).toBe(false);
+
+      fixture.componentRef.setInput("nameTaken", true);
+      fixture.detectChanges();
+
+      expect(component.nameField().touched()).toBe(true);
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain(
+        "A policy with this name already exists."
+      );
+    });
+
+    it("should leave the field untouched while the name is free", () => {
+      fixture.detectChanges();
+
+      expect(component.nameField().touched()).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+    });
+
+    it("should hide the error message again once the name is free", () => {
+      fixture.componentRef.setInput("nameTaken", true);
+      fixture.detectChanges();
+      fixture.componentRef.setInput("nameTaken", false);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+    });
+
+    it("should clear the error once the parent no longer reports a collision", () => {
+      fixture.componentRef.setInput("nameTaken", true);
+      fixture.detectChanges();
+      fixture.componentRef.setInput("nameTaken", false);
+      fixture.detectChanges();
+
+      expect(errorKinds()).not.toContain("nameTaken");
+      expect(component.nameField().valid()).toBe(true);
+    });
+
+    it("should report the collision next to the other validation errors", () => {
+      fixture.componentRef.setInput("nameTaken", true);
+      component.policyName.set("invalid name");
+      fixture.detectChanges();
+
+      expect(errorKinds()).toEqual(expect.arrayContaining(["pattern", "nameTaken"]));
+    });
+  });
 });

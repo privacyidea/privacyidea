@@ -48,6 +48,7 @@ import { of } from "rxjs";
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
   policy = input.required<PolicyDetail>();
+  nameTaken = input<boolean>(false);
   activeTab = input<PolicyTab>("actions");
   actionFilter = input<string>("");
   searchInHeader = input<boolean>(false);
@@ -136,6 +137,163 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.canSave()).toBe(true);
   });
 
+  describe("name collision", () => {
+    const existingPolicy = (name: string): PolicyDetail => ({ ...policyService.getEmptyPolicy(), name });
+    const panel = () => fixture.debugElement.query(By.directive(MockPanel)).componentInstance as MockPanel;
+
+    beforeEach(() => {
+      policyService.allPolicies.set([existingPolicy("helpdesk"), existingPolicy("admin")]);
+    });
+
+    it("does not report a collision for a free name", () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      expect(component.nameTaken()).toBe(false);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("reports a collision with an existing policy and blocks saving", () => {
+      component.addPolicyEdit({ name: "helpdesk" });
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("ignores the case of the name, which MySQL and MariaDB do as well", () => {
+      component.addPolicyEdit({ name: "Helpdesk" });
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("allows saving again once the name is changed to a free one", () => {
+      component.addPolicyEdit({ name: "helpdesk" });
+      component.addPolicyEdit({ name: "helpdesk2" });
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("reports the collision for a name that was applied by a template", () => {
+      component.addPolicyEdit({ name: "admin", scope: "admin" });
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("tells the collision to the panel", () => {
+      fixture.detectChanges();
+      expect(panel().nameTaken()).toBe(false);
+
+      component.addPolicyEdit({ name: "helpdesk" });
+      fixture.detectChanges();
+
+      expect(panel().nameTaken()).toBe(true);
+    });
+
+    it("registers the collision with the pending changes, so that leaving the page cannot save it", () => {
+      const pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      component.addPolicyEdit({ name: "helpdesk" });
+      expect(pendingChangesService.registerValidChanges).toHaveBeenCalledWith(expect.any(Function));
+      const hasValidChanges = pendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;
+      expect(hasValidChanges()).toBe(false);
+    });
+
+    it("does not report a collision while the save is pending, when the service already lists the new policy", async () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      let nameTakenDuringSave: boolean | undefined;
+      jest.spyOn(policyService, "saveNewPolicy").mockImplementation(async () => {
+        policyService.allPolicies.set([...policyService.allPolicies(), existingPolicy("new-policy")]);
+        nameTakenDuringSave = component.nameTaken();
+        return true;
+      });
+
+      await component.onSave();
+
+      expect(nameTakenDuringSave).toBe(false);
+      expect(component.nameTaken()).toBe(false);
+    });
+
+    it("still reports a collision for another name that is typed while the save is pending", async () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      let finishSave: (success: boolean) => void = () => undefined;
+      jest
+        .spyOn(policyService, "saveNewPolicy")
+        .mockReturnValue(new Promise<boolean>((resolve) => (finishSave = resolve)));
+
+      const saving = component.onSave();
+      component.addPolicyEdit({ name: "helpdesk" });
+
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+
+      finishSave(false);
+      await saving;
+    });
+
+    it("checks the name again after a failed save", async () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      jest.spyOn(policyService, "saveNewPolicy").mockImplementation(async () => {
+        policyService.allPolicies.set([...policyService.allPolicies(), existingPolicy("new-policy")]);
+        return false;
+      });
+
+      await component.onSave();
+
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("checks the name again when the save throws", async () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      jest.spyOn(policyService, "saveNewPolicy").mockImplementation(async () => {
+        policyService.allPolicies.set([...policyService.allPolicies(), existingPolicy("new-policy")]);
+        throw new Error("boom");
+      });
+
+      await expect(component.onSave()).rejects.toThrow("boom");
+
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("does not save a taken name when the save is called directly", async () => {
+      component.addPolicyEdit({ name: "helpdesk" });
+
+      expect(await component.onSave()).toBe(false);
+
+      expect(policyService.saveNewPolicy).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("does not save a name that the policy list reveals as taken after the pending-changes dialog opened", async () => {
+      const pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      const hasValidChanges = pendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;
+      const saveFromDialog = pendingChangesService.registerSave.mock.calls[0][0] as () => Promise<boolean>;
+      component.addPolicyEdit({ name: "late-policy" });
+      expect(hasValidChanges()).toBe(true);
+
+      policyService.allPolicies.set([...policyService.allPolicies(), existingPolicy("late-policy")]);
+
+      expect(await saveFromDialog()).toBe(false);
+      expect(policyService.saveNewPolicy).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("disables saving while the save is pending and enables it again after a failure", async () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      let finishSave: (success: boolean) => void = () => undefined;
+      jest
+        .spyOn(policyService, "saveNewPolicy")
+        .mockReturnValue(new Promise<boolean>((resolve) => (finishSave = resolve)));
+
+      const saving = component.onSave();
+
+      expect(component.canSave()).toBe(false);
+      expect(await component.onSave()).toBe(false);
+      expect(policyService.saveNewPolicy).toHaveBeenCalledTimes(1);
+
+      finishSave(false);
+      await saving;
+
+      expect(component.canSave()).toBe(true);
+    });
+  });
+
   it("takes the action search into the header only once it is pinned", () => {
     const searchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
     const stickyHeader = fixture.debugElement
@@ -218,6 +376,99 @@ describe("PolicyEditPageComponent – edit mode", () => {
 
   it("should be in edit mode when name param is present", () => {
     expect(component.mode()).toBe("edit");
+  });
+
+  describe("renaming", () => {
+    const existingPolicy = (name: string): PolicyDetail => ({ ...policyService.getEmptyPolicy(), name });
+
+    beforeEach(() => {
+      policyService.allPolicies.set([existingPolicy("TestPolicy"), existingPolicy("helpdesk")]);
+      fixture.detectChanges();
+    });
+
+    it("loads the policy that is edited", () => {
+      expect(component.policy().name).toBe("TestPolicy");
+    });
+
+    it("does not count the policy being edited as a collision with itself", () => {
+      component.addPolicyEdit({ description: "changed" });
+      expect(component.nameTaken()).toBe(false);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("does not report a collision when the name is typed back to the original one", () => {
+      component.addPolicyEdit({ name: "TestPolicy2" });
+      component.addPolicyEdit({ name: "TestPolicy" });
+      expect(component.nameTaken()).toBe(false);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("allows renaming to a free name", () => {
+      component.addPolicyEdit({ name: "renamed" });
+      expect(component.nameTaken()).toBe(false);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("reports a collision when renaming to the name of another policy and blocks saving", () => {
+      component.addPolicyEdit({ name: "helpdesk" });
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("registers the colliding rename as invalid with the pending changes, so that leaving the page cannot save it", () => {
+      component.addPolicyEdit({ name: "helpdesk", description: "changed" });
+      const pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      const hasValidChanges = pendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;
+      expect(hasValidChanges()).toBe(false);
+    });
+
+    it("does not report a collision while the save is pending, when the service already lists the renamed policy", async () => {
+      component.addPolicyEdit({ name: "renamed" });
+      let nameTakenDuringSave: boolean | undefined;
+      jest.spyOn(policyService, "savePolicyEdits").mockImplementation(async () => {
+        policyService.allPolicies.set([existingPolicy("renamed"), existingPolicy("helpdesk")]);
+        nameTakenDuringSave = component.nameTaken();
+        return true;
+      });
+
+      await component.onSave();
+
+      expect(nameTakenDuringSave).toBe(false);
+      expect(component.nameTaken()).toBe(false);
+    });
+
+    it("allows changing the case of the own name", () => {
+      component.addPolicyEdit({ name: "testpolicy" });
+      expect(component.nameTaken()).toBe(false);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("reports a collision when renaming to a case variant of the name of another policy", () => {
+      component.addPolicyEdit({ name: "HelpDesk" });
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("checks the name again after a failed save", async () => {
+      component.addPolicyEdit({ name: "renamed" });
+      jest.spyOn(policyService, "savePolicyEdits").mockImplementation(async () => {
+        policyService.allPolicies.set([...policyService.allPolicies(), existingPolicy("renamed")]);
+        return false;
+      });
+
+      await component.onSave();
+
+      expect(component.nameTaken()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("does not send a rename to the name of another policy when the save is called directly", async () => {
+      component.addPolicyEdit({ name: "helpdesk", description: "changed" });
+
+      expect(await component.onSave()).toBe(false);
+
+      expect(policyService.savePolicyEdits).not.toHaveBeenCalled();
+    });
   });
 
   it("savePolicy calls savePolicyEdits in edit mode and navigates back", async () => {
