@@ -37,6 +37,7 @@ from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, set_smsgateway, 
 from privacyidea.lib.token import (get_tokens, remove_token, init_token, import_tokens,
                                    create_challenge)
 from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import PushMode, PushCapability
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               DEFAULT_CHALLENGE_TEXT, PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
@@ -309,6 +310,35 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         token = self._create_push_token()
         remove_token(token.get_serial())
+
+    def test_02a1_enrollment_credential_is_compared_in_constant_time(self):
+        # The stored and the given enrollment credential are compared in constant time.
+        serial = "PIPU_CREDENTIAL"
+        # Step 1 of the enrollment leaves the token in clientwait with a stored credential
+        token = init_token({"type": "push", "genkey": 1, "serial": serial})
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        stored = token.get_tokeninfo("enrollment_credential")
+        given = "d" * len(stored)
+        step_2 = {"serial": serial, "fbtoken": "firebaseT",
+                  "pubkey": self.smartphone_public_key_pem_urlsafe}
+
+        with recorded_compare_digest() as spy:
+            with self.assertRaisesRegex(ParameterError, "Invalid enrollment credential"):
+                token.update({**step_2, "enrollment_credential": given})
+        self.assertTrue(spy.saw(stored, given))
+
+        # A token without a stored credential cannot be finalized either
+        token.remove_tokeninfo("enrollment_credential")
+        with self.assertRaisesRegex(ParameterError, "Invalid enrollment credential"):
+            token.update({**step_2, "enrollment_credential": given})
+
+        # The right credential still finalizes the enrollment and uses the credential up
+        token.write_tokeninfo("enrollment_credential", stored)
+        token.update({**step_2, "enrollment_credential": stored})
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertIsNone(token.get_tokeninfo("enrollment_credential"))
+
+        remove_token(serial)
 
     @responses.activate
     def test_02b_send_push_via_http_gateway(self):
