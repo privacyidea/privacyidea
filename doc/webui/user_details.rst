@@ -69,16 +69,18 @@ The audit log and the authentication log of the user are opened with the icon
 buttons next to the user name and realm at the top of the page.
 
 The icon button *Show audit log of user* (a receipt) takes you to the
-:ref:`audit` log filtered on the login name of this user. The filter matches
-every entry whose user contains this name, in every realm: for the user ``ann``
-it also lists the entries of ``ann`` in other realms and of ``joanna``. For an
-exact match in one realm, change the filter to ``user: =ann realm: =<realm>``.
+:ref:`audit` log filtered on the login name and the realm of this user. The
+audit log searches anywhere in a column by default, so both values are asked
+for in full with the ``=`` prefix: ``user: =ann realm: =<realm>``. The log
+therefore lists only the entries of this user in this realm, and not those of
+``ann`` in another realm or of ``joanna``. Remove a ``=`` to widen the filter
+to a partial match again.
 
 The icon button *Show authentication log of user* (a list with a lock) takes
-you to the :ref:`authentication_log` filtered on this user. Unlike the audit log
-filter, it matches the login name and the realm exactly, so it lists only the
-authentication attempts of this user in this realm. The button is only shown to
-administrators with the admin policy action ``authentication_log_read``.
+you to the :ref:`authentication_log` filtered on the login name and the realm
+of this user as well. The authentication log matches every filter exactly, so
+no ``=`` prefix is needed there. The button is only shown to administrators
+with the admin policy action ``authentication_log_read``.
 
 Edit user
 .........
