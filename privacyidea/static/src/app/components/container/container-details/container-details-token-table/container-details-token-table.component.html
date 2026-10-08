@@ -190,7 +190,7 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
-            class="col-width-s"
+            class="col-actions"
             mat-header-cell>
             <div
               class="flex just-center"
@@ -200,7 +200,7 @@
           </th>
           <td
             *matCellDef="let element"
-            class="col-width-s"
+            class="col-actions"
             mat-cell>
             <div class="flex-row just-center">
               @if (element.status !== "missing") {
