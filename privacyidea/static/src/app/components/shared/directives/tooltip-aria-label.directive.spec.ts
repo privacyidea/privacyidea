@@ -64,20 +64,91 @@ import { TooltipAriaLabelDirective } from "./tooltip-aria-label.directive";
       matTooltip=""
       ><mat-icon aria-hidden="true">x</mat-icon></button
     >
+    <button
+      id="bound"
+      [attr.aria-label]="boundLabel()"
+      matTooltip="Tip"
+      ><mat-icon aria-hidden="true">x</mat-icon></button
+    >
+    <button
+      id="boundby"
+      [attr.aria-labelledby]="boundLabelledBy()"
+      matTooltip="Tip"
+      ><mat-icon aria-hidden="true">x</mat-icon></button
+    >
+    <button
+      id="conditional"
+      matTooltip="Create"
+      ><mat-icon aria-hidden="true">add</mat-icon>
+      @if (showText()) {
+        <span>Create item</span>
+      }
+    </button>
   `
 })
 class HostComponent {
   tip = signal("Refresh Resources");
+  boundLabel = signal<string | null>(null);
+  boundLabelledBy = signal<string | null>(null);
+  showText = signal(false);
+}
+
+// jest.setup.ts replaces MutationObserver by an inert mock. This stand-in keeps the callback and the observed
+// target, so a spec delivers the "DOM changed" notification itself, after it has changed the DOM.
+class RecordingMutationObserver {
+  static instances: RecordingMutationObserver[] = [];
+  target?: Node;
+  options?: MutationObserverInit;
+  disconnected = false;
+
+  constructor(private readonly callback: () => void) {
+    RecordingMutationObserver.instances.push(this);
+  }
+
+  observe(target: Node, options: MutationObserverInit): void {
+    this.target = target;
+    this.options = options;
+  }
+
+  disconnect(): void {
+    this.disconnected = true;
+  }
+
+  takeRecords(): MutationRecord[] {
+    return [];
+  }
+
+  notify(): void {
+    if (!this.disconnected) {
+      this.callback();
+    }
+  }
 }
 
 describe("TooltipAriaLabelDirective", () => {
+  const mockedMutationObserver = globalThis.MutationObserver;
   let fixture: ComponentFixture<HostComponent>;
   const el = (id: string): HTMLElement => fixture.debugElement.query(By.css("#" + id)).nativeElement;
 
   beforeEach(() => {
+    RecordingMutationObserver.instances = [];
+    globalThis.MutationObserver = RecordingMutationObserver as unknown as typeof MutationObserver;
     fixture = TestBed.createComponent(HostComponent);
     fixture.detectChanges();
   });
+
+  afterEach(() => {
+    globalThis.MutationObserver = mockedMutationObserver;
+  });
+
+  const observerOf = (id: string): RecordingMutationObserver =>
+    RecordingMutationObserver.instances.find((observer) => observer.target === el(id))!;
+
+  // Renders pending changes, then delivers the observers' notifications as the browser would.
+  const settle = (): void => {
+    fixture.detectChanges();
+    RecordingMutationObserver.instances.forEach((observer) => observer.notify());
+  };
 
   it("names an icon-only button with its tooltip", () => {
     expect(el("icon").getAttribute("aria-label")).toBe("Refresh Resources");
@@ -112,5 +183,94 @@ describe("TooltipAriaLabelDirective", () => {
 
   it("sets no label for an empty tooltip", () => {
     expect(el("empty").hasAttribute("aria-label")).toBe(false);
+  });
+
+  it("names an element whose own aria-label binding is still null", () => {
+    expect(el("bound").getAttribute("aria-label")).toBe("Tip");
+  });
+
+  it("steps back when another writer sets an aria-label later", () => {
+    fixture.componentInstance.boundLabel.set("Own name");
+    settle();
+
+    expect(el("bound").getAttribute("aria-label")).toBe("Own name");
+  });
+
+  it("does not overwrite a later aria-label when the tooltip changes", () => {
+    const button = el("icon");
+    button.setAttribute("aria-label", "Written elsewhere");
+    settle();
+    fixture.componentInstance.tip.set("Reload");
+    settle();
+
+    expect(button.getAttribute("aria-label")).toBe("Written elsewhere");
+  });
+
+  it("names the element again when the other writer removes its aria-label", () => {
+    fixture.componentInstance.boundLabel.set("Own name");
+    settle();
+    fixture.componentInstance.boundLabel.set(null);
+    settle();
+
+    expect(el("bound").getAttribute("aria-label")).toBe("Tip");
+  });
+
+  it("steps back when an aria-labelledby appears later and keeps it free of its own label", () => {
+    fixture.componentInstance.boundLabelledBy.set("other");
+    settle();
+
+    expect(el("boundby").hasAttribute("aria-label")).toBe(false);
+  });
+
+  it("removes its label when visible text appears later", () => {
+    expect(el("conditional").getAttribute("aria-label")).toBe("Create");
+
+    fixture.componentInstance.showText.set(true);
+    settle();
+
+    expect(el("conditional").hasAttribute("aria-label")).toBe(false);
+  });
+
+  it("applies its label again when the visible text disappears", () => {
+    fixture.componentInstance.showText.set(true);
+    settle();
+    fixture.componentInstance.showText.set(false);
+    settle();
+
+    expect(el("conditional").getAttribute("aria-label")).toBe("Create");
+  });
+
+  it("removes its label when a hidden child becomes readable", () => {
+    const icon = el("icon").querySelector("mat-icon") as HTMLElement;
+    icon.setAttribute("aria-hidden", "false");
+    settle();
+
+    expect(el("icon").hasAttribute("aria-label")).toBe(false);
+  });
+
+  it("does not remove an aria-label it did not write when visible text appears", () => {
+    fixture.componentInstance.boundLabel.set("Own name");
+    settle();
+    el("bound").appendChild(document.createTextNode("Visible"));
+    settle();
+
+    expect(el("bound").getAttribute("aria-label")).toBe("Own name");
+  });
+
+  it("observes its host for text, aria-hidden and naming attributes", () => {
+    expect(observerOf("icon").options).toEqual({
+      childList: true,
+      characterData: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["aria-label", "aria-labelledby", "aria-hidden"]
+    });
+  });
+
+  it("disconnects its observer when destroyed", () => {
+    const observer = observerOf("icon");
+    fixture.destroy();
+
+    expect(observer.disconnected).toBe(true);
   });
 });
