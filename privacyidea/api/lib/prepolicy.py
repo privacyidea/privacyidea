@@ -500,10 +500,11 @@ def policy_config_access(request=None, action=None):
         return True
     params = request.all_data
     name = params.get("old_name") if "old_name" in request.view_args else params.get("name")
+    sets_policy = "scope" in params
     new_realms = None
-    if request.method == "POST" and "scope" in params:
-        new_realms = split_realms(params.get("realm")) if "realm" in params else None
-    if not policy_change_granted(name, new_realms, granted_realms, creates="scope" in params):
+    if request.method == "POST" and sets_policy and params.get("realm") is not None:
+        new_realms = split_realms(params.get("realm"))
+    if not policy_change_granted(name, new_realms, granted_realms, creates=sets_policy):
         raise PolicyError(_("You are not allowed to administer the policy {0!s}.").format(name))
     return True
 

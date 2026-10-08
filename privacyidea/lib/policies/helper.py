@@ -303,7 +303,7 @@ def admin_granted_resolvers(action: str) -> set[str] | None:
         if _policy_usernames(policy.get("user"), case_insensitive=False) != ([], []):
             continue
         realm_names = policy_realm_names(policy.get("realm"))
-        resolver_names = _policy_field_names(policy.get("resolver"), lambda: get_resolver_list().keys())
+        resolver_names = _policy_field_names(policy.get("resolver"), get_resolver_list)
         if realm_names is None and resolver_names is None:
             return None
         if realm_names is None:

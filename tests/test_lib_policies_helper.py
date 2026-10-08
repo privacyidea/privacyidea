@@ -150,6 +150,10 @@ class RealmsGrantedTestCase(MyTestCase):
         # Excluding every realm that is not granted still covers the realms created later
         self.assertFalse(realms_granted(["*", f"!{self.realm2}", f"!{self.realm3}"], [self.realm1], every_realm=True))
         self.assertFalse(realms_granted([f"!{self.realm3}"], [self.realm1]))
+        # A field of exclusions only applies to requests without a realm, so no grant of realms covers it
+        all_realms = [self.realm1, self.realm2, self.realm3]
+        for exclusions in ([f"!{self.realm3}"], [f"!{self.realm1}"], [f"!{self.realm2}", f"-{self.realm3}"]):
+            self.assertFalse(realms_granted(exclusions, all_realms, every_realm=True), exclusions)
 
 
 class PolicyChangeGrantedTestCase(MyTestCase):
@@ -162,11 +166,14 @@ class PolicyChangeGrantedTestCase(MyTestCase):
         set_policy("pol_realm3", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore", realm=self.realm3)
         set_policy("pol_realm13", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore",
                    realm=f"{self.realm1},{self.realm3}")
+        set_policy("pol_not_realm3", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore",
+                   realm=f"!{self.realm3}")
 
     def tearDown(self) -> None:
         delete_policy("pol_realm1")
         delete_policy("pol_realm3")
         delete_policy("pol_realm13")
+        delete_policy("pol_not_realm3")
         super().tearDown()
 
     def test_policy_change_granted(self):
@@ -179,10 +186,14 @@ class PolicyChangeGrantedTestCase(MyTestCase):
         self.assertFalse(policy_change_granted("pol_realm13", None, granted))
         self.assertFalse(policy_change_granted("pol_realm13", [self.realm1], granted))
         self.assertTrue(policy_change_granted("pol_realm13", None, [self.realm1, self.realm3]))
+        self.assertFalse(policy_change_granted("pol_not_realm3", None, [self.realm1, self.realm2]))
+        self.assertFalse(policy_change_granted("pol_not_realm3", [self.realm1], granted))
+        self.assertTrue(policy_change_granted("pol_not_realm3", None, None))
         # Every realm the change sets has to be granted
         self.assertTrue(policy_change_granted("pol_realm1", [self.realm1], granted))
         self.assertFalse(policy_change_granted("pol_realm1", [self.realm1, self.realm3], granted))
         self.assertFalse(policy_change_granted("pol_realm1", [], granted))
+        self.assertFalse(policy_change_granted("pol_new", [f"!{self.realm3}"], granted, creates=True))
         # A new policy without realms applies to every realm
         self.assertFalse(policy_change_granted("pol_new", None, granted, creates=True))
         self.assertTrue(policy_change_granted("pol_new", [self.realm1], granted, creates=True))

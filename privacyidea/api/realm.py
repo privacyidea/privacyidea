@@ -215,8 +215,14 @@ def get_realms_api():
 
     .. versionchanged:: 3.10 The response contains the node and priority of the resolver
     """
-    all_realms = get_realms()
     g.audit_object.log({"success": True})
+    return send_result(_visible_realms())
+
+
+def _visible_realms() -> dict:
+    """
+    The realms the logged-in admin's policies name, with their configuration, see :func:`reduce_realms`.
+    """
     # This endpoint is called by admins anyway
     luser = g.logged_in_user
     policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
@@ -224,9 +230,7 @@ def get_realms_api():
                              adminuser=luser.get("username"),
                              active=True,
                              extended_condition_check=ConditionCheck.DO_NOT_CHECK_AT_ALL).policies()
-    realms = reduce_realms(all_realms, policies)
-
-    return send_result(realms)
+    return reduce_realms(get_realms(), policies)
 
 
 @realm_blueprint.route('/superuser', methods=['GET'])
@@ -366,8 +370,9 @@ def delete_default_realm_api(realm=None):
 def get_default_realm_api():
     """
     Return the default realm with its resolver list. If no realm is
-    currently flagged as default, the response value is an empty
-    dictionary.
+    currently flagged as default, or the default realm is not among the
+    realms ``GET /realm/`` returns to the admin, the response value is an
+    empty dictionary.
 
     Requires admin authentication.
 
@@ -407,7 +412,7 @@ def get_default_realm_api():
     """
     res = {}
     defRealm = get_default_realm()
-    if defRealm:
+    if defRealm and _visible_realms().get(defRealm):
         res = get_realms(defRealm)
 
     g.audit_object.log({"success": True,

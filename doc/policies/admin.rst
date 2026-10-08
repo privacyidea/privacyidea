@@ -845,8 +845,9 @@ If the admin policy is bound to user realms, the administrator sees the policies
 apply to one of these realms, also those without a realm, which apply to every realm.
 The administrator only changes the policies that apply to none but these realms, so a
 policy without a realm stays out of reach and a new policy needs a realm. Importing a
-policy file skips the policies the administrator may not write. An admin policy that
-names users or resolvers but no realm does not restrict the policies.
+policy file skips the policies the administrator may not write. The policy check is
+limited to these realms. An admin policy that names users or resolvers but no realm
+does not restrict the policies.
 
 .. note:: An administrator who may write policies can grant rights to themselves
    within their realms. Give ``policywrite`` only to administrators you trust with
@@ -869,7 +870,9 @@ If the admin policy is bound to user realms, the administrator only sees and cha
 the resolvers that are part of these realms. If the policy also names resolvers, only
 these resolvers of the realms are granted. A policy that names resolvers but no realm
 grants these resolvers, also if they are part of no realm yet. Otherwise a resolver
-that is part of no realm, and so a new resolver, needs a policy without a realm.
+that is part of no realm, and so a new resolver, needs a policy without a realm. A
+policy that names users grants no resolver. The default realm is only shown if it is
+one of these realms.
 
 Adding a resolver to a realm or removing it from a realm needs the right for the
 resolver as well. Changing or removing the default realm needs the right for the
