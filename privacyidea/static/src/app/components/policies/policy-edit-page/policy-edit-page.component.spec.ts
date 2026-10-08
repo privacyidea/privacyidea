@@ -18,7 +18,7 @@
  **/
 
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, input, output } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -54,6 +54,7 @@ class MockPanel {
   policyEdit = output<Partial<PolicyDetail>>();
   activeTabChange = output<PolicyTab>();
   actionFilterChange = output<string>();
+  searchAnchor = signal<HTMLElement | undefined>(undefined);
 }
 
 function createTestBed(paramName: string | null) {
@@ -136,29 +137,43 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.canSave()).toBe(true);
   });
 
-  it("takes the action search into the header only once it is pinned", () => {
-    const searchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
-    const stickyHeader = fixture.debugElement
-      .query(By.directive(StickyHeaderDirective))
-      .injector.get(StickyHeaderDirective);
+  function scrollSearchAnchorTo(anchorTop: number) {
+    const header: HTMLElement = fixture.debugElement.query(By.directive(StickyHeaderDirective)).nativeElement;
+    jest.spyOn(header, "getBoundingClientRect").mockReturnValue({ bottom: 100 } as DOMRect);
+    const anchor = document.createElement("div");
+    jest.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: anchorTop } as DOMRect);
+    fixture.debugElement.query(By.directive(MockPanel)).componentInstance.searchAnchor.set(anchor);
 
-    expect(searchField()).toBeNull();
-
-    stickyHeader.isSticky.set(true);
+    fixture.debugElement.query(By.directive(ScrollToTopDirective)).nativeElement.dispatchEvent(new Event("scroll"));
     fixture.detectChanges();
+  }
 
-    expect(searchField()).not.toBeNull();
+  const headerSearchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
+
+  it("keeps the action search out of the header until the header reaches it", () => {
+    scrollSearchAnchorTo(101);
+
+    expect(headerSearchField()).toBeNull();
+  });
+
+  it("takes the action search into the header once the header touches its top edge", () => {
+    scrollSearchAnchorTo(100);
+
+    expect(headerSearchField()).not.toBeNull();
+  });
+
+  it("gives the action search back to the tab when scrolled up again", () => {
+    scrollSearchAnchorTo(40);
+    scrollSearchAnchorTo(140);
+
+    expect(headerSearchField()).toBeNull();
   });
 
   it("keeps the action search out of the header on the conditions tab", () => {
-    const stickyHeader = fixture.debugElement
-      .query(By.directive(StickyHeaderDirective))
-      .injector.get(StickyHeaderDirective);
-    stickyHeader.isSticky.set(true);
     component.activeTab.set("conditions");
-    fixture.detectChanges();
+    scrollSearchAnchorTo(40);
 
-    expect(fixture.debugElement.query(By.directive(PolicyActionSearchComponent))).toBeNull();
+    expect(headerSearchField()).toBeNull();
   });
 
   it("onAction does not call onSave if value is not submit", () => {

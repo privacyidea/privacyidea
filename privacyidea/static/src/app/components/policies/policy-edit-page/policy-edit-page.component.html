@@ -20,12 +20,14 @@
 <div
   #scrollContainer
   appScrollToTop
+  (scroll)="updateSearchReached()"
   class="edit-policy-layout">
   <h3 class="margin-8">
     {{ title() }}
   </h3>
 
   <div
+    #stickyHeader
     class="sticky-header"
     [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
@@ -53,8 +55,8 @@
         <span i18n="@@common.save">Save</span>
       </button>
 
-      <!-- Only while the header is pinned: unpinned, the field sits in the actions tab, where
-           it belongs above the two panels it filters. -->
+      <!-- Only once the header reaches the field in the actions tab: until then it sits there,
+           above the two panels it filters. -->
       @if (searchInHeader()) {
         <app-policy-action-search
           class="action-search-field"
@@ -70,6 +72,7 @@
   }
 
   <app-policy-panel-edit
+    #panel
     [policy]="editedPolicy()"
     [(activeTab)]="activeTab"
     [(actionFilter)]="actionFilter"

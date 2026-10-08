@@ -17,7 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  HostListener,
+  inject,
+  OnDestroy,
+  signal,
+  viewChild
+} from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { MatButtonModule } from "@angular/material/button";
@@ -69,13 +80,15 @@ export class PolicyEditPageComponent implements OnDestroy {
   readonly activeTab = signal<PolicyTab>("actions");
   readonly actionFilter = signal<string>("");
 
-  private readonly stickyHeader = viewChild(StickyHeaderDirective);
+  private readonly stickyHeader = viewChild.required<ElementRef<HTMLElement>>("stickyHeader");
+  private readonly panel = viewChild<PolicyPanelEditComponent>("panel");
+  private readonly searchReached = signal(false);
 
   /**
-   * The search field is only shown in the header once that header is pinned; the rest of the time
-   * the actions tab renders it above the panels it filters.
+   * The search field moves into the header once the header touches its top edge, so it is never
+   * partly covered; until then the actions tab renders it above the panels it filters.
    */
-  readonly searchInHeader = computed(() => this.activeTab() === "actions" && !!this.stickyHeader()?.isSticky());
+  readonly searchInHeader = computed(() => this.activeTab() === "actions" && this.searchReached());
 
   readonly policy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
@@ -120,6 +133,13 @@ export class PolicyEditPageComponent implements OnDestroy {
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(() => this.canSave());
     this.pendingChangesService.registerSave(() => this.onSave());
+  }
+
+  @HostListener("window:resize")
+  updateSearchReached(): void {
+    const anchor = this.panel()?.searchAnchor();
+    const headerBottom = this.stickyHeader().nativeElement.getBoundingClientRect().bottom;
+    this.searchReached.set(!!anchor && anchor.getBoundingClientRect().top <= headerBottom);
   }
 
   ngOnDestroy(): void {

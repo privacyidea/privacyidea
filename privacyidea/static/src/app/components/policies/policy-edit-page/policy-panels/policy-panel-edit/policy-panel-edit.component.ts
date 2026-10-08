@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, model, output } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, model, output, viewChild } from "@angular/core";
 
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
@@ -62,8 +62,11 @@ export class PolicyPanelEditComponent {
   readonly activeTab = model<PolicyTab>("actions");
   readonly actionFilter = model<string>("");
 
-  /** Set while the page header has taken the search field over, so the tab leaves it out. */
+  /** Set while the page header has taken the search field over, so the tab hides its own. */
   readonly searchInHeader = input<boolean>(false);
+
+  private readonly actionTab = viewChild(EditActionTabComponent);
+  readonly searchAnchor = computed(() => this.actionTab()?.searchAnchor().nativeElement);
 
   readonly tabValues: PolicyTab[] = ["actions", "conditions"];
   readonly tabLabels = [$localize`:@@common.actions:Actions`, $localize`:@@common.conditions:Conditions`];
