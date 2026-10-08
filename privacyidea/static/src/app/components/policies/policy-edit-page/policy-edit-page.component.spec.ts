@@ -55,6 +55,7 @@ class MockPanel {
   activeTabChange = output<PolicyTab>();
   actionFilterChange = output<string>();
   searchAnchor = signal<HTMLElement | undefined>(undefined);
+  searchField = signal<Partial<PolicyActionSearchComponent> | undefined>(undefined);
 }
 
 function createTestBed(paramName: string | null) {
@@ -137,12 +138,14 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.canSave()).toBe(true);
   });
 
+  const mockPanel = (): MockPanel => fixture.debugElement.query(By.directive(MockPanel)).componentInstance;
+
   function scrollSearchAnchorTo(anchorTop: number) {
     const header: HTMLElement = fixture.debugElement.query(By.directive(StickyHeaderDirective)).nativeElement;
     jest.spyOn(header, "getBoundingClientRect").mockReturnValue({ bottom: 100 } as DOMRect);
     const anchor = document.createElement("div");
     jest.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top: anchorTop } as DOMRect);
-    fixture.debugElement.query(By.directive(MockPanel)).componentInstance.searchAnchor.set(anchor);
+    mockPanel().searchAnchor.set(anchor);
 
     fixture.debugElement.query(By.directive(ScrollToTopDirective)).nativeElement.dispatchEvent(new Event("scroll"));
     fixture.detectChanges();
@@ -174,6 +177,47 @@ describe("PolicyEditPageComponent – create mode", () => {
     scrollSearchAnchorTo(40);
 
     expect(headerSearchField()).toBeNull();
+  });
+
+  describe("focus handoff", () => {
+    const headerSearchInput = (): HTMLInputElement => headerSearchField().query(By.css("input")).nativeElement;
+
+    beforeEach(() => {
+      component.actionFilter.set("token");
+    });
+
+    it("moves focus and caret into the header copy when the field moves up", async () => {
+      mockPanel().searchField.set({ focusedSelection: () => ({ start: 1, end: 3 }) });
+
+      scrollSearchAnchorTo(100);
+      await fixture.whenStable();
+
+      const input = headerSearchInput();
+      expect(document.activeElement).toBe(input);
+      expect([input.selectionStart, input.selectionEnd]).toEqual([1, 3]);
+    });
+
+    it("moves focus and caret back to the tab copy when the field returns", async () => {
+      const takeFocus = jest.fn();
+      mockPanel().searchField.set({ focusedSelection: () => null, takeFocus });
+      scrollSearchAnchorTo(100);
+      headerSearchInput().focus();
+      headerSearchInput().setSelectionRange(2, 4);
+
+      scrollSearchAnchorTo(140);
+      await fixture.whenStable();
+
+      expect(takeFocus).toHaveBeenCalledWith({ start: 2, end: 4 });
+    });
+
+    it("leaves focus alone when the search field does not have it", async () => {
+      mockPanel().searchField.set({ focusedSelection: () => null });
+
+      scrollSearchAnchorTo(100);
+      await fixture.whenStable();
+
+      expect(document.activeElement).not.toBe(headerSearchInput());
+    });
   });
 
   it("onAction does not call onSave if value is not submit", () => {

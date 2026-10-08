@@ -18,6 +18,7 @@
  **/
 
 import {
+  afterNextRender,
   Component,
   computed,
   DestroyRef,
@@ -25,6 +26,7 @@ import {
   ElementRef,
   HostListener,
   inject,
+  Injector,
   OnDestroy,
   signal,
   viewChild
@@ -74,6 +76,7 @@ export class PolicyEditPageComponent implements OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   readonly mode = signal<"create" | "edit">("create");
 
@@ -82,6 +85,7 @@ export class PolicyEditPageComponent implements OnDestroy {
 
   private readonly stickyHeader = viewChild.required<ElementRef<HTMLElement>>("stickyHeader");
   private readonly panel = viewChild<PolicyPanelEditComponent>("panel");
+  private readonly headerSearch = viewChild(PolicyActionSearchComponent);
   private readonly searchReached = signal(false);
 
   /**
@@ -139,7 +143,18 @@ export class PolicyEditPageComponent implements OnDestroy {
   updateSearchReached(): void {
     const anchor = this.panel()?.searchAnchor();
     const headerBottom = this.stickyHeader().nativeElement.getBoundingClientRect().bottom;
-    this.searchReached.set(!!anchor && anchor.getBoundingClientRect().top <= headerBottom);
+    const reached = !!anchor && anchor.getBoundingClientRect().top <= headerBottom;
+    if (reached === this.searchReached()) return;
+
+    const selection = this.visibleSearch()?.focusedSelection();
+    this.searchReached.set(reached);
+    if (selection) {
+      afterNextRender(() => this.visibleSearch()?.takeFocus(selection), { injector: this.injector });
+    }
+  }
+
+  private visibleSearch(): PolicyActionSearchComponent | undefined {
+    return this.searchInHeader() ? this.headerSearch() : this.panel()?.searchField();
   }
 
   ngOnDestroy(): void {

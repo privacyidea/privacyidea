@@ -67,6 +67,7 @@ export class PolicyPanelEditComponent {
 
   private readonly actionTab = viewChild(EditActionTabComponent);
   readonly searchAnchor = computed(() => this.actionTab()?.searchAnchor().nativeElement);
+  readonly searchField = computed(() => this.actionTab()?.searchField());
 
   readonly tabValues: PolicyTab[] = ["actions", "conditions"];
   readonly tabLabels = [$localize`:@@common.actions:Actions`, $localize`:@@common.conditions:Conditions`];
