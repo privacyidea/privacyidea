@@ -32,6 +32,8 @@
     <span class="token-type">{{ currentToken().type | titlecase }}</span>
   </div>
   <mat-progress-bar
+    aria-label="Enrollment progress"
+    i18n-aria-label="@@container.enrollmentProgress"
     [value]="progress()"
     mode="determinate"
     class="progress-bar" />

@@ -1,4 +1,5 @@
 @use "table";
+@use "@angular/material" as mat;
 
 // Material gives .mat-mdc-table its own surface colour from component styles that are injected
 // after this sheet, and a bare "table" selector loses to that class. Naming the class next to
@@ -40,8 +41,12 @@ mat-paginator .mat-mdc-paginator-range-label {
 
 mat-paginator .mat-mdc-paginator-container {
   padding: 0 0 0 16px;
-  flex-wrap: nowrap !important;
-  --mat-paginator-container-size: 0px;
+  flex-wrap: nowrap;
+  @include mat.paginator-overrides(
+    (
+      container-size: 0px
+    )
+  );
 }
 
 a {
@@ -196,7 +201,7 @@ table.mat-mdc-table .mat-mdc-header-cell {
   &.scrolled-from-top .sticky-header-shadow {
     --sticky-header-shadow-scale: calc(var(--depth-scale) / 0.6);
     box-shadow: 0 calc(4px * var(--sticky-header-shadow-scale)) calc(6px * var(--sticky-header-shadow-scale))
-      calc(-2px * var(--sticky-header-shadow-scale)) rgba(0, 0, 0, 0.4);
+      calc(-2px * var(--sticky-header-shadow-scale)) var(--sticky-header-shadow-color);
   }
 }
 
@@ -262,7 +267,8 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
   // is shifted onto the middle of the input row: a translate percentage resolves against the
   // element's own height, so the offset holds whatever the size above is.
-  .filter-actions-group > button {
+  .filter-actions-group > button,
+  .filter-actions-group > app-table-actions-trigger > button {
     align-self: flex-start;
     height: table.$filter-trigger-size;
     width: table.$filter-trigger-size;
@@ -275,8 +281,8 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
     transform: translateY(calc(#{table.$field-input-height} / 2 - 50%));
 
     span.mat-mdc-button-touch-target {
-      height: table.$filter-trigger-size !important;
-      width: table.$filter-trigger-size !important;
+      height: table.$filter-trigger-size;
+      width: table.$filter-trigger-size;
     }
   }
 
@@ -306,6 +312,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   display: block;
 }
 
+// The chips wear the fill colours that hold 4.5:1 under their white text.
 .highlight-true,
 .highlight-warning,
 .highlight-false,
@@ -320,21 +327,22 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 
   &.highlight-true,
   &.highlight-true-clickable {
-    background-color: var(--green-light);
+    background-color: var(--green-fill);
   }
 
   &.highlight-warning,
   &.highlight-warning-clickable {
-    background-color: var(--yellow-light-active);
+    background-color: var(--yellow-fill);
   }
 
   &.highlight-false,
   &.highlight-false-clickable {
-    background-color: var(--red-light);
+    background-color: var(--red-fill);
   }
 
   &.highlight-disabled {
-    background-color: var(--grey-light);
+    // The grey stays darkened so the white text keeps 4.5:1 against it in both themes.
+    background-color: color-mix(in srgb, var(--grey-light), black 32%);
   }
 
   &.highlight-true-clickable,
@@ -380,49 +388,48 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 // Material sets border-top-color on .mat-divider itself with the same specificity, from styles
 // injected after this sheet - go through its token rather than outweigh the selector.
 .mat-divider {
-  --mat-divider-color: var(--mat-sys-color-on-surface);
+  @include mat.divider-overrides(
+    (
+      color: var(--mat-sys-color-on-surface)
+    )
+  );
 }
 
-.height-52 {
+// Fixed row heights of the key/value details tables: a value cell keeps the same height whether it
+// shows text or its edit field, so entering edit mode does not shift the rows below.
+// A single-line form field, or the table row that holds one.
+.details-field-height {
   height: 52px;
 }
 
-.container-form-field {
-  height: 51px;
+mat-form-field.details-field-height {
+  @include mat.form-field-overrides(
+    (
+      container-height: 52px,
+      container-vertical-padding: 8px
+    )
+  );
 }
 
-.height-115 {
-  height: 115px;
+// A single-line value cell: the field plus the 1px row border.
+.details-row-height {
+  height: 53px;
 }
 
-.height-136 {
-  height: 136px;
-}
-
-.height-137 {
-  height: 137px;
-}
-
-.height-77 {
-  height: 77px;
-}
-
-.height-78 {
+// A two-line value cell (the realm and token group chip lists).
+.details-row-height-tall {
   height: 78px;
+}
+
+// Width of the value column in the details tables.
+.details-value-cell-width {
+  width: 241px;
+  max-width: 241px;
 }
 
 .scroll-margin-pad {
   margin-right: -16px;
   padding-right: 16px;
-}
-
-.flex-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.height-auto {
-  height: auto;
 }
 
 table.mat-mdc-table {
@@ -436,7 +443,10 @@ table.mat-mdc-table {
 .table-checkbox {
   padding: 0;
   width: 72px;
+  min-width: 72px;
   max-width: 72px;
+  // The checkbox's empty label reaches past the cell, and the cell's ellipsis would print a "..." beside the box.
+  text-overflow: clip;
 }
 
 .details-card {
@@ -554,7 +564,7 @@ app-details-card .details-header {
   .details-table.border-bottom-none {
     tr:last-child td,
     tr:last-child th {
-      border-bottom: none !important;
+      border-bottom: none;
     }
   }
 
@@ -599,13 +609,27 @@ app-details-card .details-header {
 
   .container-details-token-table-layout .mat-mdc-text-field-wrapper,
   .add-token .mat-mdc-text-field-wrapper {
-    padding-left: 16px !important;
+    padding-left: 16px;
   }
 
-  .details-table
-    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
-    --mat-form-field-container-height: 52px;
-    --mat-form-field-container-vertical-padding: 8px;
+  .details-table .mat-mdc-form-field {
+    @include mat.form-field-overrides(
+      (
+        container-height: 52px,
+        container-vertical-padding: 8px
+      )
+    );
+  }
+
+  // A multi-line field (the description textarea) opts out of the compact single-line sizing above and
+  // keeps Material's default container.
+  .details-table .mat-mdc-form-field.details-field-multiline {
+    @include mat.form-field-overrides(
+      (
+        container-height: 56px,
+        container-vertical-padding: 16px
+      )
+    );
   }
 
   .mat-mdc-row {
@@ -636,6 +660,13 @@ app-details-card .details-header {
   margin-right: 8px;
 }
 
+// A token chip keeps its own surface tone on the option's hover and active layers, so its text stays on-surface
+// while the row's label and icon turn on-primary. :where() leaves the status chips' (.highlight-*) own white text in
+// charge.
+:where(.token-option-span) {
+  color: var(--mat-sys-on-surface);
+}
+
 .mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
   height: 28px;
   display: flex;
@@ -658,4 +689,15 @@ app-details-card .details-header {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// A form field inside a col-width-* cell fills the cell instead of asking for Material's own 180px
+// infix, which would widen the column past its tier.
+.table-cell-field {
+  width: 100%;
+
+  .mat-mdc-form-field-infix {
+    min-width: 0;
+    width: auto;
+  }
 }

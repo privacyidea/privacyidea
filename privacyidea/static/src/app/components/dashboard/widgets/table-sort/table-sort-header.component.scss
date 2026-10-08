@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+@use "@angular/material" as mat;
+
 :host {
   display: inline-flex;
   align-items: center;
@@ -31,7 +33,11 @@
 
 .sort-button.mat-mdc-icon-button.mat-mdc-button-base {
   --mdc-icon-button-state-layer-size: 24px;
-  --mat-icon-button-state-layer-size: 24px;
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 24px
+    )
+  );
   --mdc-icon-button-icon-size: 20px;
   height: 24px;
   width: 24px;

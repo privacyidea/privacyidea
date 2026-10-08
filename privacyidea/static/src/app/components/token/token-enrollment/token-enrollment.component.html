@@ -35,7 +35,7 @@
       [scrollContainer]="scrollContainer"
       (reopenDialog)="reopenEnrollmentDialog()" />
     <div class="responsive-margin-left-1310">
-      <div class="width-948 margin-bottom-0">
+      <div class="enroll-content-width margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
       <h4 i18n="@@token.tokenConfiguration">Token Configuration</h4>
@@ -60,7 +60,7 @@
       </mat-form-field>
       <div class="gap-16">
         @if (authService.actionAllowed("userlist")) {
-          <div class="width-100">
+          <div class="width-full">
             <h4 i18n="@@token.assignTokenUser">Assign Token to a User</h4>
             <app-user-assignment
               [required]="isUserRequired()"

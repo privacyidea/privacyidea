@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -26,7 +28,6 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -54,6 +55,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-periodic-task",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
@@ -70,8 +73,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     CopyableComponent,
     ScrollToTopDirective,
     TableStateComponent,
-    ScrollEdgesDirective,
-    MatMenuModule
+    ScrollEdgesDirective
   ],
   templateUrl: "./periodic-task.component.html",
   styleUrls: ["./periodic-task.component.scss"]
@@ -105,6 +107,38 @@ export class PeriodicTaskComponent implements OnInit {
 
   protected readonly Object = Object;
   detailedView = signal<boolean>(false);
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createPeriodic:Create Periodic Task`,
+      tone: "primary",
+      width: "l",
+      icon: "event_repeat",
+      badge: true,
+      visible: this.authService.actionAllowed("periodictask_write"),
+      run: () => this.onCreateNewTask()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@periodicTask.deleteSelected:Delete Selected`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      visible: this.authService.actionAllowed("periodictask_write"),
+      disabled: !this.selector.hasSelection(),
+      run: () => this.deleteSelected()
+    },
+    {
+      id: "detailed-view",
+      label: $localize`:@@common.detailedView:Detailed View`,
+      tone: "secondary",
+      width: "m",
+      kind: "toggle",
+      checked: this.detailedView(),
+      run: () => this.toggleDetailedView()
+    }
+  ]);
 
   toggleDetailedView(): void {
     this.detailedView.set(!this.detailedView());

@@ -47,103 +47,37 @@
               [disabled]="reorderMode()" />
           </app-clearable-input>
         </mat-form-field>
-        @if (authService.actionAllowed("conditional_access_policy_write")) {
-          <button
-            [matMenuTriggerFor]="tableActionsMenu"
-            aria-label="Actions"
-            class="table-actions-trigger margin-left-8"
-            i18n-aria-label="@@common.actions"
-            i18n-matTooltip="@@common.actions"
-            mat-icon-button
-            matTooltip="Actions">
-            <span class="icon-badge">
-              <mat-icon>menu</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-            </span>
-          </button>
+        @if (pageActions.hasMenuActions()) {
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
         }
       </div>
     </div>
 
-    @if (authService.actionAllowed("conditional_access_policy_write")) {
-      <!-- The regular action buttons stay in place but disabled during reorder mode, so the toolbar keeps its shape,
-      and Save/Cancel take over the trailing slot the "Reorder Priorities" button otherwise occupies. -->
-      <div class="actions-row">
-        <div class="actions-row-inner">
-          <div class="flex-row margin-bottom-16 gap-8 ali-center">
-            <button
-              (click)="onCreatePolicy()"
-              class="action-button-primary button-width-l"
-              mat-stroked-button>
-              <span class="icon-badge">
-                <mat-icon class="padding-right-3">security</mat-icon>
-                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-              </span>
-              <span i18n="@@common.newConditionalAccess">New Conditional Access</span>
-            </button>
-            <button
-              (click)="toggleEnabledSelected()"
-              [disabled]="policySelection().length === 0 || reorderMode()"
-              class="action-button-secondary button-width-m"
-              mat-stroked-button>
-              <mat-icon>toggle_on</mat-icon>
-              <span i18n="@@common.deActivate">(De)activate</span>
-            </button>
-            <button
-              (click)="toggleDryRunSelected()"
-              [disabled]="policySelection().length === 0 || reorderMode()"
-              class="action-button-secondary button-width-m"
-              mat-stroked-button>
-              <mat-icon>biotech</mat-icon>
-              <span i18n="@@conditionalAccess.toggleDryRun">Toggle Dry Run</span>
-            </button>
-            <button
-              (click)="deleteSelected()"
-              [disabled]="policySelection().length === 0 || reorderMode()"
-              class="action-button-delete-secondary button-width-m"
-              mat-stroked-button>
-              <mat-icon>delete_sweep</mat-icon>
-              <span i18n="@@common.delete">Delete</span>
-            </button>
-            @if (reorderMode()) {
-              <button
-                (click)="saveReorder()"
-                [disabled]="!hasOrderChanges() || reorderSaving()"
-                class="action-button-primary button-width-m"
-                mat-stroked-button>
-                <mat-icon>save</mat-icon>
-                <span i18n="@@conditionalAccess.saveOrder">Save Order</span>
-              </button>
-              <button
-                (click)="cancelReorder()"
-                [disabled]="reorderSaving()"
-                class="action-button-secondary button-width-m"
-                mat-stroked-button>
-                <mat-icon>close</mat-icon>
-                <span i18n="@@common.cancel">Cancel</span>
-              </button>
-              <app-info-hint
-                [text]="priorityReorderHint"
-                [ariaLabel]="priorityReorderHintAriaLabel" />
-            } @else {
-              <button
-                (click)="startReorder()"
-                [disabled]="totalLength() < 2"
-                class="action-button-secondary button-width-m"
-                mat-stroked-button>
-                <mat-icon>swap_vert</mat-icon>
-                <span i18n="@@conditionalAccess.reorderPriorities">Reorder Priorities</span>
-              </button>
-            }
-          </div>
-        </div>
+    <!-- The regular actions stay in place but disabled during reorder mode, so the toolbar keeps its shape, and
+    Save/Cancel take the place of "Reorder Priorities". Both are pinned, so they stay visible while the rest of the
+    row folds into "More". -->
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <app-table-actions
+          #pageActions
+          [actions]="toolbarActions()"
+          [collapseWhenEmpty]="true">
+          @if (reorderMode()) {
+            <app-info-hint
+              [text]="priorityReorderHint"
+              [ariaLabel]="priorityReorderHintAriaLabel"
+              tableActionsEnd />
+          }
+        </app-table-actions>
       </div>
-    }
+    </div>
 
     <div
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Conditional access policies"
+        i18n-aria-label="@@table.conditionalAccess"
         [dataSource]="reorderMode() ? reorderDraft() : policyDataSource()"
         class="conditional-access-table"
         mat-table
@@ -157,6 +91,8 @@
             class="ca-checkbox-cell"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [disabled]="totalLength() === 0 || reorderMode()"
@@ -167,6 +103,8 @@
             class="ca-checkbox-cell"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="$event ? toggleRow(policy) : null"
               (click)="$event.stopPropagation()"
               [checked]="isSelected(policy)"
@@ -177,6 +115,7 @@
         <ng-container matColumnDef="name">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             i18n="@@common.name"
             mat-header-cell
             mat-sort-header
@@ -184,6 +123,7 @@
           >
           <td
             *matCellDef="let policy"
+            class="col-width-l"
             mat-cell>
             @if (reorderMode()) {
               <span class="flex ali-center">{{ policy.name }}</span>
@@ -218,7 +158,7 @@
         <ng-container matColumnDef="priority">
           <th
             *matHeaderCellDef
-            class="ca-priority-column"
+            class="col-width-s"
             i18n="@@policy.priority"
             mat-header-cell
             mat-sort-header
@@ -226,7 +166,7 @@
           >
           <td
             *matCellDef="let policy"
-            class="ca-priority-column"
+            class="col-width-s"
             mat-cell>
             <span class="ca-priority-cell">
               <span class="ca-priority-value">{{ reorderMode() ? draftPriority(policy) : policy.priority }}</span>
@@ -259,7 +199,7 @@
         <ng-container matColumnDef="time_window_seconds">
           <th
             *matHeaderCellDef
-            class="ca-time-window-column"
+            class="col-width-m"
             i18n="@@conditionalAccess.timeWindowS"
             mat-header-cell
             mat-sort-header>
@@ -267,7 +207,7 @@
           </th>
           <td
             *matCellDef="let policy"
-            class="ca-time-window-column"
+            class="col-width-m"
             mat-cell>
             {{ policy.time_window_seconds }}
           </td>
@@ -276,12 +216,14 @@
         <ng-container matColumnDef="counter_types_to_track">
           <th
             *matHeaderCellDef
+            class="col-width-xl"
             i18n="@@conditionalAccess.trackedEventTypes"
             mat-header-cell>
             Tracked Event Types
           </th>
           <td
             *matCellDef="let policy"
+            class="col-width-xl"
             mat-cell>
             {{ policy.counter_types_to_track.join(", ") }}
           </td>
@@ -290,14 +232,14 @@
         <ng-container matColumnDef="stages">
           <th
             *matHeaderCellDef
-            class="text-center"
+            class="col-width-s text-center"
             i18n="@@conditionalAccess.stages"
             mat-header-cell>
             Stages
           </th>
           <td
             *matCellDef="let policy"
-            class="text-center"
+            class="col-width-s text-center"
             mat-cell>
             {{ policy.stages.length }}
           </td>
@@ -306,12 +248,14 @@
         <ng-container matColumnDef="threshold">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             i18n="@@conditionalAccess.threshold"
             mat-header-cell>
             Threshold
           </th>
           <td
             *matCellDef="let policy"
+            class="col-width-s"
             mat-cell>
             {{ thresholdDisplay(policy) }}
           </td>
@@ -320,12 +264,14 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-width-xl"
             i18n="@@common.actions"
             mat-header-cell
             >Actions</th
           >
           <td
             *matCellDef="let policy"
+            class="col-width-xl"
             mat-cell>
             {{ actionsDisplay(policy) }}
           </td>
@@ -334,7 +280,7 @@
         <ng-container matColumnDef="enabled">
           <th
             *matHeaderCellDef
-            class="ca-toggle-column"
+            class="col-width-s"
             i18n="@@conditionalAccess.enabled3"
             mat-header-cell
             mat-sort-header>
@@ -342,13 +288,15 @@
           </th>
           <td
             *matCellDef="let policy"
-            class="ca-toggle-column"
+            class="col-width-s"
             mat-cell>
             <mat-slide-toggle
               (click)="onToggleEnabled(policy); $event.stopPropagation()"
               [checked]="policy.enabled"
               [disableRipple]="true"
               [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
+              aria-label="Toggle Enabled"
+              i18n-aria-label="@@conditionalAccess.toggleEnabled"
               i18n-matTooltip="@@conditionalAccess.toggleEnabled"
               matTooltip="Toggle Enabled" />
           </td>
@@ -357,14 +305,14 @@
         <ng-container matColumnDef="dry_run">
           <th
             *matHeaderCellDef
-            class="ca-toggle-column"
+            class="col-width-s"
             i18n="@@conditionalAccess.dryRun2"
             mat-header-cell>
             Dry Run
           </th>
           <td
             *matCellDef="let policy"
-            class="ca-toggle-column"
+            class="col-width-s"
             mat-cell>
             <mat-slide-toggle
               #dryRunToggle="matSlideToggle"
@@ -372,6 +320,8 @@
               [checked]="policy.dry_run"
               [disableRipple]="true"
               [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
+              aria-label="Toggle Dry Run (evaluate but do not enforce)"
+              i18n-aria-label="@@conditionalAccess.toggleDryRunEvaluate"
               i18n-matTooltip="@@conditionalAccess.toggleDryRunEvaluate"
               matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
           </td>
@@ -411,7 +361,7 @@
           class="action-button-primary button-width-l"
           mat-stroked-button>
           <span class="icon-badge">
-            <mat-icon class="padding-right-3">security</mat-icon>
+            <mat-icon class="icon-badge-pad-3">security</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
           <span i18n="@@common.newConditionalAccess">New Conditional Access</span>
@@ -420,59 +370,3 @@
     </app-table-state>
   }
 </div>
-
-<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
-     table is scrolled and that row is hidden. -->
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    (click)="onCreatePolicy()"
-    mat-menu-item>
-    <mat-icon>security</mat-icon>
-    <span i18n="@@common.newConditionalAccess">New Conditional Access</span>
-  </button>
-  <button
-    (click)="toggleEnabledSelected()"
-    [disabled]="policySelection().length === 0 || reorderMode()"
-    mat-menu-item>
-    <mat-icon>toggle_on</mat-icon>
-    <span i18n="@@common.deActivate">(De)activate</span>
-  </button>
-  <button
-    (click)="toggleDryRunSelected()"
-    [disabled]="policySelection().length === 0 || reorderMode()"
-    mat-menu-item>
-    <mat-icon>biotech</mat-icon>
-    <span i18n="@@conditionalAccess.toggleDryRun">Toggle Dry Run</span>
-  </button>
-  <button
-    (click)="deleteSelected()"
-    [disabled]="policySelection().length === 0 || reorderMode()"
-    mat-menu-item>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@common.delete">Delete</span>
-  </button>
-  @if (reorderMode()) {
-    <button
-      (click)="saveReorder()"
-      [disabled]="!hasOrderChanges() || reorderSaving()"
-      mat-menu-item>
-      <mat-icon>save</mat-icon>
-      <span i18n="@@conditionalAccess.saveOrder">Save Order</span>
-    </button>
-    <button
-      (click)="cancelReorder()"
-      [disabled]="reorderSaving()"
-      mat-menu-item>
-      <mat-icon>close</mat-icon>
-      <span i18n="@@common.cancel">Cancel</span>
-    </button>
-  } @else {
-    <button
-      (click)="startReorder()"
-      [disabled]="totalLength() < 2"
-      mat-menu-item>
-      <mat-icon>swap_vert</mat-icon>
-      <span i18n="@@conditionalAccess.reorderPriorities">Reorder Priorities</span>
-    </button>
-  }
-</mat-menu>

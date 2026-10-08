@@ -113,6 +113,18 @@ describe("PolicyActionItemEditComponent", () => {
     expect(label.querySelector(".highlight")?.textContent).toBe("action");
   });
 
+  it("should name the value controls after the action", () => {
+    const select = fixture.debugElement.query(By.directive(MatSelect)).nativeElement as HTMLElement;
+    expect(select.getAttribute("aria-label")).toBe("test_action");
+
+    for (const type of ["str", "int", "text"] as const) {
+      fixture.componentRef.setInput("actionDetail", { type, desc: "" });
+      fixture.detectChanges();
+      const control = fixture.debugElement.query(By.css(".detail-value input, .detail-value textarea"));
+      expect(control.nativeElement.getAttribute("aria-label")).toBe("test_action");
+    }
+  });
+
   it("should emit onUpdateAction when updateAction is called", () => {
     const spy = jest.spyOn(component.updateAction, "emit");
     component.handleUpdateAction("new_value");

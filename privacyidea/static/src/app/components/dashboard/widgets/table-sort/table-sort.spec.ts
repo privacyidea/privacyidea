@@ -118,10 +118,16 @@ describe("TableSort", () => {
       <thead>
         <tr>
           <th>
-            <app-table-sort-header key="name" [sortState]="sort" label="Name" />
+            <app-table-sort-header
+              key="name"
+              [sortState]="sort"
+              label="Name" />
           </th>
           <th>
-            <app-table-sort-header key="value" [sortState]="sort" label="Value" />
+            <app-table-sort-header
+              key="value"
+              [sortState]="sort"
+              label="Value" />
           </th>
         </tr>
       </thead>

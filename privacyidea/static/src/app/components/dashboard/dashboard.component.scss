@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-@use "buttons";
-@use "styles";
+@use "styles-api" as styles;
 
 :host {
   display: block;

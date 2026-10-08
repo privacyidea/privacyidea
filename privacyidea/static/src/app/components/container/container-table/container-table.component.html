@@ -59,25 +59,15 @@
         </mat-form-field>
         <button
           [matMenuTriggerFor]="advancedFilterMenu"
+          aria-label="More Filter"
           class="margin-left-8"
+          i18n-aria-label="@@common.moreFilter"
           i18n-matTooltip="@@common.moreFilter"
           mat-icon-button
           matTooltip="More Filter">
           <mat-icon class="ms--filter-list"></mat-icon>
         </button>
-        <button
-          [matMenuTriggerFor]="containerTableActions.actionsMenu()"
-          aria-label="Actions"
-          class="table-actions-trigger margin-left-8"
-          i18n-aria-label="@@common.actions"
-          i18n-matTooltip="@@common.actions"
-          mat-icon-button
-          matTooltip="Actions">
-          <span class="icon-badge">
-            <mat-icon>menu</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-          </span>
-        </button>
+        <app-table-actions-trigger [menu]="containerTableActions.actionsMenu()" />
       </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
@@ -136,8 +126,7 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="typeMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -147,8 +136,7 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="statesMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -160,8 +148,7 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -170,8 +157,7 @@
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button
                           type="button">
@@ -183,8 +169,7 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label="@@common.sortBy"
+                      [attr.aria-label]="column.label | sortByLabel"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -199,38 +184,41 @@
               [class.table-checkbox]="column.key === 'select'"
               [ngClass]="column.key === 'select' ? null : 'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
                     <mat-checkbox
                       (change)="containerSelection.setRowSelected(row, $event.checked)"
                       (click)="$event.stopPropagation()"
-                      [attr.aria-label]="selectRowLabel(element.serial)"
+                      [aria-label]="selectRowLabel(element.serial)"
                       [checked]="containerSelection.isRowSelected(row)"
                       [disabled]="!containerSelection.hasVisibleRows()"></mat-checkbox>
                   }
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.space)="
-                          $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
-                        "
-                        [appTruncationTooltip]="element.serial"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.space)="
+                            $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
+                          "
+                          [appTruncationTooltip]="element.serial"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                      </app-copyable>
+                    }
                   }
                   @case ("realms") {
                     <div [ngClass]="{ 'realm-list': (element[column.key]?.length || 0) > 1 }">
                       @for (realm of element[column.key]; track realm; let idx = $index) {
                         <div>
-                          <span [attr.aria-label]="linkLabel(column.label)">
+                          <span>
                             {{ realm }}
                           </span>
                           <br class="realm-break" />
@@ -259,31 +247,31 @@
                     }
                   }
                   @case ("user_name") {
-                    <app-copyable [copyText]="element[column.key]">
-                      <a
-                        (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                        (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.userSelected(element[column.key], element['user_realm'])
-                        "
-                        [appTruncationTooltip]="element[column.key]"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        [column]="column.key"
-                        [value]="element[column.key]"
-                        (filterValue)="filterByUser($event, element['user_realm'])" />
-                    </app-copyable>
+                    @if (element[column.key]) {
+                      <app-copyable [copyText]="element[column.key]">
+                        <a
+                          (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                          (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                          (keydown.space)="
+                            $event.preventDefault();
+                            contentService.userSelected(element[column.key], element['user_realm'])
+                          "
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          [column]="column.key"
+                          [value]="element[column.key]"
+                          (filterValue)="filterByUser($event, element['user_realm'])" />
+                      </app-copyable>
+                    }
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key)) {
+                    @if (tableUtilsService.isLink(column.key) && element[column.key]) {
                       <a
-                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ element[column.key] }}
                       </a>
@@ -373,7 +361,7 @@
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <span class="icon-badge">
-            <mat-icon class="padding-right-3">folder</mat-icon>
+            <mat-icon class="icon-badge-pad-3">folder</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
           <span i18n="@@common.createContainer">Create Container</span>

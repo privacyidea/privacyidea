@@ -74,10 +74,12 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { EnrollTokenArguments, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { firstValueFrom } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-create",
   imports: [
+    TooltipAriaLabelDirective,
     MatButton,
     MatFormField,
     MatIcon,

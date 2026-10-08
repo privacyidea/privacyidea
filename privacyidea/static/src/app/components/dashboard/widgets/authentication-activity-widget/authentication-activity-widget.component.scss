@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 @use "../widget";
+@use "@angular/material" as mat;
 
 // Every row of the chart is laid out on these: the outcome's name, its count, then the plot. The brush row reuses the
 // two leading columns for the presets, so they are named here rather than repeated - the track only lines up with the
@@ -69,8 +70,12 @@ $slider-height: 48px;
   display: flex;
   --info-hint-size: #{$header-action-size};
   --info-hint-icon-size: #{$header-action-icon-size};
-  --mat-icon-button-state-layer-size: #{$header-action-size};
-  --mat-icon-button-icon-size: #{$header-action-icon-size};
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: $header-action-size,
+      icon-size: $header-action-icon-size
+    )
+  );
 
   // Material derives the button's box from the tokens above, but mat-icon's own box is a fixed 24px, so the glyph has
   // to be told as well or it keeps spilling out of the smaller button.

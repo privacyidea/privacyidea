@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 .token-enrollment-container {
   @include styles.main-component-style;

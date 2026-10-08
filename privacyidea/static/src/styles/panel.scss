@@ -1,11 +1,16 @@
 @use "cards";
+@use "@angular/material" as mat;
 
 // Material paints the panel from these two tokens and its shadow rule outranks a plain
 // .mat-expansion-panel selector, so the raised step is handed over as tokens. On :root, so a
 // container setting them on an ancestor still overrides them by inheritance.
 :root {
-  --mat-expansion-container-background-color: var(--surface-raised);
-  --mat-expansion-container-elevation-shadow: var(--elevation-3);
+  @include mat.expansion-overrides(
+    (
+      container-background-color: var(--surface-raised),
+      container-elevation-shadow: var(--elevation-3)
+    )
+  );
 }
 
 // The content group inside an expansion panel.
@@ -33,9 +38,17 @@
 // Keep this slot in step with --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
   @include cards.card-raised(3);
-  --mat-expansion-container-shape: var(--border-radius);
+  @include mat.expansion-overrides(
+    (
+      container-shape: var(--border-radius)
+    )
+  );
 }
 
+// An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's
+// own corners with .mat-accordion .mat-expansion-panel:first-of-type / :last-of-type, which outranks
+// these selectors and is injected after this sheet, and every panel wrapped in
+// its own component is both first and last of its type, so the radii below need !important to win.
 .mat-accordion .mat-expansion-panel {
   border-radius: 0 !important;
   overflow: hidden;
@@ -53,32 +66,9 @@
   border-bottom-right-radius: var(--border-radius) !important;
 }
 
-.mat-accordion .mat-expansion-panel .mat-expansion-panel-header {
-  border-radius: inherit !important;
-}
 mat-panel-title.mat-expansion-panel-header-title .mat-icon {
   color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
   margin-right: 16px;
-}
-
-.type-option .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
-  color: white !important;
-}
-
-.type-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
-  background-color: var(--mat-sys-primary-light) !important;
-}
-
-.type-option.mat-mdc-option.mdc-list-item {
-  background: var(--mat-sys-surface-container-low) !important;
-}
-
-.type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
-  color: white !important;
-}
-
-.type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
-  background-color: #f2f9fd;
 }
 
 .token-type-config-container p {

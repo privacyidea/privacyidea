@@ -18,6 +18,7 @@
  **/
 import { Component, HostListener, inject } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
+import { PageTitleStrategy } from "@core/page-title";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 import { WelcomeDialogService } from "@services/welcome/welcome-dialog.service";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
@@ -109,6 +110,9 @@ export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
+
+  // The name of the current page, drawn as the page's heading for assistive technology.
+  protected readonly pageTitle = inject(PageTitleStrategy);
 
   title = "privacyidea-webui";
   lastSessionReset = 0;

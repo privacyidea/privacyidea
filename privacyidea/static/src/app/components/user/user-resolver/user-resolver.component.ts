@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -44,6 +45,7 @@ import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so page-table-state-size's min-width (see table-width() in table.scss) can be sized from
@@ -57,6 +59,8 @@ const columnKeysMap = [
   selector: "app-user-resolver",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

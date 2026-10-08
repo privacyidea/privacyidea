@@ -75,10 +75,12 @@ import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
 import { formatLocalDateTime } from "@utils/date-format.utils";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-user-details",
   imports: [
+    TooltipAriaLabelDirective,
     ScrollToTopDirective,
     MatButtonModule,
     UserDetailsTokenTableComponent,

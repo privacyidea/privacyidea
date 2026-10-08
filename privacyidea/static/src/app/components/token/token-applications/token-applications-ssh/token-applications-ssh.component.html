@@ -85,6 +85,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              class="col-width-m"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -92,8 +93,7 @@
                   @if (machineService.sshApiFilterKeys.includes(column.key)) {
                     <button
                       (click)="onKeywordClick(column.key)"
-                      aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.label | filterByLabel"
                       class="filter-button"
                       mat-icon-button
                       type="button">
@@ -104,8 +104,7 @@
                   }
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label="@@common.sortBy"
+                    [attr.aria-label]="column.label | sortByLabel"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -116,38 +115,43 @@
             </th>
             <td
               *matCellDef="let element"
+              class="col-width-m"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.tokenSelected(element.serial)"
+                          (keydown.enter)="contentService.tokenSelected(element.serial)"
+                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          column="serial"
+                          [value]="element.serial"
+                          (filterValue)="addFilterValue('serial', $event)" />
+                      </app-copyable>
+                    }
+                  }
+                  @case ("user") {
+                    @if (element[column.key]) {
                       <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        (keydown.enter)="contentService.tokenSelected(element.serial)"
-                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                        [attr.aria-label]="linkLabel(column.label)"
+                        (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                        (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
+                        "
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
                       </a>
-                      <app-filter-value-button
-                        column="serial"
-                        [value]="element.serial"
-                        (filterValue)="addFilterValue('serial', $event)" />
-                    </app-copyable>
-                  }
-                  @case ("user") {
-                    <a
-                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      (keydown.space)="
-                        $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
-                      "
-                      [attr.aria-label]="linkLabel(column.label)"
-                      role="button"
-                      tabindex="0">
-                      {{ element[column.key] }}
-                    </a>
+                    }
                   }
                   @case ("service_id") {
                     <span class="flex ali-center">

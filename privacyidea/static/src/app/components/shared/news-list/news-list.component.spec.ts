@@ -120,4 +120,13 @@ describe("NewsListComponent", () => {
 
     expect(fixture.nativeElement.querySelector("mat-icon.news-empty-icon").textContent).toContain("newspaper");
   });
+
+  it("marks summary images without alt text as decorative and keeps an alt that is there", () => {
+    fixture.componentRef.setInput("showSummary", true);
+    fixture.componentRef.setInput("items", [{ ...items[0], summary: '<img src="a.png"><img src="b.png" alt="Logo">' }]);
+    fixture.detectChanges();
+
+    const images: HTMLImageElement[] = Array.from(fixture.nativeElement.querySelectorAll(".news-summary img"));
+    expect(images.map((img) => img.getAttribute("alt"))).toEqual(["", "Logo"]);
+  });
 });

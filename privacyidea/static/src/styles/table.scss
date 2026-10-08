@@ -371,6 +371,7 @@ $checkbox-column-width: 72px;
 
     // Flush with the top of the region: the cover each edge needs comes from the ::before below,
     // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
+    // !important: the CDK table writes the sticky offset as an inline `top`.
     .mat-mdc-header-cell {
       top: 0 !important;
     }
@@ -446,6 +447,15 @@ $filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2
   min-width: min(max($min-width, $filter-row-min-width), 100cqw);
 }
 
+// For a table narrower than its filter/paginator row: the card takes the floor as its width, not only as its minimum.
+// Sized from that row, the card follows the paginator's range label, which changes with every filter and page, and
+// re-centring it moves the table sideways. The filter field absorbs the label's changes instead.
+@mixin paginator-range-width($min-width) {
+  $width: min(max($min-width, $filter-row-min-width), 100cqw);
+  min-width: $width;
+  width: $width;
+}
+
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the
 // table has scrolled far enough that collapsing it keeps the table scrollable (controls-collapsed -
 // see ScrollEdgesDirective): the full row only fits above the table, so once scrolled it would sit
@@ -457,12 +467,16 @@ $filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2
 @mixin actions-row-collapse($row-class, $inner-class, $trigger-class: ".table-actions-trigger") {
   // The trigger always occupies its room beside the filter field, shown or not, so the filter row has the same
   // width whether or not the table is scrolled and the card, the field and the table below stay put. The field
-  // (or its host component) gives that room up.
-  #{$trigger-class} {
+  // gives that room up. app-table-actions-trigger draws the same button inside its own view, out of reach of this
+  // component's scoped styles, so its host element (which this component's template owns) is what gets hidden and
+  // shown.
+  #{$trigger-class},
+  app-table-actions-trigger {
     visibility: hidden;
   }
 
-  .filter-actions-group:has(> #{$trigger-class}) > :not(#{$trigger-class}) {
+  .filter-actions-group:has(> #{$trigger-class}, > app-table-actions-trigger)
+    > :not(#{$trigger-class}, app-table-actions-trigger) {
     max-width: calc(var(--input-width-xxl) - #{$filter-trigger-reserve});
   }
 
@@ -485,7 +499,8 @@ $filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2
       margin-bottom: 0;
     }
 
-    #{$trigger-class} {
+    #{$trigger-class},
+    app-table-actions-trigger {
       visibility: visible;
     }
   }

@@ -32,19 +32,7 @@
         [unfilteredPolicies]="policyService.allPolicies()"
         class="policies-table-filter">
         @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
-          <button
-            [matMenuTriggerFor]="policiesTableActions.actionsMenu"
-            aria-label="Actions"
-            class="table-actions-trigger margin-left-8"
-            i18n-aria-label="@@common.actions"
-            i18n-matTooltip="@@common.actions"
-            mat-icon-button
-            matTooltip="Actions">
-            <span class="icon-badge">
-              <mat-icon>menu</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-            </span>
-          </button>
+          <app-table-actions-trigger [menu]="policiesTableActions.actionsMenu()" />
         }
       </app-policy-filter>
     }
@@ -61,13 +49,11 @@
       appScrollEdges
       class="table-scroll-region">
       <table
-      (matSortChange)="onSortChange($event)"
+      aria-label="Policies"
+      i18n-aria-label="@@table.policies"
       [dataSource]="sortedFilteredPolicies()"
       class="policies-table row-striped"
-      mat-table
-      matSort
-      matSortActive="priority"
-      matSortDirection="asc">
+      mat-table>
       <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
@@ -101,9 +87,8 @@
             *matHeaderCellDef
             [class]="'col-' + column.key"
             [ngClass]="column.value.width ? 'col-width-' + column.value.width : null"
-            [disabled]="!column.value.sortable || policyService.allPolicies().length === 0"
-            mat-header-cell
-            mat-sort-header>
+            [attr.aria-sort]="column.value.sortable ? ariaSort(column.key) : null"
+            mat-header-cell>
             <div class="table-header-container">
               @if (column.value.label) {
                 <div>{{ column.value.label }}</div>
@@ -118,6 +103,7 @@
                       (selectionChange)="setScopeFilter($event)" />
                   } @else {
                     <button
+                      [attr.aria-label]="column.value.label | filterByLabel"
                       (click)="$event.stopPropagation(); onFilterClick(column.key)"
                       [disabled]="policyService.allPolicies().length === 0"
                       class="filter-button"
@@ -128,6 +114,17 @@
                     </button>
                   }
                 </div>
+              }
+              @if (column.value.sortable) {
+                <button
+                  [attr.aria-label]="column.value.label | sortByLabel"
+                  (click)="onSortClick(column.key)"
+                  [disabled]="policyService.allPolicies().length === 0"
+                  class="sort-button"
+                  mat-icon-button
+                  type="button">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                </button>
               }
             </div>
           </th>
@@ -187,7 +184,8 @@
                         (click)="togglePolicyActive(policy); $event.stopPropagation()"
                         [checked]="policy.active"
                         [disableRipple]="true"
-                        [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'" />
+                        [aria-label]="activeToggleLabel(policy)"
+                        [matTooltip]="activeToggleLabel(policy)" />
                     </div>
                   }
                   @default {

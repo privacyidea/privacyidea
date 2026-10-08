@@ -29,19 +29,7 @@
           [isLoading]="containerTemplateService.templatesResource.isLoading()"
           (filterChange)="onFilterChange($event)">
         </app-container-templates-filter>
-        <button
-          [matMenuTriggerFor]="containerTemplatesTableActions.actionsMenu"
-          aria-label="Actions"
-          class="table-actions-trigger margin-left-8"
-          i18n-aria-label="@@common.actions"
-          i18n-matTooltip="@@common.actions"
-          mat-icon-button
-          matTooltip="Actions">
-          <span class="icon-badge">
-            <mat-icon>menu</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-          </span>
-        </button>
+        <app-table-actions-trigger [menu]="containerTemplatesTableActions.actionsMenu()" />
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -66,9 +54,9 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Container templates"
+        i18n-aria-label="@@table.containerTemplates"
         mat-table
-        matSort
-        (matSortChange)="onSortChange($event)"
         [dataSource]="pagedContainerTemplates()"
         class="container-templates-table">
         <ng-container matColumnDef="select">
@@ -94,7 +82,7 @@
             (change)="selector.setRowSelected(row, $event.checked)"
             [checked]="selector.isRowSelected(row)"
             [disabled]="!row.name"
-            [attr.aria-label]="selectTemplateLabel(row.name)">
+            [aria-label]="selectTemplateLabel(row.name)">
           </mat-checkbox>
         </td>
       </ng-container>
@@ -104,8 +92,7 @@
           <th
             mat-header-cell
             *matHeaderCellDef
-            mat-sort-header
-            [disabled]="!column.value.sortable || containerTemplateService.templates().length === 0"
+            [attr.aria-sort]="column.value.sortable ? ariaSort(column.key) : null"
             [class]="'col-' + column.key"
             [ngClass]="column.value.width ? 'col-width-' + column.value.width : 'col-width-flex'">
             <div class="table-header-container">
@@ -120,14 +107,14 @@
                       class="filter-button"
                       [disabled]="containerTemplateService.templates().length === 0"
                       [matMenuTriggerFor]="containerTypeMenu"
-                      aria-label="Filter by {{ column.value.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.value.label | filterByLabel"
                       type="button"
                       (click)="$event.stopPropagation()">
                       <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
                     </button>
                   } @else {
                     <button
+                      [attr.aria-label]="column.value.label | filterByLabel"
                       mat-icon-button
                       class="filter-button"
                       [disabled]="containerTemplateService.templates().length === 0"
@@ -138,6 +125,17 @@
                     </button>
                   }
                 </div>
+              }
+              @if (column.value.sortable) {
+                <button
+                  mat-icon-button
+                  class="sort-button"
+                  [attr.aria-label]="column.value.label | sortByLabel"
+                  [disabled]="containerTemplateService.templates().length === 0"
+                  type="button"
+                  (click)="onSortClick(column.key)">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, activeSort()) }}</mat-icon>
+                </button>
               }
             </div>
           </th>

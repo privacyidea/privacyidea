@@ -64,6 +64,9 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
@@ -76,6 +79,9 @@ interface ContainerDetailTokenData {
 @Component({
   selector: "app-container-details-token-table",
   imports: [
+    ScrollFocusableDirective,
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     MatCell,
     MatFormField,
     MatHeaderCell,
@@ -100,10 +106,6 @@ interface ContainerDetailTokenData {
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableComponent implements AfterViewInit {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -113,6 +115,14 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "tokentype", "active", "username");
+  // Width tier of each data column (see the col-width-* classes in styles.scss): the token type and
+  // the active state are short badges, the serial and the owner name need a medium column.
+  readonly columnWidths: Record<string, "s" | "m" | "l" | "xl"> = {
+    serial: "m",
+    tokentype: "s",
+    active: "s",
+    username: "m"
+  };
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   displayedColumns: string[] = [...this.columnKeys, "actions"];
   pageSize = 5;

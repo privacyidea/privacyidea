@@ -42,19 +42,9 @@
               placeholder="Filter by name or provider" />
           </app-clearable-input>
         </mat-form-field>
-        <button
-          [matMenuTriggerFor]="tableActionsMenu"
-          aria-label="Actions"
-          class="table-actions-trigger margin-left-8"
-          i18n-aria-label="@@common.actions"
-          i18n-matTooltip="@@common.actions"
-          mat-icon-button
-          matTooltip="Actions">
-          <span class="icon-badge">
-            <mat-icon>menu</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-          </span>
-        </button>
+        @if (pageActions.hasMenuActions()) {
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
+        }
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -63,34 +53,21 @@
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-row margin-bottom-16">
+    <div class="actions-row">
       <div class="actions-row-inner">
-        <div class="actions-container">
-          <button
-            (click)="onCreateNewGateway()"
-            class="action-button-primary button-width-l"
-            mat-stroked-button>
-            <span class="icon-badge">
-              <mat-icon class="padding-right-3">sms</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-            </span>
-            <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
-          </button>
-          <button
-            (click)="deleteSelected()"
-            [disabled]="!selector.hasSelection()"
-            class="action-button-delete-secondary button-width-l"
-            mat-stroked-button>
-            <mat-icon>delete_sweep</mat-icon>
-            <span i18n="@@common.delete">Delete</span>
-          </button>
-        </div>
+        <app-table-actions
+          #pageActions
+          [actions]="toolbarActions()"
+          [collapseWhenEmpty]="true"
+          layout="roomy" />
       </div>
     </div>
     <div
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="SMS gateways"
+        i18n-aria-label="@@table.smsGateways"
         [dataSource]="smsDataSource()"
         class="sms-gateways-table"
         mat-table
@@ -101,6 +78,8 @@
             class="table-checkbox"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
               [checked]="selector.allRowsSelected()"
               [disabled]="!selector.hasVisibleRows()"
@@ -111,6 +90,8 @@
             class="table-checkbox"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="selector.setRowSelected(row, $event.checked)"
               (click)="$event.stopPropagation()"
               [checked]="selector.isRowSelected(row)" />
@@ -206,7 +187,7 @@
         class="action-button-primary button-width-l"
         mat-stroked-button>
         <span class="icon-badge">
-          <mat-icon class="padding-right-3">sms</mat-icon>
+          <mat-icon class="icon-badge-pad-3">sms</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
@@ -214,19 +195,3 @@
     </app-table-state>
   }
 </div>
-
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    (click)="onCreateNewGateway()"
-    mat-menu-item>
-    <mat-icon>sms</mat-icon>
-    <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
-  </button>
-  <button
-    (click)="deleteSelected()"
-    [disabled]="!selector.hasSelection()"
-    mat-menu-item>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@common.delete">Delete</span>
-  </button>
-</mat-menu>

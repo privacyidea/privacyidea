@@ -89,7 +89,7 @@
         <div class="container-serial-row">
           @if (containerField.isEditing()) {
             <mat-form-field
-              class="input-width-m height-52"
+              class="input-width-m details-field-height"
               subscriptSizing="dynamic">
               <mat-label i18n="@@token.enterContainer">Enter Container</mat-label>
               <app-clearable-input
@@ -138,17 +138,17 @@
             </app-copyable>
           } @else {
             <div class="flex-row flex-nowrap ali-center">
-              <a
-                (click)="contentService.navigateContainerDetails(containerSerial())"
-                (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
-                aria-label="Container Serial Link"
-                i18n-aria-label="@@token.containerSerial"
-                role="button"
-                tabindex="0">
-                {{ containerSerial() }}
-              </a>
               @if (containerSerial() !== "") {
+                <a
+                  (click)="contentService.navigateContainerDetails(containerSerial())"
+                  (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
+                  (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
+                  aria-label="Container Serial Link"
+                  i18n-aria-label="@@token.containerSerial"
+                  role="button"
+                  tabindex="0">
+                  {{ containerSerial() }}
+                </a>
                 <app-copy-button [copyText]="containerSerial()"></app-copy-button>
               }
             </div>

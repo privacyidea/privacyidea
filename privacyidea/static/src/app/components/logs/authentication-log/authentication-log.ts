@@ -94,6 +94,8 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
 // /authenticationlog/eventtypes), and this file only maps each one to a color.
@@ -280,6 +282,9 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     TableStateComponent,
@@ -630,14 +635,6 @@ export class AuthenticationLog {
       .filter((size) => size > 0)
       .sort((a, b) => a - b)
   );
-  noDataText = computed(() =>
-    Object.keys(this.authenticationLogService.filterParams()).length > 0 ||
-    this.authenticationLogService.timestampFrom() ||
-    this.authenticationLogService.timestampTo()
-      ? $localize`:@@authLog.noAuthenticationLogEntries2:No authentication log entries matching the filter.`
-      : $localize`:@@authLog.noAuthenticationLogEntries:No authentication log entries.`
-  );
-
   onPageEvent(event: PageEvent): void {
     this.authenticationLogService.pageSize.set(event.pageSize);
     // mat-paginator emits a 0-based index; the service/API page is 1-based.
@@ -711,7 +708,10 @@ export class AuthenticationLog {
   readonly tableState = new TableState({
     resource: this.authenticationLogService.authenticationLogResource,
     count: () => this.totalLength(),
-    filterActive: () => this.authenticationLogService.authenticationLogFilter().isNotEmpty,
+    filterActive: () =>
+      this.authenticationLogService.authenticationLogFilter().isNotEmpty ||
+      !!this.authenticationLogService.timestampFrom() ||
+      !!this.authenticationLogService.timestampTo(),
     resetFilter: () => this.clearAllFilters()
   });
 

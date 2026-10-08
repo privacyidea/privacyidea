@@ -1,4 +1,5 @@
-@use "styles";
+@use "styles-api" as styles;
+@use "@angular/material" as mat;
 
 .ca-conditions {
   display: flex;
@@ -25,19 +26,18 @@
   padding-bottom: 19.5px;
 }
 
-// use same border radius for the operator toggle as for all buttons
+// The operator toggle takes the border radius of all buttons. Material's default checked tone is the M3 secondary
+// container, which reads as a different accent from the rest of the WebUI, so the selected operator is brought onto
+// the brand primary like the other toggle groups, paired with on-primary (~6:1 in both schemes). Material colours the
+// checkmark from the same text token, so check and label match.
 mat-button-toggle-group {
-  --mat-button-toggle-shape: var(--border-radius);
-}
-
-// Material's default checked tone is the M3 secondary container, which reads as a different accent
-// from the rest of the WebUI, so the selected operator is brought onto the brand primary like the
-// other toggle groups. Paired with on-primary rather than a hardcoded white: in dark mode primary is
-// a light blue where white text measures about 2.8:1 and fails AA, while this token pair is the one
-// the theme guarantees contrast for (~6:1 in both schemes).
-.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
-  background-color: var(--mat-sys-primary);
-  color: var(--mat-sys-on-primary);
+  @include mat.button-toggle-overrides(
+    (
+      shape: var(--border-radius),
+      selected-state-background-color: var(--mat-sys-primary),
+      selected-state-text-color: var(--mat-sys-on-primary)
+    )
+  );
 }
 
 // A shared minimum width lines the operator controls of the rows up with each other.

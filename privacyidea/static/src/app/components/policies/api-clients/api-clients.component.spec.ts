@@ -207,4 +207,95 @@ describe("ApiClientsComponent", () => {
   it("should fall back to the raw value for an unknown client type", () => {
     expect(component.clientTypeLabel("custom_type")).toBe("custom_type");
   });
+
+  describe("toolbar actions", () => {
+    const setRights = (rights: string[]) => {
+      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
+
+    it("lists the create and delete actions in order", () => {
+      expect(component["toolbarActions"]().map((a) => a.id)).toEqual(["create", "delete"]);
+    });
+
+    it("shows create only with the api_client_add right", () => {
+      setRights([]);
+      expect(action("create").visible).toBe(false);
+      setRights(["api_client_add"]);
+      expect(action("create").visible).toBe(true);
+      setRights(["api_client_delete"]);
+      expect(action("create").visible).toBe(false);
+    });
+
+    it("shows delete only with the api_client_delete right", () => {
+      setRights([]);
+      expect(action("delete").visible).toBe(false);
+      setRights(["api_client_delete"]);
+      expect(action("delete").visible).toBe(true);
+      setRights(["api_client_add"]);
+      expect(action("delete").visible).toBe(false);
+    });
+
+    it("never disables create", () => {
+      setRights(["api_client_add"]);
+      expect(action("create").disabled).toBeFalsy();
+    });
+
+    it("disables delete without a selection and enables it with one", () => {
+      setRights(["api_client_delete"]);
+      expect(action("delete").disabled).toBe(true);
+      component.selector.selectRow(apiClientServiceMock.apiClients()[0]);
+      expect(action("delete").disabled).toBe(false);
+    });
+
+    it("navigates to the create page when the create action runs", () => {
+      setRights(["api_client_add"]);
+      action("create").run!();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_NEW);
+    });
+
+    it("deletes the selected clients when the delete action runs", () => {
+      setRights(["api_client_delete"]);
+      component.selector.selectRow(apiClientServiceMock.apiClients()[1]);
+      action("delete").run!();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ items: ["Client Two"] })
+        })
+      );
+      confirmClosed.next(true);
+      confirmClosed.complete();
+      expect(apiClientServiceMock.deleteClient).toHaveBeenCalledWith("client2");
+      expect(apiClientServiceMock.deleteClient).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders only the permitted actions and wires the clicks to the handlers", () => {
+      setRights(["api_client_list", "api_client_add", "api_client_delete"]);
+      const buttons = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>("app-table-actions button")
+      );
+      const create = buttons.find((b) => b.textContent?.includes("Create API Client"))!;
+      const del = buttons.find((b) => b.classList.contains("action-button-delete-secondary"))!;
+      expect(create).toBeTruthy();
+      expect(del).toBeTruthy();
+      expect(del.disabled).toBe(true);
+
+      create.click();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_NEW);
+
+      component.selector.selectRow(apiClientServiceMock.apiClients()[0]);
+      fixture.detectChanges();
+      expect(del.disabled).toBe(false);
+      del.click();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    });
+
+    it("renders no toolbar button without any right", () => {
+      setRights(["api_client_list"]);
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeTruthy();
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll("app-table-actions button").length).toBe(0);
+    });
+  });
 });

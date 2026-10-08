@@ -1,5 +1,6 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
+@use "@angular/material" as mat;
 
 :host {
   display: block;
@@ -18,20 +19,23 @@
   width: 100%;
   margin-bottom: 1rem;
 
-  .mat-column-privacyideaAttr,
-  .mat-column-userStoreAttr {
-    width: 300px;
+  // The form fields fill the column tier of their cell.
+  mat-form-field {
+    width: 100%;
   }
 
   .mat-column-actions {
-    width: 80px;
     text-align: center;
   }
 
   td,
   th {
     background: var(--table-color);
-    --mat-form-field-filled-container-color: var(--table-color);
+    @include mat.form-field-overrides(
+      (
+        filled-container-color: var(--table-color)
+      )
+    );
   }
 }
 
@@ -65,9 +69,14 @@
   margin-bottom: 1rem;
 }
 
-.mat-button-toggle-appearance-standard.mat-button-toggle-checked {
-  background-color: var(--mat-sys-primary-base-active);
-  color: white;
+// The checked mode sits on the brand primary. Material colours the checkmark from the same text token.
+.mode-toggle {
+  @include mat.button-toggle-overrides(
+    (
+      selected-state-background-color: var(--mat-sys-primary-base-active),
+      selected-state-text-color: var(--mat-sys-on-primary)
+    )
+  );
 }
 
 .height-57 {

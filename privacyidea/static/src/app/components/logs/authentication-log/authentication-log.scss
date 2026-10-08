@@ -1,5 +1,6 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
+@use "@angular/material" as mat;
 
 .authentication-log-table-container {
   @include styles.main-component-style;
@@ -182,13 +183,17 @@ td.cell-info {
     margin: 0;
     // Value hint as a horizontal rounded label sized to its content, so the date/time text (e.g. "Jul 15", "13:45")
     // fits. Tokens inherit into the slider's internal value indicator across the component boundary.
-    --mat-slider-value-indicator-width: auto;
-    --mat-slider-value-indicator-height: 40px;
-    --mat-slider-value-indicator-padding: 0 10px;
-    --mat-slider-value-indicator-border-radius: 6px;
-    --mat-slider-value-indicator-container-transform: translateX(-50%);
-    --mat-slider-value-indicator-text-transform: none;
-    --mat-slider-value-indicator-transform-origin: center bottom;
+    @include mat.slider-overrides(
+      (
+        value-indicator-width: auto,
+        value-indicator-height: 40px,
+        value-indicator-padding: 0 10px,
+        value-indicator-border-radius: 6px,
+        value-indicator-container-transform: translateX(-50%),
+        value-indicator-text-transform: none,
+        value-indicator-transform-origin: center bottom
+      )
+    );
   }
 
   // The copy in the "More Filter" menu: a panel of its own under the menu items, rather than squeezed into the row.

@@ -1,10 +1,12 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .application-table-container {
   // Sits inside the raised token-applications page container, so the shallow recess.
   @include styles.card-recessed(3);
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  // Room for the paginator's full range label beside the filter, as wide as the columns' tiers.
+  @include table.paginator-range-floor(table.table-width(m, s, s));
 
   .application-table-filter {
     width: 32.7rem;

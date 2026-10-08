@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .container-templates-layout {
@@ -50,6 +50,9 @@
     align-items: center;
     gap: 8px;
     white-space: nowrap;
+    // A label too long for its tier lets the buttons drop beneath it rather than widen the column.
+    flex-wrap: wrap;
+    row-gap: 0;
 
     > div {
       flex-shrink: 0;

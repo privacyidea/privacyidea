@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 @use "@angular/material" as mat;
 
@@ -52,15 +52,6 @@
   white-space: nowrap;
 }
 
-.actions-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  width: 100%;
-  margin-bottom: 16px;
-}
-
 .no-indention {
   padding-left: 16px;
 }
@@ -87,9 +78,13 @@
   // Its filled background is dropped as well, leaving the underline and the hover tint
   // to mark the value as editable.
   td.mat-mdc-cell.mat-column-ordering mat-form-field {
-    --mat-form-field-container-height: 40px;
-    --mat-form-field-container-vertical-padding: 8px;
-    --mat-form-field-filled-container-color: transparent;
+    @include mat.form-field-overrides(
+      (
+        container-height: 40px,
+        container-vertical-padding: 8px,
+        filled-container-color: transparent
+      )
+    );
 
     margin: 4px 0;
   }

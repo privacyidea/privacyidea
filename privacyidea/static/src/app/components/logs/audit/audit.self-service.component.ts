@@ -51,10 +51,12 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuditComponent } from "./audit.component";
+import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 @Component({
   selector: "app-audit-self-service",
   imports: [
+    FilterByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     FilterAutocompleteDirective,

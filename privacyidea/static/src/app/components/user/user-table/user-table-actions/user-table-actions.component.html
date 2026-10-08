@@ -16,11 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  appOverflowNav
-  overflowNavIcon="menu"
-  overflowNavBadgeIcon="build"
-  class="actions-div margin-bottom-16">
+<app-table-actions
+  [actions]="actions()"
+  layout="roomy">
   <mat-form-field
     class="input-width-l"
     subscriptSizing="dynamic">
@@ -33,39 +31,7 @@
       }
     </mat-select>
   </mat-form-field>
-
-  @if (showCreateUser() && authService.actionAllowed("adduser") && anyEditableResolver()) {
-    <button
-      (click)="navigateToCreateUser()"
-      class="action-button-primary button-width-m"
-      mat-stroked-button>
-      <span class="icon-badge">
-        <mat-icon class="padding-right-3">person</mat-icon>
-        <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-      </span>
-      <span i18n="@@common.createUser">Create User</span>
-    </button>
-  }
-</div>
-
-<!-- Same actions as menu items, for the compact trigger shown next to the filter once the table is
-     scrolled and this component's own row is hidden. -->
-<mat-menu #actionsMenu="matMenu">
-  <button
-    [matMenuTriggerFor]="realmMenu"
-    mat-menu-item>
-    <mat-icon>public</mat-icon>
-    <span i18n="@@user.selectRealm">Select Realm</span>
-  </button>
-  @if (showCreateUser() && authService.actionAllowed("adduser") && anyEditableResolver()) {
-    <button
-      (click)="navigateToCreateUser()"
-      mat-menu-item>
-      <mat-icon>person_add</mat-icon>
-      <span i18n="@@common.createUser">Create User</span>
-    </button>
-  }
-</mat-menu>
+</app-table-actions>
 
 <mat-menu #realmMenu="matMenu">
   @for (option of realmService.realmOptions(); track option) {

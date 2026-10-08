@@ -16,34 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  appOverflowNav
-  overflowNavIcon="menu"
-  overflowNavBadgeIcon="build"
-  class="flex-row gap-8">
-  <button
-    data-overflow-pinned
-    (click)="onDeleteExpiredChallenges()"
-    class="action-button-delete-primary button-width-l"
-    mat-stroked-button>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@token.deleteExpired">Delete Expired</span>
-  </button>
-
-  @if (advancedApiFilterKeys.length > 0) {
-    <button
-      data-overflow-pinned
-      [matMenuTriggerFor]="advancedFilterMenu"
-      class="action-button-primary button-width-l"
-      i18n-matTooltip="@@common.moreFilter"
-      mat-stroked-button
-      matTooltip="More Filter"
-      type="submit">
-      <mat-icon class="ms--filter-list"></mat-icon>
-      <span i18n="@@common.moreFilter">More Filter</span>
-    </button>
-  }
-</div>
+<app-table-actions
+  [actions]="actions()"
+  [spaced]="false" />
 
 <mat-menu #advancedFilterMenu="matMenu">
   @for (keyword of advancedApiFilterKeys; track keyword) {
@@ -52,25 +27,6 @@
       mat-menu-item>
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
-    </button>
-  }
-</mat-menu>
-
-<!-- Same actions as menu items, for the compact trigger shown next to the filter once the table is
-     scrolled and this component's own button row is hidden. -->
-<mat-menu #actionsMenu="matMenu">
-  <button
-    (click)="onDeleteExpiredChallenges()"
-    mat-menu-item>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@token.deleteExpired">Delete Expired</span>
-  </button>
-  @if (advancedApiFilterKeys.length > 0) {
-    <button
-      [matMenuTriggerFor]="advancedFilterMenu"
-      mat-menu-item>
-      <mat-icon class="ms--filter-list"></mat-icon>
-      <span i18n="@@common.moreFilter">More Filter</span>
     </button>
   }
 </mat-menu>

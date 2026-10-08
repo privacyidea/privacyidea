@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+@use "@angular/material" as mat;
+
 @mixin host {
   display: flex;
   align-items: center;
@@ -47,26 +49,39 @@
   tr:not(:last-child) td {
     border-bottom: 1px solid var(--mat-sys-outline-variant);
   }
+
+  // A link in a row is a 24px-high target (WCAG 2.5.8). The row's own padding is given up for it, so the row stays
+  // about as tall as a padded one and the targets of adjacent rows sit end to end instead of overlapping.
+  td:has(a) {
+    padding-block: 0;
+  }
+
+  a {
+    display: inline-block;
+    min-height: 24px;
+    line-height: 24px;
+  }
 }
 
 // The dense time-range preset group a chart widget puts beside its brush, so the widgets offering one look alike:
 // shorter and smaller-typed than a form page's toggle group, rounded like the rest of the WebUI, and on the brand
-// primary when checked.
+// primary when checked. Material's default checked tone is the M3 secondary container, which reads as a different
+// accent from the rest of the WebUI. The text is paired with on-primary rather than a hardcoded white: in dark mode
+// primary is a light blue where white text measures about 2.8:1 and fails AA, while this token pair is the one the
+// theme guarantees contrast for (~6:1 in both schemes). Material colours the checkmark from the same text token, so
+// check and label match.
 //
 // The label padding that makes four of them fit beside a chart is not here but in styles/buttons.scss, keyed on the
 // .chart-range-presets class: Material hardcodes it with no token to set it by, and a component stylesheet cannot
 // reach inside mat-button-toggle.
 @mixin range-presets($height: 30px) {
-  --mat-button-toggle-shape: var(--border-radius);
-  --mat-button-toggle-height: #{$height};
-  --mat-button-toggle-label-text-size: 0.75rem;
-
-  // Material's default checked tone is the M3 secondary container, which reads as a different accent from the rest of
-  // the WebUI, so the selected range is brought onto the brand primary like the other toggle groups. Paired with
-  // on-primary rather than a hardcoded white: in dark mode primary is a light blue where white text measures about
-  // 2.8:1 and fails AA, while this token pair is the one the theme guarantees contrast for (~6:1 in both schemes).
-  .mat-button-toggle-appearance-standard.mat-button-toggle-checked {
-    background-color: var(--mat-sys-primary);
-    color: var(--mat-sys-on-primary);
-  }
+  @include mat.button-toggle-overrides(
+    (
+      shape: var(--border-radius),
+      height: $height,
+      label-text-size: 0.75rem,
+      selected-state-background-color: var(--mat-sys-primary),
+      selected-state-text-color: var(--mat-sys-on-primary)
+    )
+  );
 }
