@@ -26,6 +26,9 @@
           >Policy name must be <strong>different</strong> from the original</mat-error
         >
       }
+      @if (nameField().errors().some(e => e.kind === 'nameTaken')) {
+        <mat-error i18n="@@policy.nameAlreadyExists">A policy with this name already exists.</mat-error>
+      }
 
       <mat-hint i18n="@@policy.mustUniqueIdentifier">Must be a unique identifier</mat-hint>
     </mat-form-field>
