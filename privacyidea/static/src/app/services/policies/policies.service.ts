@@ -59,6 +59,19 @@ export function policyActionMatchesFilter(
   );
 }
 
+/**
+ * Whether `name` collides with one of `policies`, ignoring case. `ownName` is the current name of the policy
+ * being edited: it never collides with itself, and neither does a name that is left unchanged. A missing name
+ * (e.g. from a policy template without one) collides with nothing.
+ */
+export function policyNameCollides(policies: PolicyDetail[], name: string, ownName?: string | null): boolean {
+  if (!name || name === ownName) return false;
+  // MySQL and MariaDB compare policy names without regard to case, so the server treats "Helpdesk" as the
+  // existing policy "helpdesk" and replaces it.
+  const folded = name.toLowerCase();
+  return policies.some((p) => p.name !== ownName && p.name.toLowerCase() === folded);
+}
+
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
   active: boolean;
@@ -201,6 +214,9 @@ export interface PolicyServiceInterface {
   getScopeOfAction(name: string): string | null;
 
   canSavePolicy(policy: PolicyDetail): boolean;
+
+  /** Whether `name` collides with a loaded policy; see {@link policyNameCollides}. */
+  isPolicyNameTaken(name: string, ownName?: string | null): boolean;
 
   getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null;
 
@@ -428,6 +444,10 @@ export class PolicyService implements PolicyServiceInterface {
     return true;
   }
 
+  isPolicyNameTaken(name: string, ownName?: string | null): boolean {
+    return policyNameCollides(this.allPolicies(), name, ownName);
+  }
+
   getDetailsOfAction(actionName: string, scope?: string): PolicyActionDetail | null {
     if (!actionName) return null;
     if (scope) {
@@ -448,9 +468,10 @@ export class PolicyService implements PolicyServiceInterface {
   // -----------------------------------
 
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<Record<string, number>>> {
-    const allPoliciesCopy = [...this.allPolicies()];
-    allPoliciesCopy.push({ ...policyData });
-    this.allPolicies.set(allPoliciesCopy);
+    // The policy is listed right away and leaves the list again when the server does not create it.
+    const listedPolicy = { ...policyData };
+    this.allPolicies.set([...this.allPolicies(), listedPolicy]);
+    const unlistPolicy = () => this.allPolicies.set(this.allPolicies().filter((p) => p !== listedPolicy));
 
     const headers = this.authService.getHeaders();
     return lastValueFrom(
@@ -459,6 +480,17 @@ export class PolicyService implements PolicyServiceInterface {
         policyData,
         { headers }
       )
+    ).then(
+      (response) => {
+        if (!response?.result?.status) {
+          unlistPolicy();
+        }
+        return response;
+      },
+      (error) => {
+        unlistPolicy();
+        throw error;
+      }
     );
   }
 

@@ -19,6 +19,7 @@
 
 import { Component, input, output, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -35,6 +36,7 @@ class MockDialogService {
 @Component({ selector: "app-policy-name-edit", standalone: true, template: "" })
 class MockNameComp {
   policyName = input<string>("");
+  nameTaken = input<boolean>(false);
   policyNameChange = output<string>();
 }
 
@@ -106,6 +108,16 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
     });
 
     fixture.detectChanges();
+  });
+
+  it("should hand the name collision of the page to the name field", () => {
+    const nameField = () => fixture.debugElement.query(By.directive(MockNameComp)).componentInstance as MockNameComp;
+    expect(nameField().nameTaken()).toBe(false);
+
+    fixture.componentRef.setInput("nameTaken", true);
+    fixture.detectChanges();
+
+    expect(nameField().nameTaken()).toBe(true);
   });
 
   it("should accumulate multiple edits correctly", () => {
