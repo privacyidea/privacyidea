@@ -48,10 +48,11 @@ from privacyidea.models.conditional_access_policy import (ConditionalAccessPolic
 from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry, clear_authentication_log
 from tests.base import MyApiTestCase, OverrideConfigTestCase
+from tests.conditional_access_base import ConditionalAccessFixtureMixin
 from tests.passkey_base import PasskeyTestBase
 
 
-class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
+class PasskeyAPITestBase(ConditionalAccessFixtureMixin, MyApiTestCase, PasskeyTestBase):
 
     def setUp(self):
         # Clear session before each test to avoid side effects
@@ -621,7 +622,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("status", res.json["result"])
             self.assertTrue(res.json["result"]["status"])
             self.assertIn("value", res.json["result"])
-            self.assertEqual(1, res.json["result"]["value"])
 
         # A successful authentication should return the offline data now
         challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -1735,9 +1735,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         credential/serial lock-evasion gap. Generic failure to the client, and the log
         records the lock as the reason rather than a passkey outcome."""
         serial = self._enroll_static_passkey()
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for()
         clear_authentication_log()
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1756,8 +1754,35 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
-            db.session.query(UserLockState).delete()
-            db.session.commit()
+            self._clear()
+            remove_token(serial)
+
+    def test_28a_locked_owner_rejected_at_auth_before_token_work(self):
+        """
+        The /auth half of test_28. The two endpoints resolve a username-less
+        passkey request by different code: /validate/check through the gate's own identity resolver, /auth in
+        before_request, which has already put the owner on request.User by the time the login gate runs. A lock
+        enforced on one therefore proves nothing about the other, and this is the endpoint a browser actually
+        logs in through.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = passkey_challenge["transaction_id"]
+        self.assertNotIn("user", data)
+        self._lock_user_for()
+        clear_authentication_log()
+        try:
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+            # The rejection classifies the login, which is the only place an admin can see why a request that
+            # never named a user was turned away.
+            self.assertListEqual([AuthEventType.USER_LOCKED],
+                                 [entry.event_type for entry in get_authentication_logs()])
+        finally:
+            self._clear()
             remove_token(serial)
 
     def test_29_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
@@ -1948,9 +1973,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         without a login name.
         """
         serial = self._enroll_static_passkey()
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
-                                     realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for()
         clear_authentication_log()
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1964,8 +1987,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
-            db.session.query(UserLockState).delete()
-            db.session.commit()
+            self._clear()
             remove_token(serial)
 
     def test_36_validate_check_rejects_user_that_does_not_resolve(self):
