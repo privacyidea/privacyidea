@@ -161,10 +161,10 @@ export class PolicyEditPageComponent implements OnDestroy {
     const reached = !!anchor && anchor.getBoundingClientRect().top <= headerBottom;
     if (reached === this.searchReached()) return;
 
-    const selection = this.visibleSearch()?.focusedSelection();
+    const focus = this.visibleSearch()?.focusState();
     this.searchReached.set(reached);
-    if (selection) {
-      afterNextRender(() => this.visibleSearch()?.takeFocus(selection), { injector: this.injector });
+    if (focus) {
+      afterNextRender(() => this.visibleSearch()?.takeFocus(focus), { injector: this.injector });
     }
   }
 

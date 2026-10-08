@@ -25,7 +25,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 /**
  * The search field for policy actions. It filters both action panels, and is rendered either at
  * the top of the actions tab or, once the page header reaches it, inside that header - so it lives
- * in two places and keeps no state of its own. Focus and caret are handed over when it moves.
+ * in two places and keeps no state of its own. Focus, on the input with its caret or on the clear button, is handed over when it moves.
  */
 @Component({
   selector: "app-policy-action-search",
@@ -40,18 +40,29 @@ export class PolicyActionSearchComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>("input");
 
-  /** The caret range while focus is anywhere in this copy, or null when it is elsewhere. */
-  focusedSelection(): TextSelection | null {
-    if (!this.host.nativeElement.contains(document.activeElement)) return null;
+  /** Which control in this copy has focus, with the caret range for the input; null when focus is elsewhere. */
+  focusState(): SearchFocus | null {
+    const active = document.activeElement;
     const input = this.input().nativeElement;
-    const end = input.value.length;
-    return { start: input.selectionStart ?? end, end: input.selectionEnd ?? end };
+    if (active === input) {
+      const end = input.value.length;
+      return { start: input.selectionStart ?? end, end: input.selectionEnd ?? end };
+    }
+    return active && active === this.clearButton() ? "clear-button" : null;
   }
 
-  takeFocus(selection: TextSelection): void {
+  takeFocus(focus: SearchFocus): void {
+    if (focus === "clear-button") {
+      this.clearButton()?.focus({ preventScroll: true });
+      return;
+    }
     const input = this.input().nativeElement;
     input.focus({ preventScroll: true });
-    input.setSelectionRange(selection.start, selection.end);
+    input.setSelectionRange(focus.start, focus.end);
+  }
+
+  private clearButton(): HTMLButtonElement | null {
+    return this.host.nativeElement.querySelector("app-clear-button button");
   }
 }
 
@@ -59,3 +70,5 @@ export interface TextSelection {
   start: number;
   end: number;
 }
+
+export type SearchFocus = TextSelection | "clear-button";

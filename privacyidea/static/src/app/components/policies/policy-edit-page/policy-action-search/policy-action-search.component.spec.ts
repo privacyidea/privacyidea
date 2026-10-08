@@ -24,6 +24,8 @@ describe("PolicyActionSearchComponent", () => {
   let component: PolicyActionSearchComponent;
   let fixture: ComponentFixture<PolicyActionSearchComponent>;
   let input: HTMLInputElement;
+  const clearButton = (): HTMLButtonElement =>
+    fixture.debugElement.query(By.css("app-clear-button button")).nativeElement;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({ imports: [PolicyActionSearchComponent] }).compileComponents();
@@ -35,14 +37,20 @@ describe("PolicyActionSearchComponent", () => {
   });
 
   it("reports no selection while focus is elsewhere", () => {
-    expect(component.focusedSelection()).toBeNull();
+    expect(component.focusState()).toBeNull();
   });
 
   it("reports the caret range while the input has focus", () => {
     input.focus();
     input.setSelectionRange(1, 3);
 
-    expect(component.focusedSelection()).toEqual({ start: 1, end: 3 });
+    expect(component.focusState()).toEqual({ start: 1, end: 3 });
+  });
+
+  it("reports the clear button while it has focus", () => {
+    clearButton().focus();
+
+    expect(component.focusState()).toBe("clear-button");
   });
 
   it("takes focus at the given caret range", () => {
@@ -50,5 +58,11 @@ describe("PolicyActionSearchComponent", () => {
 
     expect(document.activeElement).toBe(input);
     expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+  });
+
+  it("puts focus back on the clear button when that is where it was", () => {
+    component.takeFocus("clear-button");
+
+    expect(document.activeElement).toBe(clearButton());
   });
 });

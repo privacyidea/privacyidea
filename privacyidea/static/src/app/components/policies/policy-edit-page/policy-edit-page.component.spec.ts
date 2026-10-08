@@ -224,7 +224,7 @@ describe("PolicyEditPageComponent – create mode", () => {
     });
 
     it("moves focus and caret into the header copy when the field moves up", async () => {
-      mockPanel().searchField.set({ focusedSelection: () => ({ start: 1, end: 3 }) });
+      mockPanel().searchField.set({ focusState: () => ({ start: 1, end: 3 }) });
 
       scrollSearchAnchorTo(100);
       await fixture.whenStable();
@@ -234,9 +234,18 @@ describe("PolicyEditPageComponent – create mode", () => {
       expect([input.selectionStart, input.selectionEnd]).toEqual([1, 3]);
     });
 
+    it("moves focus from the clear button to the header copy's clear button", async () => {
+      mockPanel().searchField.set({ focusState: () => "clear-button" });
+
+      scrollSearchAnchorTo(100);
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(headerSearchField().query(By.css("app-clear-button button")).nativeElement);
+    });
+
     it("moves focus and caret back to the tab copy when the field returns", async () => {
       const takeFocus = jest.fn();
-      mockPanel().searchField.set({ focusedSelection: () => null, takeFocus });
+      mockPanel().searchField.set({ focusState: () => null, takeFocus });
       scrollSearchAnchorTo(100);
       headerSearchInput().focus();
       headerSearchInput().setSelectionRange(2, 4);
@@ -248,7 +257,7 @@ describe("PolicyEditPageComponent – create mode", () => {
     });
 
     it("leaves focus alone when the search field does not have it", async () => {
-      mockPanel().searchField.set({ focusedSelection: () => null });
+      mockPanel().searchField.set({ focusState: () => null });
 
       scrollSearchAnchorTo(100);
       await fixture.whenStable();
