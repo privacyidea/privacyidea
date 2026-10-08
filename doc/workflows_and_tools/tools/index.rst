@@ -439,7 +439,7 @@ PSKC (default)
     to import the file with :ref:`load <token_janitor_load>`.
 ``--csv``
     Exports HOTP and TOTP tokens, one line per token with the owner (``user@realm`` or ``n/a``),
-    the serial, the OTP key, the token type and the OTP length.
+    the serial, the OTP key, the token type, the OTP length and, for TOTP tokens, the time step.
 ``--yaml``
     Exports all token types together with their tokeninfo. The file can be read by
     :ref:`update <token_janitor_update>`.
@@ -1031,7 +1031,8 @@ a subcommand. A container is selected only if it matches all given options.
 
 Unlike the filters of ``find``, the text options compare the whole value, ignore upper and lower
 case and accept ``*`` as a wildcard: ``--description 'my*'`` finds ``My smartphone`` and
-``my tablet``. Only ``--template`` is case sensitive.
+``my tablet``. Only ``--template`` without ``*`` is case sensitive (on MySQL and MariaDB this
+depends on the collation of the database).
 
 ``-s``, ``--serial``
     The serial of the container.
@@ -1164,7 +1165,8 @@ Sets the realms of the selected containers. ``REALMS`` is a comma-separated list
 Realms that can not be set are reported.
 
 ``-a``, ``--add``
-    Add the realms to the existing realms instead of replacing them.
+    Add the realms to the existing realms instead of replacing them. Given realms that the
+    container already has are then reported as not set as well; they stay.
 
 Example::
 

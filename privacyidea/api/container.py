@@ -899,7 +899,7 @@ def registration_init():
           },
           "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
           "time_stamp": "2024-12-20T09:53:40.158319+00:00",
-          "server_url": "https://pi.net",
+          "server_url": "https://privacyidea.example.com",
           "ttl": 10,
           "ssl_verify": "True",
           "key_algorithm": "secp384r1",
@@ -1102,7 +1102,7 @@ def create_challenge():
     Example response::
 
         {
-          "server_url": "https://pi.net",
+          "server_url": "https://privacyidea.example.com",
           "nonce": "123456",
           "time_stamp": "2024-10-23T05:45:02.484954+00:00"
         }
@@ -1217,7 +1217,7 @@ def synchronize():
             "disable_client_token_deletion": true,
             "disable_client_container_unregister": true
           },
-          "server_url": "https://pi.net"
+          "server_url": "https://privacyidea.example.com"
         }
     """
     params = request.all_data
@@ -1346,7 +1346,7 @@ def rollover():
           },
           "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
           "time_stamp": "2024-12-20T09:53:40.158319+00:00",
-          "server_url": "https://pi.net",
+          "server_url": "https://privacyidea.example.com",
           "ttl": 10,
           "ssl_verify": "True",
           "key_algorithm": "secp384r1",

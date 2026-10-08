@@ -183,7 +183,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         communication with RADIUS server: yes
         modification of options: The communication with the RADIUS server can
-            change the options, radius_state, radius_result, radius_message
+        change the options, radius_state, radius_result, radius_message
 
         :param passw: password, which might be pin or pin+otp
         :type passw: string
@@ -229,8 +229,7 @@ class RadiusTokenClass(RemoteTokenClass):
                  bool, if submit was successful
                  message is submitted to the user
                  data is preserved in the challenge
-                 reply_dict - additional attributes, which are displayed in the
-                    output
+                 reply_dict - additional attributes, which are displayed in the output
         """
         if options is None:
             options = {}

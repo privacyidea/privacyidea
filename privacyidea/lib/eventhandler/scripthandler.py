@@ -23,11 +23,12 @@ You can put any script in the directory specified in
 PI_SCRIPT_HANDLER_DIRECTORY and call this script in any event.
 
 The scripts can take parameters like
+
 * serial
 * user
 * realm
-* resolver
 * logged_in_user
+* logged_in_role
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.utils import is_true

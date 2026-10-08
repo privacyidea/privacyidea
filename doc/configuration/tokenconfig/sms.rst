@@ -25,7 +25,7 @@ he received via SMS. The user is granted access if the OTP values match.
 .. index:: transaction_id
 
 Alternatively, the user can authenticate with the ``transaction_id`` that was
-sent to him in the response during the first step and only the OTP value. The
+sent to him in the response during the first step and only use the OTP value. The
 ``transaction_id`` assures that the user already presented the first factor (OTP
 PIN) successfully.
 
@@ -40,10 +40,10 @@ Configuration Parameters
     :ref:`usernotification`)
 
     For configuring SMS Gateways read :ref:`sms_gateway_config`.
-    In this token configuration you can select on defined gateway to send SMS for
+    In this token configuration you can select one defined gateway to send SMS for
     authentication.
 
 **OTP validity time**
-  This is the time in seconds, for how long the sent OTP value is valid. If a
+  This is the time in seconds for how long the sent OTP value is valid. If a
   user tries to authenticate with the sent OTP value after this time,
   authentication will fail.

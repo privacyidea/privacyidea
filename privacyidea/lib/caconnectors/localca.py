@@ -498,7 +498,7 @@ class LocalCAConnector(BaseCAConnector):
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :param check_validity: Onle create a new CRL, if the old one is about to
+        :param check_validity: Only create a new CRL, if the old one is about to
             expire. Therefore, the overlap period and the remaining runtime of
             the CRL is checked. If the remaining runtime is smaller than the
             overlap period, we recreate the CRL.

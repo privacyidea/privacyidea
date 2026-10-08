@@ -158,8 +158,7 @@ class OcraTokenClass(TokenClass):
 
         At the moment we do not think of other ways to trigger a challenge.
 
-        This function is not decorated with
-            @challenge_response_allowed
+        This function is not decorated with ``@challenge_response_allowed``,
         as the OCRA token is always a challenge response token!
 
         :param passw: The PIN of the token.

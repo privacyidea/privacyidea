@@ -3,15 +3,26 @@
 Application Plugins
 ===================
 
-.. index:: Application Plugins, OTRS, FreeRADIUS, SAML, PAM, ownCloud
+.. index:: Application Plugins, FreeRADIUS, SAML, PAM, ownCloud, Nextcloud
 
 privacyIDEA comes with application plugins. These are plugins for
-applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud, simpleSAMLphp
-or Keycloak which enable these
-application to authenticate users against privacyIDEA.
+applications like PAM, Apache2, FreeRADIUS, ownCloud, Nextcloud, SimpleSAMLphp,
+Keycloak, Shibboleth or AD FS, which enable these
+applications to authenticate users against privacyIDEA.
 
 You may also write your own application plugin or connect your own application
 to privacyIDEA. To do so, please check the :ref:`plugin_guide`.
+
+Some plugins need a subscription file for larger installations. privacyIDEA
+recognizes the plugin by the User-Agent of its requests. Without a
+subscription file, privacyIDEA serves the ownCloud and Nextcloud apps, the
+LDAP Proxy, the Credential Provider, the AD FS provider and the FreeRADIUS
+plugin as long as no more than 50 users have active tokens, and the PAM
+module and the SimpleSAMLphp, Keycloak and Shibboleth plugins as long as no
+more than 10000 users have active tokens. Above that number, a growing share
+of the requests of the plugin is rejected with the error "No subscription for
+your client.". For FreeRADIUS, the subscription file of the privacyIDEA
+server applies.
 
 .. _pam_plugin:
 
@@ -28,18 +39,25 @@ authentication. In this case you need to configure an offline token (See
 For more information about building and configuring the PAM module see the
 `README <https://github.com/privacyidea/privacyidea-pam/blob/main/README.md>`_.
 
-try_first_pass
-~~~~~~~~~~~~~~
+For FIDO2/passkey authentication in the PAM stack there is the separate module
+`pam-passkey <https://github.com/privacyidea/pam-passkey>`_.
 
-Starting with version 2.8 privacyidea_pam supports *try_first_pass*.
-In this case the password that exists in the PAM stack will be sent to
-privacyIDEA. If this password is successfully validated, than the user is
+Sending the password from the PAM stack
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With the option ``sendPassword``, the PAM module sends the username and the
+password that is already present in the PAM stack to privacyIDEA before it asks
+for an OTP value. If no password is present, the user is prompted for one.
+If this password is successfully validated, then the user is
 logged in without additional requests.
 If the password is not validated by privacyIDEA, the user is asked for an
-additional OTP value.
+OTP value or to answer the challenges that the request triggered.
 
-.. note:: This can be used in conjunction with the :ref:`passthru_policy`
-   policy. In this case users with no tokens will be able to login with only
+The option ``sendEmptyPass`` sends an empty password instead, which can be used
+to trigger challenges.
+
+.. note:: ``sendPassword`` can be used in conjunction with the :ref:`passthru_policy`
+   policy. In this case users with no tokens will be able to log in with only
    the password in the PAM stack.
 
 
@@ -48,7 +66,7 @@ additional OTP value.
 Use cases SSH and VPN
 ~~~~~~~~~~~~~~~~~~~~~~
 
-PrivacyIDEA can be easily used to setup a secure SSH login combining SSH keys
+privacyIDEA can easily be used to set up a secure SSH login combining SSH keys
 with a second factor. The configuration is given in
 `SSH Keys and OTP: Really strong two factor authentication
 <https://www.privacyidea.org/ssh-keys-and-otp-really-strong-two-factor-authentication/>`_
@@ -66,30 +84,34 @@ Using pam_yubico
 
 If you are using Yubikey tokens you might also use ``pam_yubico``.
 You can use Yubikey tokens for two more or less distinct applications.
-The first is using privacyideas PAM module as described above.
-In this case privacyidea handles the policies
+The first is using privacyIDEA's PAM module as described above.
+In this case privacyIDEA handles the policies
 for user access and password validation. This works fine, when you only use
-privacyidea for token validation.
+privacyIDEA for token validation.
 
 The second mode is using the standard PAM module for Yubikeys from Yubico
 ``pam_yubico`` to handle the token validation. The upside is that you can
-use the PAM module included with you distribution, but there are downsides as
+use the PAM module included with your distribution, but there are downsides as
 well.
 
-* You can't set a token PIN in privacyidea, because ``pam_yubico`` tries to
+* You can't set a token PIN in privacyIDEA, because ``pam_yubico`` tries to
   use the token PIN entered by the user as a system password (which is likely
   to fail), i.e. the PIN will be stripped by ``pam_yubico`` and will not reach
   the privacyIDEA system.
 
 * Setting the policy which tokens are valid for which users is done either in
-  ``~/.yubico/authorized_keys`` or in the file given by the ``authfile`` option
-  in the PAM configuration. The api server will only validate the token, but
+  ``~/.yubico/authorized_yubikeys`` or in the file given by the ``authfile`` option
+  in the PAM configuration. The API server will only validate the token, but
   not check any kind of policy.
 
 You can work around the restrictions by using a clever combination
 of tokentype *Yubikey* and *Yubico* as follows:
 
-* enroll a Yubikey token with ``yubikey_mass_enroll --mode YUBICO``.
+* enroll a Yubikey token with
+  ``privacyidea token yubikey-mass-enroll --yubimode YUBICO --yubiprefixrandom 6``
+  (see :ref:`privacyideaadm_enrollment`). The option ``--yubiprefixrandom 6``
+  programs a random 12-character public ID starting with ``vv``. Without it the
+  Yubikey gets no public ID, and ``pam_yubico`` can not map it to a user.
 
 * do not set a token password.
 
@@ -98,7 +120,7 @@ of tokentype *Yubikey* and *Yubico* as follows:
 * please make a note of yubikey.prefix (12 characters starting with vv).
 
 Now the token can be used with ``pam_yubico``, but will not allow any
-user access in privacyidea. If you want to use the token with
+user access in privacyIDEA. If you want to use the token with
 ``pam_yubico`` see the manual page for details. You'll want something like the
 following in your PAM config::
 
@@ -107,26 +129,40 @@ following in your PAM config::
 
 The file ``/etc/yubikeys/authorized_yubikeys`` contains a line
 for each user with the username and the allowed tokens delimited
-by ":", for example::
+by ":". A token is given by its 12-character public ID, i.e. the
+``yubikey.prefix`` you noted above, for example::
 
-   <username>:<serial number1>:<prefix1>:<prefix2>
+   <username>:<prefix1>:<prefix2>
 
-.. doc/configuration/tokenconfig, add yubikey.rst to describe how to configure Client ID/apiid and API key
+How to configure the client ID (API ID) and the API key in privacyIDEA is
+described in :ref:`yubikey_token_config`.
+
+The second token below is of type *Yubico* (Yubico Cloud mode). By default it
+sends the OTP to the Yubico Cloud service, which does not know the AES key of
+this Yubikey, so every authentication with it would fail. Point it to
+privacyIDEA instead: in the Yubico token configuration (see
+:ref:`yubico_token_config`) set *Yubico URL* to
+``https://<privacyidea-server>/ttype/yubikey`` and set *API Client ID* and
+*API Key* to the Client ID and API key you created in the YubiKey AES mode
+configuration.
 
 
 Now create a second token representing the Yubikey, but this time
-use the ``Yubico Cloud mode``. Go to Tokens -> Enroll Token and select
-``Yubico Cloud mode``.  Enter the 12 characters prefix you noted above
+use the *Yubico Cloud Mode*. Go to *Token* -> *Enroll Token* and select
+*Yubikey Cloud mode*. Enter the 12-character prefix you noted above
 and assign this token to a user and possibly set a token PIN. It would
-be nice to have the the serial number of the UBCM token correspond
+be nice to have the serial number of the UBCM token correspond
 to the UBAM token, but this is right now not possible with the WebUI.
 
 In the WebUI, test the UBAM token without a Token PIN, test the UBCM token
 with the stored Token PIN, and check the token info afterwards.
-Check the Yubikey token via ``/ttype/yubikey``, for example with::
+Check the Yubikey token via ``/ttype/yubikey``. The endpoint requires the
+parameters ``id`` (the API ID), ``otp`` and ``nonce`` (16 to 40 random
+characters), for example::
 
-   ykclient --debug --url https://<privacyidea>/ttype/yubikey --apikey "<API key>" "apiid" <otp>
+   curl "https://<privacyidea>/ttype/yubikey?id=<apiid>&otp=<otp>&nonce=<random characters>"
 
+A successful request returns ``status=OK``.
 There should be successful authentications (count_auth_success),
 but no failures.
 
@@ -136,13 +172,13 @@ but no failures.
 FreeRADIUS
 ----------
 
-Starting with privacyIDEA 2.19, there are two ways to integrate FreeRADIUS:
+There are two ways to integrate FreeRADIUS:
 
- * Using a Perl-based privacyIDEA plugin, which is available for FreeRADIUS 2.0.x and above.
-   It supports advanced use cases (such as challenge-response authentication or attribute mapping).
-   Read more about it at :ref:`rlm_perl`.
- * Using the rlm_rest plugin provided by FreeRADIUS 3.0.x and above. However, this setup does not support
-   challenge-response or attribute mapping. Read more about it at :ref:`rlm_rest`.
+* Using a Perl-based privacyIDEA plugin, which is available for FreeRADIUS 3.x.
+  It supports advanced use cases (such as challenge-response authentication or attribute mapping).
+  Read more about it at :ref:`rlm_perl`.
+* Using the rlm_rest module provided by FreeRADIUS. However, this setup does not support
+  challenge-response or attribute mapping. Read more about it at :ref:`rlm_rest`.
 
 With either setup, you can test the RADIUS setup using a command like this::
 
@@ -153,44 +189,41 @@ With either setup, you can test the RADIUS setup using a command like this::
 
 Microsoft NPS server
 --------------------
-You can also use the Microsoft Network Protection Server with privacyIDEA.
+You can also use the Microsoft Network Policy Server (NPS) with privacyIDEA.
 A full featured integration guide can be found at the
-`NetKnights webpage <https://netknights
-.it/en/nps-2012-for-two-factor-authentication-with-privacyidea/>`_.
+`NetKnights webpage <https://netknights.it/en/nps-2012-for-two-factor-authentication-with-privacyidea/>`_.
 
 
 .. _simplesaml_plugin:
 
-simpleSAMLphp Plugin
+SimpleSAMLphp Plugin
 --------------------
-You can install the plugin for simpleSAMLphp using the
-source files from the GitHub Repository
-`simplesamplphp-module-privacyidea <https://github.com/privacyidea/simplesamlphp-module-privacyidea>`_.
+You can install the
+`SimpleSAMLphp module <https://github.com/privacyidea/simplesamlphp-module-privacyidea>`_
+with composer in the root directory of your SimpleSAMLphp installation::
 
-Follow the simpleSAMLphp instructions to configure your authsources.php.
-A usual configuration will look like this::
+    composer require privacyidea/simplesamlphp-module-privacyidea
+
+The module can perform the complete authentication as an authentication source
+or only the second factor as an authentication processing filter.
+As an authentication source, it is configured in ``config/authsources.php``.
+A basic configuration looks like this::
 
     'example-privacyidea' => array(
-        'privacyidea:privacyidea',
+        'privacyidea:PrivacyideaAuthSource',
 
         /*
-         * The name of the privacyidea server and the protocol
-         * A port can be added by a colon
+         * The URL of the privacyIDEA server.
          * Required.
          */
-        'privacyideaserver' => 'https://your.server.com',
+        'privacyideaServerURL' => 'https://your.server.com',
 
         /*
-         * Check if the hostname matches the name in the certificate
-         * Optional.
+         * Check the TLS certificate of the privacyIDEA server.
+         * Optional. The default is 'true'.
          */
-        'sslverifyhost' => False,
-
-        /*
-         * Check if the certificate is valid, signed by a trusted CA
-         * Optional.
-         */
-        'sslverifypeer' => False,
+        'sslVerifyHost' => 'true',
+        'sslVerifyPeer' => 'true',
 
         /*
          * The realm where the user is located in.
@@ -199,17 +232,32 @@ A usual configuration will look like this::
         'realm' => '',
 
         /*
+         * The authentication flow: 'sendPassword', 'triggerChallenge'
+         * or 'separateOTP'.
+         * Required.
+         */
+        'authenticationFlow' => 'sendPassword',
+
+        /*
          * This is the translation from privacyIDEA attribute names to
          * SAML attribute names.
+         * Required.
          */
-         'attributemap' => array('username' => 'samlLoginName',
-                                 'surname' => 'surName',
-                                 'givenname' => 'givenName',
-                                 'email' => 'emailAddress',
-                                 'phone' => 'telePhone',
-                                 'mobile' => 'mobilePhone',
-                                 ),
+        'attributemap' => array(
+            'username' => 'samlLoginName',
+            'surname' => 'surName',
+            'givenname' => 'givenName',
+            'email' => 'emailAddress',
+            'phone' => 'telePhone',
+            'mobile' => 'mobilePhone',
+        ),
     ),
+
+privacyIDEA only returns the user attributes if the policy
+:ref:`policy_add_user_in_response` is set.
+All options and the configuration as an authentication processing filter are
+described in the
+`module documentation <https://github.com/privacyidea/simplesamlphp-module-privacyidea/blob/master/docs/privacyidea.md>`_.
 
 
 .. _keycloak_plugin:
@@ -218,84 +266,27 @@ Keycloak
 --------
 
 With the privacyIDEA Keycloak-provider, there is a plugin available for the Keycloak identity manager.
-It is available from the GitHub repository `keycloak-provider <https://github.com/privacyidea/keycloak-
-provider>`_.
+It is available from the GitHub repository `keycloak-provider <https://github.com/privacyidea/keycloak-provider>`_.
 
-Like simpleSAMLphp, it can be used to realize single sign-on use cases with a strong second factor authentication.
-
-
-TYPO3
------
-You can install the privacyIDEA extension from the TYPO3 Extension Repository.
-The privacyIDEA extension is easily configured.
-
-**privacyIDEA Server URL**
-
-This is the URL of your privacyIDEA installation. You do not need to add the
-path *validate/check*. Thus the URL for a common installation would be
-*https://yourServer/*.
-
-**Check certificate**
-
-Whether the validity of the SSL certificate should be checked or not.
-
-.. warning:: If the SSL certificate is not checked, the authentication
-    request could be modified and the answer to the request can be modified,
-    easily granting access to an attacker.
-
-**Enable privacyIDEA for backend users**
-
-If checked, a user trying to authenticate at the backend will need to
-authenticate against privacyIDEA.
+Like SimpleSAMLphp, it can be used to realize single sign-on use cases with a strong second factor authentication.
 
 
-**Enable privacyIDEA for frontend users**
+.. _shibboleth_plugin:
 
-If checked, a user trying to authenticate at the frontend will need to
-authenticate against privacyIDEA.
+Shibboleth
+----------
 
-**Pass to other authentication module**
+The `privacyIDEA Shibboleth plugin <https://github.com/privacyidea/shibboleth-plugin>`_ adds
+multi-factor authentication with privacyIDEA to the Shibboleth Identity Provider (version 5 and later).
 
-If the authentication at privacyIDEA fails, the credential the user entered
-will be verified against the next authentication module.
-
-This can come in handy, if you are setting up the system and if you want to
-avoid locking yourself out.
-
-Anyway, in a productive environment you probably want to uncheck this feature.
-
-.. _otrs_plugin:
-
-OTRS
-----
-
-The OTRS Plugin can be found in its own
-`GitHub Repository <https://github.com/privacyidea/otrs>`__.
-
-This perl module needs to be installed to the directory ``Kernel/System/Auth``.
-
-To activate the OTP authentication you need to add the following to
-``Kernel/Config.pm``::
-
-   $Self->{'AuthModule'} = 'Kernel::System::Auth::privacyIDEA';
-   $Self->{'AuthModule::privacyIDEA::URL'} = \
-           "https://localhost/validate/check";
-   $Self->{'AuthModule::privacyIDEA::disableSSLCheck'} = "yes";
-
-.. note:: As mentioned earlier you should only disable the checking of the
-   SSL certificate if you are in a test environment. For productive use
-   you should never disable the SSL certificate checking.
-
-.. note:: This plugin requires, that you also add the path *validate/check*
-   to the URL.
 
 .. _apache_plugin:
 
 Apache2
 -------
 
-The Apache plugin uses ``mod_wsgi`` and ``redis`` to provide a basic
-authentication on Apache2 side and validating the credentials against
+The Apache plugin uses ``mod_wsgi`` and ``redis`` to provide basic
+authentication on the Apache2 side and validate the credentials against
 privacyIDEA.
 
 You need the authentication script ``privacyidea_apache.py`` and a valid
@@ -303,13 +294,13 @@ configuration in ``/etc/privacyidea/apache.conf``. Both can be found on
 `GitHub <https://github.com/privacyidea/privacyidea/tree/master/authmodules/apache2>`__.
 
 To activate the OTP authentication on a "Location" or "Directory" you need to
-configure Apache2 like this::
+configure Apache2 like this, using the path where you placed the script::
 
    <Directory /var/www/html/secretdir>
         AuthType Basic
         AuthName "Protected Area"
         AuthBasicProvider wsgi
-        WSGIAuthUserScript /usr/share/pyshared/privacyidea_apache.py
+        WSGIAuthUserScript /path/to/privacyidea_apache.py
         Require valid-user
    </Directory>
 
@@ -328,18 +319,18 @@ configure Apache2 like this::
 NGINX
 -----
 
-The NGINX plugin uses the internal scripting language ``lua`` of the NGINX
+The third-party NGINX plugin uses the internal scripting language ``lua`` of the NGINX
 webserver and ``redis`` as caching backend to provide basic authentication
-against privacyIDEA.
+against privacyIDEA. It is not maintained by the privacyIDEA project and was
+last updated in 2022.
 
-You can retrieve the nginx plugin from `GitHub <https://github
-.com/dhoffend/lua-nginx-privacyidea>`__.
+You can retrieve the nginx plugin from `GitHub <https://github.com/dhoffend/lua-nginx-privacyidea>`__.
 
 To activate the OTP authentication on a "Location" you need to include the
 ``lua`` script that basically verifies the given credentials against the
-caching backend. New authentications will be sent to a different (internal)
-location via subrequest which points to the privacyIDEA authentication backend
-(via proxy_pass).
+caching backend. New authentications are sent by the plugin itself to the
+``/validate/check`` endpoint of privacyIDEA, using the library
+``lua-resty-http``, which has to be installed as well.
 
 For the basic configuration you need to include the following lines to your
 ``location`` block::
@@ -348,17 +339,17 @@ For the basic configuration you need to include the following lines to your
         # additional plugin configuration goes here #
         access_by_lua_file 'privacyidea.lua';
     }
-    location /privacyidea-validate-check {
-        internal;
-        proxy_pass https://privacyidea/validate/check;
-    }
+
+Since the request is sent from Lua, NGINX also needs a ``resolver`` to look up
+the host name of the privacyIDEA server and ``lua_ssl_trusted_certificate``
+with the CA certificates that verify its TLS certificate.
 
 You can customize the authentication plugin by setting some of the following
 variables in the secured ``location`` block::
 
     # redis host:port
     # set $privacyidea_redis_host "127.0.0.1";
-    set $privacyidea_redis_post 6379;
+    set $privacyidea_redis_port 6379;
 
     # how long are accepted authentication allowed to be cached
     # if expired, the user has to reauthenticate
@@ -367,15 +358,15 @@ variables in the secured ``location`` block::
     # privacyIDEA realm. leave empty == default
     set $privacyidea_realm 'somerealm'; # (optional)
 
-    # pointer to the internal validation proxy pass
-    set $privacyidea_uri "/privacyidea-validate-check";
+    # full URL of the privacyIDEA endpoint /validate/check
+    set $privacyidea_uri "https://privacyidea.example.com/validate/check";
 
     # the http realm presented to the user
     set $privacyidea_http_realm "Secure zone (use PIN + OTP)";
 
 .. note:: Basic Authentication sends the base64 encoded password on each
    request. So the browser will send the same one time password with each
-   reqeust. Thus the authentication module needs to cache the password as the
+   request. Thus the authentication module needs to cache the password after a
    successful authentication. Redis is used for caching the password similar
    to the Apache2 plugin.
 
@@ -391,48 +382,26 @@ ownCloud
 
 .. index:: ownCloud
 
-The ownCloud plugin is an ownCloud user backend. The directory
-``user_privacyidea`` needs to be copied to your owncloud ``apps`` directory.
+The privacyIDEA ownCloud App uses the two-factor framework of ownCloud to add
+a second factor that is centrally managed by privacyIDEA to the ownCloud
+installation.
 
-.. figure:: owncloud.png
-   :width: 500
+The ownCloud privacyIDEA App is available from the `ownCloud App Store
+<https://marketplace.owncloud.com/apps/twofactor_privacyidea>`_ and on
+`GitHub <https://github.com/privacyidea/privacyidea-owncloud-app>`__.
 
-   *Activating the ownCloud plugin*
+Without a subscription file, privacyIDEA serves the App as long as no more
+than 50 users have active tokens. You can get the subscription file from
+`NetKnights <https://netknights.it/en/products/privacyidea-owncloud-app/>`_.
 
-You can then activate the privacyIDEA ownCloud plugin by checking *Use
-privacyIDEA to authenticate the users.*
-All users now need to be known to privacyIDEA and need to authenticate using
-the second factor enrolled in privacyIDEA - be it an OTP token, Google
-Authenticator or SMS/Smartphone.
+Nextcloud
+---------
 
-Checking *Also allow users to authenticate with their normal passwords.* lets
-the user choose if he wants to authenticate with the OTP token or with his
-original password from the original user backend.
+.. index:: Nextcloud
 
-.. note:: At the moment using a desktop client with a one time password is not
-   supported.
-
-**ownCloud 9.1 and Nextcloud 10** come with a new two-factor framework. The new
-privacyIDEA ownCloud App allows you to add a second factor, that is centrally
-managed by privacyIDEA to the ownCloud or Nextcloud installation.
-
-The ownCloud privacyIDEA App is available from the `ownCloud App Store <https://marketplace
-.owncloud.com/apps/twofactor_privacyidea>`_.
-
-The App requires a subscription file to work for more than ten users. You can
-get the subscription file from `NetKnights <https://netknights
-.it/en/produkte/privacyidea-owncloud-app/>`_.
-
-Django
-------
-
-.. index:: Django
-
-You can add two factor authentication with privacyIDEA to Django using `this
-Django plugin <https://github.com/jeweber/django-privacyidea-auth>`_.
-
-You can simply add ``PrivacyIDEA`` class to the ``AUTHENTICATION_BACKENDS``
-settings of Django.
+The `privacyIDEA Nextcloud App <https://github.com/privacyidea/privacyidea-nextcloud-app>`_
+adds multi-factor authentication with privacyIDEA to Nextcloud. It is
+available from the Nextcloud App Store.
 
 
 OpenVPN
@@ -440,7 +409,17 @@ OpenVPN
 
 .. index:: OpenVPN
 
-Read more about how to use OpenVPN with privacyidea at :ref:`openvpn`.
+Read more about how to use OpenVPN with privacyIDEA at :ref:`openvpn`.
+
+LDAP Proxy
+----------
+
+.. index:: LDAP Proxy
+
+The `privacyIDEA LDAP Proxy <https://github.com/privacyidea/privacyidea-ldap-proxy>`_
+intercepts LDAP bind requests and authenticates them against privacyIDEA.
+This way, applications that authenticate their users with an LDAP bind can use
+multi-factor authentication.
 
 Windows
 -------
@@ -449,24 +428,19 @@ Windows
 
 Credential Provider
 ~~~~~~~~~~~~~~~~~~~
-The privacyIDEA Credential Provider adds two-factor authentication to
-the Windows desktop or Terminal server.
-See http://privacyidea-credential-provider.readthedocs.io
+The privacyIDEA Credential Provider adds multi-factor authentication to
+the Windows desktop or Remote Desktop Services (RDS) hosts.
+See https://privacyidea-credential-provider.readthedocs.io
 
-Provider Class
-~~~~~~~~~~~~~~
+AD FS
+~~~~~
 
-There is a **.Net** provider class, which you can use to integrate privacyIDEA
-authentication into other products and worflows.
-See https://github.com/sbidy/privacyIDEA_dotnetProvider
+The `privacyIDEA AD FS provider <https://github.com/privacyidea/adfs-provider>`_ adds
+multi-factor authentication with privacyIDEA to Microsoft Active Directory
+Federation Services (AD FS).
 
-Further plugins
----------------
+C# client
+~~~~~~~~~
 
-.. index:: Dokuwiki, Wordpress, Contao, Django
-
-You can find further plugins for
-Dokuwiki, WordPress, Contao and Django at `cornelinux Github page <https://github
-.com/cornelinux?tab=repositories>`_.
-
-Again, check the :ref:`plugin_guide`.
+There is a `C# client <https://github.com/privacyidea/csharp-client>`__, which you can
+use to integrate privacyIDEA authentication into other .NET products and workflows.
