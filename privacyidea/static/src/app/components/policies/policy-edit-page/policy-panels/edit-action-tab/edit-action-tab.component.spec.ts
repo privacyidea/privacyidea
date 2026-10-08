@@ -17,9 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, forwardRef, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { EditActionTabComponent } from "./edit-action-tab.component";
@@ -52,7 +53,8 @@ class MockActionSelectorComponent {
 @Component({
   selector: "app-policy-action-search",
   template: "",
-  standalone: true
+  standalone: true,
+  providers: [{ provide: PolicyActionSearchComponent, useExisting: forwardRef(() => MockPolicyActionSearchComponent) }]
 })
 class MockPolicyActionSearchComponent {
   actionFilter = input<string>("");
@@ -169,6 +171,13 @@ describe("EditActionTabComponent", () => {
     const searchField = fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent));
     expect(searchField).not.toBeNull();
     expect(searchField.nativeElement.classList).toContain("hidden");
+  });
+
+  it("should expose the search field and an anchor that starts where the field does", () => {
+    const searchField = fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent));
+
+    expect(component.searchField()).toBe(searchField.componentInstance);
+    expect(component.searchAnchor().nativeElement.firstElementChild).toBe(searchField.nativeElement);
   });
 
   it("should hand the search term to both action lists", () => {

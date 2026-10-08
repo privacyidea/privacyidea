@@ -40,13 +40,17 @@ export class PolicyActionSearchComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>("input");
 
-  /** Which control in this copy has focus, with the caret range for the input; null when focus is elsewhere. */
+  /** Which control in this copy has focus, with the caret range and its direction for the input; null when focus is elsewhere. */
   focusState(): SearchFocus | null {
     const active = document.activeElement;
     const input = this.input().nativeElement;
     if (active === input) {
       const end = input.value.length;
-      return { start: input.selectionStart ?? end, end: input.selectionEnd ?? end };
+      return {
+        start: input.selectionStart ?? end,
+        end: input.selectionEnd ?? end,
+        direction: input.selectionDirection ?? "none"
+      };
     }
     return active && active === this.clearButton() ? "clear-button" : null;
   }
@@ -58,7 +62,7 @@ export class PolicyActionSearchComponent {
     }
     const input = this.input().nativeElement;
     input.focus({ preventScroll: true });
-    input.setSelectionRange(focus.start, focus.end);
+    input.setSelectionRange(focus.start, focus.end, focus.direction);
   }
 
   private clearButton(): HTMLButtonElement | null {
@@ -69,6 +73,7 @@ export class PolicyActionSearchComponent {
 export interface TextSelection {
   start: number;
   end: number;
+  direction: "forward" | "backward" | "none";
 }
 
 export type SearchFocus = TextSelection | "clear-button";

@@ -87,12 +87,12 @@ export class PolicyEditPageComponent implements OnDestroy {
   private readonly panel = viewChild<PolicyPanelEditComponent>("panel");
   private readonly panelElement = viewChild("panel", { read: ElementRef<HTMLElement> });
   private readonly templatePicker = viewChild("templatePicker", { read: ElementRef<HTMLElement> });
-  private readonly headerSearch = viewChild(PolicyActionSearchComponent);
+  private readonly headerSearch = viewChild.required(PolicyActionSearchComponent);
   private readonly searchReached = signal(false);
 
   /**
    * The search field moves into the header once the header touches its top edge, so it is never
-   * partly covered; until then the actions tab renders it above the panels it filters.
+   * partly covered; until then the actions tab shows it above the panels it filters.
    */
   readonly searchInHeader = computed(() => this.activeTab() === "actions" && this.searchReached());
 

@@ -40,11 +40,11 @@ describe("PolicyActionSearchComponent", () => {
     expect(component.focusState()).toBeNull();
   });
 
-  it("reports the caret range while the input has focus", () => {
+  it("reports the caret range and its direction while the input has focus", () => {
     input.focus();
-    input.setSelectionRange(1, 3);
+    input.setSelectionRange(1, 3, "backward");
 
-    expect(component.focusState()).toEqual({ start: 1, end: 3 });
+    expect(component.focusState()).toEqual({ start: 1, end: 3, direction: "backward" });
   });
 
   it("reports the clear button while it has focus", () => {
@@ -53,11 +53,11 @@ describe("PolicyActionSearchComponent", () => {
     expect(component.focusState()).toBe("clear-button");
   });
 
-  it("takes focus at the given caret range", () => {
-    component.takeFocus({ start: 2, end: 4 });
+  it("takes focus at the given caret range and direction", () => {
+    component.takeFocus({ start: 2, end: 4, direction: "backward" });
 
     expect(document.activeElement).toBe(input);
-    expect([input.selectionStart, input.selectionEnd]).toEqual([2, 4]);
+    expect([input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual([2, 4, "backward"]);
   });
 
   it("puts focus back on the clear button when that is where it was", () => {

@@ -156,31 +156,33 @@ describe("PolicyEditPageComponent – create mode", () => {
   }
 
   const headerSearchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
+  const headerSearchShown = () => !headerSearchField().nativeElement.classList.contains("hidden");
 
-  it("keeps the action search out of the header until the header reaches it", () => {
+  it("keeps the action search in the header but hidden until the header reaches it", () => {
     scrollSearchAnchorTo(101);
 
-    expect(headerSearchField()).toBeNull();
+    expect(headerSearchField()).not.toBeNull();
+    expect(headerSearchShown()).toBe(false);
   });
 
-  it("takes the action search into the header once the header touches its top edge", () => {
+  it("shows the action search in the header once the header touches its top edge", () => {
     scrollSearchAnchorTo(100);
 
-    expect(headerSearchField()).not.toBeNull();
+    expect(headerSearchShown()).toBe(true);
   });
 
   it("gives the action search back to the tab when scrolled up again", () => {
     scrollSearchAnchorTo(40);
     scrollSearchAnchorTo(140);
 
-    expect(headerSearchField()).toBeNull();
+    expect(headerSearchShown()).toBe(false);
   });
 
-  it("keeps the action search out of the header on the conditions tab", () => {
+  it("keeps the action search hidden in the header on the conditions tab", () => {
     component.activeTab.set("conditions");
     scrollSearchAnchorTo(40);
 
-    expect(headerSearchField()).toBeNull();
+    expect(headerSearchShown()).toBe(false);
   });
 
   function latestResizeObserver(): { observe: jest.Mock; notify: () => void } {
@@ -195,7 +197,7 @@ describe("PolicyEditPageComponent – create mode", () => {
     latestResizeObserver().notify();
     fixture.detectChanges();
 
-    expect(headerSearchField()).not.toBeNull();
+    expect(headerSearchShown()).toBe(true);
   });
 
   it("re-checks a returning actions tab against its new anchor", () => {
@@ -213,7 +215,7 @@ describe("PolicyEditPageComponent – create mode", () => {
     fixture.detectChanges();
 
     expect(observer.observe).toHaveBeenCalledWith(anchor);
-    expect(headerSearchField()).toBeNull();
+    expect(headerSearchShown()).toBe(false);
   });
 
   describe("focus handoff", () => {
@@ -224,14 +226,14 @@ describe("PolicyEditPageComponent – create mode", () => {
     });
 
     it("moves focus and caret into the header copy when the field moves up", async () => {
-      mockPanel().searchField.set({ focusState: () => ({ start: 1, end: 3 }) });
+      mockPanel().searchField.set({ focusState: () => ({ start: 1, end: 3, direction: "backward" }) });
 
       scrollSearchAnchorTo(100);
       await fixture.whenStable();
 
       const input = headerSearchInput();
       expect(document.activeElement).toBe(input);
-      expect([input.selectionStart, input.selectionEnd]).toEqual([1, 3]);
+      expect([input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual([1, 3, "backward"]);
     });
 
     it("moves focus from the clear button to the header copy's clear button", async () => {
@@ -248,12 +250,12 @@ describe("PolicyEditPageComponent – create mode", () => {
       mockPanel().searchField.set({ focusState: () => null, takeFocus });
       scrollSearchAnchorTo(100);
       headerSearchInput().focus();
-      headerSearchInput().setSelectionRange(2, 4);
+      headerSearchInput().setSelectionRange(2, 4, "backward");
 
       scrollSearchAnchorTo(140);
       await fixture.whenStable();
 
-      expect(takeFocus).toHaveBeenCalledWith({ start: 2, end: 4 });
+      expect(takeFocus).toHaveBeenCalledWith({ start: 2, end: 4, direction: "backward" });
     });
 
     it("leaves focus alone when the search field does not have it", async () => {
