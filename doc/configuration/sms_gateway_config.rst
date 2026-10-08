@@ -21,11 +21,11 @@ There are different providers (gateways) to deliver SMS.
 Firebase Provider
 ~~~~~~~~~~~~~~~~~
 
-The Firebase provider was added in privacyIDEA 3.0. It sends notifications
+The Firebase provider sends notifications
 via the Google Firebase service and this is used for the :ref:`push_token`.
 PUSH delivery is enabled by default and can be disabled by setting ``ALLOW_PUSH``
 to ``no``.
-For an exemplary configuration, you may have a look on the articles on the
+For an exemplary configuration, you may have a look at the articles on the
 privacyIDEA community website `tagged with push token <https://www.privacyidea.org/tag/push-token/>`_.
 
 **JSON config file**
@@ -34,10 +34,14 @@ privacyIDEA community website `tagged with push token <https://www.privacyidea.o
    the Firebase service. It has to be located on the privacyIDEA
    server.
 
+**httpsproxy**
 
-You can get the necessary *JSON config file*, from your Firebase console.
+   Optional proxy for the HTTPS connections to googleapis.com.
+
+
+You can get the necessary *JSON config file* from your Firebase console.
 The default PUSH authenticator App (privacyIDEA Authenticator) which you can
-find in Google Play Store and Apple App Store uses a Firebase project, that is
+find in Google Play Store and Apple App Store uses a Firebase project that is
 managed by the company NetKnights.
 You need to get an SLA to receive a JSON config file for accessing the project.
 
@@ -51,22 +55,33 @@ The HTTP provider can be used for any SMS gateway that provides a simple
 HTTP POST or GET request. This is the most commonly used provider.
 Each provider type defines its own set of parameters.
 
-The following parameters can be used. These are parameters, that define the
-behaviour of the SMS Gateway definition.
+The following parameters can be used. These are parameters that define the
+behavior of the SMS Gateway definition.
+
+**ALLOW_PUSH**
+
+   ``yes`` lets the gateway deliver :ref:`push_token` notifications, see
+   *Using the HTTP provider for PUSH*.
 
 **CHECK_SSL**
 
-   If the URL is secured via TLS (HTTPS), you can select, if the
-   certificate should be verified or not.
+   If the URL is secured via TLS (HTTPS), you can select whether the
+   certificate should be verified or not. The certificate is verified unless
+   this is set to ``no``.
 
 **PROXY**, **HTTP_PROXY** and **HTTPS_PROXY**
 
-   You can specify a proxy to connect to the HTTP gateway. Use the specific values
-   to separate HTTP and HTTPS.
+   **HTTP_PROXY** and **HTTPS_PROXY**: the proxy for gateway URLs starting with
+   ``http://`` and ``https://``. **PROXY** is deprecated: it is only used if
+   neither HTTP_PROXY nor HTTPS_PROXY is set, and only for gateway URLs with the
+   same scheme as the proxy URL itself, so ``PROXY=http://proxy:3128`` is not used
+   for an ``https://`` gateway, and a proxy without a scheme is never used. For an
+   https gateway set HTTPS_PROXY. Without a matching setting, the proxy
+   environment variables of the privacyIDEA process apply, if any.
 
 **REGEXP**
 
-   Regular expression to modify the phone number to make it compatible with provider.
+   Regular expression to modify the phone number to make it compatible with the provider.
 
    *Example*: If you want to replace the leading zero with your country code like
    0123456789 -> 0049123456789, then you need to enter ``/^0/0049/``.
@@ -80,18 +95,25 @@ behaviour of the SMS Gateway definition.
 **RETURN_FAIL**
 
    If the text of ``RETURN_FAIL`` is found in the HTTP response
-   of the gateway privacyIDEA assumes that the SMS could not be sent
+   of the gateway, privacyIDEA assumes that the SMS could not be sent
    and an error occurred.
 
 **RETURN_SUCCESS**
 
    You can either use ``RETURN_SUCCESS`` or ``RETURN_FAIL``.
+   If both are set, only ``RETURN_SUCCESS`` is checked.
    If the text of ``RETURN_SUCCESS`` is found in the HTTP response
-   of the gateway privacyIDEA assumes that the SMS was sent successfully.
+   of the gateway, privacyIDEA assumes that the SMS was sent successfully.
+
+**SEND_DATA_AS_JSON**
+
+   ``yes``: a POST request sends the options as a JSON body; ``no`` (default):
+   as form data.
 
 **TIMEOUT**
 
-   The timeout for contacting the API and receiving a response.
+   The timeout in seconds (default 3) for connecting to the gateway and for each
+   read of the response, not for the whole request.
 
 **URL**
 
@@ -111,9 +133,17 @@ POST request.
 The options can have JSON or strings as values. privacyIDEA will try to
 parse the values as JSON and either send JSON or strings to the HTTP gateway.
 
-.. note:: You can use the tags ``{phone}`` to specify the phone number. The tag ``{otp}``
+.. note:: You can use the tag ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
    by the policy :ref:`smstext`.
+
+Headers
+.......
+
+You can also define additional HTTP headers, for example an access token that the
+gateway expects (see the SMSEagle example below). privacyIDEA sends them with every
+request to the gateway. Tags are not replaced in headers. Only the HTTP provider
+supports headers.
 
 Using the HTTP provider for PUSH
 .................................
@@ -142,36 +172,32 @@ the authenticator cannot verify its signature.
    report the final delivery result if you want this feedback. A Script gateway
    running in ``background`` mode reports no result at all.
 
-.. todo:: Add description of additional headers
-
 Examples
 ........
 
 Clickatell
 ''''''''''
 
-In case of the **Clickatell** provider the configuration will look like this:
+In case of the **Clickatell** HTTP API the configuration will look like this [#clickatell]_:
 
- * **URL**: http://api.clickatell.com/http/sendmsg
+ * **URL**: ``https://platform.clickatell.com/messages/http/send``
  * **HTTP_METHOD**: GET
- * **RETURN_SUCCESS**: ID
 
 Set the additional **options** to be passed as HTTP GET parameters:
 
- * user: *YOU*
- * password: *your password*
- * api_id: *you API ID*
- * text: "Your OTP value is {otp}"
+ * apiKey: *your integration API key*
+ * content: "Your OTP value is {otp}"
  * to: {phone}
 
 This will construct an HTTP GET request like this::
 
-   http://api.clickatell.com/http/sendmsg?user=YOU&password=YOU&\
-        api_id=YOUR API ID&text=....&to=....
+   https://platform.clickatell.com/messages/http/send?apiKey=...&content=....&to=....
 
-where ``text`` and ``to`` will contain the OTP value and the mobile
-phone number. privacyIDEA will assume a successful sent SMS if the
-response contains the text "ID".
+where ``content`` and ``to`` will contain the OTP value and the mobile
+phone number. Clickatell answers with the HTTP status 202 and a JSON object
+that states for each message whether it was ``accepted``. Without
+**RETURN_SUCCESS** or **RETURN_FAIL**, privacyIDEA assumes a successfully sent SMS
+if the gateway answers with the HTTP status 200, 201 or 202.
 
 GTX-Messaging
 '''''''''''''
@@ -192,14 +218,14 @@ You need to set the additional **options**:
  * to: {phone}
  * text: Your OTP value is {otp}.
 
-.. note:: The *user* and *pass* are not the credentials you use to login.
-   You can find the required credentials for sending SMS  in your GTX
+.. note:: The *user* and *pass* are not the credentials you use to log in.
+   You can find the required credentials for sending SMS in your GTX
    messaging account when viewing the details of your *routing account*.
 
 Twilio
 ''''''
 
-You can also use the **Twilio** service for sending SMS. [#twilio]_.
+You can also use the **Twilio** service for sending SMS [#twilio]_.
 
  * **URL**: https://api.twilio.com/2010-04-01/Accounts/B...8/Messages
  * **HTTP_METHOD**: POST
@@ -225,7 +251,6 @@ Parameters:
  * **URL**: http://your-smseagle-url/api/v2/sms
  * **HTTP_METHOD**: POST
  * **RETURN_SUCCESS**: queued
- * **RETURN_FAIL**: REJECTED
  * **SEND_DATA_AS_JSON**: yes
 
 Headers:
@@ -239,22 +264,17 @@ Options:
 
 You can personalize the **text** option, but you must place it inside double-quotes and must include the *{otp}* value.
 
-.. rubric:: Footnotes
-
-.. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages
-.. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
-.. [#smseagle] https://www.smseagle.eu/integration-plugins/privacyidea-sms-integration/
-
 SMPP Provider
 ~~~~~~~~~~~~~
 
-The SMPP provider was added in privacyIDEA 2.22. It uses an SMS Center via the SMPP protocol to
+The SMPP provider uses an SMS Center via the SMPP protocol to
 deliver SMS to the users.
 
 You need to specify the **SMSC_HOST** and **SMSC_PORT** to talk to the SMS center.
-privacyIDEA need to authenticate against the SMS center. For this you can add the parameters
+privacyIDEA needs to authenticate against the SMS center. For this you can add the parameters
 **SYSTEM_ID** and **PASSWORD**. The parameter **S_ADDR** is the sender's number, shown to the users
 receiving an SMS.
+The parameter **REGEXP** modifies the phone number like in the HTTP provider.
 For the other parameters contact your SMS center operator.
 
 
@@ -269,8 +289,8 @@ will send the OTP via SMS to the given phone number.
 
 **BODY**
 
-   This is the body of the email. You can use this to explain the user, what
-   he should do with this email.
+   This is the body of the email. You can use this to explain to the user what
+   to do with this email.
    You can use the tags ``{phone}`` and ``{otp}`` to
    replace the phone number or the one time password.
 
@@ -281,9 +301,13 @@ will send the OTP via SMS to the given phone number.
    provider. But you can also use the tags ``{phone}`` and ``{otp}`` to
    replace the phone number or the one time password.
 
-**SMTPIDENTIFIED**
+**REGEXP**
 
-   Here you can select on of your centrally defined SMTP servers.
+   Regular expression to modify the phone number, like in the HTTP provider.
+
+**SMTPIDENTIFIER**
+
+   Here you can select one of your centrally defined SMTP servers.
 
 **SUBJECT**
 
@@ -307,19 +331,30 @@ the structured PUSH payload serialized as JSON.
 Scripts are located in the directory ``/etc/privacyidea/scripts/``. You can change this default
 location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in :ref:`cfgfile`.
 
-In the configuration of the Script provider you can set two attributes.
+In the configuration of the Script provider you can set the following attributes.
 
-**SCRIPT**
+**script**
 
 This is the file name of the script without the directory part.
 
-**BACKGROUND**
+**REGEXP**
 
-Here you can choose, whether the script should be started and run in the background or if the
-HTTP requests waits for the script to finish.
+Regular expression to modify the phone number, like in the HTTP provider.
+
+**background**
+
+Here you can choose whether the script should be started and run in the background (``background``) or if the
+HTTP request waits for the script to finish (``wait``).
 
 .. note:: A script running in the background reports no exit code, so privacyIDEA cannot tell
    whether the message was delivered. For a PUSH token this means that a script which fails
    after it was started still counts as a successful send: the user is asked to confirm the
    notification on the smartphone instead of being pointed at the polling fallback. Choose
    ``wait`` if you want a failed delivery to be visible.
+
+.. rubric:: Footnotes
+
+.. [#clickatell] https://help.clickatell.com/developers-api-reference/sms-api
+.. [#twilio] https://www.twilio.com/docs/messaging/api
+.. [#gtxapi] https://www.gtx-messaging.com/de/api-docs/http/
+.. [#smseagle] https://www.smseagle.eu/integration-plugins/privacyidea-sms-integration/

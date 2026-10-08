@@ -224,7 +224,7 @@ def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     # Setup logging
     log_read_func = {
         'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x).read())),
-        'cfg': lambda x: logging.config.fileConfig(x)
+        'cfg': lambda x: logging.config.fileConfig(x, disable_existing_loggers=False)
     }
     have_config = False
     log_exception = None

@@ -17,10 +17,11 @@ Possible Actions
 set tokenrealm
 ..............
 
-Here you can set the token realms of the token.
+Adds the given **realm** to the token realms of the token. With **only_realm** the given realm replaces all other
+realms of the token.
 
-E.g. You could use this action to automatically put all newly enrolled tokens
- into a special realm by attaching this action to the event *token_init*.
+E.g. you could use this action to automatically put all newly enrolled tokens
+into a special realm by attaching this action to the event *token_init*.
 
 delete
 ......
@@ -31,7 +32,7 @@ conditions are matched.
 unassign
 ........
 
-The token which was identified in the request will be unassign from the user
+The token which was identified in the request will be unassigned from the user
 if all conditions are matched.
 
 disable
@@ -54,28 +55,35 @@ enroll
 If all conditions are matched a new token will be enrolled. This new token
 can be assigned to a user and added to a container, which were both identified in the request.
 
-The administrator can specify the **tokentype** and the **realms** of the new
-token. By default the generation of the token will use the parameter ``genkey``, to
-generate the otp key. (see :ref:`rest_token`).
+The administrator can specify the **tokentype** and the **realm** of the new
+token. By default the generation of the token will use the parameter ``genkey`` to
+generate the OTP key (see :ref:`rest_token`).
 
 The action ``enroll`` also can take the options **dynamic_phone** (in case of tokentype SMS) and
-**dynamic_email** (in case of tokentype email). Then these tokens are created with a dynamic
-loadable phone number or email address, that is read from the user store on each authentication request.
+**dynamic_email** (in case of tokentype email). Then these tokens are created with a dynamically
+loaded phone number or email address that is read from the user store on each authentication request.
 
 Finally the administrator can specify the option **additional_params**. This needs to be a dictionary
-with parameters, that get passed to the init request. You can specify all parameters, that
-would be used in a ``/token/init`` request:
+with parameters that get passed to the init request. You can specify all parameters that
+would be used in a ``/token/init`` request::
 
    {"hashlib": "sha256", "type": "totp", "genkey": 0, "otpkey": "31323334"}
 
-would create a TOTP token, that uses the SHA256 hashing algorithm instead of SHA1.
-``genkey: 0`` overrides the default behaviour of generating an OTP secret. Instead the
+would create a TOTP token that uses the SHA256 hashing algorithm instead of SHA1.
+``genkey: 0`` overrides the default behavior of generating an OTP secret. Instead the
 fixed OTP secret "31323334" (``otpkey``) is used.
+
+The token is created directly, without the policies that apply to ``/token/init`` (for example the maximum number
+of tokens per user or realm, OTP PIN policies, the default hash algorithm and OTP length, or verify enrollment).
 
 If the tokentype is set to "email" or "sms", you can also specify an SMTP server or SMS gateway
 configuration for the token enrolled by selecting a configuration in the corresponding field
 (**smtp_identifier** or **sms_identifier**). If none is selected, then the default system configuration
 will be used.
+
+The options **dynamic_phone**, **dynamic_email**, **smtp_identifier**, **sms_identifier** and **motppin** only take
+effect together with the option **user**, which assigns the new token to the user of the request. Without it they
+are ignored; an email or SMS token then has no address or number and is not created (the failure is only logged).
 
 set description
 ...............
@@ -108,7 +116,7 @@ If all conditions are matched the validity period of the token will be set.
 
 There are different possibilities to set the start and the end of the
 validity period. The event definition can either contain a fixed date and
-time or if can contain a time offset.
+time or it can contain a time offset.
 
 **Fixed Time**
 
@@ -122,11 +130,11 @@ Only date without time:
 Date with time:
 
   * 2016/12/23 9:30am
-  * 2016/12/23 11:20:pm
+  * 2016/12/23 11:20pm
   * 23.12.2016 9:30
   * 23.12.2016 23:20
 
-Starting with version 2.19 we recommend setting the fixed time in the ISO
+We recommend setting the fixed time in the ISO
 8601 corresponding time format
 
   * 2016-12-23T15:30+0600
@@ -134,7 +142,7 @@ Starting with version 2.19 we recommend setting the fixed time in the ISO
 **Time Offset**
 
 You can also specify a time offset. In this case the validity period will be
-set such many days after the event occurred. This is indicated by using a "+"
+set that many days after the event occurred. This is indicated by using a "+"
 and a specifier for days (d), hours (h) and minutes (m).
 
 E.g. ``+30m`` will set to start the validity period in 30 minutes after the
@@ -142,7 +150,7 @@ event occurred.
 
 ``+30d`` could set the validity period to end 30 days after an event occurred.
 
-.. note:: This way you could easily define a event definition, which will set
+.. note:: This way you could easily define an event definition, which will set
    newly enrolled tokens to be only valid for a certain amount of days.
 
 set countwindow
@@ -153,9 +161,13 @@ Here the count window of a token can be set. This requires an integer value.
 set tokeninfo
 .............
 
-Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
-attribute for the token. You need to specify the ``key`` of the
-tokeninfo and the ``value``.
+Using the action ``set tokeninfo`` you can set a tokeninfo attribute of the
+token. You need to specify the ``key`` of the tokeninfo and the ``value``.
+Keys that the token type maintains itself, such as ``count_auth``,
+``count_auth_success``, ``last_auth``, ``creation_date``, ``assignment_date``,
+``failcounter_exceeded`` or ``next_pin_change``, can not be set: the action
+skips them and logs a warning. The attributes named in the notes below
+(``timeStep``, ``hashlib``, ``phone``, ``timeWindow``) can be set.
 
 In the value field you can use the tag ``{now}`` to set the current timestamp.
 ``{current_time}`` is a deprecated alias for ``{now}``. In addition you can append
@@ -177,27 +189,29 @@ client application and ``{ua_string}`` for the complete user agent, as well as
 
 .. note:: Some tokens have token specific required attributes that are stored
    in the tokeninfo. The TOTP token type has a ``timeStep`` attribute, the TOTP
-   and the HOTP token store the ``hashlib`` attribute in the tokeninfo. the SMS
+   and the HOTP token store the ``hashlib`` attribute in the tokeninfo. The SMS
    token stores the ``phone`` number.
 
 .. note:: You can use this to set the ``timeWindow`` of a TOTP token for
    :ref:`faq_initial_synchronization`.
 
 increase tokeninfo
-...................
+..................
 
 Using the action ``increase tokeninfo``, you can increase the value of a tokeninfo key.
 The tokeninfo is interpreted as an integer value.
 You can use a positive or a negative value as an *increment*. An increment like "-7" will
 decrease the current tokeninfo value by 7.
 If the tokeninfo does not exist, it will be created with the increment value.
+As with *set tokeninfo*, keys that the token type maintains itself can not be changed: the action skips them and
+logs a warning.
 
 set failcounter
 ...............
 
 Using the action ``set failcounter`` you can reset the fail counter by
-setting it to 0 or also "block" the token by setting the fail counter to what
-ever value the "max_fail" is, e.g. 10. Only integer values are allowed.
+setting it to 0 or also "block" the token by setting the fail counter to
+whatever value the maximum fail counter is, e.g. 10. Only integer values are allowed.
 
 See :term:`failcount`.
 
@@ -209,7 +223,7 @@ Positive and negative integer values are allowed. Positive values will increase 
 fail counter, negative values will decrease it.
 
 .. note:: To limit a token handler in decreasing the fail counter, you may use the
-   event handler condition **failcounter** (c.f. :ref:`handlerconditions`) and set
+   event handler condition **failcounter** (cf. :ref:`handlerconditions`) and set
    it to e.g. ">-5". Once this condition is not met anymore, the event handler will
    not be triggered.
 
@@ -227,9 +241,11 @@ set random pin
 
 Sets a random PIN for the handled token. The PIN is then added to the response in
 ``detail->pin``. This can be used in the *notification handler*.
-Please take care, that probably the PIN needs to be removed from the response
+Please take care that probably the PIN needs to be removed from the response
 using the *response mangler handler* after
 handling it with the notification handler.
+
+The length of the PIN is set with the option **length** (1 to 31).
 
 add tokengroup
 ..............
@@ -242,6 +258,25 @@ remove tokengroup
 .................
 
 The token is unassigned from the given tokengroup.
+
+delete tokeninfo
+................
+
+Using the action ``delete tokeninfo`` you can delete a tokeninfo attribute of the token.
+You need to specify the ``key`` of the tokeninfo that should be deleted.
+Keys that the token type maintains itself, including those that *set tokeninfo* can set (``timeStep``, ``hashlib``,
+``phone``, ``timeWindow``), can not be deleted: the action skips them and logs a warning.
+
+attach application
+..................
+
+The token is attached to a machine with the given token application. You need to specify the
+**application**, which can be ``ssh``, ``offline`` or ``luks``. Not all tokens work well with all
+applications. The option **machine ID** specifies the ID of the machine you want to attach the token to.
+
+Depending on the application, additional options are available: **count** (the number of offline OTP
+values available) and **rounds** (the number of rounds for password hashing) for ``offline``, **user**
+for ``ssh``, and **slot** and **partition** for ``luks``. See :ref:`machines` for the token applications.
 
 Code
 ~~~~
