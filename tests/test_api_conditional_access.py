@@ -1176,7 +1176,7 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
     false, so a rejection is one too, and the identity gated on is the owner of the token the serial names.
     """
 
-    failure_event_type = AuthEventType.OFFLINE_REFILL_FAIL
+    counted_event_type = AuthEventType.OFFLINE_REFILL_FAIL
     event_name = "validate_offlinerefill"
     endpoint_path = "/validate/offlinerefill"
     serial = "CA_GATE_OFFLINE"
@@ -1224,8 +1224,19 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
     def _authenticate_with_serial(self, serial: str) -> Response:
         return self._refill(data={"serial": serial})
 
-    def _fail(self) -> Response:
+    def _trip(self) -> Response:
+        """A refilltoken that does not match the stored one, which is this endpoint's OFFLINE_REFILL_FAIL."""
         return self._refill(refilltoken="a" * 2 * REFILLTOKEN_LENGTH)
+
+    def _assert_own_answer(self, response: Response) -> None:
+        """An ordinary failed refill: the refilltoken was wrong, which is the whole reason it counted. ERR905 and
+        its own wording, not the ERR401 a rejection is dressed as."""
+        self.assertEqual(400, response.status_code, response.json)
+        error = response.json["result"]["error"]
+        self.assertEqual(Error.PARAMETER, error["code"], response.json)
+        self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect", error["message"],
+                         response.json)
+        self.assertNotIn("auth_items", response.json)
 
     def _assert_succeeded(self, response: Response) -> None:
         self.assertEqual(200, response.status_code, response.json)
