@@ -261,6 +261,7 @@ AUTHENTICATING_ENDPOINTS: tuple[str, ...] = (
     "/validate/radiuscheck",
     "/validate/triggerchallenge",
     "/validate/initialize",
+    "/validate/offlinerefill",
     # Recognition of a remembered device. Not an authentication, but it records the refusals of conditional access
     # (lock, block, deny) and a replayed device cookie (DEVICE_TOKEN_REUSED).
     "/validate/remember_device",

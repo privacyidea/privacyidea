@@ -63,6 +63,11 @@ entry.
 Success
    ``LOGIN_SUCCESS``
      the authentication completed.
+   ``OFFLINE_REFILL_SUCCESS``
+     an offline client refilled its OTP values or renewed its refilltoken, see
+     :ref:`application_offline`. A refill is not a login, so a policy counting
+     ``LOGIN_SUCCESS`` does not count it, and it does not reset a counter that
+     starts over after the last successful login.
 
 Pending
    ``CHALLENGE_TRIGGERED``
@@ -151,6 +156,9 @@ Failure
      unauthenticated by that key. This entry is written in addition to the entry of the request itself, on whatever
      endpoint the request was sent to - also outside authentication, for example ``/token``. It names no user; the
      client is recorded in the other info as ``client_id``. A conditional access policy cannot count it.
+   ``OFFLINE_REFILL_FAIL``
+     an offline refill was refused. The reasons say why: one of the token states, ``WRONG_OTP`` or one of the offline
+     refill reasons below.
 
 Three further types are written by conditional access itself, when it refuses a
 request before any credentials are checked: ``USER_LOCKED`` (a user lock was in
@@ -220,6 +228,10 @@ The credentials
      ``MFA_FAIL`` alone would not tell a wrong OTP apart from a token the
      request never got to check.
 
+     On ``OFFLINE_REFILL_FAIL``, ``WRONG_OTP`` means the OTP the client
+     reported is not one of the offline values issued to it: a wrong value, or
+     a client whose OTP list is out of sync with the server.
+
 Challenge-response
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
@@ -239,6 +251,16 @@ Challenge-response
      the challenge was rejected on the device. Carried by all three decline
      event types and says only where the refusal came from; which refusal it was
      is what the event type names.
+
+Offline refill
+   ``REFILLTOKEN_MISMATCH``
+     the refilltoken the client sent is not the one stored for the token: a
+     client that missed a rotation, or a refilltoken replayed by someone else.
+   ``NOT_AN_OFFLINE_TOKEN``
+     the token is not attached to any machine with the offline application.
+   ``MACHINE_NOT_IDENTIFIED``
+     a WebAuthn or passkey refill whose user agent names no machine, so no
+     refilltoken can be looked up for it.
 
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no
@@ -261,9 +283,9 @@ as one with a wrong PIN, leaves the entry without one.
 
 No reason is picked out as the one that counts: they are listed in the order
 the vocabulary above declares them - the token states, then the authorization
-decisions, then the credentials, then challenge-response - so that the same
-findings always read the same way. The order carries no ranking; each reason is
-recorded and each is filterable on its own.
+decisions, then the credentials, then challenge-response, then offline refill -
+so that the same findings always read the same way. The order carries no
+ranking; each reason is recorded and each is filterable on its own.
 
 Which token failed for which reason is not lost either: the details of the
 entry keep the finding of every token under ``reason_detail.reasons``, keyed by
@@ -294,6 +316,9 @@ request path:
   a challenge triggered by an administrator.
 ``/validate/initialize``
   the anonymous bootstrap of a FIDO2/passkey challenge before login.
+``/validate/offlinerefill``
+  an offline client refilling its OTP values or renewing its refilltoken, see
+  :ref:`application_offline`.
 ``/validate/remember_device``
   an application asking whether a device is remembered, so that it may skip the
   second factor. This is not an authentication and writes no entry of its own

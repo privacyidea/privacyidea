@@ -100,6 +100,10 @@ stays in the realm of the original request (on ``/validate/check`` and ``/auth``
 :ref:`conditional_access` is checked for the user of the original request and again for the new user. Other policies
 that are checked before the event handlers run still apply to the user of the original request.
 
+The same holds for a request that names a token instead of a user, for example ``/validate/check`` or
+``/validate/offlinerefill`` with only a ``serial``: conditional access is checked for the owner of that token, and
+setting the ``serial`` or ``credential_id`` parameter has it checked again for the owner of the new token, with or
+without *reset_user*.
 
 A request mangler that can not set the parameter, e.g. because the value names more groups than the match pattern
 has, fails the request when the definition has *Abort the request if the handler fails* set, which new request

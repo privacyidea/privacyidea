@@ -220,13 +220,25 @@ Refill
 If a client with offline HOTP values runs out of OTP values, it can request a refill.
 This is done using :http:post:`/validate/offlinerefill`
 
-The endpoint returns an error if the token is no longer attached for offline use, if the refilltoken is out of sync,
-or if the token can no longer be used (disabled, locked by its fail counter, maximum number of authentications
-reached, outside its validity period). Therefore, clients managing WebAuthn/Passkey offline data should also call this
-endpoint regularly. For HOTP the endpoint also returns an error if the OTP value is not one of the issued offline
-values, and for WebAuthn/Passkey if the UserAgent contains no machine name (see above); these errors do not mean that
-the offline data has become invalid. With the policy :ref:`policy_hide_specific_error_message_for_offline_refill`
-every error has the same message.
+If that endpoint returns an error with the error code ``905``, the token can no longer be used offline: it is no longer
+attached for offline use, it has been deleted, it can no longer be used at all (disabled, locked by its fail counter,
+maximum number of authentications reached, outside its validity period), or the refilltoken is out of sync. Therefore,
+clients managing WebAuthn/Passkey offline data should also call this endpoint regularly. A wrong OTP value or a refusal
+by :ref:`conditional_access` is answered with the error code ``401`` instead; it does not invalidate the offline data,
+so clients should keep it. For WebAuthn/Passkey, a UserAgent without a machine name (see above) is answered with
+``905``, although the offline data is still valid. With the policy
+:ref:`policy_hide_specific_error_message_for_offline_refill` every failed refill is answered with the same message and
+the error code ``401``.
+
+For an HOTP token the client sends the last PIN and OTP value the user entered. Only the OTP value is verified, against
+the offline values issued to the client; the PIN is not checked and is only used to compute the new offline values. The
+refilltoken is therefore what authorizes a refill.
+
+A refill is subject to :ref:`conditional_access`: a lock of the token owner, a block of the source IP or a *deny*
+action refuses it before the refilltoken is checked, so no new offline values are issued and the refilltoken is not
+rotated. Such a refusal is recorded in the :ref:`authentication_log` as ``USER_LOCKED``, ``IP_BLOCKED`` or
+``ACCESS_DENIED``. A refill that passes conditional access is recorded as ``OFFLINE_REFILL_SUCCESS`` or
+``OFFLINE_REFILL_FAIL``, unless the request is missing the ``serial``, ``refilltoken`` or ``pass`` parameter.
 
 
 Managing in the WebUI

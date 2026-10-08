@@ -225,6 +225,20 @@ there has none.
 mirror image: an ordinary failed push answer carries no ``detail`` at all, so a
 silent rejection carries none either.
 
+**The offline refill** (``/validate/offlinerefill``) answers every failure with
+an error response, so a rejection is one too: HTTP ``400`` with the privacyIDEA
+error code ``401``, the code a wrong OTP is answered with. With
+``hide_auth_error_status`` set, the HTTP status is ``401`` instead. A silent rejection
+says ``Failed offline token refill``, and like every other failed refill it is
+masked when ``hide_specific_error_message_for_offline_refill`` is set. A
+configured message is shown either way, see
+:ref:`conditional_access_error_messages_masking`.
+
+A rejection never carries the error code ``905``, which the privacyIDEA
+Credential Provider reads as the token no longer being marked for offline use:
+it would delete the WebAuthn/Passkey offline data of the machine, and the user
+would have to log in online again once the restriction is lifted.
+
 ``/validate/polltransaction`` is not gated - it reads the status of a challenge
 rather than attempting an authentication - and so never produces a rejection
 message.
@@ -246,7 +260,9 @@ Interaction with the masking policies
 **A configured conditional access message is not masked.** Neither
 ``hide_specific_error_message`` (:ref:`authentication scope <authentication_policies>`)
 nor ``no_detail_on_fail`` (:ref:`authorization scope <authorization_policies>`)
-removes it, and neither does the combination of both.
+removes it, and neither does the combination of both. The same holds for
+``hide_specific_error_message_for_offline_refill`` (token scope) on the offline
+refill.
 
 Those two policies exist to suppress what privacyIDEA *volunteers by default* -
 which factor failed, why a token refused, which serial was tried. A conditional
@@ -283,6 +299,8 @@ masking policy is sufficient against a message an administrator configured.
 rejection: a refused login already returns the ``401`` that policy normalizes
 to, and a refused ``/validate`` request already returns the ordinary ``200`` -
 or, at ``/validate/radiuscheck``, the empty ``400`` every failure gets there.
+It only affects the offline refill, whose rejection it turns from HTTP ``400``
+into ``401`` like every other failed refill
 
 Where the reason always is
 --------------------------

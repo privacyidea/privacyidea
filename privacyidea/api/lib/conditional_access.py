@@ -73,6 +73,7 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from flask import request, g, Response
+from flask.typing import ResponseReturnValue
 
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
                                       send_result, get_optional_one_of)
@@ -84,7 +85,7 @@ from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_use
                                                        RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
-from privacyidea.lib.conditional_access.request_context import get_ca_context, peek_ca_context
+from privacyidea.lib.conditional_access.request_context import GateCheck, get_ca_context, peek_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
@@ -118,11 +119,16 @@ class RejectionShape:
         a refusal answers through them like any other failure. ``/validate/remember_device`` is the one endpoint
         with any: its whole answer is ``detail.remembered_device``, so a rejection leaving it out would be the one
         answer its clients cannot read.
+    :ivar render: renders the refusal itself, for an endpoint whose failures are not a ``result.value`` false at all.
+        ``/validate/offlinerefill`` answers every failure with an error response, so a refusal there has to be one too.
+        It receives the configured wording, or ``None`` for a silent rejection - the endpoint's own failure wording is
+        the stand-in there, not the generic authentication failure - and the other fields do not apply.
     """
     value: Any = False
     rid: int = 2
     carries_message: bool = True
     extra_detail: Mapping[str, Any] | None = None
+    render: Callable[[str | None], ResponseReturnValue] | None = None
 
 
 #: How ``/ttype/push`` answers a refused challenge answer. The push token renders its own response through
@@ -136,6 +142,10 @@ PUSH_ANSWER_REJECTION = RejectionShape(rid=1, carries_message=False)
 #: either and says ``false`` through the one field the client reads.
 REMEMBER_DEVICE_REJECTION = RejectionShape(rid=1, carries_message=False,
                                            extra_detail={"remembered_device": False})
+
+#: How ``/validate/triggerchallenge`` answers a refusal: ``result.value`` there is the number of challenges triggered,
+#: not a boolean, so a rejection answers with this endpoint's own kind of nothing rather than changing the field's type.
+TRIGGER_CHALLENGE_REJECTION = RejectionShape(value=0)
 
 
 def _rejected_transaction_id() -> str | None:
@@ -256,12 +266,11 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
-def conditional_access_precheck(user: User, shape: RejectionShape | None = None) -> Response | None:
+def conditional_access_precheck(user: User, shape: RejectionShape | None = None) -> ResponseReturnValue | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns the failure
-    :class:`~flask.Response` to be returned to the client, or ``None`` to continue
-    with the normal flow.
+    response to be returned to the client, or ``None`` to continue with the normal flow.
 
     The decision is :func:`_evaluate_rejection`; this renders it for a machine-facing
     client. The response says only what an admin configured on the triggering stage; with
@@ -277,8 +286,8 @@ def conditional_access_precheck(user: User, shape: RejectionShape | None = None)
     :param shape: how this endpoint answers a refusal, defaulting to the ``/validate/*`` shape - an ordinary
         ``200`` carrying ``result.value`` false and a message. ``/validate/triggerchallenge`` overrides the value
         (the number of challenges triggered, where a boolean would change the type of a field its callers may be
-        reading as a number) and ``/validate/remember_device`` the whole shape, answering a recognition rather than
-        an authentication.
+        reading as a number), ``/validate/remember_device`` the whole shape, answering a recognition rather than
+        an authentication, and ``/validate/offlinerefill`` renders an error response of its own.
     """
     shape = shape if shape is not None else RejectionShape()
     rejection = conditional_access_rejection(user, shape)
@@ -343,10 +352,10 @@ def _rejection_wording(shape: RejectionShape, message: str | None) -> str | None
     """
     if message:
         return message
-    return None if not shape.carries_message else str(GENERIC_AUTH_FAILURE)
+    return None if not shape.carries_message or shape.render is not None else str(GENERIC_AUTH_FAILURE)
 
 
-def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
+def _rejection_response(shape: RejectionShape, message: str | None) -> ResponseReturnValue:
     """
     The response a refused request gets, in the shape its endpoint's gate describes
     (:class:`RejectionShape`).
@@ -362,6 +371,8 @@ def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
     :param message: the wording, or ``None`` where this endpoint's failures carry no detail (see
         :func:`_rejection_wording`)
     """
+    if shape.render is not None:
+        return shape.render(message)
     # An empty detail is dropped by prepare_result, which is exactly what an endpoint carrying none needs.
     details = dict(shape.extra_detail or {})
     if message:
@@ -398,7 +409,7 @@ def restore_rejection_audit(response: Response) -> Response:
 
 
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
-                            rejection_value: Any = False) -> Callable[[Callable], Callable]:
+                            shape: RejectionShape | None = None) -> Callable[[Callable], Callable]:
     """
     View decorator that runs :func:`conditional_access_precheck` before the pre-policies below it and the endpoint
     act on the request. If the pre-check rejects it, that response is returned immediately and neither runs.
@@ -409,10 +420,11 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     :func:`conditional_access_login_gate`. The exception is a pre-policy that rewrites the identity: ``set_realm``
     and ``mangle`` on ``/validate/check`` assign a new ``request.User``, and everything downstream authenticates,
     logs and counts as that one - so they run first, or the gate would check an identity that never authenticates.
-    A pre-event handler can assign one too (the RequestMangler with ``reset_user``). The event handlers stay below
-    the gate, so that none of them runs for a user it refuses; instead the gate leaves its check on the request's
-    conditional-access context, and the event decorator runs it again for the new user
-    (:func:`~privacyidea.lib.conditional_access.request_context.recheck_conditional_access_gate`).
+    A pre-event handler can change the identity too: the RequestMangler assigns a new ``request.User`` with
+    ``reset_user``, or rewrites the ``serial`` or ``credential_id`` an *identity_resolver* reads. The event handlers
+    stay below the gate, so that none of them runs for a user it refuses; instead the gate leaves its check on the
+    request's conditional-access context, and the event decorator runs it again whenever the identity it resolves
+    has changed (:func:`~privacyidea.lib.conditional_access.request_context.recheck_conditional_access_gate`).
 
     Below the response decorators because this gate *returns* its rejection rather than raising one: a failed
     authentication on ``/validate/*`` is an ordinary ``200`` carrying ``result.value`` false, not an error
@@ -434,22 +446,24 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
         omitted, ``request.User`` is used. Endpoints that must resolve the
         identity differently (a serial/credential-id request, or a transaction
         owner) pass their own resolver.
-    :param rejection_value: what ``result.value`` says on a rejection, which is the whole of the refusal shape
-        for a decorated endpoint. ``False`` everywhere except ``/validate/triggerchallenge``, where the value
-        is the *number of challenges triggered* rather than a boolean - answering that endpoint with ``False``
-        would change the type of a field its callers may be reading as a number.
+    :param shape: how this endpoint answers a refusal (see :class:`RejectionShape`), defaulting to the
+        ``/validate/*`` shape. ``/validate/triggerchallenge`` (:data:`TRIGGER_CHALLENGE_REJECTION`) and
+        ``/validate/offlinerefill`` pass their own.
     """
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            def check() -> Response | None:
-                user = identity_resolver() if identity_resolver is not None else request.User
-                return conditional_access_precheck(user, RejectionShape(value=rejection_value))
+            def resolve_identity() -> User:
+                return identity_resolver() if identity_resolver is not None else request.User
 
-            rejection = check()
+            def check(user: User) -> ResponseReturnValue | None:
+                return conditional_access_precheck(user, shape)
+
+            user = resolve_identity()
+            rejection = check(user)
             if rejection is not None:
                 return rejection
-            get_ca_context().gate_check = check
+            get_ca_context().gate_check = GateCheck(resolve_identity, check, user)
             return wrapped_function(*args, **kwargs)
         return wrapper
     return decorator
@@ -700,13 +714,16 @@ def conditional_access_login_gate() -> Callable[[Callable], Callable]:
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            def check() -> None:
-                user = request.User or User()
+            def resolve_identity() -> User:
+                return request.User or User()
+
+            def check(user: User) -> None:
                 g.audit_object.log({"user": user.login, "realm": user.realm})
                 _reject_restricted_login(user)
 
-            check()
-            get_ca_context().gate_check = check
+            user = resolve_identity()
+            check(user)
+            get_ca_context().gate_check = GateCheck(resolve_identity, check, user)
             return wrapped_function(*args, **kwargs)
 
         return wrapper
