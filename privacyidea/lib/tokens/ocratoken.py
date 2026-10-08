@@ -158,8 +158,7 @@ class OcraTokenClass(TokenClass):
 
         At the moment we do not think of other ways to trigger a challenge.
 
-        This function is not decorated with
-            @challenge_response_allowed
+        This function is not decorated with ``@challenge_response_allowed``,
         as the OCRA token is always a challenge response token!
 
         :param passw: The PIN of the token.
@@ -247,8 +246,12 @@ class OcraTokenClass(TokenClass):
         :return: return otp_counter. If -1, challenge does not match
         :rtype: int
         """
-        ocrasuite = self.get_tokeninfo("ocrasuite")
         security_object = self.token.get_otpkey()
+        if not security_object.getKey():
+            # A tiqr token gets its secret only when the app completes the enrollment
+            log.warning(f"Token {self.token.serial} has no secret. The response is not checked.")
+            return -1
+        ocrasuite = self.get_tokeninfo("ocrasuite")
         ocra_object = OCRA(ocrasuite, security_object=security_object)
         # TODO: We might need to add additional Signing or Counter objects
         r = ocra_object.check_response(passw, question=challenge)

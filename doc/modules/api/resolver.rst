@@ -10,5 +10,4 @@ Resolver endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: resolver_blueprint
-
    :include-empty-docstring:

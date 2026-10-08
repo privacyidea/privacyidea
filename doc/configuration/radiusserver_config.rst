@@ -5,8 +5,14 @@ RADIUS server configuration
 
 .. index:: RADIUS server
 
-At *config->system->RADIUS servers* the administrator
-can configure a RADIUS servers to which privacyIDEA can forward authentication requests.
+At *External Services -> RADIUS Servers* the administrator
+can configure RADIUS servers to which privacyIDEA can forward authentication requests.
+
+A RADIUS server definition has a unique *Identifier*, the *Server* (host name or IP
+address) and *Port* (default 1812), the shared *Secret*, the *Dictionary* file on the
+privacyIDEA server (default ``/etc/privacyidea/dictionary``), the *Timeout* per attempt in
+seconds (default 5), the number of *Retries* (default 3), a *Description*, and
+*Require Message-Authenticator*.
 
 .. figure:: images/radius-server-config.png
    :width: 700
@@ -22,4 +28,4 @@ and in the :ref:`Passthru Policy <passthru_policy>`.
 .. figure:: images/radius-server-chain.png
    :width: 700
 
-   *privacyIDEA can reveice incoming RADIUS requests and send outgoing RADIUS requests.*
+   *privacyIDEA can receive incoming RADIUS requests and send outgoing RADIUS requests.*

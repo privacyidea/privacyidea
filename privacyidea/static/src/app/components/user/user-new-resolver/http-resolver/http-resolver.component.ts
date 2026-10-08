@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal, untracked } from "@angular/core";
 import { form, FormField } from "@angular/forms/signals";
 
 import { MatButtonModule } from "@angular/material/button";
@@ -82,6 +82,7 @@ export interface HttpResolverModel {
   requestMapping: string;
   headers: string;
   responseMapping: string;
+  hasSpecialErrorHandler: boolean;
   errorResponse: string;
   // Advanced mode fields
   base_url: string;
@@ -132,6 +133,17 @@ const EMPTY_USER_GROUPS: UserGroupsModel = {
   endpoint: ""
 };
 
+const REQUEST_CONFIG_KEYS = [
+  "config_authorization",
+  "config_user_auth",
+  "config_get_user_list",
+  "config_get_user_by_id",
+  "config_get_user_by_name",
+  "config_create_user",
+  "config_edit_user",
+  "config_delete_user"
+] as const;
+
 function emptyHttpModel(): HttpResolverModel {
   return {
     endpoint: "",
@@ -139,6 +151,7 @@ function emptyHttpModel(): HttpResolverModel {
     requestMapping: "",
     headers: "",
     responseMapping: "",
+    hasSpecialErrorHandler: false,
     errorResponse: "",
     base_url: "",
     realm: "",
@@ -228,6 +241,7 @@ export class HttpResolverComponent {
   });
   isAdvanced = false;
   isAuthorizationExpanded = false;
+  private previousBasicSettings: boolean | undefined = undefined;
 
   model = signal<HttpResolverModel>(emptyHttpModel());
 
@@ -265,10 +279,17 @@ export class HttpResolverComponent {
       { allowSignalWrites: true }
     );
 
+    // The defaults of a mode apply when the mode changes, not on every change of the model, so a response mapping
+    // typed in basic mode is kept.
     effect(() => {
       const basic = this.basicSettings();
       const data = this.mergedData();
-      if (!basic && !this.model().responseMapping) {
+      if (basic === this.previousBasicSettings) {
+        return;
+      }
+      this.previousBasicSettings = basic;
+      const responseMapping = untracked(() => this.model().responseMapping);
+      if (!basic && !responseMapping) {
         if (data.responseMapping === undefined) {
           this.model.update((m) => ({
             ...m,
@@ -279,13 +300,8 @@ export class HttpResolverComponent {
           this.model.update((m) => ({ ...m, verify_tls: true }));
         }
       }
-      if (basic && this.model().responseMapping) {
-        if (data.responseMapping === undefined) {
-          this.model.update((m) => ({ ...m, responseMapping: "" }));
-        }
-        if (data.verify_tls === undefined) {
-          this.model.update((m) => ({ ...m, verify_tls: false }));
-        }
+      if (basic && responseMapping && data.responseMapping === undefined) {
+        this.model.update((m) => ({ ...m, responseMapping: "" }));
       }
     });
 
@@ -324,7 +340,7 @@ export class HttpResolverComponent {
     });
     effect(() => {
       const groups = this.userGroupsModel();
-      this.model.update((m) => ({ ...m, user_groups: groups }));
+      this.model.update((m) => ({ ...m, config_get_user_groups: groups }));
     });
   }
 
@@ -340,13 +356,67 @@ export class HttpResolverComponent {
         !!currentModel.method &&
         !!currentModel.requestMapping &&
         !!currentModel.headers &&
-        !!currentModel.responseMapping
+        !!currentModel.responseMapping &&
+        (!currentModel.hasSpecialErrorHandler || !!currentModel.errorResponse)
       );
     }
     return !!currentModel.base_url;
   };
   isDirty = () => this.httpForm().dirty();
-  getValue = () => this.model();
+  /**
+   * The value posted to the server, by mode: a basic resolver consists of one request, so an empty object removes
+   * the request configurations an earlier save may have stored. An advanced resolver posts an empty object for a
+   * request the administrator left without endpoint, which the server then deletes.
+   */
+  getValue = (): Record<string, unknown> => {
+    const currentModel = this.model();
+    if (this.basicSettings()) {
+      return {
+        endpoint: currentModel.endpoint,
+        method: currentModel.method,
+        headers: currentModel.headers,
+        requestMapping: currentModel.requestMapping,
+        responseMapping: currentModel.responseMapping,
+        hasSpecialErrorHandler: currentModel.hasSpecialErrorHandler,
+        errorResponse: currentModel.errorResponse,
+        // A basic resolver has no request to edit users
+        Editable: false,
+        ...Object.fromEntries(REQUEST_CONFIG_KEYS.map((key) => [key, {}])),
+        // A basic resolver defines its attributes with the response mapping
+        attribute_mapping: {}
+      };
+    }
+    const value: Record<string, unknown> = {
+      base_url: currentModel.base_url,
+      headers: currentModel.global_headers,
+      Editable: currentModel.Editable,
+      verify_tls: currentModel.verify_tls,
+      tls_ca_path: currentModel.tls_ca_path,
+      timeout: currentModel.timeout,
+      attribute_mapping: currentModel.attribute_mapping,
+      config_get_user_groups: currentModel.config_get_user_groups
+    };
+    for (const key of REQUEST_CONFIG_KEYS) {
+      value[key] = currentModel[key].endpoint?.trim() ? currentModel[key] : {};
+    }
+    if (this.type() === "keycloakresolver") {
+      value["realm"] = currentModel.realm;
+    }
+    if (this.type() === "entraidresolver") {
+      Object.assign(value, {
+        tenant: currentModel.tenant,
+        client_id: currentModel.client_id,
+        authority: currentModel.authority,
+        client_credential_type: currentModel.client_credential_type,
+        ...(currentModel.client_credential_type === "certificate"
+          ? { client_certificate: currentModel.client_certificate }
+          : { client_secret: currentModel.client_secret })
+      });
+    } else {
+      Object.assign(value, { username: currentModel.username, password: currentModel.password });
+    }
+    return value;
+  };
 
   checkUserPasswordHint = computed(() => {
     const tags =
@@ -458,6 +528,10 @@ export class HttpResolverComponent {
     if (data.requestMapping !== undefined) updates.requestMapping = this.formatConfigValue(data.requestMapping);
     if (data.headers !== undefined) updates.headers = this.formatConfigValue(data.headers);
     if (data.responseMapping !== undefined) updates.responseMapping = this.formatConfigValue(data.responseMapping);
+    if (data.hasSpecialErrorHandler !== undefined) {
+      // The server returns the stored value as a string
+      updates.hasSpecialErrorHandler = parseBooleanValue(data.hasSpecialErrorHandler as boolean | string);
+    }
     if (data.errorResponse !== undefined) updates.errorResponse = this.formatConfigValue(data.errorResponse);
     if (data.base_url !== undefined) updates.base_url = data.base_url;
     if (data.tenant !== undefined) updates.tenant = data.tenant;

@@ -43,11 +43,13 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 @Component({
   selector: "app-container-table-self-service",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,

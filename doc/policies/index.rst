@@ -3,14 +3,11 @@
 Policies
 ========
 
-.. todo:: Policies may be outdated. How to check which components are missing?
-   And do we want to document all actions? I added a link to the :ref:`code_policy`.
-
 .. index:: policies, scope
 
-Policies can be used to define the reaction and behaviour of the system.
+Policies can be used to define the reaction and behavior of the system.
 
-Each policy defines the behaviour in a certain area, called scope.
+Each policy defines the behavior in a certain area, called scope.
 privacyIDEA knows these scopes:
 
 .. toctree::
@@ -36,7 +33,7 @@ The logic of the policies in the scopes is additive.
 
    *Policy Definition*
 
-Starting with privacyIDEA 2.5 you can use policy templates to ease the setup.
+You can use policy templates to ease the setup.
 
 .. toctree::
    :maxdepth: 1
@@ -48,17 +45,25 @@ Each policy can contain the following attributes:
 **policy name**
 
   A unique name of the policy. The name is the identifier of
-  the policy. If you create a new policy with the same name,
-  the policy is overwritten.
+  the policy. If you save a policy under an existing name, the
+  existing policy is updated: the attributes sent in the request
+  replace the stored ones, all others keep their values. The
+  WebUI always sends the whole policy.
 
   .. note:: In the web UI and the API policies can only be created
-     with the characters 0-9, a-z, A-Z, "_", "-", " " and ".".
+     with the characters 0-9, a-z, A-Z, ``_``, ``-`` and ``.``.
+     The names ``check`` and names starting with ``pi-update-policy-``
+     are reserved.
      On a library level or during migration scripts policies with
      other characters could be created.
+
+.. versionadded:: 2.0
 
 **scope**
 
   The scope of the policy as described above.
+
+.. versionadded:: 2.0
 
 **priority**
 
@@ -82,20 +87,24 @@ Each policy can contain the following attributes:
 **description**
     Use this to describe your policy in more detail.
 
+.. versionadded:: 3.10
+
 **action**
 
   This is the important part of the policy.
   Each scope provides its own
   set of actions.
-  An action describes that something is `allowed` or
-  that some behaviour is configured.
+  An action describes that something is *allowed* or
+  that some behavior is configured.
   A policy can contain several actions.
-  Actions can be of type `boolean`, `string` or `integer`.
+  Actions can be of type ``bool``, ``string`` or ``integer``.
   Boolean actions are enabled by just adding this action - like
   ``scope=user:action=disable``, which allows the user to disable their own
   tokens.
-  `string` and `integer` actions require an additional value - like
+  ``string`` and ``integer`` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
+
+.. versionadded:: 2.0
 
 
 Conditions
@@ -106,11 +115,18 @@ values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` 
 from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field of nothing but exclusions
 matches no value at all.
 
+In *user* and *admin user* every value other than ``*`` is a regular expression that has to match
+the whole name: ``corn.*`` matches *cornelius*, while ``corn*`` means ``cor`` followed by any
+number of ``n``. A dot matches any character, so ``john.doe`` also matches *johnXdoe*. Realm and
+resolver values must name existing realms and resolvers.
+
 **realm**
 
   This is the realm, for which this policy is valid.
 
   If this field is left blank, this policy is valid for all realms.
+
+.. versionadded:: 2.0
 
 .. _check_all_resolvers:
 
@@ -120,9 +136,11 @@ matches no value at all.
 
   If this field is left blank, this policy is valid for all resolvers.
 
-  .. note:: Starting with version 2.17 you can use the parameter
+  .. note:: You can use the parameter
      ``check_all_resolvers``. This is *Check all possible resolvers*
-     *of a user to match the resolver in this policy* in the WebUI.
+     *of a user to match the resolver in this policy* in the previous WebUI.
+     The WebUI does not offer this option. It can be set with the parameter
+     ``check_all_resolvers`` of ``POST /policy/<name>``.
 
      Assume a user *user@realm1* is contained in *resolver1* and *resolver2*
      in the realm *realm1*, where *resolver1* is the resolver with the
@@ -135,6 +153,10 @@ matches no value at all.
      policy will match for all users, which are also contained in *resolver2*
      as a secondary resolver.
 
+.. versionadded:: 2.0
+
+.. versionadded:: 2.17 ``check_all_resolvers``
+
 **user**
 
   This is the user, for whom this policy is valid: the user who authenticates or acts on their own tokens, and in
@@ -144,7 +166,9 @@ matches no value at all.
   If this field is left blank, this policy is valid for all users.
 
   .. note:: Starting with version 3.10 you can choose if the username and the
-    adminname has to match case-sensitive or not.
+    adminname have to match case-sensitively or not.
+
+.. versionadded:: 2.0
 
 **admin realm** and **admin user**
 
@@ -152,6 +176,10 @@ matches no value at all.
   ``adminrealm`` and ``adminuser`` in the API. See :ref:`admin_policies`.
 
   If these fields are left blank, this policy is valid for all administrators.
+
+.. versionadded:: 2.4 *admin realm*
+
+.. versionadded:: 3.3 *admin user*
 
 **privacyIDEA Node**
 
@@ -169,7 +197,7 @@ matches no value at all.
 **time**
 
   In the time field of a policy you can define a list of time ranges. A time
-  range can consist of day of weeks (*dow*) and of times in 24h format.
+  range can consist of days of the week (*dow*) and of times in 24h format.
   Possible values are::
 
      <dow>: <hh>-<hh>
@@ -181,6 +209,12 @@ matches no value at all.
      Mon-Fri: 8-18
 
   to define certain policies to be active throughout working hours.
+
+  Times are the local time of the privacyIDEA server, compared at minute precision with
+  both ends included: ``8-18`` means from 08:00 up to and including 18:00. A range can not
+  cross midnight (``22-6`` is rejected). The current WebUI
+  only accepts whole hours (``<dow>: <hh>-<hh>``), so the forms with minutes can only be set
+  through the API.
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before
@@ -197,8 +231,10 @@ matches no value at all.
   their tokens depending on their IP addresses (like the internal network or
   remotely via the firewall).
 
-  You can enter several IP addresses or subnets divided by comma. Exclude item
+  You can enter several IP addresses or subnets divided by comma. Exclude an item
   by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
+
+.. versionadded:: 2.0
 
 **User Agent**
 
@@ -206,12 +242,14 @@ matches no value at all.
   depending on the plugin. Multiple plugins can be selected from the drop-down list. But you can also add custom
   user agents. The matching is applied to the name, but not to the version. It is case-insensitive.
 
+.. versionadded:: 3.12
+
 **additional conditions**
 
   Using conditions you can specify more advanced rules that determine whether
   a policy is valid for a request.
 
-  Conditions are described in
+  Conditions are described on the following page:
 
 .. toctree::
     :maxdepth: 1

@@ -346,7 +346,9 @@ class TokenClass:
         Set the user attributes (uid, resolvername, resolvertype) of a token.
 
         :param user: a User() object, consisting of loginname and realm
-        :param report: tbdf.
+        :param report: Not used.
+        :param override: If the token already belongs to another user, replace that user instead of raising
+            a TokenAdminError.
         :return: None
         """
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
@@ -554,11 +556,12 @@ class TokenClass:
     @check_token_locked
     def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
         """
-        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints or the
-        token event handler. A key the token class owns is refused, see owned_tokeninfo_keys: its value decides
-        how the token authenticates, so it is maintained by the server and is not free-form metadata.
+        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints. A key the
+        token class owns is refused, see owned_tokeninfo_keys: its value decides how the token authenticates, so it
+        is maintained by the server and is not free-form metadata.
 
-        Server side code that maintains such a key writes it with write_tokeninfo() instead.
+        Server side code that maintains such a key writes it with write_tokeninfo() instead, and so do the token
+        event handler and the command line tools, which are configured or run by whoever operates the server.
 
         :param key:
         :param value:
@@ -1316,11 +1319,12 @@ class TokenClass:
 
     def delete_tokeninfo(self, key: str = None):
         """
-        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints or the
-        token event handler. A key the token class owns is refused unless it is declared deletable, and so is
-        deleting the whole token info, because that would remove the owned keys along with the free-form ones.
+        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints. A key the
+        token class owns is refused unless it is declared deletable, and so is deleting the whole token info,
+        because that would remove the owned keys along with the free-form ones.
 
-        Server side code that maintains such a key removes it with remove_tokeninfo() instead.
+        Server side code that maintains such a key removes it with remove_tokeninfo() instead, and so do the token
+        event handler and the command line tools.
 
         :param key: The key to delete
         :raises PolicyError: If the key may not be deleted, or if no key is given.
@@ -1410,7 +1414,7 @@ class TokenClass:
     @check_token_locked
     def set_count_auth(self, count):
         """
-        Sets the counter for the occurred login attepms
+        Sets the counter for the occurred login attempts
         as key "count_auth" in token info
 
         :param count: a number

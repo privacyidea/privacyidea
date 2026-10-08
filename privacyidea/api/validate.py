@@ -155,7 +155,7 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
+from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -507,7 +507,9 @@ def check():
         is supplied.
     :jsonparam otponly: ``1`` to skip the PIN check and only verify
         the OTP value. Used by the management UI; only meaningful
-        with ``serial``.
+        with ``serial``. The token has to be usable (active, within its
+        validity period, below its fail counter), and a wrong value counts
+        as a failed authentication.
     :jsonparam transaction_id: transaction id for the second leg of
         a challenge-response flow.
     :jsonparam state: alias of ``transaction_id`` for legacy callers.
@@ -752,6 +754,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if serial:
         try:
             token = get_one_token(serial=serial)
+            if token.get_type() not in (PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()):
+                # Only a FIDO2 token answers on this path, so any other token counts as not found
+                raise ResourceNotFoundError(_("The requested token could not be found."))
         except ResourceNotFoundError:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
             context[AUTH_EVENT_SERIALS_KEY] = [serial]
@@ -818,7 +823,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 or token.rollout_state != RolloutState.CLIENTWAIT or not enrollment_challenges):
             log.warning(f"Registration data for token {token.get_serial()} does not answer a pending enrollment.")
             context["details"]["message"] = _("Authentication failed.")
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            # The transaction holds no enrollment challenge of this token
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            _record_context_reason(context, AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token.get_serial())
             context["serial_list"].append(token.get_serial())
             return  # Result remains False
 
@@ -889,10 +897,15 @@ def _handle_fido2_auth(context: dict, credential_id: str):
 
         try:
             fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
-        except (ResourceNotFoundError, AuthError):
+        except (ResourceNotFoundError, AuthError) as error:
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure; record it on the
-            # context since check() logs it once in its finally.
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            # context since check() logs it once in its finally. No first factor was checked on this path, so it is
+            # a failed answer to a challenge, like for any other token.
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            _record_context_reason(context, AuthEventReason.CHALLENGE_EXPIRED
+                                   if isinstance(error, ChallengeExpiredError)
+                                   else AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token.get_serial())
             context["serial_list"].append(token.get_serial())
             raise
         except PolicyError:
@@ -925,7 +938,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if context["result"]:
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
     elif not attestation_object:
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+        context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+        _record_context_reason(context, AuthEventReason.CHALLENGE_WRONG_RESPONSE, token.get_serial())
 
 
 def _handle_serial_auth(context: dict, serial: str):
@@ -964,8 +979,11 @@ def _handle_serial_auth(context: dict, serial: str):
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
-        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
+        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
+        # token that can not be used is classified by check_otp.
+        context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None) or (
+            AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
+        context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
         # a message, so without this the row would name no token although the request named exactly one.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
@@ -1035,7 +1053,13 @@ def _handle_standard_auth(context: dict):
         # token at all, since there is no single token the response could be attributed
         # to. Take the tokens that were challenged from the transaction instead, so that
         # the failed attempt is logged against the tokens it was made against.
-        context["serial_list"].extend(_challenged_token_serials(transaction_id, context["user"]))
+        challenged_serials = _challenged_token_serials(transaction_id, context["user"])
+        context["serial_list"].extend(challenged_serials)
+        if challenged_serials:
+            # The event handlers take the token of the event from the audit entry. The
+            # response is attributed to none of these tokens, so a handler does not act on
+            # them either.
+            g.audit_serial_unattributed = True
 
 
 def _challenged_token_serials(transaction_id: str, user: User) -> list[str]:

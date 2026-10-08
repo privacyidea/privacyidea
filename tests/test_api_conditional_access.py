@@ -38,7 +38,8 @@ from privacyidea.lib.event import delete_event, set_event
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
-                                                                   log_authentication_event)
+                                                                   log_authentication_event, PendingAuthEvent,
+                                                                   _row_values)
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import get_user_lock, get_ip_block
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
@@ -55,7 +56,7 @@ from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.clients import create_client, update_client
+from privacyidea.lib.clients import create_client, update_client, delete_client
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity, PERSISTENT_COOKIE_NAME
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
 from privacyidea.lib.machine import attach_token
@@ -68,13 +69,15 @@ from privacyidea.models import db, Challenge, ConditionalAccessOutcome
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
+                                                          ConditionalAccessPolicyCondition,
+                                                          ConditionalAccessPolicyCounterType,
                                                           ConditionalAccessPolicyStage,
                                                           ConditionalAccessStageAction, UserLockState)
 from privacyidea.models.utils import utc_now
 from . import smtpmock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .api_validate_common import HOSTSFILE
-from .base import skip_unless_admin_lookup_folds_case
+from .base import MyApiTestCase, skip_unless_admin_lookup_folds_case
 from .conditional_access_base import BLOCKED_IP, DENIED_IP, ConditionalAccessApiTestCase
 
 
@@ -398,23 +401,26 @@ class _PostResponseGateContract(_ContractHost):
 
     Three things each gate has to wire for itself, so an endpoint can silently differ on any of them:
 
-    * the failure this endpoint logs reaches the engine at all, and a policy counting it writes a restriction. The
-      event type differs per endpoint - a wrong OTP at ``/validate/check``, a wrong password at ``/auth``, a replayed
-      cookie at ``/validate/remember_device`` - so each declares its own through :attr:`failure_event_type`;
+    * the event this endpoint logs reaches the engine at all, and a policy counting it writes a restriction. The
+      type differs per endpoint - a wrong OTP at ``/validate/check``, a wrong password at ``/auth``, a replayed
+      cookie at ``/validate/remember_device`` - so each declares its own through :attr:`counted_event_type`;
     * the tripping request keeps its own answer. The restriction applies from the *next* request, so a lock written
       at the end of a request says nothing on it - which is what makes a silent lock undetectable at the moment it
       trips, rather than only afterwards;
     * the gate is re-checked when a pre-event handler replaces the user mid-request, so every identity the request
       acts for is one the gate has seen. Wired by setting ``gate_check`` on the context, which only the two decorator
-      gates do - :attr:`rechecks_a_rewritten_identity` says whether this endpoint is one of them.
+      gates do, so an endpoint that fires no handlers says so with :attr:`event_name` ``None``.
     """
 
-    #: What this endpoint logs when the credential it checks is wrong, i.e. the type a policy here counts.
-    failure_event_type: AuthEventType
+    #: The event a policy here counts, i.e. what :meth:`_trip` makes this endpoint log. Not always a failure: at
+    #: ``/validate/triggerchallenge`` and ``/ttype/push`` the counted event is a *successful* request - a challenge
+    #: handed out, an answer approved - which is what a rate limit on those endpoints is written against, there
+    #: being no wrong credential to count instead.
+    counted_event_type: AuthEventType
 
-    #: How many failures the full-loop test stages. Two, so a threshold can be seen not to fire early - except
+    #: How many such requests the full-loop test makes. Two, so a threshold can be seen not to fire early - except
     #: where staging a second one is impossible, which a subclass says by lowering this to one.
-    failures_to_trip: int = 2
+    requests_to_trip: int = 2
 
     #: The name this endpoint fires pre-event handlers under, or ``None`` where it has no ``@event`` decorator at
     #: all - ``/validate/initialize`` and ``/validate/remember_device``, where no handler can rewrite the user
@@ -422,32 +428,39 @@ class _PostResponseGateContract(_ContractHost):
     event_name: str | None = None
 
 
-    def _fail(self) -> Response:
-        """Dispatch a request that fails on its own merits here, logging :attr:`failure_event_type`."""
+    def _trip(self) -> Response:
+        """Dispatch a request that logs :attr:`counted_event_type`, i.e. the one a policy here counts."""
         raise NotImplementedError
 
-    def test_the_failures_this_endpoint_logs_reach_the_engine(self):
-        # The full loop over the real endpoint: its own failures are counted, the threshold is met, and the
+    def _assert_own_answer(self, response: Response) -> None:
+        """Assert *response* is what :meth:`_trip`'s request gets on its own merits, before the restriction it may
+        have written applies to anything. A failure on most endpoints, a success on the two whose counted event is
+        one - which is exactly what would go unnoticed if the answer were left unasserted."""
+        raise NotImplementedError
+
+    def test_the_events_this_endpoint_logs_reach_the_engine(self):
+        # The full loop over the real endpoint: its own events are counted, the threshold is met, and the
         # restriction the policy asks for is written.
-        self._make_lock_policy(counter_type=self.failure_event_type, threshold=self.failures_to_trip, duration=600)
-        for remaining in range(self.failures_to_trip - 1, -1, -1):
-            self._fail()
+        self._make_lock_policy(counter_type=self.counted_event_type, threshold=self.requests_to_trip, duration=600)
+        for remaining in range(self.requests_to_trip - 1, -1, -1):
+            # Asserted every time: a request that stopped doing what it is here to do would otherwise still count,
+            # and the loop would pass on the wrong events entirely.
+            self._assert_own_answer(self._trip())
             if remaining:
                 self.assertFalse(is_user_locked(self.user), "locked below the threshold")
-        self.assertTrue(is_user_locked(self.user), f"{self.failure_event_type} did not reach the engine")
+        self.assertTrue(is_user_locked(self.user), f"{self.counted_event_type} did not reach the engine")
 
     def test_the_request_that_trips_a_lock_still_gets_its_own_answer(self):
-        # A restriction applies from the next request, so the one that wrote it is answered as what it was. With
-        # wording configured the point is sharper: that wording is said by the pre-check on the requests after
-        # this one, and never on this one.
-        self._make_lock_policy(counter_type=self.failure_event_type, threshold=1, duration=600,
+        # A restriction applies from the next request, so the one that wrote it is answered as what it was - a
+        # success where the counted event is one. With wording configured the point is sharper: that wording is
+        # said by the pre-check on the requests after this one, and never on this one.
+        self._make_lock_policy(counter_type=self.counted_event_type, threshold=1, duration=600,
                                error_message="Locked. Try again in about {duration}.")
-        tripping = self._fail()
+        tripping = self._trip()
         self.assertTrue(is_user_locked(self.user))
-        # It failed on its own merits, so it is a failure - just not this endpoint's rejection, which the next
-        # request gets.
+        self._assert_own_answer(tripping)
         self._assert_refused(self._authenticate(), message="Locked. Try again in about 10 minute(s).")
-        self.assertNotIn("Locked. Try again", str(tripping.json), tripping.json)
+        self.assertNotIn("Locked. Try again", str(tripping.get_data(as_text=True)), tripping.data)
 
     def test_the_gate_is_rechecked_for_a_user_a_pre_event_handler_rewrites_to(self):
         # The gates sit above the pre-policies and the event handlers, so nothing runs for a locked user before the
@@ -496,10 +509,15 @@ class ValidateCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseG
                                _SerialRewriteGateContract, ConditionalAccessApiTestCase):
     """The gate contract over ``/validate/check``, the machine-facing authentication."""
 
-    failure_event_type = AuthEventType.MFA_FAIL
+    counted_event_type = AuthEventType.MFA_FAIL
     event_name = "validate_check"
 
-    def _fail(self) -> Response:
+    def _assert_own_answer(self, response: Response) -> None:
+        """An ordinary failed authentication: the OTP was wrong, which is the whole reason it counted."""
+        self.assertEqual(200, response.status_code, response)
+        self.assertIs(False, response.json["result"]["value"], response.json)
+
+    def _trip(self) -> Response:
         """The right PIN with a wrong OTP, which is this endpoint's MFA_FAIL."""
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": self.username, "pass": "pin000000"}):
@@ -891,10 +909,15 @@ class RadiusCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseGat
     a bare status code: 204 authenticated, 400 anything else, with no body at all to carry wording.
     """
 
-    failure_event_type = AuthEventType.MFA_FAIL
+    counted_event_type = AuthEventType.MFA_FAIL
     event_name = "validate_check"
 
-    def _fail(self) -> Response:
+    def _assert_own_answer(self, response: Response) -> None:
+        """The 400 every other failure here gets, body and all."""
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertEqual(b"", response.data, response.data)
+
+    def _trip(self) -> Response:
         with self.app.test_request_context('/validate/radiuscheck', method='POST',
                                            data={"user": self.username, "pass": "pin000000"}):
             return self.app.full_dispatch_request()
@@ -973,12 +996,17 @@ class TriggerChallengeGateTestCase(_GateContract, _UserGateContract, _PostRespon
     rather than a boolean - so its rejection answers with this endpoint's own kind of nothing, ``0``.
     """
 
-    failure_event_type = AuthEventType.CHALLENGE_TRIGGERED
+    counted_event_type = AuthEventType.CHALLENGE_TRIGGERED
     event_name = "validate_triggerchallenge"
 
-    def _fail(self) -> Response:
+    def _assert_own_answer(self, response: Response) -> None:
+        """A challenge handed out, verdict and all: the counted event here is a success, so the request that trips
+        the policy has to be seen to be one."""
+        self._assert_succeeded(response)
+
+    def _trip(self) -> Response:
         """Triggering is this endpoint's only outcome, so a rate limit on CHALLENGE_TRIGGERED is what a policy here
-        counts - there is no wrong credential to get wrong."""
+        counts - there is no wrong credential to get wrong. The request that trips it therefore *succeeds*."""
         return self._authenticate()
 
     def _authenticate_as_realm2(self) -> Response:
@@ -1268,7 +1296,7 @@ class AuthGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContra
     here and nowhere else.
     """
 
-    failure_event_type = AuthEventType.PASSWORD_FAIL
+    counted_event_type = AuthEventType.PASSWORD_FAIL
     event_name = "auth"
     endpoint_path = "/auth"
 
@@ -1277,8 +1305,12 @@ class AuthGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContra
     def _authenticate(self, remote_addr: str | None = None) -> Response:
         return self._auth(self.username, "test", remote_addr=remote_addr)
 
-    def _fail(self) -> Response:
+    def _trip(self) -> Response:
         return self._auth(self.username, "wrongpassword")
+
+    def _assert_own_answer(self, response: Response) -> None:
+        """The 401 a wrong password gets, which is what counted."""
+        self.assertEqual(401, response.status_code, response.json)
 
     def _authenticate_as_realm2(self) -> Response:
         return self._auth(self.username, "test", realm=self.realm2)
@@ -2046,12 +2078,18 @@ class RememberDeviceGateTestCase(_GateContract, _UserGateContract, _PostResponse
     refusal has to match, the generic message being exactly the tell that including it on /validate/check avoids.
     """
 
-    failure_event_type = AuthEventType.DEVICE_TOKEN_REUSED
+    counted_event_type = AuthEventType.DEVICE_TOKEN_REUSED
     # One: the theft escalation revokes every device the user had, so a second reuse cannot be staged against the
     # same cookie - the first presentation after it is simply unrecognised rather than stolen again.
-    failures_to_trip = 1
+    requests_to_trip = 1
 
-    def _fail(self) -> Response:
+    def _assert_own_answer(self, response: Response) -> None:
+        """Not recognised: the replay is refused as the theft it is, through the one field this endpoint answers
+        through."""
+        self.assertEqual(200, response.status_code, response)
+        self.assertIs(False, response.json["result"]["value"], response.json)
+
+    def _trip(self) -> Response:
         """A replayed cookie: recognition has no credential to get wrong, and a stolen one is the event a policy
         here counts. The first use rotates the cookie, so the second presentation of the same one is the theft."""
         self._recognise_device(self.api_key, self.cookie)
@@ -3039,6 +3077,46 @@ class ConditionalAccessEngineOverRequestsTestCase(ConditionalAccessApiTestCase):
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
 
+    def _mails_after_each_unknown_user(self, count_mode: CountMode, usernames: list[str]) -> list[int]:
+        """Send one /validate/check per name in *usernames* from one address under a source-IP mail policy with
+        threshold 2 and return how many mails went out after each request. The names do not exist, so every request
+        is a USER_UNKNOWN row for that account."""
+        create_conditional_access_policy(
+            name="ca_spray_mail", time_window_seconds=3600,
+            counter_types_to_track=self._counter_types(AuthEventType.USER_UNKNOWN),
+            stages=[{"failure_threshold": 2,
+                     "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
+                                  "action_value": {"smtp_identifier": "", "subject": "spray", "body": "spray"}}]}],
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=str(count_mode), priority=1)
+        mails = []
+        with mock.patch("privacyidea.lib.conditional_access.engine._send_action_email",
+                        return_value=True) as send_mail:
+            for username in usernames:
+                with self.app.test_request_context("/validate/check", method="POST",
+                                                   data={"user": username, "realm": self.realm1, "pass": "x"},
+                                                   environ_base={"REMOTE_ADDR": "192.0.2.50"}):
+                    self.app.full_dispatch_request()
+                mails.append(send_mail.call_count)
+        return mails
+
+    def test_distinct_users_mail_fires_once_when_a_new_account_reaches_the_threshold(self):
+        # The second distinct account brings the count to the threshold and sends the mail. Retrying accounts that
+        # are already counted leaves the count at the threshold and sends nothing, and the third account takes the
+        # count above it.
+        mails = self._mails_after_each_unknown_user(CountMode.DISTINCT_USERS,
+                                                    ["ghost1", "ghost2", "ghost1", "ghost2", "ghost1", "ghost3"])
+        self.assertListEqual([0, 1, 1, 1, 1, 1], mails)
+
+    def test_distinct_users_mail_waits_for_the_second_account(self):
+        # Repeated requests for one account stay one distinct account, so the mail waits for the second account.
+        mails = self._mails_after_each_unknown_user(CountMode.DISTINCT_USERS, ["ghost1", "ghost1", "ghost1", "ghost2"])
+        self.assertListEqual([0, 0, 0, 1], mails)
+
+    def test_per_request_mail_fires_once_at_the_threshold(self):
+        mails = self._mails_after_each_unknown_user(CountMode.PER_REQUEST,
+                                                    ["ghost1", "ghost2", "ghost1", "ghost2", "ghost1", "ghost3"])
+        self.assertListEqual([0, 1, 1, 1, 1, 1], mails)
+
     # --- identity rewriting (legacy setrealm / mangle, RequestMangler) ----------
 
     def _setrealm_to_realm2(self) -> User:
@@ -3361,4 +3439,156 @@ class ConditionalAccessEngineOverRequestsTestCase(ConditionalAccessApiTestCase):
         self.assertEqual(3, len([entry for entry in get_authentication_logs()
                                  if entry.event_type == AuthEventType.MFA_FAIL]))
         self.assertIsNotNone(self._state().lock_expires_at, "escalated on attempts made while locked")
+
+
+
+class AuthenticationLogNulValueTestCase(MyApiTestCase):
+    """
+    A request value with a NUL character is stored with a replacement character, so the failed attempt is counted on
+    every database - PostgreSQL refuses text that contains NUL.
+    """
+    serial = "CA_NUL"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        self._clear()
+
+    def tearDown(self) -> None:
+        remove_token(self.serial)
+        self._clear()
+        super().tearDown()
+
+    @staticmethod
+    def _clear() -> None:
+        for model in (ConditionalAccessOutcome, AuthenticationLogReason, UserLockState, BlockList,
+                      ConditionalAccessStageAction, ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+
+    def test_01_failed_attempts_with_a_nul_character_are_counted(self):
+        create_conditional_access_policy(
+            name="lock_after_three", time_window_seconds=3600, counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
+            stages=[{"failure_threshold": 3,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+
+        for attempt in range(5):
+            with self.app.test_request_context("/validate/check", method="POST",
+                                               data={"user": "cornelius", "realm": self.realm1,
+                                                     "pass": "wrongpin123456", "client_id": f"agent\x00{attempt}"}):
+                response = self.app.full_dispatch_request()
+            self.assertFalse(response.json["result"].get("value"), response.json)
+
+        db.session.rollback()
+        self.assertEqual(5, len(get_authentication_logs()))
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_02_stored_values_hold_no_nul_character(self):
+        event = PendingAuthEvent(event_type=AuthEventType.PIN_FAIL, username="cornelius\x00", client_label="agent\x00",
+                                 transaction_id="\x00", serial="S1\x00,S2")
+        values = _row_values(event)
+        self.assertEqual("cornelius\ufffd", values["username"])
+        self.assertEqual([], [column for column, value in values.items() if isinstance(value, str) and "\x00" in value])
+
+
+
+class ResetOnSuccessFollowsConditionsTestCase(MyApiTestCase):
+    """
+    With conditions, only a successful login the conditions cover resets a user policy's count - in both count modes.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        init_token({"serial": "RESET_COND", "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+
+    def tearDown(self) -> None:
+        remove_token("RESET_COND")
+        for model in (ConditionalAccessOutcome, AuthenticationLogReason, UserLockState, BlockList,
+                      ConditionalAccessStageAction, ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _wrong_pin_at_validate_check(self) -> None:
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "wrongpin"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def _webui_login(self) -> None:
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": f"cornelius@{self.realm1}", "password": "test"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def _locked_after_sequence(self, count_mode: str) -> bool:
+        create_conditional_access_policy(
+            name="ca_lock_validate_only", time_window_seconds=3600,
+            counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
+            stages=[{"failure_threshold": 3,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            conditions=[{"condition_type": str(ConditionType.ENDPOINT), "operator": str(ConditionOperator.IN),
+                         "value": ["/validate/check"]}],
+            target=ConditionalAccessTarget.USER, priority=1, reset_on_success=True, count_mode=count_mode)
+        self._wrong_pin_at_validate_check()
+        self._wrong_pin_at_validate_check()
+        self._webui_login()
+        self._wrong_pin_at_validate_check()
+        return is_user_locked(self.user)
+
+    def test_01_per_request_ignores_a_login_outside_the_conditions(self):
+        self.assertTrue(self._locked_after_sequence(CountMode.PER_REQUEST))
+
+    def test_02_per_attempt_ignores_a_login_outside_the_conditions(self):
+        self.assertTrue(self._locked_after_sequence(CountMode.PER_ATTEMPT))
+
+
+class RememberDeviceEndpointConditionTestCase(MyApiTestCase):
+    """
+    /validate/remember_device is accepted as the value of an ENDPOINT condition and matched by it.
+    """
+    endpoint = "/validate/remember_device"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+
+    def tearDown(self) -> None:
+        for model in (ConditionalAccessOutcome, AuthenticationLogReason, ConditionalAccessStageAction,
+                      ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_endpoint_condition_matches_remember_device_requests(self):
+        create_conditional_access_policy(
+            name="ca_deny_recognition", time_window_seconds=3600,
+            counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+            stages=[{"failure_threshold": 0,
+                     "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
+            conditions=[{"condition_type": str(ConditionType.ENDPOINT), "operator": str(ConditionOperator.IN),
+                         "value": [self.endpoint]}],
+            target=ConditionalAccessTarget.SOURCE_IP, priority=1)
+        set_policy(name="remember_device_endpoint", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.addCleanup(delete_policy, "remember_device_endpoint")
+        client, api_key = create_client("remember device client", "privacyidea-cp")
+        self.addCleanup(delete_client, client.id)
+        _device, cookie = create_remembered_device(user_identity(User("cornelius", self.realm1)), client.id)
+
+        with self.app.test_request_context(self.endpoint, method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           environ_base={"REMOTE_ADDR": "10.0.0.71"},
+                                           headers={"X-API-Key": api_key,
+                                                    "Cookie": f"{PERSISTENT_COOKIE_NAME}={cookie}"}):
+            res = self.app.full_dispatch_request()
+        self.assertFalse(res.json["result"]["value"], res.json)
+        self.assertEqual([str(AuthEventType.ACCESS_DENIED)],
+                         [row.event_type for row in db.session.query(AuthenticationLog)
+                          .filter(AuthenticationLog.endpoint == self.endpoint)])
 

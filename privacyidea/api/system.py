@@ -577,6 +577,7 @@ def list_nodes():
 
 @system_blueprint.route("/health/certificates", methods=['GET'])
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.SYSTEMREAD)
 @log_with(log)
 def get_health_certificates():
     """
@@ -616,6 +617,8 @@ def get_health_certificates():
     of ``ok`` (>30 days), ``warning`` (<=30 days), ``critical`` (<=7 days),
     ``expired`` (<=0 days), or ``error`` (the certificate could not be read).
 
+    Requires admin authentication and the policy action :ref:`configread`.
+
     :queryparam refresh: If truthy, bypass the cache and re-check.
     :>json list value: List of certificate status entries (see above).
     :reqheader PI-Authorization: The authorization token
@@ -631,6 +634,7 @@ def get_health_certificates():
 
 @system_blueprint.route("/health/resolver_timing", methods=['GET'])
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.SYSTEMREAD)
 @log_with(log)
 def get_health_resolver_timing():
     """
@@ -653,6 +657,8 @@ def get_health_resolver_timing():
     ``p50`` / ``p95`` are approximated from the histogram buckets and so round up
     to the next bucket boundary; they are ``null`` when the quantile lies in the
     open-ended (> 5 s) tail.
+
+    Requires admin authentication and the policy action :ref:`configread`.
 
     :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
     :>json list value: One entry per ``(resolver, resolver_type, op)`` triple
@@ -710,6 +716,7 @@ def _aggregate_delivery_channel(counter_name: str, duration_name: str, key_label
 
 @system_blueprint.route("/health/notification_delivery", methods=['GET'])
 @admin_required
+@prepolicy(check_base_action, request, PolicyAction.SYSTEMREAD)
 @log_with(log)
 def get_health_notification_delivery():
     """
@@ -728,6 +735,8 @@ def get_health_notification_delivery():
     An entry carries ``key`` (the gateway/identifier), the outcome counts ``ok``
     / ``failed`` / ``error`` / ``total``, and - when latency was recorded -
     ``avg`` / ``p50`` / ``p95`` / ``max`` (seconds) plus ``duration_count``.
+
+    Requires admin authentication and the policy action :ref:`configread`.
 
     :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
     :>json dict value: ``{"push": [...], "sms": [...], "email": [...],

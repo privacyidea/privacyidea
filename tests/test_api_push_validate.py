@@ -3156,19 +3156,25 @@ class PushGateTestCase(PushTokenTestMixin, _GateContract, _UserGateContract, _Po
 
     endpoint_path = "/ttype/push"
     username = "selfservice"
-    failure_event_type = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
+    counted_event_type = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
     # One: the answer consumes the challenge, and staging a second one would need a second trigger that the
     # restriction written by the first is already in force for.
-    failures_to_trip = 1
+    requests_to_trip = 1
     # Left at None although /ttype does fire handlers: the smartphone's answer carries no user parameter for one to
     # rewrite, the owner being resolved from the serial. Worth knowing that the gate here could not re-check a
     # rewrite anyway - the pre-check runs inside the token class, so nothing sets gate_check for the event
     # decorator to call back into.
     event_name = None
 
-    def _fail(self) -> Response:
+    def _assert_own_answer(self, response: Response) -> None:
+        """The answer verified, so it is accepted: the counted event here is a success, and the request that trips
+        the policy has to be seen to be one rather than merely to have been sent."""
+        self._assert_succeeded(response)
+
+    def _trip(self) -> Response:
         """The verified answer is what a policy counts here: an out-of-band approval, not a wrong credential -
-        there is no wrong signature a rate limit would be written against."""
+        there is no wrong signature a rate limit would be written against. The request that trips it therefore
+        *succeeds*, and is answered as the approval it was."""
         return self._authenticate()
 
 

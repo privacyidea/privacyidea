@@ -97,7 +97,9 @@
                       <a
                         (click)="contentService.navigateContainerDetails(element.serial)"
                         (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                        [appTruncationTooltip]="element.serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}

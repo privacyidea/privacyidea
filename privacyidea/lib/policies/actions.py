@@ -251,6 +251,17 @@ class PolicyAction:
     BLOCKLIST_SET = "blocklist_set"
 
 
+# Admin actions on objects that belong to no realm, resolver or user: policies, event handlers, conditional-access
+# policies, API clients and the IP blocklist. An admin policy grants them only if it does not restrict its target, and
+# only then are they among the rights the WebUI shows.
+ADMIN_ACTIONS_WITHOUT_TARGET = frozenset({
+    PolicyAction.POLICYWRITE, PolicyAction.POLICYDELETE, PolicyAction.EVENTHANDLINGWRITE,
+    PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE, PolicyAction.API_CLIENT_ADD, PolicyAction.API_CLIENT_EDIT,
+    PolicyAction.API_CLIENT_ROTATE, PolicyAction.API_CLIENT_DELETE, PolicyAction.BLOCKLIST_READ,
+    PolicyAction.BLOCKLIST_SET, PolicyAction.BLOCKLIST_RESET,
+})
+
+
 class PasskeyLoginButtonOptions:
     __doc__ = """This is the list of options for passkey login."""
     SHOW = "show"

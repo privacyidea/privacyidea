@@ -193,6 +193,21 @@ class AppTestCase(unittest.TestCase):
                            partial=True)
             ], logger.handlers)
 
+    def test_06_logging_keeps_existing_loggers(self):
+        # Loggers of other packages exist before the app is created, e.g. those of the WSGI server
+        # or of Sphinx when it builds the API documentation. Configuring the logging must not mute them.
+        existing_logger = logging.getLogger("other_package.module")
+        existing_logger.disabled = False
+        with isolated_config_file():
+            create_app(config_name="testing", silent=True)
+        self.assertFalse(existing_logger.disabled)
+
+        class Config(TestingConfig):
+            PI_LOGCONFIG = "tests/testdata/logging.cfg"
+        with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
+            create_app(config_name="testing", silent=True)
+        self.assertFalse(existing_logger.disabled)
+
 
 class HashConfigTestCase(unittest.TestCase):
     """

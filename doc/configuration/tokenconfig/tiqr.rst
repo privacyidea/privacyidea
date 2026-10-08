@@ -15,14 +15,14 @@ Configuration Parameters
 
 **TiQR Registration Server**
    You need to at least enter the *TiQR Registration Server*.
-   This is the URL of your privacyIDEA installation, that can be reached from
+   This is the URL of your privacyIDEA installation that can be reached from
    the smartphone during enrollment. So your smartphone needs to be on the same
-   LAN (WLAN) like the privacyIDEA server, or the enrollment URL needs to be
+   LAN (WLAN) as the privacyIDEA server, or the enrollment URL needs to be
    accessible from the internet.
 
    You also need to specify the path, which is usually ``/ttype/tiqr``.
 
-   During enrollment, the parameter ``action=metadata`` and ``action=enrollment`` is
+   During enrollment, the parameters ``action=metadata`` and ``action=enrollment`` are
    added.
 
    .. note:: We do not recommend putting the registration URL on the internet.
@@ -33,3 +33,7 @@ Configuration Parameters
    the URL of the *Registration Server* is used.
 
    During authentication the parameter ``operation=login`` is added.
+
+   The app receives this URL only in the enrollment data; the authentication QR
+   code carries no server URL. A change therefore does not reach apps that are
+   already enrolled.

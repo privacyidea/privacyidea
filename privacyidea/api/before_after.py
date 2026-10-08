@@ -292,8 +292,9 @@ def before_userendpoint_request():
         before_create_user_request()
     else:
         before_request()
-    # DEL /user/ has no realm parameter, and thus we need to create the user object this way.
-    if not request.User and request.method == "DELETE":
+    # DELETE /user/<resolvername>/<username> names the user in the path and has no realm parameter, so the user
+    # object is created from the path, whatever user the other parameters name.
+    if request.endpoint == "user_blueprint.delete_user":
         resolvername = get_optional(request.all_data, "resolvername")
         username = get_optional(request.all_data, "username")
         if resolvername and username:

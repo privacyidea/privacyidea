@@ -11,17 +11,24 @@ but what the end user sees is a separate, deliberately opt-in decision.
 
 .. note:: Telling a user that their account is locked, or that their address is
    blocked, is useful for the user and useful for an attacker. privacyIDEA
-   therefore takes neither side by default: with nothing configured a refused
-   request is worded exactly like any other failed authentication, so a locked
-   account cannot be told apart from a wrong password.
+   therefore says nothing about a restriction by default: with nothing
+   configured a refused request carries the generic ``Authentication failed.``
+   and names neither the restriction nor its duration. To make it look exactly
+   like a wrong password, also set ``hide_specific_error_message``, see
+   :ref:`conditional_access_error_messages_masking`.
 
 Silent by default
 -----------------
 
 Without any configuration a rejection carries only the generic
 ``Authentication failed.``, whatever refused it - a user lock, a source IP block
-or a ``DENY``. It reveals neither that a restriction exists, nor how long it
-lasts, nor which policy wrote it.
+or a ``DENY``. It does not say which restriction refused the request, how long it
+lasts or which policy wrote it. It is not identical to every other failed
+authentication, though: at ``/validate/check`` an ordinary failure names what
+failed (for example ``wrong otp pin``), and at ``/auth`` a wrong password has the
+error code ``4031`` where a rejection has ``403``. ``hide_specific_error_message``
+removes both differences, ``no_detail_on_fail`` the one at ``/validate/check``,
+see :ref:`conditional_access_error_messages_masking`.
 
 There are two ways to say more, and they can be combined:
 
@@ -58,13 +65,16 @@ writing one sentence for the stage decides what all of that should sound like.
 
 ``{duration}`` is the only tag substituted, with the time remaining **at the
 moment of the rejection** - so it counts down over the life of a lock instead of
-naming the duration the policy configured. The phrase is deliberately coarse
-("in about 10 minute(s)", "in about 2 hour(s)"): a lock is a thing to come back
-after, not to count down to the second.
+naming the duration the policy configured. The substituted text is deliberately
+coarse - ``10 minute(s)`` or ``2 hour(s)``, rounded up and never below one
+minute: a lock is a thing to come back after, not to count down to the second.
+The default wording puts *in about* in front of it
+(``Please try again in about {duration}.``); a message written as
+``Try again in {duration}`` reads ``Try again in 10 minute(s)``.
 
 Every other brace expression is left exactly as written, so braces in ordinary
 prose need no escaping. That also means a mistyped tag is shown to the user as
-written; the policy editor points out an unrecognised tag but does not refuse to
+written; the policy editor points out an unrecognized tag but does not refuse to
 save it. ``{duration}`` itself is only substituted where there *is* a remaining
 time. A permanent lock or block has none, and a ``DENY`` counts down nothing at
 all, so there the tag is shown as written - the editor flags that combination
@@ -98,8 +108,8 @@ that locks the user *and* emails them is described by the lock alone. It is also
 applied live rather than stored, so it covers the locks and blocks that already
 exist - see :ref:`conditional_access_error_messages_snapshot`.
 
-.. note:: The policy is what makes a rejection distinguishable from an ordinary
-   failed authentication. It is scoped like any other policy in the
+.. note:: The policy makes a rejection name the restriction that refused it. It
+   is scoped like any other policy in the
    :ref:`policies_conditional_access` scope, so it can be limited to a realm, to
    a set of clients or to a user agent.
 
@@ -136,9 +146,9 @@ written, and the restriction is then described from that copy. Two consequences:
 * Editing the error message on a conditional access policy's stage does not
   change what an already locked user is being told. The new wording applies from
   the next lock or block that stage writes.
-* *Logs → Locked Users* and *Logs → IP Blocklist* show the stored text of each
-  restriction, with ``{duration}`` unsubstituted - it is the template, and the
-  remaining time is its own column.
+* *Audit → Locked Users* and *Audit → IP Blocklist* show the stored text of each
+  restriction, with ``{duration}`` unsubstituted - it is the template; when the
+  restriction ends is shown in its own expiry column.
 
 The default wording is the other way round. Nothing about
 ``show_default_ca_error_message`` is recorded on the lock or the block: the policy
@@ -153,10 +163,14 @@ That difference only shows where the two do not overlap: the default stands in
 for a *missing* message and never replaces one, so a restriction that snapshotted
 a stage's wording keeps saying that, whatever the policy does.
 
-A restriction is never weakened, and its wording travels with it: a second policy
-locking the same user in the same request cannot shorten the lock, and therefore
-cannot replace the wording of the higher-priority policy that wrote it either.
-The policy whose message was not applied is written to the log.
+A restriction is never weakened, and its wording travels with it. A second policy
+that locks the same user in the same request for the same or a shorter time, or
+for a limited time where the lock is permanent, leaves the lock and its wording
+as they are; where it writes the same lock, the policy whose message was not
+applied is written to the log. A policy that locks for longer, or permanently
+where the lock was timed, replaces the lock together with its wording - with the
+error message of its own stage, or with none if that stage has none. The same
+holds for a block of a source IP.
 
 A ``DENY`` is the exception, because it stores nothing. Its wording is read from
 the deciding stage on every request, so an edit takes effect immediately.
@@ -165,17 +179,21 @@ A lock or block an administrator set by hand carries no wording of its own, so i
 is silent - unless ``show_default_ca_error_message`` is set, which describes the
 restriction in force whoever imposed it.
 
-.. note:: A manual lock or block that *replaces* one a policy wrote keeps the
-   wording already on record, since only the expiry and the cause are rewritten.
-   Extend the duration of a policy lock by hand and the user goes on being told
-   what that policy said.
+.. note:: A manual lock or block that *replaces* one a policy wrote also
+   replaces its wording: the stored error message is cleared together with the
+   expiry and the cause, because the policy's wording describes neither. Extend
+   the duration of a policy lock by hand and the restriction is silent from then
+   on, like any other manual one - unless ``show_default_ca_error_message`` is
+   set, which then describes it.
 
 What each endpoint says
 -----------------------
 
-A configured message is shown at every gated endpoint. What differs is what a
-*silent* rejection looks like, and the rule is the same everywhere: it has to
-look like an ordinary failed authentication of that endpoint.
+A configured message is shown at every gated endpoint except
+``/validate/radiuscheck``, see below. What differs is what a *silent* rejection
+looks like: it takes the form of an ordinary failed authentication of that
+endpoint, without saying what refused it (for what still sets it apart from a
+wrong credential, see :ref:`conditional_access_error_messages_masking`).
 
 **The WebUI login** (``/auth``) answers with an error response, as every failed
 login there does: HTTP ``401``, carrying the privacyIDEA error code ``403``. That
@@ -184,12 +202,24 @@ is the generic authentication failure rather than the "wrong credentials" code
 response has to carry some message, so a silent rejection there falls back to
 ``Authentication failed.``.
 
-**The** ``/validate/`` **endpoints** answer with the ordinary failure body -
-HTTP ``200``, ``result.value`` false, ``result.authentication`` ``REJECT`` - and
-carry the wording in ``detail.message``. A silent rejection carries
-``Authentication failed.`` there rather than no detail at all: on these endpoints
-*every* failure has a detail, so a response without one could only have come
-from conditional access.
+**The** ``/validate/`` **endpoints** ``/validate/check``,
+``/validate/triggerchallenge`` and ``/validate/initialize`` answer with the
+ordinary failure body - HTTP ``200``, ``result.value`` false (``0`` at
+``/validate/triggerchallenge``, where the value is the number of triggered
+challenges), ``result.authentication`` ``REJECT`` - and carry the wording in
+``detail.message``. A silent rejection carries ``Authentication failed.`` there
+rather than no detail at all: on these endpoints *every* failure has a detail, so
+a response without one could only have come from conditional access.
+
+``/validate/radiuscheck`` answers every failed authentication, a rejection
+included, with an empty body and HTTP ``400``. No wording reaches a RADIUS
+client; the reason is only in the logs.
+
+``/validate/remember_device`` answers a rejection like a device that is not
+remembered: HTTP ``200``, ``result.value`` and ``detail.remembered_device``
+false, and no ``result.authentication``. A configured message is carried in
+``detail.message``; a silent rejection carries no message, as an ordinary answer
+there has none.
 
 **The endpoint a push app answers a challenge on** (``/ttype/push``) is the
 mirror image: an ordinary failed push answer carries no ``detail`` at all, so a
@@ -248,7 +278,7 @@ a rejection has nothing else to say - it never carried the token serial or the
 failure reason in the first place.
 
 The reverse case follows the same rule from the other side. A **silent** rejection
-*is* the ordinary failure, so it is masked along with every other one:
+is answered as an ordinary failure, so it is masked along with every other one:
 
 * ``hide_specific_error_message`` replaces it with its own generic message, which
   is the same sentence a silent rejection already carried.
@@ -256,16 +286,21 @@ The reverse case follows the same rule from the other side. A **silent** rejecti
   response, so a silent rejection ends up saying nothing at all - it had only the
   generic sentence to lose.
 
-To keep conditional access invisible, therefore, simply leave the error messages
-empty and do not set ``show_default_ca_error_message`` - that is the default. The
-masking policies are neither needed for it nor sufficient against a message an
-administrator configured.
+To keep conditional access invisible, therefore, leave the error messages empty,
+do not set ``show_default_ca_error_message`` - that is the default - and set
+``hide_specific_error_message``. Without it, a silent rejection says nothing
+about the restriction, but it can still be told apart from a wrong credential:
+at ``/validate/check`` it lacks the message an ordinary failure carries about
+what failed, and at ``/auth`` its error code is ``403`` instead of ``4031``.
+``no_detail_on_fail`` closes the difference at ``/validate/check`` only. Neither
+masking policy is sufficient against a message an administrator configured.
 
-``hide_auth_error_status`` (:ref:`policies_hardening`) only affects the offline
-refill, whose rejection it turns from HTTP ``400`` into ``401`` like every other
-failed refill. A refused login already returns the ``401`` that policy
-normalises to, and a refused ``/validate`` request already returns the ordinary
-``200``.
+``hide_auth_error_status`` (:ref:`policies_hardening`) changes nothing about a
+rejection: a refused login already returns the ``401`` that policy normalizes
+to, and a refused ``/validate`` request already returns the ordinary ``200`` -
+or, at ``/validate/radiuscheck``, the empty ``400`` every failure gets there.
+It only affects the offline refill, whose rejection it turns from HTTP ``400``
+into ``401`` like every other failed refill
 
 Where the reason always is
 --------------------------
@@ -278,5 +313,8 @@ Whatever the user is told, the administrator sees the whole reason:
   anything else logs an outcome for it;
 * the :ref:`audit` entry, which names every restriction in force and whether each
   is permanent;
-* *Logs → Locked Users* and *Logs → IP Blocklist*, which list the restriction, the
-  policy or administrator that imposed it, and the wording it carries.
+* *Audit → Locked Users* and *Audit → IP Blocklist*, which list the restriction,
+  whether a policy or an administrator imposed it (*Policy* or *Manual*), when it
+  expires, and the wording it carries. Which policy wrote a lock or block is
+  recorded on the request that tripped it, in the conditional access outcome of
+  its :ref:`authentication_log` entry.

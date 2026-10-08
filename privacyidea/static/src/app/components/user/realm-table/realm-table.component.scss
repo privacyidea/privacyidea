@@ -20,6 +20,15 @@
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
+// A width of its own for the resolver list rather than its content's, so the column, the table and the page
+// keep their size whichever realms a filter leaves.
+.token-table {
+  th.mat-column-resolvers,
+  td.mat-column-resolvers {
+    width: 340px;
+  }
+}
+
 .node-filter {
   min-width: 220px;
   margin-left: 1rem;

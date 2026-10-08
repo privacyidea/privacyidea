@@ -34,7 +34,7 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.authentication_log import get_authentication_log_visibility_scopes
-from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
+from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, check_global_config_action
 from privacyidea.api.lib.utils import send_result, to_list_param
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole,
                                                                            TRACKABLE_EVENT_TYPES)
@@ -390,7 +390,7 @@ def list_templates():
 
 
 @conditional_access_blueprint.route('policy', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def create_policy():
     """
@@ -467,7 +467,7 @@ def create_policy():
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['PATCH'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def update_policy(policy_id):
     """
@@ -522,7 +522,7 @@ def update_policy(policy_id):
 
 
 @conditional_access_blueprint.route('policy/order', methods=['PUT'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def reorder_policies():
     """
@@ -564,7 +564,7 @@ def reorder_policies():
 
 
 @conditional_access_blueprint.route('policy/<policy_id>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE)
 @log_with(log)
 def delete_policy(policy_id):
     """

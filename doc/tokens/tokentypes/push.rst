@@ -16,12 +16,12 @@ push-capable SMS gateway to the smartphone of the user. The built-in Firebase,
 HTTP, and Script providers support PUSH messages. Firebase gateways are enabled
 by default; HTTP and Script gateways require ``ALLOW_PUSH=yes``. This push
 notification is displayed on the smartphone of the user with a text
-that tells the user that he or somebody else requests to login to a
+that tells the user that he or somebody else requests to log in to a
 service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
 in the privacyIDEA server. The application checks for this mark and
-logs the user in automatically. For an example of how the components in a
+then finalizes the login with privacyIDEA. For an example of how the components in a
 typical Firebase deployment of push tokens interact reference the following diagram.
 
 .. figure:: images/push_token_deployment.svg
@@ -37,8 +37,10 @@ The PUSH token implements the :ref:`outofband mode <authentication_mode_outofban
 Configuration
 ~~~~~~~~~~~~~
 
-The minimum necessary configuration is an ``enrollment`` policy
-:ref:`policy_firebase_config`.
+The minimum necessary configuration is the two ``enrollment`` policies
+:ref:`policy_firebase_config` (a push-capable gateway, or ``poll only``) and
+``push_registration_url``. Without ``push_registration_url`` the enrollment
+fails with "Missing enrollment policy for push token: push_registration_url".
 
 With the ``authentication`` policies :ref:`policy_push_text_on_mobile`
 and :ref:`policy_push_title_on_mobile` you can define
@@ -57,7 +59,7 @@ Step 1
 ......
 
 The user scans a QR code. This QR code contains the
-basic information for the push token and a enrollment URL, to which
+basic information for the push token and an enrollment URL, to which
 the smartphone should respond in the enrollment process.
 
 The smartphone stores this data and creates a new key pair.
@@ -70,7 +72,7 @@ for compatibility), the public key of the keypair,
 the serial number and an enrollment credential back to the
 enrollment URL of the privacyIDEA server.
 
-The server responds with it's public key for this token.
+The server responds with its public key for this token.
 
 Authentication
 ~~~~~~~~~~~~~~
@@ -79,10 +81,11 @@ Triggering the challenge
 ........................
 
 The authentication request is triggered by an application
-just the same like for any
-challenge response tokens either with the PIN to the
+just as for any
+challenge-response token either with the PIN to the
 endpoint ``/validate/check`` or via the endpoint
-``/validate/triggerchallenge``.
+``/validate/triggerchallenge``, which requires the authorization token of an
+administrator with the admin policy :ref:`policy_triggerchallenge`.
 
 privacyIDEA sends a cryptographic challenge with a signature to the configured
 push gateway. The gateway sends the notification to the smartphone,
@@ -97,8 +100,8 @@ of the privacyIDEA server.
 The privacyIDEA server verifies the response and marks this authentication
 request as successfully answered.
 
-In some cases the push notification does not reach the smartphone. Since
-version 3.4 the smartphone can also poll for active challenges.
+In some cases the push notification does not reach the smartphone. The
+smartphone can also poll for active challenges.
 
 Declining login
 ...............
@@ -132,12 +135,22 @@ threshold; the last is deliberately the fallback for an unknown reason, so a
 value a newer app invents is never read as that report. See
 :ref:`authentication_log_event_types`.
 
+These types are recorded for the app's answer at ``/ttype/push``. When the
+client then finalizes the declined challenge with ``/validate/check``, that
+request is recorded as ``CHALLENGE_CANCELLED`` for a canceled push and as
+``CHALLENGE_DECLINED`` for every other decline, including one the user marked
+as not started by them. A policy that counts ``CHALLENGE_DECLINED`` therefore
+also counts those finalizing requests.
+
 Login to application
 ....................
 
-The application can check with the original transaction ID
-with the privacyIDEA server, if the challenge has been successfully
-answered and automatically login the user.
+The application polls ``/validate/polltransaction`` with the original
+transaction ID. Once it returns ``true``, the application must send
+``/validate/check`` with the user, the transaction ID and an empty ``pass``.
+Only the result of this request decides the login, because only
+``/validate/check`` applies the authentication and authorization policies (see
+:ref:`authentication_mode_outofband`).
 
 Challenge lifetime
 ..................
@@ -152,14 +165,23 @@ two consecutive time windows:
 * **Finalize window** -- once the smartphone has answered, the challenge
   expiration is pushed out to at least ``PushChallengeFinalizeGrace`` seconds
   (default 300) from the moment it was answered, so that the application can
-  finalize the authentication via ``/validate/check`` (and read a decline
-  reason). The expiration only ever moves forward, so with an answer window
-  longer than the grace the challenge may stay redeemable until its original
+  still read the outcome via ``/validate/polltransaction`` (after a refusal,
+  ``challenge_status`` is ``declined`` or ``cancelled``) and finalize the
+  authentication via ``/validate/check``. ``/validate/check`` answers a refused
+  challenge with a plain reject; the reason the app sent is recorded in the
+  audit log and the authentication log (see *Declining login* above). The
+  expiration only ever moves forward, so with an answer window
+  longer than the grace period, the challenge may stay redeemable until its original
   expiration. Once the challenge finally expires it can no longer be redeemed.
 
-The finalize window also bounds how long an answered enrollment challenge stays
-valid while the user finishes scanning and confirming on the device. Both windows
-behave identically whether or not the Redis challenge cache is enabled.
+During enrollment via :ref:`policy_enroll_via_multichallenge`, the user has to
+scan the QR code and the app has to complete the second enrollment step within
+the answer window (``PushChallengeValidityTime``). The finalize window then
+bounds how long the application can finalize the enrollment via
+``/validate/check``. If the app completes the second step after the answer
+window, the token is still enrolled, but the login that started the enrollment
+fails and has to be repeated. Both windows behave identically whether or not
+the Redis challenge cache is enabled.
 
 
 More information
@@ -168,7 +190,7 @@ More information
 For a more detailed insight see the code documentation for the :ref:`code_push_token`.
 
 For an in depth view of the protocol see
-`the github issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
+`the GitHub issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
 `the wiki page <https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken>`_.
 
 Information on the polling mechanism can be found in the `corresponding wiki page <https://github

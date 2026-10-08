@@ -59,20 +59,21 @@ def _handler_failure_info(e_handler_def: dict, exception: Exception) -> str:
     return info[:audit_column_length.get("info")]
 
 
-def _aborts_on_error(e_handler_def: dict, exception: Exception) -> bool:
+def _aborts_on_error(e_handler_def: dict, exception: Exception | None) -> bool:
     """
     Return whether the failure of an event handler must abort the request.
 
     A failing handler is best-effort by default: the failure is logged and audited, and the request continues
     without it. That is wrong for a handler whose result the request itself consumes - a response mangler that
     does not run leaves the data it was configured to remove in the response - so such a binding can be
-    configured to abort instead. A handler that raises ``HandlerAbortError`` always aborts, regardless of the
-    configuration, which is how a handler decides by its own options (see the Script handler's ``raise_error``)
-    that the request must not succeed.
+    configured to abort instead. This holds for a handler that raises as well as for one that reports that it
+    could not do what it is configured for. A handler that raises ``HandlerAbortError`` always aborts, regardless
+    of the configuration, which is how a handler decides by its own options (see the Script handler's
+    ``raise_error``) that the request must not succeed.
 
     :param e_handler_def: The definition of the event handler
-    :param exception: The exception raised by the handler
-    :return: True if the exception should be re-raised
+    :param exception: The exception raised by the handler, None for a handler that reported a failure
+    :return: True if the request has to be aborted
     """
     return isinstance(exception, HandlerAbortError) or is_true(e_handler_def.get("abort_on_error"))
 
@@ -137,7 +138,8 @@ class event:
         Evaluate the conditions of one event handler and run its action.
 
         A failure of either is logged, rolled back and audited. Whether it also aborts the request is decided
-        by the configuration of the handler, see ``_aborts_on_error``. Evaluating the conditions is part of
+        by the configuration of the handler, see ``_aborts_on_error``, also for a handler that returns False because
+        it could not do what it is configured for. Evaluating the conditions is part of
         this: an error while checking them is a failure of the handler, not an unmet condition, and a handler
         that is configured to be best-effort must not fail the request because its conditions could not be
         evaluated.
@@ -177,6 +179,13 @@ class event:
         # set audit object to success
         event_audit.log({"success": result})
         event_audit.finalize_log()
+        if result is False and _aborts_on_error(e_handler_def, None):
+            # The handler could not do what it is configured for, which fails the request like an error does. The
+            # reason is in the audit entry of the handler.
+            log.warning(f"{position.capitalize()} handler {e_handler_def.get('name')!r} "
+                        f"({e_handler_def.get('handlermodule')}:{e_handler_def.get('action')}) failed: "
+                        f"{event_handler.run_details}")
+            raise HandlerAbortError(f"The event handler {e_handler_def.get('name')!r} failed.")
         return True
 
     def __call__(self, func):

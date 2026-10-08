@@ -20,7 +20,9 @@
 <div class="reason-cell">
   <div class="reason-list">
     @for (reason of reasons() ?? []; track reason) {
-    <span class="reason-entry">{{ reason }}</span>
+    <app-breakable-code
+      class="reason-entry"
+      [text]="reason" />
     }
   </div>
   <!-- Only for an entry that actually recorded a detail: a button that opened an empty dialog would be a promise the

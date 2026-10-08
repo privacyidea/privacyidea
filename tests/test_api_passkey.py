@@ -38,6 +38,14 @@ from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db, TokenOwner
+from privacyidea.lib.conditional_access.engine import is_user_locked
+from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
+from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
+from privacyidea.models import AuthenticationLog, ConditionalAccessPolicy
+from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicyCounterType,
+                                                          ConditionalAccessPolicyStage,
+                                                          ConditionalAccessStageAction, UserLockState)
+from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry, clear_authentication_log
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.conditional_access_base import ConditionalAccessFixtureMixin
@@ -354,12 +362,14 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(res.json["result"]["value"])
             self.assertIn("authentication", res.json["result"])
             self.assertEqual("REJECT", res.json["result"]["authentication"])
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                     transaction_id=transaction_id)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL], transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id, endpoint='/validate/initialize')
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user, serials=None,
-                                        transaction_id=transaction_id, endpoint='/validate/check')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/validate/check',
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
         remove_token(serial)
 
     def test_04_authenticate_with_uv(self):
@@ -525,14 +535,16 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("code", error)
             self.assertEqual(403, error["code"])
             self.assertFalse(result["status"])
-        # Answering with a mismatched serial fails verification -> MFA_FAIL
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                     transaction_id=transaction_id)
+        # Answering with a mismatched serial fails verification: the transaction holds no challenge for that token
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL], transaction_id=transaction_id)
         # The challenge was triggered via PIN before the serial was renamed
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={serial}, transaction_id=transaction_id, endpoint='/validate/check')
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user, serials={"123456"},
-                                        transaction_id=transaction_id, endpoint='/validate/check')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={"123456"}, transaction_id=transaction_id, endpoint='/validate/check',
+                                        reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
+                                        reasons={"123456": AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION})
         remove_token(token.token.serial)
 
     def test_07_trigger_challenge(self):
@@ -958,12 +970,14 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                     transaction_id=transaction_id)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL], transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id, endpoint='/validate/initialize')
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
-                                        transaction_id=transaction_id, endpoint='/auth')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
         remove_token(serial)
 
     def test_12_auth_fail_signature(self):
@@ -979,12 +993,14 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                     transaction_id=transaction_id)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL], transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id, endpoint='/validate/initialize')
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
-                                        transaction_id=transaction_id, endpoint='/auth')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
         remove_token(serial)
 
     def test_13_uv_in_challenge_data(self):
@@ -1517,7 +1533,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
     def test_22_auth_fail_missing_challenge(self):
         """
         On /auth, answering with a transaction_id that has no challenge makes verification
-        raise (challenge not found), which propagates as a failure; this must still log MFA_FAIL.
+        raise (challenge not found), which propagates as a failure and is logged as a failed challenge answer.
         A request without any transaction_id is malformed and leaves no authentication-log row.
         """
         serial = self._enroll_static_passkey()
@@ -1534,9 +1550,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res.json)
 
-        auth_log_entries = assert_authentication_log([AuthEventType.MFA_FAIL])
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
-                                        transaction_id=transaction_id, endpoint='/auth')
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
+                                        reasons={serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION})
         remove_token(serial)
 
     def test_22_reset_all_user_tokens(self):
@@ -1852,10 +1870,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
-                                                     transaction_id=transaction_id)
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
-                                        transaction_id=transaction_id, endpoint='/auth')
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                        reasons={serial: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
 
         # The challenge was not used up, and /validate/check accepts the same assertion
         with self.app.test_request_context('/validate/check', method='POST', data=data,
@@ -2077,10 +2097,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(res.json["result"]["value"], res.json)
             self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
             self.assertNotIn("username", res.json["detail"], res.json)
-        auth_log_entries = assert_authentication_log([AuthEventType.MFA_FAIL],
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL],
                                                      transaction_id=data["transaction_id"])
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user, serials={serial},
-                                        transaction_id=data["transaction_id"], endpoint='/validate/check')
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={serial}, transaction_id=data["transaction_id"],
+                                        endpoint='/validate/check',
+                                        reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
+                                        reasons={serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION})
 
     def _assert_persisted_state(self, serial: str, rollout_state: str, active: bool):
         # Read the state from the database, not from the objects the request changed
@@ -2449,3 +2472,113 @@ class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
             self.assertEqual(200, res.status_code, res.json)
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)
+
+
+class PasskeyFailureClassificationTest(PasskeyAPITestBase):
+    """
+    A FIDO2 answer that does not verify is a failed challenge answer, not a failed second factor: no first factor was
+    checked on that path. The MFA brute-force template therefore does not lock the token owner.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        clear_authentication_log()
+        policy = next(entry["policy"] for entry in list_conditional_access_policy_templates()
+                      if entry["key"] == "mfa_bruteforce")
+        create_conditional_access_policy(**policy, priority=1)
+
+    def tearDown(self) -> None:
+        for model in (UserLockState, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy):
+            db.session.query(model).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _event_types(self) -> list[str]:
+        db.session.expire_all()
+        return [row.event_type for row in db.session.query(AuthenticationLog).order_by(AuthenticationLog.id).all()]
+
+    def _post(self, endpoint: str, data: dict) -> None:
+        with self.app.test_request_context(endpoint, method="POST", data=data,
+                                           headers={"Origin": self.expected_origin}):
+            self.app.full_dispatch_request()
+
+    def _assert_owner_not_locked(self, user: User | None = None) -> None:
+        self.assertNotIn("MFA_FAIL", self._event_types())
+        self.assertFalse(is_user_locked(user or self.user))
+
+    def test_01_known_passkey_serial_made_up_transaction(self):
+        serial = self._enroll_static_passkey()
+        clear_authentication_log()
+        try:
+            for attempt in range(3):
+                self._post("/validate/check", {"serial": serial, "credential_id": "garbage",
+                                               "transaction_id": f"{attempt}" * 20})
+            self._assert_owner_not_locked()
+            self.assertEqual(["CHALLENGE_ANSWERED_FAIL"] * 3, self._event_types())
+        finally:
+            remove_token(serial)
+
+    def test_02_known_passkey_serial_unbound_challenge_wrong_answer(self):
+        serial = self._enroll_static_passkey()
+        clear_authentication_log()
+        try:
+            for _ in range(3):
+                # A challenge anyone can create, answered with a response signed over another nonce
+                transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
+                self._post("/validate/check", {**self.authentication_response_no_uv, "serial": serial,
+                                               "transaction_id": transaction_id})
+            self._assert_owner_not_locked()
+        finally:
+            remove_token(serial)
+
+    def test_03_known_serial_registration_data_without_pending_enrollment(self):
+        serial = self._enroll_static_passkey()
+        clear_authentication_log()
+        try:
+            for attempt in range(3):
+                self._post("/validate/check", {"serial": serial, "credential_id": "garbage",
+                                               "attestationObject": "garbage", "transaction_id": f"{attempt}" * 20})
+            self._assert_owner_not_locked()
+        finally:
+            remove_token(serial)
+
+    def test_04_known_hotp_serial_on_the_fido2_path(self):
+        # Only a FIDO2 token answers on this path, so another token's serial counts as not found
+        hotp_user = User("cornelius", self.realm1)
+        init_token({"serial": "LOCKOUT_HOTP", "type": "hotp", "otpkey": self.otpkey, "pin": "secretpin"},
+                   user=hotp_user)
+        clear_authentication_log()
+        try:
+            for attempt in range(3):
+                self._post("/validate/check", {"serial": "LOCKOUT_HOTP", "credential_id": "garbage",
+                                               "transaction_id": f"{attempt}" * 20})
+            self._assert_owner_not_locked(hotp_user)
+            self.assertEqual(["NO_TOKEN"] * 3, self._event_types())
+        finally:
+            remove_token("LOCKOUT_HOTP")
+
+    def test_05_bound_challenge_triggered_with_empty_pin_wrong_answer(self):
+        # passkey_trigger_with_pin and a passkey without a PIN: the user name alone triggers a bound challenge
+        serial = self._enroll_static_passkey()
+        clear_authentication_log()
+        try:
+            for _ in range(3):
+                transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+                self._post("/validate/check", {**self.authentication_response_no_uv, "user": "hans",
+                                               "realm": self.realm1, "transaction_id": transaction_id})
+            self._assert_owner_not_locked()
+        finally:
+            remove_token(serial)
+
+    def test_06_auth_endpoint_known_credential_id_unbound_challenge_wrong_answer(self):
+        serial = self._enroll_static_passkey()
+        clear_authentication_log()
+        try:
+            for _ in range(3):
+                transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
+                self._post("/auth", {**self.authentication_response_no_uv, "transaction_id": transaction_id})
+            self._assert_owner_not_locked()
+        finally:
+            remove_token(serial)
+

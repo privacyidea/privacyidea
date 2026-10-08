@@ -10,5 +10,4 @@ Tokengroup endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: tokengroup_blueprint
-
    :include-empty-docstring:
