@@ -47,7 +47,9 @@ the check for the second factor.
 Passkeys are not triggered by these requests (unless the policy :ref:`policy_passkey_trigger_by_pin` is set).
 To offer a login with a passkey, the plugin requests a challenge with ``POST /validate/initialize`` and the
 parameter ``type=passkey``; no username is needed. The response contains the options for the browser's WebAuthn
-API (``navigator.credentials.get``) in ``detail.passkey`` and the ``transaction_id``. The plugin sends the result
+API (``navigator.credentials.get``) in ``detail.passkey`` and the ``transaction_id``. The plugin passes the
+challenge to the browser as the UTF-8 bytes of the string in ``detail.passkey.challenge``, without base64url-decoding
+it as it would for a WebAuthn challenge (see :ref:`webauthn_passkey_interop`). The plugin sends the result
 to ``/validate/check`` with the parameters ``transaction_id``, ``credential_id`` (the ID of the credential the
 browser returned), ``authenticatorData``, ``clientDataJSON``, ``signature`` and ``userHandle``, and with the
 origin of the login page in the HTTP header ``Origin``. If the request contains no ``user``, privacyIDEA
