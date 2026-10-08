@@ -18,78 +18,121 @@
  **/
 
 import { LiveAnnouncer } from "@angular/cdk/a11y";
+import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { Title } from "@angular/platform-browser";
-import { RouterStateSnapshot } from "@angular/router";
-import { pageTitleFor, PageTitleStrategy } from "./page-title";
+import { provideRouter, Router, TitleStrategy } from "@angular/router";
+import { detailsTitle, newTitle } from "./route-titles";
+import { PageTitleStrategy } from "./page-title";
 
-describe("pageTitleFor", () => {
-  it("names a list page", () => {
-    expect(pageTitleFor("/policies")).toBe("Policies");
-    expect(pageTitleFor("/policies/conditional-access")).toBe("Conditional access policies");
-  });
-
-  it("ignores the query, the fragment and a trailing slash", () => {
-    expect(pageTitleFor("/tokens/?page=2#top")).toBe("Tokens");
-  });
-
-  it("names a new or created record after its list", () => {
-    expect(pageTitleFor("/policies/new")).toBe("Policies – new");
-    expect(pageTitleFor("/containers/create")).toBe("Containers – new");
-  });
-
-  it("names a record's page after its list", () => {
-    expect(pageTitleFor("/tokens/details/HOTP0001")).toBe("Tokens – details");
-    expect(pageTitleFor("/external-services/smtp/details/mail")).toBe("SMTP servers – details");
-  });
-
-  it("takes the first keyword segment after a page, so a record may be named like a keyword", () => {
-    expect(pageTitleFor("/policies/details/new")).toBe("Policies – details");
-    expect(pageTitleFor("/tokens/details/details")).toBe("Tokens – details");
-    expect(pageTitleFor("/containers/templates/details/create")).toBe("Container templates – details");
-  });
-
-  it("has no name for a path no page is known by", () => {
-    expect(pageTitleFor("/nowhere")).toBeUndefined();
-    expect(pageTitleFor("/nowhere/new")).toBeUndefined();
-  });
-});
+@Component({ selector: "app-test-page", template: "" })
+class TestPageComponent {}
 
 describe("PageTitleStrategy", () => {
-  let strategy: PageTitleStrategy;
+  let router: Router;
   let title: Title;
   let announcer: LiveAnnouncer;
-  const snapshot = (url: string) => ({ url }) as RouterStateSnapshot;
+  let strategy: PageTitleStrategy;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          { path: "tokens", title: "Tokens", component: TestPageComponent },
+          { path: "users/realms", title: "Realms", component: TestPageComponent },
+          { path: "policies", title: "Policies", component: TestPageComponent },
+          {
+            path: "policies/details/:name",
+            title: detailsTitle("Policies"),
+            component: TestPageComponent
+          },
+          { path: "policies/new", title: newTitle("Policies"), component: TestPageComponent },
+          { path: "untitled", component: TestPageComponent },
+          {
+            path: "group",
+            children: [{ path: "child", title: "Child", component: TestPageComponent }]
+          }
+        ]),
+        { provide: TitleStrategy, useExisting: PageTitleStrategy }
+      ]
+    });
     title = TestBed.inject(Title);
     title.setTitle("privacyIDEA Authentication System");
     announcer = TestBed.inject(LiveAnnouncer);
     jest.spyOn(announcer, "announce").mockResolvedValue();
     strategy = TestBed.inject(PageTitleStrategy);
+    router = TestBed.inject(Router);
   });
 
-  it("puts the page's name before the application's in the document title", () => {
-    strategy.updateTitle(snapshot("/policies"));
+  it("puts the page's name before the application's in the document title", async () => {
+    await router.navigateByUrl("/policies");
 
     expect(title.getTitle()).toBe("Policies – privacyIDEA Authentication System");
   });
 
-  it("exposes the page's name as the heading", () => {
-    strategy.updateTitle(snapshot("/users/realms"));
+  it("exposes the page's name as the heading", async () => {
+    await router.navigateByUrl("/users/realms");
 
     expect(strategy.heading()).toBe("Realms");
   });
 
-  it("announces the page when the route changes", () => {
-    strategy.updateTitle(snapshot("/tokens"));
+  it("takes the name from the title of the activated child route", async () => {
+    await router.navigateByUrl("/group/child");
 
+    expect(strategy.heading()).toBe("Child");
+  });
+
+  it("names a new or a record's page after its list", async () => {
+    await router.navigateByUrl("/policies/new");
+    expect(strategy.heading()).toBe("Policies – new");
+
+    await router.navigateByUrl("/policies/details/hide_welcome");
+    expect(strategy.heading()).toBe("Policies – details");
+  });
+
+  it("announces the page when the route changes", async () => {
+    await router.navigateByUrl("/tokens");
+
+    expect(announcer.announce).toHaveBeenCalledTimes(1);
     expect(announcer.announce).toHaveBeenCalledWith("Tokens", "polite");
   });
 
-  it("falls back to the application's title and announces nothing for an unknown path", () => {
-    strategy.updateTitle(snapshot("/nowhere"));
+  it("announces each page it moves to", async () => {
+    await router.navigateByUrl("/tokens");
+    await router.navigateByUrl("/policies");
+
+    expect(announcer.announce).toHaveBeenCalledTimes(2);
+    expect(announcer.announce).toHaveBeenLastCalledWith("Policies", "polite");
+  });
+
+  it("announces a page again after another page was in between", async () => {
+    await router.navigateByUrl("/tokens");
+    await router.navigateByUrl("/policies");
+    await router.navigateByUrl("/tokens");
+
+    expect(announcer.announce).toHaveBeenCalledTimes(3);
+  });
+
+  it("announces nothing when only the query changes", async () => {
+    await router.navigateByUrl("/policies");
+    await router.navigateByUrl("/policies?filter=a");
+    await router.navigateByUrl("/policies?filter=b");
+    await router.navigateByUrl("/policies");
+
+    expect(announcer.announce).toHaveBeenCalledTimes(1);
+    expect(strategy.heading()).toBe("Policies");
+    expect(title.getTitle()).toBe("Policies – privacyIDEA Authentication System");
+  });
+
+  it("announces another record of the same list although the heading is the same", async () => {
+    await router.navigateByUrl("/policies/details/a");
+    await router.navigateByUrl("/policies/details/b");
+
+    expect(announcer.announce).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to the application's title and announces nothing for a page without a title", async () => {
+    await router.navigateByUrl("/untitled");
 
     expect(title.getTitle()).toBe("privacyIDEA Authentication System");
     expect(strategy.heading()).toBe("");
