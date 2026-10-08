@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgTemplateOutlet } from "@angular/common";
 import { Component, computed, input, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -80,7 +81,15 @@ export interface TableAction {
  */
 @Component({
   selector: "app-table-actions",
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatSlideToggleModule, MatTooltipModule, OverflowNavDirective],
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatSlideToggleModule,
+    MatTooltipModule,
+    NgTemplateOutlet,
+    OverflowNavDirective
+  ],
   templateUrl: "./table-actions.component.html",
   styleUrl: "./table-actions.component.scss"
 })

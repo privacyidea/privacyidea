@@ -29,8 +29,11 @@
     <ng-content />
     @for (action of toolbarButtons(); track action.id) {
       <!-- Only an action with a submenu carries the menu trigger, so a plain button is not announced as
-           collapsed. The icon is a direct child of each button so Material projects it into its icon slot,
-           beside the label, instead of into the label. -->
+           collapsed. That keeps the two button declarations apart, and a button content template cannot
+           join them: Material projects an icon into its icon slot beside the label only when the icon is a
+           direct child of the button in the declaring template, and an icon drawn through a template outlet
+           lands inside the label instead. The plain icon therefore stays in each button; the badge variant
+           already sits inside the label and is shared. -->
       @if (action.submenu) {
         <button
           (click)="action.run?.()"
@@ -41,12 +44,7 @@
           [matTooltip]="action.tooltip ?? ''"
           mat-stroked-button>
           @if (action.badge) {
-            <span
-              [class.icon-badge-spaced]="action.spacedBadge"
-              class="icon-badge">
-              <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-            </span>
+            <ng-container *ngTemplateOutlet="badgeIcon; context: { $implicit: action }" />
           } @else {
             <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
           }
@@ -61,12 +59,7 @@
           [matTooltip]="action.tooltip ?? ''"
           mat-stroked-button>
           @if (action.badge) {
-            <span
-              [class.icon-badge-spaced]="action.spacedBadge"
-              class="icon-badge">
-              <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-            </span>
+            <ng-container *ngTemplateOutlet="badgeIcon; context: { $implicit: action }" />
           } @else {
             <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
           }
@@ -88,6 +81,17 @@
     <ng-content select="[tableActionsEnd]" />
   </div>
 }
+
+<ng-template
+  #badgeIcon
+  let-action>
+  <span
+    [class.icon-badge-spaced]="action.spacedBadge"
+    class="icon-badge">
+    <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
+    <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+  </span>
+</ng-template>
 
 <!-- The same actions as menu items, for the compact trigger shown next to the filter once the table is
      scrolled and the toolbar is hidden. -->
