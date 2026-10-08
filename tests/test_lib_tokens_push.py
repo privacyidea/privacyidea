@@ -55,6 +55,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
 from .base import MyTestCase, FakeAudit, FakeFlaskG
+from .compare_helpers import recorded_compare_digest
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
@@ -2338,6 +2339,27 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("push_16l_text")
         delete_policy("push_16l_enroll")
         remove_token(serial)
+
+    def test_16m_code_to_phone_display_code_is_compared_in_constant_time(self):
+        # The display code and the given password are compared in constant time.
+        token = self._setup_notification_token("16m")
+        serial = token.get_serial()
+        transaction_id = "11112222333344445555"
+        Challenge(serial, transaction_id=transaction_id,
+                  data={"mode": PushMode.CODE_TO_PHONE, "smartphone_confirmed": True,
+                        "display_code": "424242"}).save()
+        options = {"transaction_id": transaction_id}
+
+        with recorded_compare_digest() as spy:
+            self.assertEqual(-1, token.check_challenge_response(passw="000000", options=options))
+        self.assertTrue(spy.saw("424242", "000000"))
+        # A wrong display code still counts as a failed attempt
+        self.assertEqual(1, token.token.failcount)
+
+        # The right code is still accepted
+        self.assertEqual(1, token.check_challenge_response(passw="424242", options=options))
+
+        self._teardown_notification_token(token, "16m")
 
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):

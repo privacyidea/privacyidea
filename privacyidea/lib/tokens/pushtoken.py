@@ -61,7 +61,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import geturandom, generate_keypair
+from privacyidea.lib.crypto import geturandom, generate_keypair, safe_compare
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
@@ -1783,7 +1783,7 @@ class PushTokenClass(TokenClass):
                     return state
                 # Step 2: smartphone has confirmed, check the display_code
                 display_code = data.get("display_code", "")
-                if display_code and display_code == passw:
+                if display_code and isinstance(passw, str) and safe_compare(display_code, passw):
                     state.otp_counter = 1
                     return state
                 elif passw is not None:
