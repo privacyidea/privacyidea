@@ -27,7 +27,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import (admin_granted_realms, get_policy_visibility_scopes, own_entries_scope,
-                                             policy_change_granted, policy_realm_names, realms_granted)
+                                             policy_realm_names, realms_granted)
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
 from privacyidea.lib.user import User
 from .base import FakeAudit, MyTestCase
@@ -154,50 +154,6 @@ class RealmsGrantedTestCase(MyTestCase):
         all_realms = [self.realm1, self.realm2, self.realm3]
         for exclusions in ([f"!{self.realm3}"], [f"!{self.realm1}"], [f"!{self.realm2}", f"-{self.realm3}"]):
             self.assertFalse(realms_granted(exclusions, all_realms, every_realm=True), exclusions)
-
-
-class PolicyChangeGrantedTestCase(MyTestCase):
-    """Whether an admin may change, create or delete a policy, by its stored realms and the realms the change sets."""
-
-    def setUp(self) -> None:
-        self.setUp_user_realms()
-        self.setUp_user_realm3()
-        set_policy("pol_realm1", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore", realm=self.realm1)
-        set_policy("pol_realm3", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore", realm=self.realm3)
-        set_policy("pol_realm13", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore",
-                   realm=f"{self.realm1},{self.realm3}")
-        set_policy("pol_not_realm3", scope=SCOPE.AUTH, action=PolicyAction.OTPPIN + "=userstore",
-                   realm=f"!{self.realm3}")
-
-    def tearDown(self) -> None:
-        delete_policy("pol_realm1")
-        delete_policy("pol_realm3")
-        delete_policy("pol_realm13")
-        delete_policy("pol_not_realm3")
-        super().tearDown()
-
-    def test_policy_change_granted(self):
-        granted = [self.realm1]
-        self.assertTrue(policy_change_granted("pol_realm3", [self.realm3], None))
-        # The stored policy may only apply to granted realms, whatever the change sets
-        self.assertTrue(policy_change_granted("pol_realm1", None, granted))
-        self.assertFalse(policy_change_granted("pol_realm3", None, granted))
-        self.assertFalse(policy_change_granted("pol_realm3", [self.realm1], granted, creates=True))
-        self.assertFalse(policy_change_granted("pol_realm13", None, granted))
-        self.assertFalse(policy_change_granted("pol_realm13", [self.realm1], granted))
-        self.assertTrue(policy_change_granted("pol_realm13", None, [self.realm1, self.realm3]))
-        self.assertFalse(policy_change_granted("pol_not_realm3", None, [self.realm1, self.realm2]))
-        self.assertFalse(policy_change_granted("pol_not_realm3", [self.realm1], granted))
-        self.assertTrue(policy_change_granted("pol_not_realm3", None, None))
-        # Every realm the change sets has to be granted
-        self.assertTrue(policy_change_granted("pol_realm1", [self.realm1], granted))
-        self.assertFalse(policy_change_granted("pol_realm1", [self.realm1, self.realm3], granted))
-        self.assertFalse(policy_change_granted("pol_realm1", [], granted))
-        self.assertFalse(policy_change_granted("pol_new", [f"!{self.realm3}"], granted, creates=True))
-        # A new policy without realms applies to every realm
-        self.assertFalse(policy_change_granted("pol_new", None, granted, creates=True))
-        self.assertTrue(policy_change_granted("pol_new", [self.realm1], granted, creates=True))
-        self.assertFalse(policy_change_granted("pol_new", [self.realm1], []))
 
 
 class VisibilityScopeTargetsTestCase(MyTestCase):

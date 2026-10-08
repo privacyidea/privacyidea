@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 from flask import g, request
 
-from privacyidea.lib.policy import Match, SCOPE, get_policies
+from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_realms
@@ -326,8 +326,8 @@ def realms_granted(policy_realms: list[str] | None, granted_realms: list[str] | 
     field.
 
     Reading an object needs it to apply to one of the granted realms. A realm field that is empty, or ``"*"`` without
-    exclusions, applies to every realm, so to the granted ones as well. Changing it needs it to apply to granted
-    realms only (*every_realm*).
+    exclusions, applies to every realm, so to the granted ones as well. With *every_realm* it has to apply to granted
+    realms only, like the realms a request names.
 
     :param policy_realms: a realm field, read like :func:`policy_realm_names`
     :param granted_realms: the result of :func:`admin_granted_realms`
@@ -346,31 +346,6 @@ def realms_granted(policy_realms: list[str] | None, granted_realms: list[str] | 
         return (bool(realm_names) and "*" not in policy_realms
                 and set(realm_names) <= set(granted_realms))
     return realm_names is None or bool(set(realm_names) & set(granted_realms))
-
-
-def policy_change_granted(name: str, new_realms: list[str] | None, granted_realms: list[str] | None,
-                          creates: bool = False) -> bool:
-    """
-    Whether an admin with *granted_realms* may change, create or delete the policy *name*.
-
-    The stored policy and the realms set by the change may only apply to granted realms, see :func:`realms_granted`.
-    *new_realms* None keeps the stored realms; a new policy (*creates*) without realms applies to every realm.
-
-    :param name: the name of the policy
-    :param new_realms: the realm names the change sets, or None if it keeps them
-    :param granted_realms: the result of :func:`admin_granted_realms`
-    :param creates: the change can create the policy, like ``POST /policy/<name>`` or an import
-    """
-    if granted_realms is None:
-        return True
-    existing = get_policies(name=name) if name else []
-    if any(not realms_granted(policy.get("realm"), granted_realms, every_realm=True) for policy in existing):
-        return False
-    if new_realms is None and creates and not existing:
-        new_realms = []
-    if new_realms is None:
-        return True
-    return realms_granted(new_realms, granted_realms, every_realm=True)
 
 
 def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:
