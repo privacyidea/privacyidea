@@ -22,6 +22,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import get_app_local_store
 from .base import MyTestCase, OverrideConfigTestCase
+from .compare_helpers import recorded_compare_digest
 # need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
@@ -32,7 +33,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     encrypt, decrypt, Sign, get_sign_object, generate_keypair,
                                     generate_password, pass_hash, verify_pass_hash, build_pass_context, generate_keypair_ecc,
                                     ecc_key_pair_to_b64url_str, b64url_str_key_pair_to_ecc_obj, sign_ecc,
-                                    ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc)
+                                    ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc, safe_compare)
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
@@ -302,6 +303,14 @@ class CryptoTestCase(MyTestCase):
         keypub, keypriv = generate_keypair(rsa_keysize=4096)
         self.assertTrue(keypub.startswith("-----BEGIN RSA PUBLIC KEY-----"), keypub)
         self.assertTrue(keypriv.startswith("-----BEGIN RSA PRIVATE KEY-----"), keypriv)
+
+    def test_11_safe_compare_is_recorded_by_the_spy(self):
+        # The spy of tests/compare_helpers.py backs the constant-time comparison tests of the other test modules.
+        with recorded_compare_digest() as spy:
+            self.assertFalse(safe_compare("stored", "given"))
+            self.assertTrue(safe_compare("stored", "stored"))
+        self.assertTrue(spy.saw("stored", "given"))
+        self.assertFalse(spy.saw("stored", "unrelated"))
 
 
 class EllipticCurveCryptoTestCase(MyTestCase):
