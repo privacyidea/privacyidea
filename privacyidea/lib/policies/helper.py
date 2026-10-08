@@ -429,6 +429,19 @@ def _policy_usernames(policy_users: list[str] | None, case_insensitive: bool) ->
     return (named_users, []) if named_users else None
 
 
+def policy_target_is_unrestricted(policy: dict) -> bool:
+    """
+    Whether an admin policy grants its actions on every target: its realm, resolver and user fields are each empty or
+    ``"*"``, read the way the policy engine matches them. Such a policy makes :func:`get_policy_visibility_scopes`
+    answer ``None``.
+
+    :param policy: the policy as the policy engine returns it
+    """
+    return (policy_realm_names(policy.get("realm")) is None
+            and _policy_field_names(policy.get("resolver"), get_resolver_list) is None
+            and _policy_usernames(policy.get("user"), bool(policy.get("user_case_insensitive"))) == ([], []))
+
+
 def _accounts_of(logins: list[str], realms: list[str]) -> list[tuple[str, str]]:
     """
     The accounts, as ``(resolver, uid)``, that these logins resolve to in these realms. A login that does not resolve

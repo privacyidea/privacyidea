@@ -27,8 +27,8 @@ Policy settings
   ``BLOCK_IP``, the email actions - runs for **every** enabled, matching
   policy regardless of priority; there, priority only decides whose error
   message stands when two policies write the same lock or block, see
-  :ref:`conditional_access_policies_lifting`. Use *Reorder Policies* in the
-  policy list to change the order.
+  :ref:`conditional_access_error_messages_snapshot`. Use *Reorder Priorities* in the
+  policy list to change the order, then *Save Order*.
 
 **enabled**
 
@@ -43,8 +43,11 @@ Policy settings
   What the policy counts and acts on:
 
   * ``user`` - the authenticating user, identified by resolver, user ID and
-    realm. Requests without a resolvable user are ignored by these policies.
-    An internal privacyIDEA administrator is never counted here.
+    realm. A local administrator (an account created with
+    ``pi-manage admin add``) is counted and locked by these policies too,
+    identified by the login name, see :ref:`conditional_access_local_admins`.
+    Requests that identify neither a resolvable user nor a local administrator
+    are ignored by these policies.
   * ``source_ip`` - the client address. These policies also apply when no user
     could be resolved, which is what makes spraying and enumeration visible.
 
@@ -59,7 +62,10 @@ Policy settings
 
   The event types conditional access writes for its own rejections cannot be
   tracked. Otherwise a lock would keep refreshing itself on the very requests
-  it refuses, and never expire.
+  it refuses, and never expire. ``SUSPENDED_API_KEY_USED`` cannot be tracked
+  either: it describes the client a request arrived with rather than how an
+  authentication ended, and can only be filtered for in the
+  :ref:`authentication_log`.
 
 **time window**
 
@@ -108,7 +114,10 @@ Policy settings
      *is one of*, but does match *is not one of*. An exception written as
      *realm is not one of [sales]* therefore also covers requests with no
      realm at all. For ``USER_REALM`` this happens when the client does not
-     send a realm and no default realm is defined, and always for an internal
+     send a realm and no default realm is defined; when a request names no
+     user - a serial of a token without owner, or the anonymous start of a
+     passkey login - and the client sends no realm, since the default realm is
+     only filled in for a named user; and always for an internal
      administrator, who has no realm to carry regardless of that setting.
 
 .. _conditional_access_policies_counting:
@@ -119,8 +128,12 @@ Counting and resetting
 With **reset the count on a successful login** - the default for a ``user``
 policy - the policy counts the failures **since the user's last successful
 login**, so a legitimate user is not locked by failures from days ago. Every
-threshold of the policy counts that way, the ``DENY`` decision included, so a
-denial also lifts on a successful login and not only as the window drains.
+threshold of the policy counts that way, the ``DENY`` decision included. A
+``DENY`` in force, however, also refuses the login that would reset it - it is
+decided before the credentials are checked - so in practice a denial lifts as
+the counted entries age out of the window. With conditions, only a successful
+login the conditions cover resets the count - a policy limited to
+``/validate/check`` is not reset by a WebUI login.
 
 Turn it off to make a threshold mean *this many entries in the window* outright,
 whatever happened in between. That is what a rate limit wants: the shipped rate
@@ -146,21 +159,23 @@ lock permanently at 20. Thresholds must be unique within a policy.
 
 By default an action fires **once**, exactly when the count reaches the
 threshold: an email configured at 8 is sent on the 8th failure and not again on
-the 9th. It also fires if a single evaluation's own request is what carried the
-count from below the threshold to at or above it, even when that step skipped
+the 9th. With the count mode ``DISTINCT_USERS`` that is the request whose account
+is the 8th distinct one; a retry of an account already counted does not send the
+email again. It also fires if a single evaluation's own request is what carried
+the count from below the threshold to at or above it, even when that step skipped
 the threshold value itself - e.g. one of two concurrent failed logins, each
 committing before the other is counted. A narrower race, where several such
 requests all commit before any of them is evaluated, can still let this
 particular crossing go unfired; the count keeps climbing regardless, so later
 requests remain subject to whatever higher stage the policy defines next.
-Enable **re-trigger above threshold** for an action that should fire on
+Enable *Re-trigger while above the threshold* for an action that should fire on
 every further request instead, for as long as the count stays in the range its
 stage owns - at or above its own threshold, below the next stage's. Each stage
 therefore owns one range of counts, and only the stage owning the *current*
 count acts, so escalation is a hand-over rather than an overlay.
 
 This is a live read of the count, not a state the policy remembers: should the
-count later drop back into a milder stage's range - the time window ageing old
+count later drop back into a milder stage's range - the time window aging old
 failures out, or a successful login where ``reset_on_success`` applies - that
 stage's re-triggering action fires again. ``DENY`` defaults to re-trigger, as it
 is a one-time action denying only the current request, and follows the same
@@ -171,7 +186,7 @@ can count, so the very count that would carry it past the next threshold stops
 climbing while the refusal holds.
 
 It is worth giving the **highest** stage's restricting action - its lock, block
-or ``DENY`` - re-trigger above threshold. Because a fire-once action only fires
+or ``DENY`` - *Re-trigger while above the threshold*. Because a fire-once action only fires
 on the evaluation that carries the count from below the threshold to at or
 above it, a subject whose count is already past it *before* that evaluation
 stays unrestricted: failures that predate the policy, or an administrator who
@@ -195,10 +210,12 @@ over like any other, so *always* reaches up to the next threshold.
    yourself a way back in. Either kind can shut you out: a ``user`` policy
    reaches a local administrator like anybody else (see
    :ref:`conditional_access_local_admins`), and a ``source_ip`` policy applies
-   to whoever is behind the address. Exempt your own address in
-   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which is never denied either (see
-   :ref:`conditional_access_never_block`), or write *user role is not one of
-   [admin-internal]* and read what that exemption costs in
+   to whoever is behind the address. Against a ``source_ip`` policy, exempt
+   your own address in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``: such a policy
+   never blocks or denies it (see :ref:`conditional_access_never_block`).
+   Against a ``user`` policy the address does not help - its ``DENY`` and its
+   locks apply from any address - so write *user role is not one of
+   [admin-internal]* there and read what that exemption costs in
    :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
    state, so none of the ``pi-manage conditionalaccess`` reset commands can
    lift it; undoing an unscoped one means disabling the policy itself, with
@@ -208,8 +225,11 @@ over like any other, so *always* reaches up to the next threshold.
 Each stage also has an optional **error message**, the text an end user sees on a
 request that a lock, block or ``DENY`` from that stage turns away - never on the
 request that trips the stage, which is answered on its own merits. It is empty by
-default, which keeps a rejection indistinguishable from any other failed
-authentication, see :ref:`conditional_access_error_messages`.
+default: the rejection then names neither the restriction nor its duration and
+carries at most the generic ``Authentication failed.``. It is identical to any
+other failed authentication only if ``hide_specific_error_message`` is set as
+well, see :ref:`conditional_access_evaluation` and
+:ref:`conditional_access_error_messages_masking`.
 
 .. _conditional_access_policies_actions:
 
@@ -218,17 +238,20 @@ Actions
 
 **LOCK_USER**, **BLOCK_IP**
     Lock the user, or block the source address, for the configured duration.
-    The restriction lifts itself when the duration has passed. A missing or
-    invalid duration is a misconfiguration: the action is skipped and logged.
+    The restriction lifts itself when the duration has passed. The duration is
+    required: a ``LOCK_USER`` or ``BLOCK_IP`` action without a positive duration
+    in seconds is refused when the policy is saved.
 
 **PERMANENT_LOCK_USER**, **PERMANENT_BLOCK_IP**
     The same, without an expiry. Only an administrator can lift these.
 
 **DENY**
     Refuse this single request pre-authentication, without storing anything.
-    The rejection lifts by itself as the counted entries age out of the window -
-    and, on a policy that resets on success, on the next successful login.
-    Use it for a rate limit that must not leave a lock behind.
+    The rejection lifts by itself as the counted entries age out of the window.
+    Reset on success does not shorten it in practice: while the denial holds,
+    it refuses the successful login as well, see
+    :ref:`conditional_access_policies_counting`. Use it for a rate limit that
+    must not leave a lock behind.
 
 **EMAIL_USER**, **EMAIL_ADMIN**
     Notify the user, or an administrator, that the threshold was reached.
@@ -247,6 +270,26 @@ Actions
     and are only filled in when a user was resolved for the request - which
     ``EMAIL_ADMIN`` on a ``source_ip`` policy is not guaranteed to have,
     since that target also applies where no user could be resolved at all.
+
+Which actions a policy may use depends on its target:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - Target
+     - Actions
+     - Count modes
+   * - ``user``
+     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
+     - PER_REQUEST, PER_ATTEMPT
+   * - ``source_ip``
+     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
+     - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
+
+.. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy
+   knows nothing about how many accounts an address attacked. Use a
+   ``source_ip`` policy with ``DISTINCT_USERS`` for that.
 
 .. _conditional_access_policies_exceptions:
 
@@ -276,30 +319,13 @@ policy will look for it.
    that user, whom they can lock out (see :ref:`conditional_access_local_admins`).
    The most guessable account in the installation is then the one account the
    policy does not protect. Write the exemption only on the policies that need
-   it, and where an address will do, exempt the address in
-   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` (see
+   it. On a ``source_ip`` policy, where an address will do, exempt the address
+   in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` (see
    :ref:`conditional_access_never_block`) instead: an address is a fact of the
-   connection rather than a claim of the request.
-
-Which actions a policy may use depends on its target:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Target
-     - Actions
-     - Count modes
-   * - ``user``
-     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
-     - PER_REQUEST, PER_ATTEMPT
-   * - ``source_ip``
-     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
-     - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
-
-.. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy
-   knows nothing about how many accounts an address attacked. Use a
-   ``source_ip`` policy with ``DISTINCT_USERS`` for that.
+   connection rather than a claim of the request. A ``user`` policy does not
+   look at the address - its ``DENY`` and its locks apply to requests from an
+   exempt address as well - so there the address is no substitute for the
+   condition.
 
 Templates
 ---------
@@ -313,6 +339,12 @@ of each template's highest stage re-triggers above its threshold, as recommended
 above. The two per-IP rate limit templates are pre-set to dry run, because
 their threshold depends on how many users share an address, see
 :ref:`conditional_access_policies_dry_run`.
+
+.. note:: The MFA brute force template counts ``MFA_FAIL``: a correct first
+   factor followed by a wrong second one. With the default ``otppin=tokenpin``,
+   a token without a PIN has an empty first factor, so wrong OTP values given
+   with the login name alone count as well. Use this template where every token
+   has a PIN, or with ``otppin=userstore``.
 
 .. _conditional_access_policies_dry_run:
 
@@ -359,7 +391,7 @@ the very next matching request is the point.
 
 .. warning:: Counting events from before enforcement began can leave a policy
    silent rather than strict. A stage fires as the count *reaches* its
-   threshold (unless the action sets *retrigger above threshold*), so a count
+   threshold (unless the action sets *Re-trigger while above the threshold*), so a count
    that already sits above a threshold never reaches it: that stage stays quiet
    until the old events age out of the time window and the count climbs through
    the threshold again. On a busy policy the count may not drop below the

@@ -143,7 +143,7 @@ class SmartphoneContainer(TokenContainerClass):
         Initializes the registration: Generates a QR code containing all relevant data.
 
         :param server_url: URL of the server reachable for the client.
-        :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
+        :param scope: The URL the client contacts to finalize the registration e.g. ``https://privacyidea.example.com/container/register/finalize``.
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters in the format:
@@ -263,16 +263,14 @@ class SmartphoneContainer(TokenContainerClass):
             * timestamp (from the registration challenge)
             * serial of the container
             * scope: The URL the client contacts to finalize the registration, e.g.
-              "https://pi.net/container/register/finalize"
+              ``https://privacyidea.example.com/container/register/finalize``
             * device brand (optional)
             * device model (optional)
             * passphrase response if defined in the registration challenge
-            * public key of the client in PEM format (curve secp384r1)
 
         ::
 
-            message = <nonce>|<time>|<serial>|<scope>|<device_brand>|<device_model>|
-                      <passphrase_response>|<public_key_client>
+            message = <nonce>|<time>|<serial>|<scope>|<device_brand>|<device_model>|<passphrase_response>
 
         To verify the signature, the ECDSA signature algorithm with SHA256 hash function is used. The public key is
         expected to be an ecc key of curve secp384r1.
@@ -358,7 +356,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         Create a challenge for the container.
 
-        :param scope: The scope (endpoint) of the challenge, e.g. "https://pi.com/container/SMPH001/sync"
+        :param scope: The scope (endpoint) of the challenge, e.g. ``https://privacyidea.example.com/container/synchronize``
         :param validity_time: The validity time of the challenge in minutes.
         :param data: Additional data for the challenge.
         :return: A dictionary with the challenge data in the format:
@@ -405,9 +403,12 @@ class SmartphoneContainer(TokenContainerClass):
             * nonce (from the challenge)
             * timestamp (from the challenge)
             * serial of the container
-            * scope: The URL the client wants to contact, e.g. "https://pi.net/container/register/finalize"
-            * ecc public key of the client in PEM format (optional)
-            * container dict of the client (optional)
+            * scope: The URL the client wants to contact, e.g. ``https://privacyidea.example.com/container/synchronize``
+            * device brand (optional)
+            * device model (optional)
+            * passphrase (optional)
+            * public encryption key of the client as sent in ``public_enc_key_client`` (optional)
+            * container dict of the client as sent in ``container_dict_client`` (optional)
 
         :param params: Dictionary with the parameters for the challenge. The device information is optional.
 
@@ -415,11 +416,11 @@ class SmartphoneContainer(TokenContainerClass):
             ::
 
                 {
-                    "signature": <sign(nonce|timestamp|serial|scope|pub_key|container_dict)>,
-                    "public_client_key_encry": <public key of the client for encryption base 64 url safe encoded>,
+                    "signature": <sign(message)>,
+                    "public_enc_key_client": <public key of the client for encryption base 64 url safe encoded>,
                     "container_dict_client": {"serial": "SMPH0001", "type": "smartphone",
                         "tokens": [{"serial": "1234", "type": "HOTP"}]...}
-                    "scope": "https://pi/container/SMPH001/sync",
+                    "scope": "https://privacyidea.example.com/container/synchronize",
                     "device_brand": "XYZ",
                     "device_model": "123"
                 }

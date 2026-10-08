@@ -83,7 +83,7 @@ def set_realm_api(realm=None):
     resolvers, optionally with a per-resolver priority used to
     disambiguate when the same login name resolves in more than one
     resolver. Resolvers attached to specific nodes are preserved
-    across this call (use :http:post:`/realm/(realm)/node/(nodeid)`
+    across this call (use :http:post:`/realm/(string:realm)/node/(string:nodeid)`
     to manage them).
 
     Requires admin authentication and the policy action :ref:`resolverwrite`.

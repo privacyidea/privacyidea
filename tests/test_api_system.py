@@ -19,7 +19,7 @@ from privacyidea.lib.radiusserver import add_radius, delete_radius
 from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.models import UserCache
-from privacyidea.models import db, NodeName
+from privacyidea.models import db, NodeName, Policy
 from privacyidea.models.metric_aggregate import MetricAggregate
 from .base import MyApiTestCase
 from .conftest import prepare_ca_directory
@@ -1867,3 +1867,58 @@ class HealthEndpointsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res.data)
             self.assertEqual(res.json["result"]["value"]["since_seconds"], 60)
+
+
+class HealthEndpointRightsTestCase(MyApiTestCase):
+    """
+    The /system/health/* endpoints answer only administrators who may read the system configuration.
+    """
+    health_urls = ["/system/health/certificates?refresh=1", "/system/health/resolver_timing",
+                   "/system/health/notification_delivery"]
+    fake_certificates = [{"source": "ldap-resolver", "name": "hiddenldap", "host": "ldap.internal:636",
+                          "tls_mode": "ldaps", "status": "ok", "days_remaining": 200,
+                          "not_after": "2027-01-01T00:00:00", "subject": "CN=ldap", "issuer": "CN=ca", "error": None}]
+    policy_names = ["health_tokenlist", "health_configread"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        db.session.query(MetricAggregate).delete()
+        db.session.commit()
+        health.invalidate_certificate_cache()
+        observe("resolver_op_duration_seconds", 0.05,
+                {"resolver": "hiddenldap", "resolver_type": "ldapresolver", "op": "checkPass"})
+        inc("sms_send_total", {"gateway": "hiddengw", "result": "ok"})
+        inc("email_send_total", {"identifier": "hiddensmtp", "result": "ok"})
+
+    def tearDown(self) -> None:
+        for name in self.policy_names:
+            if Policy.query.filter_by(name=name).first():
+                delete_policy(name)
+        super().tearDown()
+
+    def _get_all(self) -> tuple[dict, int]:
+        statuses = {}
+        with patch("privacyidea.api.system.get_certificate_status", return_value=self.fake_certificates) as probe:
+            for url in self.health_urls:
+                with self.app.test_request_context(url, method="GET", headers={"Authorization": self.at}):
+                    statuses[url] = self.app.full_dispatch_request().status_code
+        return statuses, probe.call_count
+
+    def test_01_admin_without_read_right_is_refused(self):
+        set_policy("health_tokenlist", scope=SCOPE.ADMIN, realm=self.realm1, action=PolicyAction.TOKENLIST)
+        statuses, probes = self._get_all()
+        self.assertEqual({url: 403 for url in self.health_urls}, statuses)
+        self.assertEqual(0, probes)
+
+    def test_02_admin_with_configread_gets_the_panels(self):
+        set_policy("health_tokenlist", scope=SCOPE.ADMIN, realm=self.realm1, action=PolicyAction.TOKENLIST)
+        set_policy("health_configread", scope=SCOPE.ADMIN, action=PolicyAction.SYSTEMREAD)
+        statuses, probes = self._get_all()
+        self.assertEqual({url: 200 for url in self.health_urls}, statuses)
+        self.assertEqual(1, probes)
+
+    def test_03_no_admin_policy_keeps_the_default(self):
+        statuses, _ = self._get_all()
+        self.assertEqual({url: 200 for url in self.health_urls}, statuses)
+

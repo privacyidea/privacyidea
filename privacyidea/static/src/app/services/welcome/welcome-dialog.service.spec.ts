@@ -81,4 +81,16 @@ describe("WelcomeDialogService", () => {
     expect(service.opened()).toBe(false);
     expect(dialogMock.open).not.toHaveBeenCalled();
   });
+
+  it("does NOT open on an interactive login of a self-service user", () => {
+    authMock.isAuthenticated.set(false);
+    const service = TestBed.inject(WelcomeDialogService);
+
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", hide_welcome: false });
+    authMock.isAuthenticated.set(true);
+    TestBed.tick();
+
+    expect(service.opened()).toBe(false);
+    expect(dialogMock.open).not.toHaveBeenCalled();
+  });
 });

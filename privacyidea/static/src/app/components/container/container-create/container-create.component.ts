@@ -193,11 +193,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.selectedUserRealm();
     }
-    const template = this.selectedTemplate();
-    if (template && template.template_options.tokens.length > 0) {
-      createData.name = template.name;
-      createData.template = template;
-    }
+    Object.assign(createData, this.templateCreateData());
 
     try {
       await firstValueFrom(this.containerService.createContainer(createData));
@@ -246,10 +242,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     }
 
     const template = this.selectedTemplate();
-    if (template && template.template_options.tokens.length > 0) {
-      createData.name = template.name;
-      createData.template = template;
-    }
+    Object.assign(createData, this.templateCreateData());
 
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {
@@ -281,6 +274,14 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  /**
+   * The template part of the create request: the template selected on the page, if it has tokens.
+   */
+  protected templateCreateData(): Pick<ContainerCreateData, "name" | "template" | "template_name"> {
+    const template = this.selectedTemplate();
+    return template && template.template_options.tokens.length > 0 ? { name: template.name, template } : {};
   }
 
   protected buildEnrollmentParameters(

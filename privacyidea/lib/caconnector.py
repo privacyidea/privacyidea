@@ -144,7 +144,7 @@ def get_caconnector_list(filter_caconnector_type=None,
         returned
     :type filter_caconnector_type: string
     :param return_config: Whether the configuration should be returned. If False
-        only the list of the CAconncetor names is returned
+        only the list of the CA connector names is returned
     :param censor: If True, password-type config values are replaced with
         CENSORED instead of being returned in clear text.
     :type censor: bool

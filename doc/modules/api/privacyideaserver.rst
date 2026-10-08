@@ -8,5 +8,4 @@ privacyIDEA Server endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: privacyideaserver_blueprint
-
    :include-empty-docstring:

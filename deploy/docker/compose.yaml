@@ -25,7 +25,6 @@ x-pi-common: &pi-common
   build:
     context: "../../"
     dockerfile: ./deploy/docker/Dockerfile
-    network: host
   # image: privacyidea/privacyidea:<tag>   # use instead of build: once published
   secrets:
     - enckey

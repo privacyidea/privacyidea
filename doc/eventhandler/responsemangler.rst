@@ -11,7 +11,8 @@ This way privacyIDEA can change the data sent back to the client, depending
 on certain conditions.
 
 All actions take a JSON pointer, which looks like a path variable like
-``/result/value``.
+``/result/value``. The JSON pointer can have at most three levels, like
+``/detail/googleurl/img``. A longer pointer is ignored (a warning is logged).
 
 Possible Actions
 ~~~~~~~~~~~~~~~~
@@ -42,6 +43,11 @@ or to modify existing entries. Existing entries are overwritten.
 This action takes the additional attributes ``type`` and ``value``.
 
 The value can be returned as a string, an integer or a boolean.
+
+
+A response mangler that can not do what it is configured for, e.g. with a JSON pointer it does not support, does
+not send the original response: new response mangler definitions fail the request in that case, see
+:ref:`event_abort_on_error`.
 
 Code
 ~~~~

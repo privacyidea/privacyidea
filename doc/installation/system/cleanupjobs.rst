@@ -7,9 +7,12 @@ Cleanup Jobs
 
 Several database tables collect rows that are no longer needed: expired
 challenges, expired remembered devices, stale authentication cache entries and
-more. privacyIDEA does not delete them while it serves requests. A scheduled job
-has to do it, otherwise these tables grow without limit, which costs disk space
-and can slow down the queries that read them.
+more. privacyIDEA removes such rows only when it touches them again while
+serving a request, e.g. the expired challenges of a token when that token is
+used again, or an expired remembered device when its cookie comes back. Rows
+that are not touched again stay. A scheduled job has to remove them, otherwise
+these tables grow without limit, which costs disk space and can slow down the
+queries that read them.
 
 The :ref:`Ubuntu packages <install_ubuntu>` and the Docker image schedule these
 jobs out of the box. An :ref:`installation from PyPI <pip_install>` schedules

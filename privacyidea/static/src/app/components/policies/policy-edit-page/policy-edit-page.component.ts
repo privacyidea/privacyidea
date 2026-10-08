@@ -17,7 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
+import {
+  afterNextRender,
+  afterRenderEffect,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  OnDestroy,
+  signal,
+  viewChild
+} from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { MatButtonModule } from "@angular/material/button";
@@ -63,19 +76,25 @@ export class PolicyEditPageComponent implements OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   readonly mode = signal<"create" | "edit">("create");
 
   readonly activeTab = signal<PolicyTab>("actions");
   readonly actionFilter = signal<string>("");
 
-  private readonly stickyHeader = viewChild(StickyHeaderDirective);
+  private readonly stickyHeader = viewChild.required<ElementRef<HTMLElement>>("stickyHeader");
+  private readonly panel = viewChild<PolicyPanelEditComponent>("panel");
+  private readonly panelElement = viewChild("panel", { read: ElementRef<HTMLElement> });
+  private readonly templatePicker = viewChild("templatePicker", { read: ElementRef<HTMLElement> });
+  private readonly headerSearch = viewChild.required(PolicyActionSearchComponent);
+  private readonly searchReached = signal(false);
 
   /**
-   * The search field is only shown in the header once that header is pinned; the rest of the time
-   * the actions tab renders it above the panels it filters.
+   * The search field moves into the header once the header touches its top edge, so it is never
+   * partly covered; until then the actions tab shows it above the panels it filters.
    */
-  readonly searchInHeader = computed(() => this.activeTab() === "actions" && !!this.stickyHeader()?.isSticky());
+  readonly searchInHeader = computed(() => this.activeTab() === "actions" && this.searchReached());
 
   readonly policy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
@@ -117,9 +136,40 @@ export class PolicyEditPageComponent implements OnDestroy {
       }
     });
 
+    // Layout shifts move the field without a scroll event, and a recreated action tab brings a new
+    // anchor. Observing it fires once right away, so a returning tab is checked on arrival.
+    afterRenderEffect((onCleanup) => {
+      const elements = [
+        this.stickyHeader().nativeElement,
+        this.templatePicker()?.nativeElement,
+        this.panelElement()?.nativeElement,
+        this.panel()?.searchAnchor()
+      ];
+      const observer = new ResizeObserver(() => this.updateSearchReached());
+      elements.forEach((element) => element && observer.observe(element));
+      onCleanup(() => observer.disconnect());
+    });
+
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(() => this.canSave());
     this.pendingChangesService.registerSave(() => this.onSave());
+  }
+
+  updateSearchReached(): void {
+    const anchor = this.panel()?.searchAnchor();
+    const headerBottom = this.stickyHeader().nativeElement.getBoundingClientRect().bottom;
+    const reached = !!anchor && anchor.getBoundingClientRect().top <= headerBottom;
+    if (reached === this.searchReached()) return;
+
+    const focus = this.visibleSearch()?.focusState();
+    this.searchReached.set(reached);
+    if (focus) {
+      afterNextRender(() => this.visibleSearch()?.takeFocus(focus), { injector: this.injector });
+    }
+  }
+
+  private visibleSearch(): PolicyActionSearchComponent | undefined {
+    return this.searchInHeader() ? this.headerSearch() : this.panel()?.searchField();
   }
 
   ngOnDestroy(): void {

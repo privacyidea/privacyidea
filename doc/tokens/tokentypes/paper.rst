@@ -6,7 +6,7 @@ Paper Token (PPR)
 .. index:: Paper Token
 
 The token type *paper* lets you print out a list of OTP values, which you can
-use to authenticate and cross of the list.
+use to authenticate and cross off the list.
 
 The paper token is based on the :ref:`hotp_token`. I.e. you need to use one
 value after the other.
@@ -15,6 +15,9 @@ value after the other.
 
 Customization
 ~~~~~~~~~~~~~
+
+.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as described in
+   :ref:`legacy_webui`. The WebUI offers a print button for the OTP values, which does not use these files.
 
 CSS
 ....
@@ -31,15 +34,15 @@ the OTP values.
 
 Create the files
 
- * static/customize/views/includes/token.enrolled.paper.top.html
- * static/customize/views/includes/token.enrolled.paper.bottom.html
+ * static_old/customize/views/includes/token.enrolled.paper.top.html
+ * static_old/customize/views/includes/token.enrolled.paper.bottom.html
 
 to display the contents before (top) and behind (bottom) the table.
 
 Within these html templates you may use angular replacements. To get the
 serial number of the token use::
 
-    {{ tokenEnrolled.serial }}
+    {{ enrolledToken.serial }}
 
 to get the name and realm of the user use::
 
@@ -51,7 +54,7 @@ A good example for the ``token.enrolled.paper.top.html`` is::
     <h1>{{ enrolledToken.serial }}</h1>
     <p>
       Please use the OTP values of your paper token in order one after the
-      other. You may scratch of or otherwise mark used values.
+      other. You may scratch off or otherwise mark used values.
     </p>
 
 A good example for the ``token.enrolled.paper.bottom.html`` is::
@@ -64,8 +67,8 @@ A good example for the ``token.enrolled.paper.bottom.html`` is::
       Store it at a safe location.
     </p>
 
-.. note:: You can change the directory *static/customize* to a URL that fits
-   your needs the best by defining a variable `PI_CUSTOMIZATION` in the file
+.. note:: You can change the directory *static_old/customize* to a URL that fits
+   your needs the best by defining a variable ``PI_CUSTOMIZATION`` in the file
    *pi.cfg*. This way you can put all modifications in one place apart from
    the original code.
 
@@ -74,7 +77,7 @@ OTP Table
 
 If you want to change the complete layout of the table you need to
 overwrite the file
-``static/components/token/views/token.enrolled.paper.html``. The
+``static_old/components/token/views/token.enrolled.paper.html``. The
 scope variable::
 
 {{ enrolledToken.otps }}
