@@ -20,6 +20,7 @@
 import codecs
 import datetime
 import json
+from io import BytesIO
 import unittest
 from urllib.parse import quote, urlencode
 
@@ -38,11 +39,13 @@ from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.config import delete_privacyidea_config, set_privacyidea_config
 from privacyidea.lib.container import (
     add_token_to_container,
+    delete_container_by_serial,
     find_container_by_serial,
     find_container_for_token,
     init_container,
+    set_container_realms,
 )
-from privacyidea.lib.error import ResolverError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.error import ParameterError, ResolverError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.event import EventConfiguration, delete_event, set_event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, set_policy
@@ -61,6 +64,9 @@ from privacyidea.lib.token import (
     get_tokens_from_serial_or_user,
     init_token,
     remove_token,
+    reset_token,
+    revoke_token,
+    set_realms,
     token_exist,
     unassign_token,
 )
@@ -6195,3 +6201,394 @@ class APITokenListNodeTestCase(MyApiTestCase):
                     remove_token(serial)
                 except ResourceNotFoundError:
                     pass
+
+
+class APIEmptyParameterValuesTestCase(MyApiTestCase):
+
+    def test_01_empty_values_clear(self):
+        # An empty value is accepted where it has a meaning: no realms and no token groups remove the token from
+        # all of them, and a token info entry can be set to the empty string
+        from privacyidea.lib.token import assign_tokengroup, get_realms_of_token
+        from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+        self.setUp_user_realms()
+        set_tokengroup("emptygroup")
+        token = init_token({"serial": "EMPTY01", "type": "spass", "realm": self.realm1})
+        assign_tokengroup("EMPTY01", "emptygroup")
+        token.add_tokeninfo("note", "some text")
+        self.assertEqual([self.realm1], get_realms_of_token("EMPTY01"))
+
+        for url, data in [("/token/realm/EMPTY01", {"realms": ""}),
+                          ("/token/group/EMPTY01", {"groups": ""}),
+                          ("/token/info/EMPTY01/note", {"value": ""})]:
+            with self.app.test_request_context(url, method='POST', data=data, headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, (url, res.json))
+
+        token = get_one_token(serial="EMPTY01")
+        self.assertEqual([], get_realms_of_token("EMPTY01"))
+        self.assertEqual([], token.token.tokengroup_list)
+        self.assertEqual("", token.get_tokeninfo("note"))
+
+        remove_token("EMPTY01")
+        delete_tokengroup("emptygroup")
+
+
+class InitExistingTokenRealmTestCase(MyApiTestCase):
+    """
+    POST /token/init with the serial of an existing token is authorized against that token: its owner or its realms.
+    """
+    original_key = "31323334353637383930313233343536373839dd"
+    chosen_key = "dddddddddddddddddddddddddddddddddddddddd"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.keys = {}
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+    def tearDown(self) -> None:
+        for token in get_tokens():
+            remove_token(token.token.serial)
+        super().tearDown()
+
+    def _ownerless_token(self, serial: str, realm: str, pending: bool = False) -> TokenClass:
+        if pending:
+            # The first request of a two-step enrollment leaves the token waiting for the client part
+            token = init_token({"serial": serial, "type": "hotp", "genkey": 1, "2stepinit": 1})
+            self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        else:
+            token = init_token({"serial": serial, "type": "hotp", "otpkey": self.original_key})
+        token.set_realms([realm])
+        self.keys[serial] = token.token.get_otpkey().getKey()
+        return token
+
+    def _init_request(self, data: dict, auth_token: str):
+        with self.app.test_request_context("/token/init", method="POST", data=data,
+                                           headers={"Authorization": auth_token}):
+            return self.app.full_dispatch_request()
+
+    def _assert_unchanged(self, serial: str, realm: str) -> None:
+        token = get_one_token(serial=serial)
+        self.assertEqual(self.keys[serial], token.token.get_otpkey().getKey())
+        self.assertEqual([realm], token.get_realms())
+        self.assertFalse(token.user)
+
+    def test_01_admin_rollover_of_a_token_without_owner_is_matched_against_its_realms(self):
+        set_policy("realm1_enroll", scope=SCOPE.ADMIN, realm=self.realm1, action="enrollHOTP, token_rollover")
+        for serial, data in [("POOL2A", {"user": "cornelius", "realm": self.realm1}),
+                             ("POOL2B", {"realm": self.realm1})]:
+            with self.subTest(data=data):
+                self._ownerless_token(serial, self.realm2)
+                res = self._init_request(dict(data, serial=serial, type="hotp", otpkey=self.chosen_key), self.at)
+                self.assertEqual(403, res.status_code, res.json)
+                self._assert_unchanged(serial, self.realm2)
+
+        # A token without owner in the realm of the admin can still be rolled over
+        self._ownerless_token("POOL1", self.realm1)
+        res = self._init_request({"serial": "POOL1", "type": "hotp", "otpkey": self.chosen_key,
+                                  "realm": self.realm1}, self.at)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.chosen_key,
+                         get_one_token(serial="POOL1").token.get_otpkey().getKey().decode("utf-8"))
+        delete_policy("realm1_enroll")
+
+    def test_02_admin_continuing_an_enrollment_is_matched_against_the_token(self):
+        set_policy("realm1_enroll", scope=SCOPE.ADMIN, realm=self.realm1, action="enrollHOTP, hotp_2step=allow")
+        self._ownerless_token("PEND2", self.realm2, pending=True)
+        res = self._init_request({"serial": "PEND2", "type": "hotp", "otpkey": "aaaaaaaaaaaaaaaa",
+                                  "user": "cornelius", "realm": self.realm1}, self.at)
+        self.assertEqual(403, res.status_code, res.json)
+        self._assert_unchanged("PEND2", self.realm2)
+
+        # The admin finishes a two-step enrollment in their realm
+        res = self._init_request({"serial": "PEND1", "type": "hotp", "2stepinit": 1, "genkey": 1,
+                                  "user": "cornelius", "realm": self.realm1}, self.at)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial="PEND1").token.rollout_state)
+        res = self._init_request({"serial": "PEND1", "type": "hotp", "otpkey": "aaaaaaaaaaaaaaaa",
+                                  "user": "cornelius", "realm": self.realm1}, self.at)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial="PEND1").token.rollout_state)
+        delete_policy("realm1_enroll")
+
+    def test_02b_realm_admin_enrolls_a_token_without_owner_into_their_realm(self):
+        set_policy("realm1_enroll", scope=SCOPE.ADMIN, realm=self.realm1, action="enrollHOTP, hotp_2step=allow")
+        # Without user and realm the token would belong to no realm the admin is granted
+        res = self._init_request({"serial": "PEND0", "type": "hotp", "2stepinit": 1, "genkey": 1}, self.at)
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual([], get_tokens(serial="PEND0"))
+        # With the realm, the token belongs to it, and the second request is matched against it
+        res = self._init_request({"serial": "PEND0", "type": "hotp", "2stepinit": 1, "genkey": 1,
+                                  "realm": self.realm1}, self.at)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual([self.realm1], get_one_token(serial="PEND0").get_realms())
+        res = self._init_request({"serial": "PEND0", "type": "hotp", "otpkey": "aaaaaaaaaaaaaaaa",
+                                  "realm": self.realm1}, self.at)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial="PEND0").token.rollout_state)
+        delete_policy("realm1_enroll")
+
+    def test_03_a_user_only_enrolls_onto_a_token_they_own(self):
+        self.authenticate_selfservice_user()
+        set_policy("user_enroll", scope=SCOPE.USER, realm=self.realm1, action="enrollHOTP, token_rollover")
+        for serial, realm, pending in [("POOL2", self.realm2, False), ("POOL1", self.realm1, False),
+                                       ("PEND2", self.realm2, True)]:
+            with self.subTest(serial=serial):
+                self._ownerless_token(serial, realm, pending)
+                otpkey = "aaaaaaaaaaaaaaaa" if pending else self.chosen_key
+                res = self._init_request({"serial": serial, "type": "hotp", "otpkey": otpkey}, self.at_user)
+                self.assertEqual(403, res.status_code, res.json)
+                self._assert_unchanged(serial, realm)
+        delete_policy("user_enroll")
+
+    def test_04_admin_of_a_second_token_realm_rolls_over_an_owned_token(self):
+        # Like disable, setpin or lost: an owned token is matched against its owner or one of its realms
+        set_policy("realm2_enroll", scope=SCOPE.ADMIN, realm=self.realm2, action="enrollHOTP, token_rollover, disable")
+        token = init_token({"serial": "OWNED12", "type": "hotp", "otpkey": self.original_key},
+                           user=User("cornelius", self.realm1))
+        token.set_realms([self.realm2], add=True)
+        init_token({"serial": "OWNED1", "type": "hotp", "otpkey": self.original_key},
+                   user=User("cornelius", self.realm1))
+
+        res = self._init_request({"serial": "OWNED12", "type": "hotp", "otpkey": self.chosen_key,
+                                  "realm": self.realm2}, self.at)
+        token = get_one_token(serial="OWNED12")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.chosen_key, token.token.get_otpkey().getKey().decode("utf-8"))
+        self.assertEqual([self.realm1, self.realm2], sorted(token.get_realms()))
+        self.assertEqual(User("cornelius", self.realm1), token.user)
+
+        # A token owned in realm1 and in no realm of the admin stays refused
+        res = self._init_request({"serial": "OWNED1", "type": "hotp", "otpkey": self.chosen_key,
+                                  "realm": self.realm2}, self.at)
+        self.assertEqual(403, res.status_code, res.json)
+        delete_policy("realm2_enroll")
+
+
+class TokenActionPathSerialTestCase(MyApiTestCase):
+    """
+    A token action on /token/<action>/<serial> acts on the token of the path, so that token has to be authorized. A
+    single-token action without any authorized serial is refused instead of falling back to every token.
+    """
+    own_serial = "PATHOWN"
+    other_serial = "PATHOTHER"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy("realm1_helpdesk", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action="disable, revoke, setpin, settokeninfo, tokenrealms, losttoken, delete")
+
+    def tearDown(self) -> None:
+        delete_policy("realm1_helpdesk")
+        self._remove_tokens()
+        super().tearDown()
+
+    @staticmethod
+    def _remove_tokens() -> None:
+        for token in get_tokens():
+            remove_token(token.token.serial)
+
+    def _create_tokens(self) -> None:
+        self._remove_tokens()
+        init_token({"serial": self.own_serial, "type": "hotp", "genkey": 1, "pin": "ownpin"},
+                   user=User("cornelius", self.realm1))
+        init_token({"serial": self.other_serial, "type": "hotp", "genkey": 1, "pin": "otherpin"},
+                   user=User("cornelius", self.realm2))
+
+    def _request(self, url: str, method: str = "POST", json: dict | None = None):
+        with self.app.test_request_context(url, method=method, json=json or {}, headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    def _assert_other_token_unchanged(self) -> None:
+        token = get_one_token(serial=self.other_serial)
+        self.assertTrue(token.is_active())
+        self.assertFalse(token.is_revoked())
+        self.assertTrue(token.check_pin("otherpin"))
+        self.assertNotIn("k1", token.get_tokeninfo())
+        self.assertEqual([self.realm2], token.get_realms())
+        self.assertEqual([], get_tokens(serial=f"lost{self.other_serial}"))
+
+    def test_01_path_serial_outside_the_allowed_realms_is_refused_next_to_an_allowed_serial(self):
+        other = self.other_serial
+        for url, body in [(f"/token/disable/{other}", {}),
+                          (f"/token/revoke/{other}", {}),
+                          (f"/token/setpin/{other}", {"otppin": "1234"}),
+                          (f"/token/info/{other}/k1", {"value": "v"}),
+                          (f"/token/realm/{other}", {"realms": self.realm1}),
+                          (f"/token/lost/{other}", {})]:
+            with self.subTest(url=url):
+                self._create_tokens()
+                # Only the token of the path: refused
+                res = self._request(url, json=body)
+                self.assertEqual(403, res.status_code, res.json)
+                # An allowed serial next to it does not change which token the request is about
+                res = self._request(url, json=dict(body, serials=[self.own_serial]))
+                self.assertEqual(403, res.status_code, res.json)
+                self._assert_other_token_unchanged()
+
+    def test_02_path_serial_outside_the_allowed_realms_is_refused_next_to_an_unknown_serial(self):
+        self._create_tokens()
+        res = self._request(f"/token/disable/{self.other_serial}", json={"serials": ["DOESNOTEXIST"]})
+        self.assertEqual(403, res.status_code, res.json)
+        self._assert_other_token_unchanged()
+
+    def test_03_serial_list_without_an_allowed_token_is_refused(self):
+        for url, body in [("/token/disable", {"serial": f"{self.other_serial},DOESNOTEXIST"}),
+                          ("/token/disable", {"serials": [self.other_serial, "DOESNOTEXIST"]}),
+                          ("/token/revoke", {"serial": f"{self.other_serial},DOESNOTEXIST"})]:
+            with self.subTest(url=url, body=body):
+                self._create_tokens()
+                res = self._request(url, json=body)
+                state = {t.token.serial: (t.is_active(), t.is_revoked()) for t in get_tokens()}
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertEqual({self.own_serial: (True, False), self.other_serial: (True, False)}, state)
+
+    def test_04_allowed_path_serial_and_bulk_requests_keep_working(self):
+        self._create_tokens()
+        res = self._request(f"/token/disable/{self.own_serial}")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(get_one_token(serial=self.own_serial).is_active())
+
+        # The bulk delete keeps skipping the tokens outside the allowed realms
+        res = self._request("/token/", method="DELETE", json={"serials": [self.own_serial, self.other_serial]})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual([self.other_serial], res.json["result"]["value"]["unauthorized"])
+        self.assertEqual([], get_tokens(serial=self.own_serial))
+        self._assert_other_token_unchanged()
+
+    def test_05_an_empty_serial_without_a_user_names_no_token(self):
+        self._create_tokens()
+        for function, kwargs in [(enable_token, {"enable": False}), (revoke_token, {}), (reset_token, {})]:
+            with self.subTest(function=function.__name__):
+                self.assertRaises(ParameterError, function, "", user=User(), **kwargs)
+                self.assertRaises(ParameterError, function, "", user=None, **kwargs)
+        state = {t.token.serial: (t.is_active(), t.is_revoked()) for t in get_tokens()}
+        self.assertEqual({self.own_serial: (True, False), self.other_serial: (True, False)}, state)
+
+
+class UserAssignRealmTestCase(MyApiTestCase):
+    """
+    A user assigns only tokens and containers that are in their realm or in no realm.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_policy("user_assign", scope=SCOPE.USER, realm=self.realm1,
+                   action=f"{PolicyAction.ASSIGN}, {PolicyAction.CONTAINER_ASSIGN_USER}")
+        self.authenticate_selfservice_user()
+
+    def tearDown(self) -> None:
+        delete_policy("user_assign")
+        super().tearDown()
+
+    def _post(self, url: str, data: dict):
+        with self.app.test_request_context(url, method="POST", json=data, headers={"Authorization": self.at_user}):
+            return self.app.full_dispatch_request()
+
+    def test_01_token(self):
+        cases = [("ASSIGN_R3", [self.realm3], 403), ("ASSIGN_NONE", [], 200), ("ASSIGN_R1", [self.realm1], 200),
+                 ("ASSIGN_R1R3", [self.realm1, self.realm3], 200)]
+        for serial, realms, expected in cases:
+            with self.subTest(serial=serial):
+                init_token({"type": "hotp", "genkey": True, "serial": serial})
+                set_realms(serial, realms)
+                res = self._post("/token/assign", {"serial": serial})
+                remove_token(serial)
+                self.assertEqual(expected, res.status_code, res.json)
+
+    def test_02_container(self):
+        cases = [([self.realm3], 403), ([], 200), ([self.realm1], 200)]
+        for realms, expected in cases:
+            with self.subTest(realms=realms):
+                serial = init_container({"type": "generic"})["container_serial"]
+                set_container_realms(serial, realms)
+                res = self._post(f"/container/{serial}/assign", {})
+                delete_container_by_serial(serial)
+                self.assertEqual(expected, res.status_code, res.json)
+
+
+class TokenImportRealmTestCase(MyApiTestCase):
+    """
+    POST /token/load checks the import policy against every token of the file: the realms (or owner) of a token that
+    already exists with that serial, and the user a version 2 file assigns it to. Nothing of the file is written when
+    one of its tokens is not allowed.
+    """
+    original_key = "31323334353637383930313233343536373839dd"
+    file_key = "dddddddddddddddddddddddddddddddddddddddd"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy("realm1_import", scope=SCOPE.ADMIN, realm=self.realm1, action="importtokens")
+
+    def tearDown(self) -> None:
+        delete_policy("realm1_import")
+        for token in get_tokens():
+            remove_token(token.token.serial)
+        super().tearDown()
+
+    def _load(self, csv: str, tokenrealms: str | None = None):
+        data = {"type": "oathcsv", "file": (BytesIO(csv.encode("utf-8")), "import.csv")}
+        if tokenrealms:
+            data["tokenrealms"] = tokenrealms
+        with self.app.test_request_context("/token/load/import.csv", method="POST", data=data,
+                                           headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    @staticmethod
+    def _key(serial: str) -> str:
+        return get_one_token(serial=serial).token.get_otpkey().getKey().decode("utf-8")
+
+    def test_01_existing_token_outside_the_allowed_realms_is_not_overwritten(self):
+        init_token({"serial": "IMPPOOL2A", "type": "hotp", "otpkey": self.original_key}).set_realms([self.realm2])
+        init_token({"serial": "IMPPOOL2B", "type": "hotp", "otpkey": self.original_key}).set_realms([self.realm2])
+        init_token({"serial": "IMPOWNED2", "type": "hotp", "otpkey": self.original_key},
+                   user=User("cornelius", self.realm2))
+        for serial, tokenrealms in [("IMPPOOL2A", self.realm1), ("IMPPOOL2B", None), ("IMPOWNED2", None)]:
+            with self.subTest(serial=serial, tokenrealms=tokenrealms):
+                res = self._load(f"{serial}, {self.file_key}, hotp, 6\n", tokenrealms)
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertEqual(self.original_key, self._key(serial))
+                self.assertEqual([self.realm2], get_one_token(serial=serial).get_realms())
+
+    def test_02_version_2_user_outside_the_allowed_realms_is_refused(self):
+        for serial, user_columns, tokenrealms in [
+                ("IMPNEWA", f"cornelius, {self.resolvername1}, {self.realm2}", self.realm1),
+                ("IMPNEWB", f"cornelius, {self.resolvername1}, {self.realm2}", None),
+                ("IMPNEWC", f", , {self.realm2}", self.realm1)]:
+            with self.subTest(user_columns=user_columns, tokenrealms=tokenrealms):
+                res = self._load(f"# version: 2\n{user_columns}, {serial}, {self.file_key}, hotp, 6\n", tokenrealms)
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertEqual([], get_tokens(serial=serial))
+
+    def test_03_nothing_of_the_file_is_imported_when_one_token_is_refused(self):
+        res = self._load(f"# version: 2\n"
+                         f"cornelius, {self.resolvername1}, {self.realm1}, IMPOK, {self.file_key}, hotp, 6\n"
+                         f"cornelius, {self.resolvername1}, {self.realm2}, IMPREFUSED, {self.file_key}, hotp, 6\n",
+                         self.realm1)
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual([], get_tokens(serial="IMPOK"))
+        self.assertEqual([], get_tokens(serial="IMPREFUSED"))
+
+    def test_03b_version_2_user_with_a_resolver_outside_its_realm_is_refused(self):
+        self.setUp_user_realm3()
+        res = self._load(f"# version: 2\ncornelius, {self.resolvername3}, {self.realm1}, IMPFOREIGN, {self.file_key}, "
+                         f"hotp, 6\n", self.realm1)
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual([], get_tokens(serial="IMPFOREIGN"))
+
+    def test_04_tokens_and_users_of_the_allowed_realm_are_imported(self):
+        init_token({"serial": "IMPPOOL1", "type": "hotp", "otpkey": self.original_key}).set_realms([self.realm1])
+        res = self._load(f"# version: 2\n"
+                         f"cornelius, {self.resolvername1}, {self.realm1}, IMPNEW1, {self.file_key}, hotp, 6\n"
+                         f", , , IMPPOOL1, {self.file_key}, hotp, 6\n", self.realm1)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(2, res.json["result"]["value"]["n_imported"])
+        self.assertEqual(User("cornelius", self.realm1), get_one_token(serial="IMPNEW1").user)
+        self.assertEqual(self.file_key, self._key("IMPPOOL1"))
+

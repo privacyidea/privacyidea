@@ -30,6 +30,7 @@
           i18n-aria-label="@@container.templateName"
           aria-label="Template Name"
           [value]="template().name"
+          [readonly]="!nameEditable()"
           (input)="editTemplate({ name: $any($event.target).value })"
           (keydown)="$event.stopPropagation()"
           [errorStateMatcher]="nameErrorMatcher" />

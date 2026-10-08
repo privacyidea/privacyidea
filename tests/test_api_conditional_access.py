@@ -37,7 +37,8 @@ from privacyidea.lib.event import delete_event, set_event
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
-                                                                   log_authentication_event)
+                                                                   log_authentication_event, PendingAuthEvent,
+                                                                   _row_values)
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import get_user_lock, get_ip_block
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
@@ -54,7 +55,7 @@ from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.clients import create_client, update_client
+from privacyidea.lib.clients import create_client, update_client, delete_client
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity, PERSISTENT_COOKIE_NAME
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
 from privacyidea.lib.user import User
@@ -2867,6 +2868,46 @@ class ConditionalAccessEngineOverRequestsTestCase(ConditionalAccessApiTestCase):
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
 
+    def _mails_after_each_unknown_user(self, count_mode: CountMode, usernames: list[str]) -> list[int]:
+        """Send one /validate/check per name in *usernames* from one address under a source-IP mail policy with
+        threshold 2 and return how many mails went out after each request. The names do not exist, so every request
+        is a USER_UNKNOWN row for that account."""
+        create_conditional_access_policy(
+            name="ca_spray_mail", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.USER_UNKNOWN),
+            stages=[{"failure_threshold": 2,
+                     "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
+                                  "action_value": {"smtp_identifier": "", "subject": "spray", "body": "spray"}}]}],
+            target=ConditionalAccessTarget.SOURCE_IP, count_mode=str(count_mode), priority=1)
+        mails = []
+        with mock.patch("privacyidea.lib.conditional_access.engine._send_action_email",
+                        return_value=True) as send_mail:
+            for username in usernames:
+                with self.app.test_request_context("/validate/check", method="POST",
+                                                   data={"user": username, "realm": self.realm1, "pass": "x"},
+                                                   environ_base={"REMOTE_ADDR": "192.0.2.50"}):
+                    self.app.full_dispatch_request()
+                mails.append(send_mail.call_count)
+        return mails
+
+    def test_distinct_users_mail_fires_once_when_a_new_account_reaches_the_threshold(self):
+        # The second distinct account brings the count to the threshold and sends the mail. Retrying accounts that
+        # are already counted leaves the count at the threshold and sends nothing, and the third account takes the
+        # count above it.
+        mails = self._mails_after_each_unknown_user(CountMode.DISTINCT_USERS,
+                                                    ["ghost1", "ghost2", "ghost1", "ghost2", "ghost1", "ghost3"])
+        self.assertListEqual([0, 1, 1, 1, 1, 1], mails)
+
+    def test_distinct_users_mail_waits_for_the_second_account(self):
+        # Repeated requests for one account stay one distinct account, so the mail waits for the second account.
+        mails = self._mails_after_each_unknown_user(CountMode.DISTINCT_USERS, ["ghost1", "ghost1", "ghost1", "ghost2"])
+        self.assertListEqual([0, 0, 0, 1], mails)
+
+    def test_per_request_mail_fires_once_at_the_threshold(self):
+        mails = self._mails_after_each_unknown_user(CountMode.PER_REQUEST,
+                                                    ["ghost1", "ghost2", "ghost1", "ghost2", "ghost1", "ghost3"])
+        self.assertListEqual([0, 1, 1, 1, 1, 1], mails)
+
     # --- identity rewriting (legacy setrealm / mangle, RequestMangler) ----------
 
     def _setrealm_to_realm2(self) -> User:
@@ -3189,4 +3230,156 @@ class ConditionalAccessEngineOverRequestsTestCase(ConditionalAccessApiTestCase):
         self.assertEqual(3, len([entry for entry in get_authentication_logs()
                                  if entry.event_type == AuthEventType.MFA_FAIL]))
         self.assertIsNotNone(self._state().lock_expires_at, "escalated on attempts made while locked")
+
+
+
+class AuthenticationLogNulValueTestCase(MyApiTestCase):
+    """
+    A request value with a NUL character is stored with a replacement character, so the failed attempt is counted on
+    every database - PostgreSQL refuses text that contains NUL.
+    """
+    serial = "CA_NUL"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        self._clear()
+
+    def tearDown(self) -> None:
+        remove_token(self.serial)
+        self._clear()
+        super().tearDown()
+
+    @staticmethod
+    def _clear() -> None:
+        for model in (ConditionalAccessOutcome, AuthenticationLogReason, UserLockState, BlockList,
+                      ConditionalAccessStageAction, ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+
+    def test_01_failed_attempts_with_a_nul_character_are_counted(self):
+        create_conditional_access_policy(
+            name="lock_after_three", time_window_seconds=3600, counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
+            stages=[{"failure_threshold": 3,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+
+        for attempt in range(5):
+            with self.app.test_request_context("/validate/check", method="POST",
+                                               data={"user": "cornelius", "realm": self.realm1,
+                                                     "pass": "wrongpin123456", "client_id": f"agent\x00{attempt}"}):
+                response = self.app.full_dispatch_request()
+            self.assertFalse(response.json["result"].get("value"), response.json)
+
+        db.session.rollback()
+        self.assertEqual(5, len(get_authentication_logs()))
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_02_stored_values_hold_no_nul_character(self):
+        event = PendingAuthEvent(event_type=AuthEventType.PIN_FAIL, username="cornelius\x00", client_label="agent\x00",
+                                 transaction_id="\x00", serial="S1\x00,S2")
+        values = _row_values(event)
+        self.assertEqual("cornelius\ufffd", values["username"])
+        self.assertEqual([], [column for column, value in values.items() if isinstance(value, str) and "\x00" in value])
+
+
+
+class ResetOnSuccessFollowsConditionsTestCase(MyApiTestCase):
+    """
+    With conditions, only a successful login the conditions cover resets a user policy's count - in both count modes.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        init_token({"serial": "RESET_COND", "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+
+    def tearDown(self) -> None:
+        remove_token("RESET_COND")
+        for model in (ConditionalAccessOutcome, AuthenticationLogReason, UserLockState, BlockList,
+                      ConditionalAccessStageAction, ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _wrong_pin_at_validate_check(self) -> None:
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "wrongpin"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def _webui_login(self) -> None:
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": f"cornelius@{self.realm1}", "password": "test"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def _locked_after_sequence(self, count_mode: str) -> bool:
+        create_conditional_access_policy(
+            name="ca_lock_validate_only", time_window_seconds=3600,
+            counter_types_to_track=[str(AuthEventType.PIN_FAIL)],
+            stages=[{"failure_threshold": 3,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            conditions=[{"condition_type": str(ConditionType.ENDPOINT), "operator": str(ConditionOperator.IN),
+                         "value": ["/validate/check"]}],
+            target=ConditionalAccessTarget.USER, priority=1, reset_on_success=True, count_mode=count_mode)
+        self._wrong_pin_at_validate_check()
+        self._wrong_pin_at_validate_check()
+        self._webui_login()
+        self._wrong_pin_at_validate_check()
+        return is_user_locked(self.user)
+
+    def test_01_per_request_ignores_a_login_outside_the_conditions(self):
+        self.assertTrue(self._locked_after_sequence(CountMode.PER_REQUEST))
+
+    def test_02_per_attempt_ignores_a_login_outside_the_conditions(self):
+        self.assertTrue(self._locked_after_sequence(CountMode.PER_ATTEMPT))
+
+
+class RememberDeviceEndpointConditionTestCase(MyApiTestCase):
+    """
+    /validate/remember_device is accepted as the value of an ENDPOINT condition and matched by it.
+    """
+    endpoint = "/validate/remember_device"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+
+    def tearDown(self) -> None:
+        for model in (ConditionalAccessOutcome, AuthenticationLogReason, ConditionalAccessStageAction,
+                      ConditionalAccessPolicyStage, ConditionalAccessPolicyCondition,
+                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
+            db.session.query(model).delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_endpoint_condition_matches_remember_device_requests(self):
+        create_conditional_access_policy(
+            name="ca_deny_recognition", time_window_seconds=3600,
+            counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+            stages=[{"failure_threshold": 0,
+                     "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
+            conditions=[{"condition_type": str(ConditionType.ENDPOINT), "operator": str(ConditionOperator.IN),
+                         "value": [self.endpoint]}],
+            target=ConditionalAccessTarget.SOURCE_IP, priority=1)
+        set_policy(name="remember_device_endpoint", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.addCleanup(delete_policy, "remember_device_endpoint")
+        client, api_key = create_client("remember device client", "privacyidea-cp")
+        self.addCleanup(delete_client, client.id)
+        _device, cookie = create_remembered_device(user_identity(User("cornelius", self.realm1)), client.id)
+
+        with self.app.test_request_context(self.endpoint, method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           environ_base={"REMOTE_ADDR": "10.0.0.71"},
+                                           headers={"X-API-Key": api_key,
+                                                    "Cookie": f"{PERSISTENT_COOKIE_NAME}={cookie}"}):
+            res = self.app.full_dispatch_request()
+        self.assertFalse(res.json["result"]["value"], res.json)
+        self.assertEqual([str(AuthEventType.ACCESS_DENIED)],
+                         [row.event_type for row in db.session.query(AuthenticationLog)
+                          .filter(AuthenticationLog.endpoint == self.endpoint)])
 

@@ -47,7 +47,7 @@ from flask.cli import AppGroup
 from yaml import safe_dump as yaml_safe_dump
 
 from privacyidea.lib.container import find_container_for_token, add_multiple_tokens_to_container
-from privacyidea.lib.error import PolicyError, ResolverError
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
 from privacyidea.lib.tokenclass import TokenClass
@@ -731,10 +731,9 @@ def set_tokeninfo(ctx, tokeninfo):
     """
     Sets the tokeninfo of the found tokens.
 
-    Only the free-form entries of the tokeninfo can be set. Every token type also keeps entries of its own
-    there, e.g. the public key of a passkey or the server a RADIUS token forwards to, which are written by the
-    token itself and are skipped here. The type specific ones can be set at enrollment or with the
-    /token/set endpoint.
+    This includes the entries a token type keeps there itself, e.g. "hashlib", "next_pin_change" or the
+    acceptance window "timeWindow" of a TOTP token. The command runs on the server, so it is not restricted to
+    the free-form entries the token info endpoints of the API may write.
     """
     # The value is everything after the first "=", so it can hold dates, spaces or further "=" characters
     match = re.match(r"\s*(\w+)\s*=\s*(\S.*?)\s*$", tokeninfo)
@@ -745,13 +744,7 @@ def set_tokeninfo(ctx, tokeninfo):
     tokeninfo_value = match.group(2)
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            try:
-                token_obj.add_tokeninfo(tokeninfo_key, tokeninfo_value)
-            except PolicyError as error:
-                # Keep going through the remaining tokens, the run may cover token types that do and types
-                # that do not maintain this key themselves
-                click.echo(f"Skipped token {token_obj.token.serial}: {error!s}")
-                continue
+            token_obj.write_tokeninfo(tokeninfo_key, tokeninfo_value)
             token_obj.save()
             click.echo(f"Set tokeninfo for token {token_obj.token.serial}: {tokeninfo_key}={tokeninfo_value}")
 
@@ -763,19 +756,15 @@ def remove_tokeninfo(ctx, tokeninfo_key):
     """
     Remove the tokeninfo of the found tokens.
 
-    An entry a token type maintains itself, e.g. the public key of a passkey, is skipped, because the token
-    needs it to work. An offline refill token is an exception: removing it revokes the ability to refill
-    offline OTP values and is allowed.
+    This includes the entries a token type keeps there itself. Removing one the token needs to work, e.g. the
+    public key of a passkey, makes the token unusable.
     """
+    if not tokeninfo_key:
+        # An empty key would remove the whole tokeninfo of every found token
+        raise click.BadParameter("The key must not be empty.", param_hint="'--tokeninfo_key'")
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
-            try:
-                token_obj.delete_tokeninfo(tokeninfo_key)
-            except PolicyError as error:
-                # Keep going through the remaining tokens, the run may cover token types that do and types
-                # that do not maintain this key themselves
-                click.echo(f"Skipped token {token_obj.token.serial}: {error!s}")
-                continue
+            token_obj.remove_tokeninfo(tokeninfo_key)
             token_obj.save()
             click.echo(f"Removed tokeninfo '{tokeninfo_key}' for token {token_obj.token.serial}")
 

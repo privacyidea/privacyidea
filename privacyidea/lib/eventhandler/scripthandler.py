@@ -165,9 +165,7 @@ class ScriptEventHandler(BaseEventHandler):
                               "realm": "none",
                               "role": "none"}
 
-        serial = (request.all_data.get("serial")
-                  or content.get("detail", {}).get("serial")
-                  or g.audit_object.audit_data.get("serial"))
+        serial = self._get_token_serials(request, content, g)
 
         if is_true(handler_options.get("serial")):
             proc_args.append("--serial")
@@ -207,10 +205,14 @@ class ScriptEventHandler(BaseEventHandler):
             log.warning(traceback.format_exc())
             if handler_options.get("background") == SCRIPT_WAIT and is_true(handler_options.get("raise_error")):
                 raise HandlerAbortError("Failed to start script.")
+            self.run_details = f"Failed to start the script {script_name!r}."
+            ret = False
 
         if rcode:
             log.warning(f"Script {script_name!r} failed to execute with error code {rcode!r}")
             if is_true(handler_options.get("raise_error")):
                 raise HandlerAbortError("Error during execution of the script.")
+            self.run_details = f"The script {script_name!r} exited with {rcode!r}."
+            ret = False
 
         return ret

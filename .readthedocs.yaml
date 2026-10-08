@@ -25,3 +25,10 @@ python:
     - requirements: doc/requirements.txt
     - method: pip
       path: .
+
+# Rank the code documentation of the Python modules low in the search results, so that it does not crowd out the
+# user documentation. The patterns match the built HTML files: modules/lib.html, modules/lib/*.html and modules/db.html.
+search:
+  ranking:
+    modules/lib*: -8
+    modules/db.html: -8

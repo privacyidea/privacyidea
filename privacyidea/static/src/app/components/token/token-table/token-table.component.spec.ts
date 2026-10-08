@@ -405,6 +405,17 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.activeFilter()).toBe(keywordResult);
   });
 
+  it("toggleFilter uses the boolean toggler for 'assigned' too, so its first click sets assigned: true", () => {
+    const booleanResult = new FilterValue().addEntry("assigned", "true");
+    tableUtilsService.toggleBooleanInFilter.mockReturnValue(booleanResult);
+    table.toggleFilter("assigned");
+    expect(tableUtilsService.toggleBooleanInFilter).toHaveBeenCalledWith({
+      keyword: "assigned",
+      currentValue: expect.any(FilterValue)
+    });
+    expect(tokenService.activeFilter()).toBe(booleanResult);
+  });
+
   it("toggleFilter adds the default realm when a user filter without a realm is set", () => {
     tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue().addEntry("user", "bob"));
 

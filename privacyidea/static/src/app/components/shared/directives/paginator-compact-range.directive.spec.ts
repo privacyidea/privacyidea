@@ -418,5 +418,13 @@ describe("PaginatorCompactRangeDirective", () => {
 
       expect(query(".mat-mdc-paginator-range-label").textContent?.trim()).toBe("1 – 10");
     });
+
+    it("does not count a hidden child", () => {
+      // The same 400px trigger that leaves no gap above, but hidden: 1000 - 300 - 300 leaves plenty.
+      query(".trigger").style.visibility = "hidden";
+      layOut(400);
+
+      expect(query(".mat-mdc-paginator-range-label").textContent?.trim()).toBe("1 – 10 of 10189");
+    });
   });
 });

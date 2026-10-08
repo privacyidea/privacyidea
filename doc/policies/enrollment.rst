@@ -514,6 +514,15 @@ relying party ID for the domain `example.com`).
     an overview of all the settings required for the use of WebAuthn, see
     :ref:`webauthn_otp_token`.
 
+Set this action once for the whole installation. Authentication requests
+(``/validate/check``, ``/validate/triggerchallenge``, ``/validate/initialize``
+and the WebUI login) read it without the user; with differing values in
+policies of different priority, the value of the policy with the highest
+priority is used for passkey authentication in every realm. If two policies
+with different relying party IDs have the same priority, passkey
+authentication is not available (no challenge can be created); other token
+types are not affected.
+
 .. _policy_webauthn_enroll_relying_party_name:
 
 webauthn_relying_party_name

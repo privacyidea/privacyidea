@@ -3,7 +3,7 @@
 Re-Encrypting data
 ------------------
 
-You might need to reencrypt your token data, i.e. the secret OTP keys of your tokens.
+You might need to re-encrypt your token data, i.e. the secret OTP keys and the other encrypted data of your tokens.
 It could be since you are changing your security module or you think your encryption key is compromised.
 
 privacyIDEA provides tools to reencrypt your token data.
@@ -38,15 +38,21 @@ Updating tokens
 You can then turn to the system with the new security module or encryption key.
 Note, that the new privacyIDEA system actually has to contain the tokens!
 
-Use the :ref:`update command <token_janitor_update>` to store the secret OTP keys with the new encryption
-mechanism::
+Use the :ref:`update command <token_janitor_update>` to store the secret OTP keys and the encrypted token info with
+the new encryption mechanism::
 
     privacyidea-token-janitor update my-tokens.yaml
 
 Check for error messages written to stderr!
 
-The update keeps the OTP counter, the fail counter and the token kind of each token, so OTP values
-that were already used do not become valid again.
+The update keeps the OTP counter, the fail counter, the token kind, the active state and the rollout state of each
+token, and it does not write back TAN lists or other token info, so OTP values that were already used do not become
+valid again.
+
+.. warning:: The PIN of mOTP tokens and PINs that are stored encrypted
+   (enrollment policy ``encrypt_pin``) are not re-encrypted. Set these PINs
+   again after the key change. Hashed PINs, the default, do not depend on the
+   encryption key.
 
 What can possibly go wrong
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

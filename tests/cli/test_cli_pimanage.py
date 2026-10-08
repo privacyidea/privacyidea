@@ -1167,6 +1167,65 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertFalse(dump_file.exists(), "the dump was extracted despite the refusal")
             self.assertFalse((tmp / "outside" / "data.sqlite").exists())
 
+    def test_16g_archive_with_a_special_file_is_refused_before_extracting(self):
+        """
+        A backup holds regular files, directories and links. An archive that also contains e.g. a FIFO is refused
+        before any of its files is extracted.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            restore_dir = tmp / "restore"
+            config_content = f"SQLALCHEMY_DATABASE_URI = {f'sqlite:///{tmp}/data.sqlite'!r}\n".encode()
+            dump_content = b"-- sql dump placeholder\n"
+            archive_file = tmp / "backup.tgz"
+            with tarfile.open(archive_file, "w:gz") as archive:
+                for name, content in [("pi.cfg", config_content), ("dbdump-20240101-1200.sqlite", dump_content)]:
+                    member = tarfile.TarInfo(str(restore_dir / name).lstrip("/"))
+                    member.size = len(content)
+                    archive.addfile(member, io.BytesIO(content))
+                fifo = tarfile.TarInfo(str(restore_dir / "fifo").lstrip("/"))
+                fifo.type = tarfile.FIFOTYPE
+                archive.addfile(fifo)
+
+            runner = self.app.test_cli_runner()
+            result = runner.invoke(pi_manage, ["backup", "restore", str(archive_file)])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("nothing was restored", result.output, result.output)
+            self.assertIn("fifo: not a regular file, directory or link", result.output, result.output)
+            self.assertFalse(restore_dir.exists(), "files were extracted despite the refusal")
+
+    def test_16h_extraction_keeps_links_to_absolute_paths_and_permissions(self):
+        """
+        A configuration can link to a file outside of it by its absolute path, e.g. the certificates of a FreeRADIUS
+        configuration. Such a link is restored, and so are the permissions of the files, e.g. of the encryption key.
+        """
+        from privacyidea.cli.pimanage.backup import _extract_backup, _refused_member
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            restore_dir = tmp / "restore"
+            key_content = b"0123456789abcdef"
+            archive_file = tmp / "backup.tgz"
+            with tarfile.open(archive_file, "w:gz") as archive:
+                link = tarfile.TarInfo(str(restore_dir / "ca.pem").lstrip("/"))
+                link.type = tarfile.SYMTYPE
+                link.linkname = "/etc/ssl/certs/ca-certificates.crt"
+                archive.addfile(link)
+                key = tarfile.TarInfo(str(restore_dir / "enckey").lstrip("/"))
+                key.size = len(key_content)
+                key.mode = 0o400
+                archive.addfile(key, io.BytesIO(key_content))
+
+            with tarfile.open(archive_file, "r:gz") as archive:
+                self.assertEqual([None, None], [_refused_member(member) for member in archive])
+                _extract_backup(archive)
+
+            self.assertTrue((restore_dir / "ca.pem").is_symlink())
+            self.assertEqual("/etc/ssl/certs/ca-certificates.crt", os.readlink(restore_dir / "ca.pem"))
+            self.assertEqual(key_content, (restore_dir / "enckey").read_bytes())
+            self.assertEqual(0o400, (restore_dir / "enckey").stat().st_mode & 0o777)
+
     def test_16f_archived_config_that_is_no_python_is_refused(self):
         """
         A pi.cfg in the archive that cannot be parsed is reported together with
@@ -1302,6 +1361,11 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertIn("Realm 'realm1' successfully deleted.", result.output, result)
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
         self.assertIn("Realm 'realm2' successfully deleted.", result.output, result)
+        self.assertEqual(0, result.exit_code, result.output)
+        # A realm that does not exist is reported with a non-zero exit code, so that a script notices it
+        result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm2"])
+        self.assertIn("Could not delete realm 'realm2'", result.output, result)
+        self.assertEqual(1, result.exit_code, result.output)
         delete_resolver("resolver1")
 
     def test_03_pimanage_realm_delete_custom_attributes(self):
@@ -1314,10 +1378,11 @@ class PIManageRealmTestCase(CliTestCase):
         runner.invoke(pi_manage, ["config", "realm", "create", "realm1", "resolver1"])
         User("cornelius", "realm1").set_attribute("department", "sales")
 
-        # Declining the confirmation leaves the realm in place.
+        # Declining the confirmation leaves the realm in place and is reported with a non-zero exit code.
         result = runner.invoke(pi_manage, ["config", "realm", "delete", "realm1"], input="n\n")
         self.assertIn("custom user attributes", result.output, result.output)
         self.assertIn("department", result.output, result.output)
+        self.assertEqual(1, result.exit_code, result.output)
         self.assertEqual(1, CustomUserAttribute.query.filter_by(Key="department").count())
 
         # The flag deletes the realm and its custom attributes together.

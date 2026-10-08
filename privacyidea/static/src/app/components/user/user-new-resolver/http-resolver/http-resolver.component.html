@@ -114,14 +114,14 @@
     </div>
 
     <mat-checkbox
-      (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
-      [checked]="model().Editable"
+      (change)="model.update(m => ({ ...m, hasSpecialErrorHandler: $event.checked }))"
+      [checked]="model().hasSpecialErrorHandler"
       class="checkbox-inline"
       i18n="@@resolver.specialErrorHandling"
       >Special Error Handling</mat-checkbox
     >
 
-    @if (model().Editable) {
+    @if (model().hasSpecialErrorHandler) {
       <mat-form-field class="auth-wide input-width-xl margin-bottom-16">
         <mat-label i18n="@@resolver.responseContainsJsonFormat">Response contains (JSON Format)</mat-label>
         <textarea
