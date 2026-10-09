@@ -3700,3 +3700,42 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
         # The registration token deletes itself after its one successful use
         self.assertIsNone(get_one_token(serial="OTPONLYREG", silent_fail=True))
 
+
+
+class AuthMaxFailOperatorLoginTestCase(MyApiTestCase):
+    realm = "operatorrealm"
+    resolver = "operatorresolver"
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolver, "type": "passwdresolver",
+                       "fileName": "tests/testdata/passwd-search-operator-logins"})
+        set_realm(self.realm, [{"name": self.resolver}])
+        set_policy("max_fail_operator", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m",
+                   realm=self.realm)
+
+    def tearDown(self) -> None:
+        delete_policy("max_fail_operator")
+        for token in get_tokens(realm=self.realm):
+            remove_token(token.token.serial)
+        delete_realm(self.realm)
+        delete_resolver(self.resolver)
+        super().tearDown()
+
+    def _check(self, login: str, pin: str) -> bool:
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": login, "realm": self.realm, "pass": pin}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]
+
+    def test_failures_of_another_user_do_not_count(self):
+        logins = ["cornelius", "!cornelius", "corn*", "*"]
+        for login in logins + ["cornerstone"]:
+            init_token({"type": "spass", "pin": "spass"}, user=User(login, realm=self.realm))
+        for _attempt in range(2):
+            self.assertFalse(self._check("cornerstone", "wrongpin"))
+
+        for login in logins:
+            with self.subTest(login=login):
+                self.assertTrue(self._check(login, "spass"))
