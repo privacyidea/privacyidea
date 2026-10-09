@@ -96,13 +96,14 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError, ResolverError
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib.fido2.challenge import (verify_fido2_challenge, has_unbound_challenge,
                                              ChallengeExpiredError, check_fido2_token_state,
                                              record_fido2_login_success)
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthntoken import require_fido2_assertion
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
@@ -111,7 +112,7 @@ from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.user import User, split_user, log_used_user
+from privacyidea.lib.user import User, split_user, log_used_user, get_user_from_param
 from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
 
@@ -217,6 +218,36 @@ def _realm_parameter_fits_remote_user(remote_user: str) -> bool:
         return True
     remote_user_realm = split_user(remote_user)[1] or get_default_realm()
     return realm_parameter.lower() == (remote_user_realm or "").lower()
+
+
+def _owner_is_session_user(token: TokenClass, owner: User) -> bool:
+    """
+    Whether a session built from the owner's login name and realm - which is all the JWT carries - would act as
+    the owner themselves.
+
+    A usernameless passkey login identifies its user by resolver and user id, while every later request of the
+    session resolves the login name through the realm's resolver order. The two part company when the same login
+    name exists in a resolver the order finds first, and the session then acts as that other user.
+    """
+    try:
+        # The same lookup `before_after.resolve_logged_in_user` makes for a role-user request, which takes the
+        # login name and the realm out of the JWT and leaves the resolver to the realm's resolver order.
+        session_user = get_user_from_param({"user": owner.login, "realm": owner.realm})
+    except ResolverError:
+        # A user store that cannot be asked is not an ambiguous login name. The failure belongs to whoever reports
+        # a failing store, so it passes through instead of being classified here.
+        raise
+    except Exception as error:
+        log.warning(f"The login name {owner.login} of the owner of {token.get_serial()} could not be resolved in "
+                    f"realm {owner.realm}: {error!s}")
+        return False
+    if ((session_user.resolver or "").lower() == (owner.resolver or "").lower()
+            and str(session_user.uid) == str(owner.uid)):
+        return True
+    log.warning(f"The login name {owner.login} of the owner of {token.get_serial()} (resolver {owner.resolver}) "
+                f"resolves to resolver {session_user.resolver} in realm {owner.realm}; the passkey login is "
+                f"refused.")
+    return False
 
 
 @jwtauth.route('', methods=['POST'])
@@ -478,6 +509,17 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise
         if passkey_login_result.success > 0:
+            if not username and not _owner_is_session_user(token, login_user):
+                # The session would act as another user of the realm with the same login name, so the login is
+                # refused rather than issuing a JWT that does not name its owner. A login that named the user
+                # cannot get here: token_belongs_to_user already compared the owner above.
+                g.audit_object.log({"user": login_user.login, "realm": login_user.realm,
+                                    "resolver": login_user.resolver,
+                                    "authentication": AUTH_RESPONSE.REJECT,
+                                    "serial": token.get_serial(), "token_type": token.get_type()})
+                log_authentication(AuthEventType.LOGIN_NAME_NOT_UNIQUE, request, user=login_user,
+                                   serial=token.get_serial(), transaction_id=transaction_id)
+                raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             user = login_user
             login_name = user.login
             realm = user.realm

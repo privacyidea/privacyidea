@@ -127,6 +127,11 @@ class AuthEventType(str, Enum):
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
+    # The credential identified its user, but the login name and realm that a session carries do not lead back to
+    # them: another user of the realm has the same login name and the realm's resolver order finds them first, so
+    # the session would act as that other user. Unlike USER_UNKNOWN the login name resolves - just to somebody
+    # else.
+    LOGIN_NAME_NOT_UNIQUE = "LOGIN_NAME_NOT_UNIQUE"
     # User is known but has no tokens assigned, or the requested token does not exist.
     NO_TOKEN = "NO_TOKEN"
     # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).

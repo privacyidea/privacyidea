@@ -32,7 +32,10 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
-from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token, enable_token
+from privacyidea.lib.realm import set_realm, delete_realm, get_realms
+from privacyidea.lib.resolver import save_resolver, delete_resolver, get_resolver_list
+from privacyidea.lib.token import (remove_token, init_token, get_tokens, get_one_token, enable_token,
+                                   assign_token, unassign_token)
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
@@ -2681,6 +2684,123 @@ class PasskeyRequestShapeTest(PasskeyAPITestBase):
         res = self._post("/validate/check", {**data, "pass": ""})
         self.assertEqual(200, res.status_code, res.json)
         self.assertTrue(res.json["result"]["value"], res.json)
+
+
+class PasskeySessionUserAPITest(PasskeyAPITestBase):
+    """
+    A login without a username identifies its user by resolver and user id, while every request of the session
+    afterwards resolves the login name through the realm's resolver order. Where the two disagree, the login is
+    refused instead of handing out a session for someone else.
+    """
+    duplicate_resolver = "duplicate_hans"
+    suffix_resolver = "suffix_hans"
+
+    def tearDown(self):
+        set_realm(self.realm1, [{"name": self.resolvername1}])
+        if "corp" in get_realms():
+            delete_realm("corp")
+        for resolver in (self.duplicate_resolver, self.suffix_resolver):
+            if resolver in get_resolver_list():
+                delete_resolver(resolver)
+        super().tearDown()
+
+    def _add_resolver_to_realm(self, filename: str, priority: int) -> None:
+        """Add a second resolver to the realm, after the passkey was enrolled for the owner."""
+        save_resolver({"resolver": self.duplicate_resolver, "type": "passwdresolver", "fileName": filename})
+        success, failed = set_realm(self.realm1, [{"name": self.duplicate_resolver, "priority": priority},
+                                                  {"name": self.resolvername1, "priority": priority + 1}])
+        self.assertEqual(2, len(success))
+        self.assertEqual(0, len(failed))
+
+    def _login_without_username(self):
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = {**self.authentication_response_uv, "transaction_id": passkey_challenge["transaction_id"]}
+        with self.app.test_request_context("/auth", method="POST", data=data,
+                                           headers={"Origin": self.expected_origin}):
+            return self.app.full_dispatch_request(), passkey_challenge["transaction_id"]
+
+    def test_01_login_name_of_the_owner_resolves_to_another_user(self):
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        # The second resolver is added after the enrollment, so the passkey belongs to the first hans
+        self._add_resolver_to_realm("tests/testdata/passwd-duplicate-login", priority=1)
+        clear_authentication_log()
+
+        res, transaction_id = self._login_without_username()
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertNotIn("token", res.json["result"].get("value") or {})
+
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.LOGIN_NAME_NOT_UNIQUE],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_NAME_NOT_UNIQUE], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint="/auth")
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(serial, audit_entry.get("serial"), audit_entry)
+
+    def test_02_owner_is_found_first_and_logs_in(self):
+        """The same two resolvers, with the owner's resolver first: nothing changes."""
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        save_resolver({"resolver": self.duplicate_resolver, "type": "passwdresolver",
+                       "fileName": "tests/testdata/passwd-duplicate-login"})
+        set_realm(self.realm1, [{"name": self.resolvername1, "priority": 1},
+                                {"name": self.duplicate_resolver, "priority": 2}])
+
+        res, _ = self._login_without_username()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        token = res.json["result"]["value"]["token"]
+
+        # The session acts as the owner: it lists the owner's passkey
+        with self.app.test_request_context("/token/", method="GET", headers={"Authorization": token}):
+            listing = self.app.full_dispatch_request()
+            self.assertEqual(200, listing.status_code, listing.json)
+            self.assertIn(serial, [entry["serial"] for entry in listing.json["result"]["value"]["tokens"]])
+
+    def test_03_login_with_a_username_is_unaffected(self):
+        """A login that names the user is refused by the owner comparison, as before."""
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        self._add_resolver_to_realm("tests/testdata/passwd-duplicate-login", priority=1)
+
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = {**self.authentication_response_uv, "transaction_id": passkey_challenge["transaction_id"],
+                "username": self.user.login, "realm": self.realm1}
+        with self.app.test_request_context("/auth", method="POST", data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+
+
+    def test_04_login_name_of_the_owner_ends_in_a_realm_name(self):
+        """
+        With splitAtSign on, a login name ending in the name of a defined realm is resolved as the name without
+        the suffix, which is a different user again.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        save_resolver({"resolver": self.suffix_resolver, "type": "passwdresolver",
+                       "fileName": "tests/testdata/passwd-login-with-realm-suffix"})
+        set_realm(self.realm1, [{"name": self.resolvername1}, {"name": self.suffix_resolver}])
+        # The owner is a (resolver, user id) pair, so handing the passkey to the user with the suffixed login
+        # name is all it takes - the registration data does not name the owner.
+        suffixed_owner = User(login="hans@corp", realm=self.realm1, resolver=self.suffix_resolver)
+        self.assertEqual("4343", str(suffixed_owner.uid))
+        unassign_token(serial)
+        assign_token(serial, suffixed_owner)
+        # The realm that makes the suffix a realm name is defined only now, as it would be in practice
+        set_realm("corp", [{"name": self.resolvername1}])
+        clear_authentication_log()
+
+        res, transaction_id = self._login_without_username()
+        self.assertEqual(401, res.status_code, res.json)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.LOGIN_NAME_NOT_UNIQUE],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.LOGIN_NAME_NOT_UNIQUE], user=suffixed_owner,
+                                        serials={serial}, transaction_id=transaction_id, endpoint="/auth")
 
 
 class PasskeyFailureClassificationTest(PasskeyAPITestBase):
