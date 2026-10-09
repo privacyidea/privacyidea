@@ -38,7 +38,7 @@ You can attach token actions like enable, disable, delete, unassign,... of the
 """
 
 from privacyidea.lib.container import add_token_to_container
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError, ResourceNotFoundError
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
@@ -47,11 +47,10 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    unassign_token, init_token, set_description,
-                                   set_count_window, add_tokeninfo, get_tokeninfo,
-                                   set_failcounter, delete_tokeninfo,
+                                   set_count_window, get_tokeninfo,
+                                   set_failcounter,
                                    get_one_token, set_max_failcount,
-                                   assign_tokengroup, unassign_tokengroup,
-                                   set_token_type_info)
+                                   assign_tokengroup, unassign_tokengroup)
 from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now,
                                    create_tag_dict)
@@ -111,30 +110,22 @@ def _write_tokeninfo_of_handler(serial: str, key: str, value: str) -> None:
     """
     Write a token info entry on behalf of a token event handler.
 
-    A handler is configured by an administrator and runs on the server, so it may write the entries a token
-    class maintains but allows to be set, e.g. the acceptance window of a TOTP token, which is the documented
-    way to widen that window while a token is synchronized for the first time. An entry that carries what the
-    token authenticates with is refused, and the handler logs it instead of failing.
+    The handler writes every entry, including the ones a token class maintains itself, e.g. "next_pin_change"
+    to have the user change the PIN, or "timeWindow" of a TOTP token while it is synchronized for the first time.
+    The key comes from the configuration of the handler, which is part of the server configuration like the
+    tokens the handler enrolls, so the handler is not limited to the free-form entries the token info endpoints
+    write.
 
-    Whether a key belongs to the token depends on its type, e.g. "timeWindow" is what a TOTP token accepts an
-    OTP within, while it is free-form on an HOTP token, so the free-form write is tried first and only a
-    refusal leads to the write of a maintained entry.
+    A failure is raised. The handler records it in its audit entry and goes on with the remaining tokens.
 
     :param serial: The serial number of the token
     :param key: The token info key to write
     :param value: The value to write
+    :raises ParameterError: If the key uses the reserved ".type" suffix
     """
-    try:
-        add_tokeninfo(serial, key, value)
-        return
-    except PolicyError as error:
-        refusal = str(error)
-    try:
-        if set_token_type_info(serial, {key: value}):
-            return
-    except ParameterError:
-        pass
-    log.warning(f"The event handler can not set the token info '{key}' of token {serial}: {refusal}")
+    token = get_one_token(serial=serial)
+    token.write_tokeninfo(key, value)
+    token.save()
 
 
 def _delete_tokeninfo_of_handler(serial: str, key: str) -> None:
@@ -143,11 +134,13 @@ def _delete_tokeninfo_of_handler(serial: str, key: str) -> None:
 
     :param serial: The serial number of the token
     :param key: The token info key to delete
+    :raises ParameterError: If no key is given, which would delete the whole token info
     """
-    try:
-        delete_tokeninfo(serial, key)
-    except PolicyError as error:
-        log.warning(f"The event handler can not delete the token info '{key}' of token {serial}: {error!s}")
+    if not key:
+        raise ParameterError("The event handler needs the key of the token info entry to delete.")
+    token = get_one_token(serial=serial)
+    token.remove_tokeninfo(key)
+    token.save()
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -156,11 +149,23 @@ class TokenEventHandler(BaseEventHandler):
 
     It also returns a list of allowed action and conditions
 
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the event handling definitions
     """
 
     identifier = "Token"
     description = "This event handler can trigger new actions on tokens."
+
+    def _action_failed(self, message: str) -> bool:
+        """
+        Log an action that could not be carried out and keep the reason, so that the audit entry of the handler
+        records the run as failed with that reason.
+
+        :param message: What could not be done
+        :return: False, the result of the run
+        """
+        log.warning(message)
+        self.run_details = message
+        return False
 
     @property
     def allowed_positions(self):
@@ -591,6 +596,8 @@ class TokenEventHandler(BaseEventHandler):
                         if set_pin(serial, pin):
                             content.setdefault("detail", {})["pin"] = pin
                             options.get("response").data = json.dumps(content)
+                        else:
+                            ret = self._action_failed(f"Could not set a random PIN for token {serial}.")
                     elif action.lower() == ACTION_TYPE.DELETE:
                         remove_token(serial=serial)
                     elif action.lower() == ACTION_TYPE.DISABLE:
@@ -609,21 +616,37 @@ class TokenEventHandler(BaseEventHandler):
                                          int(handler_options.get("count window",
                                                                  50)))
                     elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
+                        key = handler_options.get("key")
                         tokeninfo = handler_options.get("value") or ""
                         text, tags = self._get_tags(g, request, serial, tokeninfo)
-                        _write_tokeninfo_of_handler(serial, handler_options.get("key"),
-                                                    self._format_with_tags(text, tags, tokeninfo))
+                        try:
+                            _write_tokeninfo_of_handler(serial, key, self._format_with_tags(text, tags, tokeninfo))
+                        except PrivacyIDEAError as error:
+                            # The remaining tokens are still written
+                            ret = self._action_failed(f"Can not set the token info '{key}' of token {serial}: "
+                                                      f"{error.message}")
                     elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
+                        key = handler_options.get("key")
                         try:
                             # We assume that the tokeninfo is an integer
                             increment = int(handler_options.get("increment") or 1)
-                            current_value = int(get_tokeninfo(serial, handler_options.get("key")) or 0)
-                            _write_tokeninfo_of_handler(serial, handler_options.get("key"),
-                                                        f"{current_value + increment}")
+                            current_value = int(get_tokeninfo(serial, key) or 0)
+                            _write_tokeninfo_of_handler(serial, key, f"{current_value + increment}")
                         except ValueError:
-                            log.warning("Can not increase the tokeninfo {!s}".format(handler_options.get("key")))
+                            # The remaining tokens are still increased
+                            ret = self._action_failed(f"Can not increase the token info '{key}' of token {serial}, "
+                                                      f"the value or the increment is not an integer.")
+                        except PrivacyIDEAError as error:
+                            ret = self._action_failed(f"Can not increase the token info '{key}' of token {serial}: "
+                                                      f"{error.message}")
                     elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
-                        _delete_tokeninfo_of_handler(serial, handler_options.get("key"))
+                        key = handler_options.get("key")
+                        try:
+                            _delete_tokeninfo_of_handler(serial, key)
+                        except PrivacyIDEAError as error:
+                            # The remaining tokens are still handled
+                            ret = self._action_failed(f"Can not delete the token info '{key}' of token {serial}: "
+                                                      f"{error.message}")
                     elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                         start_date = handler_options.get(VALIDITY.START)
                         end_date = handler_options.get(VALIDITY.END)
@@ -640,14 +663,15 @@ class TokenEventHandler(BaseEventHandler):
                             set_failcounter(serial,
                                             int(handler_options.get("fail counter")))
                         except Exception:
-                            log.warning("Misconfiguration: Failed to set fail "
-                                        "counter!")
+                            ret = self._action_failed(f"Misconfiguration: Failed to set the fail counter of token "
+                                                      f"{serial}!")
                     elif action.lower() == ACTION_TYPE.SET_MAXFAIL:
                         try:
                             set_max_failcount(serial,
                                               int(handler_options.get("max failcount")))
                         except Exception:
-                            log.warning("Misconfiguration: Failed to set max failcount!")
+                            ret = self._action_failed(f"Misconfiguration: Failed to set the max failcount of token "
+                                                      f"{serial}!")
                     elif action.lower() == ACTION_TYPE.CHANGE_FAILCOUNTER:
                         try:
                             token_obj = get_one_token(serial=serial)
@@ -655,20 +679,19 @@ class TokenEventHandler(BaseEventHandler):
                                 token_obj.token.failcount + int(handler_options.get("change fail counter")))
                             token_obj.save()
                         except Exception:
-                            log.warning("Misconfiguration: Failed to increase or decrease fail "
-                                        "counter!")
+                            ret = self._action_failed(f"Misconfiguration: Failed to increase or decrease the fail "
+                                                      f"counter of token {serial}!")
                     elif action.lower() == ACTION_TYPE.ADD_TOKENGROUP:
                         try:
                             assign_tokengroup(serial, handler_options.get("tokengroup"))
                         except Exception:
-                            log.warning("Misconfiguration: Failed to add tokengroup "
-                                        f"to token {serial!s}!")
+                            ret = self._action_failed(f"Misconfiguration: Failed to add tokengroup to token {serial}!")
                     elif action.lower() == ACTION_TYPE.REMOVE_TOKENGROUP:
                         try:
                             unassign_tokengroup(serial, handler_options.get("tokengroup"))
                         except Exception:
-                            log.warning("Misconfiguration: Failed to remove tokengroup "
-                                        f"from token {serial!s}!")
+                            ret = self._action_failed(f"Misconfiguration: Failed to remove tokengroup from token "
+                                                      f"{serial}!")
                     elif action.lower() == ACTION_TYPE.ATTACH_APPLICATION:
                         try:
                             machine = handler_options.get("machine ID")
@@ -691,8 +714,8 @@ class TokenEventHandler(BaseEventHandler):
                                 application_options.update({"user": user})
                             attach_token(serial, application, machine_id=machine, options=application_options)
                         except Exception:
-                            log.warning(f"Misconfiguration: Failed to attach token "
-                                        f"to machine. Token serial: {serial}")
+                            ret = self._action_failed(f"Misconfiguration: Failed to attach token to machine. Token "
+                                                      f"serial: {serial}")
             else:
                 log.info(f"No token serials found for token event handling action '{action}'.")
                 ret = False
@@ -718,8 +741,9 @@ class TokenEventHandler(BaseEventHandler):
                         if is_true(handler_options.get("dynamic_phone")):
                             init_param["dynamic_phone"] = 1
                         else:
-                            init_param['phone'] = user.get_user_phone(
-                                phone_type='mobile', index=0)
+                            # A user store can return None for a missing number, the token is enrolled without
+                            # one, like for an empty number
+                            init_param['phone'] = user.get_user_phone(phone_type='mobile', index=0) or ""
                             if not init_param['phone']:
                                 log.warning("Enrolling SMS token. But the user "
                                             f"{user!r} has no mobile number!")
@@ -729,7 +753,7 @@ class TokenEventHandler(BaseEventHandler):
                         if is_true(handler_options.get("dynamic_email")):
                             init_param["dynamic_email"] = 1
                         else:
-                            init_param['email'] = user.get_specific_info(["email"]).get("email", "")
+                            init_param['email'] = user.get_specific_info(["email"]).get("email") or ""
                             if not init_param['email']:
                                 log.warning(f"Enrolling EMail token. But the user {user!s}"
                                             "has no email address!")
@@ -749,6 +773,8 @@ class TokenEventHandler(BaseEventHandler):
                         log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")
             except Exception as e:
                 log.error(f"Failed to initialize token: {e}")
+                # Only the class of the error goes to the audit entry, its message can contain enrollment parameters
+                self.run_details = f"Failed to enroll a {handler_options.get('tokentype')} token ({type(e).__name__})"
                 ret = False
         else:
             log.warning(f"Action '{action}' is not supported by the token handler.")

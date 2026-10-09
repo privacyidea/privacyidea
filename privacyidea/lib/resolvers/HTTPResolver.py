@@ -86,6 +86,16 @@ class Error:
     message: str
 
 
+def is_request_configured(request_config: dict | None) -> bool:
+    """
+    Whether a request configuration names an endpoint. A form may post the configuration of every request, including
+    the ones the administrator left empty, and such a configuration counts as not configured.
+
+    :param request_config: the configuration of one request
+    """
+    return isinstance(request_config, dict) and bool(request_config.get(ENDPOINT))
+
+
 class HTTPMethod(Enum):
     GET = "get"
     POST = "post"
@@ -432,7 +442,7 @@ class HTTPResolver(UserIdResolver):
         :return: The user ID for the given username or an empty string if the user does not exist.
         """
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
-        if not config_get_user_by_name:
+        if not is_request_configured(config_get_user_by_name):
             # No endpoint configured to get user by name
             log.debug("No configuration to get user by name available.")
             return login_name
@@ -496,7 +506,7 @@ class HTTPResolver(UserIdResolver):
         :return: list users represented as dictionaries
         """
         config_get_user_list = self.config.get(CONFIG_GET_USER_LIST)
-        if not config_get_user_list:
+        if not is_request_configured(config_get_user_list):
             log.debug("No configuration to list users available.")
             return []
 
@@ -516,7 +526,7 @@ class HTTPResolver(UserIdResolver):
         """
         uid = ""
         config_create_user = self.config.get(CONFIG_CREATE_USER)
-        if not config_create_user:
+        if not is_request_configured(config_create_user):
             # No create user config available
             log.debug("No configuration to create users available.")
             return uid
@@ -553,7 +563,7 @@ class HTTPResolver(UserIdResolver):
         """
         success = False
         config_delete_user = self.config.get(CONFIG_DELETE_USER)
-        if not config_delete_user:
+        if not is_request_configured(config_delete_user):
             # No delete user config available
             log.debug("No delete user configuration available.")
             return success
@@ -585,7 +595,7 @@ class HTTPResolver(UserIdResolver):
         """
         success = False
         config_edit_user = self.config.get(CONFIG_EDIT_USER)
-        if not config_edit_user:
+        if not is_request_configured(config_edit_user):
             # No edit user config available
             log.debug("No edit user configuration available.")
             return success
@@ -616,7 +626,7 @@ class HTTPResolver(UserIdResolver):
         :param username: The username of the user
         :return: True or False
         """
-        if not self.config_user_auth:
+        if not is_request_configured(self.config_user_auth):
             # No user auth config available
             log.debug("No user authentication configuration available.")
             return False
@@ -648,6 +658,7 @@ class HTTPResolver(UserIdResolver):
         Exception.
 
         For the basic http resolver the config dict must contain the following entries:
+
         * endpoint: str
         * method: str (e.g. "get" or "post")
         * requestMapping: str (JSON) or dict
@@ -656,6 +667,7 @@ class HTTPResolver(UserIdResolver):
         * errorResponse: str (JSON) or dict
 
         For the advanced http resolver the config can contain the following entries:
+
         * base_url: str
         * headers: dict or str (JSON)
         * attribute_mapping: dict (or JSON str)
@@ -668,23 +680,20 @@ class HTTPResolver(UserIdResolver):
         * tls_certificate_path: str
         * timeout: int (seconds) or str e.g. "10"
         * config_get_user_by_id: dict
-            - method: str (e.g. "get" or "post")
-            - endpoint: str
-            - headers: str (JSON) or dict
-            - requestMapping: str (JSON) or dict
-            - responseMapping: str (JSON) or dict
-            - hasSpecialErrorHandler: bool or str (e.g. "true" or "false")
-            - errorResponse: str (JSON) or dict
-        * config_get_user_by_name: dict
-            - see config_get_user_by_id
-        * config_get_user_list: dict
-            - see config_get_user_by_id
-        * config_create_user
-            - see config_get_user_by_id
-        * config_edit_user
-            - see config_get_user_by_id
-        * config_delete_user
-            - see config_get_user_by_id
+
+          - method: str (e.g. "get" or "post")
+          - endpoint: str
+          - headers: str (JSON) or dict
+          - requestMapping: str (JSON) or dict
+          - responseMapping: str (JSON) or dict
+          - hasSpecialErrorHandler: bool or str (e.g. "true" or "false")
+          - errorResponse: str (JSON) or dict
+
+        * config_get_user_by_name: dict, same keys as config_get_user_by_id
+        * config_get_user_list: dict, same keys as config_get_user_by_id
+        * config_create_user: dict, same keys as config_get_user_by_id
+        * config_edit_user: dict, same keys as config_get_user_by_id
+        * config_delete_user: dict, same keys as config_get_user_by_id
 
         :param config: The configuration values of the resolver
         :type config: dict
@@ -700,7 +709,8 @@ class HTTPResolver(UserIdResolver):
                     raise ParameterError(f"Invalid JSON format for headers: {self.headers}")
             else:
                 self.headers = {}
-        if not self.config.get(CONFIG_GET_USER_BY_ID):
+        basic_resolver = not is_request_configured(self.config.get(CONFIG_GET_USER_BY_ID))
+        if basic_resolver:
             # Basic HTTP Resolver config only contains config for getUserInfo
             self.config_get_user_by_id[ENDPOINT] = get_required(config, ENDPOINT)
             self.config_get_user_by_id[METHOD] = get_required(config, METHOD)
@@ -719,7 +729,10 @@ class HTTPResolver(UserIdResolver):
                 attribute_mapping = json.loads(attribute_mapping)
             except json.JSONDecodeError:
                 raise ParameterError(f"Invalid JSON format for '{ATTRIBUTE_MAPPING}': {attribute_mapping}")
-        if attribute_mapping:
+        if attribute_mapping and basic_resolver:
+            # A basic resolver defines its attributes with the response mapping
+            log.debug("The attribute mapping is not used by a basic HTTP resolver.")
+        elif attribute_mapping:
             self.attribute_mapping_pi_to_user_store = attribute_mapping
             self.attribute_mapping_user_store_to_pi = {store_key: pi_key for pi_key, store_key in
                                                        self.attribute_mapping_pi_to_user_store.items()}
@@ -979,7 +992,7 @@ class HTTPResolver(UserIdResolver):
         # TODO: Cache implementation
 
         auth_header = {}
-        if not self.authorization_config:
+        if not is_request_configured(self.authorization_config):
             return auth_header
 
         config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencoded"},

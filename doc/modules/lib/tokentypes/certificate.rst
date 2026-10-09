@@ -1,4 +1,4 @@
-.. _code_certifiacte_token:
+.. _code_certificate_token:
 
 Certificate Token
 ~~~~~~~~~~~~~~~~~

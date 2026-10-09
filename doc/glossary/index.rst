@@ -37,8 +37,8 @@ Glossary
         privacyIDEA comes with a web-based user interface which is used to manage and
         configure the privacyIDEA server.
 
-        It is also used a self-service portal for the average user, who manages his own tokens.
-        This section gives an overview on the interface and links the respective sections in the documentation.
+        It is also used as a self-service portal for the average user, who manages his own tokens.
+        The main views are described in these sections:
 
         * :ref:`dashboard`
         * :ref:`tokensview`
@@ -49,7 +49,7 @@ Glossary
         * :ref:`components`
 
    Time Step
-        A TOTP token can have a timestep of 30/60 seconds. It can still be used, if this 30/60 seconds are over.
+        A TOTP token can have a timestep of 30/60 seconds. It can still be used after these 30/60 seconds are over.
         Technically the timestep is the divider by which the seconds since 1.1.1970 (unix system time)
         are divided to calculate the OTP value.
 
@@ -57,7 +57,7 @@ Glossary
 
    Time Window
         Timewindow in which the given OTP value is valid for authentication.
-        ``Timestep`` and ``timewindow`` are completely similar to the ``counter``
+        ``Timestep`` and ``timewindow`` are analogous to the ``counter``
         and ``countwindow`` (:ref:`tokeninfo`) of HOTP tokens.
 
    Revoked Token
@@ -76,12 +76,12 @@ Glossary
    Resolver(UserId)
         UserIdResolvers are connectors to those user stores, the locations,
         where the users are managed. Nowadays this can be LDAP directories or
-        especially Active Directory, some times FreeIPA or the Redhat 389 service.
+        especially Active Directory, sometimes FreeIPA or the 389 Directory Server.
         But classically users are also located in files like ``/etc/passwd`` on
         standalone unix systems. Web services often use SQL databases as
         user store.
 
-        Today with many more online cloud services SCIM is also an uprising
+        Today with many more online cloud services SCIM is also an emerging
         protocol to access userstores.
 
         privacyIDEA already comes with :ref:`useridresolvers` to talk to all these
@@ -103,7 +103,7 @@ Glossary
 
         In addition you need to define, which application on the client machine
         the user should authenticate to.
-        Different application require different authentication items.
+        Different applications require different authentication items.
 
         Therefore privacyIDEA can define application types.
         At the moment privacyIDEA knows the application
@@ -113,20 +113,20 @@ Glossary
         The table “tokeninfo” is used to store additional, long information that is
         specific to the :ref:`tokentypes`. E.g. the tokentype “TOTP” has additional entries
         in the tokeninfo table for “timeStep” and “timeWindow”, which are stored in the
-        column “Key” and “Value”.
+        columns “Key” and “Value”.
 
-        The ``tokeninfo`` is reference by the foreign key to the “token” table.
+        The ``tokeninfo`` is referenced by the foreign key to the “token” table.
 
         Token info can be viewed and partially edited in the WebUI. In addition, the
         Token-Janitor can be used to output token info, filter for tokens that have
         specific tokeninfo and set user-defined tokeninfos.
 
    Token
-        PrivacyIDEA supports a great variety of different token types.
+        privacyIDEA supports a great variety of different token types.
         They each have different requirements concerning configuration and how
-        the authentication works. This chapter explains the authentication modes, lists the
-        supported hardware and software tokens and explains how the token types can be used
-        with privacyIDEA.
+        the authentication works. The authentication modes, the
+        supported hardware and software tokens and the use of the token types
+        with privacyIDEA are described in the sections listed below.
         Tools which facilitate and automate token enrollment are found in :ref:`enrollment_tools`.
 
         * :ref:`authentication_modes`
@@ -134,7 +134,7 @@ Glossary
         * :ref:`tokentypes`
 
    Audit
-        The systems provides a sophisticated audit log, that can be viewed in the WebUI.
+        The system provides a sophisticated audit log, that can be viewed in the WebUI.
 
         The Audit log is essentially a record of events and changes.
 
@@ -145,16 +145,16 @@ Glossary
 
         privacyIDEA comes with a default SQL audit module (see :ref:`audit`).
 
-        Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
+        privacyIDEA also provides a :ref:`logger_audit` and
         a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
-        to services like splunk or logstash.
+        to services like Splunk or Logstash.
 
    Tokenowner
         The owner of a token is the user for whom the token was rolled out.
 
    FailCount
    MaxFail
-        The FailCount count the number of failed login attempts.
+        The FailCount counts the number of failed login attempts.
 
         If the login fail counter reaches the ``MaxFail`` the user can not login
         with this token anymore.
@@ -169,10 +169,10 @@ Glossary
         ``splitAtSign`` defines if the username like *user@company*
         given during authentication should
         be split into the loginname *user* and the realm name *company*.
-        In most cases this is the wanted behaviour so this is enabled by default.
+        In most cases this is the wanted behavior so this is enabled by default.
 
-        But given your users log in with email addresses like *user@gmail.com* and
-        *otheruser@outlook.com* you probably do not want to split.
+        A name like *user@gmail.com* is only split if a realm *gmail.com* exists. So you probably only want to
+        disable splitting if users log in with email addresses whose domain is also the name of a realm.
 
         How a user is related to a realm is described here: :ref:`relate_realm`
 
@@ -187,9 +187,12 @@ Glossary
 
         - Clientwait
 
-          The rollout is pending in the backend, like CSRs that need to be approved.
+          The server waits for the client to complete the enrollment, e.g. the second step of a two-step HOTP/TOTP
+          enrollment or the registration of a push, WebAuthn or passkey token.
 
         - Pending
+
+          The rollout is pending in the backend, e.g. a certificate request that the CA still has to approve.
 
         - Verify
 
@@ -202,6 +205,16 @@ Glossary
 
         - Failed
 
+          The enrollment failed, e.g. the CA could not be reached or refused the certificate request right away.
+
+        - Denied
+
+          The CA denied a pending certificate request.
+
+        - Broken
+
+          The token data could not be used, e.g. an SSH key of a type that is not allowed or without key data.
+
         .. versionchanged:: 3.14
            Fully enrolled tokens now consistently have ``rollout_state = "enrolled"``.
            Previously the value could be an empty string for tokens that completed
@@ -212,46 +225,53 @@ Glossary
    Custom User Attributes
         The table ``“customuserattribute”`` is used to store additional, custom attributes for users.
 
-        privacyIDEA working with user resolvers, which means users are already located somewhere for
+        privacyIDEA works with user resolvers, which means users are already located somewhere for
         example in an Active Directory.
 
         The interesting thing is that often the administrator who's responsible for managing the tokens
         in privacyIDEA does not have any access to the Active Directory. The administrator can define
         policies to allow other admins, help desk users or even the user to manage custom attributes in privacyIDEA.
 
-        A user is identified by the user_id, the resolver_id and the realm_id.
+        A user is identified by the user_id, the resolver name and the realm_id.
         The additional attributes are stored in Key and Value.
         The Type can hold extra information like e.g. an encrypted value / password.
 
-        .. note:: Since the users are external, i.e. no objects in this database, there is not
-            logic reference on a database level. Since users could be deleted from user stores without
+        .. note:: Since the users are external, i.e. no objects in this database, there is no
+            reference to the user or the resolver at the database level (the resolver is stored by its name); only
+            the realm_id refers to the realm table. Since users could be deleted from user stores without
             privacyIDEA realizing that, this table could pile up with remnants of attributes.
 
    Scope
-        A scope is the area, where a policy is meant for.
-        This can be values like:
+        A scope is the area a policy applies to (see :ref:`policies`).
+        The scopes are:
 
-        * ADMIN = 'admin'
+        * ``admin``
 
-        * AUDIT = 'audit'
+        * ``user``
 
-        * AUTH = 'authentication'
+        * ``authentication``
 
-        * AUTHZ = 'authorization'
+        * ``authorization``
 
-        * ENROLL = 'enrollment'
+        * ``enrollment``
 
-        * REGISTER = 'register'
+        * ``webui``
 
-        * USER = 'user'
+        * ``register``
 
-        * WEBUI = 'webui'
+        * ``container``
 
-        scope takes only one value.
+        * ``token``
+
+        * ``hardening``
+
+        * ``conditional_access``
+
+        A policy has exactly one scope.
 
    Realms
         Realms are meant for general logical user grouping. Users need to be in realms to have tokens assigned.
-        A user, who is not member of a realm can not have a token assigned and can not authenticate.
+        A user who is not a member of a realm can not have a token assigned and can not authenticate.
 
         You can combine several different UserIdResolvers (see :ref:`useridresolvers`)
         into a realm.
@@ -265,9 +285,12 @@ Glossary
             user@realm
 
    Events
-        Each **API call** is an **event** and you can bind arbitrary actions to each
-        event as you like. You can bind several actions to one event. These actions are executed
-        in the order of the priority one after another.
+        Most API calls of the token, container, user, authentication (``/auth``) and validation endpoints are
+        **events**, e.g. ``token_init`` or ``validate_check``. The configuration endpoints (policies, realms,
+        resolvers, system settings, SMTP and SMS configuration, event definitions, audit, machines, periodic tasks,
+        CA connectors, ...) do not trigger events. You can bind arbitrary actions to each event as you like. You can
+        bind several actions to one event. These actions are executed one after another in ascending order of their
+        *Ordering* value (lowest first).
 
         .. Note:: An action, that is triggered by an event can not trigger a new action. Only **events** (API calls)
            can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
@@ -275,8 +298,6 @@ Glossary
            action. For more complex actions, you might need to look into the :ref:`scripthandler`.
 
         Internally events are marked by a decorator "event" with an *event identifier*.
-        At the moment not all events might be tagged. Please drop us a note to tag
-        all further API calls.
 
         .. figure:: /eventhandler/event-list.png
            :width: 500
@@ -300,7 +321,7 @@ Glossary
         :ref:`policy_no_detail_on_fail`) the FreeRADIUS server can receive this
         serial number.
 
-        In ``rlm_perl_ini`` use::
+        In ``rlm_perl.ini`` use::
 
             [Mapping]
             serial = privacyIDEA-Serial
@@ -318,7 +339,7 @@ Glossary
         the privacyIDEA response contains an additional tree ``detail->user`` with
         user information.
 
-        The FreeRADIUS plugin can also map these user information to RADIUS
+        The FreeRADIUS plugin can also map this user information to RADIUS
         Attribute-Value pairs. Certain VPN systems use RADIUS return values to put
         users into certain groups to allow access to special sub networks.
 
@@ -334,7 +355,7 @@ Glossary
         You can also address different sections in the privacyIDEA detail response by
         changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
 
-        You can find a detailed explanation in `this video <https://www.youtube.com/watch?v=uERhuCLxz0o/>`_.
+        You can find a detailed explanation in `this video <https://www.youtube.com/watch?v=uERhuCLxz0o>`_.
 
    UserID
         The id of the user in a :term:`Resolver(UserId)`.
@@ -347,7 +368,7 @@ Glossary
         manage those admins from the command line as the system's root user. (see
         :ref:`installation`)
 
-        These admin users can logon to the WebUI using the admins user name and the
+        These admin users can log on to the WebUI with the admin's user name and the
         specified password.
         These admins are used to get a simple quick start.
 
@@ -378,7 +399,7 @@ Glossary
 
    Userstore
         Are the locations, where the users are managed. This can be LDAP directories
-        or especially Active Directory, some times FreeIPA or the Redhat 389 service.
+        or especially Active Directory, sometimes FreeIPA or the 389 Directory Server.
         But classically users are also located in files like /etc/passwd on standalone unix systems.
         Web services often use SQL databases as user store.
 
@@ -392,7 +413,13 @@ Glossary
         challenge response token exists for this user. In this case, the challenge is triggered and privacyIDEA expects a response.
         If the user now gives the answer expected from the server, the response is accepted and the authentication is successful.
 
-        Multi Challenge is basically a chain of challenges. It can be used to reset a PIN, with the :ref:`code_foureye_token` e.g..
+        Multi Challenge has two meanings. In the response of an authentication request, ``multi_challenge`` is the
+        list of all challenges that were triggered, one entry per token. Challenges can also be chained, so that an
+        answer is followed by a further challenge instead of finishing the authentication. This is used to let the
+        user set a new PIN (:ref:`policy_change_pin_via_validate`), to resynchronize a token
+        (:ref:`policy_resync_via_multichallenge`), to enroll a token during the authentication
+        (:ref:`policy_enroll_via_multichallenge`), and by the :ref:`four_eyes_token` in challenge response mode to
+        ask for the further tokens one after another.
 
         **Challenges are triggered by:**
 
@@ -400,8 +427,10 @@ Glossary
 
         * Programmatically via a call to ``POST /validate/triggerchallenge``
 
+        * A call to ``POST /validate/initialize``, which starts a passkey challenge without a user
+
    Extended Policy Conditions
-        Since privacyIDEA 3.1, :ref:`policy_conditions` allow to define more advanced rules
+        :ref:`policy_conditions` allow defining more advanced rules
         for policy matching, i.e. for determining which policies are valid for a
         specific request.
 
@@ -414,9 +443,9 @@ Glossary
 
    Application Plugins
         There are some plugins for privacyIDEA. These are plugins for
-        applications like PAM, OTRS, Apache2, FreeRADIUS, ownCloud, simpleSAMLphp
+        applications like PAM, Apache2, FreeRADIUS, Nextcloud, ownCloud, SimpleSAMLphp
         or Keycloak which enable these
-        application to authenticate users against privacyIDEA.
+        applications to authenticate users against privacyIDEA.
 
         You may also write your own application plugin or connect your own application
         to privacyIDEA. This is quite simple using a REST API
@@ -435,12 +464,12 @@ Glossary
         differently or even completely deleted.
         You could not do anything about it. The Open Source privacyIDEA is under your control – forever.
 
-        The Open Source license dos not mean that a company has no costs in regards to two factor authentication.
+        The Open Source license does not mean that a company has no costs in regards to two factor authentication.
         At least they need to pay the administrator.
         In any case the Open Source license states that this software comes without any warranty.
         Getting a subscription provides this warranty.
         A company using privacyIDEA needs to be aware of this.
 
-        For the product privacyIDEA we provide the suitable
-        `support <https://netknights.it/en/produkte/privacyidea/>`_ with a
+        NetKnights, the maintainer of privacyIDEA, provides suitable
+        `support <https://netknights.it/en/services/support/>`_ with a
         defined response time and with fixed costs.

@@ -176,7 +176,8 @@ with the path of the configuration file (default ``/etc/privacyidea/pi.cfg``)::
    privacyidea-diag /etc/privacyidea/pi.cfg
 
 ``pi-manage`` has to be in the ``PATH``. The script is written for Debian,
-Ubuntu, RHEL and CentOS, on other distributions it collects less. It writes the
+Ubuntu and RHEL (also CentOS Stream, Rocky Linux and AlmaLinux); on other
+distributions it collects less. It writes the
 file ``/tmp/<yy-mm-dd>_pi_diag_<random>.tar.gz``, which only root can read,
 and prints its name. The file contains:
 
@@ -186,7 +187,7 @@ and prints its name. The file contains:
   event handlers and policies, and the SMTP, RADIUS and privacyIDEA server
   definitions,
 * the file list of the FreeRADIUS configuration, the Apache configuration,
-  the last 100 lines of the Apache or nginx logs and, on CentOS, the SELinux
+  the last 100 lines of the Apache or nginx logs and, on RHEL, the SELinux
   denials,
 * the privacyIDEA log file and the audit log of the last two days.
 
@@ -209,7 +210,7 @@ and prints its name. The file contains:
   enrollment policy. This also applies to JSON objects inside values, e.g.
   HTTP headers.
 
-Secrets in free text are not recognised, e.g. in the data of a webhook event
+Secrets in free text are not recognized, e.g. in the data of a webhook event
 handler, and the privacyIDEA log file and the audit log are included as they
 are. So the file still contains your configuration, and user names and IP
 addresses from the logs: only give it to recipients you trust.

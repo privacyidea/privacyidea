@@ -178,5 +178,7 @@ class FederationEventHandler(BaseEventHandler):
                 options["response"].status_code = r.status_code
             else:
                 log.warning(f"Unsupported method: {method!r}")
+                self.run_details = f"The method {method!r} is not supported."
+                return False
 
         return True

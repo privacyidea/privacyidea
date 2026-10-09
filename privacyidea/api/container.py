@@ -816,7 +816,7 @@ def set_container_info(container_serial, key):
     :status 200: ``True`` on success in ``result.value``.
     :status 403: the key is reserved as ``PI_INTERNAL``.
     """
-    value = get_required(request.all_data, "value")
+    value = get_required(request.all_data, "value", allow_empty=True)
     res = add_container_info(container_serial, key, value)
 
     # Audit log
@@ -899,7 +899,7 @@ def registration_init():
           },
           "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
           "time_stamp": "2024-12-20T09:53:40.158319+00:00",
-          "server_url": "https://pi.net",
+          "server_url": "https://privacyidea.example.com",
           "ttl": 10,
           "ssl_verify": "True",
           "key_algorithm": "secp384r1",
@@ -1102,7 +1102,7 @@ def create_challenge():
     Example response::
 
         {
-          "server_url": "https://pi.net",
+          "server_url": "https://privacyidea.example.com",
           "nonce": "123456",
           "time_stamp": "2024-10-23T05:45:02.484954+00:00"
         }
@@ -1217,7 +1217,7 @@ def synchronize():
             "disable_client_token_deletion": true,
             "disable_client_container_unregister": true
           },
-          "server_url": "https://pi.net"
+          "server_url": "https://privacyidea.example.com"
         }
     """
     params = request.all_data
@@ -1346,7 +1346,7 @@ def rollover():
           },
           "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
           "time_stamp": "2024-12-20T09:53:40.158319+00:00",
-          "server_url": "https://pi.net",
+          "server_url": "https://privacyidea.example.com",
           "ttl": 10,
           "ssl_verify": "True",
           "key_algorithm": "secp384r1",
@@ -1516,8 +1516,8 @@ def create_template_with_name(container_type, template_name):
 @log_with(log)
 def delete_template(template_name):
     """
-    Delete a container template. Existing containers that were
-    created from this template are not affected.
+    Delete a container template. Existing containers that were created from this template keep their tokens, but are
+    no longer linked to a template.
 
     Requires authentication and the policy action
     :ref:`policy_container_template_delete`.

@@ -18,9 +18,13 @@ The following actions are available in the scope
 authorized
 ~~~~~~~~~~
 
+type: ``string``
+
+allowed values: ``grant_access``, ``deny_access``
+
 This is the basic authorization, that either grants the user access or denies access via the ``/validate``
 endpoints (see :ref:`rest_validate`).
-The default behaviour is to grant access, if and after the user has authenticated successfully.
+The default behavior is to grant access, if and after the user has authenticated successfully.
 
 Using ``authorized=deny_access`` specific authentication requests can be denied, even if the user has provided
 the correct credentials.
@@ -36,6 +40,8 @@ users by defining higher policy priorities.
     Meaning pre-event handlers (:ref:`eventhandler_pre_and_post`) would still
     see the request as successful before it would be changed by this policy and
     match the event handler condition ``result value == True``.
+
+.. versionadded:: 3.4
 
 .. _tokentype_policy:
 
@@ -60,6 +66,8 @@ used up, even if the user was not authorized with this request.
    while allowing access to less sensitive areas
    with other token types.
 
+.. versionadded:: 2.0
+
 .. _application_tokentype_policy:
 
 application_tokentype
@@ -77,6 +85,7 @@ should be checked.
 E.g. when using this in *triggerchallenge*, an application could assure that only SMS tokens
 are used for authentication.
 
+.. versionadded:: 3.4
 
 serial
 ~~~~~~
@@ -93,9 +102,11 @@ used up, even if the user was not authorized with this request.
 .. note:: Combining this with the client IP
    you can use this to allow remote access to
    sensitive areas only with hardware tokens
-   like the Yubikey, while allowing access
+   like the YubiKey, while allowing access
    to less secure areas also with a Google
    Authenticator.
+
+.. versionadded:: 2.0
 
 .. _policy_tokeninfo:
 
@@ -120,6 +131,8 @@ Example::
 
 This would mean the tokeninfo field needs to start with "2018".
 
+.. versionadded:: 2.22
+
 .. _policy_setrealm:
 
 setrealm
@@ -131,12 +144,16 @@ This policy is checked before the user authenticates.
 The realm of the user matching this policy will be set to
 the realm in this action.
 
-This policy is only applied to :http:post:`/validate/check`.
+This policy is only applied to :http:post:`/validate/check` and :http:post:`/validate/radiuscheck`.
+
+Priorities are not evaluated for ``setrealm``: if the matching policies name more than one realm, the request fails
+with "Conflicting policies exist". If an authentication :ref:`policy_set_realm` policy matched, ``setrealm`` is not
+evaluated at all.
 
 Note, that this policy is evaluated, after the parameters of the request have been processed. This means,
-that the parameters like `user` and `realm` would already have to result in a valid user object. And thereafter this
+that the parameters like ``user`` and ``realm`` would already have to result in a valid user object. And thereafter this
 policy is applied.
-However, this means, that is is also possible to use the original user object in the policy conditions.
+However, this means, that it is also possible to use the original user object in the policy conditions.
 
 This policy can be used to move users from one original realm to a different realm, e.g. for authorization
 reasons. For this policy, the user has to be available in both realms!
@@ -149,11 +166,15 @@ reasons. For this policy, the user has to be available in both realms!
 
 For in depth information about user and realm mapping read :ref:`realms`.
 
+.. versionadded:: 2.0
+
 .. _policy_no_detail_on_success:
 
 no_detail_on_success
 ~~~~~~~~~~~~~~~~~~~~
-.. deprecated:: v3.12
+.. versionadded:: 2.0
+
+.. deprecated:: 3.12
    Please use the :ref:`responsemanglerhandler` to delete the ``detail`` section.
 
 type: ``bool``
@@ -169,7 +190,9 @@ this additional information will not be returned.
 
 no_detail_on_fail
 ~~~~~~~~~~~~~~~~~
-.. deprecated:: v3.12
+.. versionadded:: 2.0
+
+.. deprecated:: 3.12
    This policy breaks :term:`challenge-response <Challenge>` authentication.
 
 type: ``bool``
@@ -195,6 +218,8 @@ api_key_required
 ~~~~~~~~~~~~~~~~
 
 type: ``bool``
+
+.. versionadded:: 2.4
 
 .. deprecated:: 3.14
    This policy and its ``Authorization`` JWT (minted by ``pi-manage api
@@ -237,8 +262,7 @@ If this value is exceeded, the authentication attempt is canceled.
 
 Specify the value like ``2/5m`` meaning 2 successful authentication requests
 per 5 minutes. If during the last 5 minutes 2 successful authentications were
-performed the authentication request is discarded. The used OTP value is
-invalidated.
+performed the authentication request is refused, and the OTP value stays valid.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
@@ -255,6 +279,8 @@ time limit of successful authentications, the user will not be able to authentic
 explicitly passing the user's realm. Anyway, local admins are not affected by the number of successful user
 authentications.
 
+.. versionadded:: 2.8
+
 .. _policy_auth_max_fail:
 
 auth_max_fail
@@ -266,10 +292,10 @@ Here you can specify how many failed authentication requests a user is allowed t
 
 If this value is exceeded, authentication is not possible anymore. The user will have to wait.
 
-If this policy is not defined, the normal behaviour of the failcounter applies. (see :term:`failcount`)
+If this policy is not defined, the normal behavior of the failcounter applies. (see :term:`FailCount`)
 
-Specify the value like ``2/1m`` meaning 2 failed authentication requests per minute. If during the last 5 minutes 2
-failed authentications were performed the authentication request is discarded. The used OTP value is invalidated.
+Specify the value like ``2/1m`` meaning 2 failed authentication requests per minute. If during the last minute 2
+failed authentications were performed the authentication request is refused, and the OTP value stays valid.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
@@ -283,6 +309,8 @@ In case a local admin and a user in the default realm exist with the same userna
 authentications. Hence, if the admin reaches the time limit of failed authentications, the user will not be able to
 authenticate anymore, and vice versa.
 
+.. versionadded:: 2.8
+
 last_auth
 ~~~~~~~~~
 
@@ -290,12 +318,17 @@ type: ``string``
 
 You can define if an authentication should fail, if the token was not
 successfully used for a certain time.
+A token without a recorded successful authentication (e.g. not used since its
+enrollment) is not refused; its first successful authentication starts the period.
 
 Specify a value like ``12h``, ``123d`` or ``2y`` to disallow authentication,
 if the token was not successfully used for 12 hours, 123 days or 2 years.
 
-The date of the last successful authentication is store in the `tokeninfo`
-field of a token and denoted in UTC.
+The date of the last successful authentication is stored in the ``tokeninfo``
+field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
+passkey authentications).
+
+.. versionadded:: 2.8
 
 .. _policy_add_user_in_response:
 
@@ -314,6 +347,8 @@ to the response. A dictionary containing user information is added in
    need user data after a failed authentication must look the user up
    themselves.
 
+.. versionadded:: 2.15
+
 .. _policy_add_resolver_in_response:
 
 add_resolver_in_response
@@ -324,6 +359,8 @@ type: ``bool``
 In case of a successful authentication the resolver and realm of the user are added
 to the response. The names are added in
 ``detail->user-resolver`` and ``detail->user-realm``.
+
+.. versionadded:: 2.22
 
 .. _policy_webauthn_authz_authenticator_selection_list:
 
@@ -336,16 +373,19 @@ This action configures a whitelist of authenticator models which may be
 authorized. It is a space-separated list of AAGUIDs. An AAGUID is a
 hexadecimal string (usually grouped using dashes, although these are
 optional) identifying one particular model of authenticator. To limit
-enrollment to a few known-good authenticator models, simply specify the AAGUIDs
-for each model of authenticator that is acceptable. If multiple policies with
-this action apply, the set of acceptable authenticators will be the union off
-all authenticators allowed by the various policies.
+authentication to a few known-good authenticator models, specify the AAGUIDs
+for each model of authenticator that is acceptable. The AAGUID recorded at the
+enrollment of the token is checked when the token authenticates. If multiple
+policies with this action apply, the set of acceptable authenticators will be the
+union of all authenticators allowed by the various policies.
 
 If this action is not configured, all authenticators will be deemed acceptable,
 unless limited through some other action.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_authenticator_selection_list`
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authz_req:
 
@@ -361,13 +401,17 @@ The action can be specified like this::
 
     webauthn_req=subject/.*Yubico.*/
 
-The keyword can be "subject", "issuer" or "serial". Followed by a
-regular expression. During registration of the WebAuthn authenticator the
-information is fetched from the attestation certificate. Only if the attribute
-in the attestation certificate matches accordingly the token can be enrolled.
+The keyword can be "subject", "issuer" or "serial", followed by a
+regular expression. When a WebAuthn token authenticates, the attestation
+certificate data recorded at its enrollment is checked, and the token is only
+accepted if the field matches. A token enrolled without attestation certificate
+data is refused while such a policy applies. If several values apply (from one or
+several policies), every one of them must match.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_req`
+
+.. versionadded:: 3.3
 
 .. _policy_require_auth_for_resolver_details:
 
@@ -376,7 +420,7 @@ require_auth_for_resolver_details
 
 type: ``bool``
 
-Usually, `/healthz/resolversz` will include in its response the name and status
+Usually, ``/healthz/resolversz`` will include in its response the name and status
 of each resolver individually, as well as the total status of all resolvers;
 without requiring any form of authentication.
 
@@ -385,3 +429,5 @@ individual resolver details.  The total status will be included either way.
 
 .. note:: In order to limit the amount of information exposed to third parties,
     it is recommended to activate this policy.
+
+.. versionadded:: 3.13

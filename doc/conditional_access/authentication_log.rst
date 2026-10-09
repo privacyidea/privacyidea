@@ -7,22 +7,24 @@ Authentication Log
 The authentication log records the outcome of every authentication request:
 what was attempted, by whom, from where, and how it ended. It is the data
 :ref:`conditional_access_policies` count, and it is readable on its own under
-*Logs → Authentication log*.
+*Audit → Authentication Log*.
 
 It is separate from the :ref:`audit` log. The audit log records *what the API
 did*, in free text, for every call. The authentication log records *how an
 authentication ended*, one entry per request, with a fixed set of event types
-that can be filtered and counted reliably. The only exception is
-:ref:`policy_push_wait`, where one request writes two entries: one when the
-challenge is triggered and one for the outcome, if the challenge was answered
-or declined before the wait ended.
+that can be filtered and counted reliably. There are two exceptions. With
+:ref:`policy_push_wait` one request writes two entries: one when the challenge
+is triggered and one for the outcome, if the challenge was answered or declined
+before the wait ended. And a request that carries the API key of a suspended
+client gets an additional ``SUSPENDED_API_KEY_USED`` entry, see
+:ref:`authentication_log_event_types`.
 
 Each entry holds
 
 * the time of the request,
 * the user, as resolver, user ID, realm and the login name that was used, plus
   the role (user, internal or external administrator),
-* the event type and, for a failed one, every reason behind it, see below,
+* the event type and, for a failed one, the reasons behind it, see below,
 * the source IP, the client description and the endpoint the request
   authenticated against,
 * the token serial, the transaction ID and the attempt ID,
@@ -42,7 +44,7 @@ Attempts
 
 A challenge-response login takes several requests, e.g. one that triggers the
 challenge and one that answers it. These share an **attempt ID**, so they can be
-recognised as one logical authentication attempt, and a conditional access policy
+recognized as one logical authentication attempt, and a conditional access policy
 using the ``PER_ATTEMPT`` count mode counts them once.
 
 The attempt ID also survives a multi-challenge login, where answering one
@@ -55,12 +57,17 @@ Event types
 -----------
 
 Every entry carries exactly one event type. Each type belongs to an outcome
-class - *success*, *failure* or *pending* - which the WebUI uses to colour the
+class - *success*, *failure* or *pending* - which the WebUI uses to color the
 entry.
 
 Success
    ``LOGIN_SUCCESS``
      the authentication completed.
+   ``OFFLINE_REFILL_SUCCESS``
+     an offline client refilled its OTP values or renewed its refilltoken, see
+     :ref:`application_offline`. A refill is not a login, so a policy counting
+     ``LOGIN_SUCCESS`` does not count it, and it does not reset a counter that
+     starts over after the last successful login.
 
 Pending
    ``CHALLENGE_TRIGGERED``
@@ -81,28 +88,39 @@ Failure
    ``TOKEN_ONLY_FAIL``
      no PIN was required, and the OTP value was wrong.
    ``MFA_FAIL``
-     the first factor was correct but the second failed. Also used for a failed
-     passkey authentication, where the cause cannot be determined.
+     the first factor was correct but the second failed.
    ``USER_UNKNOWN``
      the login name was not found in any resolver of the given realm (or default realm if none were given).
    ``NO_TOKEN``
-     the user exists but has no token.
+     the user exists but has no token. It is also recorded for a passkey answer whose serial or credential ID matches
+     no token, or a token of another user than the one named in the request, and at ``/validate/triggerchallenge``
+     whenever no challenge was triggered - also when the user has tokens, but none that is active, not revoked, not
+     locked and able to do challenge-response. A user whose only token is disabled therefore gets ``NO_TOKEN`` there,
+     not ``NO_USABLE_TOKEN``.
    ``NO_USABLE_TOKEN``
      the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
      over the failcount.
    ``INVALID_TOKEN_TYPE``
-     the given token type can not be used to authenticate at this endpoint, e.g. `/validate/initialize` only accepts
+     the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
    ``CHALLENGE_ANSWERED_FAIL``
-     the challenge response was wrong or expired, or the transaction ID is unknown.
+     the challenge response was wrong or expired, or the transaction ID is unknown. A passkey or WebAuthn answer
+     that does not verify is one too.
    ``CHALLENGE_TRIGGER_FAIL``
-     a challenge was requested but the server could not create one, for example
-     because a required policy is missing.
+     ``/validate/initialize`` could not create the passkey challenge, for
+     example because the :ref:`policy_webauthn_enroll_relying_party_id` policy
+     is missing.
    ``CHALLENGE_DECLINED``
      a challenge was rejected out of band, for example a push notification
      declined in the authenticator app, without the app saying why. Either it is
      an older app that does not send a decline reason, or it sent one this
-     server version does not know.
+     server version does not know. It is also the type of the
+     ``/validate/check`` a client sends to finalize a push challenge the user
+     declined for any reason other than canceling it (see
+     ``CHALLENGE_CANCELLED``): the decline reason is only recorded on the
+     ``/ttype/push`` entry. A push declined as not triggered by the user is
+     therefore ``CHALLENGE_DECLINED_UNKNOWN_TRIGGER`` on ``/ttype/push`` and
+     ``CHALLENGE_DECLINED`` on the finalizing request.
    ``CHALLENGE_DECLINED_UNKNOWN_TRIGGER``
      the user rejected a push challenge stating that they did not trigger it.
      This is the user reporting someone else's attempt rather than a credential
@@ -115,9 +133,11 @@ Failure
      the user aborted a push challenge they triggered themselves. Abandonment
      rather than a failed attempt, which is why the ready-made failure rate
      limits leave it out - counting it would spend part of a brute-force budget
-     on users changing their mind.
+     on users changing their mind. If the client then finalizes the canceled
+     push with ``/validate/check``, that request is recorded as
+     ``CHALLENGE_CANCELLED`` as well.
    ``ENROLLMENT_CANCELED_FAIL``
-     cancelling an enrollment failed.
+     canceling an enrollment failed.
    ``ENROLLMENT_FAIL``
      completing the enrollment of a token during authentication failed, for
      example of a passkey with :ref:`policy_enroll_via_multichallenge`. Either a
@@ -133,7 +153,12 @@ Failure
      device series, and every other remembered device of this user, is revoked.
    ``SUSPENDED_API_KEY_USED``
      a request carried a valid API key whose client is suspended. The request is not identified by it and proceeds
-     unauthenticated by that key.
+     unauthenticated by that key. This entry is written in addition to the entry of the request itself, on whatever
+     endpoint the request was sent to - also outside authentication, for example ``/token``. It names no user; the
+     client is recorded in the other info as ``client_id``. A conditional access policy cannot count it.
+   ``OFFLINE_REFILL_FAIL``
+     an offline refill was refused. The reasons say why: one of the token states, ``WRONG_OTP`` or one of the offline
+     refill reasons below.
 
 Three further types are written by conditional access itself, when it refuses a
 request before any credentials are checked: ``USER_LOCKED`` (a user lock was in
@@ -142,8 +167,8 @@ policy's *deny* action refused this single request).
 
 These entries record that the refusal happened, and can be filtered and sorted
 like any other, so an administrator can see how often a lock or block took
-effect. They are, however, the only types a conditional access policy cannot
-count.
+effect. They and ``SUSPENDED_API_KEY_USED`` are, however, the only types a
+conditional access policy cannot count.
 
 .. _authentication_log_reasons:
 
@@ -203,6 +228,10 @@ The credentials
      ``MFA_FAIL`` alone would not tell a wrong OTP apart from a token the
      request never got to check.
 
+     On ``OFFLINE_REFILL_FAIL``, ``WRONG_OTP`` means the OTP the client
+     reported is not one of the offline values issued to it: a wrong value, or
+     a client whose OTP list is out of sync with the server.
+
 Challenge-response
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
@@ -223,34 +252,51 @@ Challenge-response
      event types and says only where the refusal came from; which refusal it was
      is what the event type names.
 
+Offline refill
+   ``REFILLTOKEN_MISMATCH``
+     the refilltoken the client sent is not the one stored for the token: a
+     client that missed a rotation, or a refilltoken replayed by someone else.
+   ``NOT_AN_OFFLINE_TOKEN``
+     the token is not attached to any machine with the offline application.
+   ``MACHINE_NOT_IDENTIFIED``
+     a WebAuthn or passkey refill whose user agent names no machine, so no
+     refilltoken can be looked up for it.
+
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no
 reason reads as *not classified* rather than *no cause*.
 
-One entry, every reason
-~~~~~~~~~~~~~~~~~~~~~~~
+Which reasons an entry carries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A request is checked against every token of the user, and those tokens can fail
-for different reasons. The entry lists **all** of them, each filterable on its
-own: a request whose one token is revoked while another merely got the wrong
-OTP is found by either filter, because both are findings an admin may be
-looking for.
+for different reasons. The reasons of an entry explain its event type: they are
+taken from the tokens that produced that event, and each is filterable on its
+own. A request whose one token is revoked while another merely got the wrong
+OTP is classified by the wrong OTP, for example as ``MFA_FAIL`` with the reason
+``WRONG_OTP``; the filter ``TOKEN_REVOKED`` does not find it. Only where no
+token produced an event - a ``NO_USABLE_TOKEN``, where every token was turned
+away before it was checked - does the entry carry the reasons of all tokens,
+for example ``TOKEN_DISABLED`` for one token and ``TOKEN_FAILCOUNT_EXCEEDED``
+for another. A token that produced the event without a reason of its own, such
+as one with a wrong PIN, leaves the entry without one.
 
 No reason is picked out as the one that counts: they are listed in the order
 the vocabulary above declares them - the token states, then the authorization
-decisions, then the credentials, then challenge-response - so that the same
-findings always read the same way. The order carries no ranking; each reason is
-recorded and each is filterable on its own.
+decisions, then the credentials, then challenge-response, then offline refill -
+so that the same findings always read the same way. The order carries no
+ranking; each reason is recorded and each is filterable on its own.
 
 Which token failed for which reason is not lost either: the details of the
 entry keep the finding of every token under ``reason_detail.reasons``, keyed by
-serial, and the names of the policies that decided under
-``reason_detail.policies``.
+serial, also for the tokens whose reasons are not on the entry, and the names of
+the policies that decided under ``reason_detail.policies``.
 
 .. note:: ``CHALLENGE_EXPIRED`` tells a timeout apart from a wrong answer - the
    user answered correctly, only too late. Recognizing it depends on the lapsed
    challenge still being readable, which is best-effort: stored in the database
-   a challenge stays until the janitor removes it, while the Redis cache expires
+   a challenge stays until ``pi-manage config challenge cleanup`` removes it
+   (see :ref:`cleanup_jobs`), while the Redis cache expires
    the key shortly after the challenge validity, so an answer arriving much
    later finds nothing and is recorded as ``CHALLENGE_UNKNOWN_TRANSACTION``.
 
@@ -270,6 +316,9 @@ request path:
   a challenge triggered by an administrator.
 ``/validate/initialize``
   the anonymous bootstrap of a FIDO2/passkey challenge before login.
+``/validate/offlinerefill``
+  an offline client refilling its OTP values or renewing its refilltoken, see
+  :ref:`application_offline`.
 ``/validate/remember_device``
   an application asking whether a device is remembered, so that it may skip the
   second factor. This is not an authentication and writes no entry of its own
@@ -310,10 +359,11 @@ values, which the WebUI reads from ``GET /authenticationlog/endpoints`` and
 ``GET /authenticationlog/reasons``.
 
 A time range can be given in addition, and the result can be sorted by any
-column except the reasons, the conditional-access outcomes and the other info:
-the first two each hold a list per entry rather than a single value, and the
-other info is excluded because ordering by JSON content is neither meaningful
-nor portable.
+column except the user role, the IP chain, the reasons, the conditional-access
+outcomes and the other info: the reasons and the outcomes each hold a list per
+entry rather than a single value, and the IP chain and the other info are
+excluded because ordering by JSON content is neither meaningful nor portable.
+Any other sort column is not refused; the entries are then sorted by their ID.
 
 The *Conditional access* column filters on what conditional access did: the
 action type, the name of the policy that acted, and whether the outcome was a
@@ -322,7 +372,7 @@ conditional access acted on at all.
 
 .. _authentication_log_statistics:
 
-Summarising the log
+Summarizing the log
 -------------------
 
 :http:get:`/authenticationlog/statistics` answers "how did authentication go
@@ -372,12 +422,15 @@ positive number at all falls back to the default. Every filter the log listing
 accepts on an entry can be given as well, under the same plural name and with
 the same comma-separated lists and ``*`` wildcards, for example
 ``event_types=MFA_FAIL,PIN_FAIL`` or ``realms=realm1``. The plural is the only
-name recognised, so a query written in the singular - ``realm=realm1`` rather
+name recognized, so a query written in the singular - ``realm=realm1`` rather
 than ``realms=`` - is no filter at all and the summary then covers every
 attempt in the window. The filters apply to the entry that classifies each
 attempt. The ``ca_*`` filters are not offered: they match what conditional
 access did to a single request, which an attempt-level summary has no notion
-of.
+of. Neither are ``peer_ips``, ``source_ip_sources`` and
+``client_label_sources``, which describe how the client of an entry was derived
+rather than the attempt. Given anyway, these filters are ignored, and the
+summary covers every attempt the other filters match.
 
 Who sees what
 -------------

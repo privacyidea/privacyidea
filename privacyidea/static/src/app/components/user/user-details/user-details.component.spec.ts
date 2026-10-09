@@ -234,13 +234,22 @@ describe("UserDetailsComponent", () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("showUserAuditLog sets the audit filter to the current user", () => {
+  it("showUserAuditLog filters the audit log for exactly the current user and realm", () => {
     const auditServiceMock = TestBed.inject(AuditService) as unknown as MockAuditService;
     userServiceMock.detailsUser.set({ username: "Alice", realm: "realm1" });
 
     component.showUserAuditLog();
 
-    expect(auditServiceMock.activeFilter().value).toBe("user: Alice");
+    expect(auditServiceMock.activeFilter().value).toBe("user: =Alice realm: =realm1");
+  });
+
+  it("showUserAuditLog leaves the realm out when the user has none", () => {
+    const auditServiceMock = TestBed.inject(AuditService) as unknown as MockAuditService;
+    userServiceMock.detailsUser.set({ username: "Alice", realm: "" });
+
+    component.showUserAuditLog();
+
+    expect(auditServiceMock.activeFilter().value).toBe("user: =Alice");
   });
 
   it("showUserAuthenticationLog sets username and realm filter for the current user", () => {

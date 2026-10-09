@@ -4,7 +4,7 @@
 Audit
 =====
 
-The systems provides a sophisticated audit log, which can be viewed in the
+The system provides a sophisticated audit log, which can be viewed in the
 WebUI.
 
 .. figure:: auditlog.png
@@ -17,9 +17,9 @@ privacyIDEA comes with a default SQL audit module (see :ref:`code_audit`).
 Next to the audit log, privacyIDEA keeps an :ref:`authentication_log` which
 records the outcome of every authentication request.
 
-Starting with version 3.2 privacyIDEA also provides a :ref:`logger_audit` and
+privacyIDEA also provides a :ref:`logger_audit` and
 a :ref:`container_audit` which can be used to send privacyIDEA audit log messages
-to services like splunk or logstash.
+to services like Splunk or Logstash.
 
 
 .. _sql_audit:
@@ -33,8 +33,8 @@ Searching the audit log
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The audit log can be filtered in the WebUI and via the ``GET /audit/`` API by
-any audit column (``user``, ``realm``, ``serial``, ``action``, ...). Filter
-values are matched as follows:
+any audit column (``user``, ``realm``, ``serial``, ``action``, ...). The
+``GET /audit/`` API matches filter values as follows:
 
 * ``*`` is the wildcard and matches any sequence of characters. For example,
   ``action=*/token/init`` matches every action ending in ``/token/init`` and
@@ -42,7 +42,16 @@ values are matched as follows:
 * All other characters are matched literally. In particular ``%`` and ``_`` are
   *not* wildcards. A value that contains no ``*`` must match the column exactly.
 * A leading ``!`` negates the condition, e.g. ``authentication=!CHALLENGE``
-  returns the entries whose ``authentication`` is not ``CHALLENGE``.
+  returns the entries whose ``authentication`` is not ``CHALLENGE``. This does
+  not apply to ``success``: filter it with ``1`` (successful) or ``0``
+  (failed); a value with ``!``, e.g. ``!0``, selects the failed entries.
+
+The WebUI searches anywhere in the column: it wraps every filter value in ``*``
+before it sends it, so ``user: corn`` finds *cornelius*. Prefix a value with
+``=`` to match the whole column, e.g. ``serial: =OATH0001``. A negation has to
+be written this way too, e.g. ``authentication: =!CHALLENGE``; without the
+``=`` the WebUI searches for the text ``!CHALLENGE``. In the previous WebUI
+every value is searched anywhere in the column, and a negation is not possible.
 
 .. versionchanged:: 3.14 ``*`` is the only wildcard. Earlier versions also
    treated a literal ``%`` as a wildcard in the audit search; now ``%`` and
@@ -59,16 +68,16 @@ The ``sqlaudit`` module writes audit entries to an SQL database.
 For performance reasons the audit module does not remove old audit entries
 during the logging process.
 
-But you can set up a cron job to clean up old audit entries. Since version
-2.19 audit entries can be either cleaned up based on the number of entries or
+But you can set up a cron job to clean up old audit entries. Audit entries
+can be cleaned up either based on the number of entries or
 based on the age. A config file (``--config``) takes precedence over the age,
 and the age takes precedence over the number of entries.
 
 The Ubuntu packages ship such a job commented out; the Docker image rotates by
 the number of entries, see :ref:`cleanup_jobs`.
 
-.. versionadded:: 2.22 The ``--chunksize`` parameter allows cleaning up audit
-    entries in chunks to avoid exzessive memory usage.
+The ``--chunksize`` parameter allows cleaning up audit
+entries in chunks to avoid excessive memory usage.
 
 Cleaning based on the number of entries:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -81,10 +90,14 @@ the command line::
 
 If there are more than 20000 log entries, this will clean up all old log entries, leaving only 18000 log entries.
 
+If neither ``--config`` nor ``--age`` is given, the command cleans by the number of entries, with the defaults
+``--highwatermark 10000`` and ``--lowwatermark 5000``: ``pi-manage audit rotate`` without options deletes all but the
+newest 5000 entries as soon as there are more than 10000.
+
 Cleaning based on the age:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can specify the number of days, how old an audit entry may be at a max::
+You can specify the maximum age of an audit entry in days::
 
    pi-manage audit rotate --age 365
 
@@ -94,10 +107,9 @@ This will delete all audit entries that are older than one year.
 
 Cleaning based on the config file:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. versionadded:: 2.21
 
 Using a config file, you can define different retention times for the audit data.
-E.g. this way you can define, that audit entries about token listings can be deleted after
+E.g. this way you can define that audit entries about token listings can be deleted after
 one month,
 while the audit information about token creation will only be deleted after ten years.
 
@@ -105,26 +117,26 @@ The config file is in a *YAML* format and looks like this::
 
     # DELETE auth requests of nils after 10 days
     - rotate: 10
-      user: nils
+      user: ^nils$
       action: .*/validate/check.*
 
     # DELETE auth requests of friedrich after 7 days
     - rotate: 7
-      user: friedrich
+      user: ^friedrich$
       action: .*/validate/check.*
 
     # Delete nagios user test auth directly
     - rotate: 0
-      user: nagiosuser
+      user: ^nagiosuser$
       action: POST /validate/check.*
 
     # Delete token listing after one month
     - rotate: 30
-      action: ^GET /token
+      action: ^GET /token/
 
-    # Delete audit logs for token creating after 10 years
+    # Delete audit logs for token creation after 10 years
     - rotate: 3650
-      action: POST /token/init
+      action: ^POST /token/init$
 
     # Delete everything else after 6 months
     - rotate: 180
@@ -141,7 +153,8 @@ It is a good idea to have a *catch-all* rule at the end. A rule needs at least o
 .. note:: The keys "user", "action"... correspond to the column names of the audit table.
    You can use any column name here like "date", "action", "action_detail", "success", "serial", "administrator",
    "user", "realm"... for a complete list, see the model definition here: :class:`privacyidea.models.Audit`.
-   You may use Python regular expressions for matching.
+   The values are Python regular expressions that are searched anywhere in the column value: ``user: nils``
+   would also match *nilsson* and *anils*. Use ``^`` and ``$`` to match the whole value, as in the example above.
 
 You can then add a call like::
 
@@ -158,21 +171,24 @@ entries first.
 Access rights
 ~~~~~~~~~~~~~
 
-You may also want to run the cron job with reduced rights. I.e. a user who
+You may also want to run the cron job with reduced rights, e.g. as a user who
 has no read access to the original pi.cfg file, since this job does not need
-read access to the SECRET or PEPPER in the pi.cfg file.
+read access to the ``SECRET_KEY`` or ``PI_PEPPER`` in the pi.cfg file.
 
 So you can simply specify a config file with only the content::
 
    PI_AUDIT_SQL_URI = <your database uri>
 
-Then you can call ``pi-manage`` like this::
+Then you can call ``pi-manage`` in the cron job like this::
 
-   PRIVACYIDEA_CONFIGFILE=/home/cornelius/src/privacyidea/audit.cfg \
-   pi-manage audit rotate
+   PRIVACYIDEA_CONFIGFILE=/etc/privacyidea/audit.cfg \
+   pi-manage audit rotate --config /etc/privacyidea/audit.yaml
 
 This will read the configuration (only the database URI) from the config file
-``audit.cfg``.
+``audit.cfg`` and the rotation rules from ``audit.yaml``, so the user of the
+cron job needs read access to both. ``--age`` or the watermarks can be used the
+same way. Always give one of these options: without any of them, the command
+keeps only the newest 5000 entries (see above).
 
 .. _audit_table_size:
 
@@ -193,7 +209,7 @@ its entries are shortened to what it really accepts instead of being rejected.
 Reading the database can only shorten a value further, though, never lengthen
 it: a wider column is not used on its own. So if you increase a column length
 by the usual database means
-(i.e. :code:`ALTER TABLE pidea_audit MODIFY user varchar(1000);` for MariaDB),
+(e.g. :code:`ALTER TABLE pidea_audit MODIFY user varchar(1000);` for MariaDB),
 tell privacyIDEA about it in your :ref:`config file <cfgfile>`::
 
     PI_AUDIT_SQL_COLUMN_LENGTH = {"user": 1000,
@@ -215,7 +231,7 @@ Logger Audit
 The *Logger Audit* module can be used to write audit log information to
 the Python logging facility and thus write log messages to a plain file,
 a syslog daemon, an email address or any destination that is supported
-by the Python logging mechanism. The log message passed to the python logging
+by the Python logging mechanism. The log message passed to the Python logging
 facility is a JSON-encoded string of the fields of the audit entry.
 
 You can find more information about this in :ref:`advanced_logging`.
@@ -232,8 +248,11 @@ You can optionally set a custom logging name for the logger audit with::
    PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
 
 It defaults to the module name ``privacyidea.lib.auditmodules.loggeraudit``.
-In contrast to the :ref:`sql_audit` you *need* a ``PI_LOGCONFIG`` otherwise
-the *Logger Audit* will not work correctly.
+Use the same name as ``qualname`` of the audit logger in the logging
+configuration below. In contrast to the :ref:`sql_audit` you *need* a logging
+configuration file that defines the audit logger (``PI_LOGCONFIG``, default
+``/etc/privacyidea/logging.cfg``), otherwise the *Logger Audit* will not work
+correctly.
 
 In the ``logging.cfg`` you then need to define the audit logger::
 
@@ -241,6 +260,7 @@ In the ``logging.cfg`` you then need to define the audit logger::
    handlers=audit
    qualname=privacyidea.lib.auditmodules.loggeraudit
    level=INFO
+   propagate=0
 
    [handler_audit]
    class=logging.handlers.RotatingFileHandler
@@ -250,8 +270,13 @@ In the ``logging.cfg`` you then need to define the audit logger::
    level=INFO
    args=('/var/log/privacyidea/audit.log',)
 
-Note, that the ``level`` always needs to be *INFO*. In this example, the
+Note that the ``level`` always needs to be *INFO*. In this example, the
 audit log will be written to the file ``/var/log/privacyidea/audit.log``.
+
+``propagate=0`` keeps the audit entries out of the other log files. Without
+it, every entry is also passed to the handlers of the parent loggers (with the
+default name, those of the ``privacyidea`` logger) and ends up in the
+privacyIDEA log file as well.
 
 Finally you need to extend the following settings with the defined audit logger
 and audit handler::
@@ -262,16 +287,16 @@ and audit handler::
    [loggers]
    keys=root,privacyidea,audit
 
-.. note:: The *Logger Audit* only allows to **write** audit information. It
-   can not be used to **read** data. So if you are only using the
-   *Audit Logger*, you will not be able to *view* audit information in the
-   privacyIDEA Web UI!
+.. note:: The *Logger Audit* can only **write** audit information. It
+   cannot be used to **read** data. So if you are only using the
+   *Logger Audit*, you will not be able to *view* audit information in the
+   privacyIDEA WebUI!
    To still be able to *read* audit information, take a look at the
    :ref:`container_audit`.
 
 .. note:: The policies :ref:`policy_auth_max_success`
    and :ref:`policy_auth_max_fail`
-   depend on reading the audit log. If you use a non readable audit log
+   depend on reading the audit log. If you use a non-readable audit log
    like the *Logger Audit* these policies will not work.
 
 .. _container_audit:
@@ -279,7 +304,7 @@ and audit handler::
 Container Audit
 ---------------
 
-The *Container Audit* module is a meta audit module, that can be used to
+The *Container Audit* module is a meta audit module that can be used to
 write audit information to more than one audit module.
 
 It is configured in the ``pi.cfg`` like this::
@@ -293,7 +318,7 @@ to which the audit information should be written. The listed
 audit modules need to be configured as mentioned in the corresponding audit
 module description.
 
-The key ``PI_AUDIT_CONTAINER_READ`` contains one single audit module, that
+The key ``PI_AUDIT_CONTAINER_READ`` contains one single audit module that
 is capable of reading information. In this case the :ref:`sql_audit` module can be
 used. The :ref:`logger_audit` module can **not** be used for reading!
 

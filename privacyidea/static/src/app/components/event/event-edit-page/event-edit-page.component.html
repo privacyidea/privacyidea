@@ -97,23 +97,22 @@
             >
           }
         </mat-form-field>
-        @if (isNewEvent()) {
-          <mat-form-field class="input-width-l">
-            <mat-label i18n="@@event.handlerModule">Handler Module</mat-label>
-            <mat-select
-              (selectionChange)="setNewHandlerModule($event.value)"
-              [appErrorState]="showHandlerModuleError()"
-              [value]="eventService.selectedHandlerModule()"
-              required>
-              @for (module of eventService.eventHandlerModules(); track module) {
-                <mat-option [value]="module">{{ module }}</mat-option>
-              }
-            </mat-select>
-            <mat-error i18n="@@event.selectingHandler"
-              >Selecting a handler module is <strong>required</strong>.</mat-error
-            >
-          </mat-form-field>
-        }
+        <mat-form-field class="input-width-l">
+          <mat-label i18n="@@event.handlerModule">Handler Module</mat-label>
+          <mat-select
+            (selectionChange)="setNewHandlerModule($event.value)"
+            [appErrorState]="showHandlerModuleError()"
+            [value]="eventService.selectedHandlerModule()"
+            [disabled]="!isNewEvent()"
+            required>
+            @for (module of eventService.eventHandlerModules(); track module) {
+              <mat-option [value]="module">{{ module }}</mat-option>
+            }
+          </mat-select>
+          <mat-error i18n="@@event.selectingHandler"
+            >Selecting a handler module is <strong>required</strong>.</mat-error
+          >
+        </mat-form-field>
       </div>
 
       <div class="two-col-grid margin-bottom-32">

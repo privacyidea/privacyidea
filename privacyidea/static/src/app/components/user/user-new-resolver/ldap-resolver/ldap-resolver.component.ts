@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, effect, inject, input, signal } from "@angular/core";
-import { form, FormField, required } from "@angular/forms/signals";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -146,6 +146,7 @@ export class LdapResolverComponent {
     required(f.LOGINNAMEATTRIBUTE);
     required(f.LDAPSEARCHFILTER);
     required(f.USERINFO);
+    disabled(f.TLS_CA_FILE, () => this.tlsCaFileDisabled());
   });
 
   constructor() {
@@ -203,11 +204,12 @@ export class LdapResolverComponent {
   // Computed TLS state
   isLdapsUri = computed(() => (this.model().LDAPURI || "").startsWith("ldaps:"));
   isLdapUri = computed(() => (this.model().LDAPURI || "").startsWith("ldap:"));
+  // An ldaps URI uses TLS without STARTTLS; the TLS version, the verification and the CA file apply to both.
+  tlsInUse = computed(() => this.isLdapsUri() || this.model().START_TLS);
   startTlsDisabled = computed(() => this.isLdapsUri());
-  tlsVersionDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
-  tlsVerifyDisabled = computed(() => !this.model().START_TLS || this.isLdapsUri());
-  tlsCaFileDisabled = computed(() => !this.model().START_TLS || !this.model().TLS_VERIFY || this.isLdapsUri());
-  tlsCaFileRequired = computed(() => this.model().START_TLS && this.model().TLS_VERIFY && !this.isLdapsUri());
+  tlsVersionDisabled = computed(() => !this.tlsInUse());
+  tlsVerifyDisabled = computed(() => !this.tlsInUse());
+  tlsCaFileDisabled = computed(() => !this.tlsInUse() || !this.model().TLS_VERIFY);
 
   get showTls(): boolean {
     return this.isLdapUri() || this.isLdapsUri();

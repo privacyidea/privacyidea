@@ -77,10 +77,11 @@ class PasskeyTokenClass(TokenClass):
     for registration and authentication. It is less configurable, always requires resident key and uses excluded
     credentials by default.
     It shares the following policy configuration with the webauthn token class:
-        - RP_ID
-        - RP_NAME
-        - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
-        - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
+
+    - RP_ID
+    - RP_NAME
+    - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
+    - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
     """
     mode = [AuthenticationMode.CHALLENGE]
     client_mode = ClientMode.WEBAUTHN
@@ -505,13 +506,16 @@ class PasskeyTokenClass(TokenClass):
         :param options: Contains the data from the client, along with policy configurations.
                         For compatibility with the WebAuthnTokenClass, some keys can have multiple names.
                         The following keys are required:
+
                         - "challenge"
                         - "authenticatorData" or "authenticatordata"
                         - "clientDataJSON" or "clientdata"
                         - "signature" or "signaturedata"
                         - "userHandle" or "userhandle"
                         - "HTTP_ORIGIN"
+
                         The following keys are optional:
+
                         - "webauthn_user_verification_requirement" (FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
                           defaults to preferred
                         - PasskeyAction.AllowedAuthenticatorDeviceTypes, a list of allowed values for

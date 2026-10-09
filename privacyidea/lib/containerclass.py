@@ -694,7 +694,7 @@ class TokenContainerClass:
 
         :param server_url: URL of the server reachable for the client.
         :param scope: The URL the client contacts to finalize the registration
-                      e.g. "https://pi.net/container/register/finalize".
+                      e.g. ``https://privacyidea.example.com/container/register/finalize``.
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters

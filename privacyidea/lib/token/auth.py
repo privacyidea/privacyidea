@@ -129,21 +129,44 @@ def check_serial_pass(serial: str, passw: str, options: dict | None = None) -> t
     return res, reply_dict
 
 
-@log_with(log)
+@log_with(log, hide_args=[1])
 def check_otp(serial: str, otpval: str) -> tuple[bool, dict]:
     """
-    This function checks the OTP for a given serial number
+    This function checks the OTP for a given serial number, without a PIN. The token has to be usable as for any
+    other authentication (not revoked, active, within its validity period, below its fail counter), a wrong value
+    increases the fail counter and a correct one is counted as a successful authentication.
 
     :param serial:
     :param otpval:
     :return: tuple of result and dictionary containing a message if the
-        verification failed
+        verification failed, and the authentication event of an unusable token
     :rtype: tuple(bool, dict)
     """
     reply_dict = {}
     token_object = get_one_token(serial=serial)
+    if token_object.is_revoked():
+        raise TokenAdminError(_("This action is not possible, since the token is locked"), id=Error.TOKEN_LOCKED)
+    increase_auth_counters = not is_true(get_from_config(key="no_auth_counter"))
+    token_object.check_reset_failcount()
+    messages = []
+    if not token_object.check_all(messages):
+        reason = token_object.auth_details.get(AUTH_EVENT_REASON_KEY)
+        reply_dict["message"] = ", ".join(messages)
+        reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+        if reason:
+            reply_dict[AUTH_EVENT_REASON_KEY] = [reason]
+            reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons={serial: reason})
+        return False, reply_dict
     res = token_object.check_otp(otpval) >= 0
-    if not res:
+    if res:
+        if increase_auth_counters:
+            token_object.inc_count_auth_success()
+        token_object.reset()
+        token_object.post_success()
+    else:
+        token_object.inc_failcount()
+        if increase_auth_counters:
+            token_object.inc_count_auth()
         reply_dict["message"] = _("OTP verification failed.")
     return res, reply_dict
 

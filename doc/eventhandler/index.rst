@@ -5,37 +5,37 @@
 Event Handler
 =============
 
-Added in version 2.12.
-
 What is the difference between :ref:`policies` and event handlers?
 
-Policies are used to define the behaviour of the system. With policies you
+Policies are used to define the behavior of the system. With policies you
 can *change* the way the system reacts.
 
 With event handlers you do not change the way the system reacts. But on
-certain events you can *trigger a new action* in addition to the behaviour
+certain events you can *trigger a new action* in addition to the behavior
 defined in the policies.
 
 These additional actions are also logged to the audit log. These actions are
-marked as *EVENT* in the audit log and you can see, which event triggered
+marked as *EVENT* in the audit log and you can see which event triggered
 these actions. Thus a single API call can cause several audit log entries:
 One for the API call and more for the triggered actions.
 
 Events
 ------
 
-Each **API call** is an **event** and you can bind arbitrary actions to each
-event as you like. You can bind several actions to one event. These actions are executed
-in the order of the priority one after another.
+Most API calls of the token, container, user, authentication (``/auth``) and validation endpoints are **events**,
+e.g. ``token_init`` or ``validate_check``; the calls of the ``/ttype/``, token group, service ID, subscription and
+``/clients`` endpoints are events as well. The configuration endpoints (policies, realms, resolvers, system settings, SMTP and SMS
+configuration, event definitions, audit, machines, periodic tasks, CA connectors, ...) do not trigger events.
+You can bind arbitrary actions to each event as you like. You can bind several actions to one event. These actions
+are executed one after another in ascending order of their *Ordering* value (lowest first). Pre and post definitions
+run in separate passes.
 
-.. Note:: An action, that is triggered by an event can not trigger a new action. Only **events** (API calls)
+.. Note:: An action that is triggered by an event cannot trigger a new action. Only **events** (API calls)
    can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
    of the token is an *action*, not an *event*. This means this creation of the token can *not* trigger a new
    action. For more complex actions, you might need to look into the :ref:`scripthandler`.
 
 Internally events are marked by a decorator "event" with an *event identifier*.
-At the moment not all events might be tagged. Please drop us a note to tag
-all further API calls.
 
 .. figure:: event-list.png
    :width: 500
@@ -49,15 +49,13 @@ Pre and Post Handling
 
 .. index:: Pre Handling, Post Handling
 
-Added in Version 2.23.
-
 With most event handlers you can decide if you want the action to be taken before the actual event or
 after the actual event. I.e. if all conditions would trigger certain actions the action is either triggered
 before (*pre*) the API request is processed or after (*post*) the request is processed.
 
-Up to version 2.22 all actions where triggered after the request.
-In this case additional information from the response is available. E.g. if a user successfully authenticated the
-event will know the serial number of the token, which the user used to authenticate.
+If the action is triggered after the request (*post*), additional information from the response is available.
+E.g. if a user successfully authenticated the event will know the serial number of the token, which the user used to
+authenticate.
 
 If the action is triggered before the API request is processed, the event can not know if the authentication request
 will be successful or which serial number a token would have.
@@ -66,13 +64,14 @@ However, triggering the action *before* the API request is processed can have so
 Example for Pre Handling
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The administrator can define an event definition that would trigger on the event ``validate/check`` in case the
-the authenticating user does not have any token assigned.
+The administrator can define an event definition that would trigger on the event ``validate_check`` in case the
+authenticating user does not have any token assigned.
 
-The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with
-*dynamic_email* for this very user.
+The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with the
+options *user* and *dynamic_email* for this very user (*dynamic_email* only takes effect together with *user*, see
+:ref:`event_token_enroll`).
 
-When the API request ``validate/check`` is now processed, the user actually now has an email token and can authenticate
+When the API request ``/validate/check`` is now processed, the user actually now has an email token and can authenticate
 via challenge response with this very email token without an administrator ever enrolling or assigning a token for this
 user.
 
@@ -92,7 +91,35 @@ module can require additional options.
 .. figure:: event-details.png
    :width: 500
 
-   *The event* sendmail *requires the option* emailconfig.
+   *The action* sendmail *requires the option* emailconfig.
+
+.. _event_abort_on_error:
+
+Failing handlers
+----------------
+
+.. index:: Abort on error
+
+A handler fails when it raises an error or reports that it could not do what it is configured for, e.g. a
+notification without a recipient, a script that exits with an error, a webhook that is answered with an HTTP error or
+a response mangler with a JSON pointer it does not support. A handler whose conditions can not be evaluated, e.g.
+because the user store can not be reached, fails the same way. The audit entry of the handler records
+``success=False`` and, in the ``info`` column, the reason or the class of the error.
+
+By default a failing handler does not affect the request: the remaining handlers run and the request continues. The
+option *Abort the request if the handler fails* (API parameter ``abort_on_error``) of an event definition makes a
+failure of its handler fail the request instead. Use it for a handler whose result the request depends on:
+
+* a response mangler that removes data from the response - if it fails, the data would be sent to the client,
+* a request mangler that overwrites request parameters - if it fails, the endpoint would use the values the client
+  sent,
+* a federation handler, which replaces the response with the one of the remote privacyIDEA server.
+
+New request mangler and response mangler definitions start with the option enabled. A Script handler that is
+configured to raise an error fails the request whenever the script fails, whatever the option says.
+
+A post-event handler runs after the request has done its work, so failing the request there reports an error for an
+operation that already happened, e.g. a token that was enrolled.
 
 .. _handlerconditions:
 
@@ -100,8 +127,6 @@ Conditions
 ----------
 
 .. index:: Event Handler, conditions
-
-Added in version 2.14
 
 An event handler module may also contain conditions. Only if all conditions
 are fulfilled, the action is triggered. Conditions are defined in the class
@@ -115,10 +140,14 @@ the same conditions.
    I.e. if a request does not contain a *serial* or if the serial can not be determined, this condition will be
    evaluated as fulfilled.
 
-   Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend to
-   test your definitions thoroughly to assure your expected outcome.
+   Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend
+   testing your definitions thoroughly to assure your expected outcome.
 
-Invalid conditions are evaluated to False. Errors are logged, but not raised to not break the request.
+If checking the conditions or running the action fails, the action is not performed, the error is logged and an audit
+entry with success *False* is written, and the request continues. If *Abort the request if the handler fails*
+(``abort_on_error``) is set for the definition, the request fails instead. Definitions of the :ref:`federationhandler`
+get this option enabled when it is not given, and the :ref:`scripthandler` with *raise_error* always fails the
+request. A condition the handler does not know is ignored, i.e. it counts as fulfilled.
 
 
 .. _condition_comparators:
@@ -129,36 +158,43 @@ Comparators
 In some conditions you need to use comparators to define how the condition should be checked. Generally the following
 comparators are available:
 
-    * ``==`` evaluates to true if both values are equal. Allows comparison of strings, integers, and dates in isoformat.
-      ``!=`` evaluates to true if this is not the case.
-    * ``>`` evaluates to true if the left value is greater than the right value. Allows comparison of integers and
-      dates in isoformat.
-    * ``<`` evaluates to true if the left value is less than the right value. Allows comparison of integers and dates
-      in isoformat.
-    * ``matches`` evaluates to true if the left value matches the right value as a regular expression. Allows
-      comparison of strings.
-      ``!matches`` evaluates to true if this is not the case.
-    * ``in`` evaluates to true if the left value is contained in the comma-separated list on the right.
-      Only allows strings.
-      ``!in`` evaluates to true if this is not the case.
-    * ``contains`` evaluates to true if the left value is a list containing the right value. Only allows strings.
-      ``!contains`` evaluates to true if this is not the case.
-    * ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
-      ``!string_contains`` evaluates to true if this is not the case.
-    * ``date_before`` evaluates to true if the left value is a date and time that occurs before the right value.
-      Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
-    * ``date_after`` evaluates to true if the left value is a date and time that occurs after the right value.
-      Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
-    * ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
-      interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
-      The right-hand value must be a duration expressed as an integer
-      immediately followed by a time unit:
-        * ``y`` for years
-        * ``d`` for days
-        * ``h`` for hours
-        * ``m`` for minutes
-        * ``s`` for seconds
-      For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+* ``==`` evaluates to true if both values are equal. Allows comparison of strings, integers, and dates in isoformat.
+  ``!=`` evaluates to true if this is not the case.
+* ``>`` evaluates to true if the left value is greater than the right value. Allows comparison of integers and
+  dates in isoformat.
+* ``<`` evaluates to true if the left value is less than the right value. Allows comparison of integers and dates
+  in isoformat.
+* ``matches`` evaluates to true if the whole left value matches the right value as a regular expression (use
+  ``.*World`` to find *World* anywhere). Allows comparison of strings.
+  ``!matches`` evaluates to true if this is not the case.
+* ``in`` evaluates to true if the left value is contained in the comma-separated list on the right.
+  Only allows strings.
+  ``!in`` evaluates to true if this is not the case.
+* ``contains`` evaluates to true if the left value is a list containing the right value. Only allows strings.
+  ``!contains`` evaluates to true if this is not the case.
+* ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring,
+  ignoring upper and lower case.
+  ``!string_contains`` evaluates to true if this is not the case.
+* ``date_before`` evaluates to true if the left value is a date and time that occurs before the right value.
+  Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+* ``date_after`` evaluates to true if the left value is a date and time that occurs after the right value.
+  Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+* ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
+  interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
+  The right-hand value must be a duration expressed as an integer
+  immediately followed by a time unit:
+
+  * ``y`` for years
+  * ``d`` for days
+  * ``h`` for hours
+  * ``m`` for minutes
+  * ``s`` for seconds
+
+  For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+
+When two dates are compared, both must either contain a time zone offset or not. ``date_before`` and ``date_after``
+evaluate to false if only one of them has an offset; ``<`` and ``>`` make the event handler fail. ``{now}`` always
+contains the offset of the server.
 
 Usually, comparators should be wrapped in single quotes, e.g. ``'=='1000`` or ``'>'1000``. Due to backwards
 compatibility, the basic comparators (``==``, ``!=``, ``>``, ``<``) can also be used without quotes.
@@ -185,7 +221,7 @@ is bigger than 100, less than 99 or exactly 100. You can use all :ref:`condition
 **count_auth_fail**
 
 This can be ``'>'100``, ``'<'99``, or ``'=='100``, to trigger the action, if the difference between
-the tokeninfo field 'count_auth' and 'count_auth_success is bigger than 100,
+the tokeninfo field 'count_auth' and 'count_auth_success' is bigger than 100,
 less than 99 or exactly 100. You can use all :ref:`condition_comparators` supporting integers.
 
 **count_auth_success**
@@ -208,7 +244,7 @@ all :ref:`condition_comparators` that support integers.
 This condition checks a regular expression against the ``detail`` section in
 the API response. The field ``detail->error->message`` is evaluated.
 
-Error messages can be manyfold. In case of authentication you could get error
+Error messages vary widely. In case of authentication you could get error
 messages like:
 
 "The user can not be found in any resolver in this realm!"
@@ -217,15 +253,16 @@ With ``token/init`` you could get:
 
 "missing Authorization header"
 
-.. note:: The field ``detail->error->message is only available in case of an
+.. note:: The field ``detail->error->message`` is only available in case of an
    internal error, i.e. if the response status is ``False``.
 
 **detail_message**
 
 This condition checks a regular expression against the ``detail`` section in
-the API response. The field ``detail->message`` is evaluated.
+the API response. The field ``detail->message`` is evaluated. The condition only
+applies if the regular expression matches the ``detail->message`` in the response.
 
-Those messages can be manyfold like::
+Those messages vary widely, for example::
 
     "wrong otp pin"
     "wrong otp value"
@@ -234,21 +271,17 @@ Those messages can be manyfold like::
 .. note:: The field ``detail->message`` is available in case of status ``True``,
    like an authentication request that was handled successfully but failed.
 
-**detail_message**
-
-Here you can enter a regular expression. The condition only applies if the regular
-expression matches the ``detail->message`` in the response.
-
 **last_auth**
 
 This condition checks if the last authentication is older than the specified
-time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
-(years). Specifying ``180d`` would mean, that the action is triggered if the
-last successful authentication with the token was performed more than 180
-days ago.
+time delta. The timedelta is specified with "s" (seconds), "m" (minutes), "h"
+(hours), "d" (days) or "y" (years). Specifying ``180d`` would mean that the
+action is triggered if the last successful authentication with the token was
+performed more than 180 days ago. Tokens that were never used for a successful
+authentication do not match.
 
 This can be used to send notifications to users or administrators to inform
-them, that there is a token, that might be orphaned.
+them that there is a token that might be orphaned.
 
 **logged_in_user**
 
@@ -262,7 +295,7 @@ notified.
 
 **otp_counter**
 
-The action is triggered, if the otp counter of a token has reached the given
+The action is triggered if the OTP counter of a token has reached the given
 value. You can use all :ref:`condition_comparators` that support integers, e.g. ``'<'100``.
 
 The administrator can use this condition to e.g. automatically enroll a new
@@ -271,16 +304,16 @@ paper token have been spent.
 
 **realm**
 
-The condition *realm* matches the user realm. The action will only trigger,
+The condition *realm* matches the user realm. The action will only trigger
 if the user in this event is located in the given realm.
 
 This way the administrator can bind certain actions to specific realms. E.g.
-some actions will only be triggered, if the event happens for normal users,
+some actions will only be triggered if the event happens for normal users,
 but not for users in admin- or helpdesk realms.
 
 **resolver**
 
-The resolver of the user, for which this event should apply.
+The resolver of the user for which this event should apply.
 
 **result_status**
 
@@ -295,24 +328,25 @@ This can be the trigger to notify either the token owner or the administrator.
 
 **result_authentication**
 
-This checks the entry `result->authentication` in the response.
+This checks the entry ``result->authentication`` in the response.
 Possible values are "ACCEPT", "REJECT", "DECLINED" and "CHALLENGE".
-It is an enhancement to `result_value`.
-If `result_value` is *true*, the `result_authentication` will be "ACCEPT".
-If `result_value` is *false*, the `result_authentication` can be "CHALLENGE", "REJECT" or "DELINCED".
+It is an enhancement to ``result_value``.
+If ``result_value`` is *true*, the ``result_authentication`` will be "ACCEPT".
+If ``result_value`` is *false*, the ``result_authentication`` can be "CHALLENGE", "REJECT" or "DECLINED".
 
 **rollout_state**
 
-This is the rollout_state of a token. A token can be rolled out in several steps
+This is the ``rollout_state`` of a token. A token can be rolled out in several steps
 like the 2step HOTP/TOTP token. In this case the attribute "rollout_state" of the
 token contains certain values like ``clientwait`` or ``enrolled``.
-This way actions can be triggered, depending on the step during an enrollment
+This way actions can be triggered depending on the step during an enrollment
 process.
 
 **serial**
 
-The action will only be triggered, if the serial number of the token in the
-event does match the regular expression.
+The action will only be triggered if the serial number of the token in the
+event starts with a match of the regular expression, e.g. ``OATH`` matches
+*OATH0001*. Use ``.*`` in front to match anywhere and ``$`` to match the end.
 
 This is a good idea to combine with other conditions. E.g. only tokens with a
 certain kind of serial number like Google Authenticator will be deleted
@@ -320,17 +354,17 @@ automatically.
 
 **token_has_owner**
 
-The action is only triggered, if the token is or is not assigned to a user.
+The action is only triggered if the token is or is not assigned to a user.
 
 **token_is_orphaned**
 
-The action is only triggered, if the user, to whom the token is assigned,
+The action is only triggered if the user to whom the token is assigned
 does not exist anymore.
 
 **token_locked**
 
-The action is only triggered, if the token in the event is locked, i.e. the
-maximum failcounter is reached. In such a case the user can not use the token
+The action is only triggered if the token in the event is locked, i.e. the
+maximum failcounter is reached. In such a case the user cannot use the token
 to authenticate anymore. So an action to notify the user or enroll a new
 token can be triggered.
 
@@ -339,8 +373,8 @@ token can be triggered.
 Checks if the token is in the current validity period or not. Can be set to
 *True* or *False*.
 
-.. note:: ``token_validity_period==False`` will trigger an action if either the
-   validity period is either *over* or has not *started*, yet.
+.. note:: ``token_validity_period==False`` will trigger an action if the
+   validity period is either *over* or has not *started* yet.
 
 **tokeninfo**
 
@@ -360,7 +394,7 @@ your values. Valid comparisons are::
 
 "myValue" and "myTokenInfoField" being any possible tokeninfo fields.
 
-Starting with version 2.20 you can also compare dates in the isoformat like
+You can also compare dates in the isoformat like
 that::
 
     myValue '>' 2017-10-12T10:00+0200
@@ -373,21 +407,22 @@ In addition you can also use the tag ``{now}`` to compare to the current time
     myValue '>' {now}+10d
     myValue '<' {now}-5h
 
-Which would match if the tokeninfo *myValue* is a date, which is later than
-10 days from now or it the tokeninfo *myValue* is a date, which is 5 more
+Which would match if the tokeninfo *myValue* is a date which is later than
+10 days from now or if the tokeninfo *myValue* is a date more
 than 5 hours in the past.
 
 **tokenrealm**
 
 In contrast to the *realm* this is the realm of the token - the *tokenrealm*.
-The action is only triggered, if the token within the event has the given
+The action is only triggered if the token within the event has the given
 tokenrealm or no tokenrealm at all. This can be used in workflows, when e.g. hardware tokens which
 are not assigned to a user are pushed into a kind of storage realm.
 
 **tokenresolver**
 
-The resolver of the token, for which this event should apply. The action is also triggered if the token (the token
-owner) is in no resolver at all.
+The action is only triggered if one of the realms of the token contains one of the given resolvers. The resolver of
+the token owner is not checked; use the condition *resolver* for the resolver of the user. The action is also
+triggered if the token is in no realm.
 
 **tokentype**
 
@@ -412,14 +447,17 @@ where ``<fieldname>`` is the name of any user info field and ``<fieldvalue>`` is
 You can use the tag ``{now}`` for time-based comparisons. It is also possible to add offsets to ``{now}``
 in seconds (``s``), minutes (``m``), hours (``h``) or days (``d``)::
 
-    last_login '<' {now} - 7d
-    created '>' {now} - 1h
+    last_login '<' {now}-7d
+    created '>' {now}-1h
+
+The plus or minus must follow ``{now}`` without a blank. With blanks the offset is not applied and the value is
+compared as a string.
 
 This can be useful to e.g. trigger actions for users who have not logged in for a certain period of time.
 
 **user_token_number**
 
-The action is only triggered, if the user in the event has the given number
+The action is only triggered if the user in the event has the given number
 of tokens assigned.
 
 This can be used to e.g. automatically enroll a token for the user if the
@@ -430,7 +468,7 @@ You can use all :ref:`condition_comparators` that support integers, e.g. ``'=='0
 
 **user_container_number**
 
-The action is only triggered, if the number of containers assigned to the user in the event matches the given
+The action is only triggered if the number of containers assigned to the user in the event matches the given
 condition.
 
 You can use all :ref:`condition_comparators` that support integers, e.g. ``'=='0``.
@@ -453,9 +491,12 @@ value. You can use all :ref:`condition_comparators` that support integers. Valid
 The *challenge_session* condition can compare the value of the session attribute of
 a challenge against a regular expression. Usual values of the session are:
 
-*enrollment* during a multi challenge enrollment process and
+*enrollment* during a multi challenge enrollment process,
 
-*challenge_declined* if the challenge of a PUSH token was declined by the user.
+*challenge_declined* if the challenge of a PUSH token was declined by the user and
+
+*challenge_cancelled* if the user canceled a PUSH challenge in the app (decline reason *cancelled*). A definition
+that matches ``challenge_declined`` does not fire for it.
 
 This way, the administrator can check for declined PUSH authentications and take
 according actions to implement PUSH fatigue mitigations like
@@ -465,11 +506,16 @@ disabling the token or increasing a counter in the tokeninfo (see :ref:`tokenhan
 **challenge_expired**
 
 This is a boolean check if the challenge has expired. Each challenge has an expiration
-date. If this exceeded this condition evaluates to *True*.
+date. If it is exceeded, this condition evaluates to *True*.
+
+Both challenge conditions need exactly one challenge of the token (or container) of the event, for the
+``transaction_id`` of the request if it has one. If there is no such challenge - e.g. after a successful answer,
+which removes the challenge, or in the PUSH ``push_wait`` mode - or more than one, the condition is not fulfilled. To
+act on a declined PUSH in ``push_wait`` mode use the condition *result_authentication* ``DECLINED``.
 
 **token_is_in_container**
 
-The action is only triggered, if the token is or is not in a container.
+The action is only triggered if the token is or is not in a container.
 
 **container_state**
 
@@ -490,7 +536,7 @@ The action is only triggered if the container is of the given type.
 
 **container_has_token**
 
-The action is only triggered if the container has or has not at least one token.
+The action is only triggered if the container has or does not have at least one token.
 
 **container_info**
 
@@ -508,7 +554,7 @@ Valid comparisons are: ::
     myInfoField 'date_after' 2017-10-12 10:00+02:00
     myInfoField 'date_within_last' 7d
 
-"myValue" and "myTokenInfoField" being any possible tokeninfo fields.
+"myValue" and "myInfoField" being any possible container info fields.
 
 **container_realm**
 
@@ -522,19 +568,21 @@ The action is only triggered if the owner of the container is in the given resol
 all. If multiple resolvers are selected, the condition is fulfilled if at least one owner is in one resolver. The
 condition is not checked if the container has no owner, hence the action would be triggered.
 
-**container_last_auth**
+**container_last_authentication**
 
-The action is only triggered if the last authentication of the container is older than the specified time delta.
+The action is only triggered if the container authenticated within the specified time span, e.g. ``7d`` = the last
+authentication of the container lies within the last 7 days. A container that never authenticated does not match.
 The time value has to be an integer followed by a time unit.
-Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds)
+Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds).
 Only one unit is allowed.
 Examples: ``'8h', '7d', '1y'``
 
-**container_last_sync**
+**container_last_synchronization**
 
-The action is only triggered if the last synchronization of the container is older than the specified time delta.
+The action is only triggered if the container synchronized within the specified time span, e.g. ``7d`` = the last
+synchronization of the container lies within the last 7 days. A container that never synchronized does not match.
 The time value has to be an integer followed by a time unit.
-Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds)
+Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds).
 Only one unit is allowed.
 Examples: ``'8h', '7d', '1y'``
 
@@ -543,12 +591,12 @@ Managing Events
 ---------------
 
 Using the command ``pi-manage config event`` you can list, delete, enable and disable events.
-You can also export the complete event definitions to a file or import the event definitions from a file again.
-During import you can specify if you want to remove all existing events or if you want to add the events from the file
-to the existing events in the database.
+You can also export the complete event definitions to a file with ``pi-manage config export -t event`` and import
+them from a file again with ``pi-manage config import -t event``, see :ref:`pimanage_config_export`.
+The import adds the events from the file to the existing events in the database.
 
-.. note:: Events are identified by an *id*! Due to database restrictions the id is ignored during import.
-   So importing an event with the same name will create a second event with the same name but another id.
+.. note:: Events are identified by an *id*! During import, an existing event with the same id is overwritten.
+   Importing an event with the same name but another id creates a second event with the same name.
 
 
 Available Handler Modules

@@ -1148,6 +1148,18 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL], user=self.user,
                                         serials={self.serial}, endpoint=self.endpoint_path)
 
+    def test_serial_otp_only_disabled_token(self):
+        # otponly checks the token like every other path: a disabled token is not usable
+        get_one_token(serial=self.serial).enable(False)
+        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"})
+        self.assertFalse(body["result"]["value"], body)
+
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        serials={self.serial}, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.TOKEN_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED})
+
     def test_serial_pass_success(self):
         # serial + pin+otp (no otponly) goes through check_serial_pass -> check_token_list -> LOGIN_SUCCESS.
         body = self._check({"serial": self.serial, "pass": f"{self.pin}755224"})

@@ -19,7 +19,7 @@ def set_tokengroups(serial: str, tokengroups: list[str] | None = None, add: bool
 
     :param serial: The serial of the token
     :param tokengroups: The list of tokengroups (names)
-    :param add: Whether the list of tokengropus should be added
+    :param add: Whether the list of tokengroups should be added
     :return:
     """
     tokengroups = tokengroups or []

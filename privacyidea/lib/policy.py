@@ -200,7 +200,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
-from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
+from .policies.actions import PolicyAction, PasskeyLoginButtonOptions, ADMIN_ACTIONS_WITHOUT_TARGET
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
@@ -1019,6 +1019,7 @@ class PolicyClass:
         :return: A list of actions
         """
         from privacyidea.lib.token import get_dynamic_policy_definitions
+        from privacyidea.lib.policies.helper import policy_target_is_unrestricted
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
@@ -1050,6 +1051,11 @@ class PolicyClass:
                                    user_agent=user_agent)
         for pol in pols:
             for action, action_value in pol.get("action").items():
+                if (scope == SCOPE.ADMIN and action in ADMIN_ACTIONS_WITHOUT_TARGET
+                        and not policy_target_is_unrestricted(pol)):
+                    # A policy restricted to named realms, resolvers or users does not grant an action on an object
+                    # that has none of them, so the WebUI does not offer it.
+                    continue
                 if action_value:
                     rights.add(action)
                     # if the action has an actual non-boolean value, return it
@@ -1084,7 +1090,7 @@ class PolicyClass:
             "remote": "Remote Token: Forward authentication request to another server",
             "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
             "radius": "RADIUS: Forward authentication request to a RADIUS server",
-            "email": "EMail: Send a One Time Passwort to the users email address",
+            "email": "EMail: Send a One Time Password to the users email address",
             "sms": "SMS: Send a One Time Password to the users mobile phone",
             "certificate": "Certificate: Enroll an x509 Certificate Token."}
 
@@ -1462,15 +1468,16 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
 def set_policy(name: str | None = None, scope: str | None = None, action: str | list | None = None,
                realm: str | list | None = None, resolver: str | list | None = None,
                user: str | list | None = None, time: str | None = None, client: str | None = None,
-               active: bool = True, adminrealm: str | list | None = None, adminuser: str | list | None = None,
-               priority: int | str | None = None, check_all_resolvers: bool = False,
+               active: bool | None = None, adminrealm: str | list | None = None, adminuser: str | list | None = None,
+               priority: int | str | None = None, check_all_resolvers: bool | None = None,
                conditions: list | None = None, pinode: str | list | None = None,
-               description: str | None = None, user_case_insensitive: bool = False,
+               description: str | None = None, user_case_insensitive: bool | None = None,
                user_agents: str | list[str] | None = None) -> int:
     """
     Function to set a policy.
 
-    If the policy with this name already exists, it updates the policy.
+    If the policy with this name already exists, it updates the policy. Parameters that are None keep their
+    stored value.
     It expects a dict of with the following keys:
 
     :param name: The name of the policy
@@ -1537,9 +1544,12 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
         except (ValueError, ParameterError):
             raise ParameterError(f"Invalid time format '{time}'!")
 
-    active = is_true(active)
-    check_all_resolvers = is_true(check_all_resolvers)
-    user_case_insensitive = is_true(user_case_insensitive)
+    if active is not None:
+        active = is_true(active)
+    if check_all_resolvers is not None:
+        check_all_resolvers = is_true(check_all_resolvers)
+    if user_case_insensitive is not None:
+        user_case_insensitive = is_true(user_case_insensitive)
 
     if isinstance(action, list):
         action = ", ".join(action)
@@ -1625,9 +1635,12 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
             policy.pinode = pinode
         if user_agents is not None:
             policy.user_agents = user_agents
-        policy.active = active
-        policy.check_all_resolvers = check_all_resolvers
-        policy.user_case_insensitive = user_case_insensitive
+        if active is not None:
+            policy.active = active
+        if check_all_resolvers is not None:
+            policy.check_all_resolvers = check_all_resolvers
+        if user_case_insensitive is not None:
+            policy.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             # only update the conditions if there are any
             set_policy_conditions(conditions_data, policy)
@@ -1648,8 +1661,9 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
                                                        PolicyDescription.object_type == "policy")
     description_db = db.session.scalars(description_stmt).first()
     if description_db:
-        description_db.description = description
-    else:
+        if description is not None:
+            description_db.description = description
+    elif description:
         new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
         db.session.add(new_description)
     save_config_timestamp()

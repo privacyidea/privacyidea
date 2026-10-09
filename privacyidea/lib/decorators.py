@@ -81,9 +81,8 @@ def check_user_or_serial(func):
         # there is no normal argument, we do not have enough information
         serial = kwds.get("serial")
         user = kwds.get("user")
-        # We have no serial! The serial would be the first arg
-        if (serial is None and (len(args) == 0 or args[0] is None) and
-                (user is None or (user is not None and user.is_empty()))):
+        # We have no serial! The serial would be the first arg. An empty serial is no serial.
+        if not serial and (len(args) == 0 or not args[0]) and (user is None or user.is_empty()):
             # We either have an empty User object or None
             raise ParameterError(_('You either need to provide user or serial'))
 

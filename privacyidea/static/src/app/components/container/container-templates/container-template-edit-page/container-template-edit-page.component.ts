@@ -163,9 +163,6 @@ export class ContainerTemplateEditPageComponent {
     if (action === "save") {
       const result = await this._saveTemplate();
       if (!result) return;
-      if (this.initTemplate() && this.initTemplate()?.name !== this.template().name) {
-        await this.containerTemplateService.deleteTemplate(this.initTemplate()!.name);
-      }
       this._navigateBack();
     }
   }
@@ -187,7 +184,11 @@ export class ContainerTemplateEditPageComponent {
       ...t,
       template_options: { ...t.template_options, tokens }
     }));
-    return this.containerTemplateService.postTemplateEdits(this.template());
+    // An existing template is saved under its own name, so a changed name can not create a second template
+    const initTemplate = this.initTemplate();
+    return this.containerTemplateService.postTemplateEdits(
+      initTemplate ? { ...this.template(), name: initTemplate.name } : this.template()
+    );
   }
 
   onCancel(): void {
