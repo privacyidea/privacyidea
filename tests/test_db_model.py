@@ -51,6 +51,7 @@ from privacyidea.models import (Token,
                                 ConditionalAccessPolicyStage, ConditionalAccessStageAction, AuthenticationLog,
                                 AuthenticationLogReason, ConditionalAccessOutcome)
 from .base import MyTestCase
+from .compare_helpers import recorded_compare_digest
 
 
 class TokenModelTestCase(MyTestCase):
@@ -316,6 +317,32 @@ class TokenModelTestCase(MyTestCase):
         token.save()
         self.assertFalse(token.check_pin("wrongPIN"))
         self.assertEqual(legacy_hash, token.pin_hash)
+
+        token.delete()
+
+    def test_04a_encrypted_pin_is_compared_in_constant_time(self):
+        token = Token(serial="serial_encrypted_pin", tokentype="hmac")
+        token.set_pin("1234", hashed=False)
+        token.save()
+        self.assertTrue(token.is_pin_encrypted())
+
+        with recorded_compare_digest() as spy:
+            self.assertFalse(token.check_pin("1235"))
+        self.assertTrue(spy.saw("1234", "1235"))
+        self.assertTrue(token.check_pin("1234"))
+
+        token.delete()
+
+    def test_04b_legacy_pin_hash_is_compared_in_constant_time(self):
+        token = Token(serial="serial_legacy_pin_compare", tokentype="hmac")
+        token.save()
+        token.pin_hash = token.get_hashed_pin("1234")
+        token.save()
+        stored_hash = token.pin_hash
+
+        with recorded_compare_digest() as spy:
+            self.assertFalse(token.check_pin("1235"))
+        self.assertTrue(spy.saw(stored_hash, token.get_hashed_pin("1235")))
 
         token.delete()
 

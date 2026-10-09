@@ -62,6 +62,7 @@ from . import smtpmock, ldap3mock, radiusmock
 from .authlog_utils import (assert_authentication_log, assert_authentication_log_entry,
                            clear_authentication_log)
 from .base import MyApiTestCase
+from .compare_helpers import recorded_compare_digest
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
@@ -387,6 +388,46 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual(400, res.status_code, res)
             self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect",
                              res.json["result"]["error"]["message"])
+        remove_token(serial)
+
+    def test_03a_refilltoken_is_compared_in_constant_time(self):
+        """The stored and the given refill token are compared with the constant-time comparison."""
+        serial = "SE_OFFLINE_COMPARE"
+        init_token({"serial": serial, "otpkey": self.otpkey, "type": "hotp", "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+        attach_token(serial, "offline", hostname="pippin", resolver_name="testresolver", options={"count": 100})
+        stored = "b" * 2 * REFILLTOKEN_LENGTH
+        get_tokens(serial=serial)[0].write_tokeninfo("refilltoken", stored)
+        given = "a" * 2 * REFILLTOKEN_LENGTH
+        with recorded_compare_digest() as spy:
+            with self.app.test_request_context('/validate/offlinerefill',
+                                               method='POST',
+                                               data={"serial": serial, "pass": "pin755224",
+                                                     "refilltoken": given},
+                                               environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res)
+        self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect",
+                         res.json["result"]["error"]["message"])
+        self.assertTrue(spy.saw(stored, given))
+        remove_token(serial)
+
+    def test_03b_refilltoken_is_not_a_string(self):
+        """A refill token that is not a string is answered like any other incorrect refill token."""
+        serial = "SE_OFFLINE_NONSTRING"
+        init_token({"serial": serial, "otpkey": self.otpkey, "type": "hotp", "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+        attach_token(serial, "offline", hostname="pippin",
+                     resolver_name="testresolver", options={"count": 100})
+        get_tokens(serial=serial)[0].write_tokeninfo("refilltoken", "b" * 2 * REFILLTOKEN_LENGTH)
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           json={"serial": serial, "pass": "pin755224", "refilltoken": 5},
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res)
+        self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect",
+                         res.json["result"]["error"]["message"])
         remove_token(serial)
 
     def test_04_multiple_offline_attachments_share_one_refilltoken(self):

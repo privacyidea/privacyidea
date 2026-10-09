@@ -30,7 +30,7 @@ from privacyidea.lib.tokens.papertoken import PaperTokenClass
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib import _
-from privacyidea.lib.crypto import geturandom, hash
+from privacyidea.lib.crypto import geturandom, hash, safe_compare
 
 log = logging.getLogger(__name__)
 DEFAULT_COUNT = 100
@@ -176,7 +176,7 @@ class TanTokenClass(PaperTokenClass):
         for tankey, tanvalue in tans.items():
             if tankey.startswith("tan.tan"):
                 salt, tan = tanvalue.split(":")
-                if tan == hash(anOtpVal, salt):
+                if safe_compare(tan, hash(anOtpVal, salt)):
                     self.remove_tokeninfo(tankey)
                     return 1
 

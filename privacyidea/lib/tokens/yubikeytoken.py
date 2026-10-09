@@ -52,6 +52,7 @@ This code is tested in tests/test_lib_tokens_yubikey.py
 
 import logging
 
+from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.error import EnrollmentError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
@@ -130,7 +131,8 @@ def yubico_check_api_signature(data, api_key, signature=None):
     """
     if not signature:
         signature = data.get('h')
-    return signature == yubico_api_signature(data, api_key)
+    expected_signature = yubico_api_signature(data, api_key)
+    return isinstance(signature, str) and safe_compare(signature, expected_signature)
 
 
 class YubikeyTokenClass(TokenClass):

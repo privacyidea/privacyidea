@@ -7,6 +7,7 @@ from testfixtures import log_capture
 
 from testfixtures import LogCapture
 from .base import MyTestCase
+from .compare_helpers import recorded_compare_digest
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
                                                  yubico_check_api_signature)
@@ -181,6 +182,24 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(yubico_check_api_signature(data, api_key,
                                                     signature), True)
         self.assertEqual(yubico_check_api_signature(data, api_key), True)
+
+    def test_09a_api_signature_is_compared_in_constant_time(self):
+        """The given and the expected API signature are compared in constant time."""
+        api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
+        data = {"otp": "ececegecejeeedehfftnecrrfcfibfbklhvetghgrvtjdtvv",
+                "nonce": "blablafoo",
+                "timestamp": "time"}
+        expected = yubico_api_signature(data, api_key)
+        given = "A" * len(expected)
+
+        with recorded_compare_digest() as spy:
+            self.assertFalse(yubico_check_api_signature(data, api_key, given))
+        self.assertTrue(spy.saw(expected, given))
+
+        # A missing signature is still refused, and the right one still verifies
+        self.assertFalse(yubico_check_api_signature(data, api_key))
+        data["h"] = expected
+        self.assertTrue(yubico_check_api_signature(data, api_key))
 
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
