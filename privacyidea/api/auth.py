@@ -98,7 +98,9 @@ from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_ob
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
 from privacyidea.lib.event import event, EventConfiguration
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge, ChallengeExpiredError
+from privacyidea.lib.fido2.challenge import (verify_fido2_challenge, has_unbound_challenge,
+                                             ChallengeExpiredError, check_fido2_token_state,
+                                             record_fido2_login_success)
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -380,20 +382,22 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+        token_state = check_fido2_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            g.audit_object.log({"info": log_used_user(user, token_state.message),
                                 "success": False,
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
-            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
+            # The user owns this passkey but it may not authenticate -> NO_USABLE_TOKEN
             log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
                                transaction_id=transaction_id,
-                               reasons=[AuthEventReason.TOKEN_DISABLED],
+                               reasons=[token_state.reason],
                                reason_detail=build_reason_detail(
-                                   reasons={token.get_serial(): AuthEventReason.TOKEN_DISABLED}))
-            return send_result(False, rid=2, details={"message": "Token is disabled"})
+                                   reasons={token.get_serial(): token_state.reason}))
+            return send_result(False, rid=2, details={"message": token_state.message})
 
         if not token.user:
             log_authentication(AuthEventType.USER_UNKNOWN, request, transaction_id=transaction_id)
@@ -464,6 +468,9 @@ def get_auth_token():
             auth_event_type = AuthEventType.LOGIN_SUCCESS
             # Record the passkey serial for the authentication log
             serials = token.get_serial()
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
             # Passkey login bypasses check_token_list, so the reset_all_user_tokens
             # policy is applied explicitly here (mirrors the /validate FIDO2 path).
             if reset_all_user_tokens_active(g, user):

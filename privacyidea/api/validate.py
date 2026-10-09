@@ -155,7 +155,8 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError
+from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
+                                   check_fido2_token_state, record_fido2_login_success)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -879,20 +880,22 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            context["details"]["message"] = "Token is disabled"
-            # Explicit audit for disabled token
+        token_state = check_fido2_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            context["details"]["message"] = token_state.message
+            # Explicit audit for the unusable token
             g.audit_object.log({
-                "info": log_used_user(user, "Token is disabled"),
+                "info": log_used_user(user, token_state.message),
                 "success": False,
                 "authentication": AUTH_RESPONSE.REJECT,
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
-            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
+            # Owned-but-unusable token (disabled, expired, counters exceeded) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
-            _record_context_reason(context, AuthEventReason.TOKEN_DISABLED, token.get_serial())
+            _record_context_reason(context, token_state.reason, token.get_serial())
             return
 
         try:
@@ -916,6 +919,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
             raise
         context["result"] = fido_verification_result.success > 0
+        if context["result"]:
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
 
     # Success Handling
     if context["result"]:

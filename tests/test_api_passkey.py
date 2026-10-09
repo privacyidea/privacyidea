@@ -1428,6 +1428,105 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
+    def _expire_token(self, serial: str):
+        token = get_one_token(serial=serial)
+        token.set_validity_period_end((datetime.now(timezone.utc) - timedelta(days=1)).isoformat())
+        token.save()
+
+    def _answer_passkey_challenge(self, endpoint: str, challenge: str, response: dict) -> tuple:
+        """Trigger a passkey challenge and answer it at the given endpoint. Returns (response, transaction_id)."""
+        passkey_challenge = self._trigger_passkey_challenge(challenge)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(response)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context(endpoint, method="POST", data=data,
+                                           headers={"Origin": self.expected_origin}):
+            return self.app.full_dispatch_request(), transaction_id
+
+    def _assert_unusable_token_logged(self, transaction_id: str, serial: str, endpoint: str,
+                                      reason: AuthEventReason):
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                      AuthEventType.NO_USABLE_TOKEN],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        transaction_id=transaction_id, endpoint=endpoint,
+                                        reason=reason, reasons={serial: reason})
+
+    def test_19a_passkey_outside_validity_period(self):
+        """
+        A passkey answered with credential_id is subject to its validity period, like every other token.
+        """
+        serial = self._enroll_static_passkey()
+        self._expire_token(serial)
+
+        res, transaction_id = self._answer_passkey_challenge("/validate/check",
+                                                             self.authentication_challenge_no_uv,
+                                                             self.authentication_response_no_uv)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"])
+        self.assertFalse(res.json["result"]["value"])
+        self._assert_unusable_token_logged(transaction_id, serial, "/validate/check",
+                                           AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD)
+        remove_token(serial)
+
+    def test_19b_passkey_outside_validity_period_auth(self):
+        """
+        The same applies to the WebUI login at /auth.
+        """
+        serial = self._enroll_static_passkey()
+        self._expire_token(serial)
+
+        res, transaction_id = self._answer_passkey_challenge("/auth", self.authentication_challenge_uv,
+                                                             self.authentication_response_uv)
+        self.assertEqual(200, res.status_code)
+        self.assertFalse(res.json["result"]["value"])
+        self._assert_unusable_token_logged(transaction_id, serial, "/auth",
+                                           AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD)
+        remove_token(serial)
+
+    def test_19c_passkey_past_its_authentication_counter(self):
+        """
+        A passkey that reached count_auth_max does not authenticate.
+        """
+        serial = self._enroll_static_passkey()
+        token = get_one_token(serial=serial)
+        token.set_count_auth_max(1)
+        token.set_count_auth(1)
+        token.save()
+
+        res, transaction_id = self._answer_passkey_challenge("/validate/check",
+                                                             self.authentication_challenge_no_uv,
+                                                             self.authentication_response_no_uv)
+        self.assertEqual(200, res.status_code)
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"])
+        self.assertFalse(res.json["result"]["value"])
+        self._assert_unusable_token_logged(transaction_id, serial, "/validate/check",
+                                           AuthEventReason.TOKEN_AUTH_COUNTER_EXCEEDED)
+        remove_token(serial)
+
+    def test_19d_successful_passkey_login_counts(self):
+        """
+        A successful passkey login counts toward the authentication counters, so count_auth_success_max is
+        reached like it is for every other token type.
+        """
+        serial = self._enroll_static_passkey()
+        token = get_one_token(serial=serial)
+        token.set_count_auth_success_max(1)
+        token.save()
+
+        first, _ = self._answer_passkey_challenge("/validate/check", self.authentication_challenge_no_uv,
+                                                  self.authentication_response_no_uv)
+        self.assertTrue(first.json["result"]["value"], first.json)
+        self.assertEqual(1, get_one_token(serial=serial).get_count_auth_success())
+
+        second, transaction_id = self._answer_passkey_challenge("/validate/check",
+                                                                self.authentication_challenge_uv,
+                                                                self.authentication_response_uv)
+        self.assertFalse(second.json["result"]["value"], second.json)
+        self._assert_unusable_token_logged(transaction_id, serial, "/validate/check",
+                                           AuthEventReason.TOKEN_AUTH_COUNTER_EXCEEDED)
+        remove_token(serial)
+
     def test_20_disabled_passkey_auth(self):
         """
         Disabled passkeys should not be usable for authentication
