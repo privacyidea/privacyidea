@@ -11,6 +11,7 @@ Needs a database with row locks; on SQLite the lock serializes the writers, so t
 """
 import json
 import threading
+import time
 from datetime import datetime, timezone
 from functools import partial
 from unittest import mock
@@ -30,6 +31,7 @@ from privacyidea.lib.passwordreset import check_recoverycode
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.token import create_challenge, get_one_token, init_token, remove_token
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
+from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, PushTokenClass
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
@@ -40,6 +42,9 @@ from tests.test_api_push_validate import PushTokenTestMixin, REGISTRATION_URL
 
 QUESTIONS = {"frage1": "antwort1", "frage2": "antwort2", "frage3": "antwort3"}
 QUESTION_PIN = "pin"
+# RFC 4226 test key and its first OTP value
+OTP_KEY = "3132333435363738393031323334353637383930"
+HOTP_AT_COUNTER_0 = "755224"
 
 
 def run_in_parallel(app, functions: list) -> list:
@@ -87,6 +92,15 @@ def synchronize_after(target, attribute: str, parties: int):
         return result
 
     return mock.patch.object(target, attribute, wrapper)
+
+
+def results_of(responses: list) -> list:
+    """The result of each response body, or the exception string of a thread that did not get one."""
+    return [body["result"] if isinstance(body, dict) else body for body in responses]
+
+
+def accepted(results: list) -> int:
+    return sum(1 for result in results if isinstance(result, dict) and result.get("value") is True)
 
 
 def seed_auth_counters(token: TokenClass) -> TokenClass:
@@ -235,14 +249,6 @@ class ParallelMultiStepChallengeTestCase(ParallelRequestTestCase):
             return client.post("/validate/check", data={"serial": serial, "transaction_id": transaction_id,
                                                         "pass": answer}).json
 
-    def _outcomes(self, responses: list) -> list:
-        """The result of each response, or the exception string of a thread that did not get one."""
-        return [body["result"] if isinstance(body, dict) else body for body in responses]
-
-    @staticmethod
-    def _accepted(outcomes: list) -> int:
-        return sum(1 for outcome in outcomes if isinstance(outcome, dict) and outcome.get("value") is True)
-
     def test_single_question_is_answered_once(self):
         serial = "PARQUST1"
         self._create_token(serial)
@@ -251,8 +257,8 @@ class ParallelMultiStepChallengeTestCase(ParallelRequestTestCase):
         answer_again = partial(self._answer, serial, transaction_id, answer)
         try:
             with synchronize_after(QuestionnaireTokenClass, "check_answer", 2):
-                outcomes = self._outcomes(run_in_parallel(self.app, [answer_again, answer_again]))
-            self.assertEqual(1, self._accepted(outcomes), outcomes)
+                outcomes = results_of(run_in_parallel(self.app, [answer_again, answer_again]))
+            self.assertEqual(1, accepted(outcomes), outcomes)
         finally:
             remove_token(serial)
 
@@ -271,9 +277,9 @@ class ParallelMultiStepChallengeTestCase(ParallelRequestTestCase):
 
             answer_last = partial(self._answer, serial, last_transaction_id, last_answer)
             with synchronize_after(QuestionnaireTokenClass, "check_answer", 2):
-                outcomes = self._outcomes(run_in_parallel(self.app, [answer_last, answer_last]))
+                outcomes = results_of(run_in_parallel(self.app, [answer_last, answer_last]))
 
-            self.assertEqual(1, self._accepted(outcomes), outcomes)
+            self.assertEqual(1, accepted(outcomes), outcomes)
         finally:
             delete_policy("parallel_questions")
             remove_token(serial)
@@ -295,4 +301,68 @@ class ParallelMultiStepChallengeTestCase(ParallelRequestTestCase):
             self.assertEqual(1, len(follow_ups), responses)
         finally:
             delete_policy("parallel_questions")
+            remove_token(serial)
+
+
+class ParallelOtpCounterTestCase(ParallelRequestTestCase):
+    """
+    The OTP counter and the failcounter are advanced with a single conditional statement, so an OTP value is
+    accepted once and every failed attempt is counted.
+    """
+
+    def _check(self, data: dict) -> dict:
+        with self.app.test_client() as client:
+            return client.post("/validate/check", data=data).json
+
+    def _create_token(self, params: dict) -> TokenClass:
+        return seed_auth_counters(init_token(params))
+
+    def test_same_hotp_value_is_accepted_once(self):
+        serial = "PARHOTP"
+        token = self._create_token({"serial": serial, "type": "hotp", "otpkey": OTP_KEY, "pin": "pin"})
+        self.assertEqual(0, token.token.count)
+        send = partial(self._check, {"serial": serial, "pass": "pin" + HOTP_AT_COUNTER_0})
+
+        try:
+            with synchronize_after(HmacOtp, "checkOtp", 2):
+                results = results_of(run_in_parallel(self.app, [send, send]))
+
+            self.assertEqual(1, accepted(results), results)
+            self.assertEqual(1, get_one_token(serial=serial).token.count)
+        finally:
+            remove_token(serial)
+
+    def test_same_totp_value_is_accepted_once(self):
+        serial = "PARTOTP"
+        self._create_token({"serial": serial, "type": "totp", "otpkey": OTP_KEY, "pin": "pin", "timeStep": "30"})
+        # Stay clear of a time step boundary, so both requests see the same step.
+        if int(time.time()) % 30 > 25:
+            time.sleep(6)
+        totp_value = HmacOtp(digits=6).generate(key=bytes.fromhex(OTP_KEY), counter=int(time.time() // 30))
+        send = partial(self._check, {"serial": serial, "pass": "pin" + totp_value})
+
+        try:
+            with synchronize_after(HmacOtp, "checkOtp", 2):
+                results = results_of(run_in_parallel(self.app, [send, send]))
+
+            self.assertEqual(1, accepted(results), results)
+        finally:
+            remove_token(serial)
+
+    def test_every_parallel_wrong_value_counts(self):
+        serial = "PARFAIL"
+        parallel_requests = 5
+        token = self._create_token({"serial": serial, "type": "hotp", "otpkey": OTP_KEY, "pin": "pin"})
+        token.set_maxfail(10)
+        token.save()
+        sends = [partial(self._check, {"serial": serial, "pass": f"pin00000{index}"})
+                 for index in range(parallel_requests)]
+
+        try:
+            with synchronize_after(HmacOtp, "checkOtp", parallel_requests):
+                results = results_of(run_in_parallel(self.app, sends))
+
+            self.assertEqual(0, accepted(results), results)
+            self.assertEqual(parallel_requests, get_one_token(serial=serial).token.failcount)
+        finally:
             remove_token(serial)
