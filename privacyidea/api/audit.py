@@ -44,6 +44,7 @@ from ..lib.policies.actions import PolicyAction
 from flask import g
 import logging
 from ..lib.audit import search, getAudit
+from ..lib.auth import ROLE
 from privacyidea.lib.utils import parse_timedelta
 from ..lib.policies.helper import get_admin_audit_params
 
@@ -87,7 +88,13 @@ def search_audit():
         ``count``, ``current``, ``next``, ``prev``, ``auditdata``.
     """
     admin_params = get_admin_audit_params()
-    audit_dict = search(current_app.config, request.all_data, admin_params)
+    exact_params = None
+    if g.logged_in_user.get("role") == ROLE.USER:
+        # A login may contain "!" or "*", which must not turn the user's own entries into a search for others.
+        for key in ("user", "realm", "resolver"):
+            request.all_data.pop(key, None)
+        exact_params = {"user": request.User.login, "realm": request.User.realm, "resolver": request.User.resolver}
+    audit_dict = search(current_app.config, request.all_data, admin_params, exact_params=exact_params)
     g.audit_object.log({'success': True})
 
     return send_result(audit_dict)

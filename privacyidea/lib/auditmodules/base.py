@@ -156,7 +156,7 @@ class Audit:  # pragma: no cover
                 'missing_line', 'resolver', 'thread_id', 'container_serial', 'container_type']
 
     def get_total(self, param: dict, admin_params: dict | None = None, AND: bool = True, display_error: bool = True,
-                  timelimit: datetime.timedelta | None = None) -> int:
+                  timelimit: datetime.timedelta | None = None, exact_params: dict[str, str] | None = None) -> int:
         """
         This method returns the total number of audit entries
         in the audit store
@@ -277,7 +277,8 @@ class Audit:  # pragma: no cover
 #        pass
 
     def search(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
-               sortorder: str = "asc", timelimit: datetime.timedelta | None = None):
+               sortorder: str = "asc", timelimit: datetime.timedelta | None = None,
+               exact_params: dict[str, str] | None = None):
         """
         This function is used to search audit events.
 
@@ -293,15 +294,19 @@ class Audit:  # pragma: no cover
         :param page: The page number
         :param sortorder: "asc" - ascending or "desc" - descending
         :param timelimit: Only audit entries newer than this timedelta will be searched
+        :param exact_params: Filter parameters that are compared for equality, without the "!" and "*" operators of
+            *search_dict*, such as the identity of a user
         """
         return Paginate()
 
-    def get_count(self, search_dict, timedelta=None, success=None):
+    def get_count(self, search_dict, timedelta=None, success=None, exact_params: dict[str, str] | None = None):
         """
         Returns the number of found log entries.
         E.g. used for checking the timelimit.
 
         :param param: List of filter parameters
+        :param exact_params: Filter parameters that are compared for equality, without the "!" and "*" operators of
+            *search_dict*, such as the identity of a user
         :return: number of found entries
         """
         return 0
@@ -317,7 +322,8 @@ class Audit:  # pragma: no cover
         pass
 
     def search_query(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
-                     sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None):
+                     sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None,
+                     exact_params: dict[str, str] | None = None):
         """
         This function returns the audit log as an iterator on the result
         """
