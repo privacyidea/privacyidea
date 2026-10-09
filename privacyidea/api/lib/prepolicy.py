@@ -95,10 +95,10 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction, ADMIN_ACTIONS_WITHOUT_TARGET
 from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
                                              DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names,
-                                             get_policy_visibility_scopes)
+                                             admin_granted_resolvers, get_policy_visibility_scopes)
 from privacyidea.lib.policy import Match, PolicyClass, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
-from privacyidea.lib.realm import get_realms, split_realms, get_ordered_resolvers
+from privacyidea.lib.realm import get_realms, split_realms, normalize_realm_name, get_ordered_resolvers
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -395,6 +395,94 @@ def resolver_realm_access(request=None, action=None):
         if not resolver_realms & set(granted_realms):
             raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
+    return True
+
+
+def resolver_config_access(request=None, action=None):
+    """
+    Bind the configuration of the resolver named in the request to the resolvers the admin's policies grant, see
+    :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. A request without a resolver name configures
+    no stored resolver and passes.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.RESOLVERWRITE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    resolver = get_optional(request.all_data, "resolver")
+    if not resolver:
+        return True
+    granted_resolvers = admin_granted_resolvers(action)
+    if granted_resolvers is not None and resolver not in granted_resolvers:
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+    return True
+
+
+def realm_membership_access(request=None, action=None):
+    """
+    Allow a request to change the resolvers of a realm only if the admin's policies grant every resolver the realm
+    contains on any node, before and after the request, see
+    :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. The priorities decide which resolver a login
+    name of the realm is resolved in, so any change to a realm with a resolver the admin may not administer, a
+    priority as well, can redirect the users of that resolver. A policy for the whole realm grants all of its
+    resolvers, but not a resolver the request adds to it.
+
+    Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter),
+    ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body) and
+    ``DELETE /realm/<realm>``, which removes every resolver of the realm on every node.
+    Malformed resolver entries are left to the endpoint, which refuses them.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.RESOLVERWRITE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    granted_resolvers = admin_granted_resolvers(action)
+    if granted_resolvers is None:
+        return True
+    params = request.all_data
+    realm = normalize_realm_name(params.get("realm"))
+    node = params.get("nodeid") if "nodeid" in request.view_args else None
+    deletes = request.method == "DELETE"
+    if deletes:
+        names = []
+    elif node:
+        entries = params.get("resolver")
+        names = [entry.get("name") for entry in entries if isinstance(entry, dict)] \
+            if isinstance(entries, list) else []
+    else:
+        resolvers = params.get("resolvers") or []
+        names = resolvers if isinstance(resolvers, list) else resolvers.split(",")
+    # set_realm strips the names and skips empty ones, so " reso" and "reso" are the same resolver
+    requested = {name.strip() for name in names if isinstance(name, str) and name.strip()}
+    stored = {entry.get("name") for entry in get_realms(realm).get(realm, {}).get("resolver", [])}
+    denied = sorted((stored | requested) - granted_resolvers)
+    if denied:
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(", ".join(denied)))
+    return True
+
+
+def default_realm_access(request=None, action=None):
+    """
+    Allow changing or removing the default realm only if the admin's policies grant the current default realm. The
+    default realm decides where users without a realm are looked up, so replacing it changes the realm of those users.
+    The new default realm of ``POST /defaultrealm/<realm>`` is checked by :func:`check_base_action`.
+    ``DELETE /realm/<realm>`` only removes the default realm if it deletes that realm, so only then it is checked.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.RESOLVERDELETE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    default_realm = get_default_realm()
+    if not default_realm:
+        return True
+    deleted_realm = normalize_realm_name(request.view_args.get("realm", default_realm))
+    if request.method == "DELETE" and deleted_realm != default_realm:
+        return True
+    granted_realms = admin_granted_realms(action, whole_realms=True)
+    if granted_realms is not None and default_realm not in granted_realms:
+        raise PolicyError(_("You are not allowed to change the default realm {0!s}.").format(default_realm))
     return True
 
 

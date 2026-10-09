@@ -3693,7 +3693,7 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
 
     def test_07_registration_code_is_consumed(self):
         # Digits only: the test client sends no user agent, so the API percent-decodes the values it receives
-        token = init_token({"type": "registration", "serial": "OTPONLYREG", "registration.contents": "n"})
+        token = init_token({"type": "registration", "serial": "OTPONLYREG", "registration.contents": "-cs"})
         registration_code = token.get_init_detail().get("registrationcode")
         response = self._check_otp_only(registration_code, serial="OTPONLYREG")
         self.assertTrue(response.json["result"]["value"], response.json)

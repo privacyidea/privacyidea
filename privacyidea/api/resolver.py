@@ -45,7 +45,8 @@ from ..lib.log import log_with
 from ..lib.resolver import get_resolver_list, save_resolver, delete_resolver, pretestresolver, get_resolver_class
 from flask import g
 import logging
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, resolver_config_access
+from ..lib.policies.helper import admin_granted_resolvers
 from ..lib.policies.actions import PolicyAction
 from ..lib.utils import is_true
 
@@ -87,6 +88,9 @@ def get_resolvers(resolver=None):
                             filter_resolver_type=typ,
                             editable=editable,
                             censor=True)
+    granted_resolvers = admin_granted_resolvers(PolicyAction.RESOLVERREAD)
+    if granted_resolvers is not None:
+        res = {name: config for name, config in res.items() if name in granted_resolvers}
     g.audit_object.log({"success": True,
                         "info": resolver})
     return send_result(res)
@@ -95,6 +99,7 @@ def get_resolvers(resolver=None):
 @resolver_blueprint.route('/<resolver>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(resolver_config_access, request, PolicyAction.RESOLVERWRITE)
 def set_resolver(resolver=None):
     """
     Create or update a user-id resolver. If a resolver with the given name
@@ -147,6 +152,7 @@ def set_resolver(resolver=None):
 @resolver_blueprint.route('/<resolver>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(resolver_config_access, request, PolicyAction.RESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
     Delete the user-id resolver with the given name. A resolver that is
@@ -169,6 +175,7 @@ def delete_resolver_api(resolver=None):
 @resolver_blueprint.route('/test', methods=["POST"])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(resolver_config_access, request, PolicyAction.RESOLVERWRITE)
 def test_resolver():
     """
     Test whether the supplied parameters yield a working resolver,

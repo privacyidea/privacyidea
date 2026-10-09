@@ -46,6 +46,14 @@ meaning ``realm``, ``resolver`` and ``user`` are each empty or ``*``. A policy
 that restricts the action to named realms, resolvers or users does not grant
 it, whatever realm the request names, and the WebUI does not offer it.
 
+.. note:: Other configuration objects that belong to no realm, like SMTP, RADIUS and
+   privacyIDEA servers, SMS gateways, CA connectors, the system configuration and
+   periodic tasks, serve every realm. The user realm of an admin policy does not
+   restrict them: an administrator with ``smtpserver_write`` changes the SMTP servers
+   of all realms, whatever realm the policy names. The same holds for
+   ``system_documentation``. Do not give such actions to administrators who should
+   only act in some realms.
+
 .. note:: As long as no admin policy is active, all administrators are allowed to do
    everything, except the actions that always need their policy:
    :ref:`policy_set_custom_user_attributes`, :ref:`policy_delete_custom_user_attributes`,
@@ -977,12 +985,15 @@ type: ``bool``
 
 Allow the administrator to write, read or delete policies.
 
+If the admin policy is bound to user realms, the administrator sees the policies that
+apply to one of these realms, also those without a realm, which apply to every realm.
+The policy check is limited to these realms. An admin policy that names users or
+resolvers but no realm does not restrict which policies the administrator sees.
+
 .. note:: Writing and deleting policies require a policy that does not restrict
    its target, see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
-.. note:: Currently the policies do not take into account resolvers
-   or realms. Having the right to read policies will allow the
-   administrator to see all policies.
+.. versionchanged:: 3.14 The realm of the admin policy restricts reading the policies.
 
 .. versionadded:: 2.0 ``policywrite`` and ``policydelete``
 
@@ -999,9 +1010,21 @@ type: ``bool``
 
 Allow the administrator to write, read or delete user resolvers and realms.
 
-.. note:: Currently the policies do not take into account resolvers
-   or realms. Having the right to read resolvers will allow the
-   administrator to see all resolvers and realms.
+If the admin policy is bound to user realms, the administrator only sees and changes
+the resolvers that are part of these realms. If the policy also names resolvers, only
+these resolvers of the realms are granted. A policy that names resolvers but no realm
+grants these resolvers, also if they are part of no realm yet. Otherwise a resolver
+that is part of no realm, and so a new resolver, needs a policy without a realm. A
+policy that names users grants no resolver. The default realm is only shown if it is
+one of these realms.
+
+Adding a resolver to a realm, removing it from a realm or changing its priority in
+a realm needs the right for the resolver as well. Changing or removing the default realm needs the right for the
+whole current default realm: a policy for the realm that also names resolvers or
+users does not grant it. Deleting a realm removes all of its resolvers and, for the
+default realm, the default realm, so it needs these rights as well.
+
+.. versionchanged:: 3.14 The realm of the admin policy restricts the resolvers.
 
 The WebUI also needs ``resolverread`` to offer editing and creating users: the *Edit*
 button in the user details needs ``updateuser`` and ``resolverread``, and *Create User*

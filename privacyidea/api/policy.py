@@ -57,10 +57,12 @@ from ..lib.policy import (set_policy, rename_policy,
                           get_policy_condition_comparators, Match, validate_values, get_policies, SCOPE,
                           check_policy_name)
 from ..lib.token import get_dynamic_policy_definitions
-from ..lib.error import (ParameterError)
+from ..lib.error import (ParameterError, PolicyError)
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
 from ..api.lib.prepolicy import prepolicy, check_base_action, check_global_config_action
+from ..lib.realm import split_realms
+from ..lib.policies.helper import admin_granted_realms, realms_granted
 
 from flask import g
 from werkzeug.datastructures import FileStorage
@@ -362,15 +364,16 @@ def get_policy(name=None, export=None):
     if active is not None:
         active = is_true(active)
 
+    granted_realms = admin_granted_realms(PolicyAction.POLICYREAD, unrestricted_without_realm=True)
     if not export:
         log.debug(f"retrieving policy name: {name!s}, realm: {realm!s}, scope: {scope!s}")
 
         policies = get_policies(name=name, realm=realm, scope=scope, active=active)
-        ret = send_result(policies)
     else:
         # We want to export all policies
         policies = get_policies()
-        ret = send_file(export_policies(policies), export, content_type='text/plain')
+    policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
+    ret = send_file(export_policies(policies), export, content_type='text/plain') if export else send_result(policies)
 
     g.audit_object.log({"success": True,
                         'info': f"name = {name!s}, realm = {realm!s}, scope = {scope!s}"})
@@ -516,6 +519,8 @@ def check_policy_api():
         <dict-of-matching-policies>}`` if at least one active policy
         matches, otherwise
         ``{"allowed": false, "info": "No policies found"}``.
+    :status 403: the admin policies of the administrator do not grant
+        every realm of ``realm``.
     """
     res = {}
     param = getLowerParams(request.all_data)
@@ -527,6 +532,11 @@ def check_policy_api():
     action = get_required(param, "action")
     client = get_optional(param, "client")
     resolver = get_optional(param, "resolver")
+
+    # check_base_action reads the parameter "realm" only, but getLowerParams also takes "Realm" or "REALM"
+    granted_realms = admin_granted_realms(PolicyAction.POLICYREAD, unrestricted_without_realm=True)
+    if not realms_granted(split_realms(realm), granted_realms, every_realm=True):
+        raise PolicyError(_("You are not allowed to check the policies of the realm {0!s}.").format(realm))
 
     policies = Match.generic(g, scope=scope, user=user, resolver=resolver, realm=realm,
                              action=action, client=client, active=True).policies()

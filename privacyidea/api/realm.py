@@ -50,14 +50,16 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          get_realms,
-                         delete_realm)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+                         delete_realm,
+                         normalize_realm_name)
+from ..api.lib.prepolicy import prepolicy, check_base_action, realm_membership_access, default_realm_access
 from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import ConditionCheck, Match
 from ..lib.policies.actions import PolicyAction
+from ..lib.policies.helper import admin_granted_realms
 import logging
 
 log = logging.getLogger(__name__)
@@ -75,6 +77,7 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 @realm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
     Create or reconfigure a realm. The realm is defined as a list of
@@ -129,6 +132,7 @@ def set_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
+    realm = normalize_realm_name(realm)
     param = request.all_data
     resolvers = get_required(param, "resolvers")
     priority = get_priority_from_param(param)
@@ -212,8 +216,14 @@ def get_realms_api():
 
     .. versionchanged:: 3.10 The response contains the node and priority of the resolver
     """
-    all_realms = get_realms()
     g.audit_object.log({"success": True})
+    return send_result(_visible_realms())
+
+
+def _visible_realms() -> dict:
+    """
+    The realms the logged-in admin's policies name, with their configuration, see :func:`reduce_realms`.
+    """
     # This endpoint is called by admins anyway
     luser = g.logged_in_user
     policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
@@ -221,9 +231,7 @@ def get_realms_api():
                              adminuser=luser.get("username"),
                              active=True,
                              extended_condition_check=ConditionCheck.DO_NOT_CHECK_AT_ALL).policies()
-    realms = reduce_realms(all_realms, policies)
-
-    return send_result(realms)
+    return reduce_realms(get_realms(), policies)
 
 
 @realm_blueprint.route('/superuser', methods=['GET'])
@@ -264,6 +272,7 @@ def get_super_user_realms():
 @defaultrealm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
     """
     Set the default realm. The previous default (if any) is cleared
@@ -312,6 +321,7 @@ def set_default_realm_api(realm=None):
 @defaultrealm_blueprint.route('', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
     """
     Clear the default realm. The realm definitions themselves are not
@@ -361,8 +371,9 @@ def delete_default_realm_api(realm=None):
 def get_default_realm_api():
     """
     Return the default realm with its resolver list. If no realm is
-    currently flagged as default, the response value is an empty
-    dictionary.
+    currently flagged as default, or the admin policies do not grant
+    :ref:`resolverread` for the default realm, the response value is an
+    empty dictionary.
 
     Requires admin authentication.
 
@@ -402,7 +413,8 @@ def get_default_realm_api():
     """
     res = {}
     defRealm = get_default_realm()
-    if defRealm:
+    granted_realms = admin_granted_realms(PolicyAction.RESOLVERREAD)
+    if defRealm and (granted_realms is None or defRealm in granted_realms):
         res = get_realms(defRealm)
 
     g.audit_object.log({"success": True,
@@ -414,6 +426,8 @@ def get_default_realm_api():
 @realm_blueprint.route('/<realm>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
     Delete a realm. The realm can only be deleted if no user from
@@ -495,6 +509,7 @@ def delete_realm_api(realm=None):
 @realm_blueprint.route('/<string:realm>/node/<string:nodeid>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_node_api(realm, nodeid):
     """
     Create or reconfigure the resolver assignment for a realm on a
@@ -559,6 +574,7 @@ def set_realm_node_api(realm, nodeid):
 
     .. versionadded:: 3.10 Node specific realm configuration
     """
+    realm = normalize_realm_name(realm)
     if not check_node_uuid_exists(nodeid):
         log.warning(f"Node with UUID {nodeid} does not exist in the database!")
         raise ParameterError(_("The given node does not exist!"))

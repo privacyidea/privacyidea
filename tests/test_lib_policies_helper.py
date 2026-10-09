@@ -27,7 +27,7 @@ from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import (admin_granted_realms, get_policy_visibility_scopes, own_entries_scope,
-                                             policy_realm_names)
+                                             policy_realm_names, realms_granted)
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
 from privacyidea.lib.user import User
 from .base import FakeAudit, MyTestCase
@@ -82,11 +82,11 @@ class AdminGrantedRealmsTestCase(MyTestCase):
         g.client_ip = None
         g.serial = None
 
-    def _granted(self, **policy_scope: str) -> list[str] | None:
+    def _granted(self, unrestricted_without_realm: bool = False, **policy_scope: str) -> list[str] | None:
         set_policy("granted", scope=SCOPE.ADMIN, action=PolicyAction.DELETEUSER, **policy_scope)
         g.policy_object = PolicyClass()
         try:
-            return admin_granted_realms(PolicyAction.DELETEUSER)
+            return admin_granted_realms(PolicyAction.DELETEUSER, unrestricted_without_realm=unrestricted_without_realm)
         finally:
             delete_policy("granted")
 
@@ -118,6 +118,42 @@ class AdminGrantedRealmsTestCase(MyTestCase):
             granted = self._granted(realm=f"*,!{self.realm3}", **target_scope)
             self.assertIn(self.realm1, granted, target_scope)
             self.assertNotIn(self.realm3, granted, target_scope)
+
+    def test_a_policy_without_realm_is_unrestricted_for_objects_bound_to_realms(self):
+        for target_scope in ({"user": "operator"}, {"resolver": self.resolvername1}):
+            self.assertIsNone(self._granted(unrestricted_without_realm=True, **target_scope), target_scope)
+            self.assertEqual([self.realm1], self._granted(unrestricted_without_realm=True, realm=self.realm1,
+                                                          **target_scope), target_scope)
+
+
+class RealmsGrantedTestCase(MyTestCase):
+    """Whether an admin may act on an object bound to a realm field, like a policy."""
+
+    def setUp(self) -> None:
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+
+    def test_realms_granted(self):
+        self.assertTrue(realms_granted([self.realm3], None))
+        self.assertTrue(realms_granted(None, None))
+        self.assertFalse(realms_granted([self.realm1], []))
+        # A field for every realm applies to the granted realms as well, but also to all others
+        for every_realm in (None, [], ["*"]):
+            self.assertTrue(realms_granted(every_realm, [self.realm1]), every_realm)
+            self.assertFalse(realms_granted(every_realm, [self.realm1], every_realm=True), every_realm)
+        self.assertTrue(realms_granted([self.realm1, self.realm3], [self.realm1]))
+        self.assertFalse(realms_granted([self.realm1, self.realm3], [self.realm1], every_realm=True))
+        self.assertTrue(realms_granted([self.realm1, self.realm3], [self.realm1, self.realm3], every_realm=True))
+        self.assertTrue(realms_granted(["*", f"!{self.realm3}"], [self.realm1]))
+        self.assertFalse(realms_granted(["*", f"!{self.realm3}"], [self.realm1], every_realm=True))
+        # Excluding every realm that is not granted still covers the realms created later
+        self.assertFalse(realms_granted(["*", f"!{self.realm2}", f"!{self.realm3}"], [self.realm1], every_realm=True))
+        self.assertFalse(realms_granted([f"!{self.realm3}"], [self.realm1]))
+        # A field of exclusions only applies to requests without a realm, so no grant of realms covers it
+        all_realms = [self.realm1, self.realm2, self.realm3]
+        for exclusions in ([f"!{self.realm3}"], [f"!{self.realm1}"], [f"!{self.realm2}", f"-{self.realm3}"]):
+            self.assertFalse(realms_granted(exclusions, all_realms, every_realm=True), exclusions)
 
 
 class VisibilityScopeTargetsTestCase(MyTestCase):
