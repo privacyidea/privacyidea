@@ -50,7 +50,7 @@ EXPECTED = {
 
 class TestMigrationF8a498439814(MigrationTestBase):
     REVISION = "f8a498439814"
-    PARENT_REVISION = "b7c1e4d2a9f3"
+    PARENT_REVISION = "35815effd77c"
 
     def _insert_policies(self, engine) -> None:
         self._insert_rows(engine, "policy", [

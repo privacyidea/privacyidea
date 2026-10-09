@@ -16,7 +16,7 @@ next time the policy is saved.
 The downgrade does not restore the values, the excluded action means the same in every version.
 
 Revision ID: f8a498439814
-Revises: b7c1e4d2a9f3
+Revises: 35815effd77c
 Create Date: 2026-10-02 15:00:00.000000
 
 """
@@ -30,7 +30,7 @@ from sqlalchemy import orm
 log = logging.getLogger("alembic.env")
 
 revision = 'f8a498439814'
-down_revision = 'b7c1e4d2a9f3'
+down_revision = '35815effd77c'
 branch_labels = None
 depends_on = None
 
