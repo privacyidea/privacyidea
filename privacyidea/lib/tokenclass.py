@@ -160,6 +160,10 @@ class TokenClass:
     client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # Whether check_challenge_response removes the challenge it accepted. A class that keeps the answered challenge
+    # because has_further_challenge still has to read it sets this to False; check_token_list then consumes the
+    # challenge for it once no further challenge follows.
+    consumes_answered_challenge = True
 
     desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
