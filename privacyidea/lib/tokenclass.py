@@ -97,7 +97,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
-from .challenge import get_challenges
+from .challenge import get_challenges, consume_challenge
 from .challenge_types import ChallengeSession
 # Re-exported for backwards compatibility: these live in challenge_types so that
 # models.challenge and lib.cache.redis can import them without a circular import.
@@ -2002,8 +2002,14 @@ class TokenClass:
                     options["challenge"] = challenge.challenge
                     options["data"] = challenge.get_data()
                     if challenge.session == ChallengeSession.ENROLLMENT:
+                        # Claim the challenge before enrolling, so a second request cannot overwrite what this one
+                        # enrolls. An enrollment that rejects its input ends the enrollment either way: the only
+                        # class that can reject it deletes the token before it raises.
+                        if not consume_challenge(challenge):
+                            log.info(f"The enrollment challenge of token {self.token.serial} was used by another "
+                                     f"request.")
+                            break
                         self.enroll_via_validate_2nd_step(passw, options=options)
-                        challenge.delete()
                         # Basically we have a successfully answered challenge
                         otp_counter = 0
                     else:
@@ -2019,8 +2025,12 @@ class TokenClass:
                             otp_counter = -1
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
-                            # successful result and delete the challenge object.
-                            challenge.delete()
+                            # successful result and delete the challenge object. Only the request that removes it
+                            # is accepted; another one that answered it at the same time is not.
+                            if not consume_challenge(challenge):
+                                log.info(f"The challenge {transaction_id} of token {self.token.serial} was used by "
+                                         f"another request.")
+                                otp_counter = -1
                             break
                         else:
                             # increase the received_count

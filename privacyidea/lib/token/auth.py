@@ -649,10 +649,12 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     # has_further_challenge reads the answered challenge of the token classes that keep it, so it
                     # is asked before the challenge is consumed below.
                     further_challenge_follows = token_object.has_further_challenge(options)
-                    if not further_challenge_follows and not token_object.consumes_answered_challenge:
+                    if not token_object.consumes_answered_challenge:
                         # The token class left the answered challenge in place, so this is the only point at which
-                        # this request can claim it. Of several requests answering the same last step only the one
-                        # that removes the challenge is accepted; the others end like a response that did not match.
+                        # this request can claim it. Of several requests answering the same step only the one that
+                        # removes the challenge continues; the others end like a response that did not match. An
+                        # intermediate step is claimed too, or one answer would buy a follow-up challenge per
+                        # request instead of one.
                         # The commit ends the transaction that read the challenge, so the DELETE starts a new one
                         # and MariaDB >= 11.6.2 does not refuse it with 1020 (as consume_challenge does the same).
                         db.session.commit()
