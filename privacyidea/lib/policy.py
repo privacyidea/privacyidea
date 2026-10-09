@@ -1193,10 +1193,80 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _action_definitions_for_scope(scope: str) -> dict:
+    """Return the definitions of the actions of the given scope (static + dynamic), keyed by the action name."""
+    from .token import get_dynamic_policy_definitions
+    return get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
+
+
 def _allowed_actions_for_scope(scope: str) -> set:
     """Return the set of action names defined for the given scope (static + dynamic)."""
-    from .token import get_dynamic_policy_definitions
-    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+    return set(_action_definitions_for_scope(scope))
+
+
+def _bool_actions_for_scope(scope: str) -> set:
+    """Return the names of the boolean actions of the given scope."""
+    return {name for name, definition in _action_definitions_for_scope(scope).items()
+            if definition.get("type") == "bool"}
+
+
+def _bool_action_value(value) -> bool | None:
+    """
+    What the value of a boolean action means: True for an empty value or a value is_true accepts, False for False, 0,
+    "0" and "false" in any case, None for any other value, like "hotp".
+    """
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in ("false", "0"):
+            return False
+        return True if value == "" or is_true(value) else None
+    if value is None or is_true(value):
+        return True
+    return False if value is False or value == 0 else None
+
+
+def negate_disabled_bool_actions(scope: str, action: str | dict) -> str | dict:
+    """
+    Turn a boolean action with a false value (like ``policywrite=False``) into the excluded action ``-policywrite``.
+    The policy matching only checks whether an action is set, so it would ignore the value and treat the action as
+    enabled. A boolean action with an empty value is stored without the value, any other value stays as it is.
+    ``validate_actions`` rejects the values that are neither true nor false.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: The policy actions in the same form
+    """
+    bool_actions = _bool_actions_for_scope(scope)
+
+    def stored_key(key, value):
+        # The key a boolean action is stored with, or None if it keeps its value
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return key
+        if _bool_action_value(value) is False:
+            return f"-{key}"
+        return None
+
+    if isinstance(action, dict):
+        negated_action = {}
+        for key, value in action.items():
+            new_key = stored_key(key, value) if key in bool_actions else None
+            if new_key:
+                negated_action[new_key] = True
+            else:
+                negated_action[key] = value
+        return negated_action
+
+    # Only replace the changed actions, so that the other actions are stored exactly as given
+    parts = []
+    for part in re.split(r'(?<!\\),', action):
+        key_value = part.strip().split("=", 1)
+        if len(key_value) == 2 and key_value[0] in bool_actions:
+            new_key = stored_key(*key_value)
+            if new_key:
+                # Keep the space after the separating comma
+                part = part[:len(part) - len(part.lstrip())] + new_key
+        parts.append(part)
+    return ",".join(parts)
 
 
 def validate_actions(scope: str, action: str | dict) -> bool:
@@ -1232,16 +1302,25 @@ def validate_actions(scope: str, action: str | dict) -> bool:
             except ParameterError as e:
                 raise ParameterError(f"Invalid value for action '{action_key}': {e.message}")
 
+    # A boolean action with a value that is neither true nor false would act as enabled, whatever was meant by it
+    bool_actions = _bool_actions_for_scope(scope)
+    for action_key, action_value in actions.items():
+        if action_key in bool_actions and _bool_action_value(action_value) is None:
+            raise ParameterError(f"Invalid value for action '{action_key}': '{action_value}' is neither true nor "
+                                 f"false!")
+
     return True
 
 
 def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
     """
-    Remove the actions that are not valid for the given scope.
+    Remove the actions that are not valid for the given scope and the boolean
+    actions with a value that is neither true nor false.
 
     This is used to import a policy that was exported from a different
     privacyIDEA version which still contained actions (e.g. of a removed token
-    type) that are no longer available.
+    type) that are no longer available, or boolean actions with a value like
+    "hotp" that older versions stored without checking it.
 
     :param scope: The scope of the policy
     :param action: The policy actions as a dict or comma separated string
@@ -1251,6 +1330,7 @@ def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
         removed because they are not valid for the scope.
     """
     allowed_actions = _allowed_actions_for_scope(scope)
+    bool_actions = _bool_actions_for_scope(scope)
 
     if isinstance(action, dict):
         actions = dict(action)
@@ -1265,6 +1345,8 @@ def filter_invalid_actions(scope: str, action: str | dict) -> tuple[dict, list]:
         # check the action key without its wildcard/negation prefix
         raw = remove_wildcards_and_negations([action_key])
         if raw and raw[0] not in allowed_actions:
+            dropped.append(action_key)
+        elif action_key in bool_actions and _bool_action_value(action_value) is None:
             dropped.append(action_key)
         else:
             cleaned[action_key] = action_value
@@ -1509,11 +1591,13 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     # validate action values
     if action is not None:
         if scope is not None:
-            validate_actions(scope, action)
+            action_scope = scope
         elif policy:
-            validate_actions(policy.scope, action)
+            action_scope = policy.scope
         else:
             raise ParameterError("Scope is required to set action values!")
+        validate_actions(action_scope, action)
+        action = negate_disabled_bool_actions(action_scope, action)
     if isinstance(action, dict):
         action_list = []
         for k, v in action.items():
@@ -3938,7 +4022,7 @@ def import_policy(data, name=None, skip_invalid=False):
                                                       res_data.get('action', {}))
             if dropped:
                 log.warning(f'Policy "{policy_name}": dropping actions not valid '
-                            f'for this version: {dropped}')
+                            f'for this version or with an invalid value: {dropped}')
                 res_data['action'] = cleaned
             # Only skip when dropping actions emptied the policy. A policy that
             # had no actions to begin with has nothing invalid and must import

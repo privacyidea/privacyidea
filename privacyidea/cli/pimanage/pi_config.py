@@ -596,7 +596,8 @@ def _accepts_parameter(func, parameter):
 @click.option('--skip-invalid', is_flag=True, default=False,
               help='Skip parts of the configuration that are not valid for this '
                    'privacyIDEA version (e.g. policy actions of a removed token '
-                   'type) instead of failing, and import the rest.')
+                   'type or boolean policy actions with a value that is neither '
+                   'true nor false) instead of failing, and import the rest.')
 @click.pass_context
 def config_import(ctx, infile, types, name, skip_invalid):
     """

@@ -18,6 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
 import { PolicyService } from "@services/policies/policies.service";
 import { ViewActionColumnComponent } from "./view-action-column.component";
 
@@ -181,6 +183,84 @@ describe("ViewActionColumnComponent", () => {
 
     // The boolean value is not rendered, so it must not reorder to the top.
     expect(component.actionsList().map((a) => a.name)).toEqual(["alpha", "flag"]);
+  });
+
+  it("hides the value of an excluded action and resolves its definition without the prefix", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string) =>
+      name === "configwrite" ? { type: "bool" } : null
+    );
+    fixture.componentRef.setInput("actions", { "-configwrite": true });
+    fixture.componentRef.setInput("scope", "admin");
+    fixture.detectChanges();
+
+    expect(mockPolicyService.getDetailsOfAction).toHaveBeenCalledWith("configwrite", "admin");
+    expect(component.actionsList()[0].showValue).toBe(false);
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector(".action-label")?.textContent).toBe("-configwrite");
+    expect(compiled.querySelector(".action-value")).toBeNull();
+  });
+
+  it("shows and marks the value of a boolean action that does not enable it", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string) =>
+      name === "container_ssl_verify" ? { type: "str" } : { type: "bool" }
+    );
+    fixture.componentRef.setInput("actions", {
+      triggerchallenge: "hotp",
+      policywrite: "False",
+      enable: "true",
+      disable: "1",
+      tokenlist: true,
+      container_ssl_verify: "False"
+    });
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const valueOf = (name: string) =>
+      Array.from(compiled.querySelectorAll(".action-row"))
+        .find((row) => row.querySelector(".action-label")?.textContent === name)
+        ?.querySelector(".action-value");
+
+    for (const name of ["triggerchallenge", "policywrite"]) {
+      expect(valueOf(name)?.querySelector(".invalid-value")).not.toBeNull();
+    }
+    expect(valueOf("triggerchallenge")?.textContent).toBe("hotp");
+    // A value that enables the boolean action stays hidden
+    for (const name of ["enable", "disable", "tokenlist"]) {
+      expect(valueOf(name)).toBeNull();
+    }
+    // "False" is a regular value of a string action
+    expect(valueOf("container_ssl_verify")?.querySelector(".invalid-value")).toBeNull();
+    expect(valueOf("container_ssl_verify")?.textContent).toBe("False");
+  });
+
+  it("floats a boolean action whose shown value matches the term", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string) =>
+      name === "triggerchallenge" ? { type: "bool" } : { type: "str" }
+    );
+    fixture.componentRef.setInput("actions", { alpha: "1", triggerchallenge: "hotp" });
+    fixture.componentRef.setInput("highlightTerms", ["hotp"]);
+    fixture.detectChanges();
+
+    expect(component.actionsList().map((a) => a.name)).toEqual(["triggerchallenge", "alpha"]);
+  });
+
+  it("marks an invalid value of an action of another type and explains it on hover", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string) => {
+      if (name === "otppin") return { type: "str", value: ["userstore", "tokenpin", "none"] };
+      if (name === "logout_time") return { type: "int" };
+      return { type: "str" };
+    });
+    fixture.componentRef.setInput("actions", { otppin: "ldap", logout_time: "soon", tokenlabel: "<s>" });
+    fixture.detectChanges();
+
+    expect(component.actionsList().map((a) => [a.name, a.invalidValue])).toEqual([
+      ["otppin", true],
+      ["logout_time", true],
+      ["tokenlabel", false]
+    ]);
+    const marked = fixture.debugElement.queryAll(By.directive(MatTooltip));
+    expect(marked.map((element) => (element.nativeElement as HTMLElement).textContent)).toEqual(["ldap", "soon"]);
+    expect(marked[0].injector.get(MatTooltip).message).toBe("This value is invalid. Edit the policy to correct it.");
   });
 
   it("should resolve correct isBoolean per scope", () => {

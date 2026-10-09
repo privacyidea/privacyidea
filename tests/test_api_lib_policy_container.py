@@ -729,6 +729,25 @@ class PrePolicyContainerTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("policy")
         delete_policy("policy_realm2")
 
+    def test_80b_smartphone_config_bool_action_values(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        # A boolean action with a value that is not true is not set
+        set_policy("policy", SCOPE.CONTAINER,
+                   action={PolicyAction.CONTAINER_CLIENT_ROLLOVER: "true",
+                           PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER: True,
+                           PolicyAction.DISABLE_CLIENT_TOKEN_DELETION: False,
+                           PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER: "false"})
+        req, container = self.mock_container_request("user", "smartphone")
+        self.assertTrue(smartphone_config(req))
+        policies = req.all_data["client_policies"]
+        self.assertTrue(policies[PolicyAction.CONTAINER_CLIENT_ROLLOVER])
+        self.assertTrue(policies[PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_TOKEN_DELETION])
+        self.assertFalse(policies[PolicyAction.DISABLE_CLIENT_CONTAINER_UNREGISTER])
+        container.delete()
+        delete_policy("policy")
+
     def test_81_check_client_container_disabled_action_user_denied(self):
         self.setUp_user_realms()
         self.setUp_user_realm3()

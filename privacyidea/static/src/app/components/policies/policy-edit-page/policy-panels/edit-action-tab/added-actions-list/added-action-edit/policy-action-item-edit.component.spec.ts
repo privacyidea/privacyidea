@@ -125,4 +125,51 @@ describe("PolicyActionItemEditComponent", () => {
     deleteBtn.nativeElement.click();
     expect(spy).toHaveBeenCalled();
   });
+
+  describe("boolean action with a value that does not enable it", () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput("action", { name: "triggerchallenge", value: "hotp" });
+      fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "Trigger a challenge" });
+      fixture.detectChanges();
+    });
+
+    it("shows that saving the policy fails for a value that is neither true nor false", () => {
+      expect(component.boolValue()).toBeNull();
+      const warning = fixture.debugElement.query(By.css(".detail-warning")).nativeElement as HTMLElement;
+      expect(warning.textContent).toContain('"hotp"');
+      expect(warning.textContent).toContain("fails");
+    });
+
+    it("shows that saving the policy stores a false value as excluded", () => {
+      fixture.componentRef.setInput("action", { name: "triggerchallenge", value: "False" });
+      fixture.detectChanges();
+      expect(component.boolValue()).toBe(false);
+      const warning = fixture.debugElement.query(By.css(".detail-warning")).nativeElement as HTMLElement;
+      expect(warning.textContent).toContain("excluded");
+      expect(fixture.debugElement.query(By.css(".detail-value button"))).not.toBeNull();
+    });
+
+    it("keeps the action enabled by setting its value to true", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      const keepButton = fixture.debugElement.query(By.css(".detail-value button")).nativeElement as HTMLElement;
+      keepButton.click();
+      expect(spy).toHaveBeenCalledWith(true);
+    });
+
+    it.each([true, "true", "TRUE", "1", ""])("shows nothing for the enabling value %p", (value) => {
+      fixture.componentRef.setInput("action", { name: "triggerchallenge", value });
+      fixture.detectChanges();
+      expect(component.boolValue()).toBe(true);
+      expect(fixture.debugElement.query(By.css(".detail-warning"))).toBeNull();
+      expect(fixture.debugElement.query(By.css(".detail-value button"))).toBeNull();
+    });
+
+    it("shows nothing for a string action with the value False", () => {
+      fixture.componentRef.setInput("action", { name: "container_ssl_verify", value: "False" });
+      fixture.componentRef.setInput("actionDetail", { type: "str", desc: "", value: ["True", "False"] });
+      fixture.detectChanges();
+      expect(component.boolValue()).toBe(true);
+      expect(fixture.debugElement.query(By.css(".detail-warning"))).toBeNull();
+    });
+  });
 });

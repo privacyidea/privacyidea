@@ -712,7 +712,7 @@ class AChallengeResponse(MyApiTestCase):
                        user=User("cornelius", self.realm1))
         self.assertTrue(r)
 
-        set_policy("chalresp", scope=SCOPE.ADMIN, action=f"{PolicyAction.TRIGGERCHALLENGE}=hotp")
+        set_policy("chalresp", scope=SCOPE.ADMIN, action=PolicyAction.TRIGGERCHALLENGE)
 
         with self.app.test_request_context('/validate/triggerchallenge',
                                            method='POST',

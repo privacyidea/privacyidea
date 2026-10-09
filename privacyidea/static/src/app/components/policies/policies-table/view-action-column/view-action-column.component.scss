@@ -23,5 +23,13 @@
     color: var(--mat-sys-on-surface-variant);
     white-space: normal;
     flex: 1;
+
+    // A value that does not fit the definition of the action
+    .invalid-value {
+      padding: 0 4px;
+      border-radius: var(--border-radius);
+      background-color: color-mix(in srgb, var(--yellow-light), transparent 40%);
+      color: var(--mat-sys-on-surface);
+    }
   }
 }
