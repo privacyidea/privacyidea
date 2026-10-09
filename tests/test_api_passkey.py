@@ -19,6 +19,7 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
+from flask import Response
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
@@ -31,7 +32,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
-from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
+from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token, enable_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
@@ -1428,12 +1429,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def _expire_token(self, serial: str):
+    def _expire_token(self, serial: str) -> None:
         token = get_one_token(serial=serial)
         token.set_validity_period_end((datetime.now(timezone.utc) - timedelta(days=1)).isoformat())
         token.save()
 
-    def _answer_passkey_challenge(self, endpoint: str, challenge: str, response: dict) -> tuple:
+    def _answer_passkey_challenge(self, endpoint: str, challenge: str,
+                                  response: dict) -> tuple[Response, str]:
         """Trigger a passkey challenge and answer it at the given endpoint. Returns (response, transaction_id)."""
         passkey_challenge = self._trigger_passkey_challenge(challenge)
         transaction_id = passkey_challenge["transaction_id"]
@@ -1444,7 +1446,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             return self.app.full_dispatch_request(), transaction_id
 
     def _assert_unusable_token_logged(self, transaction_id: str, serial: str, endpoint: str,
-                                      reason: AuthEventReason):
+                                      reason: AuthEventReason) -> None:
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.NO_USABLE_TOKEN],
                                                      transaction_id=transaction_id)
@@ -2225,14 +2227,25 @@ class PasskeyAPITest(PasskeyAPITestBase):
             "token by serial, other credential": {**registration, "serial": serial,
                                                   "credential_id": self.credential_id_multi_device,
                                                   "rawId": self.credential_id_multi_device},
-            "incomplete registration": {"attestationObject": self.registration_attestation,
-                                        "credential_id": self.credential_id},
         }
         for index, (name, data) in enumerate(requests.items()):
             with self.subTest(name):
                 data["transaction_id"] = f"38{index:018d}"
                 self._assert_registration_data_rejected(data, serial)
                 self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+
+        # Registration data that is not complete for a registration is refused as a malformed request, before
+        # anything can classify it as an answer to a challenge
+        with self.subTest("incomplete registration"):
+            clear_authentication_log()
+            data = {"attestationObject": self.registration_attestation, "credential_id": self.credential_id,
+                    "transaction_id": f"38{len(requests):018d}"}
+            with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+            assert_authentication_log([])
+            self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
         remove_token(serial)
 
     def test_39_replayed_registration(self):
@@ -2573,6 +2586,103 @@ class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
         remove_token(serial)
 
 
+class PasskeyRequestShapeTest(PasskeyAPITestBase):
+    """
+    A FIDO2 request that is incomplete for the method it selects is malformed, not an authentication attempt: it is
+    answered with a 400 and leaves no authentication event, as a request without a transaction_id already does.
+    """
+
+    def _complete_assertion(self) -> dict:
+        transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        clear_authentication_log()
+        return {**self.authentication_response_no_uv, "transaction_id": transaction_id}
+
+    def _post(self, endpoint: str, data: dict, origin: bool = True) -> Response:
+        headers = {"Origin": self.expected_origin} if origin else {}
+        with self.app.test_request_context(endpoint, method="POST", data=data, headers=headers):
+            return self.app.full_dispatch_request()
+
+    def test_01_incomplete_assertion_is_malformed(self):
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        for endpoint in ("/validate/check", "/auth"):
+            for missing in ("authenticatorData", "clientDataJSON", "signature", "Origin"):
+                with self.subTest(endpoint=endpoint, missing=missing):
+                    data = self._complete_assertion()
+                    data.pop(missing, None)
+                    res = self._post(endpoint, data, origin=missing != "Origin")
+                    self.assertEqual(400, res.status_code, res.json)
+                    assert_authentication_log([])
+
+    def test_02_incomplete_assertion_is_malformed_before_the_token_is_judged(self):
+        """
+        The exits that classified such a request before it reached the verification: an unknown credential, and a
+        token that may not authenticate.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+
+        for endpoint in ("/validate/check", "/auth"):
+            with self.subTest("unknown credential", endpoint=endpoint):
+                data = self._complete_assertion()
+                res = self._post(endpoint, {"credential_id": "unknown", "transaction_id": data["transaction_id"]})
+                self.assertEqual(400, res.status_code, res.json)
+                assert_authentication_log([])
+
+        with self.subTest("disabled token"):
+            data = self._complete_assertion()
+            data.pop("signature")
+            enable_token(serial, False)
+            res = self._post("/validate/check", data)
+            enable_token(serial, True)
+            self.assertEqual(400, res.status_code, res.json)
+            assert_authentication_log([])
+
+    def test_03_incomplete_registration_is_malformed(self):
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        registration = {"attestationObject": self.registration_attestation,
+                        "clientDataJSON": self.registration_client_data,
+                        "credential_id": self.credential_id, "rawId": self.credential_id,
+                        "authenticatorAttachment": self.authenticator_attachment}
+        for missing in ("clientDataJSON", "rawId", "authenticatorAttachment"):
+            with self.subTest(missing=missing):
+                data = self._complete_assertion()
+                data = {**registration, "transaction_id": data["transaction_id"]}
+                data.pop(missing)
+                res = self._post("/validate/check", data)
+                self.assertEqual(400, res.status_code, res.json)
+                assert_authentication_log([])
+
+    def test_04_legacy_parameter_names_still_verify(self):
+        """
+        The shape check accepts the parameter names a legacy WebAuthn client sends.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        data = self._complete_assertion()
+        legacy = {"authenticatordata": data.pop("authenticatorData"),
+                  "clientdata": data.pop("clientDataJSON"),
+                  "signaturedata": data.pop("signature")}
+
+        res = self._post("/validate/check", {**data, **legacy})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"], res.json)
+
+    def test_05_a_password_next_to_an_assertion_is_not_refused(self):
+        """
+        A legacy WebAuthn client sends an empty pass next to the assertion. Parameters of another method do not
+        make the request malformed.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        data = self._complete_assertion()
+
+        res = self._post("/validate/check", {**data, "pass": ""})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"], res.json)
+
+
 class PasskeyFailureClassificationTest(PasskeyAPITestBase):
     """
     A FIDO2 answer that does not verify is a failed challenge answer, not a failed second factor: no first factor was
@@ -2611,7 +2721,9 @@ class PasskeyFailureClassificationTest(PasskeyAPITestBase):
         clear_authentication_log()
         try:
             for attempt in range(3):
-                self._post("/validate/check", {"serial": serial, "credential_id": "garbage",
+                # A complete assertion, so the request is classified rather than refused as malformed
+                self._post("/validate/check", {**self.authentication_response_no_uv, "serial": serial,
+                                               "credential_id": "garbage",
                                                "transaction_id": f"{attempt}" * 20})
             self._assert_owner_not_locked()
             self.assertEqual(["CHALLENGE_ANSWERED_FAIL"] * 3, self._event_types())
@@ -2650,7 +2762,9 @@ class PasskeyFailureClassificationTest(PasskeyAPITestBase):
         clear_authentication_log()
         try:
             for attempt in range(3):
-                self._post("/validate/check", {"serial": "LOCKOUT_HOTP", "credential_id": "garbage",
+                # A complete assertion, so the request is classified rather than refused as malformed
+                self._post("/validate/check", {**self.authentication_response_no_uv, "serial": "LOCKOUT_HOTP",
+                                               "credential_id": "garbage",
                                                "transaction_id": f"{attempt}" * 20})
             self._assert_owner_not_locked(hotp_user)
             self.assertEqual(["NO_TOKEN"] * 3, self._event_types())

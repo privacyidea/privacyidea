@@ -104,6 +104,7 @@ from privacyidea.lib.fido2.challenge import (verify_fido2_challenge, has_unbound
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthntoken import require_fido2_assertion
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
@@ -283,6 +284,16 @@ def get_auth_token():
         :http:post:`/validate/initialize` (required for passkey and
         for the second leg of a challenge-response flow).
 
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (passkey), then ``username`` with ``password``.
+    A request that does not carry everything the selected method needs
+    is malformed and is answered with a 400, without counting as an
+    authentication attempt. A passkey request needs ``transaction_id``,
+    the ``Origin`` header and the assertion itself:
+    ``authenticatorData``, ``clientDataJSON`` and ``signature``, or
+    their legacy spellings ``authenticatordata``, ``clientdata`` and
+    ``signaturedata``.
+
     :status 200: success — the JWT is in ``result.value.token``;
         or first leg of a challenge-response — ``result.value`` is
         ``False`` and ``detail.multi_challenge`` describes the next
@@ -356,6 +367,13 @@ def get_auth_token():
         # A passkey request without its transaction_id is malformed, not an authentication attempt: nothing was
         # checked, so the parameter error is not logged as an authentication event.
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # The same applies to the parameters the assertion is verified with: they are read in the token class,
+        # after the checks below have classified the request, so an incomplete request would be logged as a
+        # failed authentication. Requiring them here keeps it the malformed request it is.
+        require_fido2_assertion(request.all_data)
+        # The origin binds the answer to the site it was made for and is taken from the request environment,
+        # never from a parameter, so it is required from there.
+        get_required(request.environ, "HTTP_ORIGIN")
         # The passkey branch is the only one that consumes the transaction it was given, so it is where the
         # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
         # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.

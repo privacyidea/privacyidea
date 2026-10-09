@@ -141,7 +141,8 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
+from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
+                                                 require_fido2_registration)
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -523,6 +524,19 @@ def check():
         ``transaction_id`` cancels an in-progress
         ``enroll_via_multichallenge`` flow without authenticating.
 
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (FIDO2), then ``serial``, then ``user`` with
+    ``pass``. A request that does not carry everything the selected
+    method needs is malformed and is answered with a 400, without
+    counting as an authentication attempt. A FIDO2 request always
+    needs ``transaction_id`` and the ``Origin`` header, and beyond
+    that either the assertion (``authenticatorData``,
+    ``clientDataJSON`` and ``signature``, or their legacy spellings
+    ``authenticatordata``, ``clientdata`` and ``signaturedata``) or,
+    when it answers an ``enroll_via_multichallenge`` enrollment, the
+    registration (``attestationObject``, ``clientDataJSON``, ``rawId``
+    and ``authenticatorAttachment``).
+
     **Example Validation Request**:
 
         .. sourcecode:: http
@@ -746,6 +760,18 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     # A request without its transaction_id is malformed, not an authentication attempt, so it is rejected before
     # anything classifies it and leaves no authentication event.
     transaction_id = get_required(request.all_data, "transaction_id")
+    # The same applies to the rest of the request: the parameters the answer is verified with are read in the
+    # token class, after the checks below have classified the request. Requiring them here keeps an incomplete
+    # request a malformed request instead of a failed authentication. Which ones are required follows from the
+    # method the request selected, so the registration data decides that before anything else is read.
+    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+    if attestation_object:
+        require_fido2_registration(request.all_data)
+    else:
+        require_fido2_assertion(request.all_data)
+    # The origin binds the answer to the site it was made for and is taken from the request environment, never
+    # from a parameter, so it is required from there.
+    get_required(request.environ, "HTTP_ORIGIN")
     # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
     # own settling does not apply here: this path resolves and checks the token itself.
     confirm_attempt(transaction_id)
@@ -810,9 +836,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
-    # Handle Enrollment vs Authentication
-    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
-
+    # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
     if attestation_object:
         # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
         # enrollment started at /token/init is completed there.
