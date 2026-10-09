@@ -56,7 +56,7 @@ from privacyidea.lib.users.internal_user_attributes import InternalUserAttribute
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
+from privacyidea.models import (Audit, Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
@@ -3702,25 +3702,32 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
 
 
 
-class AuthMaxFailOperatorLoginTestCase(MyApiTestCase):
+class AuthMaxOperatorLoginTestCase(MyApiTestCase):
     realm = "operatorrealm"
     resolver = "operatorresolver"
+    operator_logins = ["!cornelius", "corn*", "*"]
 
     def setUp(self) -> None:
         super().setUp()
         save_resolver({"resolver": self.resolver, "type": "passwdresolver",
                        "fileName": "tests/testdata/passwd-search-operator-logins"})
         set_realm(self.realm, [{"name": self.resolver}])
-        set_policy("max_fail_operator", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m",
-                   realm=self.realm)
+        # The policies count the audit entries, which earlier tests leave behind.
+        Audit.query.delete()
+        db.session.commit()
+        for login in ["cornelius", "cornerstone"] + self.operator_logins:
+            init_token({"type": "spass", "pin": "spass"}, user=User(login, realm=self.realm))
 
     def tearDown(self) -> None:
-        delete_policy("max_fail_operator")
         for token in get_tokens(realm=self.realm):
             remove_token(token.token.serial)
         delete_realm(self.realm)
         delete_resolver(self.resolver)
         super().tearDown()
+
+    def _set_policy(self, action: str) -> None:
+        set_policy("max_operator", scope=SCOPE.AUTHZ, action=f"{action}=2/1m", realm=self.realm)
+        self.addCleanup(delete_policy, "max_operator")
 
     def _check(self, login: str, pin: str) -> bool:
         with self.app.test_request_context('/validate/check', method='POST',
@@ -3730,12 +3737,35 @@ class AuthMaxFailOperatorLoginTestCase(MyApiTestCase):
         return res.json["result"]["value"]
 
     def test_failures_of_another_user_do_not_count(self):
-        logins = ["cornelius", "!cornelius", "corn*", "*"]
-        for login in logins + ["cornerstone"]:
-            init_token({"type": "spass", "pin": "spass"}, user=User(login, realm=self.realm))
+        self._set_policy(PolicyAction.AUTHMAXFAIL)
         for _attempt in range(2):
             self.assertFalse(self._check("cornerstone", "wrongpin"))
 
-        for login in logins:
+        for login in ["cornelius"] + self.operator_logins:
             with self.subTest(login=login):
                 self.assertTrue(self._check(login, "spass"))
+
+    def test_own_failures_count(self):
+        self._set_policy(PolicyAction.AUTHMAXFAIL)
+        for login in self.operator_logins:
+            with self.subTest(login=login):
+                for _attempt in range(2):
+                    self.assertFalse(self._check(login, "wrongpin"))
+                self.assertFalse(self._check(login, "spass"))
+
+    def test_successes_of_another_user_do_not_count(self):
+        self._set_policy(PolicyAction.AUTHMAXSUCCESS)
+        for _attempt in range(2):
+            self.assertTrue(self._check("cornerstone", "spass"))
+
+        for login in ["cornelius"] + self.operator_logins:
+            with self.subTest(login=login):
+                self.assertTrue(self._check(login, "spass"))
+
+    def test_own_successes_count(self):
+        self._set_policy(PolicyAction.AUTHMAXSUCCESS)
+        for login in self.operator_logins:
+            with self.subTest(login=login):
+                for _attempt in range(2):
+                    self.assertTrue(self._check(login, "spass"))
+                self.assertFalse(self._check(login, "spass"))
