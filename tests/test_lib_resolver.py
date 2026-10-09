@@ -11,6 +11,7 @@ lib.resolvers.ldapresolver
 The lib.resolver.py only depends on the database model.
 """
 import datetime
+import hashlib
 import json
 import logging
 import shutil
@@ -553,6 +554,27 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(stored_password.startswith("$1$"), stored_password)
         self.assertTrue(resolver.checkPass(uid, "test8"))
         self.assertFalse(resolver.checkPass(uid, "test"))
+
+        # OTRS (unsalted hex sha256)
+        parameters["Password_Hash_Type"] = "OTRS"
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
+                                            "password": "test10"}))
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
+        self.assertEqual(hashlib.sha256(b"test10").hexdigest(), stored_password)
+        self.assertTrue(resolver.checkPass(uid, "test10"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
+
+        # the type is case-insensitive
+        parameters["Password_Hash_Type"] = "sha256crypt"
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
+                                            "password": "test11"}))
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
+        self.assertTrue(stored_password.startswith("$5$rounds="), stored_password)
+        self.assertTrue(resolver.checkPass(uid, "test11"))
 
         # TODO: check unknown hash type
         parameters["Password_Hash_Type"] = "UNKNOWN"
