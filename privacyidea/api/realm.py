@@ -59,6 +59,7 @@ from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import ConditionCheck, Match
 from ..lib.policies.actions import PolicyAction
+from ..lib.policies.helper import admin_granted_realms
 import logging
 
 log = logging.getLogger(__name__)
@@ -370,8 +371,8 @@ def delete_default_realm_api(realm=None):
 def get_default_realm_api():
     """
     Return the default realm with its resolver list. If no realm is
-    currently flagged as default, or the default realm is not among the
-    realms ``GET /realm/`` returns to the admin, the response value is an
+    currently flagged as default, or the admin policies do not grant
+    :ref:`resolverread` for the default realm, the response value is an
     empty dictionary.
 
     Requires admin authentication.
@@ -412,7 +413,8 @@ def get_default_realm_api():
     """
     res = {}
     defRealm = get_default_realm()
-    if defRealm and _visible_realms().get(defRealm):
+    granted_realms = admin_granted_realms(PolicyAction.RESOLVERREAD)
+    if defRealm and (granted_realms is None or defRealm in granted_realms):
         res = get_realms(defRealm)
 
     g.audit_object.log({"success": True,

@@ -104,13 +104,13 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         res = self._request("/resolver/")
         self.assertEqual({RESO_A, RESO_FREE}, set(res.json["result"]["value"]))
 
-        # A policy narrowed to one resolver of the realm: the other one may stay in the realm, but not be removed
+        # A policy narrowed to one resolver of the realm changes nothing in it, not even a save that keeps it as it is
         set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
         res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": RESO_A})
         self.assertEqual(403, res.status_code, res.json)
         for resolvers in (f"{RESO_A},{RESO_FREE}", f"{RESO_A}, {RESO_FREE}", f"{RESO_A},{RESO_FREE},"):
             res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": resolvers})
-            self.assertEqual(200, res.status_code, resolvers)
+            self.assertEqual(403, res.status_code, resolvers)
 
         # Only the path names the realm and the node: a nodeid in the body or another spelling of the realm
         # does not hide the removal
@@ -131,15 +131,12 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         res = self._request(f"/realm/{REALM_A}/node/{NODE_UUID}", "POST", json={"resolver": [{"priority": 1}]})
         self.assertEqual(400, res.status_code, res.json)
 
-        # Another spelling of the realm keeps the resolvers the request does not set, also those the admin may not
-        # administer
+        # Another spelling of the realm keeps the resolvers the request does not set
         set_realm(REALM_A, [{"name": RESO_A}, {"name": RESO_FREE, "node": NODE_UUID}])
-        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
         expected = {(RESO_A, ""), (RESO_FREE, NODE_UUID)}
         res = self._request(f"/realm/{REALM_A.upper()}", "POST", {"resolvers": RESO_A})
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(expected, {(r["name"], r.get("node") or "") for r in get_realms(REALM_A)[REALM_A]["resolver"]})
-        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver="")
         res = self._request(f"/realm/{REALM_A.upper()}/node/{NODE_UUID}", "POST",
                             json={"resolver": [{"name": RESO_FREE}]})
         self.assertEqual(200, res.status_code, res.json)
@@ -154,6 +151,11 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         res = self._request("/defaultrealm")
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual({}, res.json["result"]["value"])
+        set_policy(name="admin_tokens_b", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=REALM_B)
+        res = self._request("/defaultrealm")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual({}, res.json["result"]["value"])
+        delete_policy("admin_tokens_b")
         res = self._request(f"/defaultrealm/{REALM_A}", "POST")
         self.assertEqual(403, res.status_code, res.json)
         res = self._request("/defaultrealm", "DELETE")
@@ -309,6 +311,12 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual({"pol_a", "pol_all", "admin_but_b"}, {p["name"] for p in res.json["result"]["value"]})
         res = self._request("/resolver/")
         self.assertEqual({RESO_A}, set(res.json["result"]["value"]))
+        res = self._request("/defaultrealm")
+        self.assertEqual({REALM_A}, set(res.json["result"]["value"]))
+        set_default_realm(REALM_B)
+        res = self._request("/defaultrealm")
+        self.assertEqual({}, res.json["result"]["value"])
+        set_default_realm(REALM_A)
         res = self._request("/policy/pol_b", "POST", {"scope": SCOPE.AUTH, "action": auth_action})
         self.assertEqual(403, res.status_code, res.json)
 
@@ -319,6 +327,64 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual([], res.json["result"]["value"])
         res = self._request("/resolver/")
         self.assertEqual({}, res.json["result"]["value"])
+        res = self._request("/defaultrealm")
+        self.assertEqual({}, res.json["result"]["value"])
         res = self._request("/policy/pol_new", "POST", {"scope": SCOPE.AUTH, "action": auth_action,
                                                         "realm": REALM_A})
         self.assertEqual(403, res.status_code, res.json)
+
+    def test_12_resolver_priority(self):
+        set_realm(REALM_A, [{"name": RESO_A, "priority": 1}, {"name": RESO_FREE, "priority": 2}])
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
+        resolvers = f"{RESO_A},{RESO_FREE}"
+        # The priority of a granted resolver decides whether it hides the users of the other one, so it may not be
+        # changed either
+        for priorities in ({f"priority.{RESO_A}": 1, f"priority.{RESO_FREE}": 3},
+                           {f"priority.{RESO_A}": 1},
+                           {f"priority.{RESO_A}": 3, f"priority.{RESO_FREE}": 2}):
+            res = self._request(f"/realm/{REALM_A}", "POST", json=dict(priorities, resolvers=resolvers))
+            self.assertEqual(403, res.status_code, priorities)
+        self.assertEqual({RESO_A: 1, RESO_FREE: 2},
+                         {r["name"]: r["priority"] for r in get_realms(REALM_A)[REALM_A]["resolver"]})
+
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver="")
+        res = self._request(f"/realm/{REALM_A}", "POST",
+                            json={"resolvers": resolvers, f"priority.{RESO_A}": 3, f"priority.{RESO_FREE}": 2})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual({RESO_A: 3, RESO_FREE: 2},
+                         {r["name"]: r["priority"] for r in get_realms(REALM_A)[REALM_A]["resolver"]})
+
+    def test_13_resolver_restricted_admin(self):
+        realm_new = "realm_new"
+        set_default_realm(REALM_B)
+        set_policy(name="admin_reso_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, resolver=RESO_A)
+
+        # A realm of granted resolvers only may be created and changed in every way
+        res = self._request(f"/realm/{realm_new}", "POST", {"resolvers": RESO_A})
+        self.assertEqual(200, res.status_code, res.json)
+        res = self._request(f"/realm/{realm_new}", "POST", json={"resolvers": RESO_A, f"priority.{RESO_A}": 5})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual({RESO_A: 5}, {r["name"]: r["priority"] for r in get_realms(realm_new)[realm_new]["resolver"]})
+        res = self._request(f"/realm/{realm_new}", "POST", {"resolvers": f"{RESO_A},{RESO_B}"})
+        self.assertEqual(403, res.status_code, res.json)
+
+        # A realm with a resolver that is not granted can not be changed
+        res = self._request(f"/realm/{REALM_B}", "POST", {"resolvers": f"{RESO_B},{RESO_A}"})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual([RESO_B], [r["name"] for r in get_realms(REALM_B)[REALM_B]["resolver"]])
+
+        # Also if the resolver that is not granted is part of the realm on another node only
+        db.session.add(NodeName(id=NODE_UUID, name="realm_scope_node"))
+        db.session.commit()
+        set_realm(REALM_A, [{"name": RESO_A, "priority": 2}, {"name": RESO_FREE, "node": NODE_UUID}])
+        res = self._request(f"/realm/{REALM_A}", "POST", json={"resolvers": RESO_A, f"priority.{RESO_A}": 1})
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request(f"/realm/{REALM_A}", "POST", json={"resolvers": RESO_A, f"priority.{RESO_A}": 2})
+        self.assertEqual(403, res.status_code, res.json)
+        res = self._request(f"/realm/{REALM_A}", "DELETE")
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertIn(REALM_A, get_realms())
+
+        res = self._request(f"/realm/{realm_new}", "DELETE")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertNotIn(realm_new, get_realms())

@@ -420,9 +420,12 @@ def resolver_config_access(request=None, action=None):
 
 def realm_membership_access(request=None, action=None):
     """
-    Allow a request to add a resolver to a realm or to remove one from it only if the admin's policies grant that
-    resolver, see :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. Resolvers that stay in the realm
-    are not checked, so an admin can keep a resolver they may not administer in a realm they may.
+    Allow a request to change the resolvers of a realm only if the admin's policies grant every resolver the realm
+    contains on any node, before and after the request, see
+    :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. The priorities decide which resolver a login
+    name of the realm is resolved in, so any change to a realm with a resolver the admin may not administer, a
+    priority as well, can redirect the users of that resolver. A policy for the whole realm grants all of its
+    resolvers, but not a resolver the request adds to it.
 
     Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter),
     ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body) and
@@ -433,6 +436,9 @@ def realm_membership_access(request=None, action=None):
     :param action: The action like PolicyAction.RESOLVERWRITE
     """
     if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    granted_resolvers = admin_granted_resolvers(action)
+    if granted_resolvers is None:
         return True
     params = request.all_data
     realm = normalize_realm_name(params.get("realm"))
@@ -448,16 +454,9 @@ def realm_membership_access(request=None, action=None):
         resolvers = params.get("resolvers") or []
         names = resolvers if isinstance(resolvers, list) else resolvers.split(",")
     # set_realm strips the names and skips empty ones, so " reso" and "reso" are the same resolver
-    requested = {name.strip() for name in names if isinstance(name, str)} - {""}
-    current = {entry.get("name") for entry in get_realms(realm).get(realm, {}).get("resolver", [])
-               if deletes or (entry.get("node") or "") == (node or "")}
-    changed = requested ^ current
-    if not changed:
-        return True
-    granted_resolvers = admin_granted_resolvers(action)
-    if granted_resolvers is None:
-        return True
-    denied = sorted(changed - granted_resolvers)
+    requested = {name.strip() for name in names if isinstance(name, str) and name.strip()}
+    stored = {entry.get("name") for entry in get_realms(realm).get(realm, {}).get("resolver", [])}
+    denied = sorted((stored | requested) - granted_resolvers)
     if denied:
         raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(", ".join(denied)))
     return True

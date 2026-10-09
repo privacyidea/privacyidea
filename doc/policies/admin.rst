@@ -1018,8 +1018,8 @@ that is part of no realm, and so a new resolver, needs a policy without a realm.
 policy that names users grants no resolver. The default realm is only shown if it is
 one of these realms.
 
-Adding a resolver to a realm or removing it from a realm needs the right for the
-resolver as well. Changing or removing the default realm needs the right for the
+Adding a resolver to a realm, removing it from a realm or changing its priority in
+a realm needs the right for the resolver as well. Changing or removing the default realm needs the right for the
 whole current default realm: a policy for the realm that also names resolvers or
 users does not grant it. Deleting a realm removes all of its resolvers and, for the
 default realm, the default realm, so it needs these rights as well.
