@@ -16,6 +16,7 @@ from privacyidea.lib.error import PolicyError, ParameterError
 from privacyidea.lib.utils import (parse_timelimit,
                                    check_time_in_range, parse_proxy,
                                    check_proxy, get_client_ip_info, MAX_IP_CHAIN_HOPS, MAX_IP_CHAIN_HOP_LENGTH,
+                                   resolve_remote_user_from_header,
                                    reduce_realms, is_true,
                                    parse_date, get_data_from_params, parse_legacy_time,
                                    int_to_hex, parse_time_offset_from_now, censor_connect_string,
@@ -859,6 +860,81 @@ class UtilsTestCase(MyTestCase):
         r.remote_addr = "not-an-ip-address"
         r.access_route = ["not-an-ip-address"]
         self.assertIsNone(get_client_ip(r, "10.0.0.1"))
+
+    def test_23j_remote_user_header_trusted_only_from_a_configured_proxy(self):
+        # The header that a reverse proxy passes the authenticated user in is only honoured when the
+        # TCP peer is the FIRST network of an OverrideAuthorizationClient proxy path.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_user = None
+            remote_addr = "10.0.0.1"
+            headers = {}
+
+        r = RequestMock()
+        r.headers = {"X-Forwarded-User": "cornelius"}
+        # The peer is the configured proxy: the header is honoured.
+        self.assertEqual("cornelius",
+                         resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1 > 192.168.0.0/16"))
+        # A single network is a proxy that may map to any client.
+        self.assertEqual("cornelius",
+                         resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # The same IP further down a chain does not qualify the request: only the proxy
+        # privacyIDEA is talking to may set the header.
+        self.assertIsNone(
+            resolve_remote_user_from_header(r, "X-Forwarded-User", "10.1.0.1 > 10.0.0.1 > 192.168.0.0/16"))
+        # A peer that is not listed at all must not pass a user either.
+        r.remote_addr = "203.0.113.9"
+        self.assertIsNone(
+            resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1 > 192.168.0.0/16"))
+
+    def test_23k_remote_user_header_never_overrides_the_web_server(self):
+        # An upstream web server (Apache mod_wsgi, nginx with uWSGI) authenticated the request and
+        # set REMOTE_USER: a plain request header must not override it.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_user = "admin"
+            remote_addr = "10.0.0.1"
+            headers = {}
+
+        r = RequestMock()
+        r.headers = {"X-Forwarded-User": "cornelius"}
+        self.assertIsNone(
+            resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # An empty header name keeps the feature off (the hook does not even call this).
+        self.assertIsNone(
+            resolve_remote_user_from_header(r, "", "10.0.0.1"))
+
+    def test_23l_remote_user_header_edge_cases(self):
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_user = None
+            remote_addr = "10.0.0.1"
+            headers = {}
+
+        r = RequestMock()
+        # No header sent: nothing to trust.
+        self.assertIsNone(resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # An empty header value is not a user name.
+        r.headers = {"X-Forwarded-User": ""}
+        self.assertIsNone(resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # No peer address (e.g. a unit test context): no way to check the proxy list.
+        r.headers = {"X-Forwarded-User": "cornelius"}
+        r.remote_addr = None
+        self.assertIsNone(resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # An unparseable peer address must not raise.
+        r.remote_addr = "not-an-ip-address"
+        self.assertIsNone(resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # A malformed proxy setting must not raise either (parse_proxy logs it).
+        r.remote_addr = "10.0.0.1"
+        self.assertIsNone(resolve_remote_user_from_header(r, "X-Forwarded-User", "not-an-ip-address"))
+        # An IPv4-mapped IPv6 peer ("::ffff:10.0.0.1") is the same proxy as 10.0.0.1.
+        r.remote_addr = "::ffff:10.0.0.1"
+        self.assertEqual("cornelius",
+                         resolve_remote_user_from_header(r, "X-Forwarded-User", "10.0.0.1"))
+        # An IPv6 proxy list must match an IPv6 peer.
+        r.remote_addr = "2001:db8::1"
+        self.assertEqual("cornelius",
+                         resolve_remote_user_from_header(r, "X-Forwarded-User", "2001:db8::/32"))
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
