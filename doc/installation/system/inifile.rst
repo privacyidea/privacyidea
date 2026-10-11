@@ -531,6 +531,53 @@ A JWT can be created like this::
    must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 
 
+.. _picfg_remote_user_header:
+
+REMOTE_USER from a reverse proxy
+--------------------------------
+
+.. index:: remote user, reverse proxy, gunicorn, Docker, X-Forwarded-User
+
+The ``remote_user`` login (see :ref:`policy_remote_user`) reads the
+``REMOTE_USER`` the web server authenticated. Apache ``mod_wsgi`` and nginx
+with uWSGI set it; a plain HTTP reverse proxy in front of gunicorn - which is
+how the Docker image runs, with Caddy in front of gunicorn - does not, so
+``remote_user`` has no effect in such a setup: gunicorn never populates
+``REMOTE_USER``.
+
+An administrator who terminates authentication in the proxy instead lets the
+proxy pass the verified user name in a request header and configures that
+header with ``PI_REMOTE_USER_HEADER``::
+
+   PI_REMOTE_USER_HEADER = X-Forwarded-User
+
+With this set, privacyIDEA treats the header value as the ``REMOTE_USER`` for
+every request (the login page, ``/config`` and ``/auth`` included). The header
+is only honoured when the TCP peer is the first network of a path in the
+``OverrideAuthorizationClient`` system setting (see :ref:`override_client`):
+the same list of proxies that may rewrite the client IP via ``X-Forwarded-For``
+decides which proxy may pass the authenticated user. A request that arrives
+with its own ``REMOTE_USER`` (Apache, uWSGI) keeps that value - a header never
+overrides the web server. The proxy must remove the configured header from
+incoming client requests; otherwise a client could authenticate as any user by
+sending the header itself, and the peer check is the second line of defence,
+not the first.
+
+With nginx in front of uWSGI, pass the user the classic way instead - then
+``REMOTE_USER`` arrives natively and the header is not needed::
+
+   location / {
+       include uwsgi_params;
+       uwsgi_param REMOTE_USER $remote_user;
+       ...
+   }
+
+The setting is off unless configured, and it can only be configured on the
+server (in ``pi.cfg`` or through the ``PRIVACYIDEA_PI_REMOTE_USER_HEADER``
+environment variable in a container). Changes take effect after a restart of
+the web server.
+
+
 Token parameters
 ----------------
 

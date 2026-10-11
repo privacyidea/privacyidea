@@ -824,6 +824,90 @@ def get_client_ip(request, proxy_settings):
     return get_client_ip_info(request, proxy_settings).ip
 
 
+def resolve_remote_user_from_header(request, header_name, proxy_settings):
+    """
+    Determine the REMOTE_USER for *request* from a configurable HTTP header,
+    the way a reverse proxy in front of privacyIDEA passes it.
+
+    gunicorn (and thus the Docker image, which runs Caddy in front of gunicorn)
+    never populates the WSGI ``REMOTE_USER`` variable, so the ``remote_user``
+    login has no effect behind an HTTP reverse proxy: only Apache ``mod_wsgi``
+    and nginx with uWSGI (``uwsgi_param REMOTE_USER $remote_user;``) currently
+    work. An authenticated proxy can instead pass the verified user name in a
+    request header; this turns such a header into the REMOTE_USER the
+    ``remote_user`` policy already evaluates.
+
+    The header is only trusted from a configured proxy. The TCP peer must
+    appear as the first network of a proxy path in the
+    ``OverrideAuthorizationClient`` system setting (see :func:`parse_proxy`),
+    i.e. the same list of proxies that may already rewrite the client IP via
+    ``X-Forwarded-For`` decides which proxy may pass the authenticated user.
+    A request that arrives with its own ``REMOTE_USER`` (Apache, uWSGI) keeps
+    that value - the header never overrides an upstream web server.
+
+    The caller is expected to only pass a non-empty *header_name* (the
+    ``PI_REMOTE_USER_HEADER`` configuration), which keeps the feature off
+    unless an administrator opts in.
+
+    :param request: the Flask request
+    :param header_name: the name of the HTTP header carrying the authenticated
+        user, as configured in ``PI_REMOTE_USER_HEADER``
+    :param proxy_settings: the ``OverrideAuthorizationClient`` system setting
+    :return: the user name from the header, or None when the request has no
+        usable header value or the peer is not a configured proxy
+    """
+    if not header_name:
+        return None
+    if request.remote_user:
+        # An upstream web server (Apache mod_wsgi, nginx with uWSGI) already
+        # authenticated this request. Its REMOTE_USER is authoritative; a
+        # request header must never override it.
+        return None
+    header_value = request.headers.get(header_name)
+    if not header_value:
+        return None
+    peer_ip = request.remote_addr
+    if not peer_ip:
+        return None
+    try:
+        peer = IPAddress(peer_ip)
+    except AddrFormatError:
+        log.warning(
+            f"Cannot check the proxy list for the remote user header: "
+            f"the peer address {peer_ip!r} is not an IP address."
+        )
+        return None
+    # The proxy paths are (IPNetwork, IPNetwork[, IPNetwork...]) tuples. The
+    # first network of a path is the proxy that privacyIDEA is talking to, and
+    # only such a directly connected proxy can set the authenticated-user
+    # header: everything further down the chain forwards a header value that
+    # the directly connected proxy is responsible for having validated (or
+    # stripped). Requiring the peer to be the *first* network keeps an IP
+    # listed further down a chain (e.g. a trusted backend in
+    # "10.0.0.0/24 > 192.168.0.0/16") from qualifying.
+    try:
+        proxy_paths = parse_proxy(proxy_settings or "")
+    except AddrFormatError:
+        # parse_proxy itself logs the malformed setting in detail.
+        return None
+    for proxy_path in proxy_paths:
+        first_network = proxy_path[0]
+        candidate = peer
+        # An IPv4-mapped IPv6 peer ("::ffff:10.1.2.3") is the same host as the
+        # IPv4 address it maps to; compare it in the family the admin wrote.
+        if candidate.version == 6 and candidate.is_ipv4_mapped():
+            candidate = candidate.ipv4()
+        if first_network.version != candidate.version:
+            continue
+        if candidate in first_network:
+            return header_value
+    log.info(
+        f"Ignoring the remote user header {header_name!r}: the peer "
+        f"{peer_ip} is not listed in OverrideAuthorizationClient."
+    )
+    return None
+
+
 def check_ip_in_policy(client_ip, policy):
     """
     This checks, if the given client IP is contained in a list like
