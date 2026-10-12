@@ -333,14 +333,19 @@ class RememberedDeviceLibTestCase(MyTestCase):
         ada = self._identity("ada")
         _device, cookie = create_remembered_device(ada, client_id, ip_address="10.0.0.1")
 
-        # The cookie is still the current one, so re-validating finds a device that is not in grace
+        # Nothing moved the device, so re-validating finds the current one, which is not in grace
         with patch.object(remembered_device_module, "rotate_device", return_value=None):
             self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
 
-        # After a real rotation the cookie carries the previous counter, which is tolerated from the same
-        # address inside the grace window
-        self.assertEqual("recognized", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
-        with patch.object(remembered_device_module, "rotate_device", return_value=None):
+        # The race itself: the rotation this request lost is the one that happened, so re-validating finds
+        # the cookie one counter behind - a duplicate of the request that won, from the same address.
+        real_rotate = remembered_device_module.rotate_device
+
+        def rotated_by_someone_else(device, client_ip=None):
+            real_rotate(device, client_ip)
+            return None
+
+        with patch.object(remembered_device_module, "rotate_device", side_effect=rotated_by_someone_else):
             self.assertEqual("grace", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
 
     def test_unknown_series_returns_miss(self):
