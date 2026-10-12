@@ -49,6 +49,20 @@ tr.example-detail-row td {
   border-top-width: 0;
 }
 
+// The detail cell spans every column. In Firefox a visible right border on it makes the table drop its own right edge
+// line from every element row below the first, so there the cell's edge is transparent and an open detail draws the
+// line as a background instead. Other engines keep the cell's border.
+@supports (-moz-appearance: none) {
+  .container-table-container .container-table tr.example-detail-row td {
+    border-right-color: transparent;
+
+    &:has(.expanded-detail) {
+      background: linear-gradient(var(--mat-sys-outline-variant), var(--mat-sys-outline-variant)) right / 1px 100%
+        no-repeat border-box;
+    }
+  }
+}
+
 .expanded-detail {
   display: grid;
   grid-template-rows: 1fr;
