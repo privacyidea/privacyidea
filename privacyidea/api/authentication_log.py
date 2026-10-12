@@ -165,6 +165,7 @@ def get_authentication_log():
     :query ca_dry_run: ``true`` for only entries with a dry-run outcome, ``false`` for only entries with an enforced
         one; omit it to get both. The three ``ca_*`` filters apply to the *same* outcome, so an entry matches when one
         of its outcomes satisfies all of them.
+
     Each entry records **how** its client was determined as well as what it was determined to be. ``source_ip``
     is the effective address - the one authorization and conditional access act on - while ``peer_ip`` is the TCP
     peer the request arrived from, ``source_ip_source`` names where the effective address was taken from

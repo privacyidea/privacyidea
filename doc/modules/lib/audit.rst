@@ -21,6 +21,7 @@ SQL Audit module
 .. automodule:: privacyidea.lib.auditmodules.sqlaudit
    :members:
    :undoc-members:
+   :exclude-members: inherit_cache
 
 Container Audit module
 ......................

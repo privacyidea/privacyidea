@@ -14,12 +14,16 @@ even create new containers. Additionally, the tokens in the container can be mod
 
 Possible Actions
 ~~~~~~~~~~~~~~~~
+
 create
 ......
+
 A new container will be created. This new container can be assigned to a user, which was identified in the request.
 Additionally, a token identified in the request can be added to the container.
 
-The administrator has to specify the **containertype** and can optionally specify a **description**.
+The administrator has to specify the container **type** and can optionally specify a **description**.
+With the option **user** the container is assigned to the user in the request or to the token or container owner,
+and with the option **token** the token from the request is added to the container.
 
 delete
 ......
@@ -30,15 +34,16 @@ conditions are matched. The tokens in the container will not be deleted.
 unassign
 ........
 
-The container which was identified in the request will be unassign from all users
+The container which was identified in the request will be unassigned from all users
 if all conditions are matched. The tokens in the container will not be changed.
 
 assign
 ......
 
 The container which was identified in the request will be assigned to a user which was identified in the request.
-If the logged in user performing this action has the role 'user' it is always himself. The user is not assigned to the
-tokens in the container.
+If the logged in user performing this action has the role 'user', it is always this user. The user is not assigned to the
+tokens in the container. A container has at most one owner. If it is already assigned to another user, the action
+fails; combine it with *unassign* first.
 
 set states
 ..........
@@ -46,7 +51,8 @@ set states
 The administrator can specify states that will be set on the container identified in the request. All other states
 will be removed.
 
-The administrator can select the new **states**. If no state is selected, all states will be removed.
+The administrator can select the new **states**. At least one state has to be selected; if no state is selected, the
+states of the container are not changed.
 
 add states
 ..........
@@ -79,7 +85,8 @@ All tokens will be removed from the container identified in the request.
 set container info
 ..................
 
-For the container identified in the request the container info will be set. All previous entries will be removed.
+For the container identified in the request the container info will be set. All previous entries except the internal
+ones are removed. A key of an internal entry is not written (a warning is logged).
 
 It requires the specification of a **key** and optionally a **value**. If no value is defined, it is set to an empty
 string "".
@@ -98,9 +105,10 @@ add container info
 ..................
 
 For the container identified in the request the container info will be added. Previous entries will be kept. Only if
-the given key already exists, an old entry will be overwritten.
+the given key already exists, an old entry will be overwritten. Internal entries can not be overwritten: using the key
+of an internal entry makes the action fail.
 
-It requires the specification of a **key** and a optionally **value**. If no value is defined, it is set to an empty
+It requires the specification of a **key** and optionally a **value**. If no value is defined, it is set to an empty
 string "".
 
 The **value** may contain tags that are replaced when the event is handled.
@@ -116,8 +124,7 @@ handling, the value is then written as it was entered.
 delete container info
 .....................
 
-For the container identified in the request the container info will be deleted. If a **key** is specified, only the
-entry of this key will be deleted. If no key is passed, all entries will be removed.
+For the container identified in the request all container info entries will be deleted. Internal entries are kept.
 
 enable all tokens
 .................
@@ -132,8 +139,8 @@ For the container identified in the request all contained tokens will be disable
 unregister
 ..........
 
-The container identified in the request will be unregistered. Synchronization with the smartphone is not possible
-anymore.
+Only for smartphone containers: the registration of the container identified in the request is terminated, and
+synchronization with the smartphone is not possible anymore. For other container types the action fails.
 
 Code
 ~~~~

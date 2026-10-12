@@ -154,4 +154,43 @@ describe("LdapResolverComponent", () => {
     expect(component.model().UIDTYPE).toBe(preset.uidType);
     expect(component.model().MULTIVALUEATTRIBUTES).toBe("");
   });
+
+  describe("TLS controls", () => {
+    it("enables TLS version and verification for an ldaps URI", () => {
+      componentRef.setInput("data", { LDAPURI: "ldaps://ldap.example.com", TLS_VERIFY: false, TLS_VERSION: "5" });
+      fixture.detectChanges();
+
+      expect(component.startTlsDisabled()).toBe(true);
+      expect(component.tlsVersionDisabled()).toBe(false);
+      expect(component.tlsVerifyDisabled()).toBe(false);
+      // The CA file is used only with verification
+      expect(component.tlsCaFileDisabled()).toBe(true);
+    });
+
+    it("enables the CA file for ldaps with verification", () => {
+      componentRef.setInput("data", { LDAPURI: "ldaps://ldap.example.com", TLS_VERIFY: true });
+      fixture.detectChanges();
+
+      expect(component.tlsCaFileDisabled()).toBe(false);
+      expect(component.ldapForm.TLS_CA_FILE().disabled()).toBe(false);
+    });
+
+    it("disables all TLS controls for ldap without STARTTLS, including the CA file input", () => {
+      componentRef.setInput("data", { LDAPURI: "ldap://ldap.example.com", START_TLS: false, TLS_CA_FILE: "/ca.pem" });
+      fixture.detectChanges();
+
+      expect(component.tlsVersionDisabled()).toBe(true);
+      expect(component.tlsVerifyDisabled()).toBe(true);
+      expect(component.ldapForm.TLS_CA_FILE().disabled()).toBe(true);
+      expect(component.getValue().TLS_CA_FILE).toBe("/ca.pem");
+    });
+
+    it("lets the admin choose TLS 1.2 for an ldaps URI", () => {
+      componentRef.setInput("data", { LDAPURI: "ldaps://ldap.example.com" });
+      fixture.detectChanges();
+      component.model.update((m) => ({ ...m, TLS_VERSION: "5" }));
+
+      expect(component.getValue().TLS_VERSION).toBe("5");
+    });
+  });
 });

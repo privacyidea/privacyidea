@@ -777,7 +777,7 @@ class IdResolver (UserIdResolver):
 
         :param attributes: Attributes according to the attribute mapping
         :return: The new UID of the user. The UserIdResolver needs to
-        determine the way how to create the UID.
+            determine the way how to create the UID.
         """
         attributes = attributes or {}
         # TODO: add try/except

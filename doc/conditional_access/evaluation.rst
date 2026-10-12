@@ -10,16 +10,19 @@ been answered.
 It protects the WebUI login, the ``/validate/`` endpoints and the endpoint a
 push app answers a challenge on.
 
-Before the credentials are checked, each of these endpoints asks three
-questions, in this order:
+Before the credentials are checked, each of these endpoints asks two questions:
 
-1. Is this user locked?
-2. Is this source IP blocked?
-3. Does a conditional access policy deny this request?
+1. Is this user locked, or is this source IP blocked?
+2. Does a conditional access policy deny this request?
 
-The first question answered with *yes* ends the request.
+A lock or a block in force ends the request, and no policy is asked. If both are
+in force, the request is refused for both: the authentication log files it under
+the one that lasts longer - a permanent one before a timed one, the lock on a
+tie - and records the other in the entry's other info, and the user is told
+about each of them that carries an error message, see
+:ref:`conditional_access_error_messages`.
 
-For the third question the policies are evaluated by ascending **priority** - a
+For the second question the policies are evaluated by ascending **priority** - a
 lower number takes precedence, as elsewhere in privacyIDEA - and the first policy
 that denies wins. If none denies, the request proceeds normally. A subject is
 exempted from a policy by giving that policy a condition, see
@@ -45,12 +48,20 @@ point, so they apply from the *next* request onwards.
 Rejection messages
 ------------------
 
-A refused request returns the same generic failure as a wrong password, so the
-client learns nothing about why it failed - the reason is in the
-:ref:`authentication_log` and in the :ref:`audit` log. That is the default and
-it applies to the WebUI login as well as to the ``/validate/`` endpoints.
+A refused request is not told why: with nothing configured it carries at most
+the generic ``Authentication failed.``, and the reason is in the
+:ref:`authentication_log` and in the :ref:`audit` log. By default it can still
+be told apart from a wrong password, though. At ``/validate/check`` an ordinary
+failure names what failed (for example ``wrong otp pin``), and at ``/auth`` -
+the WebUI login - a wrong password returns the error code ``4031`` where a
+refusal returns ``403``; the WebUI shows the same sentence for both. Set the
+authentication policy ``hide_specific_error_message`` to make a refusal
+identical to any other failed authentication at these two endpoints
+(``no_detail_on_fail`` does so at ``/validate/check`` only), see
+:ref:`conditional_access_error_messages_masking`. ``/validate/radiuscheck``
+answers every failure, a refusal included, with an empty ``400``.
 
-Only a request refused by one of the three questions above carries a message at
+Only a request refused by one of the questions above carries a message at
 all. Because the request that writes a restriction is answered normally, a
 restriction reaches a user in exactly one shape: the pre-credential refusal of
 every request after it.

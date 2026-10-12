@@ -77,7 +77,7 @@ class MotpTokenClass(TokenClass):
         :param ret: default return value, if nothing is found
         :type ret: user defined
         :return: subsection if key exists or user defined
-        :rtype : dict or string
+        :rtype: dict or string
         """
 
         res = {'type': 'motp',

@@ -15,8 +15,8 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """This is th event handler module for posting webhooks.
-You can send an webhook to trigger an event on an other system or use to replace
+__doc__ = """This is the event handler module for posting webhooks.
+You can send a webhook to trigger an event on another system or use it to replace
 api requests and reduce your traffic this way.
 
 """
@@ -152,12 +152,17 @@ class WebHookHandler(BaseEventHandler):
                 log.info(f'Could not determine user: {e}')
 
         if replace:
-            # If tags should be replaced, gather information about the user and token
-            token_serial = request.all_data.get('serial', '') if request else ""
+            # If tags should be replaced, gather information about the user and token. The serial is the token of the
+            # event, if the event names one. The tokens of the owner are no substitute for it, a receiver takes the
+            # serial as the token the event is about.
+            content = self._get_response_content(options.get("response"))
+            token_serial = (self._get_token_serials(request, content, g) or "") if request else ""
             tokenowner = self._get_tokenowner(request) if request else None
             logged_in_user = g.logged_in_user if hasattr(g, 'logged_in_user') else {}
             try:
-                token_serial, tokentype, tokendescription = self._get_token_data(token_serial, tokenowner)
+                tokentype = tokendescription = None
+                if token_serial:
+                    token_serial, tokentype, tokendescription = self._get_token_data(token_serial, tokenowner)
 
                 tags = create_tag_dict(logged_in_user=logged_in_user,
                                        request=request,
@@ -203,8 +208,13 @@ class WebHookHandler(BaseEventHandler):
                     webhook_text = webhook_text.format(**tags)
             except (KeyError, AttributeError, IndexError) as err:
                 log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
+                # The data is still sent as it is configured
+                self.run_details = "Unable to replace the placeholders in the data."
+                ret = False
             except (ValueError, TypeError) as err:
                 log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
+                self.run_details = "Unable to parse the data as JSON."
+                ret = False
 
         # Send the request
         if action.lower() == ActionType.POST_WEBHOOK:
@@ -213,11 +223,16 @@ class WebHookHandler(BaseEventHandler):
                     log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
                     response = requests.post(webhook_url, data=webhook_text,
                                              headers={'Content-Type': content_type}, timeout=TIMEOUT)
-                    # Responses will be logged when running debug. The HTTP response code will be shown in the audit too
+                    # Responses will be logged when running debug. The HTTP response code is shown in the audit too
                     log.info(response.status_code)
                     log.debug(response)
+                    if not response.ok:
+                        # A receiver that answers with an error did not take the data
+                        self.run_details = f"The webhook answered with HTTP {response.status_code}."
+                        ret = False
                 except (HTTPError, ConnectionError, RequestException, Timeout) as err:
                     log.warning(err)
+                    self.run_details = f"The webhook could not be called ({type(err).__name__})."
                     ret = False
             else:
                 log.warning(f'Unknown content type value: {handler_options.get("content_type")}')

@@ -45,7 +45,8 @@ export class WelcomeDialogService {
         return;
       }
       this.welcomeHandled = true;
-      if (!this.auth.hideWelcome()) {
+      // The dialog is for administrators, as the hide_welcome_info policy says
+      if (this.auth.role() === "admin" && !this.auth.hideWelcome()) {
         this.opened.set(true);
         this.dialog.open(WelcomeDialogComponent, {
           disableClose: true,

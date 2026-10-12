@@ -23,6 +23,7 @@ from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
@@ -58,10 +59,15 @@ from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
+from .authlog_utils import (assert_authentication_log, assert_authentication_log_entry,
+                           clear_authentication_log)
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
+
+
+REFILL_USER_AGENT = "privacyidea-cp/1.1.1"
 
 
 class AValidateOfflineTestCase(MyApiTestCase):
@@ -92,6 +98,15 @@ class AValidateOfflineTestCase(MyApiTestCase):
         finally:
             delete_policy("hide_specific_error_message")
 
+    def _assert_refill_logged(self, event_type: AuthEventType, serial: str, user: User | None,
+                              reason: AuthEventReason | None = None, dispatches: int = 1) -> None:
+        # A failure checked with _resend_and_check_unspecific_error is dispatched three times, and logged each time.
+        entries = assert_authentication_log([event_type] * dispatches, same_attempt=False)
+        for entry in entries.all:
+            assert_authentication_log_entry(entry, user=user, serials={serial}, client_label=REFILL_USER_AGENT,
+                                            endpoint="/validate/offlinerefill", source_ip="192.168.0.2",
+                                            peer_ip="192.168.0.2", source_ip_source="REMOTE_ADDR", reason=reason)
+
     def test_00_create_realms(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
@@ -107,6 +122,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
         self.assertEqual(token.token.first_owner.user_id, "1000")
 
     def test_01_validate_offline(self):
+        user = User("cornelius", self.realm1)
         # create offline app
         # tokenobj = get_tokens(self.serials[0])[0]
         mr_obj = save_machine_resolver({"name": "testresolver",
@@ -148,8 +164,10 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual(tok.token.count, 102)
 
         # first refill with the 5th value
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": self.serials[0],
                                                  "pass": "pin338314",
                                                  "refilltoken": refilltoken_1},
@@ -174,10 +192,13 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual(tok.token.count, 105)
             # The refilltoken changes each time
             self.assertNotEqual(refilltoken_1, refilltoken_2)
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_SUCCESS, self.serials[0], user)
 
         # refill with wrong refill token fails
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": self.serials[0],
                                                  "pass": "pin520489",
                                                  "refilltoken": 'a' * 2 * REFILLTOKEN_LENGTH},
@@ -191,11 +212,15 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self._resend_and_check_unspecific_error(400)
             # A failed refill must not rotate the stored refilltoken
             self.assertEqual(refilltoken_2, get_tokens(serial=self.serials[0])[0].get_tokeninfo("refilltoken"))
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_FAIL, self.serials[0], user,
+                                   AuthEventReason.REFILLTOKEN_MISMATCH, dispatches=3)
 
         # Disable token. Refill should fail.
         enable_token(self.serials[0], False)
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": self.serials[0],
                                                  "pass": "pin520489",
                                                  "refilltoken": refilltoken_2},
@@ -210,13 +235,17 @@ class AValidateOfflineTestCase(MyApiTestCase):
 
             self._resend_and_check_unspecific_error(400)
             self.assertEqual(refilltoken_2, get_tokens(serial=self.serials[0])[0].get_tokeninfo("refilltoken"))
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_FAIL, self.serials[0], user,
+                                   AuthEventReason.TOKEN_DISABLED, dispatches=3)
 
         # Enable token again
         enable_token(self.serials[0], True)
 
         # 2nd refill with 10th value
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": self.serials[0],
                                                  "pass": "pin520489",
                                                  "refilltoken": refilltoken_2},
@@ -244,12 +273,15 @@ class AValidateOfflineTestCase(MyApiTestCase):
             # The refilltoken changes each time
             self.assertNotEqual(refilltoken_2, refilltoken_3)
             self.assertNotEqual(refilltoken_1, refilltoken_3)
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_SUCCESS, self.serials[0], user)
 
         # A refill with a totally wrong OTP value fails
         token_obj = get_tokens(serial=self.serials[0])[0]
         old_counter = token_obj.token.count
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": self.serials[0],
                                                  "pass": "pin000000",
                                                  "refilltoken": refilltoken_3},
@@ -262,13 +294,17 @@ class AValidateOfflineTestCase(MyApiTestCase):
 
             self._resend_and_check_unspecific_error(400)
             self.assertEqual(refilltoken_3, get_tokens(serial=self.serials[0])[0].get_tokeninfo("refilltoken"))
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_FAIL, self.serials[0], user,
+                                   AuthEventReason.WRONG_OTP, dispatches=3)
 
         # The failed refill should not modify the token counter!
         self.assertEqual(old_counter, token_obj.token.count)
 
         # A refill with a wrong serial number fails
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": 'ABCDEF123',
                                                  "pass": "pin000000",
                                                  "refilltoken": refilltoken_3},
@@ -281,11 +317,14 @@ class AValidateOfflineTestCase(MyApiTestCase):
 
             self._resend_and_check_unspecific_error(400)
             self.assertEqual(refilltoken_3, get_tokens(serial=self.serials[0])[0].get_tokeninfo("refilltoken"))
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_FAIL, 'ABCDEF123', None, dispatches=3)
 
         # Detach the token, refill should then fail
         detach_token(self.serials[0], "offline", "pippin")
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": self.serials[0],
                                                  "pass": "pin520489",
                                                  "refilltoken": refilltoken_3},
@@ -299,12 +338,14 @@ class AValidateOfflineTestCase(MyApiTestCase):
 
             self._resend_and_check_unspecific_error(400)
             self.assertEqual(refilltoken_3, get_tokens(serial=self.serials[0])[0].get_tokeninfo("refilltoken"))
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_FAIL, self.serials[0], user,
+                                   AuthEventReason.NOT_AN_OFFLINE_TOKEN, dispatches=3)
 
     def test_02_empty_pass_hotp_refill(self):
         """An HOTP refill with empty ``pass`` cannot be split into PIN+OTP and is rejected."""
         serial = "SE_OFFLINE_EMPTY"
-        init_token({"serial": serial, "otpkey": self.otpkey, "type": "hotp", "pin": "pin"},
-                   user=User("cornelius", self.realm1))
+        user = User("cornelius", self.realm1)
+        init_token({"serial": serial, "otpkey": self.otpkey, "type": "hotp", "pin": "pin"}, user=user)
         attach_token(serial, "offline", hostname="pippin",
                      resolver_name="testresolver", options={"count": 100})
         with self.app.test_request_context('/validate/check',
@@ -314,8 +355,10 @@ class AValidateOfflineTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             refilltoken = res.json["auth_items"]["offline"][0]["refilltoken"]
+        clear_authentication_log()
         with self.app.test_request_context('/validate/offlinerefill',
                                            method='POST',
+                                           headers={"User-Agent": REFILL_USER_AGENT},
                                            data={"serial": serial, "pass": "", "refilltoken": refilltoken},
                                            environ_base={'REMOTE_ADDR': '192.168.0.2'}):
             res = self.app.full_dispatch_request()
@@ -323,6 +366,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual("ERR905: Could not split password",
                              res.json["result"]["error"]["message"])
             self.assertEqual(refilltoken, get_tokens(serial=serial)[0].get_tokeninfo("refilltoken"))
+        self._assert_refill_logged(AuthEventType.OFFLINE_REFILL_FAIL, serial, user)
         remove_token(serial)
 
     def test_03_refill_unsupported_token_type(self):
@@ -385,3 +429,4 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect",
                              res.json["result"]["error"]["message"])
         remove_token(serial)
+

@@ -154,6 +154,11 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             # immediate, dedicated lock (threshold 1), not folding into a rate limit that tolerates several before
             # acting.
             AuthEventType.DEVICE_TOKEN_REUSED,
+            # A refill is machine-driven and its refilltoken is a random secret, so there is no guessed credential to
+            # budget. Most refill failures are token state (disabled, no longer attached, a missed rotation), and the
+            # Credential Provider retries a refill on every logon, so counting them would lock a user's online logins
+            # over a stale offline token.
+            AuthEventType.OFFLINE_REFILL_FAIL,
         }
         # This check covers only the trackable types. The other FAILURE outcomes - conditional access's own
         # rejections (USER_LOCKED, IP_BLOCKED, ACCESS_DENIED) and the client signals (SUSPENDED_API_KEY_USED) - are

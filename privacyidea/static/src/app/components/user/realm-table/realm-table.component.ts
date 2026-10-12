@@ -72,6 +72,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
+  compareResolverPriority,
   REALM_CA_POLICY_REFERENCE_ERROR_CODE,
   REALM_CUSTOM_ATTRIBUTES_ERROR_CODE,
   RealmRow,
@@ -227,7 +228,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const selectedNodeUuid = this.selectedNode();
 
     return Object.entries(realms).flatMap(([realmName, realm]) => {
-      const resolvers = realm.resolver ?? [];
+      const resolvers = [...(realm.resolver ?? [])].sort(compareResolverPriority);
 
       if (selectedNodeUuid !== ALL_NODES_VALUE) {
         const matchesNode = resolvers.some((r: { node: string }) => r.node === selectedNodeUuid);

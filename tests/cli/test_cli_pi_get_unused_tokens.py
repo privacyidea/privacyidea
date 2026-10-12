@@ -175,18 +175,17 @@ class PIGetUnusedTokensTestCase(CliTestCase):
         self.assertIn("expected key=value", result.output, result)
         self.assertNotEqual("not set", get_one_token(serial="OLD0001").token.description)
 
-    def test_09_mark_skips_tokeninfo_key_the_token_maintains_itself(self):
-        # "phone" is maintained by the SMS token itself, but is a free-form entry for a HOTP token. The SMS
-        # token is reported and left unchanged, and marking goes on with the HOTP token created after it.
+    def test_09_mark_writes_tokeninfo_key_the_token_maintains_itself(self):
+        # "phone" is maintained by the SMS token itself, but is a free-form entry for a HOTP token. The command
+        # runs on the server and writes the mark to both.
         create_token("SMS0001", datetime.timedelta(days=10), token_type="sms", parameters={"phone": "+491111"})
         create_token("OLD0001", datetime.timedelta(days=10))
 
         runner = self.app.test_cli_runner()
         result = runner.invoke(cli, ["mark", "5d", "-t", "phone=+492222"])
         self.assertEqual(0, result.exit_code, result.output)
-        self.assertIn("Skipped token SMS0001: ", result.output, result)
-        self.assertNotIn("Skipped token OLD0001", result.output, result)
-        self.assertEqual("+491111", get_one_token(serial="SMS0001").get_tokeninfo("phone"))
+        self.assertTrue(get_one_token(serial="SMS0001").is_owned_tokeninfo_key("phone"))
+        self.assertEqual("+492222", get_one_token(serial="SMS0001").get_tokeninfo("phone"))
         self.assertEqual("+492222", get_one_token(serial="OLD0001").get_tokeninfo("phone"))
 
     def test_10_unsupported_age_is_reported_and_changes_nothing(self):

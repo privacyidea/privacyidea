@@ -161,6 +161,8 @@ export interface ContainerCreateData {
   realm?: string;
   name?: string;
   template?: ContainerTemplate;
+  // The server loads the template of this name; not sent together with template
+  template_name?: string;
 }
 
 export interface ContainerTemplate {

@@ -60,7 +60,7 @@ from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, check_global_config_action
 
 from flask import g
 from werkzeug.datastructures import FileStorage
@@ -81,7 +81,7 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 
 @policy_blueprint.route('/enable/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.POLICYWRITE)
 def enable_policy_api(name):
     """
     Enable a policy. The policy definition is preserved; only the
@@ -100,7 +100,7 @@ def enable_policy_api(name):
 
 @policy_blueprint.route('/disable/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.POLICYWRITE)
 def disable_policy_api(name):
     """
     Disable a policy. The policy definition is preserved; only the
@@ -118,7 +118,7 @@ def disable_policy_api(name):
 
 @policy_blueprint.route('/<old_name>', methods=['PATCH'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.POLICYWRITE)
 def patch_policy_name_api(old_name):
     """
     Rename a policy. Only the policy's name is modified; all other
@@ -142,11 +142,12 @@ def patch_policy_name_api(old_name):
 
 @policy_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.POLICYWRITE)
 def set_policy_api(name=None):
     """
     Create or update a policy. If a policy with the given ``name``
-    already exists, it is updated; otherwise it is created.
+    already exists, it is updated; otherwise it is created. On an
+    update, every parameter that is not sent keeps its stored value.
 
     Policies in privacyIDEA gate what an admin or user is allowed to do,
     define defaults, and shape authentication and enrollment behavior.
@@ -251,11 +252,15 @@ def set_policy_api(name=None):
     user = param.get("user")
     time = param.get("time")
     client = param.get("client")
-    active = is_true(param.get("active", True))
+    active = param.get("active")
+    if active is not None:
+        active = is_true(active)
     check_all_resolvers = param.get("check_all_resolvers")
     admin_realm = param.get("adminrealm")
     admin_user = param.get("adminuser")
-    priority = int(param.get("priority", 1))
+    priority = param.get("priority")
+    if priority is not None:
+        priority = int(priority)
     conditions = param.get("conditions")
     description = param.get("description")
     user_agents = param.get("user_agents", None)
@@ -272,7 +277,7 @@ def set_policy_api(name=None):
                      resolver=resolver, user=user, client=client, time=time,
                      active=active, adminrealm=admin_realm,
                      adminuser=admin_user, pinode=pinode,
-                     check_all_resolvers=check_all_resolvers or False,
+                     check_all_resolvers=check_all_resolvers,
                      priority=priority, conditions=conditions,
                      description=description, user_agents=user_agents,
                      user_case_insensitive=user_case_insensitive)
@@ -374,7 +379,7 @@ def get_policy(name=None, export=None):
 
 @policy_blueprint.route('/<name>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.POLICYDELETE)
+@prepolicy(check_global_config_action, request, PolicyAction.POLICYDELETE)
 def delete_policy_api(name=None):
     """
     Delete the named policy.
@@ -418,7 +423,7 @@ def delete_policy_api(name=None):
 
 @policy_blueprint.route('/import/<filename>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.POLICYWRITE)
 def import_policy_api(filename=None):
     """
     Import policies from a previously-exported ``.cfg`` file. The
@@ -515,8 +520,9 @@ def check_policy_api():
     res = {}
     param = getLowerParams(request.all_data)
 
-    user = get_required(param, "user")
-    realm = get_required(param, "realm")
+    # An empty user or realm checks the policies that apply without one
+    user = get_required(param, "user", allow_empty=True)
+    realm = get_required(param, "realm", allow_empty=True)
     scope = get_required(param, "scope")
     action = get_required(param, "action")
     client = get_optional(param, "client")

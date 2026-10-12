@@ -37,7 +37,7 @@ from flask import (Blueprint,
 from flask import g
 
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
-                                        delete_smtpserver, send_or_enqueue_email)
+                                        delete_smtpserver, send_or_enqueue_email, replace_censored_secrets)
 from .lib.utils import (send_result)
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -90,18 +90,20 @@ def create(identifier=None):
     param = request.all_data
     server = get_required(param, "server")
     port = int(get_optional(param, "port", default=25))
-    username = get_optional(param, "username", default="")
+    # Not passed, the user name, the sender, the description, the private key and the certificate of an existing
+    # server keep their stored values
+    username = get_optional(param, "username")
     password = get_optional(param, "password", default="")
-    sender = get_optional(param, "sender", default="")
+    sender = get_optional(param, "sender")
     tls = is_true(get_optional(param, "tls", default=False))
-    description = get_optional(param, "description", default="")
+    description = get_optional(param, "description")
     timeout = int(get_optional(param, "timeout") or 10)
     enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
     smime = is_true(get_optional(param, "smime", default=False))
     dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
-    private_key = get_optional(param, "private_key", default="")
+    private_key = get_optional(param, "private_key")
     private_key_password = get_optional(param, "private_key_password")
-    certificate = get_optional(param, "certificate", default="")
+    certificate = get_optional(param, "certificate")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
@@ -188,7 +190,8 @@ def test():
     :jsonparam server: hostname or IP of the mail server (required).
     :jsonparam port: TCP port, default ``25``.
     :jsonparam username: SMTP auth user.
-    :jsonparam password: SMTP auth password.
+    :jsonparam password: SMTP auth password. ``__CENSORED__``, as ``GET /smtpserver/`` returns it, uses the stored
+        password of the definition ``identifier``.
     :jsonparam sender: ``From:`` address used for the test message.
     :jsonparam tls: ``True`` to use STARTTLS, default ``False``.
     :jsonparam timeout: socket timeout in seconds, default ``10``.
@@ -198,7 +201,8 @@ def test():
     :jsonparam dont_send_on_error: if ``True`` and S/MIME signing fails,
         the message is dropped instead of being sent unsigned.
     :jsonparam private_key: PEM-encoded S/MIME private key.
-    :jsonparam private_key_password: passphrase for the S/MIME private key.
+    :jsonparam private_key_password: passphrase for the S/MIME private key. ``__CENSORED__`` uses the stored
+        passphrase of the definition ``identifier``.
     :jsonparam certificate: PEM-encoded S/MIME certificate.
     :status 200: ``True`` if the message was delivered (or queued)
         successfully, ``False`` otherwise.
@@ -219,6 +223,8 @@ def test():
     private_key = get_optional(param, "private_key", default="")
     private_key_password = get_optional(param, "private_key_password", default="")
     certificate = get_optional(param, "certificate", default="")
+    # The edit dialog sends back the placeholder that GET /smtpserver/ returned for a stored secret
+    password, private_key_password = replace_censored_secrets(identifier, password, private_key_password)
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,

@@ -23,6 +23,7 @@
     (clearButtonClick)="actionFilter.set('')"
     [showClearButton]="actionFilter() !== ''">
     <input
+      #input
       matInput
       type="text"
       [value]="actionFilter()"

@@ -839,5 +839,65 @@ describe("ContainerCreateComponent", () => {
         })
       );
     });
+
+    describe("container wizard template", () => {
+      const setWizard = (template: string | null, registration = false) =>
+        authService.authData.set({
+          ...authService.authData()!,
+          container_wizard: { enabled: true, type: "generic", registration, template }
+        });
+      const sentData = () => (containerServiceMock.createContainer as jest.Mock).mock.calls.at(-1)[0];
+
+      beforeEach(() => {
+        containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      });
+
+      it("the wizard sends the template of container_wizard_template", () => {
+        setWizard("wizard_template");
+        TestBed.createComponent(ContainerCreateWizardComponent).componentInstance.createContainer();
+
+        expect(sentData()).toEqual(expect.objectContaining({ type: "generic", template_name: "wizard_template" }));
+        expect(sentData().template).toBeUndefined();
+      });
+
+      it("saving the wizard when leaving the page sends the template of container_wizard_template", async () => {
+        setWizard("wizard_template");
+        (pendingChangesService.registerSave as jest.Mock).mockClear();
+        TestBed.createComponent(ContainerCreateWizardComponent).componentInstance.ngOnInit();
+        const save = (pendingChangesService.registerSave as jest.Mock).mock.calls.at(-1)[0] as () => Promise<boolean>;
+
+        await save();
+
+        expect(sentData()).toEqual(expect.objectContaining({ type: "generic", template_name: "wizard_template" }));
+        expect(sentData().template).toBeUndefined();
+      });
+
+      it("the wizard sends no template without container_wizard_template", () => {
+        setWizard(null);
+        TestBed.createComponent(ContainerCreateWizardComponent).componentInstance.createContainer();
+
+        expect(sentData()).not.toHaveProperty("template_name");
+      });
+
+      it("the create page does not send the wizard template", () => {
+        setWizard("wizard_template");
+        component.createContainer();
+
+        expect(sentData()).not.toHaveProperty("template_name");
+      });
+
+      it("the wizard waits for the registration of the container it registers", () => {
+        setWizard(null, true);
+        containerServiceMock.selectedContainerType.set({
+          containerType: "smartphone",
+          description: "",
+          token_types: []
+        });
+        TestBed.createComponent(ContainerCreateWizardComponent).componentInstance.createContainer();
+
+        expect(containerServiceMock.registerContainer).toHaveBeenCalled();
+        expect(containerServiceMock.startPolling).toHaveBeenCalledWith("C-001");
+      });
+    });
   });
 });

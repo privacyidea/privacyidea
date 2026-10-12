@@ -761,8 +761,8 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token.write_tokeninfo("tokenkind", "software")
 
-        # A generic write, the way the token info endpoints and the token event handler do it, cannot touch a
-        # key the token class owns, neither to change it nor to remove it
+        # A generic write, the way the token info endpoints do it, cannot touch a key the token class owns,
+        # neither to change it nor to remove it
         self.assertRaises(PolicyError, token.add_tokeninfo, "tokenkind", "hardware")
         self.assertRaises(PolicyError, token.delete_tokeninfo, "tokenkind")
         self.assertEqual("software", token.get_tokeninfo("tokenkind"))

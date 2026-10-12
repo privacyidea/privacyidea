@@ -8,5 +8,4 @@ Tokentype endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: ttype_blueprint
-
    :include-empty-docstring:

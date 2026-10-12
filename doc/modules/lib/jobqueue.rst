@@ -3,7 +3,7 @@
 Job Queue
 .........
 
-The following queue classes are known to privacyIDEA
+The following queue classes are known to privacyIDEA:
 
 .. toctree::
    :glob:

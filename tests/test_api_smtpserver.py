@@ -1,6 +1,17 @@
+import datetime
 import email
+import os
+import shutil
+import tempfile
+from unittest import mock
+
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 
 from privacyidea.lib.crypto import encryptPassword, CENSORED
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from . import smtpmock
 from .base import MyApiTestCase
 
@@ -311,3 +322,111 @@ class SMTPServerTestCase(MyApiTestCase):
         db_server = db.session.execute(stmt).scalar_one()
         # the password was overwritten and now decrypts to the empty string
         assert decryptPassword(db_server.password) == ""
+
+    def test_update_keeps_the_fields_that_are_not_passed(self):
+        """An update that does not pass the user name, the sender or the description keeps the stored values, an
+        empty value clears them."""
+        from privacyidea.models import db
+        from privacyidea.models.server import SMTPServer as SMTPServerDB
+        from sqlalchemy import select
+
+        def stored():
+            db.session.expire_all()
+            return db.session.execute(select(SMTPServerDB).filter(SMTPServerDB.identifier == "server1")).scalar_one()
+
+        self._create_server()
+        res = self._create_server(extra_data={"port": "587"})
+        assert res.status_code == 200
+        with self.app.test_request_context('/smtpserver/server1', method='POST',
+                                           data={"server": "1.2.3.4", "port": "587"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        assert res.status_code == 200
+        server = stored()
+        assert ("cornelius", "privacyidea@local", "myServer", 587) == (
+            server.username, server.sender, server.description, server.port)
+
+        with self.app.test_request_context('/smtpserver/server1', method='POST',
+                                           data={"server": "1.2.3.4", "description": ""},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        assert res.status_code == 200
+        assert "" == stored().description
+        assert "cornelius" == stored().username
+
+    def _listed_definition(self, identifier: str) -> dict:
+        with self.app.test_request_context("/smtpserver/", method="GET", headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"][identifier]
+
+    def _send_censored_test_email(self, body: dict) -> tuple[bool, list]:
+        with mock.patch("smtplib.SMTP.login", return_value=(235, b"OK")) as login:
+            with self.app.test_request_context("/smtpserver/send_test_email", method="POST", json=body,
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"], login.call_args_list
+
+    def test_test_email_of_a_saved_definition_logs_in_with_the_stored_password(self):
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        add_smtpserver("savedServer", server="mail.example.com", username="u", password="realsecret",
+                       sender="privacyidea@local")
+        self.addCleanup(delete_smtpserver, "savedServer")
+        # The edit dialog loads the listed definition and posts it for the test, as both WebUIs do
+        body = self._listed_definition("savedServer")
+        self.assertEqual(CENSORED, body["password"])
+        body.update(identifier="savedServer", recipient="recp@example.com")
+        value, logins = self._send_censored_test_email(body)
+        self.assertTrue(value)
+        self.assertEqual([mock.call("u", "realsecret")], logins)
+
+    def test_test_email_uses_a_password_typed_in_for_the_test(self):
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        add_smtpserver("savedServer2", server="mail.example.com", username="u", password="realsecret")
+        self.addCleanup(delete_smtpserver, "savedServer2")
+        body = self._listed_definition("savedServer2")
+        body.update(identifier="savedServer2", recipient="recp@example.com", password="newsecret")
+        _value, logins = self._send_censored_test_email(body)
+        self.assertEqual([mock.call("u", "newsecret")], logins)
+
+    def test_test_email_of_an_unknown_definition_does_not_log_in_with_the_placeholder(self):
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        body = {"identifier": "notSaved", "server": "mail.example.com", "username": "u", "password": CENSORED,
+                "recipient": "recp@example.com"}
+        _value, logins = self._send_censored_test_email(body)
+        self.assertEqual([mock.call("u", "")], logins)
+
+    def test_test_email_of_a_saved_definition_signs_with_the_stored_key_password(self):
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, directory)
+        key_file, certificate_file = _write_smime_key_and_certificate(directory, "keysecret")
+        add_smtpserver("smimeServer", server="mail.example.com", sender="privacyidea@local", smime=True,
+                       dont_send_on_error=True, private_key=key_file, private_key_password="keysecret",
+                       certificate=certificate_file)
+        self.addCleanup(delete_smtpserver, "smimeServer")
+        body = self._listed_definition("smimeServer")
+        self.assertEqual(CENSORED, body["private_key_password"])
+        body.update(identifier="smimeServer", recipient="recp@example.com")
+        value, _logins = self._send_censored_test_email(body)
+        self.assertTrue(value)
+        self.assertIn("application/x-pkcs7-signature", self.smtp_mock.get_sent_message().decode())
+
+
+def _write_smime_key_and_certificate(directory: str, key_password: str) -> tuple[str, str]:
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "privacyidea@local")])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    certificate = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
+                   .serial_number(x509.random_serial_number())
+                   .not_valid_before(now).not_valid_after(now + datetime.timedelta(days=1))
+                   .sign(key, hashes.SHA256()))
+    key_file = os.path.join(directory, "smime.key")
+    certificate_file = os.path.join(directory, "smime.pem")
+    with open(key_file, "wb") as key_output:
+        key_output.write(key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                           serialization.BestAvailableEncryption(key_password.encode())))
+    with open(certificate_file, "wb") as certificate_output:
+        certificate_output.write(certificate.public_bytes(serialization.Encoding.PEM))
+    return key_file, certificate_file

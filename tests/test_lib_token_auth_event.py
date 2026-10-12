@@ -210,10 +210,10 @@ class EventTypeOutcomeTestCase(MyTestCase):
         self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.MFA_FAIL))
         self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.USER_UNKNOWN))
 
-    def test_03_exactly_one_success_event(self):
-        # A sanity check on the taxonomy: LOGIN_SUCCESS is the only success outcome.
+    def test_03_success_events(self):
+        # A sanity check on the taxonomy: a completed login and an accepted offline refill are the only successes.
         success = [event for event, outcome in EVENT_TYPE_OUTCOME.items() if outcome == AuthEventOutcome.SUCCESS]
-        self.assertEqual([AuthEventType.LOGIN_SUCCESS], success)
+        self.assertListEqual([AuthEventType.LOGIN_SUCCESS, AuthEventType.OFFLINE_REFILL_SUCCESS], success)
 
 
 class ReasonOrderTestCase(MyTestCase):

@@ -106,10 +106,15 @@ key to standard output or to the file given with ``-o``::
 
    pi-manage setup encrypt_enckey /etc/privacyidea/enckey -o /etc/privacyidea/enckey.enc
 
-Point ``PI_ENCFILE`` to the encrypted file. The server recognises an encrypted
-key and waits for the passphrase after every start. pi-manage cannot ask for
-it, so while the key is encrypted, commands that have to encrypt or decrypt
-data fail. Read more about the database encryption and the *enckey* in
+Point ``PI_ENCFILE`` to the encrypted file. The server recognizes an encrypted
+key and waits for the passphrase after every start. The passphrase unlocks the
+key only in the server process that receives it (``POST /system/hsm``), which
+then keeps the decrypted key in memory: with several server processes (WSGI
+workers), each of them has to receive it, also every process that is started
+anew later. A process that has not received it answers requests that need the
+key with the error ``ERR707: hsm not ready!``. pi-manage cannot ask for it, so
+while the key is encrypted, commands that have to encrypt or decrypt data fail.
+Read more about the database encryption and the *enckey* in
 :ref:`securitymodule`.
 
 Audit signing keys
@@ -183,8 +188,12 @@ WebUI with their name and password, see :ref:`faq_admins`::
 
 ``add`` and ``change`` ask for the password twice, unless it is given with
 ``-p`` (``add``) or ``--password`` (``change``), which leaves it in the shell
-history. ``change`` always sets the password, so enter the current one again
-to change only the email address. ``delete`` does not ask for confirmation.
+history. Both commands create the administrator if the name does not exist, and
+otherwise set a new password and, if ``-e`` is given, a new email address;
+``add`` does not check whether the name is taken. ``change`` always sets the
+password, so enter the current one again to change only the email address.
+``delete`` does not ask for confirmation and ends with an error if the name
+does not exist.
 
 A local administrator locked by :ref:`conditional access <conditional_access>`
 is unlocked with ``pi-manage conditionalaccess unlock-user <name> --admin``,
@@ -239,8 +248,10 @@ configuration directory */etc/privacyidea* to
 */var/lib/privacyidea/backup/privacyidea-backup-<YYYYMMDD-HHMM>.tgz*, readable
 only by its owner. The options are:
 
-* ``-e``/``--enckey`` adds the encryption key. Without it the key file is left
-  out, and you have to keep a copy of it elsewhere.
+* ``-e``/``--enckey`` also archives the encryption key file, as long as it lies
+  inside the configuration directory. Without ``-e``, or if ``PI_ENCFILE``
+  points to a file outside of it, the key is not in the backup, and you have to
+  keep a copy of it elsewhere.
 * ``-d <directory>`` writes the archive to another directory.
 * ``-c <directory>`` backs up another configuration directory.
 * ``-r <directory>`` also adds a FreeRADIUS configuration directory.
@@ -258,8 +269,19 @@ installation, with these limits:
   configuration directory. A configuration file that lives elsewhere or has
   another name (see ``PRIVACYIDEA_CONFIGFILE`` above) is not backed up, and
   the archive cannot be restored.
-* The encryption key is only included if its file (``PI_ENCFILE``) is in the
-  backed up configuration directory.
+* Besides the database dump, only the configuration directory (and a
+  FreeRADIUS directory given with ``-r``) is archived. Files that privacyIDEA
+  uses outside of it are not in the backup: the encryption key
+  (``PI_ENCFILE``), the audit signing keys (``PI_AUDIT_KEY_PRIVATE``,
+  ``PI_AUDIT_KEY_PUBLIC``), the GPG keys (``PI_GNUPG_HOME``), a logging
+  configuration (``PI_LOGCONFIG``) and the directory of a local CA connector
+  are only included if they lie inside the backed up configuration directory.
+* The restore does not migrate the database: it keeps the schema of the
+  privacyIDEA version the backup was taken with. After restoring the backup of
+  an older version, run ``pi-manage db upgrade``, see :ref:`pimanage_db`. On
+  MySQL/MariaDB and PostgreSQL, restore such a backup into an empty database:
+  the restore only replaces the tables contained in the backup, and the tables
+  that only the newer version has would stay in place.
 
 The Docker deployment keeps its configuration in environment variables and
 secret files and comes with its own backup and restore scripts, see
@@ -344,14 +366,18 @@ Rotating the audit log
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Audit logs are written to the database. You can use pi-manage to perform a
-log rotation::
+log rotation, e.g. delete the entries older than 365 days::
 
-   pi-manage audit rotate
+   pi-manage audit rotate --age 365
 
 You can specify a highwatermark and a lowwatermark (``-hw``, ``-lw``), an age
 in days (``--age``) or a config file (``--config``). ``--dryrun`` only reports
 how many entries would be deleted, ``--chunksize`` deletes in batches. The
-command only works with the SQL audit module. Read more about it at
+command rotates the audit table of the SQL audit module, in the database of
+``PI_AUDIT_SQL_URI`` or, if that is not set, of ``SQLALCHEMY_DATABASE_URI``. If
+``PI_AUDIT_MODULE`` names another module, it prints a warning and rotates that
+table anyway; this is what you want with the container audit module when it
+writes to the SQL audit module. Read more about it at
 :ref:`cleaning up audit entries <audit_rotate>`.
 
 .. warning:: Without options, ``audit rotate`` deletes all but the newest 5000
@@ -373,7 +399,7 @@ Clean up challenges
 -------------------
 
 The challenges of challenge-response tokens are stored in a database table.
-Each challenge has a validity time. Challenges which haven't been answered,
+Each challenge has a validity time. Challenges that have not been answered
 persist in the database until they are cleaned up. The Ubuntu packages and the
 Docker image do this for you, see :ref:`cleanup_jobs`. To clean up all expired
 challenges use::
@@ -492,12 +518,17 @@ user, client or time condition, e.g.::
    pi-manage config policy create helpdesk admin "tokenlist, enable, disable"
 
 With ``-f`` the policy is read from a file that contains a Python dictionary
-with the attributes of the policy, e.g. ``realm``, ``adminrealm`` or
-``active``. The ``name``, ``scope`` and ``action`` in the file take precedence
-over the arguments, which still have to be given. If the policy cannot be
-created, the command prints the error and exits with a non-zero status. To
-transfer many policies use ``pi-manage config import``, see
-:ref:`pimanage_config_export`.
+with the attributes of the policy. Only ``name``, ``scope``, ``action``,
+``realm``, ``resolver``, ``user``, ``time``, ``client``, ``active``,
+``adminrealm``, ``adminuser`` and ``check_all_resolvers`` are read; other
+attributes, such as ``priority``, ``conditions``, ``pinode``, ``description``,
+``user_agents`` or ``user_case_insensitive``, are ignored without a message.
+Without ``active`` in the file the policy is active, without
+``check_all_resolvers`` that option is off. The ``name``, ``scope`` and
+``action`` in the file take precedence over the arguments, which still have to
+be given. If the policy cannot be created, the command prints the error and
+exits with a non-zero status. To transfer complete policies, or many of them,
+use ``pi-manage config import``, see :ref:`pimanage_config_export`.
 
 Conditional access policies are managed with ``pi-manage conditionalaccess``,
 see :ref:`pimanage_conditional_access`.
@@ -594,7 +625,12 @@ expire; ``-f`` creates one in any case.
 
 creates the three encryption keys on the AES hardware security module
 configured with ``PI_HSM_MODULE`` and its ``PI_HSM_MODULE_*`` settings, and
-prints the ``PI_HSM_MODULE_KEY_LABEL_*`` lines to add to *pi.cfg*.
+prints the ``PI_HSM_MODULE_KEY_LABEL_*`` lines to add to *pi.cfg*. The keys get
+new labels (``token_``, ``config_`` and ``value_`` followed by random
+characters), so the printed lines are required. The command logs in to the HSM
+with ``PI_HSM_MODULE_PASSWORD``, so the password has to be in *pi.cfg* while the
+keys are created, even if the server gets it at runtime later
+(``POST /system/hsm``).
 
 .. _pimanage_token_import:
 
@@ -606,7 +642,10 @@ Importing Tokens
    pi-manage token import <file> [-t <realm>]
 
 imports the tokens of a file in the :ref:`OATH CSV <import_oath_csv>` format.
-A token whose serial exists already is updated with the data from the file.
+A token whose serial exists already is updated with the data from the file if
+it has the same token type. A serial that exists with another token type ends
+the import with an error at that line: the tokens before it are imported, the
+ones after it are not.
 ``-t`` puts the tokens into a realm and can be given several times. The file
 has to be plain text; GPG encrypted files and the other formats are imported
 in the WebUI or through the API, see :ref:`import`.
@@ -643,9 +682,10 @@ To automate administrative REST API calls, create a key with the role
 ``-u`` is required for both roles. An admin key acts as the administrator
 ``<name>`` in the realm ``API``; ``-R`` sets another realm. No administrator
 account has to exist for it. As for every administrator, the key may do
-everything as long as no admin policy is defined. Once there are admin
-policies, it may only do what a policy with a matching administrative realm
-and user allows, see :ref:`admin_policies`.
+everything as long as no admin policy is active, except the few actions that
+always need their policy. Once an admin policy is active, it may only do what a
+policy with a matching administrative realm and user allows, see
+:ref:`admin_policies`.
 
 Send the key in the ``PI-Authorization`` header (or in ``Authorization``), see
 :ref:`rest_auth`.

@@ -75,6 +75,7 @@ import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
 import { formatLocalDateTime } from "@utils/date-format.utils";
+import { exactMatch, withUser } from "@utils/filter.utils";
 
 @Component({
   selector: "app-user-details",
@@ -385,7 +386,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   public showUserAuditLog() {
-    this.auditService.setFilter(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+    const user = this.userService.detailsUser();
+    this.auditService.setFilter(
+      withUser(new FilterValue(), exactMatch(user.username), user.realm && exactMatch(user.realm))
+    );
   }
 
   public showUserAuthenticationLog() {

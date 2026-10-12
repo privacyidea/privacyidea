@@ -18,7 +18,7 @@
  **/
 
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, input, output } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -54,6 +54,8 @@ class MockPanel {
   policyEdit = output<Partial<PolicyDetail>>();
   activeTabChange = output<PolicyTab>();
   actionFilterChange = output<string>();
+  searchAnchor = signal<HTMLElement | undefined>(undefined);
+  searchField = signal<Partial<PolicyActionSearchComponent> | undefined>(undefined);
 }
 
 function createTestBed(paramName: string | null) {
@@ -136,29 +138,134 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.canSave()).toBe(true);
   });
 
-  it("takes the action search into the header only once it is pinned", () => {
-    const searchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
-    const stickyHeader = fixture.debugElement
-      .query(By.directive(StickyHeaderDirective))
-      .injector.get(StickyHeaderDirective);
+  const mockPanel = (): MockPanel => fixture.debugElement.query(By.directive(MockPanel)).componentInstance;
 
-    expect(searchField()).toBeNull();
+  function anchorAt(top: number): HTMLElement {
+    const header: HTMLElement = fixture.debugElement.query(By.directive(StickyHeaderDirective)).nativeElement;
+    jest.spyOn(header, "getBoundingClientRect").mockReturnValue({ bottom: 100 } as DOMRect);
+    const anchor = document.createElement("div");
+    jest.spyOn(anchor, "getBoundingClientRect").mockReturnValue({ top } as DOMRect);
+    return anchor;
+  }
 
-    stickyHeader.isSticky.set(true);
+  function scrollSearchAnchorTo(anchorTop: number) {
+    mockPanel().searchAnchor.set(anchorAt(anchorTop));
+
+    fixture.debugElement.query(By.directive(ScrollToTopDirective)).nativeElement.dispatchEvent(new Event("scroll"));
     fixture.detectChanges();
+  }
 
-    expect(searchField()).not.toBeNull();
+  const headerSearchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
+  const headerSearchShown = () => !headerSearchField().nativeElement.classList.contains("hidden");
+
+  it("keeps the action search in the header but hidden until the header reaches it", () => {
+    scrollSearchAnchorTo(101);
+
+    expect(headerSearchField()).not.toBeNull();
+    expect(headerSearchShown()).toBe(false);
   });
 
-  it("keeps the action search out of the header on the conditions tab", () => {
-    const stickyHeader = fixture.debugElement
-      .query(By.directive(StickyHeaderDirective))
-      .injector.get(StickyHeaderDirective);
-    stickyHeader.isSticky.set(true);
+  it("shows the action search in the header once the header touches its top edge", () => {
+    scrollSearchAnchorTo(100);
+
+    expect(headerSearchShown()).toBe(true);
+  });
+
+  it("gives the action search back to the tab when scrolled up again", () => {
+    scrollSearchAnchorTo(40);
+    scrollSearchAnchorTo(140);
+
+    expect(headerSearchShown()).toBe(false);
+  });
+
+  it("keeps the action search hidden in the header on the conditions tab", () => {
     component.activeTab.set("conditions");
+    scrollSearchAnchorTo(40);
+
+    expect(headerSearchShown()).toBe(false);
+  });
+
+  function latestResizeObserver(): { observe: jest.Mock; notify: () => void } {
+    const { mock } = ResizeObserver as unknown as jest.Mock;
+    return { observe: mock.results.at(-1)!.value.observe, notify: () => mock.calls.at(-1)![0]([]) };
+  }
+
+  it("re-checks when content above shifts the field without a scroll", () => {
+    scrollSearchAnchorTo(101);
+    jest.spyOn(mockPanel().searchAnchor()!, "getBoundingClientRect").mockReturnValue({ top: 100 } as DOMRect);
+
+    latestResizeObserver().notify();
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.directive(PolicyActionSearchComponent))).toBeNull();
+    expect(headerSearchShown()).toBe(true);
+  });
+
+  it("re-checks a returning actions tab against its new anchor", () => {
+    scrollSearchAnchorTo(40);
+    component.activeTab.set("conditions");
+    mockPanel().searchAnchor.set(undefined);
+    fixture.detectChanges();
+
+    const anchor = anchorAt(140);
+    component.activeTab.set("actions");
+    mockPanel().searchAnchor.set(anchor);
+    fixture.detectChanges();
+    const observer = latestResizeObserver();
+    observer.notify();
+    fixture.detectChanges();
+
+    expect(observer.observe).toHaveBeenCalledWith(anchor);
+    expect(headerSearchShown()).toBe(false);
+  });
+
+  describe("focus handoff", () => {
+    const headerSearchInput = (): HTMLInputElement => headerSearchField().query(By.css("input")).nativeElement;
+
+    beforeEach(() => {
+      component.actionFilter.set("token");
+    });
+
+    it("moves focus and caret into the header copy when the field moves up", async () => {
+      mockPanel().searchField.set({ focusState: () => ({ start: 1, end: 3, direction: "backward" }) });
+
+      scrollSearchAnchorTo(100);
+      await fixture.whenStable();
+
+      const input = headerSearchInput();
+      expect(document.activeElement).toBe(input);
+      expect([input.selectionStart, input.selectionEnd, input.selectionDirection]).toEqual([1, 3, "backward"]);
+    });
+
+    it("moves focus from the clear button to the header copy's clear button", async () => {
+      mockPanel().searchField.set({ focusState: () => "clear-button" });
+
+      scrollSearchAnchorTo(100);
+      await fixture.whenStable();
+
+      expect(document.activeElement).toBe(headerSearchField().query(By.css("app-clear-button button")).nativeElement);
+    });
+
+    it("moves focus and caret back to the tab copy when the field returns", async () => {
+      const takeFocus = jest.fn();
+      mockPanel().searchField.set({ focusState: () => null, takeFocus });
+      scrollSearchAnchorTo(100);
+      headerSearchInput().focus();
+      headerSearchInput().setSelectionRange(2, 4, "backward");
+
+      scrollSearchAnchorTo(140);
+      await fixture.whenStable();
+
+      expect(takeFocus).toHaveBeenCalledWith({ start: 2, end: 4, direction: "backward" });
+    });
+
+    it("leaves focus alone when the search field does not have it", async () => {
+      mockPanel().searchField.set({ focusState: () => null });
+
+      scrollSearchAnchorTo(100);
+      await fixture.whenStable();
+
+      expect(document.activeElement).not.toBe(headerSearchInput());
+    });
   });
 
   it("onAction does not call onSave if value is not submit", () => {

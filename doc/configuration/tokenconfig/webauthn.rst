@@ -11,14 +11,21 @@ Trust Anchor Directory
 You may define a directory containing trust roots for attestation certificates.
 
 This should be a path to a local directory on the server to which privacyIDEA has
-read access to. Any certificate in this
-directory will be trusted to correctly attest authenticators during enrollment.
+read access. An attestation is trusted during enrollment if its certificate chain
+leads to a root certificate in this directory (see below).
 
 This does not need to be set for WebAuthn to work, however without this,
-privacyIDEA can not check, whether an attestation certificate is actually
-trusted (it will still be checked for validity). Therefore it is mandatory to
-set this, if :ref:`policy_webauthn_enroll_authenticator_attestation_level` is
-set to “trusted” through policy for any user.
+privacyIDEA cannot check whether an attestation certificate is actually
+trusted. Therefore, it is mandatory to set this if
+:ref:`policy_webauthn_enroll_authenticator_attestation_level` is set to
+“trusted” through policy for any user.
+
+The directory is only read at the attestation level “trusted”. At the other
+levels the attestation signature is verified with the key of the certificate,
+but for packed, FIDO U2F and TPM attestations the issuer and the validity period
+of the certificate are not checked (Apple, Android key and SafetyNet
+attestations are always checked against the library's built-in roots, see
+below).
 
 What this verifies (and what it does not):
 
@@ -26,20 +33,31 @@ What this verifies (and what it does not):
   X.509 certificates are logged and skipped, so a directory with a
   mix of valid and invalid files will still work but trust will be reduced
   accordingly.
-* Only the **leaf attestation certificate** is matched against the configured
-  roots; **full certificate chain traversal is not performed**. If your
-  authenticators ship intermediate certificates, ensure that the certificate
-  that directly signs the attestation statement is itself present in this
-  directory (not just the ultimate root).
+* The attestation certificate chain is verified up to a self-signed root
+  certificate in this directory, including the validity periods. Put the root
+  certificate here, plus every intermediate certificate that the authenticator
+  does not send in its attestation statement. A directory that holds only the
+  intermediate certificate that signs the attestation does not work. Each file
+  is read as one certificate: put one certificate per file, in a PEM bundle only
+  the first certificate counts.
+* Besides the certificates in this directory, the WebAuthn library trusts its
+  built-in root certificates for three attestation formats: Apple (``apple``),
+  Google hardware attestation (``android-key``) and GlobalSign
+  (``android-safetynet``). With the attestation level “trusted”, authenticators
+  using these formats are accepted even if none of these roots is in the
+  directory. To restrict enrollment to specific authenticator models, use
+  :ref:`policy_webauthn_enroll_authenticator_selection_list` or
+  :ref:`policy_webauthn_enroll_req`.
 * There is **no FIDO Metadata Service (MDS) integration** and no AAGUID-based
   trust evaluation. AAGUID allow-listing is a separate mechanism configured
   via :ref:`policy_webauthn_enroll_authenticator_selection_list`.
 * This setting is only consulted by the :ref:`webauthn` token type. The
-  :ref:`passkey` token type does not perform attestation trust validation;
-  any attestation certificate it receives is archived for reference only.
+  :ref:`passkey` token type does not check attestations against this
+  directory; for the three formats above the library still checks them
+  against its built-in roots.
 
 WebAuthn Required Policies
-..........................
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For WebAuthn to work, a name and ID for the relying party need to be set. The
 relying party in WebAuthn represents the entity the user is registering with.
@@ -48,9 +66,9 @@ to segment according to department by setting up multiple ID and name policies f
 WebAuthn that apply to different users.
 
 Relying Party ID
-~~~~~~~~~~~~~~~~
+""""""""""""""""
 
-The ID of the relying party must be a fully-qualified domain name. Every web-service
+The ID of the relying party must be a fully-qualified domain name. Every web service
 where the WebAuthn token should be used needs to be reachable under a domain name
 which is a superset (i.e. a subdomain) of this ID.
 This means that a WebAuthn token enrolled with a relying party ID of ``example.com``
@@ -61,7 +79,7 @@ other webservice that is not hosted on a subdomain of ``example.com``.
 See also: :ref:`policy_webauthn_enroll_relying_party_id`.
 
 Relying Party Name
-~~~~~~~~~~~~~~~~~~
+""""""""""""""""""
 
 This is a human-readable name to go along with the relying party ID. It will
 usually be either the name of your company (if there is just one relying

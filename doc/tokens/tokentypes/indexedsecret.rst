@@ -15,9 +15,10 @@ Then the user needs to respond with the concatenated characters from the given p
 In the example the response would be "ye".
 
 Certain policies can be used to either preset or force the value of the indexed secret during
-enrollment to the value of a user attribute. The attribute specified in these policies is a privacyidea
+enrollment to the value of a user attribute. The attribute specified in these policies is a privacyIDEA
 attribute from the attribute mapping of the corresponding user resolver.
 
-Starting with version 3.4 the Indexed Secret Token can work in multi challenge authentication.
+The Indexed Secret Token can work in multi challenge authentication.
 This way each position is asked separately in consecutive challenges. To achieve this, the token needs
-the tokeninfo value ``multichallenge=1``.
+the tokeninfo entry ``multichallenge`` (e.g. ``multichallenge=1``). Any value switches this mode on, also ``0``;
+delete the entry to switch it off. The number of positions is set with :ref:`policy_indexedsecret_count`.

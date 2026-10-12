@@ -213,6 +213,13 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         r = check_anonymous_user(req, PolicyAction.PASSWORDRESET)
         self.assertEqual(r, True)
 
+        # A resolver of the realm is accepted, a resolver outside it is refused
+        self.setUp_user_realm3()
+        req.all_data = {"user": "cornelius", "realm": self.realm1, "resolver": self.resolvername1}
+        self.assertTrue(check_anonymous_user(req, PolicyAction.PASSWORDRESET))
+        req.all_data = {"user": "cornelius", "realm": self.realm1, "resolver": self.resolvername3}
+        self.assertRaises(PolicyError, check_anonymous_user, req, PolicyAction.PASSWORDRESET)
+
     def test_40_custom_user_attributes(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",

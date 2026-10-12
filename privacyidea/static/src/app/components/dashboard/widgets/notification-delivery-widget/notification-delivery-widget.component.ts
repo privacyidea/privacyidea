@@ -70,6 +70,7 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget {
   static override readonly type = "notification-delivery";
   static override readonly title = $localize`:@@dashboard.notificationDelivery:Notification Delivery`;
   static override readonly icon = "notifications_active";
+  static override readonly requiredAction = "configread";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 6 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
   static override readonly maxSize: WidgetSize = { cols: 16, rows: 12 };

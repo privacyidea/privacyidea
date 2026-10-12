@@ -104,6 +104,8 @@ from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..lib.policy import Match
+from ..lib.auth import ROLE
+from .lib.policyhelper import check_token_import_allowed, UserAttributes
 from ..models.audit import audit_column_length
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -1426,7 +1428,8 @@ def tokenrealm_api(serial=None):
 
        {"realms": "realm1,realm2"}
     """
-    realms = get_required(request.all_data, "realms")
+    # An empty value removes the token from all realms
+    realms = get_required(request.all_data, "realms", allow_empty=True)
     if isinstance(realms, list):
         realm_list = realms
     else:
@@ -1460,7 +1463,11 @@ def loadtokens_api(filename=None):
 
     Requires admin authentication and the import policy in scope
     ADMIN. The check honors the supplied ``tokenrealms``: the admin
-    must be allowed to import into every named realm.
+    must be allowed to import into every named realm. Each token of the
+    file that already exists is matched by its owner or one of its
+    realms, and each user of a version 2 OATH CSV file is matched as the
+    owner the token gets. One entry that is not allowed refuses the whole
+    file, before any token is written.
 
     :param filename: path component, used as a log/audit label for
         the imported file.
@@ -1547,6 +1554,11 @@ def loadtokens_api(filename=None):
             validate_mac=aes_validate_mac)
     else:
         import_tokens = {}
+
+    # Every token of the file is checked before the first one is written
+    check_token_import_allowed(g, import_tokens,
+                               UserAttributes(role=ROLE.ADMIN, adminuser=g.logged_in_user.get("username"),
+                                              adminrealm=g.logged_in_user.get("realm")))
 
     # Now import the Tokens from the dictionary
     for serial in import_tokens:
@@ -1806,7 +1818,7 @@ def set_tokeninfo_api(serial, key):
     :jsonparam value: tokeninfo value to set (required).
     :status 200: ``True`` on success in ``result.value``.
     """
-    value = get_required(request.all_data, "value")
+    value = get_required(request.all_data, "value", allow_empty=True)
     g.audit_object.log({"serial": serial})
     count = add_tokeninfo(serial, key, value)
     success = count > 0
@@ -1872,7 +1884,8 @@ def assign_tokengroup_api(serial, groupname=None):
         g.audit_object.add_to_log({'action_detail': groupname})
         assign_tokengroup(serial, tokengroup=groupname)
     else:
-        groups = get_required(request.all_data, "groups")
+        # An empty value removes all token groups of the token
+        groups = get_required(request.all_data, "groups", allow_empty=True)
         if isinstance(groups, list):
             group_list = groups
         else:

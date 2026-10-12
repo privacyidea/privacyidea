@@ -1413,8 +1413,7 @@ class PushTokenClass(TokenClass):
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
-          (https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll#update
-          -firebase-token):
+          (https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken-update-Firebase-device-token):
 
             .. sourcecode:: http
 

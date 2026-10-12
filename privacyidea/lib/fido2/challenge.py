@@ -96,6 +96,12 @@ def has_unbound_challenge(transaction_id: str) -> bool:
     return any(not challenge.serial for challenge in get_challenges(transaction_id=transaction_id))
 
 
+class ChallengeExpiredError(AuthError):
+    """
+    The challenge of the transaction had timed out when the response arrived.
+    """
+
+
 def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
                            minimum_user_verification: str | None = None) -> FIDOVerificationResult:
     """
@@ -108,7 +114,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
     - HTTP_ORIGIN
 
     If no challenge is found for the transaction_id, a ResourceNotFoundError is raised.
-    If the challenge has timed out, an AuthError is raised.
+    If the challenge has timed out, a ChallengeExpiredError (an AuthError) is raised.
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
 
@@ -128,7 +134,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
 
     if not challenge.is_valid():
         log.error(f"Challenge with transaction_id {transaction_id} has timed out.")
-        raise AuthError(f"The challenge {transaction_id} has timed out.")
+        raise ChallengeExpiredError(f"The challenge {transaction_id} has timed out.")
 
     # New challenges store the value under FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
     # Challenges created by older code used the raw "user_verification" string instead.
