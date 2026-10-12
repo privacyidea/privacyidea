@@ -354,7 +354,14 @@ def offlinerefill():
                 except ValidateError:
                     reason = AuthEventReason.WRONG_OTP
                     raise
-                refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string)
+                # The refill token is replaced only if it is still the one this request presented, so of several
+                # requests refilling with the same refill token only one is served. The rotation stays after
+                # get_refill, so a wrong OTP still leaves the refill token valid.
+                refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string,
+                                                                             replaces=refilltoken_request)
+                if refilltoken_new is None:
+                    reason = AuthEventReason.REFILLTOKEN_MISMATCH
+                    raise ParameterError(_("Token is not an offline token or refill token is incorrect"))
                 response = send_result(True)
                 content = response.json
                 content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,

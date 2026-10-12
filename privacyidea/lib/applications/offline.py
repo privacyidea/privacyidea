@@ -25,15 +25,17 @@
 import logging
 
 from passlib.hash import pbkdf2_sha512
+from sqlalchemy import select, update
 
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.config import get_prepend_pin
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import geturandom, safe_compare
 from privacyidea.lib.error import ValidateError, ParameterError
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import TYPE
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.utils import get_computer_name_from_user_agent
+from privacyidea.models import TokenInfo, db
 
 log = logging.getLogger(__name__)
 ROUNDS = 6549
@@ -60,12 +62,15 @@ class MachineApplication(MachineApplicationBase):
     application_name = "offline"
 
     @staticmethod
-    def generate_new_refilltoken(token, user_agent=None):
+    def generate_new_refilltoken(token, user_agent=None, replaces: str | None = None):
         """
         Generate new refill token and store it in the tokeninfo of the token.
         :param token: token in question
         :param user_agent: name of the machine, taken from the user-agent header
-        :return: a string
+        :param replaces: the refill token this one replaces. When given, the stored value is replaced only if it
+            is still this one, so of several requests refilling with the same refill token only one succeeds and
+            the others get None.
+        :return: a string, or None if another request replaced the refill token first
         """
         log.debug(f"Generating refilltoken for {token.get_serial()} with user agent {user_agent}")
 
@@ -82,7 +87,28 @@ class MachineApplication(MachineApplicationBase):
             key = "refilltoken"
 
         new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
-        token.write_tokeninfo(key, new_refilltoken)
+        if replaces is None:
+            token.write_tokeninfo(key, new_refilltoken)
+            return new_refilltoken
+
+        token_id = token.token.id
+        # End the transaction that read the token info, so the locking read sees the committed value and
+        # MariaDB >= 11.6.2 does not refuse it with 1020.
+        db.session.commit()
+        # A row lock and not UPDATE ... WHERE Value = :old, because Value is a CLOB on Oracle. The locking read
+        # returns the committed value on PostgreSQL (it re-checks after the wait) and on InnoDB.
+        stored = db.session.execute(select(TokenInfo.Value)
+                                    .where(TokenInfo.token_id == token_id, TokenInfo.Key == key)
+                                    .with_for_update()).scalar_one_or_none()
+        if not stored or not safe_compare(stored, replaces):
+            db.session.rollback()
+            log.info(f"The refill token of {token.get_serial()} was replaced by another request.")
+            return None
+        db.session.execute(update(TokenInfo)
+                           .where(TokenInfo.token_id == token_id, TokenInfo.Key == key)
+                           .values(Value=new_refilltoken)
+                           .execution_options(synchronize_session=False))
+        db.session.commit()
         return new_refilltoken
 
     @staticmethod

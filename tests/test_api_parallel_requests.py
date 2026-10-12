@@ -21,14 +21,21 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 import privacyidea.lib.containerclass as containerclass_module
 import privacyidea.lib.passwordreset as passwordreset_module
+import privacyidea.lib.remembered_device as remembered_device_module
+from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.clients import create_client
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import init_container, find_container_by_serial, delete_container_by_serial
 from privacyidea.lib.crypto import hash_with_pepper
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.passwordreset import check_recoverycode
+from privacyidea.lib.machine import attach_token
+from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.remembered_device import (UserIdentity, consume_remember_device_cookie,
+                                               create_remembered_device)
 from privacyidea.lib.token import create_challenge, get_one_token, init_token, remove_token
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
@@ -364,5 +371,55 @@ class ParallelOtpCounterTestCase(ParallelRequestTestCase):
 
             self.assertEqual(0, accepted(results), results)
             self.assertEqual(parallel_requests, get_one_token(serial=serial).token.failcount)
+        finally:
+            remove_token(serial)
+
+
+class ParallelCookieAndRefillTestCase(ParallelRequestTestCase):
+    """
+    A remembered-device cookie and an offline refill token are each replaced by one request only.
+    """
+
+    def test_same_remember_device_cookie_is_recognized_once(self):
+        self.setUp_user_realms()
+        realm_id = User(login="cornelius", realm=self.realm1).realm_id
+        # Plain values only: the threads must not touch ORM objects of this thread's session
+        client_id = create_client("parallel device client", "privacyidea-cp")[0].id
+        identity = UserIdentity(self.resolvername1, "bob", realm_id)
+        _device, cookie = create_remembered_device(identity, client_id, ip_address="10.0.0.1")
+
+        # The client and a second party present the same cookie at the same time, from different addresses
+        with synchronize_after(remembered_device_module, "get_valid_device", 2):
+            results = run_in_parallel(self.app, [
+                partial(consume_remember_device_cookie, cookie, client_id, identity, "10.0.0.1"),
+                partial(consume_remember_device_cookie, cookie, client_id, identity, "198.51.100.7")])
+
+        statuses = [getattr(result, "status", result) for result in results]
+        self.assertEqual(1, statuses.count("recognized"), results)
+
+    def test_same_refilltoken_is_used_once(self):
+        serial = "PARREFILL"
+        save_machine_resolver({"name": "hosts_parallel", "type": "hosts", "filename": "tests/testdata/hosts"})
+        token = init_token({"type": "hotp", "serial": serial, "otpkey": OTP_KEY})
+        attach_token(serial, "offline", hostname="pippin", resolver_name="hosts_parallel", options={"count": 10})
+        # State after an online login at counter 1 that handed out the offline values for counters 2..11
+        token.set_otp_count(12)
+        refilltoken = "ab" * REFILLTOKEN_LENGTH
+        token.write_tokeninfo("refilltoken", refilltoken)
+        # A token that was refilled before: parallel first refills otherwise race to insert this row
+        token.write_tokeninfo("offline_counter", "10")
+
+        def refill() -> int:
+            with self.app.test_client() as client:
+                # 338314 is the value for counter 4: the client used three offline values
+                return client.post("/validate/offlinerefill",
+                                   data={"serial": serial, "pass": "338314",
+                                         "refilltoken": refilltoken}).status_code
+
+        try:
+            with synchronize_after(MachineApplication, "get_refill", 2):
+                results = run_in_parallel(self.app, [refill, refill])
+
+            self.assertEqual(1, results.count(200), results)
         finally:
             remove_token(serial)

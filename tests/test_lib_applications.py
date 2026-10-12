@@ -15,7 +15,7 @@ from privacyidea.lib.applications.offline import (MachineApplication as
 from privacyidea.lib.applications import (get_auth_item,
                                           is_application_allow_bulk_call,
                                           get_application_types)
-from privacyidea.lib.token import init_token, get_tokens
+from privacyidea.lib.token import init_token, get_tokens, get_one_token, remove_token
 from privacyidea.lib.user import User
 import passlib.hash
 import mock
@@ -178,6 +178,27 @@ class OfflineApplicationTestCase(MyTestCase):
         auth_item = OfflineApplication.get_authentication_item("unsupported",
                                                                "s")
         self.assertEqual(auth_item, {})
+
+
+class OfflineRefillTokenTestCase(MyTestCase):
+
+    def test_refilltoken_is_replaced_only_if_it_is_still_the_stored_one(self):
+        serial = "REPLACEREFILL"
+        old_refilltoken = "a" * 2 * REFILLTOKEN_LENGTH
+        token = init_token({"type": "hotp", "serial": serial, "otpkey": self.otpkey})
+        token.write_tokeninfo("refilltoken", old_refilltoken)
+
+        # A refill token that is not the stored one replaces nothing
+        refused = OfflineApplication.generate_new_refilltoken(token, replaces="b" * 2 * REFILLTOKEN_LENGTH)
+        self.assertIsNone(refused)
+        self.assertEqual(old_refilltoken, get_one_token(serial=serial).get_tokeninfo("refilltoken"))
+
+        # The stored one is replaced, and then it is no longer the stored one
+        new_refilltoken = OfflineApplication.generate_new_refilltoken(token, replaces=old_refilltoken)
+        self.assertEqual(new_refilltoken, get_one_token(serial=serial).get_tokeninfo("refilltoken"))
+        self.assertIsNone(OfflineApplication.generate_new_refilltoken(token, replaces=old_refilltoken))
+
+        remove_token(serial)
 
 
 class BaseApplicationTestCase(MyTestCase):
