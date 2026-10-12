@@ -63,6 +63,47 @@ describe("WelcomeDialogService", () => {
     expect(dialogMock.open).not.toHaveBeenCalled();
   });
 
+  it("opens on login despite hideWelcome when the free tier is exceeded, as the policy only hides the introduction", () => {
+    authMock.isAuthenticated.set(false);
+    const service = TestBed.inject(WelcomeDialogService);
+
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 1 });
+    authMock.isAuthenticated.set(true);
+    TestBed.tick();
+
+    expect(service.opened()).toBe(true);
+    expect(dialogMock.open).toHaveBeenCalled();
+  });
+
+  it("does NOT open on login with hideWelcome for any other subscription status", () => {
+    authMock.isAuthenticated.set(false);
+    const service = TestBed.inject(WelcomeDialogService);
+
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 2 });
+    authMock.isAuthenticated.set(true);
+    TestBed.tick();
+
+    expect(service.opened()).toBe(false);
+    expect(dialogMock.open).not.toHaveBeenCalled();
+  });
+
+  it("does NOT open on login of a self-service user when the free tier is exceeded", () => {
+    authMock.isAuthenticated.set(false);
+    const service = TestBed.inject(WelcomeDialogService);
+
+    authMock.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      role: "user",
+      hide_welcome: true,
+      subscription_status: 1
+    });
+    authMock.isAuthenticated.set(true);
+    TestBed.tick();
+
+    expect(service.opened()).toBe(false);
+    expect(dialogMock.open).not.toHaveBeenCalled();
+  });
+
   it("does NOT open when not authenticated", () => {
     authMock.isAuthenticated.set(false);
     const service = TestBed.inject(WelcomeDialogService);

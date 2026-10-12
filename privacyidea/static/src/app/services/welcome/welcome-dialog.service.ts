@@ -45,8 +45,9 @@ export class WelcomeDialogService {
         return;
       }
       this.welcomeHandled = true;
-      // The dialog is for administrators, as the hide_welcome_info policy says
-      if (this.auth.role() === "admin" && !this.auth.hideWelcome()) {
+      // The dialog is for administrators, as the hide_welcome_info policy says. The policy only hides the
+      // introduction: the free tier warning is shown regardless, see WelcomeDialogComponent.
+      if (this.auth.role() === "admin" && (!this.auth.hideWelcome() || this.auth.subscriptionStatus() === 1)) {
         this.opened.set(true);
         this.dialog.open(WelcomeDialogComponent, {
           disableClose: true,

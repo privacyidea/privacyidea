@@ -34,7 +34,8 @@ type WelcomeAction = "next" | "restart";
 })
 export class WelcomeDialogComponent extends AbstractDialogComponent<void, void> {
   private auth = inject(AuthService);
-  step = signal<number>(0);
+  // With the introduction hidden by the hide_welcome_info policy, only the free tier warning is left to show.
+  step = signal<number>(this.auth.hideWelcome() ? 4 : 0);
 
   readonly dialogTitle = computed(() => {
     switch (this.step()) {

@@ -20,14 +20,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services";
-import { WelcomeDialogServiceMock } from "@testing/mock-services/mock-welcome-dialog-service";
 import { WelcomeDialogComponent } from "./welcome-dialog.component";
 
 describe("WelcomeDialogComponent", () => {
   let fixture: ComponentFixture<WelcomeDialogComponent>;
   let component: WelcomeDialogComponent;
   let dialogRefMock: { close: jest.Mock };
-  let welcomeDialogServiceMock: WelcomeDialogServiceMock;
   let authMock: MockAuthService;
 
   const heading = (): string => fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim();
@@ -42,7 +40,6 @@ describe("WelcomeDialogComponent", () => {
 
   beforeEach(() => {
     dialogRefMock = { close: jest.fn() };
-    welcomeDialogServiceMock = new WelcomeDialogServiceMock();
 
     TestBed.configureTestingModule({
       providers: [
@@ -61,9 +58,18 @@ describe("WelcomeDialogComponent", () => {
     expect(component.step()).toBe(0);
   });
 
-  it("should not open the dialog when hideWelcome is true", () => {
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true });
-    expect(welcomeDialogServiceMock.opened()).toBe(false);
+  it("starts at the free tier warning and closes on okay when hideWelcome hides the introduction", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 1 });
+    fixture = TestBed.createComponent(WelcomeDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.step()).toBe(4);
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Okay");
+
+    clickButton("Okay");
+    expect(dialogRefMock.close).toHaveBeenCalled();
   });
 
   it("nextWelcome should increment step and close at >=5", () => {
