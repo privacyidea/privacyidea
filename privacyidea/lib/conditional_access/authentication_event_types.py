@@ -406,6 +406,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.TOKEN_ONLY_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.MFA_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE: AuthEventOutcome.FAILURE,
     AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.INVALID_TOKEN_TYPE: AuthEventOutcome.FAILURE,
@@ -591,6 +592,10 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
     AuthEventType.USER_UNKNOWN,
+    # Next to USER_UNKNOWN, which it is the counterpart of: the login name resolves, just not to the user the
+    # credential identified. Like it, it classifies a request the endpoint refused before any token flow ran, so
+    # it never actually reaches reduce_request_events and is ranked here to satisfy the invariant.
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE,
     # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
     # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
     # is the better classification. In practice neither reduces against anything - the endpoints that emit them
