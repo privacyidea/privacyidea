@@ -53,7 +53,8 @@ from privacyidea.lib.cache.redis import (
     get_challenges_from_cache,
     get_redis,
 )
-from privacyidea.lib.challenge import delete_challenges, get_challenges, get_challenges_paginate
+from privacyidea.lib.challenge import (consume_challenge, delete_challenges, get_challenges,
+                                       get_challenges_paginate)
 from privacyidea.lib.crypto import decryptPassword
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_local_store
@@ -442,6 +443,16 @@ class TestRedisCacheOperations(_RealRedisBase):
             challenge.save()
             updated = get_challenges_from_cache(transaction_id='txn-rcache-006')
         self.assertEqual(updated[0].get_data(), {"mode": "push", "display_code": "1234"})
+
+    def test_consume_challenge_picks_one_user_of_a_cached_challenge(self):
+        """The cached branch of consume_challenge: only the call whose HDEL removed the field returns True,
+        so a request answering a cached challenge is accepted only if it claimed it."""
+        self._write_dto(_make_dto(serial='RCACHE_CONSUME', txn='txn-rcache-consume'))
+        with redis_in_store(self._real_client):
+            challenge = get_challenges_from_cache(transaction_id='txn-rcache-consume')[0]
+            second_reader = get_challenges_from_cache(transaction_id='txn-rcache-consume')[0]
+            self.assertTrue(consume_challenge(challenge))
+            self.assertFalse(consume_challenge(second_reader))
 
     def test_the_save_script_compiles_and_reports_whether_it_wrote(self):
         """The save path runs a Lua script. A broken one raises a Redis error, which the save path turns into

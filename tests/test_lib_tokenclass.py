@@ -19,7 +19,7 @@ from privacyidea.lib.error import TokenAdminError, ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.token import init_token, assign_tokengroup, remove_token
+from privacyidea.lib.token import init_token, assign_tokengroup, remove_token, get_one_token
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
@@ -1300,6 +1300,46 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual(token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED), None)
         self.assertEqual(token_obj.get_failcount(), 0)
 
+        token_obj.delete_token()
+
+    def test_40a_advance_otp_count(self):
+        db_token = Token("advancecount", tokentype="hotp")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        token_obj.set_otp_count(5)
+
+        # A higher value moves the counter
+        self.assertTrue(token_obj.advance_otp_count(6))
+        self.assertEqual(6, get_one_token(serial="advancecount").token.count)
+        # The same value and a lower one do not, and leave the counter where it is
+        self.assertFalse(token_obj.advance_otp_count(6))
+        self.assertFalse(token_obj.advance_otp_count(3))
+        self.assertEqual(6, get_one_token(serial="advancecount").token.count)
+
+        # set_otp_count stays unconditional, for the callers that bring their own counter
+        token_obj.set_otp_count(2)
+        self.assertEqual(2, get_one_token(serial="advancecount").token.count)
+        token_obj.delete_token()
+
+    def test_40b_inc_failcount_stops_at_maxfail(self):
+        from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED
+        db_token = Token("failcountstop", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        token_obj.set_maxfail(3)
+
+        self.assertEqual(1, token_obj.inc_failcount())
+        self.assertEqual(2, token_obj.inc_failcount())
+        self.assertIsNone(token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED))
+        # The attempt that reaches maxfail writes the timestamp
+        self.assertEqual(3, token_obj.inc_failcount())
+        exceeded_at = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+        self.assertIsNotNone(exceeded_at)
+
+        # Further attempts neither count nor write the timestamp again
+        self.assertEqual(3, token_obj.inc_failcount())
+        self.assertEqual(3, token_obj.inc_failcount())
+        self.assertEqual(exceeded_at, token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED))
         token_obj.delete_token()
 
     def test_41_import_csv(self):
