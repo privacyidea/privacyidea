@@ -1907,8 +1907,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.periodicTasks" datatype="html">
-        <source>Periodic Tasks</source>
-        <target state="new">Periodic Tasks</target>
+        <source>Periodic tasks</source>
+        <target state="new">Periodic tasks</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task.component.html</context>
           <context context-type="linenumber">22</context>
@@ -24680,18 +24680,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machine-details/machine-details.component.html</context>
           <context context-type="linenumber">101</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="common.periodicTasksSentenceCase" datatype="html">
-        <source>Periodic tasks</source>
-        <target state="new">Periodic tasks</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task.component.html</context>
-          <context context-type="linenumber">63</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/core/route-titles.ts</context>
-          <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.containerTemplates" datatype="html">

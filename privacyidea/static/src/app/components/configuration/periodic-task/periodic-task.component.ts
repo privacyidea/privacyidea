@@ -226,7 +226,7 @@ export class PeriodicTaskComponent implements OnInit {
           data: {
             title: $localize`:@@periodicTask.deletePeriodicTasks:Delete Periodic Tasks`,
             items: selectedTasks.map((t) => t.name),
-            itemType: $localize`:@@common.periodicTasks:Periodic Tasks`,
+            itemType: $localize`:@@common.periodicTasks:Periodic tasks`,
             confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
           }
         })
