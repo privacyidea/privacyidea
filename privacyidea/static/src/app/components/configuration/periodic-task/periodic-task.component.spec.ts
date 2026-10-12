@@ -32,6 +32,7 @@ import { MockNotificationService } from "@testing/mock-services/mock-notificatio
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
 import { of } from "rxjs";
 import { PeriodicTaskComponent } from "./periodic-task.component";
+import { grantRights, toolbarAction } from "@testing/toolbar-actions";
 
 describe("PeriodicTaskComponent", () => {
   let component: PeriodicTaskComponent;
@@ -313,11 +314,6 @@ describe("PeriodicTaskComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    const setRights = (rights: string[]) => {
-      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
-    };
-    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
     const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, id: 1, name: "nightly-stats" };
 
     it("lists create, delete and the detailed-view toggle in order", () => {
@@ -325,41 +321,41 @@ describe("PeriodicTaskComponent", () => {
     });
 
     it("shows create and delete only with the periodictask_write right", () => {
-      setRights([]);
-      expect(action("create").visible).toBe(false);
-      expect(action("delete").visible).toBe(false);
-      setRights(["periodictask_read"]);
-      expect(action("create").visible).toBe(false);
-      expect(action("delete").visible).toBe(false);
-      setRights(["periodictask_write"]);
-      expect(action("create").visible).toBe(true);
-      expect(action("delete").visible).toBe(true);
+      grantRights([]);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      grantRights(["periodictask_read"]);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      grantRights(["periodictask_write"]);
+      expect(toolbarAction(component, "create").visible).toBe(true);
+      expect(toolbarAction(component, "delete").visible).toBe(true);
     });
 
     it("keeps the detailed-view toggle visible whatever the rights", () => {
-      setRights([]);
-      expect(action("detailed-view").visible).toBeUndefined();
-      expect(action("detailed-view").kind).toBe("toggle");
+      grantRights([]);
+      expect(toolbarAction(component, "detailed-view").visible).toBeUndefined();
+      expect(toolbarAction(component, "detailed-view").kind).toBe("toggle");
     });
 
     it("never disables create", () => {
-      setRights(["periodictask_write"]);
-      expect(action("create").disabled).toBeFalsy();
+      grantRights(["periodictask_write"]);
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
     });
 
     it("disables delete without a selection and enables it with one", async () => {
-      setRights(["periodictask_write"]);
+      grantRights(["periodictask_write"]);
       periodicTaskService.setPeriodicTasks([task]);
       fixture.detectChanges();
       await fixture.whenStable();
-      expect(action("delete").disabled).toBe(true);
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
       component.selector.selectAllRows();
-      expect(action("delete").disabled).toBe(false);
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
     });
 
     it("navigates to the new-task route when the create action runs", () => {
       const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-      action("create").run!();
+      toolbarAction(component, "create").run!();
       expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW);
     });
 
@@ -369,7 +365,7 @@ describe("PeriodicTaskComponent", () => {
       await fixture.whenStable();
       component.selector.selectAllRows();
       (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(true) });
-      action("delete").run!();
+      toolbarAction(component, "delete").run!();
       await fixture.whenStable();
       expect(dialogService.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ items: ["nightly-stats"] }) })
@@ -378,17 +374,17 @@ describe("PeriodicTaskComponent", () => {
     });
 
     it("reflects the detailed view in the toggle and flips it when the action runs", () => {
-      expect(action("detailed-view").checked).toBe(false);
-      action("detailed-view").run!();
+      expect(toolbarAction(component, "detailed-view").checked).toBe(false);
+      toolbarAction(component, "detailed-view").run!();
       expect(component.detailedView()).toBe(true);
-      expect(action("detailed-view").checked).toBe(true);
-      action("detailed-view").run!();
+      expect(toolbarAction(component, "detailed-view").checked).toBe(true);
+      toolbarAction(component, "detailed-view").run!();
       expect(component.detailedView()).toBe(false);
-      expect(action("detailed-view").checked).toBe(false);
+      expect(toolbarAction(component, "detailed-view").checked).toBe(false);
     });
 
     it("renders the toolbar and wires the button clicks and the toggle to the handlers", async () => {
-      setRights(["periodictask_read", "periodictask_write"]);
+      grantRights(["periodictask_read", "periodictask_write"]);
       periodicTaskService.setPeriodicTasks([task]);
       fixture.detectChanges();
       await fixture.whenStable();

@@ -34,6 +34,7 @@ import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { EventComponent } from "./event.component";
+import { setRights, toolbarAction } from "@testing/toolbar-actions";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -864,12 +865,6 @@ describe("EventComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    const setRights = (rights: string[]) => {
-      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
-      fixture.detectChanges();
-    };
-    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
     const showRows = () => {
       mockEventService.eventHandlers.set([
         {
@@ -893,42 +888,42 @@ describe("EventComponent", () => {
     });
 
     it("shows create only with the eventhandling_write right", () => {
-      setRights([]);
-      expect(action("create").visible).toBe(false);
-      setRights(["eventhandling_read"]);
-      expect(action("create").visible).toBe(false);
-      setRights(["eventhandling_write"]);
-      expect(action("create").visible).toBe(true);
+      setRights(fixture, []);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      setRights(fixture, ["eventhandling_read"]);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      setRights(fixture, ["eventhandling_write"]);
+      expect(toolbarAction(component, "create").visible).toBe(true);
     });
 
     it("never disables create", () => {
-      setRights(["eventhandling_write"]);
-      expect(action("create").disabled).toBeFalsy();
+      setRights(fixture, ["eventhandling_write"]);
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
     });
 
     it("navigates to the new-handler route when the create action runs", () => {
       const router = TestBed.inject(Router);
       const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
-      setRights(["eventhandling_write"]);
-      action("create").run!();
+      setRights(fixture, ["eventhandling_write"]);
+      toolbarAction(component, "create").run!();
       expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS_NEW);
     });
 
     it("keeps the detailed-view toggle visible whatever the rights", () => {
-      setRights([]);
-      expect(action("detailed-view").visible).toBeUndefined();
-      expect(action("detailed-view").kind).toBe("toggle");
+      setRights(fixture, []);
+      expect(toolbarAction(component, "detailed-view").visible).toBeUndefined();
+      expect(toolbarAction(component, "detailed-view").kind).toBe("toggle");
     });
 
     it("reflects the detailed view in the toggle and flips it when the action runs", () => {
       const navigate = jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
-      expect(action("detailed-view").checked).toBe(false);
-      action("detailed-view").run!();
+      expect(toolbarAction(component, "detailed-view").checked).toBe(false);
+      toolbarAction(component, "detailed-view").run!();
       expect(component.detailedView()).toBe(true);
-      expect(action("detailed-view").checked).toBe(true);
-      action("detailed-view").run!();
+      expect(toolbarAction(component, "detailed-view").checked).toBe(true);
+      toolbarAction(component, "detailed-view").run!();
       expect(component.detailedView()).toBe(false);
-      expect(action("detailed-view").checked).toBe(false);
+      expect(toolbarAction(component, "detailed-view").checked).toBe(false);
       expect(navigate).not.toHaveBeenCalled();
     });
 
@@ -936,7 +931,7 @@ describe("EventComponent", () => {
       const router = TestBed.inject(Router);
       const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       showRows();
-      setRights(["eventhandling_read", "eventhandling_write"]);
+      setRights(fixture, ["eventhandling_read", "eventhandling_write"]);
       const root = fixture.nativeElement as HTMLElement;
       const create = root.querySelector<HTMLButtonElement>("app-table-actions button.action-button-primary")!;
       expect(create).toBeTruthy();
@@ -951,7 +946,7 @@ describe("EventComponent", () => {
 
     it("renders no create button without the write right", () => {
       showRows();
-      setRights(["eventhandling_read"]);
+      setRights(fixture, ["eventhandling_read"]);
       const root = fixture.nativeElement as HTMLElement;
       expect(root.querySelector("app-table-actions")).toBeTruthy();
       expect(root.querySelector("app-table-actions button.action-button-primary")).toBeNull();

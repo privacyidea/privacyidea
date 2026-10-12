@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { TableAction } from "@components/shared/table-actions/table-actions.component";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -38,6 +37,7 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { SmsGatewaysComponent } from "./sms-gateways.component";
+import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;
@@ -139,65 +139,48 @@ describe("SmsGatewaysComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    const toolbarAction = (id: string): TableAction => {
-      const found = component["toolbarActions"]().find((candidate) => candidate.id === id);
-      if (!found) {
-        throw new Error(`no toolbar action ${id}`);
-      }
-      return found;
-    };
-    const toolbarButton = (label: string): HTMLButtonElement | undefined =>
-      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll("app-table-actions button")).find(
-        (button) => button.textContent?.includes(label)
-      );
-    const setRights = (rights: string[]) => {
-      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
-      fixture.detectChanges();
-    };
-
     it("offers create and delete in that order", () => {
       expect(component["toolbarActions"]().map((action) => action.id)).toEqual(["create", "delete"]);
-      expect(toolbarAction("create").label).toBe("Create SMS Gateway");
-      expect(toolbarAction("delete").label).toBe("Delete");
+      expect(toolbarAction(component, "create").label).toBe("Create SMS Gateway");
+      expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
     it("shows both actions while the read right is granted", () => {
-      setRights(["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
-      expect(toolbarButton("Create SMS Gateway")).toBeTruthy();
-      expect(toolbarButton("Delete")).toBeTruthy();
+      expect(toolbarButton(fixture, "Create SMS Gateway")).toBeTruthy();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
     });
 
     it("draws no toolbar while the read right is denied", () => {
-      setRights([]);
+      setRights(fixture, []);
 
       expect(fixture.nativeElement.querySelector("app-table-actions")).toBeNull();
-      expect(toolbarButton("Create SMS Gateway")).toBeUndefined();
+      expect(toolbarButton(fixture, "Create SMS Gateway")).toBeUndefined();
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read"]);
 
-      expect(toolbarAction("create").disabled).toBeFalsy();
-      expect(toolbarAction("delete").disabled).toBe(true);
-      expect(toolbarButton("Create SMS Gateway")?.disabled).toBe(false);
-      expect(toolbarButton("Delete")?.disabled).toBe(true);
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      expect(toolbarButton(fixture, "Create SMS Gateway")?.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(true);
 
       component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
       fixture.detectChanges();
 
-      expect(toolbarAction("create").disabled).toBeFalsy();
-      expect(toolbarAction("delete").disabled).toBe(false);
-      expect(toolbarButton("Delete")?.disabled).toBe(false);
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+      expect(toolbarButton(fixture, "Delete")?.disabled).toBe(false);
     });
 
     it("runs create by opening the new-entry route", () => {
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
-      toolbarAction("create").run?.();
+      toolbarAction(component, "create").run?.();
 
       expect(navigate).toHaveBeenCalledTimes(1);
       expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
@@ -206,7 +189,7 @@ describe("SmsGatewaysComponent", () => {
     it("runs delete by confirming and then deleting the selected row", () => {
       component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
 
-      toolbarAction("delete").run?.();
+      toolbarAction(component, "delete").run?.();
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
@@ -220,21 +203,21 @@ describe("SmsGatewaysComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
-      toolbarButton("Create SMS Gateway")?.click();
+      toolbarButton(fixture, "Create SMS Gateway")?.click();
 
       expect(navigate).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read"]);
       component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
       fixture.detectChanges();
 
-      toolbarButton("Delete")?.click();
+      toolbarButton(fixture, "Delete")?.click();
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })

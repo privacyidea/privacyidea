@@ -38,6 +38,7 @@ import {
   MockTableUtilsService
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
+import { setRights, toolbarAction } from "@testing/toolbar-actions";
 
 describe("ApiClientsComponent", () => {
   let component: ApiClientsComponent;
@@ -209,57 +210,50 @@ describe("ApiClientsComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    const setRights = (rights: string[]) => {
-      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
-      fixture.detectChanges();
-    };
-    const action = (id: string) => component["toolbarActions"]().find((a) => a.id === id)!;
-
     it("lists the create and delete actions in order", () => {
       expect(component["toolbarActions"]().map((a) => a.id)).toEqual(["create", "delete"]);
     });
 
     it("shows create only with the api_client_add right", () => {
-      setRights([]);
-      expect(action("create").visible).toBe(false);
-      setRights(["api_client_add"]);
-      expect(action("create").visible).toBe(true);
-      setRights(["api_client_delete"]);
-      expect(action("create").visible).toBe(false);
+      setRights(fixture, []);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      setRights(fixture, ["api_client_add"]);
+      expect(toolbarAction(component, "create").visible).toBe(true);
+      setRights(fixture, ["api_client_delete"]);
+      expect(toolbarAction(component, "create").visible).toBe(false);
     });
 
     it("shows delete only with the api_client_delete right", () => {
-      setRights([]);
-      expect(action("delete").visible).toBe(false);
-      setRights(["api_client_delete"]);
-      expect(action("delete").visible).toBe(true);
-      setRights(["api_client_add"]);
-      expect(action("delete").visible).toBe(false);
+      setRights(fixture, []);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      setRights(fixture, ["api_client_delete"]);
+      expect(toolbarAction(component, "delete").visible).toBe(true);
+      setRights(fixture, ["api_client_add"]);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
     });
 
     it("never disables create", () => {
-      setRights(["api_client_add"]);
-      expect(action("create").disabled).toBeFalsy();
+      setRights(fixture, ["api_client_add"]);
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
     });
 
     it("disables delete without a selection and enables it with one", () => {
-      setRights(["api_client_delete"]);
-      expect(action("delete").disabled).toBe(true);
+      setRights(fixture, ["api_client_delete"]);
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
       component.selector.selectRow(apiClientServiceMock.apiClients()[0]);
-      expect(action("delete").disabled).toBe(false);
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
     });
 
     it("navigates to the create page when the create action runs", () => {
-      setRights(["api_client_add"]);
-      action("create").run!();
+      setRights(fixture, ["api_client_add"]);
+      toolbarAction(component, "create").run!();
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_NEW);
     });
 
     it("deletes the selected clients when the delete action runs", () => {
-      setRights(["api_client_delete"]);
+      setRights(fixture, ["api_client_delete"]);
       component.selector.selectRow(apiClientServiceMock.apiClients()[1]);
-      action("delete").run!();
+      toolbarAction(component, "delete").run!();
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ items: ["Client Two"] })
@@ -272,7 +266,7 @@ describe("ApiClientsComponent", () => {
     });
 
     it("renders only the permitted actions and wires the clicks to the handlers", () => {
-      setRights(["api_client_list", "api_client_add", "api_client_delete"]);
+      setRights(fixture, ["api_client_list", "api_client_add", "api_client_delete"]);
       const buttons = Array.from(
         (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>("app-table-actions button")
       );
@@ -293,7 +287,7 @@ describe("ApiClientsComponent", () => {
     });
 
     it("renders no toolbar button without any right", () => {
-      setRights(["api_client_list"]);
+      setRights(fixture, ["api_client_list"]);
       expect(fixture.nativeElement.querySelector("app-table-actions")).toBeTruthy();
       expect((fixture.nativeElement as HTMLElement).querySelectorAll("app-table-actions button").length).toBe(0);
     });

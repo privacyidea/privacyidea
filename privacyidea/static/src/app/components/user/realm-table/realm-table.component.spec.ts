@@ -47,7 +47,7 @@ import { RealmTableComponent } from "./realm-table.component";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
-import { TableAction } from "@components/shared/table-actions/table-actions.component";
+import { toolbarActions } from "@testing/toolbar-actions";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -758,8 +758,6 @@ describe("RealmTableComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    const toolbarActions = (): TableAction[] =>
-      (component as unknown as { toolbarActions: () => TableAction[] }).toolbarActions();
     const openActionsMenu = (): void => {
       (fixture.nativeElement.querySelector("app-table-actions-trigger button") as HTMLButtonElement).click();
       fixture.detectChanges();
@@ -770,11 +768,11 @@ describe("RealmTableComponent", () => {
       );
 
     it("offers a single Node action", () => {
-      expect(toolbarActions().map((candidate) => candidate.id)).toEqual(["node"]);
+      expect(toolbarActions(component).map((candidate) => candidate.id)).toEqual(["node"]);
     });
 
     it("offers the Node action in the menu only, as the node select already fills the toolbar", () => {
-      const node = toolbarActions()[0];
+      const node = toolbarActions(component)[0];
       expect(node.placement).toBe("menu");
       expect(
         fixture.nativeElement.querySelectorAll("app-table-actions > div > button:not(.overflow-more-btn)").length
@@ -782,13 +780,13 @@ describe("RealmTableComponent", () => {
     });
 
     it("keeps the Node action visible and enabled for every user", () => {
-      const node = toolbarActions()[0];
+      const node = toolbarActions(component)[0];
       expect(node.visible).toBeUndefined();
       expect(node.disabled).toBeUndefined();
     });
 
     it("opens the node submenu instead of running a handler", () => {
-      const node = toolbarActions()[0];
+      const node = toolbarActions(component)[0];
       expect(node.submenu).toBeDefined();
       expect(node.run).toBeUndefined();
     });

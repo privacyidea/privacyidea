@@ -33,6 +33,7 @@ import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-s
 import { of } from "rxjs";
 import { MachineResolverComponent } from "./machine-resolver.component";
 import { TableAction } from "@components/shared/table-actions/table-actions.component";
+import { grantRights, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -153,19 +154,10 @@ describe("MachineResolverComponent", () => {
       type: "hosts",
       data: { resolver: "hosts1", type: "hosts" }
     } as MachineResolver;
-    const toolbarActions = (): TableAction[] =>
-      (component as unknown as { toolbarActions: () => TableAction[] }).toolbarActions();
-    const newAction = (): TableAction => toolbarActions().find((candidate) => candidate.id === "new")!;
-    const toolbarButton = (label: string): HTMLButtonElement | undefined =>
-      (Array.from(fixture.nativeElement.querySelectorAll("app-table-actions button")) as HTMLButtonElement[]).find(
-        (button) => button.textContent!.includes(label)
-      );
-    const grantRights = (rights: string[]): void => {
-      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
-    };
+    const newAction = (): TableAction => toolbarActions(component).find((candidate) => candidate.id === "new")!;
 
     it("offers a single New Machine Resolver action", () => {
-      expect(toolbarActions().map((candidate) => candidate.id)).toEqual(["new"]);
+      expect(toolbarActions(component).map((candidate) => candidate.id)).toEqual(["new"]);
     });
 
     it("shows New Machine Resolver with mresolverwrite", () => {
@@ -194,7 +186,7 @@ describe("MachineResolverComponent", () => {
       machineResolverServiceMock.machineResolvers.set([hostsResolver]);
       fixture.detectChanges();
 
-      toolbarButton("New Machine Resolver")!.click();
+      toolbarButton(fixture, "New Machine Resolver")!.click();
 
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
     });
@@ -204,7 +196,7 @@ describe("MachineResolverComponent", () => {
       machineResolverServiceMock.machineResolvers.set([hostsResolver]);
       fixture.detectChanges();
 
-      expect(toolbarButton("New Machine Resolver")).toBeUndefined();
+      expect(toolbarButton(fixture, "New Machine Resolver")).toBeUndefined();
     });
   });
 });

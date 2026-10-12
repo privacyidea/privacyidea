@@ -45,7 +45,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideRouter } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { LockedUserEntry } from "@services/conditional-access-state/conditional-access-state.service";
-import { TableAction } from "@components/shared/table-actions/table-actions.component";
+import { grantRights, toolbarAction, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
 
 // A local database admin: the login name is the whole identity, so it stands in uid with no resolver or realm
 // beside it, and the role is what tells that row apart from an ordinary user's.
@@ -409,53 +409,41 @@ describe("LockedUsersComponent", () => {
   });
 
   describe("toolbar actions", () => {
-    const grantRights = (rights: string[]): void => {
-      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
-    };
-    const toolbarActions = (): TableAction[] =>
-      (component as unknown as { toolbarActions: () => TableAction[] }).toolbarActions();
-    const action = (id: string): TableAction => toolbarActions().find((candidate) => candidate.id === id)!;
-    const toolbarButton = (label: string): HTMLButtonElement | undefined =>
-      (Array.from(fixture.nativeElement.querySelectorAll("app-table-actions button")) as HTMLButtonElement[]).find(
-        (button) => button.textContent!.includes(label)
-      );
-
     it("offers unlock and delete-expired in that order", () => {
-      expect(toolbarActions().map((candidate) => candidate.id)).toEqual(["unlock", "delete-expired"]);
+      expect(toolbarActions(component).map((candidate) => candidate.id)).toEqual(["unlock", "delete-expired"]);
     });
 
     it("hides every action without user_lock_reset", () => {
       grantRights(["blocklist_reset", "user_lock_set"]);
-      expect(toolbarActions().map((candidate) => candidate.visible)).toEqual([false, false]);
+      expect(toolbarActions(component).map((candidate) => candidate.visible)).toEqual([false, false]);
     });
 
     it("shows Unlock and Delete Expired with user_lock_reset", () => {
       grantRights(["user_lock_reset"]);
-      expect(action("unlock").visible).toBe(true);
-      expect(action("delete-expired").visible).toBe(true);
+      expect(toolbarAction(component, "unlock").visible).toBe(true);
+      expect(toolbarAction(component, "delete-expired").visible).toBe(true);
     });
 
     it("disables Unlock without a selection and enables it with one", () => {
       grantRights(["user_lock_reset"]);
       casService.setLockedUsers([mockEntry, permanentEntry]);
-      expect(action("unlock").disabled).toBe(true);
+      expect(toolbarAction(component, "unlock").disabled).toBe(true);
 
       component.selection.set([mockEntry]);
 
-      expect(action("unlock").disabled).toBe(false);
+      expect(toolbarAction(component, "unlock").disabled).toBe(false);
     });
 
     it("keeps Delete Expired enabled without a selection", () => {
       grantRights(["user_lock_reset"]);
-      expect(action("delete-expired").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete-expired").disabled).toBeFalsy();
     });
 
     it("runs resetSelected from Unlock", () => {
       const resetSelected = jest.spyOn(component, "resetSelected").mockImplementation();
       const deleteExpired = jest.spyOn(component, "deleteExpired").mockImplementation();
 
-      action("unlock").run!();
+      toolbarAction(component, "unlock").run!();
 
       expect(resetSelected).toHaveBeenCalledTimes(1);
       expect(deleteExpired).not.toHaveBeenCalled();
@@ -465,7 +453,7 @@ describe("LockedUsersComponent", () => {
       const resetSelected = jest.spyOn(component, "resetSelected").mockImplementation();
       const deleteExpired = jest.spyOn(component, "deleteExpired").mockImplementation();
 
-      action("delete-expired").run!();
+      toolbarAction(component, "delete-expired").run!();
 
       expect(deleteExpired).toHaveBeenCalledTimes(1);
       expect(resetSelected).not.toHaveBeenCalled();
@@ -479,7 +467,7 @@ describe("LockedUsersComponent", () => {
       (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
       (casService.resetUserLock as jest.Mock).mockReturnValue(of(true));
 
-      action("unlock").run!();
+      toolbarAction(component, "unlock").run!();
       dialogRef.close(true);
 
       expect(casService.resetUserLock).toHaveBeenCalledTimes(1);
@@ -497,7 +485,7 @@ describe("LockedUsersComponent", () => {
       (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
       (casService.purgeUserLocks as jest.Mock).mockReturnValue(of(1));
 
-      action("delete-expired").run!();
+      toolbarAction(component, "delete-expired").run!();
       dialogRef.close(true);
 
       expect(casService.purgeUserLocks).toHaveBeenCalledTimes(1);
@@ -508,20 +496,20 @@ describe("LockedUsersComponent", () => {
       casService.setLockedUsers([mockEntry]);
       fixture.detectChanges();
 
-      expect(toolbarButton("Unlock")).toBeUndefined();
-      expect(toolbarButton("Delete Expired")).toBeUndefined();
+      expect(toolbarButton(fixture, "Unlock")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete Expired")).toBeUndefined();
     });
 
     it("disables the rendered Unlock button until a row is selected", () => {
       grantRights(["user_lock_reset"]);
       casService.setLockedUsers([mockEntry]);
       fixture.detectChanges();
-      expect(toolbarButton("Unlock")!.disabled).toBe(true);
+      expect(toolbarButton(fixture, "Unlock")!.disabled).toBe(true);
 
       component.selection.set([mockEntry]);
       fixture.detectChanges();
 
-      expect(toolbarButton("Unlock")!.disabled).toBe(false);
+      expect(toolbarButton(fixture, "Unlock")!.disabled).toBe(false);
     });
 
     it("asks to confirm the reset when the Unlock toolbar button is clicked", () => {
@@ -533,7 +521,7 @@ describe("LockedUsersComponent", () => {
       (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
       (casService.resetUserLock as jest.Mock).mockReturnValue(of(true));
 
-      toolbarButton("Unlock")!.click();
+      toolbarButton(fixture, "Unlock")!.click();
       dialogRef.close(true);
 
       expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
@@ -547,7 +535,7 @@ describe("LockedUsersComponent", () => {
       const dialogRef = new MockMatDialogRef<unknown, boolean>();
       (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
 
-      toolbarButton("Delete Expired")!.click();
+      toolbarButton(fixture, "Delete Expired")!.click();
       dialogRef.close(true);
 
       expect(casService.purgeUserLocks).toHaveBeenCalledTimes(1);
