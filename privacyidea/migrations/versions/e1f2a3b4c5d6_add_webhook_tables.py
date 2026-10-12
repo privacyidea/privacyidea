@@ -262,9 +262,21 @@ def _write_snapshot(conn):
 
     try:
         os.makedirs(directory, exist_ok=True)
-        with open(path, "w", encoding="utf-8") as fh:
+        # os.open rather than open(), for the case where `directory` is the system temp directory:
+        # the fallback in _snapshot_directory() lands there whenever the backup directory does not
+        # exist, which is the normal state of a pip or container install. The name is fully
+        # predictable - a fixed revision and a second-resolution timestamp - so in a world-writable
+        # directory another local user can place a symlink under it in advance. open(path, "w")
+        # follows one and truncates whatever it points at, and `pi-manage db upgrade` usually runs
+        # as root.
+        #
+        # O_NOFOLLOW refuses to follow a symlink, O_EXCL refuses an existing file at all, and the
+        # mode is applied at creation instead of by a chmod afterwards, which would follow the
+        # symlink just as happily. The snapshot also carries the webhook URLs of every handler,
+        # which may embed a token, so creating it 0600 from the start matters on its own.
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(snapshot, fh, indent=2, ensure_ascii=False, default=str)
-        os.chmod(path, 0o600)
     except OSError as ex:
         log.warning(
             f"Could not write pre-migration snapshot to {path}: {ex}. "

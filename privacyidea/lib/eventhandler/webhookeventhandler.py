@@ -30,8 +30,8 @@ import requests
 from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestException
 from privacyidea.lib.user import User
 from privacyidea.lib.error import UserError, ResourceNotFoundError
-from privacyidea.lib.webhook import (fire_webhook, get_webhook,
-                                     get_webhook_identifiers)
+from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
+                                     get_webhook_identifiers, outbound_guard_check)
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -329,10 +329,35 @@ class WebHookHandler(BaseEventHandler):
         if replace:
             webhook_text = self._replace_tags(webhook_text, content_type, g, request)
 
+        # The outbound request guard applies here too. This path does not go through
+        # fire_webhook(), so without this an inline definition would be the one way to reach an
+        # address the guard refuses - and it is the older, more widely used shape, configured by
+        # whoever holds eventhandling_write rather than webhook_write. A control that covers only
+        # the new shape protects the installation that has not migrated yet least of all.
+        try:
+            mode, rejection = outbound_guard_check(webhook_url)
+        except Exception as ex:
+            # Reading the config or parsing the URL must not break the handler; the request below
+            # is what this method is for, and a guard that cannot judge is a guard that does not.
+            log.warning(f"Could not apply the outbound request guard: {ex!r}")
+            mode, rejection = GuardMode.OFF, None
+        if rejection:
+            log.warning(f"Inline webhook: outbound request guard ({mode}) rejected the target: "
+                        f"{rejection}")
+            if mode == GuardMode.ENFORCE:
+                self.run_details = f"blocked by the outbound request guard ({mode})"
+                return False
+
         try:
             log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
             response = requests.post(webhook_url, data=webhook_text,
-                                     headers={'Content-Type': content_type}, timeout=TIMEOUT)
+                                     headers={'Content-Type': content_type}, timeout=TIMEOUT,
+                                     # Only ENFORCE withholds a redirect, matching fire_webhook():
+                                     # a redirect target was never checked, so following one would
+                                     # defeat the guard. OFF and WARN keep the previous default, so
+                                     # an installation that has not opted in sees no change and a
+                                     # trial run does not alter delivery.
+                                     allow_redirects=mode != GuardMode.ENFORCE)
             log.info(response.status_code)
             log.debug(response)
         except (HTTPError, ConnectionError, RequestException, Timeout) as err:

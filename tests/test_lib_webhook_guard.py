@@ -3,6 +3,7 @@ Tests for the outbound request guard in privacyidea/lib/webhook.py.
 
 See https://github.com/privacyidea/privacyidea/issues/5751
 """
+import os
 import socket
 from unittest.mock import patch
 
@@ -335,6 +336,48 @@ class FireWebhookGuardTestCase(MyTestCase):
         # blocked space, so the request must still be rejected.
         self.assertFalse(result["success"])
         self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_a_proxy_from_the_environment_is_checked_too(self):
+        """
+        requests runs with trust_env=True, so http(s)_proxy in the server's environment is used
+        even for a webhook that configures none. Checking the destination would then protect
+        against nothing: the connection goes to that proxy, which resolves the destination itself.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+        public_url = "https://public.example/hook"
+        responses.add(responses.POST, public_url, json={"ok": True}, status=200)
+        set_webhook("hook", url=public_url)
+
+        dns = _fake_getaddrinfo({
+            "public.example": ["203.0.113.5"],
+            "proxy.internal": ["10.9.9.9"],
+        })
+        with patch.dict(os.environ, {"https_proxy": "https://proxy.internal:3128"}, clear=False):
+            with patch("socket.getaddrinfo", dns):
+                result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertIn("outbound request guard", result["error"])
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_no_proxy_in_the_environment_puts_the_destination_back_in_scope(self):
+        # get_environ_proxies() applies no_proxy, so a destination excluded there is checked as
+        # itself rather than as a proxy it never goes through.
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+        public_url = "https://public.example/hook"
+        responses.add(responses.POST, public_url, json={"ok": True}, status=200)
+        set_webhook("hook", url=public_url)
+
+        dns = _fake_getaddrinfo({"public.example": ["203.0.113.5"]})
+        with patch.dict(os.environ, {"https_proxy": "https://proxy.internal:3128",
+                                     "no_proxy": "public.example"}, clear=False):
+            with patch("socket.getaddrinfo", dns):
+                result = fire_webhook("hook")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
     def test_invalid_guard_mode_falls_back_to_off(self):

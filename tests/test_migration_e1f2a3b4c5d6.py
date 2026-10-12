@@ -4,6 +4,7 @@ converts inline WebHook event handler options to first-class webhook objects.
 
 See https://github.com/privacyidea/privacyidea/issues/5751 (steps 1.1-1.3)
 """
+import datetime
 import json
 import os
 import tempfile
@@ -413,6 +414,31 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
         _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
         path = self._write_snapshot()
         self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+
+    def test_snapshot_refuses_to_write_through_a_symlink(self):
+        """
+        The snapshot directory falls back to the system temp directory whenever the backup
+        directory is absent, which is the normal state of a pip or container install - and the file
+        name is fully predictable. Another local user can therefore place a symlink under that name
+        in advance, and `pi-manage db upgrade` usually runs as root. Following one would truncate
+        whatever it points at.
+        """
+        _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
+        target = os.path.join(self.tmpdir, "precious")
+        with open(target, "w", encoding="utf-8") as fh:
+            fh.write("do not clobber me")
+
+        # Pre-place the symlink under the exact name the snapshot is about to use.
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import revision
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        link = os.path.join(self.tmpdir, f"privacyidea-{revision}-{timestamp}.json")
+        os.symlink(target, link)
+
+        # The write fails rather than following the link, and the failure is swallowed so the
+        # upgrade itself still proceeds.
+        self.assertIsNone(self._write_snapshot())
+        with open(target, encoding="utf-8") as fh:
+            self.assertEqual("do not clobber me", fh.read())
 
     def test_snapshot_can_be_disabled(self):
         """PRIVACYIDEA_MIGRATION_NO_SNAPSHOT=1 skips snapshot creation."""

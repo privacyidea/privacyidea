@@ -930,18 +930,41 @@ def _guard_config():
     return mode, allowlist
 
 
+def outbound_guard_check(url):
+    """
+    Read the guard's configuration and judge *url* against it.
+
+    The two steps belong together everywhere they are used - the mode decides what a rejection
+    means, so a caller needs both - and this keeps callers outside this module from reaching for
+    :func:`_guard_config`.
+
+    :param url: the URL the connection will actually go to (a proxy, where one is configured)
+    :return: a ``(mode, rejection)`` tuple; *rejection* is None when the target may be contacted
+    """
+    mode, allowlist = _guard_config()
+    return mode, check_outbound_target(url, mode=mode, allowlist=allowlist)
+
+
 def _guard_target(config):
     """
     Return the URL the guard should check for this webhook's request.
 
-    When a proxy is configured for the scheme in use, the connection goes to
-    the proxy, so the proxy is what the guard must check -- the destination
-    host is resolved by the proxy, not by us, and checking it would protect
-    against nothing.
+    When a proxy is used, the connection goes to the proxy, so the proxy is what the guard must
+    check -- the destination host is resolved by the proxy, not by us, and checking it would
+    protect against nothing.
+
+    That holds for a proxy out of the environment too. ``requests`` runs with ``trust_env=True``,
+    so ``http_proxy`` / ``https_proxy`` in the server's environment are used even for a webhook
+    that configures none; the guard would otherwise resolve and approve a destination the
+    connection never goes to. ``get_environ_proxies()`` applies ``no_proxy`` as well, so a
+    destination excluded there is correctly checked as itself.
     """
-    scheme = urlsplit(config["url"]).scheme
+    url = config["url"]
+    scheme = urlsplit(url).scheme
     proxies = _build_proxies(config) or {}
-    return proxies.get(scheme) or config["url"]
+    # A proxy on the webhook wins, exactly as it does for the request itself.
+    proxy = proxies.get(scheme) or requests.utils.get_environ_proxies(url).get(scheme)
+    return proxy or url
 
 
 def _record_webhook_call(identifier, start, success, error=False):
@@ -1007,11 +1030,9 @@ def fire_webhook(identifier, payload=None):
     # so a failure anywhere in here has to come back as a reported failure.
     session = None
     try:
-        mode, allowlist = _guard_config()
+        mode, rejection = outbound_guard_check(_guard_target(config))
         # Only ENFORCE withholds a redirect; see the request call below.
         follow_redirects = mode != GuardMode.ENFORCE
-        rejection = check_outbound_target(_guard_target(config), mode=mode,
-                                          allowlist=allowlist)
         if rejection:
             # The rejection names the target it judged, so it can carry the URL.
             rejection = _redact_url(rejection, config["url"])

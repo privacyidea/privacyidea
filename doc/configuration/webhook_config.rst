@@ -138,9 +138,14 @@ is **off by default**, so an upgrade changes nothing until you opt in::
 The guard resolves the target host and refuses an address in a blocked range:
 loopback, the unspecified addresses, RFC1918 private space, link-local
 (which covers the cloud metadata endpoint ``169.254.169.254``), carrier-grade
-NAT, IPv6 unique-local. When a proxy is configured for the webhook, the **proxy**
-is checked rather than the destination - that is where the connection actually
-goes, and the destination is resolved by the proxy rather than by privacyIDEA.
+NAT, IPv6 unique-local. When a proxy is used, the **proxy** is checked rather
+than the destination - that is where the connection actually goes, and the
+destination is resolved by the proxy rather than by privacyIDEA. This covers a
+proxy out of the server's environment (``http_proxy`` / ``https_proxy``) as well
+as one configured on the webhook, and it honours ``no_proxy``.
+
+It applies to an event handler that still carries its URL inline, from before
+webhooks became configuration objects, just as it does to a webhook object.
 
 ``PI_OUTBOUND_GUARD_ALLOW``
    Exceptions, checked against both the configured host name and every address

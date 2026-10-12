@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, UTC
 
 from unittest import mock
 import requests.exceptions
+import socket
+
 import responses
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -5203,3 +5205,46 @@ class WebhookObjectHandlerTestCase(MyTestCase):
 
         self.assertTrue(result)
         self.assertEqual(f"{self.INLINE_URL}: HTTP 200", handler.run_details)
+
+    @responses.activate
+    def test_16_the_inline_path_obeys_the_outbound_guard(self):
+        """
+        The inline shape does not go through fire_webhook(), so without its own check it would be
+        the one way to reach an address the guard refuses - and it is the older, more widely used
+        shape, configured by whoever holds eventhandling_write rather than webhook_write.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                           "", ("127.0.0.1", 80))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertFalse(result)
+            self.assertIn("outbound request guard", handler.run_details)
+            self.assertEqual(0, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_17_the_inline_path_still_sends_while_the_guard_is_off(self):
+        # The default, and the upgrade-safety case: an installation that has not opted in must see
+        # the behaviour of privacyIDEA 3.14 and older.
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        with mock.patch("socket.getaddrinfo",
+                        return_value=[(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                       "", ("127.0.0.1", 80))]):
+            result, _ = self._run(self._make_options(
+                self._make_g(), {"URL": self.INLINE_URL,
+                                 "content_type": ContentType.JSON,
+                                 "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(1, len(responses.calls))
