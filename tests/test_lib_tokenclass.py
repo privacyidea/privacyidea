@@ -19,6 +19,7 @@ from privacyidea.lib.error import TokenAdminError, ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.challenge_types import ChallengeSession
 from privacyidea.lib.token import init_token, assign_tokengroup, remove_token, get_one_token
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
@@ -1367,6 +1368,35 @@ class TokenBaseTestCase(MyTestCase):
         token_obj = TokenClass(db_token)
         self.assertFalse(token_obj.has_further_challenge())
         token_obj.delete_token()
+
+    def test_42a_a_challenge_used_by_another_request_is_not_accepted(self):
+        """The answer verifies, but another request removed the challenge first, so it is not accepted."""
+        token = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": "LOSTCHAL"})
+        transaction_id = token.create_challenge()[2]
+        options = {"transaction_id": transaction_id}
+
+        self.assertEqual(1, token.check_challenge_response(passw="287082", options=dict(options)))
+
+        transaction_id = token.create_challenge()[2]
+        with mock.patch("privacyidea.lib.tokenclass.consume_challenge", return_value=False):
+            self.assertEqual(-1, token.check_challenge_response(passw="359152",
+                                                                options={"transaction_id": transaction_id}))
+        remove_token("LOSTCHAL")
+
+    def test_42b_an_enrollment_step_used_by_another_request_does_not_enroll(self):
+        """The second step of an enrollment claims its challenge first, so the request that lost it does not
+        overwrite what the other one enrolled."""
+        token = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": "LOSTENROLL"})
+        challenge = Challenge(token.token.serial, challenge="enroll", session=ChallengeSession.ENROLLMENT)
+        challenge.save()
+
+        with (mock.patch("privacyidea.lib.tokenclass.consume_challenge", return_value=False),
+              mock.patch.object(TokenClass, "enroll_via_validate_2nd_step") as enroll):
+            otp_counter = token.check_challenge_response(passw="anything",
+                                                         options={"transaction_id": challenge.transaction_id})
+        self.assertEqual(-1, otp_counter)
+        enroll.assert_not_called()
+        remove_token("LOSTENROLL")
 
     def test_43_remove_token_owner(self):
         # Create a token and assign a user to it

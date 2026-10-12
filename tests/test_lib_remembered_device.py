@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+import privacyidea.lib.remembered_device as remembered_device_module
 from .base import MyTestCase
 
 from privacyidea.lib.clients import create_client
@@ -322,6 +325,23 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # From anywhere else: reuse, and the series is gone
         self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, iris, "9.9.9.9").status)
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+    def test_a_lost_rotation_is_answered_like_a_later_request(self):
+        """When another request rotated the device between the validation and the rotation, this one is
+        answered the way a later request with the cookie it holds is: a tolerated duplicate, or a miss."""
+        client_id = self._client_id()
+        ada = self._identity("ada")
+        _device, cookie = create_remembered_device(ada, client_id, ip_address="10.0.0.1")
+
+        # The cookie is still the current one, so re-validating finds a device that is not in grace
+        with patch.object(remembered_device_module, "rotate_device", return_value=None):
+            self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
+
+        # After a real rotation the cookie carries the previous counter, which is tolerated from the same
+        # address inside the grace window
+        self.assertEqual("recognized", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
+        with patch.object(remembered_device_module, "rotate_device", return_value=None):
+            self.assertEqual("grace", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
 
     def test_unknown_series_returns_miss(self):
         client_id = self._client_id()
