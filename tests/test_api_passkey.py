@@ -17,6 +17,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 from datetime import datetime, timedelta, timezone
+
+from dateutil.tz import tzlocal
 from unittest.mock import patch
 
 from flask import Response
@@ -36,6 +38,9 @@ from privacyidea.lib.realm import set_realm, delete_realm, get_realms
 from privacyidea.lib.resolver import save_resolver, delete_resolver, get_resolver_list
 from privacyidea.lib.token import (remove_token, init_token, get_tokens, get_one_token, enable_token,
                                    assign_token, unassign_token)
+from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.tokenclass import (DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT,
+                                        FAILCOUNTER_EXCEEDED)
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
@@ -1474,6 +1479,33 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                            AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD)
         remove_token(serial)
 
+    def test_19a2_revoked_passkey_with_an_elapsed_failcounter_timeout(self):
+        """
+        A revoked token is also locked, and a locked token refuses the timed failcounter reset. The revocation
+        has to be reported before that reset is attempted, or the login ends in an error instead of a refusal.
+        """
+        serial = self._enroll_static_passkey()
+        token = get_one_token(serial=serial)
+        token.set_maxfail(3)
+        token.set_failcount(3)
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED,
+                              (datetime.now(tzlocal()) - timedelta(minutes=30)).strftime(DATE_FORMAT))
+        token.revoke()
+
+        try:
+            res, transaction_id = self._answer_passkey_challenge("/validate/check",
+                                                                 self.authentication_challenge_no_uv,
+                                                                 self.authentication_response_no_uv)
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"])
+            self.assertFalse(res.json["result"]["value"])
+            self._assert_unusable_token_logged(transaction_id, serial, "/validate/check",
+                                               AuthEventReason.TOKEN_REVOKED)
+        finally:
+            set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 0)
+            remove_token(serial)
+
     def test_19b_passkey_outside_validity_period_auth(self):
         """
         The same applies to the WebUI login at /auth.
@@ -2737,6 +2769,19 @@ class PasskeySessionUserAPITest(PasskeyAPITestBase):
                                         serials={serial}, transaction_id=transaction_id, endpoint="/auth")
         audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
         self.assertEqual(serial, audit_entry.get("serial"), audit_entry)
+
+    def test_01a_a_refused_login_is_not_the_token_last_authentication(self):
+        """The assertion verifies before the login name is checked, but a refused login is not an
+        authentication: last_auth must still say what it said before."""
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        self._add_resolver_to_realm("tests/testdata/passwd-duplicate-login", priority=1)
+        last_auth_before = get_one_token(serial=serial).get_tokeninfo(PolicyAction.LASTAUTH)
+
+        res, _ = self._login_without_username()
+
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertEqual(last_auth_before, get_one_token(serial=serial).get_tokeninfo(PolicyAction.LASTAUTH))
 
     def test_02_owner_is_found_first_and_logs_in(self):
         """The same two resolvers, with the owner's resolver first: nothing changes."""

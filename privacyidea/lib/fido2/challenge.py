@@ -110,9 +110,12 @@ def check_fido2_token_state(token: TokenClass) -> FIDO2TokenState:
     returned instead of raised, because each view phrases its own response and writes its own
     authentication-log row from the reason.
     """
-    token.check_reset_failcount()
+    # Revocation first, as check_serial_pass does: revoke() also locks the token, and check_reset_failcount()
+    # calls the lock-protected reset() once the clear timeout has elapsed, which would raise here instead of
+    # letting the token report that it is revoked.
     if token.is_revoked():
         return FIDO2TokenState(False, "Token is revoked", AuthEventReason.TOKEN_REVOKED)
+    token.check_reset_failcount()
     messages = []
     if not token.check_all(messages):
         return FIDO2TokenState(False, ", ".join(messages), token.auth_details.get(AUTH_EVENT_REASON_KEY))
@@ -122,11 +125,16 @@ def check_fido2_token_state(token: TokenClass) -> FIDO2TokenState:
 def record_fido2_login_success(token: TokenClass) -> None:
     """
     The success bookkeeping of ``check_token_list`` for the FIDO2 login paths: count the authentication unless
-    the no_auth_counter config switches the counters off, and reset the fail counter.
+    the no_auth_counter config switches the counters off, reset the fail counter and record the time of this
+    authentication.
+
+    The views call this once the login is accepted. A verified assertion is not yet an accepted login - the
+    view can still refuse it - so last_auth is written here and not where the assertion is verified.
     """
     if not is_true(get_from_config(key="no_auth_counter")):
         token.inc_count_auth_success()
     token.reset()
+    token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 
 def has_unbound_challenge(transaction_id: str) -> bool:
@@ -227,6 +235,4 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
     # Redis (when active) and the DB.
     if result.success > 0:
         cancel_challenge(transaction_id)
-        # Update the last_auth token info
-        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
     return result
