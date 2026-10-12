@@ -18,15 +18,12 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { AuthService } from "@services/auth/auth.service";
-import { MockAuthService } from "@testing/mock-services";
 import { WelcomeDialogComponent } from "./welcome-dialog.component";
 
 describe("WelcomeDialogComponent", () => {
   let fixture: ComponentFixture<WelcomeDialogComponent>;
   let component: WelcomeDialogComponent;
   let dialogRefMock: { close: jest.Mock };
-  let authMock: MockAuthService;
 
   const heading = (): string => fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim();
   const buttons = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
@@ -44,12 +41,10 @@ describe("WelcomeDialogComponent", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: MAT_DIALOG_DATA, useValue: null },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: MAT_DIALOG_DATA, useValue: null }
       ]
     });
 
-    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     fixture = TestBed.createComponent(WelcomeDialogComponent);
     component = fixture.componentInstance;
   });
@@ -58,41 +53,13 @@ describe("WelcomeDialogComponent", () => {
     expect(component.step()).toBe(0);
   });
 
-  it("starts at the free tier warning and closes on okay when hideWelcome hides the introduction", () => {
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 1 });
-    fixture = TestBed.createComponent(WelcomeDialogComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-
-    expect(component.step()).toBe(4);
-    expect(buttonLabels()).toHaveLength(1);
-    expect(buttonLabels()[0]).toContain("Okay");
-
-    clickButton("Okay");
-    expect(dialogRefMock.close).toHaveBeenCalled();
-  });
-
-  it("nextWelcome should increment step and close at >=5", () => {
+  it("nextWelcome should increment step and close after step 3", () => {
     component.nextWelcome();
     expect(component.step()).toBe(1);
     component.nextWelcome();
     expect(component.step()).toBe(2);
     component.nextWelcome();
     expect(component.step()).toBe(3);
-
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 0 });
-    component.nextWelcome();
-    expect(dialogRefMock.close).toHaveBeenCalled();
-  });
-
-  it("should allow step 4 when subscriptionStatus is 1, then close on next", () => {
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 1 });
-    component.nextWelcome(); // 1
-    component.nextWelcome(); // 2
-    component.nextWelcome(); // 3
-
-    component.nextWelcome();
-    expect(component.step()).toBe(4);
     expect(dialogRefMock.close).not.toHaveBeenCalled();
 
     component.nextWelcome();
@@ -125,18 +92,6 @@ describe("WelcomeDialogComponent", () => {
     expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
     expect(buttonLabels()).toHaveLength(1);
     expect(buttonLabels()[0]).toContain("Next");
-  });
-
-  it("closes the subscription step with a single confirm button under the enterprise heading", () => {
-    component.step.set(4);
-    fixture.detectChanges();
-
-    expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
-    expect(buttonLabels()).toHaveLength(1);
-    expect(buttonLabels()[0]).toContain("Okay");
-
-    clickButton("Okay");
-    expect(dialogRefMock.close).toHaveBeenCalled();
   });
 
   it("restarts on the read again action and advances on every other action", () => {

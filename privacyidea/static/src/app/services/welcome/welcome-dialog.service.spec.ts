@@ -18,16 +18,33 @@
  **/
 import { TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
-import { AuthService } from "@services/auth/auth.service";
+import { FreeTierDialogComponent } from "@components/shared/free-tier-dialog/free-tier-dialog.component";
+import { WelcomeDialogComponent } from "@components/shared/welcome-dialog/welcome-dialog.component";
+import { AuthData, AuthService } from "@services/auth/auth.service";
+import { Subject } from "rxjs";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { WelcomeDialogService } from "./welcome-dialog.service";
 
 describe("WelcomeDialogService", () => {
-  let dialogMock: Pick<MatDialog, "open">;
+  let dialogMock: { open: jest.Mock };
   let authMock: MockAuthService;
+  let welcomeClosed: Subject<void>;
+
+  const openedDialogs = () => dialogMock.open.mock.calls.map(([component]) => component);
+
+  // An interactive login: authenticated only after the service was created.
+  const login = (authData: Partial<AuthData>): WelcomeDialogService => {
+    authMock.isAuthenticated.set(false);
+    const service = TestBed.inject(WelcomeDialogService);
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, ...authData });
+    authMock.isAuthenticated.set(true);
+    TestBed.tick();
+    return service;
+  };
 
   beforeEach(() => {
-    dialogMock = { open: jest.fn() } as unknown as Pick<MatDialog, "open">;
+    welcomeClosed = new Subject<void>();
+    dialogMock = { open: jest.fn(() => ({ afterClosed: () => welcomeClosed })) };
 
     TestBed.configureTestingModule({
       providers: [
@@ -63,42 +80,39 @@ describe("WelcomeDialogService", () => {
     expect(dialogMock.open).not.toHaveBeenCalled();
   });
 
-  it("opens on login despite hideWelcome when the free tier is exceeded, as the policy only hides the introduction", () => {
-    authMock.isAuthenticated.set(false);
-    const service = TestBed.inject(WelcomeDialogService);
-
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 1 });
-    authMock.isAuthenticated.set(true);
-    TestBed.tick();
+  it("shows the free tier dialog after the welcome dialog when the free tier is exceeded", () => {
+    const service = login({ hide_welcome: false, subscription_status: 1 });
 
     expect(service.opened()).toBe(true);
-    expect(dialogMock.open).toHaveBeenCalled();
+    expect(openedDialogs()).toEqual([WelcomeDialogComponent]);
+
+    welcomeClosed.next();
+    expect(openedDialogs()).toEqual([WelcomeDialogComponent, FreeTierDialogComponent]);
   });
 
-  it("does NOT open on login with hideWelcome for any other subscription status", () => {
-    authMock.isAuthenticated.set(false);
-    const service = TestBed.inject(WelcomeDialogService);
+  it("shows only the free tier dialog when hideWelcome hides the welcome dialog", () => {
+    const service = login({ hide_welcome: true, subscription_status: 1 });
 
-    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 2 });
-    authMock.isAuthenticated.set(true);
-    TestBed.tick();
+    expect(service.opened()).toBe(true);
+    expect(openedDialogs()).toEqual([FreeTierDialogComponent]);
+  });
+
+  it.each([0, 2, 3])("shows only the welcome dialog at subscription status %i", (subscription_status) => {
+    login({ hide_welcome: false, subscription_status });
+    welcomeClosed.next();
+
+    expect(openedDialogs()).toEqual([WelcomeDialogComponent]);
+  });
+
+  it.each([0, 2, 3])("shows no dialog with hideWelcome at subscription status %i", (subscription_status) => {
+    const service = login({ hide_welcome: true, subscription_status });
 
     expect(service.opened()).toBe(false);
     expect(dialogMock.open).not.toHaveBeenCalled();
   });
 
-  it("does NOT open on login of a self-service user when the free tier is exceeded", () => {
-    authMock.isAuthenticated.set(false);
-    const service = TestBed.inject(WelcomeDialogService);
-
-    authMock.authData.set({
-      ...MockAuthService.MOCK_AUTH_DATA,
-      role: "user",
-      hide_welcome: true,
-      subscription_status: 1
-    });
-    authMock.isAuthenticated.set(true);
-    TestBed.tick();
+  it("shows no free tier dialog to a self-service user", () => {
+    const service = login({ role: "user", hide_welcome: true, subscription_status: 1 });
 
     expect(service.opened()).toBe(false);
     expect(dialogMock.open).not.toHaveBeenCalled();

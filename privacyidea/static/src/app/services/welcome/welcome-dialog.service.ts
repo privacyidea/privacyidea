@@ -17,7 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { effect, inject, Injectable, signal } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
+import { ComponentType } from "@angular/cdk/overlay";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { FreeTierDialogComponent } from "@components/shared/free-tier-dialog/free-tier-dialog.component";
 import { WelcomeDialogComponent } from "@components/shared/welcome-dialog/welcome-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
@@ -45,15 +47,28 @@ export class WelcomeDialogService {
         return;
       }
       this.welcomeHandled = true;
-      // The dialog is for administrators, as the hide_welcome_info policy says. The policy only hides the
-      // introduction: the free tier warning is shown regardless, see WelcomeDialogComponent.
-      if (this.auth.role() === "admin" && (!this.auth.hideWelcome() || this.auth.subscriptionStatus() === 1)) {
-        this.opened.set(true);
-        this.dialog.open(WelcomeDialogComponent, {
-          disableClose: true,
-          autoFocus: false
-        });
+      // The dialogs are for administrators. The hide_welcome_info policy hides the welcome dialog only, the free
+      // tier warning is shown regardless, after the welcome dialog if both are due.
+      if (this.auth.role() !== "admin") {
+        return;
       }
+      const freeTierExceeded = this.auth.subscriptionStatus() === 1;
+      if (!this.auth.hideWelcome()) {
+        const welcome = this.openDialog(WelcomeDialogComponent);
+        if (freeTierExceeded) {
+          welcome.afterClosed().subscribe(() => this.openDialog(FreeTierDialogComponent));
+        }
+      } else if (freeTierExceeded) {
+        this.openDialog(FreeTierDialogComponent);
+      }
+    });
+  }
+
+  private openDialog<T>(component: ComponentType<T>): MatDialogRef<T> {
+    this.opened.set(true);
+    return this.dialog.open(component, {
+      disableClose: true,
+      autoFocus: false
     });
   }
 }
