@@ -26,7 +26,7 @@ USER_LOCK = ("resolver1", "1000", "realm1")
 
 class TestMigration670d90ff7113(MigrationTestBase):
     REVISION = "670d90ff7113"
-    PARENT_REVISION = "b7c1e4d2a9f3"
+    PARENT_REVISION = "35815effd77c"
 
     @staticmethod
     def _lock_row(resolver: str, uid: str, realm: str, user_role: str) -> dict:
