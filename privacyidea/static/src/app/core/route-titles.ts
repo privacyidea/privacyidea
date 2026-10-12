@@ -21,15 +21,15 @@
 // routed; the admin and the self-service routes share these.
 export const PAGE_NAMES = {
   login: $localize`:@@pageTitle.login:Login`,
-  dashboard: $localize`:@@pageTitle.dashboard:Dashboard`,
+  dashboard: $localize`:@@common.dashboard:Dashboard`,
   settings: $localize`:@@pageTitle.settings:UI settings`,
   audit: $localize`:@@pageTitle.audit:Audit log`,
-  news: $localize`:@@pageTitle.news:News`,
+  news: $localize`:@@common.news:News`,
   clients: $localize`:@@pageTitle.clients:Clients`,
   authenticationLog: $localize`:@@pageTitle.authenticationLog:Authentication log`,
   lockedUsers: $localize`:@@pageTitle.lockedUsers:Locked users`,
   blocklist: $localize`:@@pageTitle.blocklist:Blocklist`,
-  tokens: $localize`:@@pageTitle.tokens:Tokens`,
+  tokens: $localize`:@@common.tokens:Tokens`,
   challenges: $localize`:@@pageTitle.challenges:Token challenges`,
   applications: $localize`:@@pageTitle.applications:Token applications`,
   getSerial: $localize`:@@pageTitle.getSerial:Find a token serial`,
@@ -38,36 +38,36 @@ export const PAGE_NAMES = {
   assignToken: $localize`:@@pageTitle.assignToken:Assign a token`,
   tokenWizard: $localize`:@@pageTitle.tokenWizard:Token enrollment wizard`,
   containers: $localize`:@@pageTitle.containers:Containers`,
-  containerTemplates: $localize`:@@pageTitle.containerTemplates:Container templates`,
+  containerTemplates: $localize`:@@common.containerTemplates:Container templates`,
   containerWizard: $localize`:@@pageTitle.containerWizard:Container creation wizard`,
-  users: $localize`:@@pageTitle.users:Users`,
-  realms: $localize`:@@pageTitle.realms:Realms`,
-  resolvers: $localize`:@@pageTitle.resolvers:Resolvers`,
-  policies: $localize`:@@pageTitle.policies:Policies`,
-  conditionalAccess: $localize`:@@pageTitle.conditionalAccess:Conditional access policies`,
-  apiClients: $localize`:@@pageTitle.apiClients:API clients`,
-  events: $localize`:@@pageTitle.events:Event handlers`,
+  users: $localize`:@@common.users:Users`,
+  realms: $localize`:@@common.realms:Realms`,
+  resolvers: $localize`:@@common.resolvers:Resolvers`,
+  policies: $localize`:@@common.policies:Policies`,
+  conditionalAccess: $localize`:@@common.conditionalAccess:Conditional access policies`,
+  apiClients: $localize`:@@common.apiClients:API clients`,
+  events: $localize`:@@common.eventHandlers:Event handlers`,
   machineResolvers: $localize`:@@pageTitle.machineResolvers:Machine resolvers`,
-  machines: $localize`:@@pageTitle.machines:Machines`,
-  periodicTasks: $localize`:@@pageTitle.periodicTasks:Periodic tasks`,
+  machines: $localize`:@@common.machines:Machines`,
+  periodicTasks: $localize`:@@common.periodicTasksSentenceCase:Periodic tasks`,
   system: $localize`:@@pageTitle.system:System configuration`,
   tokenTypes: $localize`:@@pageTitle.tokenTypes:Token type configuration`,
-  subscription: $localize`:@@pageTitle.subscription:Subscription`,
-  smtp: $localize`:@@pageTitle.smtp:SMTP servers`,
-  radius: $localize`:@@pageTitle.radius:RADIUS servers`,
-  sms: $localize`:@@pageTitle.sms:SMS gateways`,
-  privacyideaServers: $localize`:@@pageTitle.privacyideaServers:privacyIDEA servers`,
-  caConnectors: $localize`:@@pageTitle.caConnectors:CA connectors`,
-  tokengroups: $localize`:@@pageTitle.tokengroups:Token groups`,
-  serviceIds: $localize`:@@pageTitle.serviceIds:Service IDs`
+  subscription: $localize`:@@common.subscription:Subscription`,
+  smtp: $localize`:@@common.smtpServers:SMTP servers`,
+  radius: $localize`:@@common.radiusServers:RADIUS servers`,
+  sms: $localize`:@@common.smsGateways:SMS gateways`,
+  privacyideaServers: $localize`:@@common.privacyideaServers:privacyIDEA servers`,
+  caConnectors: $localize`:@@common.caConnectors:CA connectors`,
+  tokengroups: $localize`:@@common.tokengroups:Token groups`,
+  serviceIds: $localize`:@@common.serviceIds:Service IDs`
 };
 
 // The title of the page that creates a record of the list called `base`.
 export function newTitle(base: string): string {
-  return $localize`:@@pageTitle.new:${base}:PAGE: – new`;
+  return $localize`:@@pageTitle.new:${base}:PAGE: - new`;
 }
 
 // The title of the page that shows one record of the list called `base`.
 export function detailsTitle(base: string): string {
-  return $localize`:@@pageTitle.details:${base}:PAGE: – details`;
+  return $localize`:@@pageTitle.details:${base}:PAGE: - details`;
 }

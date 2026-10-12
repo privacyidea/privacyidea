@@ -228,7 +228,7 @@
         [ngClass]="contentService.onNews() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.NEWS]">
         <mat-icon>campaign</mat-icon>
-        <span i18n="@@nav.news">News</span>
+        <span i18n="@@common.news">News</span>
       </a>
     }
     @if (contentService.onDashboard()) {
@@ -664,7 +664,7 @@
         [ngClass]="contentService.routePath() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]">
         <mat-icon>point_of_sale</mat-icon>
-        <span i18n="@@nav.machines">Machines</span>
+        <span i18n="@@common.machines">Machines</span>
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS)) {
@@ -940,7 +940,7 @@
         [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS]">
         <mat-icon>storage</mat-icon>
-        <span i18n="@@nav.serviceIds">Service IDs</span>
+        <span i18n="@@common.serviceIds">Service IDs</span>
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)) {

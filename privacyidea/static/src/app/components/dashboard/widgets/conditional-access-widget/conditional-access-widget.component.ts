@@ -81,7 +81,7 @@ export interface RestrictionKind {
 }
 
 export const RESTRICTION_KINDS: readonly RestrictionKind[] = [
-  { id: "users", label: $localize`:@@nav.users:Users`, actions: ["LOCK_USER", "PERMANENT_LOCK_USER"] },
+  { id: "users", label: $localize`:@@common.users:Users`, actions: ["LOCK_USER", "PERMANENT_LOCK_USER"] },
   { id: "ips", label: $localize`:@@common.ips:IPs`, actions: ["BLOCK_IP", "PERMANENT_BLOCK_IP"] }
 ];
 

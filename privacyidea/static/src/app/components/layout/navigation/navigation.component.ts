@@ -124,21 +124,21 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   primaryNavItems: NavItem[] = [
     {
       icon: "dashboard",
-      label: $localize`:@@nav.dashboard:Dashboard`,
+      label: $localize`:@@common.dashboard:Dashboard`,
       route: ROUTE_PATHS.DASHBOARD,
       section: "dashboard"
     },
     { icon: "shield", label: $localize`:@@common.token:Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
     {
       icon: "supervised_user_circle",
-      label: $localize`:@@nav.users:Users`,
+      label: $localize`:@@common.users:Users`,
       route: ROUTE_PATHS.USERS,
       section: "users"
     },
     { icon: "gavel", label: $localize`:@@common.policies:Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
     {
       icon: "event_repeat",
-      label: $localize`:@@nav.subscription:Subscription`,
+      label: $localize`:@@common.subscription:Subscription`,
       route: ROUTE_PATHS.SUBSCRIPTION,
       section: "subscription"
     },

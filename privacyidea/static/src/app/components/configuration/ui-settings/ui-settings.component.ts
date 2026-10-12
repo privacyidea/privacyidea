@@ -77,9 +77,9 @@ export class UISettingsComponent {
   // which snaps the control back to what is actually persisted.
   protected readonly selectedLandingPage: WritableSignal<LandingPage> = linkedSignal(() => this.landingPage());
   protected readonly landingPageLabels: Record<LandingPage, string> = {
-    dashboard: $localize`:@@nav.dashboard:Dashboard`,
+    dashboard: $localize`:@@common.dashboard:Dashboard`,
     tokens: $localize`:@@common.token:Token`,
-    users: $localize`:@@nav.users:Users`,
+    users: $localize`:@@common.users:Users`,
     audit: $localize`:@@nav.audit:Audit`,
     "conditional-access": $localize`:@@nav.conditionalAccess:Conditional Access`
   };

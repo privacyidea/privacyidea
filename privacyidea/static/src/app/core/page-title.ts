@@ -45,7 +45,7 @@ export class PageTitleStrategy extends TitleStrategy {
     const changed = heading !== this.heading() || path !== this.path;
     this.heading.set(heading);
     this.path = path;
-    this.title.setTitle(heading ? `${heading} – ${this.appTitle}` : this.appTitle);
+    this.title.setTitle(heading ? `${heading} - ${this.appTitle}` : this.appTitle);
     if (heading && changed) {
       void this.announcer.announce(heading, "polite");
     }

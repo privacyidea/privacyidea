@@ -67,7 +67,7 @@ describe("PageTitleStrategy", () => {
   it("puts the page's name before the application's in the document title", async () => {
     await router.navigateByUrl("/policies");
 
-    expect(title.getTitle()).toBe("Policies – privacyIDEA Authentication System");
+    expect(title.getTitle()).toBe("Policies - privacyIDEA Authentication System");
   });
 
   it("exposes the page's name as the heading", async () => {
@@ -84,10 +84,10 @@ describe("PageTitleStrategy", () => {
 
   it("names a new or a record's page after its list", async () => {
     await router.navigateByUrl("/policies/new");
-    expect(strategy.heading()).toBe("Policies – new");
+    expect(strategy.heading()).toBe("Policies - new");
 
     await router.navigateByUrl("/policies/details/hide_welcome");
-    expect(strategy.heading()).toBe("Policies – details");
+    expect(strategy.heading()).toBe("Policies - details");
   });
 
   it("announces the page when the route changes", async () => {
@@ -121,7 +121,7 @@ describe("PageTitleStrategy", () => {
 
     expect(announcer.announce).toHaveBeenCalledTimes(1);
     expect(strategy.heading()).toBe("Policies");
-    expect(title.getTitle()).toBe("Policies – privacyIDEA Authentication System");
+    expect(title.getTitle()).toBe("Policies - privacyIDEA Authentication System");
   });
 
   it("announces another record of the same list although the heading is the same", async () => {

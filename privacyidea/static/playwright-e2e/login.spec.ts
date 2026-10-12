@@ -1,3 +1,22 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
 import { expect, test } from "@playwright/test";
 import { expectNoNewViolations } from "./support/axe";
 
@@ -29,7 +48,7 @@ test.describe("login", () => {
     const box = await h1.boundingBox();
     expect(box?.width).toBeLessThanOrEqual(2);
     expect(box?.height).toBeLessThanOrEqual(2);
-    expect(await page.title()).toMatch(/^Login – /);
+    expect(await page.title()).toMatch(/^Login - /);
   });
 
   test("the form starts on the username, and Tab reaches the password, its toggle and the passkey button", async ({
