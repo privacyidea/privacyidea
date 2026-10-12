@@ -1,19 +1,18 @@
-"""v3.14.1: Store boolean policy actions saved with a false value as excluded actions
+"""v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true
 
-The policy matching only checks whether an action is set and ignores its value, so a boolean action saved with a value
-like ``policywrite=False`` acted as enabled. The policy template "helpdesk" of the WebUI stored 21 admin rights like
-this, which it meant to deny. Saving a policy now stores such an action as the excluded action ``-policywrite``, and
-this migration does the same for the policies already stored.
+The policy matching only checks whether an action is set and ignores its value, so a boolean action stored with a
+value like ``policywrite=False`` or ``triggerchallenge=hotp`` acted as enabled. The policy template "helpdesk" of the
+WebUI stored 21 admin rights like this. Saving a policy now stores ``false`` as the excluded action and rejects any
+other value, so this migration removes these values from the policies already stored. The actions stay enabled, the
+policies grant the same rights as before. The migration logs every policy it changes, so that the administrator can
+check whether an action was meant to be disabled.
 
-Only the values ``false`` (in any case) and ``0`` are taken as false, since whoever stored them meant to disable the
-action. Other values like ``triggerchallenge=hotp`` acted as enabled until now and are left as they are, the
-migration logs them as warnings.
+Values that enable the action (``true``, ``True``, ``TRUE`` and ``1``) are left as they are.
 
 The boolean actions are a snapshot of the policy definitions of this version, so the migration does not depend on the
-models of a later version. Boolean actions of token types outside privacyIDEA are not included, they are excluded the
-next time the policy is saved.
+models of a later version. Boolean actions of token types outside privacyIDEA are not included.
 
-The downgrade does not restore the values, the excluded action means the same in every version.
+The downgrade does not restore the values, the action without a value means the same in every version.
 
 Revision ID: f8a498439814
 Revises: 35815effd77c
@@ -34,7 +33,6 @@ down_revision = '35815effd77c'
 branch_labels = None
 depends_on = None
 
-FALSE_VALUES = ("false", "0")
 TRUE_VALUES = ("1", "True", "true", "TRUE")
 
 # The boolean actions of each scope in v3.14.1, including those of the token types privacyIDEA ships
@@ -134,47 +132,40 @@ class Policy(Base):
     action = sa.Column(sa.Text, default="")
 
 
-def negate_false_bool_actions(scope: str, action: str) -> tuple[str, list[str]]:
+def drop_bool_action_values(scope: str, action: str) -> tuple[str, list[str]]:
     """
-    Return the action string with every boolean action that has a false value turned into the excluded action, and
-    the boolean actions with a value that is neither true nor false. The other actions stay exactly as they are.
+    Return the action string with the value removed from every boolean action whose value is not true, and the
+    removed actions as they were stored. The other actions stay exactly as they are.
     """
     bool_actions = BOOL_ACTIONS.get(scope, frozenset())
     parts = []
-    unclear = []
-    changed = False
+    dropped = []
     for part in re.split(r'(?<!\\),', action):
         key_value = part.strip().split("=", 1)
-        if len(key_value) == 2 and key_value[0] in bool_actions:
-            value = key_value[1].strip()
-            if value.lower() in FALSE_VALUES:
-                # Keep the space after the separating comma
-                part = part[:len(part) - len(part.lstrip())] + f"-{key_value[0]}"
-                changed = True
-            elif value and value not in TRUE_VALUES:
-                unclear.append(part.strip())
+        if len(key_value) == 2 and key_value[0] in bool_actions and key_value[1].strip() not in TRUE_VALUES:
+            dropped.append(part.strip())
+            # Keep the space after the separating comma
+            part = part[:len(part) - len(part.lstrip())] + key_value[0]
         parts.append(part)
-    return ",".join(parts) if changed else action, unclear
+    return (",".join(parts) if dropped else action), dropped
 
 
 def upgrade():
     session = orm.Session(bind=op.get_bind())
     try:
         for policy in session.scalars(sa.select(Policy).where(Policy.action.like("%=%"))):
-            action, unclear = negate_false_bool_actions(policy.scope, policy.action)
-            if action != policy.action:
-                log.warning(f"Policy '{policy.name}': boolean actions with a false value are now excluded: {action}")
+            action, dropped = drop_bool_action_values(policy.scope, policy.action)
+            if dropped:
+                log.warning(f"Policy '{policy.name}': removed the value of the boolean actions {', '.join(dropped)}. "
+                            f"They stay enabled as before.")
                 policy.action = action
-            if unclear:
-                log.warning(f"Policy '{policy.name}': boolean actions with a value that is neither true nor false "
-                            f"are left as they are and act as enabled: {', '.join(unclear)}")
         session.commit()
     except Exception as e:
         session.rollback()
-        log.error(f"Failed to exclude the boolean policy actions with a false value: {e!r}")
+        log.error(f"Failed to remove the values of the boolean policy actions: {e!r}")
         raise
 
 
 def downgrade():
-    # The excluded action means the same in every version, so it is kept
+    # The action without a value means the same in every version, so it is kept
     pass

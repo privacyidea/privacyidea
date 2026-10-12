@@ -1,11 +1,12 @@
 """
 Data transformation test for migration f8a498439814
-v3.14.1: Store boolean policy actions saved with a false value as excluded actions
+v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true
 
-upgrade()   — rewrites a boolean action with the value false (in any case) or 0 to the excluded action ``-<action>``
-downgrade() — keeps the excluded actions, they mean the same in every version
+upgrade()   — removes the value of a boolean action whose value is not true, like ``policywrite=False`` or
+              ``triggerchallenge=hotp``, so it stays enabled
+downgrade() — keeps the actions without value, they mean the same in every version
 
-Boolean actions with a true, empty or any other value and the actions of other types are untouched.
+Boolean actions with a true value and the actions of other types are untouched.
 """
 
 import os
@@ -29,18 +30,18 @@ POLICIES = {
     902: ("authentication", "otppin=userstore, passOnNoToken=0"),
     903: ("admin", "*, policywrite=False"),
     904: ("authentication", "challenge_text=Hello\\, enter the OTP, passOnNoUser=False"),
-    905: ("admin", "triggerchallenge=hotp, enable=true, disable=1, set="),
+    905: ("admin", "triggerchallenge=hotp, enable=true, disable=1, set=, revoke=TRUE"),
     906: ("container", "container_ssl_verify=False"),
     907: ("webui", "policywrite=False"),
 }
 
 EXPECTED = {
-    901: "enable, -policywrite, -policydelete, -importtokens",
-    902: "otppin=userstore, -passOnNoToken",
-    903: "*, -policywrite",
-    904: "challenge_text=Hello\\, enter the OTP, -passOnNoUser",
-    # A value that is neither true nor false, a true and an empty value stay as they are
-    905: "triggerchallenge=hotp, enable=true, disable=1, set=",
+    901: "enable, policywrite, policydelete, importtokens",
+    902: "otppin=userstore, passOnNoToken",
+    903: "*, policywrite",
+    904: "challenge_text=Hello\\, enter the OTP, passOnNoUser",
+    # A value that is neither true nor false and an empty value are removed, the true values stay
+    905: "triggerchallenge, enable=true, disable=1, set, revoke=TRUE",
     # An action of another type keeps "False"
     906: "container_ssl_verify=False",
     # The name is not a boolean action of this scope
@@ -66,8 +67,8 @@ class TestMigrationF8a498439814(MigrationTestBase):
     def _fetch_all_actions(self, engine) -> dict:
         return {policy_id: self._fetch_action(engine, policy_id) for policy_id in POLICIES}
 
-    def test_upgrade_excludes_false_bool_actions(self, flask_app):
-        """upgrade() turns the boolean actions with a false value into excluded actions and leaves the rest."""
+    def test_upgrade_drops_bool_action_values(self, flask_app):
+        """upgrade() removes the values of the boolean actions that are not true and leaves the rest."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_policies(engine)
@@ -80,7 +81,7 @@ class TestMigrationF8a498439814(MigrationTestBase):
         engine.dispose()
 
     def test_upgrade_leaves_seed_policies_untouched(self, flask_app):
-        """upgrade() does not change the policies of the seed, which contain no boolean action with a false value."""
+        """upgrade() does not change the seed policies, none of them has a boolean action with a non-true value."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         query = f"SELECT id, {quote_identifier('action')} FROM policy ORDER BY id"
@@ -96,8 +97,8 @@ class TestMigrationF8a498439814(MigrationTestBase):
         engine.dispose()
         assert after == before
 
-    def test_downgrade_keeps_excluded_actions(self, flask_app):
-        """downgrade() keeps the excluded actions, and upgrading again changes nothing."""
+    def test_downgrade_keeps_actions_without_value(self, flask_app):
+        """downgrade() keeps the actions without value, and upgrading again changes nothing."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_policies(engine)

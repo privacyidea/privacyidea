@@ -2,15 +2,15 @@
 
 ## Update from 3.14 to 3.14.1
 
-* **Boolean policy actions stored with the value false are now excluded actions.** A boolean action like
-  `policywrite=False` acted as enabled, because the policy matching only checks whether an action is set. Policies
-  created from the WebUI template "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The
-  migration turns every boolean action with the value `false` (in any case) or `0` into the excluded action, like
-  `-policywrite` — **run the schema update** (`pi-manage setup update_db`). The schema update logs a warning for
-  every policy it changes. Other values, like `triggerchallenge=hotp`, are left as they are and still act as enabled;
-  the schema update logs a warning for these too. Saving a policy with such a value now fails, also through the API
-  and `pi-manage`, so check the policies named in the warnings and set these actions to `true` or `false`.
-  `pi-manage config import --skip-invalid` drops such actions instead.
+* **Boolean policy actions with a value are cleaned up.** A boolean action like `policywrite=False` acted as enabled,
+  because the policy matching only checks whether an action is set. Policies created from the WebUI template
+  "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The schema update
+  (`privacyidea-schema-upgrade`) removes the value of every boolean action whose value is not `true`, `True`, `TRUE`
+  or `1`, like `policywrite=False` or `triggerchallenge=hotp`. **The actions stay enabled**, the policies grant the
+  same rights as before. The schema update logs a warning for every policy it changes, so check these policies and
+  exclude the actions that were meant to be disabled, like `-policywrite`. From now on, saving a boolean action with
+  the value `false` (in any case) or `0` stores the excluded action, and saving it with any other value fails, also
+  through the API and `pi-manage`. `pi-manage config import --skip-invalid` drops such actions instead.
 
 ## Update from 3.13 to 3.14
 
