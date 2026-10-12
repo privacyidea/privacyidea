@@ -60,6 +60,8 @@ html {
     --green-fill: hsl(120, 45%, 36%);
     --yellow-fill: hsl(34, 85%, 36%);
     --red-fill: hsl(2, 64%, 52%);
+    // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
+    --select-option-bg: light-dark(hsl(0, 0%, 100%), hsl(0, 0%, 27%));
 
     --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
     --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
@@ -152,6 +154,8 @@ html {
     --green-fill: hsl(120, 45%, 36%);
     --yellow-fill: hsl(34, 85%, 36%);
     --red-fill: hsl(2, 64%, 52%);
+    // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
+    --select-option-bg: hsl(0, 0%, 100%);
 
     --grey-dark: hsl(0, 0%, 42%);
     --grey-base: hsl(0, 0%, 50%);
@@ -242,6 +246,8 @@ html {
     --green-fill: hsl(120, 45%, 36%);
     --yellow-fill: hsl(34, 85%, 36%);
     --red-fill: hsl(2, 64%, 52%);
+    // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
+    --select-option-bg: hsl(0, 0%, 27%);
 
     --grey-dark: hsl(0, 0%, 50%);
     --grey-base: hsl(0, 0%, 55%);

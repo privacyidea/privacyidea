@@ -72,6 +72,12 @@
   background: var(--mat-sys-surface-container-low);
 }
 
+// The idle rows of a tile select panel (.select-option) are raised tiles on the panel. The extra classes outrank
+// Material's transparent option background, and the states keep the layers above.
+.mat-mdc-option.mdc-list-item.select-option:not(:hover, :focus, .mat-mdc-option-active, .mdc-list-item--selected) {
+  background-color: var(--select-option-bg);
+}
+
 // The global option state layers paint an opaque primary fill. These rows bring their own colours (a
 // primary-coloured IP, chips) and keep the on-surface label, so their states stay a surface step.
 // Both panel classes are named so this outranks the global option state rules above.
