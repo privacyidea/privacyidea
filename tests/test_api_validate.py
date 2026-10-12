@@ -29,6 +29,7 @@ from privacyidea.lib.container import init_container, find_container_by_serial, 
 from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policies.actions import PolicyAction
@@ -38,6 +39,7 @@ from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.subscriptions import _USER_COUNT_KEY
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token, unassign_token)
@@ -3769,3 +3771,49 @@ class AuthMaxOperatorLoginTestCase(MyApiTestCase):
                 for _attempt in range(2):
                     self.assertTrue(self._check(login, "spass"))
                 self.assertFalse(self._check(login, "spass"))
+
+
+class FreeRADIUSSubscriptionTestCase(MyApiTestCase):
+    """
+    FreeRADIUS is shown under the server's subscription, which only has a soft limit: above the free tier the WebUI
+    warns, but RADIUS authentications are never refused.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        init_token({"type": "spass", "serial": "FRSUB1", "pin": "test"})
+        self.addCleanup(remove_token, "FRSUB1")
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+        self.addCleanup(get_app_local_store().pop, _USER_COUNT_KEY, None)
+        # Far over every free tier, and any metered check that is exceeded refuses
+        patches = [mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens", return_value=100_000),
+                   mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=100_000),
+                   mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[]),
+                   mock.patch("random.randrange", return_value=100_000)]
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def _check(self, user_agent: str):
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": "FRSUB1", "pass": "test"},
+                                           headers={"User-Agent": user_agent}):
+            return self.app.full_dispatch_request()
+
+    def test_01_freeradius_is_never_refused(self):
+        for _attempt in range(20):
+            response = self._check("FreeRADIUS/3.2.1")
+            self.assertEqual(200, response.status_code, response.json)
+            self.assertTrue(response.json["result"]["value"], response.json)
+
+    def test_02_metered_client_is_refused(self):
+        # The same setup refuses a metered client, so test_01 did exceed a limit
+        response = self._check("privacyidea-cp/1.0")
+        self.assertEqual(Error.SUBSCRIPTION, response.json["result"]["error"]["code"], response.json)
+
+    def test_03_admin_login_reports_the_exceeded_free_tier(self):
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": self.testadmin, "password": self.testadminpw}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(1, response.json["result"]["value"]["subscription_status"], response.json)
