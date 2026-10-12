@@ -1,5 +1,11 @@
 # Update Notes
 
+## Update from 3.14 to 3.14.1
+
+* **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
+  argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
+  these values, without applying the `!` and `*` search operators.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
