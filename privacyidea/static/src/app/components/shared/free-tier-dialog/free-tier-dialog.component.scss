@@ -16,9 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
-import { signal } from "@angular/core";
-
-export class WelcomeDialogServiceMock {
-  opened = signal(false);
+// The wrapper supplies the padding, the body indent and the footer; only the prose spacing is ours.
+.content {
+  line-height: 1.6;
 }
