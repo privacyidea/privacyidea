@@ -31,7 +31,7 @@ import { StringUtils } from "@utils/string.utils";
 import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
 
-const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
+const LOCKED_USERS_DEFAULT_PAGE_SIZE = 10;
 
 // The locked-users list supports these filter keys (comma-separated / wildcard values, matched
 // case-insensitively by the backend). Plural to match the API query parameters (`usernames`, `realms`,
