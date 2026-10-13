@@ -151,7 +151,7 @@ export class AppearanceWidgetComponent extends DashboardWidget {
 
   // Only what this widget controls; the language and the pending-request list are left alone.
   protected resetAppearance(): void {
-    this.appearanceService.resetToDefaults();
+    this.appearanceService.resetLook();
     this.themeService.setTheme("system");
   }
 

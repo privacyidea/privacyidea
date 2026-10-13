@@ -224,9 +224,10 @@ $slider-height: 48px;
 .bar {
   width: 100%;
   border-radius: 2px 2px 0 0;
+  background-color: var(--bar-fill);
   // A bar is a graphic, so its edge needs 3:1 against the card, which the bright fills alone do not give. The edge is
   // a darker shade of the row's own fill, drawn inside the bar so the bar keeps its width and height.
-  box-shadow: inset 0 0 0 1px var(--bar-edge);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bar-fill), black 55%);
 }
 
 // A bucket the brush leaves out. It keeps its full height - the shape of the window is what the chart is for - but
@@ -238,23 +239,19 @@ $slider-height: 48px;
 // Colourless on purpose: the aggregate row stands for no classification, so it takes none of the three colours that
 // mean one. Row position and the row's own label carry the identity here as everywhere in this chart.
 .bars-overall .bar {
-  background-color: var(--grey-fill);
-  --bar-edge: color-mix(in srgb, var(--grey-fill), black 55%);
+  --bar-fill: var(--grey-fill);
 }
 
 .bars-success .bar {
-  background-color: var(--green-fill);
-  --bar-edge: color-mix(in srgb, var(--green-fill), black 55%);
+  --bar-fill: var(--green-fill);
 }
 
 .bars-failure .bar {
-  background-color: var(--red-fill);
-  --bar-edge: color-mix(in srgb, var(--red-fill), black 55%);
+  --bar-fill: var(--red-fill);
 }
 
 .bars-pending .bar {
-  background-color: var(--yellow-fill);
-  --bar-edge: color-mix(in srgb, var(--yellow-fill), black 55%);
+  --bar-fill: var(--yellow-fill);
 }
 
 .section-title {

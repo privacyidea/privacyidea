@@ -59,6 +59,8 @@ export type LightSourceLevel = string;
 
 /** 16 * 20 = 320 degrees: light from the upper right. */
 export const DEFAULT_LIGHT_SOURCE = "16";
+/** Must stay in step with the `:root` status colors in styles.scss. */
+export const DEFAULT_STATUS_COLORS = "aa";
 
 /** Levels of the global corner radius; the names are the $corner-radii keys in styles/styles.scss. */
 export const CORNER_LEVELS = ["square", "default", "round", "extra-round"] as const;
@@ -120,10 +122,10 @@ export class AppearanceService {
   };
   private readonly statusColorsGroup: LevelGroup<StatusColorLevel> = {
     levels: STATUS_COLOR_LEVELS,
-    fallback: "aa",
+    fallback: DEFAULT_STATUS_COLORS,
     classPrefix: "status-colors-",
     settingKey: "status_colors",
-    level: signal<StatusColorLevel>("aa")
+    level: signal<StatusColorLevel>(DEFAULT_STATUS_COLORS)
   };
 
   public readonly depth: Signal<DepthLevel> = this.depthGroup.level.asReadonly();
@@ -201,11 +203,17 @@ export class AppearanceService {
    * half stick.
    */
   public resetToDefaults(): Observable<unknown> {
-    this.apply(this.depthGroup, this.depthGroup.fallback);
-    this.apply(this.lightSourceGroup, this.lightSourceGroup.fallback);
-    this.apply(this.cornerGroup, this.cornerGroup.fallback);
-    this.apply(this.statusColorsGroup, this.statusColorsGroup.fallback);
-    const written$ = this.storeAll([this.depthGroup, this.lightSourceGroup, this.cornerGroup, this.statusColorsGroup]);
+    return this.resetGroups([this.depthGroup, this.lightSourceGroup, this.cornerGroup, this.statusColorsGroup]);
+  }
+
+  /** Resets only the look of the surfaces (depth, light source, corners); the status colors stay as picked. */
+  public resetLook(): Observable<unknown> {
+    return this.resetGroups([this.depthGroup, this.lightSourceGroup, this.cornerGroup]);
+  }
+
+  private resetGroups(groups: LevelGroup<string>[]): Observable<unknown> {
+    groups.forEach((group) => this.apply(group, group.fallback));
+    const written$ = this.storeAll(groups);
     // One write for all groups: caching per group would persist half-updated intermediate states.
     this.cacheAppearance();
     return written$;

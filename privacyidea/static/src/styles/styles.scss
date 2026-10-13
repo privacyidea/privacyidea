@@ -462,6 +462,7 @@ $status-colors: (
 }
 
 // What holds before a level is applied: the default level, so the first paint already has every fill.
+// Must stay in step with AppearanceService's DEFAULT_STATUS_COLORS.
 :root {
   @include status-colors(map.get($status-colors, "aa"));
 }

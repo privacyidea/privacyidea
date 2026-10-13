@@ -92,10 +92,8 @@
     background: var(--mat-sys-surface-container-lowest);
   }
 
-  // Compact view: only three columns, so they share the width in proportion instead of
-  // leaving the two dots pressed against the right edge. Just under half for the name,
-  // over a quarter for each status — which gives both headers room to be read in full, so the
-  // header text is centred over its dots instead of being cut off on the right.
+  // Compact view: only three columns, so they share the width in proportion. Just under half for the name, over a
+  // quarter for each status, which gives both headers room to be read in full and centred over their dots.
   .application-cell {
     width: 46%;
   }
@@ -184,8 +182,8 @@
   height: 16px;
   border-radius: 50%;
   background: var(--grey-fill);
-  // Holds the glyph that carries the state alongside the colour. Small enough that the dot
-  // stays inside the single line every cell is. Paired with the dot fill rather than with the page surface: the ink is the status ink in both themes.
+  // Holds the glyph that carries the state alongside the colour. Small enough that the dot stays inside the single
+  // line every cell is. The ink is the status ink in both themes, since it sits on the dot fill.
   color: var(--status-ink);
 
   .status-glyph {
@@ -215,9 +213,5 @@
       position: relative;
       right: -0.7px;
     }
-  }
-
-  &.dot-none {
-    background: var(--grey-fill);
   }
 }

@@ -62,6 +62,10 @@
 
 .settings-group-panel {
   width: 100%;
+  justify-content: center;
+}
+
+.settings-group-start {
   justify-content: start;
 }
 
@@ -78,6 +82,12 @@
 .settings-item-s {
   flex: 0 0 var(--input-width-l);
   max-width: var(--input-width-l);
+}
+
+// Wide enough for a large field and the 16px margin that aligns it with the fields of the other items.
+.settings-item-field-l {
+  flex: 0 0 calc(var(--input-width-l) + 16px);
+  max-width: calc(var(--input-width-l) + 16px);
 }
 
 .settings-item-m {

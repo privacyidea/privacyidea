@@ -170,6 +170,17 @@ describe("AppearanceService", () => {
     expect(userSettingsService.settings()?.status_colors).toBe("aa");
   });
 
+  it("should reset only the look and leave the status colors as picked", () => {
+    service.setDepth("strong");
+    service.setStatusColors("aaa");
+
+    service.resetLook();
+
+    expect(service.depth()).toBe("default");
+    expect(service.statusColors()).toBe("aaa");
+    expect(userSettingsService.settings()?.status_colors).toBe("aaa");
+  });
+
   it("should replace the previous level of the same group only", () => {
     service.setDepth("flat");
     service.setCorners("round");

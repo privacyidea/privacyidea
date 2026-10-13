@@ -143,7 +143,12 @@ describe("UiPreferencesService", () => {
 
   it("should apply the stored appearance levels", () => {
     create("en");
-    userSettingsService.settings.set({ depth: "flat", light_source: "8", corner_radius: "square", status_colors: "aa" });
+    userSettingsService.settings.set({
+      depth: "flat",
+      light_source: "8",
+      corner_radius: "square",
+      status_colors: "aa"
+    });
 
     service.sync();
 

@@ -250,9 +250,8 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   }
 
   /**
-   * The Material icon shown inside a status dot; an icon is centred in its box where a text character sits off
-   * the middle. Without it the usage column would be a green dot against a red one, which is the pair
-   * colour-blind admins cannot separate, so every state carries a shape next to its colour.
+   * The Material icon shown inside a status dot. Without it the usage column would be a green dot against a red
+   * one, which is the pair colour-blind admins cannot separate, so every state carries a shape next to its colour.
    */
   protected dotGlyph(dotClass: string): string {
     switch (dotClass) {

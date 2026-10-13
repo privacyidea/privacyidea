@@ -41,7 +41,7 @@ describe("AppearanceWidgetComponent", () => {
     setLightSource: jest.Mock;
     setCorners: jest.Mock;
     setPreset: jest.Mock;
-    resetToDefaults: jest.Mock;
+    resetLook: jest.Mock;
   };
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
 
@@ -62,7 +62,7 @@ describe("AppearanceWidgetComponent", () => {
         appearanceService.corners.set(corner);
         appearanceService.lightSource.set(lightSource);
       }),
-      resetToDefaults: jest.fn()
+      resetLook: jest.fn()
     };
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
 
@@ -169,7 +169,7 @@ describe("AppearanceWidgetComponent", () => {
 
     reset?.click();
 
-    expect(appearanceService.resetToDefaults).toHaveBeenCalled();
+    expect(appearanceService.resetLook).toHaveBeenCalled();
     expect(themeService.setTheme).toHaveBeenCalledWith("system");
   });
 
