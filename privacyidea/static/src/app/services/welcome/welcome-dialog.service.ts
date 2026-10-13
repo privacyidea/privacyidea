@@ -22,6 +22,7 @@ import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { FreeTierDialogComponent } from "@components/shared/free-tier-dialog/free-tier-dialog.component";
 import { WelcomeDialogComponent } from "@components/shared/welcome-dialog/welcome-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { filter } from "rxjs";
 
 @Injectable({ providedIn: "root" })
 export class WelcomeDialogService {
@@ -53,10 +54,17 @@ export class WelcomeDialogService {
         return;
       }
       const freeTierExceeded = this.auth.subscriptionStatus() === 1;
+      // Every login stores a new AuthData object, so it identifies the session the dialogs belong to.
+      const session = this.auth.authData();
       if (!this.auth.hideWelcome()) {
         const welcome = this.openDialog(WelcomeDialogComponent);
         if (freeTierExceeded) {
-          welcome.afterClosed().subscribe(() => this.openDialog(FreeTierDialogComponent));
+          // The welcome dialog is also closed programmatically when the session ends; the free tier
+          // warning must not follow it onto the login screen or into the next session.
+          welcome
+            .afterClosed()
+            .pipe(filter(() => this.auth.authData() === session))
+            .subscribe(() => this.openDialog(FreeTierDialogComponent));
         }
       } else if (freeTierExceeded) {
         this.openDialog(FreeTierDialogComponent);
