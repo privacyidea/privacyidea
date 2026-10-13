@@ -10,8 +10,8 @@ from privacyidea.lib.auditmodules.base import Audit as BaseAudit
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm, delete_realm
+from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import Audit, db
 from .base import MyApiTestCase
@@ -686,3 +686,34 @@ class APIAuditTestCase(MyApiTestCase):
                 self.assertEqual(200, res.status_code, res)
                 value = res.json.get("result").get("value")
                 self.assertEqual(expected, sorted(entry.get("date")[:10] for entry in value.get("auditdata")), day)
+
+    def test_10_a_user_sees_only_their_own_entries_whatever_their_login(self):
+        realm = "operatorrealm"
+        resolver = "operatorresolver"
+        save_resolver({"resolver": resolver, "type": "passwdresolver",
+                       "fileName": "tests/testdata/passwd-search-operator-logins"})
+        set_realm(realm, [{"name": resolver}])
+        set_policy("audit_operator", scope=SCOPE.USER, action=PolicyAction.AUDIT, realm=realm)
+        Audit.query.delete()
+        logins = ["cornelius", "!cornelius", "corn*", "*"]
+        for login in logins + ["cornerstone", None]:
+            Audit(action="enroll", success=1, user=login, resolver=resolver, realm=realm).save()
+        try:
+            for login in logins:
+                with self.subTest(login=login):
+                    with self.app.test_request_context('/auth', method='POST',
+                                                       data={"username": f"{login}@{realm}", "password": "test"}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    user_authorization = res.json["result"]["value"]["token"]
+
+                    with self.app.test_request_context('/audit/', method='GET', query_string={"action": "enroll"},
+                                                       headers={'Authorization': user_authorization}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertListEqual([login],
+                                         [entry["user"] for entry in res.json["result"]["value"]["auditdata"]])
+        finally:
+            delete_policy("audit_operator")
+            delete_realm(realm)
+            delete_resolver(resolver)

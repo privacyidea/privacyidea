@@ -91,6 +91,11 @@ Failure
      the first factor was correct but the second failed.
    ``USER_UNKNOWN``
      the login name was not found in any resolver of the given realm (or default realm if none were given).
+   ``LOGIN_NAME_NOT_UNIQUE``
+     the credential identified its user, but the login name and realm a session carries do not lead back to them:
+     another user of the realm has the same login name and the realm's resolver order finds them first. Recorded for
+     a WebUI login with a passkey and without a username, which is the login that identifies its user by the
+     credential rather than by name.
    ``NO_TOKEN``
      the user exists but has no token. It is also recorded for a passkey answer whose serial or credential ID matches
      no token, or a token of another user than the one named in the request, and at ``/validate/triggerchallenge``

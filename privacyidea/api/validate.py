@@ -141,7 +141,8 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
+from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
+                                                 require_fido2_registration)
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -155,7 +156,8 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError
+from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
+                                   check_fido2_token_state, record_fido2_login_success)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -517,6 +519,19 @@ def check():
         ``transaction_id`` cancels an in-progress
         ``enroll_via_multichallenge`` flow without authenticating.
 
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (FIDO2), then ``serial``, then ``user`` with
+    ``pass``. A request that does not carry everything the selected
+    method needs is malformed and is answered with a 400, without
+    counting as an authentication attempt. A FIDO2 request always
+    needs ``transaction_id`` and the ``Origin`` header, and beyond
+    that either the assertion (``authenticatorData``,
+    ``clientDataJSON`` and ``signature``, or their legacy spellings
+    ``authenticatordata``, ``clientdata`` and ``signaturedata``) or,
+    when it answers an ``enroll_via_multichallenge`` enrollment, the
+    registration (``attestationObject``, ``clientDataJSON``, ``rawId``
+    and ``authenticatorAttachment``).
+
     **Example Validation Request**:
 
         .. sourcecode:: http
@@ -740,6 +755,18 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     # A request without its transaction_id is malformed, not an authentication attempt, so it is rejected before
     # anything classifies it and leaves no authentication event.
     transaction_id = get_required(request.all_data, "transaction_id")
+    # The same applies to the rest of the request: the parameters the answer is verified with are read in the
+    # token class, after the checks below have classified the request. Requiring them here keeps an incomplete
+    # request a malformed request instead of a failed authentication. Which ones are required follows from the
+    # method the request selected, so the registration data decides that before anything else is read.
+    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+    if attestation_object:
+        require_fido2_registration(request.all_data)
+    else:
+        require_fido2_assertion(request.all_data)
+    # The origin binds the answer to the site it was made for and is taken from the request environment, never
+    # from a parameter, so it is required from there.
+    get_required(request.environ, "HTTP_ORIGIN")
     # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
     # own settling does not apply here: this path resolves and checks the token itself.
     confirm_attempt(transaction_id)
@@ -804,9 +831,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
-    # Handle Enrollment vs Authentication
-    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
-
+    # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
     if attestation_object:
         # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
         # enrollment started at /token/init is completed there.
@@ -874,20 +899,22 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            context["details"]["message"] = "Token is disabled"
-            # Explicit audit for disabled token
+        token_state = check_fido2_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            context["details"]["message"] = token_state.message
+            # Explicit audit for the unusable token
             g.audit_object.log({
-                "info": log_used_user(user, "Token is disabled"),
+                "info": log_used_user(user, token_state.message),
                 "success": False,
                 "authentication": AUTH_RESPONSE.REJECT,
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
-            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
+            # Owned-but-unusable token (disabled, expired, counters exceeded) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
-            _record_context_reason(context, AuthEventReason.TOKEN_DISABLED, token.get_serial())
+            _record_context_reason(context, token_state.reason, token.get_serial())
             return
 
         try:
@@ -911,6 +938,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
             raise
         context["result"] = fido_verification_result.success > 0
+        if context["result"]:
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
 
     # Success Handling
     if context["result"]:
