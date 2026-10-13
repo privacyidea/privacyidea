@@ -220,7 +220,7 @@ def readyz():
     if not current_app.config.get('APP_READY'):
         return send_result({"status": "not ready",
                             "hsm": "unchecked"}), 503
-    elif not get_hsm().is_ready:
+    elif not get_hsm(require_ready=False).is_ready:
         return send_result({"status": "not ready",
                             "hsm": "fail"}), 503
     else:
