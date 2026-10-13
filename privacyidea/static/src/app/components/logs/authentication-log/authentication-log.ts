@@ -90,6 +90,7 @@ import {
   ConditionalAccessPolicyServiceInterface
 } from "@services/conditional-access/conditional-access-policy.service";
 import {
+  AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE,
   AuthenticationLogEntry,
   AuthenticationLogService,
   AuthenticationLogServiceInterface
@@ -630,12 +631,14 @@ export class AuthenticationLog {
   readonly hasOutcomeValues = computed(() =>
     this.dataSource().data.some((entry) => (entry.conditional_access_outcomes?.length ?? 0) > 0)
   );
-  // The presets, the active page size, and the total number of matching entries - the last one so the selector also
-  // offers "everything on one page", sorted into place among the presets.
+  // The presets, this log's default page size, the active page size, and the total number of matching entries - the
+  // default so it is still offered once another size is picked, the total so the selector also offers "everything on
+  // one page", sorted into place among the presets.
   pageSizeOptions = computed(() =>
     [
       ...new Set([
         ...this.tableUtilsService.pageSizeOptions(),
+        AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE,
         this.authenticationLogService.pageSize(),
         this.totalLength()
       ])

@@ -22,6 +22,7 @@ import { PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
 import { provideRouter } from "@angular/router";
 import {
+  AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE,
   AuthenticationLogEntry,
   AuthenticationLogService
 } from "@services/authentication-log/authentication-log.service";
@@ -184,12 +185,17 @@ describe("AuthenticationLog", () => {
 
   it("offers the total number of entries as a page size, sorted among the presets", () => {
     component.totalLength.set(37);
-    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 37, 50]);
+    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 37, 50, 100]);
   });
 
   it("leaves the page-size options untouched for an empty result", () => {
     component.totalLength.set(0);
-    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 50]);
+    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 50, 100]);
+  });
+
+  it("keeps offering the default page size after another one is picked", () => {
+    component.onPageEvent({ pageIndex: 0, pageSize: 25 } as PageEvent);
+    expect(component.pageSizeOptions()).toContain(AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE);
   });
 
   it("onKeywordClick toggles the keyword in the filter for free-text columns", () => {
