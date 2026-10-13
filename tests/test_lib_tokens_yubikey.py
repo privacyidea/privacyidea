@@ -3,6 +3,8 @@ This test file tests the lib.tokens.yubikeytoken
 
 """
 import logging
+from unittest import mock
+
 from testfixtures import log_capture
 
 from testfixtures import LogCapture
@@ -410,6 +412,20 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue(r > old_r, (r, old_r))
         # Clean up
         remove_token(token.token.serial)
+
+    def test_23_otp_value_used_by_another_request(self):
+        """The OTP value verifies, but another request advanced the counter past it first."""
+        serial = "UBAM_LOSTRACE"
+        db_token = Token(serial, tokentype="yubikey")
+        db_token.save()
+        token = YubikeyTokenClass(db_token)
+        token.set_otpkey(self.otpkey)
+        token.set_otplen(48)
+        token.save()
+
+        with mock.patch.object(YubikeyTokenClass, "advance_otp_count", return_value=False):
+            self.assertEqual(-1, token.check_otp(self.valid_otps[0]))
+        remove_token(serial)
 
     def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

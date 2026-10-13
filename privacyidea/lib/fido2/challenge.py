@@ -6,7 +6,7 @@ from webauthn.helpers import bytes_to_base64url
 from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required, get_optional
 from privacyidea.lib import fido2
 from privacyidea.lib.cache.redis import ChallengeDTO
-from privacyidea.lib.challenge import get_challenges, cancel_challenge
+from privacyidea.lib.challenge import get_challenges, cancel_challenge, consume_challenge
 from privacyidea.lib.config import get_from_config
 from privacyidea.models import Challenge
 from privacyidea.lib.crypto import geturandom
@@ -181,8 +181,14 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
         })
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
+    if ret > 0 and not consume_challenge(challenge):
+        # The assertion is valid, but another request already used this challenge, so this one is not accepted.
+        # Consume only after a verified assertion: a wrong one must not remove the challenge of the right request.
+        # A synced passkey reports sign count 0, so the challenge is the only replay guard on that path.
+        log.info(f"The challenge {transaction_id} of token {token.get_serial()} was used by another request.")
+        ret = -1
     result = FIDOVerificationResult(ret, challenge)
-    # On success, remove all challenges with the transaction_id from both
+    # On success, remove the remaining challenges with the transaction_id from both
     # Redis (when active) and the DB.
     if result.success > 0:
         cancel_challenge(transaction_id)

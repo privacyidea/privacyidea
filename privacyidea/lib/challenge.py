@@ -337,6 +337,33 @@ def delete_challenges(serial: str = None, transaction_id: str = None,
                                   cache_available=cache_available)
 
 
+def consume_challenge(challenge: "Challenge | ChallengeDTO") -> bool:
+    """
+    Remove this one challenge and report whether this very call removed it.
+
+    A single-use object has to be claimed by the request that uses it: of several requests that answer the same
+    challenge at the same time, only the one this returns True for may be accepted. The others see False, because
+    the row or the cached field was already gone when they got here.
+
+    :param challenge: the challenge that was answered, from the database or from the Redis cache
+    :return: True only for the call that removed the challenge
+    """
+    if isinstance(challenge, ChallengeDTO):
+        return evict_challenge(challenge.transaction_id, challenge.serial) == 1
+    # By primary key, and read from the identity map rather than from the row: the row may already be gone, and an
+    # unbound FIDO2 challenge has serial="", which Oracle stores as NULL, so WHERE serial = '' would never match.
+    challenge_id = sqlalchemy.inspect(challenge).identity[0]
+    # End the transaction that read the challenge, so the DELETE starts a new one and MariaDB >= 11.6.2 does not
+    # refuse it with 1020 "Record has changed since last read".
+    db.session.commit()
+    result = db.session.execute(delete(Challenge).where(Challenge.id == challenge_id)
+                                .execution_options(synchronize_session=False))
+    db.session.commit()
+    # After a False the caller must not touch the challenge object again: the commit expired it and a reload of a
+    # deleted row raises ObjectDeletedError.
+    return result.rowcount == 1
+
+
 def cancel_challenge(transaction_id: str) -> DeleteChallengesResult:
     """
     Abort an in-flight authentication by its ``transaction_id``, removing the
