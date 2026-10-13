@@ -26,6 +26,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { DURATION_UNIT_FACTORS, DURATION_UNITS, DurationUnit } from "@utils/duration-unit.utils";
 
 export interface UserDetailsLockDialogData {
   username: string;
@@ -36,16 +37,6 @@ export interface UserDetailsLockDialogData {
 export interface UserDetailsLockDialogResult {
   durationSeconds: number | null;
 }
-
-// The duration is always sent in seconds; the unit only changes how it is entered. Mirrors the policy
-// editor's action duration field.
-type DurationUnit = "seconds" | "minutes" | "hours";
-
-const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
-  seconds: 1,
-  minutes: 60,
-  hours: 3600
-};
 
 @Component({
   selector: "app-user-details-lock-dialog",
@@ -71,7 +62,7 @@ export class UserDetailsLockDialogComponent extends AbstractDialogComponent<
   readonly mode = signal<"permanent" | "timed">("permanent");
   readonly durationInput = signal("");
   readonly durationUnit = signal<DurationUnit>("minutes");
-  readonly durationUnits: readonly DurationUnit[] = ["seconds", "minutes", "hours"];
+  readonly durationUnits = DURATION_UNITS;
 
   readonly durationSeconds = computed<number | null>(() => {
     const parsed = Number.parseInt(this.durationInput().trim(), 10);
