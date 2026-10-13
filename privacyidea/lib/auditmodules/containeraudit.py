@@ -84,18 +84,20 @@ class Audit(AuditBase):
             module.add_policy(policy_names)
 
     def search(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
-               sortorder: str = "asc", timelimit: timedelta | None = None):
+               sortorder: str = "asc", timelimit: timedelta | None = None,
+               exact_params: dict[str, str] | None = None):
         """
         Call the search method for the one readable module
         """
         return self.read_module.search(search_dict, admin_params=admin_params, page_size=page_size, page=page,
-                                       sortorder=sortorder, timelimit=timelimit)
+                                       sortorder=sortorder, timelimit=timelimit, exact_params=exact_params)
 
-    def get_count(self, search_dict, timedelta=None, success=None):
+    def get_count(self, search_dict, timedelta=None, success=None, exact_params: dict[str, str] | None = None):
         """
         Call the count method for the one readable module
         """
-        return self.read_module.get_count(search_dict, timedelta=timedelta, success=success)
+        return self.read_module.get_count(search_dict, timedelta=timedelta, success=success,
+                                          exact_params=exact_params)
 
     def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user=None,
                       timelimit: timedelta | None = None):
@@ -105,12 +107,12 @@ class Audit(AuditBase):
         return self.read_module.csv_generator(param=param, admin_params=admin_params, user=user, timelimit=timelimit)
 
     def get_total(self, param: dict, admin_params: dict | None = None, AND: bool = True, display_error: bool = True,
-                  timelimit: timedelta | None = None) -> int:
+                  timelimit: timedelta | None = None, exact_params: dict[str, str] | None = None) -> int:
         """
         Call the total method for the one readable module
         """
         return self.read_module.get_total(param, admin_params=admin_params, AND=AND, display_error=display_error,
-                                          timelimit=timelimit)
+                                          timelimit=timelimit, exact_params=exact_params)
 
     def finalize_log(self):
         """

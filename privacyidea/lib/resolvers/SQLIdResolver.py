@@ -883,7 +883,8 @@ class IdResolver (UserIdResolver):
 
 def hash_password(password, hashtype):
     """
-    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
+    Hash a password with PHPASS, SHA, SSHA, SSHA256, SSHA512, OTRS,
+    SHA256CRYPT, SHA512CRYPT or MD5CRYPT
 
     :param password: The password in plain text
     :type password: str

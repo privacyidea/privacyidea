@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
-                                    verify_pass_hash, SecretObj)
+                                    verify_pass_hash, safe_compare, SecretObj)
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.log import log_with, redacted_attributes
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -297,7 +297,7 @@ class Token(MethodsMixin, db.Model):
                 log.debug("we got an encrypted PIN!")
                 token_pin = self.pin_hash[2:]
                 decrypted_token_pin = decryptPin(token_pin)
-                if decrypted_token_pin == pin:
+                if isinstance(pin, str) and safe_compare(decrypted_token_pin, pin):
                     res = True
             else:
                 log.debug("we got a hashed PIN!")
@@ -312,7 +312,7 @@ class Token(MethodsMixin, db.Model):
                         pin_hash = self.get_hashed_pin(pin)
                 else:
                     pin_hash = pin
-                if pin_hash == (self.pin_hash or ""):
+                if isinstance(pin_hash, str) and safe_compare(pin_hash, self.pin_hash or ""):
                     res = True
                     if legacy_hash:
                         # The PIN is correct but stored with the legacy hash format. Rewrite it with

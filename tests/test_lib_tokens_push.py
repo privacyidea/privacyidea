@@ -37,6 +37,7 @@ from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, set_smsgateway, 
 from privacyidea.lib.token import (get_tokens, remove_token, init_token, import_tokens,
                                    create_challenge)
 from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import PushMode, PushCapability
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               DEFAULT_CHALLENGE_TEXT, PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
@@ -55,6 +56,7 @@ from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
 from .base import MyTestCase, FakeAudit, FakeFlaskG
+from .compare_helpers import recorded_compare_digest
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
@@ -308,6 +310,35 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         token = self._create_push_token()
         remove_token(token.get_serial())
+
+    def test_02a1_enrollment_credential_is_compared_in_constant_time(self):
+        # The stored and the given enrollment credential are compared in constant time.
+        serial = "PIPU_CREDENTIAL"
+        # Step 1 of the enrollment leaves the token in clientwait with a stored credential
+        token = init_token({"type": "push", "genkey": 1, "serial": serial})
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        stored = token.get_tokeninfo("enrollment_credential")
+        given = "d" * len(stored)
+        step_2 = {"serial": serial, "fbtoken": "firebaseT",
+                  "pubkey": self.smartphone_public_key_pem_urlsafe}
+
+        with recorded_compare_digest() as spy:
+            with self.assertRaisesRegex(ParameterError, "Invalid enrollment credential"):
+                token.update({**step_2, "enrollment_credential": given})
+        self.assertTrue(spy.saw(stored, given))
+
+        # A token without a stored credential cannot be finalized either
+        token.remove_tokeninfo("enrollment_credential")
+        with self.assertRaisesRegex(ParameterError, "Invalid enrollment credential"):
+            token.update({**step_2, "enrollment_credential": given})
+
+        # The right credential still finalizes the enrollment and uses the credential up
+        token.write_tokeninfo("enrollment_credential", stored)
+        token.update({**step_2, "enrollment_credential": stored})
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertIsNone(token.get_tokeninfo("enrollment_credential"))
+
+        remove_token(serial)
 
     @responses.activate
     def test_02b_send_push_via_http_gateway(self):
@@ -2338,6 +2369,27 @@ class PushTokenTestCase(MyTestCase):
         delete_policy("push_16l_text")
         delete_policy("push_16l_enroll")
         remove_token(serial)
+
+    def test_16m_code_to_phone_display_code_is_compared_in_constant_time(self):
+        # The display code and the given password are compared in constant time.
+        token = self._setup_notification_token("16m")
+        serial = token.get_serial()
+        transaction_id = "11112222333344445555"
+        Challenge(serial, transaction_id=transaction_id,
+                  data={"mode": PushMode.CODE_TO_PHONE, "smartphone_confirmed": True,
+                        "display_code": "424242"}).save()
+        options = {"transaction_id": transaction_id}
+
+        with recorded_compare_digest() as spy:
+            self.assertEqual(-1, token.check_challenge_response(passw="000000", options=options))
+        self.assertTrue(spy.saw("424242", "000000"))
+        # A wrong display code still counts as a failed attempt
+        self.assertEqual(1, token.token.failcount)
+
+        # The right code is still accepted
+        self.assertEqual(1, token.check_challenge_response(passw="424242", options=options))
+
+        self._teardown_notification_token(token, "16m")
 
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):
