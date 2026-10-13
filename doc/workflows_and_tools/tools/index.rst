@@ -439,7 +439,7 @@ PSKC (default)
     to import the file with :ref:`load <token_janitor_load>`.
 ``--csv``
     Exports HOTP and TOTP tokens, one line per token with the owner (``user@realm`` or ``n/a``),
-    the serial, the OTP key, the token type and the OTP length.
+    the serial, the OTP key, the token type, the OTP length and, for TOTP tokens, the time step.
 ``--yaml``
     Exports all token types together with their tokeninfo. The file can be read by
     :ref:`update <token_janitor_update>`.
@@ -958,9 +958,10 @@ Adds a tokeninfo entry to the selected tokens or overwrites an existing entry wi
     digits and ``_``. The value is everything after the first ``=``, without the spaces around
     it, and may contain any character, e.g. ``'marked=to delete 2026-10-01'``.
 
-Only free-form entries can be set. An entry that the token type maintains itself, e.g. the public
-key of a passkey, is skipped with a message. Such entries can be set at enrollment or with the
-``/token/set`` endpoint.
+Only free-form entries can be set. An entry that the token type maintains itself is skipped with a
+message. Some of these entries can be changed with the ``/token/set`` endpoint, e.g.
+``validity_period_end``, ``count_auth_max`` or the phone number of an SMS token; others, like the
+public key of a passkey, are only written at enrollment.
 
 Example::
 
@@ -975,8 +976,9 @@ Removes a tokeninfo entry from the selected tokens.
     The key of the entry to remove. Required.
 
 An entry that the token type maintains itself, e.g. the public key of a passkey, is skipped with a
-message, because the token needs it. The exception is ``refilltoken`` of HOTP and TOTP tokens:
-removing it stops the offline refill of OTP values.
+message, because the token needs it. The exceptions are the offline refill entries,
+``refilltoken`` of HOTP and TOTP tokens and ``refilltoken_<computer name>`` of passkeys and
+WebAuthn tokens: removing them stops the offline refill.
 
 Example::
 
@@ -1025,7 +1027,8 @@ a subcommand. A container is selected only if it matches all given options.
 
 Unlike the filters of ``find``, the text options compare the whole value, ignore upper and lower
 case and accept ``*`` as a wildcard: ``--description 'my*'`` finds ``My smartphone`` and
-``my tablet``. Only ``--template`` is case sensitive.
+``my tablet``. Only ``--template`` without ``*`` is case sensitive (on MySQL and MariaDB this
+depends on the collation of the database).
 
 ``-s``, ``--serial``
     The serial of the container.
@@ -1158,7 +1161,8 @@ Sets the realms of the selected containers. ``REALMS`` is a comma-separated list
 Realms that can not be set are reported.
 
 ``-a``, ``--add``
-    Add the realms to the existing realms instead of replacing them.
+    Add the realms to the existing realms instead of replacing them. Given realms that the
+    container already has are then reported as not set as well; they stay.
 
 Example::
 

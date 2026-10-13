@@ -29,17 +29,20 @@ has no effect on registered containers. To apply the changes to registered conta
 privacyIDEA_server_url
 ~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``str``
+type: ``string``
 
-The URL of the privacyIDEA server, e.g. ``https://pi.net/``. It is used to build URLs of API endpoints the container
+The URL of the privacyIDEA server, e.g. ``https://privacyidea.example.com/``. It is used to build URLs of API endpoints the container
 can contact for registration and synchronization. Note that the URL might differ from the server URL of the WebUI.
+
+This action is required: without it a container can not be registered or rolled over (the request fails with
+"Missing enrollment policy privacyIDEA_server_url").
 
 .. versionadded:: 3.11
 
 container_registration_ttl
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``int``
+type: ``integer``
 
 The time in minutes the client has to do the second step of the registration (to scan the QR code). The default is ten
 minutes.
@@ -49,7 +52,7 @@ minutes.
 container_challenge_ttl
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``int``
+type: ``integer``
 
 After the client (a registered container) has challenged an action such as synchronization,
 ``container_challenge_ttl`` defines the time in minutes the client has to complete the action.
@@ -60,7 +63,7 @@ The default is two minutes.
 container_ssl_verify
 ~~~~~~~~~~~~~~~~~~~~
 
-type: ``str``
+type: ``string``
 
 If set to ``True`` the client needs to verify the SSL certificate of the privacyIDEA server.
 If no value is set, the default is ``True``. It is highly recommended to use SSL.
@@ -94,9 +97,9 @@ initially_add_tokens_to_container
 type: ``bool``
 
 During the first synchronization, this action allows the server to automatically add tokens from the client to the
-container on the server. This allows to register devices with existing tokens as container without having to manually
+container on the server. This allows registering devices with existing tokens as container without having to manually
 add the tokens on the device to the container. However, the tokens already have to exist on the server. No new token is
-created, it only allows to add existing tokens to the container.
+created, it only adds existing tokens to the container.
 
 Only tokens that are related to the container are added. A token that is assigned to a user is added if the user is an
 owner of the container. A token that is not assigned to a user is added if it is in one of the realms of the container,
@@ -131,3 +134,19 @@ To prevent the user from unregistering the container, this action can be activat
 the container in the authenticator app as long as the smartphone is registered on the server or this policy changes.
 
 .. versionadded:: 3.11
+
+
+.. _container_policy_hide_specific_error_message:
+
+hide_specific_error_message
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If this policy is set, failures in the container endpoints that a registered client calls without an authenticated
+user return a generic error message instead of the specific one, e.g. "Failed container synchronization". This applies
+to the endpoints ``/container/register/finalize``, ``/container/register/terminate/client``, ``/container/challenge``,
+``/container/synchronize`` and ``/container/rollover``.
+
+The corresponding policy for failed authentications is :ref:`policy_hide_specific_error_message` in the
+authentication scope.

@@ -28,7 +28,7 @@ detailed enrollment information.
 For a description of the TiQR protocol see
 
 * https://www.usenix.org/legacy/events/lisa11/tech/full_papers/Rijswijk.pdf
-* https://github.com/SURFnet/tiqr/wiki/Protocol-documentation.
+* https://github.com/Tiqr/tiqr/wiki/Protocol-documentation.
 * https://tiqr.org
 
 The TiQR token is based on the OCRA algorithm. It lets you authenticate

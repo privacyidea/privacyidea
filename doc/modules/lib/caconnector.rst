@@ -12,6 +12,14 @@ privacyIDEA provides connector objects for different Certificate Authorities (CA
    :undoc-members:
 
 
+Base class
+----------
+
+.. autoclass:: privacyidea.lib.caconnectors.baseca.BaseCAConnector
+   :members:
+   :undoc-members:
+
+
 CA Connector functions
 ----------------------
 

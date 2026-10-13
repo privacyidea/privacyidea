@@ -22,7 +22,7 @@ __doc__ = """This is the event handler module that can mangle the JSON response.
 We can add or delete key or even subtrees in the JSON response of a request.
 
 The key is identified by a JSON Pointer
-(see https://tools.ietf.org/html/rfc6901)
+(see https://www.rfc-editor.org/rfc/rfc6901)
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.utils import is_true
@@ -48,7 +48,7 @@ class ResponseManglerEventHandler(BaseEventHandler):
 
     It also returns a list of allowed action and conditions
 
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the event handling definitions
     """
 
     identifier = "ResponseMangler"

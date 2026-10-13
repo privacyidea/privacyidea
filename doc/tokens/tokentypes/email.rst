@@ -15,7 +15,9 @@ configure the email server in :ref:`email_token_config`.
    *Enroll an email token*
 
 When enrolling an email token, you only need to specify the email address of
-the user.
+the user, or let the token read the address from the user store at each
+authentication (WebUI: *Read email dynamically from user source on each
+request*, API parameter ``dynamic_email``).
 
 The email token is a challenge response token. I.e. when using the OTP PIN in
 the first authentication request, the sending of the email will be triggered

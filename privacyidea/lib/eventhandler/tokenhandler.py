@@ -156,7 +156,7 @@ class TokenEventHandler(BaseEventHandler):
 
     It also returns a list of allowed action and conditions
 
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the event handling definitions
     """
 
     identifier = "Token"

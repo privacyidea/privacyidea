@@ -6,9 +6,9 @@ Import
 .. index:: import, OATH CSV, Yubikey CSV, PSKC, RFC6030
 
 Seed files that contain the secret keys of hardware tokens can be 
-imported to the system via the menu *Import*.
+imported to the system via the menu *Token* -> *Import*.
 
-The default import options are to import *SafeNet XML* file,
+The default import options are to import *SafeNet XML* files,
 *OATH CSV* files, *Yubikey CSV* files or
 *PSKC* files.
 
@@ -17,7 +17,7 @@ GPG Encryption
 
 .. index:: GPG encryption, Encrypted Seed File
 
-Starting with privacyIDEA 2.14 you can import GPG encrypted seed files.
+You can import GPG-encrypted seed files.
 All files mentioned below can be encrypted this way.
 
 privacyIDEA needs its own GPG key. You may create one like this::
@@ -25,8 +25,8 @@ privacyIDEA needs its own GPG key. You may create one like this::
     mkdir /etc/privacyidea/gpg
     GNUPGHOME=/etc/privacyidea/gpg gpg --gen-key
 
-Then make sure, that the directory /etc/privacyidea/gpg is *chown 700* for
-the user *privacyidea*.
+Then make sure that the directory ``/etc/privacyidea/gpg`` is owned by the
+user *privacyidea* and has the mode 700 (``chmod 700``).
 
 Now you can export the public key and hand it to your token vendor::
 
@@ -40,7 +40,7 @@ import the GPG encrypted file to privacyIDEA!
    above mentioned *GNUPGHOME* directory.
 
 .. note:: privacyIDEA imports an ASCII armored file. The file needs to be
-   encrypted like this:
+   encrypted like this::
 
       gpg -e -a -r <keyid>  import.csv
 
@@ -49,7 +49,7 @@ import the GPG encrypted file to privacyIDEA!
 OATH CSV
 --------
 
-This is a very simple CSV file to import HOTP, TOTP or OATH tokens.
+This is a very simple CSV file to import HOTP, TOTP, OCRA or TAN tokens.
 You can also convert your seed easily to this file format, to import
 the tokens. 
 
@@ -71,8 +71,7 @@ twice will overwrite the token data.
 
 **seed** is the secret key, that is used to calculate the OTP
 value. The seed is provided in a hexadecimal notation. 
-Depending on the length either the SHA1 or SHA256 hash algorithm 
-is identified.
+The hash algorithm is derived from the length of the seed, see the note below.
 
 **type** is either HOTP, TOTP or OCRA.
 
@@ -90,19 +89,19 @@ For TAN tokens it looks like this::
 
 The list of tans is a whitespace separated list.
 
-.. note:: The Hash algorithm (SHA1, SHA256, SHA512) is derived from the length of the **seed**.
-   If the length of the seed does not match any Hash algorithm, the default SHA1 is used.
+.. note:: The hash algorithm is derived from the length of the hexadecimal **seed**: 56 characters select SHA224,
+   64 characters SHA256, 96 characters SHA384 and 128 characters SHA512. With any other length SHA1 is used.
 
 Import format version 2
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A new import format allows to prepend a user, to whom the imported token should be assigned.
+Import format version 2 lets you prepend the user to whom the imported token should be assigned.
 
-The file format needs to start with the first line
+The file format needs to start with the first line::
 
    # version: 2
 
-and the first three colums will be the user:
+and the first three columns will be the user::
 
    <username>, <resolver>, <realm>, <serial>, <seed>, <type>, ...
 
@@ -112,8 +111,16 @@ and the first three colums will be the user:
 Yubikey CSV
 -----------
 
-Here you can import the CSV file that is written by the :ref:`ykpersgui` [#yubipers]_.
-privacyIDEA can import all Yubikey modes, either Yubico mode or HOTP mode.
+Here you can import the CSV file that is written by the :ref:`ykpersgui` [#yubipers]_,
+in the traditional format or in the *Yubico format*. The tool has reached its end of life,
+but files written with it can still be imported.
+privacyIDEA imports YubiKeys in Yubico OTP (AES) mode and in OATH-HOTP mode. Lines for the static
+password mode are skipped.
+
+HOTP tokens from a Yubikey CSV file always get the OTP length 6. For YubiKeys programmed with 8 digits, use a PSKC
+file or the *Flexible format* described in :ref:`yubikey_enrollment_tools` and import it as :ref:`import_oath_csv`.
+The *Yubico format* does not record the slot: all serials end in ``_X``, so if both slots of a YubiKey are programmed
+in the same mode, only the later line is imported.
 
 .. figure:: yubikey.png
    :width: 500
@@ -129,21 +136,31 @@ PSKC
 The *Portable Symmetric Key Container* is specified in [#RFC6030]_.
 OATH compliant token vendors provide the token seeds in a PSKC file.
 privacyIDEA lets you import PSKC files.
-All necessary information (OTP length, Hash algorithm, token type) are read
+All necessary information (OTP length, Hash algorithm, token type) is read
 from the file.
 
 .. note:: In PSKC the Hash algorithm is specified in the ``<Suite>`` tag.
    If it is not specified, SHA1 is used as the default. The length of the
    seed is *not* used to determine the Hash algorithm.
 
-PSKC files can be encrypted - either with a password or an AES key. You can
-provide this during the upload.
+PSKC files can be encrypted - either with a password or an AES key. You can provide this during the upload: the
+*Pre Shared Key* as 32 hexadecimal characters (128 bit), or the *Password*, from which the key is derived with PBKDF2
+using the parameters given in the file. Encrypted values must use AES-128-CBC.
+
+For encrypted files, the *Verification Method for the Authenticity of Imported Tokens* (API parameter
+``pskcValidateMAC``) decides how the MAC of the encrypted values is handled:
+
+* *Abort operation on unverifiable token* (``check_fail_hard``, default): if the MAC of one token does not match,
+  no token of the file is imported.
+* *Skip tokens that can not be verified* (``check_fail_soft``): tokens with a wrong MAC are not imported, the others
+  are.
+* *Do not verify the authenticity* (``no_check``): the MAC is not checked.
 
 
 SafeNet XML
 -----------
 
-Safenet or former Aladdin provided seed files in their own XML format.
+SafeNet (now part of Thales), formerly Aladdin, provided seed files in their own XML format.
 This is the format to choose, if you have a file, that looks like this::
 
     <Tokens>
@@ -165,13 +182,13 @@ This is the format to choose, if you have a file, that looks like this::
         </Token>
      </Tokens>
 
-.. note:: The HASH algorithm defaults to SHA1. Unless the length of the seed is 64 characters, then SHA256
+.. note:: The hash algorithm defaults to SHA1, unless the seed is 64 characters long; then SHA256
    is assumed.
 
-.. note:: This format is deprecated. Safenet nowadays might provide you an XML file, which is probably a PKCS file.
+.. note:: This format is deprecated. SafeNet (Thales) nowadays might provide you with an XML file, which is probably a PSKC file.
    Please check the file contents!
 
 
-.. [#ocra] http://tools.ietf.org/html/rfc6287#section-6
-.. [#yubipers] http://www.yubico.com/products/services-software/personalization-tools/use/
-.. [#RFC6030] https://tools.ietf.org/html/rfc6030
+.. [#ocra] https://www.rfc-editor.org/rfc/rfc6287.html#section-6
+.. [#yubipers] https://www.yubico.com/support/download/yubikey-personalization-tools/
+.. [#RFC6030] https://www.rfc-editor.org/rfc/rfc6030

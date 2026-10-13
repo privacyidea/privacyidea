@@ -6,7 +6,7 @@ Database connect string
 Due to its use of a database abstraction layer, privacyIDEA can work with several
 databases with the help of corresponding database drivers.
 
-The database and corresponding diver are specified in the connect string
+The database and corresponding driver are specified in the connect string
 ``SQLALCHEMY_DATABASE_URI`` in :ref:`cfgfile`
 
 .. _tested_databases:
@@ -19,7 +19,7 @@ The continuous integration runs the full test suite against **MariaDB 10.11**
 database models or migrations it additionally runs the migration test suite,
 which verifies that the schema migrations apply cleanly in both directions
 (upgrade *and* downgrade) starting from the v3.9 schema — against **MariaDB
-10.11 and 11** and **PostgreSQL 17**. A single-node MariaDB Galera cluster is
+10.11 and 11**, **MySQL 8.4** and **PostgreSQL 17**. A single-node MariaDB Galera cluster is
 covered as well, to catch cluster-specific DDL constraints.
 
 **SQLite** is the default for development and small, single-node installations.
@@ -57,8 +57,8 @@ The corresponding connect string looks like this:
 Other databases
 ~~~~~~~~~~~~~~~
 
-While we recommend MySQL as the backend database we regularly test MariaDB and
-PostgreSQL as well.
+The continuous integration regularly tests MariaDB, MySQL and PostgreSQL, see
+:ref:`tested_databases`.
 
 Other databases like Oracle or MSSQL are working as well but not all
 functionality can be assured, so be aware that "Your mileage may vary".

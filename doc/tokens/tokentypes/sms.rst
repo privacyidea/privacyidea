@@ -1,7 +1,7 @@
 .. _sms_token:
 
 SMS Token
---------
+---------
 
 .. index:: SMS token
 
@@ -14,7 +14,10 @@ configure the SMS service in :ref:`sms_token_config`.
 
    *Enroll an SMS token*
 
-When enrolling an SMS token, you only need to specify the mobile phone number.
+When enrolling an SMS token, you only need to specify the mobile phone number,
+or let the token read the number from the user store at each authentication
+(WebUI: *Read number dynamically from user source on each request*, API
+parameter ``dynamic_phone``).
 
 SMS token is a challenge response token. I.e. when sending the OTP PIN in the
 first authentication request, the sending of the SMS will be triggered and in

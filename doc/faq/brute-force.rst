@@ -9,7 +9,7 @@ For each failed authentication attempt privacyIDEA will increase a fail
 counter of a token. If the maximum allowed fail counter is reached,
 authentication with this token is not possible anymore. The token gets a timestamp
 mark, when the maximum fail counter was reached.
-Starting with version 2.20 the administrator can define a timeout in minutes.
+The administrator can define a timeout in minutes.
 If the maximum fail counter was reached more than these specified minutes ago,
 any authentication attempt will reset the fail counter, and in case of a successful
 authentication access will be granted.

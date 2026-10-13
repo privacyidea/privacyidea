@@ -244,7 +244,7 @@ data, returned as an ArrayBuffer.
 
 The problem and ways to solve it are described in detail in this MDN-Article:
 
-https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa#unicode_strings
 
 Authentication
 --------------
@@ -940,6 +940,7 @@ class WebAuthnTokenClass(TokenClass):
         Update token state during WebAuthn enrollment.
 
         The method handles both enrollment phases:
+
         1. Bootstrap phase (no registration data): move token to
            ``ROLLOUTSTATE.CLIENTWAIT`` and keep it inactive.
         2. Finalization phase (with ``regdata`` and ``clientdata`` while in
@@ -947,6 +948,7 @@ class WebAuthnTokenClass(TokenClass):
            challenge, persist credential metadata, and activate the token.
 
         Required parameters for finalization include:
+
         - ``transaction_id``
         - ``regdata`` (attestationObject, base64url)
         - ``clientdata`` (clientDataJSON, base64url)
@@ -955,6 +957,7 @@ class WebAuthnTokenClass(TokenClass):
         - ``FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL``
 
         Side effects in finalization:
+
         - writes otp key/sign counter
         - stores credential hash and tokeninfo metadata
         - deletes enrollment challenges

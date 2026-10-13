@@ -10,27 +10,23 @@ virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
 .. note::
-    privacyIDEA currently runs with Python 3.9 to 3.12. Other
+    privacyIDEA runs with Python 3.11 to 3.14. Other
     versions either do not work or are not tested.
 
 Setting up a virtual environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You first need to install a package for creating a python `virtual environment
-<https://virtualenv.pypa.io/en/stable/>`_.
+privacyIDEA is installed into a Python `virtual environment
+<https://docs.python.org/3/library/venv.html>`_. Some distributions ship the
+``venv`` module as a separate package (e.g. ``python3-venv`` on Debian and Ubuntu).
 
-Now you can setup the virtual environment for privacyIDEA like this::
+Now you can set up the virtual environment for privacyIDEA like this::
 
-  $ virtualenv /opt/privacyidea
+  $ python3 -m venv /opt/privacyidea
 
   $ cd /opt/privacyidea
   $ source bin/activate
   (privacyidea)$
-
-.. note::
-    Some distributions still ship Python 2.7 as the system python. If you want
-    to use Python 3 you can create the virtual environment like this:
-    `virtualenv -p /usr/bin/python3 /opt/privacyidea`
 
 Now you are within the python virtual environment and you can proceed with the
 :ref:`deterministic installation <pip_deterministic_installation>`.
@@ -40,17 +36,18 @@ Now you are within the python virtual environment and you can proceed with the
 Deterministic Installation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The privacyIDEA package contains dependencies with a minimal required version. However, newest
-versions of dependencies are not always tested and might cause problems.
+The privacyIDEA package declares its dependencies without minimal versions (only ``ldap3`` has
+an upper bound), so pip may install any version of them. The newest versions of the dependencies
+are not always tested and might cause problems.
 To achieve a deterministic installation, you must install the pinned and tested
 versions of the dependencies *before* installing privacyIDEA::
 
-    (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v3.11.3/requirements.txt
+    (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v<version>/requirements.txt
 
-Now you can install the required privacyIDEA version from
-`PyPI <https://pypi.org/project/privacyIDEA>`_::
+Replace ``<version>`` with the privacyIDEA version you want to install. Then
+install this version from `PyPI <https://pypi.org/project/privacyIDEA>`_::
 
-    (privacyidea)$ pip install privacyidea==3.11.3
+    (privacyidea)$ pip install privacyidea==<version>
 
 The requirements are also available after the installation at ``/opt/privacyidea/lib/privacyidea/requirements.txt``.
 
@@ -73,15 +70,18 @@ the matching OS packages must be present:
 
 * ``postgres`` (``psycopg2``): needs the PostgreSQL client library and its
   headers (``libpq-dev`` / ``postgresql-devel``), the ``pg_config`` executable
-  they ship and a C compiler. Without them pip aborts with ``Error: pg_config
+  they ship, the Python development headers (``python3-dev`` /
+  ``python3-devel``, ``python3.11-devel`` with the ``python3.11`` packages of
+  RHEL 8 and 9) and a C compiler. Without them pip aborts with ``Error: pg_config
   executable not found``. The prebuilt ``psycopg2-binary`` wheel needs no build
   tools and is a practical choice for development and testing, but upstream
   advises against it in production, as it bundles its own libssl and libcrypto.
-* ``kerberos`` (``gssapi``): pip usually installs a prebuilt wheel, but the host
-  still needs the MIT Kerberos runtime libraries (``libkrb5`` / ``krb5-libs``) and
-  a valid ``/etc/krb5.conf`` for the realm. If pip has to build from source,
-  additionally install the Kerberos development headers (``libkrb5-dev`` /
-  ``krb5-devel``), ``krb5-config`` and a C compiler.
+* ``kerberos`` (``gssapi``): there are no prebuilt wheels for Linux, so pip
+  always builds it from source. Install the Kerberos development files
+  (``libkrb5-dev`` / ``krb5-devel``, which also provide ``krb5-config``), the
+  Python development headers (see above) and a C compiler. At runtime the host
+  needs the MIT Kerberos libraries (``libkrb5`` / ``krb5-libs``) and a valid
+  ``/etc/krb5.conf`` for the realm.
 * ``hsm`` (``PyKCS11``): additionally needs your HSM vendor's PKCS#11 module.
 
 .. note::
@@ -108,28 +108,38 @@ The database server should be installed on the host or be otherwise reachable.
 
 In order for privacyIDEA to use the database, a database user with the
 appropriate privileges is needed.
-The following SQL commands will create the database as well as a user in `MySQL`::
+The following SQL commands will create the database as well as a user in MySQL::
 
     CREATE DATABASE pi;
     CREATE USER "pi"@"localhost" IDENTIFIED BY "<dbsecret>";
     GRANT ALL PRIVILEGES ON pi.* TO "pi"@"localhost";
 
-You must then add the database name, user and password to your `pi.cfg`. See
+You must then add the database name, user and password to your ``pi.cfg``. See
 :ref:`cfgfile` for more information on the configuration.
 
 Setting up privacyIDEA
 ......................
-Additionally to the database connection a new ``PI_PEPPER`` and ``SECRET_KEY``
+In addition to the database connection a new ``PI_PEPPER`` and ``SECRET_KEY``
 must be generated in order to secure the installation::
 
     PEPPER="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
-    echo "PI_PEPPER = '$PEPPER'" >> /path/to/pi.cfg
+    echo "PI_PEPPER = '$PEPPER'" >> /etc/privacyidea/pi.cfg
     SECRET="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
-    echo "SECRET_KEY = '$SECRET'" >> /path/to/pi.cfg
+    echo "SECRET_KEY = '$SECRET'" >> /etc/privacyidea/pi.cfg
 
 An encryption key for encrypting the secrets in the database and a key for
-signing the :ref:`audit` log is also needed (the following commands should be
-executed inside the virtual environment)::
+signing the :ref:`audit` log are also needed. The following commands write them
+to the paths set in ``PI_ENCFILE``, ``PI_AUDIT_KEY_PRIVATE`` and
+``PI_AUDIT_KEY_PUBLIC``, so first set these in ``pi.cfg`` to a place outside the
+virtual environment, e.g. ``/etc/privacyidea/enckey``,
+``/etc/privacyidea/private.pem`` and ``/etc/privacyidea/public.pem`` as in the
+example in :ref:`cfgfile`. Without them the files are created inside the virtual
+environment, next to the ``privacyidea`` package: they are lost when the virtual
+environment is recreated, and ``pi-manage backup create`` does not include them.
+Losing the encryption key makes the encrypted data in the database, e.g. the
+token secrets, unreadable.
+
+Execute the commands inside the virtual environment::
 
     (privacyidea)$ pi-manage setup create_enckey  # encryption key for the database
     (privacyidea)$ pi-manage setup create_audit_keys  # key for verification of audit log entries
@@ -151,18 +161,19 @@ the development server can be started with::
     command is still available but deprecated.
 
 .. warning::
-    The development server should not be used for a productive environment.
+    The development server should not be used for a production environment.
 
 Webserver
 .........
 
 To serve authentication requests and provide the management UI a
-`WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`_ capable webserver
-like `Apache2 <https://httpd.apache.org/>`_ or `nginx <https://nginx.org/en>`_
-is needed.
+`WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`_ server is needed,
+e.g. `Apache2 <https://httpd.apache.org/>`_ with ``mod_wsgi``, or uWSGI or
+gunicorn behind a web server like `nginx <https://nginx.org/en>`_. nginx itself
+cannot run the application, it forwards the requests to the WSGI server.
 
 Setup and configuration of a webserver can be a complex procedure depending on
-several parameter (host OS, SSL, internal network structure, ...).
+several parameters (host OS, SSL, internal network structure, ...).
 Some example configuration can be found in the NetKnights GitHub
 repositories [#nkgh]_. More on the WSGI setup for privacyIDEA can be found in
 :ref:`wsgiscript`.
@@ -177,5 +188,5 @@ without limit.
 
 .. rubric:: Footnotes
 
-.. [#sqlaDialects] https://docs.sqlalchemy.org/en/14/dialects/index.html
+.. [#sqlaDialects] https://docs.sqlalchemy.org/en/20/dialects/index.html
 .. [#nkgh] https://github.com/NetKnights-GmbH/ubuntu/tree/master/deploy

@@ -5,11 +5,14 @@ Configuration
 
 .. index:: configuration
 
-The configuration menu can be used to define useridresolvers and realms,
-set the system config and the token config.
+This chapter describes how to define user ID resolvers and realms, the system config,
+the token config and the connections to external services.
 
-It also contains a shortcut to the :ref:`policies`, :ref:`eventhandler` and
-:ref:`periodic_tasks`.
+In the WebUI, user ID resolvers and realms are found under *Users*, the system config,
+the token config and the :ref:`periodic_tasks` under *Configuration*, and SMTP servers,
+RADIUS servers, privacyIDEA servers, SMS gateways, CA connectors and service IDs under
+*External Services*. The :ref:`policies`, the :ref:`eventhandler` and the API clients are
+found under *Policies*.
 
 .. toctree::
    :maxdepth: 1

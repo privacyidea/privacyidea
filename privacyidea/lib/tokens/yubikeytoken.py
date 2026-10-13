@@ -271,9 +271,11 @@ class YubikeyTokenClass(TokenClass):
         :type options: dict or None
 
         :return: the counter state or an error code (< 0):
-        -1 if the OTP is old (counter < stored counter)
-        -2 if the private_uid sent in the OTP is wrong (different from the one stored with the token)
-        -3 if the CRC verification fails
+
+            * -1 if the OTP is old (counter < stored counter)
+            * -2 if the private_uid sent in the OTP is wrong (different from the one stored with the token)
+            * -3 if the CRC verification fails
+
         :rtype: int
 
         """

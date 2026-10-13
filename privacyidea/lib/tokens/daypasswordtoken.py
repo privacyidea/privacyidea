@@ -214,12 +214,12 @@ class DayPasswordTokenClass(TotpTokenClass):
     @check_token_locked
     def check_otp(self, anOtpVal, counter=None, options=None):
         """
-        validate the token passwort against a given passwordvalue
+        validate the token password against a given password value
 
-        :param anOtpVal: the to be verified passwordvalue
+        :param anOtpVal: the password value to verify
         :type anOtpVal:  string
         :param counter: the counter state, that should be verified. For DayPasswordToken
-        this is the unix system time (seconds) divided by 30/60
+            this is the unix system time (seconds) divided by 30/60
         :type counter: int
         :param options: the dict, which could contain token specific info
         :type options: dict
@@ -279,11 +279,11 @@ class DayPasswordTokenClass(TotpTokenClass):
         get the next OTP value
 
         :param current_time: the current time, for which the OTP value
-        should be calculated for.
+            should be calculated for.
         :type current_time: datetime object
         :param time_seconds: the current time, for which the OTP value
-        should be calculated for (date +%s)
-        :type: time_seconds: int, unix system time seconds
+            should be calculated for (date +%s)
+        :type time_seconds: int, unix system time seconds
         :return: next otp value, and PIN, if possible
         :rtype: tuple
         """

@@ -5,12 +5,12 @@ Periodic Tasks
 
 .. index:: periodic task, recurring task
 
-Starting with version 2.23, privacyIDEA comes with the ability to define periodically recurring tasks
-in the Web UI. The purpose of such tasks is to periodically execute certain processes automatically.
+privacyIDEA comes with the ability to define periodically recurring tasks
+in the WebUI. The purpose of such tasks is to periodically execute certain processes automatically.
 The administrator defines which tasks should be executed using task modules. Currently there are task modules
 for simple statistics and for handling recorded events. Further task modules can be added easily.
 
-As privacyIDEA is a web application, it can not actually execute the defined periodic tasks itself. For that,
+As privacyIDEA is a web application, it cannot actually execute the defined periodic tasks itself. For that,
 privacyIDEA comes with a script ``privacyidea-cron`` which must be invoked by the system cron daemon.
 This can, for example, be achieved by creating a file ``/etc/cron.d/privacyidea`` with the following
 contents (this is done automatically by the Ubuntu package)::
@@ -24,7 +24,7 @@ error (see :ref:`privacyidea_cron`).
 
 The Ubuntu package's file also holds the jobs that clean up the database, see :ref:`cleanup_jobs`.
 
-Periodic tasks can be managed in the WebUI by navigating to *Config->Periodic Tasks*:
+Periodic tasks can be managed in the WebUI by navigating to *Configuration -> Periodic Tasks*:
 
 .. figure:: periodictasks.png
 
@@ -76,7 +76,7 @@ Every periodic task has the following attributes:
 
 **options**
 	The options are a set of key-value pairs that configure the behavior of the task module.
-	Each task module can have it's own allowed options.
+	Each task module can have its own allowed options.
 
 
 .. _periodic_task_modules:
@@ -98,14 +98,17 @@ privacyIDEA comes with the following task modules:
 The ``privacyidea-cron`` script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``privacyidea-cron`` script executes the periodic tasks defined in the Web UI. It reads
+The ``privacyidea-cron`` script executes the periodic tasks defined in the WebUI. It reads
 the configuration file ``/etc/privacyidea/pi.cfg``, or the file given in the environment
 variable ``PRIVACYIDEA_CONFIGFILE``.
 
 The script works with the name of the node it runs on: ``PI_NODE`` from the configuration
 file, or ``PI_AUDIT_SERVERNAME`` if ``PI_NODE`` is not set, or ``localnode`` if neither is
-set. In a setup with several nodes, give every node its own ``PI_NODE``: nodes that end up
-with the same name all run the tasks assigned to that name. The option ``-n`` overrides the
+set. In a setup with several nodes, give every node its own ``PI_NODE``. Nodes that end up
+with the same name share one record of the last run of each task: when one of them has run a
+due task and recorded the run, the others find the task not due until its next scheduled
+time. Only nodes that check before that record is written run it as well, so whether a task
+runs on one or on several of these nodes depends on timing. The option ``-n`` overrides the
 node name.
 
 ``privacyidea-cron run_scheduled [-c] [-d] [-n NODE]``

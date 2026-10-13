@@ -725,7 +725,7 @@ def set_failcounter(serial: str | None, counter: int, user: "User | None" = None
     Set the fail counter of a  token.
 
     :param serial: The serial number of the token (exact)
-    :param counter: THe counter to which the fail counter should be set
+    :param counter: The counter to which the fail counter should be set
     :param user: An optional user
     :return: Number of tokens, where the fail counter was set.
     """

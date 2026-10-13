@@ -213,9 +213,9 @@ def set_eventhandling():
     :jsonparam id: id of an existing binding to update; omit to create.
     :jsonparam name: human-readable name of the binding (required).
     :jsonparam event: comma-separated list of event names that should
-        trigger this binding (required); see :http:get:`/event/available`.
+        trigger this binding (required); see ``GET /event/available``.
     :jsonparam handlermodule: handler module identifier (required); see
-        :http:get:`/event/handlermodules`.
+        ``GET /event/handlermodules``.
     :jsonparam action: action the handler should perform (required); see
         :http:get:`/event/actions/(handlermodule)`.
     :jsonparam position: ``post`` (default) or ``pre`` — when in the

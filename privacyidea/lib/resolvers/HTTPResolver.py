@@ -648,6 +648,7 @@ class HTTPResolver(UserIdResolver):
         Exception.
 
         For the basic http resolver the config dict must contain the following entries:
+
         * endpoint: str
         * method: str (e.g. "get" or "post")
         * requestMapping: str (JSON) or dict
@@ -656,6 +657,7 @@ class HTTPResolver(UserIdResolver):
         * errorResponse: str (JSON) or dict
 
         For the advanced http resolver the config can contain the following entries:
+
         * base_url: str
         * headers: dict or str (JSON)
         * attribute_mapping: dict (or JSON str)
@@ -668,23 +670,20 @@ class HTTPResolver(UserIdResolver):
         * tls_certificate_path: str
         * timeout: int (seconds) or str e.g. "10"
         * config_get_user_by_id: dict
-            - method: str (e.g. "get" or "post")
-            - endpoint: str
-            - headers: str (JSON) or dict
-            - requestMapping: str (JSON) or dict
-            - responseMapping: str (JSON) or dict
-            - hasSpecialErrorHandler: bool or str (e.g. "true" or "false")
-            - errorResponse: str (JSON) or dict
-        * config_get_user_by_name: dict
-            - see config_get_user_by_id
-        * config_get_user_list: dict
-            - see config_get_user_by_id
-        * config_create_user
-            - see config_get_user_by_id
-        * config_edit_user
-            - see config_get_user_by_id
-        * config_delete_user
-            - see config_get_user_by_id
+
+          - method: str (e.g. "get" or "post")
+          - endpoint: str
+          - headers: str (JSON) or dict
+          - requestMapping: str (JSON) or dict
+          - responseMapping: str (JSON) or dict
+          - hasSpecialErrorHandler: bool or str (e.g. "true" or "false")
+          - errorResponse: str (JSON) or dict
+
+        * config_get_user_by_name: dict, same keys as config_get_user_by_id
+        * config_get_user_list: dict, same keys as config_get_user_by_id
+        * config_create_user: dict, same keys as config_get_user_by_id
+        * config_edit_user: dict, same keys as config_get_user_by_id
+        * config_delete_user: dict, same keys as config_get_user_by_id
 
         :param config: The configuration values of the resolver
         :type config: dict

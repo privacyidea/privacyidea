@@ -346,7 +346,9 @@ class TokenClass:
         Set the user attributes (uid, resolvername, resolvertype) of a token.
 
         :param user: a User() object, consisting of loginname and realm
-        :param report: tbdf.
+        :param report: Not used.
+        :param override: If the token already belongs to another user, replace that user instead of raising
+            a TokenAdminError.
         :return: None
         """
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
@@ -1410,7 +1412,7 @@ class TokenClass:
     @check_token_locked
     def set_count_auth(self, count):
         """
-        Sets the counter for the occurred login attepms
+        Sets the counter for the occurred login attempts
         as key "count_auth" in token info
 
         :param count: a number

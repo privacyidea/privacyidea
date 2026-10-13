@@ -26,7 +26,7 @@ To protect an Apache directory or Location add this to your apache config::
         AuthType Basic
         AuthName "Protected Area"
         AuthBasicProvider wsgi
-        WSGIAuthUserScript /usr/share/pyshared/privacyidea_apache.py
+        WSGIAuthUserScript /path/to/privacyidea_apache.py
         Require valid-user
     </Directory>
 

@@ -1084,7 +1084,7 @@ class PolicyClass:
             "remote": "Remote Token: Forward authentication request to another server",
             "yubico": "Yubikey Cloud mode: Forward authentication request to YubiCloud",
             "radius": "RADIUS: Forward authentication request to a RADIUS server",
-            "email": "EMail: Send a One Time Passwort to the users email address",
+            "email": "EMail: Send a One Time Password to the users email address",
             "sms": "SMS: Send a One Time Password to the users mobile phone",
             "certificate": "Certificate: Enroll an x509 Certificate Token."}
 

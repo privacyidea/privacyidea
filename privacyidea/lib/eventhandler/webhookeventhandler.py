@@ -15,8 +15,8 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """This is th event handler module for posting webhooks.
-You can send an webhook to trigger an event on an other system or use to replace
+__doc__ = """This is the event handler module for posting webhooks.
+You can send a webhook to trigger an event on another system or use it to replace
 api requests and reduce your traffic this way.
 
 """

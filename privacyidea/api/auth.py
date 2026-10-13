@@ -304,8 +304,8 @@ def get_auth_token():
              "username": "admin",
              "realm": "",
              "log_level": 30,
-             "rights": ["enrollHOTP", "enrollTOTP", ...],
-             "menus": ["tokens", "users", ...],
+             "rights": ["enrollHOTP", "enrollTOTP"],
+             "menus": ["tokens", "users"],
              "auth": true
            }
          },
