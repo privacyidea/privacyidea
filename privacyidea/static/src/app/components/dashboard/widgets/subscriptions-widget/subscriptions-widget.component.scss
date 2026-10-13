@@ -206,8 +206,11 @@
 
   &.dot-bad {
     background: var(--red-fill);
+  }
 
-    // The cross is drawn a touch left of its box's middle.
+  // The exclamation mark and the cross are drawn a touch left of their box's middle.
+  &.dot-warn,
+  &.dot-bad {
     .status-glyph {
       position: relative;
       right: -0.7px;
