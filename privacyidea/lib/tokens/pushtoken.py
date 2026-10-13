@@ -54,7 +54,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges, consume_challenge
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_TYPE_KEY,
@@ -543,6 +543,9 @@ class _PushChallengeState:
     """
     otp_counter: int = -1
     refused_status: str | None = None  # "declined" | "cancelled" | None
+    # The challenge that carried the answer, so check_challenge_response can claim it. The push_wait loop in
+    # authenticate reads the scan directly and deletes afterwards; its transaction id never leaves the server.
+    answered_challenge: "Challenge | ChallengeDTO | None" = None
 
 
 class PushTokenClass(TokenClass):
@@ -1768,6 +1771,7 @@ class PushTokenClass(TokenClass):
                 _, status = challenge.get_otp_status()
                 if status is True:
                     state.otp_counter = 1
+                    state.answered_challenge = challenge
                     return state
                 continue
 
@@ -1787,6 +1791,7 @@ class PushTokenClass(TokenClass):
                 display_code = data.get("display_code", "")
                 if display_code and isinstance(passw, str) and safe_compare(display_code, passw):
                     state.otp_counter = 1
+                    state.answered_challenge = challenge
                     return state
                 elif passw is not None:
                     log.debug("Received the wrong display code for push code_to_phone!")
@@ -1800,7 +1805,7 @@ class PushTokenClass(TokenClass):
                 if status is True:
                     # create a positive response
                     state.otp_counter = 1
-                    # do not delete the challenge yet, that is the job of the calling context
+                    state.answered_challenge = challenge
                     break
         return state
 
@@ -1835,6 +1840,10 @@ class PushTokenClass(TokenClass):
             # CHALLENGE_CANCELLED from those templates exists to avoid.
             self.auth_details[AUTH_EVENT_TYPE_KEY] = REFUSAL_STATUS_AUTH_EVENTS[state.refused_status]
             self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE
+        if state.otp_counter >= 0 and not consume_challenge(state.answered_challenge):
+            # Another request already redeemed this approval, so only that one is accepted.
+            log.info(f"The challenge {transaction_id} of token {self.token.serial} was used by another request.")
+            return -1
         return state.otp_counter
 
     @classmethod

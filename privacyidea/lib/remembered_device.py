@@ -37,6 +37,8 @@ from typing import NamedTuple, TYPE_CHECKING
 
 from flask_babel import _
 
+from sqlalchemy import update
+
 from privacyidea.lib.error import AuthError, ParameterError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -307,25 +309,44 @@ class RotatedCookie(NamedTuple):
     expires_at: datetime | None
 
 
-def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> RotatedCookie:
+def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> RotatedCookie | None:
     """
     Rotate a validated device: bump the counter, refresh ``last_used_at`` and
     return the new cookie value plus its expiry.
 
+    The counter is moved with a single conditional UPDATE from the value this request validated, so of
+    several requests presenting the same cookie at the same moment only one rotates it. The others get
+    ``None`` and are answered as a later request with the previous cookie is.
+
     :param device: a device returned by :func:`get_valid_device`
     :param client_ip: the source of this request, recorded as where the device was last seen
-    :return: a :class:`RotatedCookie` ``(value, expires_at)``
+    :return: a :class:`RotatedCookie` ``(value, expires_at)``, or None if another request rotated it first
     """
-    device.counter += 1
-    device.last_used_at = utc_now()
+    # Read what is needed before the commit: it expires the instance, and the attributes would be
+    # reloaded from a row another request may already have moved.
+    series_id = device.series_id
+    presented_counter = device.counter
+    expires_at = device.expires_at
+    values = {"counter": presented_counter + 1, "last_used_at": utc_now()}
     if client_ip:
         # Follow the device as it moves. The grace window compares the presented request's source
         # against this, and a device that keeps the address it was first registered from would stop
         # qualifying the moment its client changed network - turning a tolerated duplicate request
         # into a detected theft, which revokes every remembered device that user holds.
-        device.ip_address = client_ip[:64]
-    device.save()
-    return RotatedCookie(build_cookie_value(device.series_id, device.counter), device.expires_at)
+        values["ip_address"] = client_ip[:64]
+    # End the transaction that read the device, so the UPDATE compares with the current row and
+    # MariaDB >= 11.6.2 does not refuse it with 1020.
+    db.session.commit()
+    statement = (update(RememberedDevice)
+                 .where(RememberedDevice.series_id == series_id,
+                        RememberedDevice.counter == presented_counter)
+                 .values(**values)
+                 .execution_options(synchronize_session=False))
+    rotated = db.session.execute(statement).rowcount == 1
+    db.session.commit()
+    if not rotated:
+        return None
+    return RotatedCookie(build_cookie_value(series_id, presented_counter + 1), expires_at)
 
 
 class RememberStatus(str, enum.Enum):
@@ -406,6 +427,17 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
     if result.is_grace:
         return ConsumeResult(RememberStatus.GRACE, None, None)
     rotated = rotate_device(result.device, client_ip)
+    if rotated is None:
+        # Another request rotated the device between the validation above and the rotation, so this one
+        # presents what is now the previous counter. Validate once more and answer it the way a later
+        # request with that cookie is answered: tolerated within the grace window, reuse otherwise.
+        try:
+            again = get_valid_device(cookie_value, client_id, identity, client_ip)
+        except AuthError:
+            return ConsumeResult(RememberStatus.THEFT, None, None)
+        if again and again.is_grace:
+            return ConsumeResult(RememberStatus.GRACE, None, None)
+        return ConsumeResult(RememberStatus.MISS, None, None)
     return ConsumeResult(RememberStatus.RECOGNIZED, rotated.value, rotated.expires_at)
 
 

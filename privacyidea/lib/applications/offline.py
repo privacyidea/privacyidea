@@ -23,21 +23,32 @@
 #
 
 import logging
+from dataclasses import dataclass
 
 from passlib.hash import pbkdf2_sha512
+from sqlalchemy import select
 
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.config import get_prepend_pin
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import geturandom, safe_compare
 from privacyidea.lib.error import ValidateError, ParameterError
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import TYPE
 from privacyidea.lib.token import get_one_token
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.utils import get_computer_name_from_user_agent
+from privacyidea.models import Token, TokenInfo, db
 
 log = logging.getLogger(__name__)
 ROUNDS = 6549
 REFILLTOKEN_LENGTH = 40
+
+
+@dataclass
+class Refill:
+    otps: dict
+    refilltoken: str
 
 
 class MachineApplication(MachineApplicationBase):
@@ -60,15 +71,7 @@ class MachineApplication(MachineApplicationBase):
     application_name = "offline"
 
     @staticmethod
-    def generate_new_refilltoken(token, user_agent=None):
-        """
-        Generate new refill token and store it in the tokeninfo of the token.
-        :param token: token in question
-        :param user_agent: name of the machine, taken from the user-agent header
-        :return: a string
-        """
-        log.debug(f"Generating refilltoken for {token.get_serial()} with user agent {user_agent}")
-
+    def _refilltoken_key(token: TokenClass, user_agent: str | None = None) -> str:
         # If the token is a FIDO2 token, we need to store the machine name with the refill token, because
         # the token can be on multiple machines, which need to be managed separately
         # TODO improve where the information about offline capabilities is stored
@@ -80,22 +83,27 @@ class MachineApplication(MachineApplicationBase):
             key = "refilltoken_" + computer_name
         else:
             key = "refilltoken"
+        return key
 
+    @staticmethod
+    def generate_new_refilltoken(token: TokenClass, user_agent: str | None = None) -> str:
+        """
+        Generate new refill token and store it in the tokeninfo of the token.
+        :param token: token in question
+        :param user_agent: name of the machine, taken from the user-agent header
+        :return: a string
+        """
+        log.debug(f"Generating refilltoken for {token.get_serial()} with user agent {user_agent}")
+        key = MachineApplication._refilltoken_key(token, user_agent)
         new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
         token.write_tokeninfo(key, new_refilltoken)
         return new_refilltoken
 
     @staticmethod
-    def get_offline_otps(token, otppin, amount, rounds=ROUNDS):
+    def _hash_offline_otps(token: TokenClass, otppin: str, amount: int, rounds: int = ROUNDS) -> dict:
         """
-        Retrieve the desired number of passwords (= PIN + OTP), hash them
-        and return them in a dictionary. Increase the token counter.
-
-        :param token: token in question
-        :param otppin: The OTP PIN to prepend in the passwords. The PIN is not validated!
-        :param amount: Number of OTP values (non-negative!)
-        :param rounds: Number of PBKDF2 rounds
-        :return: dictionary
+        The next *amount* OTP values from the token counter on, each hashed together with the OTP PIN. The counter
+        is not changed.
         """
         if amount < 0:
             raise ParameterError(f"Invalid refill amount: {amount!r}")
@@ -106,55 +114,103 @@ class MachineApplication(MachineApplicationBase):
             # Return the hash of OTP PIN and OTP values
             otp_with_pin = otppin + otp if prepend_pin else otp + otppin
             otps[key] = pbkdf2_sha512.using(rounds=rounds, salt_size=10).hash(otp_with_pin)
+        return otps
+
+    @staticmethod
+    def get_offline_otps(token: TokenClass, otppin: str, amount: int, rounds: int = ROUNDS) -> dict:
+        """
+        Retrieve the desired number of passwords (= PIN + OTP), hash them
+        and return them in a dictionary. Increase the token counter.
+
+        :param token: token in question
+        :param otppin: The OTP PIN to prepend in the passwords. The PIN is not validated!
+        :param amount: Number of OTP values (non-negative!)
+        :param rounds: Number of PBKDF2 rounds
+        :return: dictionary
+        """
+        otps = MachineApplication._hash_offline_otps(token, otppin, amount, rounds)
         # We do not disable the token, so if all offline OTP values
         # are used, the token can be used to authenticate online again.
         # token_obj.enable(False)
         # increase the counter by the consumed values and
         # also store it in tokeninfo.
         token.inc_otp_counter(increment=amount)
-
         return otps
 
     @staticmethod
-    def get_refill(token, password, options=None):
+    def refill(token: TokenClass, password: str, refilltoken: str, options: dict | None = None,
+               user_agent: str | None = None) -> Refill | None:
         """
-        Returns new authentication OTPs to refill the client
+        Check the refill token and the password, and hand out the offline OTP values that replace the ones the
+        client used, together with a new refill token.
 
-        To do so we also verify the password, which may consist of PIN + OTP.
+        The token row and the refill token row are locked from the check of the refill token until the new one is
+        committed, and the counter and the refill token are written in that one commit. Refills of the token are
+        serialized: of several with the same refill token one is served and the others write nothing. Another
+        writer of the refill token, the online login that hands out offline values, waits for the lock and replaces
+        the new refill token afterwards, or, if it was first, makes this refill fail the check.
 
-        :param token: Token object
+        :param token: token in question
         :param password: PIN + OTP
+        :param refilltoken: the refill token of the request
         :param options: dict that might contain "count" and "rounds"
-        :return: a dictionary of auth items
+        :param user_agent: the user agent of the request, naming the machine of a FIDO2 token
+        :return: the offline values and the new refill token, or None if the refill token is not the stored one or
+            the token type has no offline refill
+        :raises ValidateError: if the OTP value is wrong. Nothing is written, the refill token stays valid.
         """
+        if token.type.lower() not in ["hotp", "webauthn", "passkey"]:
+            return None
         options = options or {}
-        otps = {}
-        if token.type.lower() == "hotp":
-            count = int(options.get("count", 100))
-            rounds = int(options.get("rounds", ROUNDS))
-            _r, otppin, otpval = token.split_pin_pass(password)
-            if not _r:
-                raise ParameterError("Could not split password")
-            current_token_counter = token.token.count
-            first_offline_counter = current_token_counter - count
-            if first_offline_counter < 0:
-                first_offline_counter = 0
-            # find the value in the offline OTP values! This resets the token.count!
-            matching_count = token.check_otp(otpval, first_offline_counter, count)
-            token.set_otp_count(current_token_counter)
-            # Raise an exception *after* we reset the token counter
-            if matching_count < 0:
-                raise ValidateError("You provided a wrong OTP value.")
-            # We have to add 1 here: Assume *first_offline_counter* is the counter value of the first offline OTP
-            # we sent to the client. Assume the client then requests a refill with that exact OTP value.
-            # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
-            counter_diff = matching_count - first_offline_counter + 1
-            otps = MachineApplication.get_offline_otps(token, otppin, counter_diff, rounds)
-            token.write_tokeninfo(key="offline_counter",
-                                value=count)
-        elif token.type.lower() in ["webauthn", "passkey"]:
-            pass
-        return otps
+        key = MachineApplication._refilltoken_key(token, user_agent)
+        # Read the id before the commit, and end the transaction that read the token, so the locking reads see the
+        # committed rows. Both locks are taken before the refresh: on MariaDB >= 11.6.2 a locking read of a row that
+        # changed after the transaction's first plain read is refused with 1020.
+        token_id = token.token.id
+        db.session.commit()
+        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        stored = db.session.execute(select(TokenInfo.Value)
+                                    .where(TokenInfo.token_id == token_id, TokenInfo.Key == key)
+                                    .with_for_update()).scalar_one_or_none()
+        db.session.refresh(token.token)
+        if not stored or not safe_compare(stored, refilltoken):
+            db.session.rollback()
+            log.info(f"The refill token of {token.get_serial()} was replaced by another request.")
+            return None
+
+        try:
+            otps = {}
+            if token.type.lower() == "hotp":
+                count = int(options.get("count", 100))
+                rounds = int(options.get("rounds", ROUNDS))
+                _r, otppin, otpval = token.split_pin_pass(password)
+                if not _r:
+                    raise ParameterError("Could not split password")
+                current_token_counter = token.token.count
+                first_offline_counter = max(current_token_counter - count, 0)
+                # Find the value among the offline values, without writing: every write of the refill is part of
+                # the commit below.
+                hmac_otp = HmacOtp(token.token.get_otpkey(), first_offline_counter, int(token.token.otplen),
+                                   token.get_hashlib(token.hashlib))
+                matching_count = hmac_otp.checkOtp(otpval, count)
+                if matching_count < 0:
+                    raise ValidateError("You provided a wrong OTP value.")
+                # We have to add 1 here: Assume *first_offline_counter* is the counter value of the first offline OTP
+                # we sent to the client. Assume the client then requests a refill with that exact OTP value.
+                # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
+                counter_diff = matching_count - first_offline_counter + 1
+                otps = MachineApplication._hash_offline_otps(token, otppin, counter_diff, rounds)
+                token.write_tokeninfo(key="offline_counter", value=count, commit_db_session=False)
+            new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
+            token.write_tokeninfo(key, new_refilltoken, commit_db_session=False)
+            if token.type.lower() == "hotp":
+                # Its commit writes everything above at once and releases the row locks: nothing may be written after it
+                token.inc_otp_counter(increment=counter_diff)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
+        return Refill(otps, new_refilltoken)
 
     @staticmethod
     def get_authentication_item(token_type, serial, challenge=None, options=None, filter_param=None, user_agent=None):

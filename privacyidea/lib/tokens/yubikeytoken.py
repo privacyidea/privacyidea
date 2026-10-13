@@ -354,8 +354,12 @@ class YubikeyTokenClass(TokenClass):
         log.debug(f'compare counter to database counter: {self.token.count!r}')
         if count_int >= self.token.count:
             res = count_int
-            # on success we save the used counter
-            self.inc_otp_counter(res)
+            # on success we save the used counter. The failcounter reset that inc_otp_counter would do is done by
+            # check_token_list on success.
+            if not self.advance_otp_count(res + 1):
+                # Another request used this OTP value first, so it is as spent as it is for a later replay.
+                log.info(f"The OTP value of token {self.token.serial} was used by another request.")
+                return -1
 
         return res
 
