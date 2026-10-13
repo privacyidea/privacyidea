@@ -448,9 +448,8 @@ class HotpTokenClass(TokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
-        # A caller that brings its own counter checks values against that one, not against the stored counter
-        # (the offline refill checks values below it and restores it afterwards), so only the stored-counter case
-        # advances the counter conditionally.
+        # A caller that brings its own counter checks values against that one, not against the stored counter, so
+        # only the stored-counter case advances the counter conditionally.
         counter_from_token = counter is None
         if counter is None:
             counter = int(self.get_otp_count())

@@ -19,10 +19,11 @@ from unittest import mock
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 
+import privacyidea.lib.applications.offline as offline_module
 import privacyidea.lib.containerclass as containerclass_module
 import privacyidea.lib.passwordreset as passwordreset_module
 import privacyidea.lib.remembered_device as remembered_device_module
-from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
+from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH, Refill
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.config import set_privacyidea_config
@@ -51,6 +52,7 @@ QUESTIONS = {"frage1": "antwort1", "frage2": "antwort2", "frage3": "antwort3"}
 QUESTION_PIN = "pin"
 # RFC 4226 test key and its first OTP value
 OTP_KEY = "3132333435363738393031323334353637383930"
+REFILLTOKEN = "ab" * REFILLTOKEN_LENGTH
 HOTP_AT_COUNTER_0 = "755224"
 
 
@@ -397,29 +399,125 @@ class ParallelCookieAndRefillTestCase(ParallelRequestTestCase):
         statuses = [getattr(result, "status", result) for result in results]
         self.assertEqual(1, statuses.count("recognized"), results)
 
-    def test_same_refilltoken_is_used_once(self):
-        serial = "PARREFILL"
+    def _offline_token(self, serial: str) -> None:
         save_machine_resolver({"name": "hosts_parallel", "type": "hosts", "filename": "tests/testdata/hosts"})
         token = init_token({"type": "hotp", "serial": serial, "otpkey": OTP_KEY})
+        self.addCleanup(remove_token, serial)
         attach_token(serial, "offline", hostname="pippin", resolver_name="hosts_parallel", options={"count": 10})
         # State after an online login at counter 1 that handed out the offline values for counters 2..11
         token.set_otp_count(12)
-        refilltoken = "ab" * REFILLTOKEN_LENGTH
-        token.write_tokeninfo("refilltoken", refilltoken)
+        token.write_tokeninfo("refilltoken", REFILLTOKEN)
         # A token that was refilled before: parallel first refills otherwise race to insert this row
         token.write_tokeninfo("offline_counter", "10")
 
-        def refill() -> int:
-            with self.app.test_client() as client:
-                # 338314 is the value for counter 4: the client used three offline values
-                return client.post("/validate/offlinerefill",
-                                   data={"serial": serial, "pass": "338314",
-                                         "refilltoken": refilltoken}).status_code
+    def _refill(self, serial: str, otp: str) -> tuple[int, list[int], str | None]:
+        """The status, the counters of the offline values handed out and the new refill token of one refill."""
+        with self.app.test_client() as client:
+            response = client.post("/validate/offlinerefill",
+                                   data={"serial": serial, "pass": otp, "refilltoken": REFILLTOKEN})
+        offline = response.json.get("auth_items", {}).get("offline", [{}])[0]
+        return (response.status_code, sorted(int(counter) for counter in offline.get("response", {})),
+                offline.get("refilltoken"))
 
-        try:
-            with synchronize_after(MachineApplication, "get_refill", 2):
-                results = run_in_parallel(self.app, [refill, refill])
+    def test_same_refilltoken_is_used_once(self):
+        serial = "PARREFILL"
+        self._offline_token(serial)
 
-            self.assertEqual(1, results.count(200), results)
-        finally:
-            remove_token(serial)
+        # 338314 is the value for counter 4: the client used three offline values
+        with synchronize_after(MachineApplication, "_refilltoken_key", 2):
+            results = run_in_parallel(self.app, [partial(self._refill, serial, "338314")] * 2)
+
+        self.assertListEqual([200, 400], sorted(status for status, _counters, _refilltoken in results), results)
+
+    def test_online_login_waits_for_a_refill_that_checked_the_refill_token(self):
+        """
+        An online login hands out offline values with a new refill token, so it writes the refill token too. If it
+        does so after a refill checked the refill token and before the refill replaced it, it must wait for the
+        refill: otherwise the refill overwrites the refill token the online login handed out, which the online
+        client then holds without it being stored.
+        """
+        serial = "PARREFILLONLINE"
+        self._offline_token(serial)
+        online_has_logged_in = threading.Event()
+        refill_has_checked = threading.Event()
+        online_is_done = threading.Event()
+        real_generate_new_refilltoken = MachineApplication.generate_new_refilltoken
+        real_safe_compare = offline_module.safe_compare
+
+        def generate_after_the_refill_checked(token: TokenClass, user_agent: str | None = None) -> str:
+            online_has_logged_in.set()
+            refill_has_checked.wait(10)
+            return real_generate_new_refilltoken(token, user_agent)
+
+        def check_and_let_the_online_login_write(stored: str, given: str) -> bool:
+            refill_has_checked.set()
+            # A refill that holds the refill token row keeps the online login waiting until this times out
+            online_is_done.wait(2)
+            return real_safe_compare(stored, given)
+
+        def online_login() -> tuple[int, str | None]:
+            try:
+                with self.app.test_client() as client:
+                    # 868912 is the value for counter 12, the stored counter
+                    response = client.post("/validate/check", data={"serial": serial, "pass": "868912"})
+                offline = response.json.get("auth_items", {}).get("offline", [{}])[0]
+                return response.status_code, offline.get("refilltoken")
+            finally:
+                online_is_done.set()
+
+        def refill() -> tuple[int, list[int], str | None]:
+            online_has_logged_in.wait(10)
+            return self._refill(serial, "338314")
+
+        with (mock.patch.object(MachineApplication, "generate_new_refilltoken", generate_after_the_refill_checked),
+              mock.patch.object(offline_module, "safe_compare", check_and_let_the_online_login_write)):
+            online, refilled = run_in_parallel(self.app, [online_login, refill])
+
+        online_status, online_refilltoken = online
+        self.assertEqual(200, online_status, online)
+        self.assertEqual(200, refilled[0], refilled)
+        # The online login wrote last, so the refill token it handed out is the stored one
+        self.assertIsNotNone(online_refilltoken)
+        self.assertEqual(online_refilltoken, get_one_token(serial=serial).get_tokeninfo("refilltoken"))
+
+    def test_delayed_refill_writes_nothing(self):
+        """
+        Two refills with the same refill token and different OTP values, where one has read the token before the
+        other one ran and continues only after it finished. The delayed one must write nothing: not the counter it
+        read, which would make offline values the other one handed out valid online again, and no refill of its own,
+        which its OTP value would still allow when it is the higher one.
+        """
+        # 338314 is the value for counter 4 and 287922 for counter 6: the client used three or five offline values
+        for delayed_otp, served_otp, served_counters in (("338314", "287922", [12, 13, 14, 15, 16]),
+                                                          ("287922", "338314", [12, 13, 14])):
+            with self.subTest(delayed_otp=delayed_otp):
+                serial = f"PARREFILLDELAYED{delayed_otp}"
+                self._offline_token(serial)
+                delayed_has_read = threading.Event()
+                served_is_done = threading.Event()
+                real_refill = MachineApplication.refill
+
+                def refill_after_the_other(token: TokenClass, password: str, *args, **kwargs) -> Refill | None:
+                    if password == delayed_otp:
+                        delayed_has_read.set()
+                        served_is_done.wait(10)
+                    return real_refill(token, password, *args, **kwargs)
+
+                def served_refill() -> tuple[int, list[int], str | None]:
+                    delayed_has_read.wait(10)
+                    try:
+                        return self._refill(serial, served_otp)
+                    finally:
+                        served_is_done.set()
+
+                with mock.patch.object(MachineApplication, "refill", refill_after_the_other):
+                    delayed, served = run_in_parallel(self.app, [partial(self._refill, serial, delayed_otp),
+                                                                 served_refill])
+
+                self.assertTupleEqual((400, [], None), delayed)
+                status, counters, refilltoken = served
+                self.assertEqual(200, status, served)
+                self.assertListEqual(served_counters, counters)
+                token = get_one_token(serial=serial)
+                self.assertEqual(served_counters[-1] + 1, token.token.count)
+                self.assertEqual(refilltoken, token.get_tokeninfo("refilltoken"))

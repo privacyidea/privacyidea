@@ -1175,8 +1175,8 @@ class TokenClass:
         backwards, and it does not refuse a request whose own, higher value is still unused while a lower one was
         consumed in parallel.
 
-        Callers that check an OTP value against a counter of their own - the offline refill, resync - keep
-        ``set_otp_count``, which writes the value unconditionally.
+        Callers that check an OTP value against a counter of their own - resync - keep ``set_otp_count``, which
+        writes the value unconditionally.
 
         :param new_count: the counter value that follows the OTP value this request used
         :return: True only for the call that advanced the counter

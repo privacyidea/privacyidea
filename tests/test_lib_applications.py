@@ -2,7 +2,7 @@
 This test file tests the applications definitions standalone
 lib/applications/*
 """
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, ValidateError
 from .base import MyTestCase
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.applications.ssh import (MachineApplication as
@@ -180,25 +180,52 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(auth_item, {})
 
 
-class OfflineRefillTokenTestCase(MyTestCase):
+class OfflineRefillTestCase(MyTestCase):
 
-    def test_refilltoken_is_replaced_only_if_it_is_still_the_stored_one(self):
-        serial = "REPLACEREFILL"
+    def test_refill(self):
+        serial = "REFILL"
         old_refilltoken = "a" * 2 * REFILLTOKEN_LENGTH
         token = init_token({"type": "hotp", "serial": serial, "otpkey": self.otpkey})
+        self.addCleanup(remove_token, serial)
+        # State after an online login at counter 1 that handed out the offline values for counters 2..11
+        token.set_otp_count(12)
         token.write_tokeninfo("refilltoken", old_refilltoken)
+        options = {"count": 10}
 
-        # A refill token that is not the stored one replaces nothing
-        refused = OfflineApplication.generate_new_refilltoken(token, replaces="b" * 2 * REFILLTOKEN_LENGTH)
-        self.assertIsNone(refused)
-        self.assertEqual(old_refilltoken, get_one_token(serial=serial).get_tokeninfo("refilltoken"))
+        def stored() -> tuple[int, str]:
+            stored_token = get_one_token(serial=serial)
+            return stored_token.token.count, stored_token.get_tokeninfo("refilltoken")
 
-        # The stored one is replaced, and then it is no longer the stored one
-        new_refilltoken = OfflineApplication.generate_new_refilltoken(token, replaces=old_refilltoken)
-        self.assertEqual(new_refilltoken, get_one_token(serial=serial).get_tokeninfo("refilltoken"))
-        self.assertIsNone(OfflineApplication.generate_new_refilltoken(token, replaces=old_refilltoken))
+        # A refill token that is not the stored one is refused and writes nothing
+        self.assertIsNone(OfflineApplication.refill(token, "338314", "b" * 2 * REFILLTOKEN_LENGTH, options))
+        self.assertEqual((12, old_refilltoken), stored())
 
-        remove_token(serial)
+        # A wrong OTP value writes nothing either, so the refill token stays valid
+        with self.assertRaises(ValidateError):
+            OfflineApplication.refill(token, "123456", old_refilltoken, options)
+        self.assertEqual((12, old_refilltoken), stored())
+
+        # 338314 is the value for counter 4: the client used three offline values and gets three new ones
+        refill = OfflineApplication.refill(token, "338314", old_refilltoken, options)
+        self.assertListEqual([12, 13, 14], sorted(refill.otps))
+        self.assertTrue(passlib.hash.pbkdf2_sha512.verify("736127", refill.otps[13]))
+        self.assertEqual((15, refill.refilltoken), stored())
+        self.assertEqual("10", get_one_token(serial=serial).get_tokeninfo("offline_counter"))
+
+        # The replaced refill token is not accepted again
+        self.assertIsNone(OfflineApplication.refill(token, "338314", old_refilltoken, options))
+        self.assertEqual((15, refill.refilltoken), stored())
+
+    def test_refill_of_a_token_type_without_offline_refill(self):
+        # A refill token in the token info does not make a token type refillable that hands out no offline values
+        serial = "REFILLSPASS"
+        refilltoken = "a" * 2 * REFILLTOKEN_LENGTH
+        token = init_token({"type": "spass", "serial": serial})
+        self.addCleanup(remove_token, serial)
+        token.write_tokeninfo("refilltoken", refilltoken)
+
+        self.assertIsNone(OfflineApplication.refill(token, "", refilltoken))
+        self.assertEqual(refilltoken, get_one_token(serial=serial).get_tokeninfo("refilltoken"))
 
 
 class BaseApplicationTestCase(MyTestCase):
