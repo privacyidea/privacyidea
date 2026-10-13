@@ -312,6 +312,11 @@ class CryptoTestCase(MyTestCase):
         self.assertTrue(spy.saw("stored", "given"))
         self.assertFalse(spy.saw("stored", "unrelated"))
 
+    def test_12_safe_compare_with_a_lone_surrogate(self):
+        self.assertFalse(safe_compare("stored", "\ud800"))
+        self.assertFalse(safe_compare(b"stored", "\ud800"))
+        self.assertTrue(safe_compare("\ud800", "\ud800"))
+
 
 class EllipticCurveCryptoTestCase(MyTestCase):
 

@@ -430,6 +430,25 @@ class AValidateOfflineTestCase(MyApiTestCase):
                          res.json["result"]["error"]["message"])
         remove_token(serial)
 
+    def test_03c_refilltoken_with_a_lone_surrogate(self):
+        """A refill token that can not be encoded as UTF-8 is answered like any other incorrect refill token."""
+        serial = "SE_OFFLINE_SURROGATE"
+        init_token({"serial": serial, "otpkey": self.otpkey, "type": "hotp", "pin": "pin"},
+                   user=User("cornelius", self.realm1))
+        attach_token(serial, "offline", hostname="pippin",
+                     resolver_name="testresolver", options={"count": 100})
+        get_tokens(serial=serial)[0].write_tokeninfo("refilltoken", "b" * 2 * REFILLTOKEN_LENGTH)
+        body = json.dumps({"serial": serial, "pass": "pin755224", "refilltoken": "\ud800"})
+        with self.app.test_request_context('/validate/offlinerefill',
+                                           method='POST',
+                                           data=body, content_type="application/json",
+                                           environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res)
+        self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect",
+                         res.json["result"]["error"]["message"])
+        remove_token(serial)
+
     def test_04_multiple_offline_attachments_share_one_refilltoken(self):
         """With two offline attachments (HOTP), the response contains one ``auth_items.offline``
         entry per machine, each with a distinct ``refilltoken`` in the JSON — but
