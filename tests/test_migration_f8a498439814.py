@@ -1,12 +1,13 @@
 """
 Data transformation test for migration f8a498439814
-v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true
+v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true, and duplicates
 
-upgrade()   — removes the value of a boolean action whose value is not true, like ``policywrite=False`` or
+upgrade()   — removes the earlier occurrences of an action given more than once, keeping the last one, and the
+              value of a boolean action whose value is not true, like ``policywrite=False`` or
               ``triggerchallenge=hotp``, so it stays enabled
-downgrade() — keeps the actions without value, they mean the same in every version
+downgrade() — keeps the cleaned actions, they mean the same in every version
 
-Boolean actions with a true value and the actions of other types are untouched.
+Boolean actions with a true value, the actions of other types and an action next to its exclusion are untouched.
 """
 
 import os
@@ -33,6 +34,10 @@ POLICIES = {
     905: ("admin", "triggerchallenge=hotp, enable=true, disable=1, set=, revoke=TRUE"),
     906: ("container", "container_ssl_verify=False"),
     907: ("webui", "policywrite=False"),
+    908: ("admin", "policywrite=hotp, policywrite=false"),
+    909: ("admin", "policywrite=hotp, -policywrite"),
+    910: ("authentication", "otppin=userstore, passOnNoToken, otppin=token"),
+    911: ("admin", "enable, enable"),
 }
 
 EXPECTED = {
@@ -46,6 +51,13 @@ EXPECTED = {
     906: "container_ssl_verify=False",
     # The name is not a boolean action of this scope
     907: "policywrite=False",
+    # Of an action given more than once only the last occurrence stays, it is the one the policy matching reads
+    908: "policywrite",
+    # An action and its exclusion are different actions
+    909: "policywrite, -policywrite",
+    910: "passOnNoToken, otppin=token",
+    # A policy without any value is cleaned up as well
+    911: "enable",
 }
 
 
@@ -81,7 +93,10 @@ class TestMigrationF8a498439814(MigrationTestBase):
         engine.dispose()
 
     def test_upgrade_leaves_seed_policies_untouched(self, flask_app):
-        """upgrade() does not change the seed policies, none of them has a boolean action with a non-true value."""
+        """
+        upgrade() runs on the seed data without changing its policies. They use no real scope name and no action given
+        more than once, so this only guards against a failing upgrade, the cases above cover the cleanup itself.
+        """
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         query = f"SELECT id, {quote_identifier('action')} FROM policy ORDER BY id"

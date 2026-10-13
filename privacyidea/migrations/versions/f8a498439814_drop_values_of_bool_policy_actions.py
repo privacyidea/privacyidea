@@ -1,4 +1,4 @@
-"""v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true
+"""v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true, and duplicates
 
 The policy matching only checks whether an action is set and ignores its value, so a boolean action stored with a
 value like ``policywrite=False`` or ``triggerchallenge=hotp`` acted as enabled. The policy template "helpdesk" of the
@@ -9,10 +9,14 @@ check whether an action was meant to be disabled.
 
 Values that enable the action (``true``, ``True``, ``TRUE`` and ``1``) are left as they are.
 
+Saving a policy also rejects an action given more than once, like ``policywrite=hotp, policywrite=false``. Parsing the
+action string keeps only the last occurrence, so the migration removes the earlier ones and the policy acts as before.
+An action and its exclusion, like ``policywrite`` and ``-policywrite``, are different actions and both stay.
+
 The boolean actions are a snapshot of the policy definitions of this version, so the migration does not depend on the
 models of a later version. Boolean actions of token types outside privacyIDEA are not included.
 
-The downgrade does not restore the values, the action without a value means the same in every version.
+The downgrade does not restore the values and the duplicates, the result means the same in every version.
 
 Revision ID: f8a498439814
 Revises: 35815effd77c
@@ -132,6 +136,27 @@ class Policy(Base):
     action = sa.Column(sa.Text, default="")
 
 
+def drop_duplicate_actions(action: str) -> tuple[str, list[str]]:
+    """
+    Return the action string without the earlier occurrences of an action given more than once, and the removed parts
+    as they were stored. The last occurrence stays, since it is the one parsing the action string keeps.
+    """
+    parts = re.split(r'(?<!\\),', action)
+    keys = [part.strip().split("=", 1)[0] for part in parts]
+    kept = []
+    dropped = []
+    for i, part in enumerate(parts):
+        if keys[i] and keys[i] in keys[i + 1:]:
+            dropped.append(part.strip())
+        else:
+            kept.append(part)
+    if not dropped:
+        return action, dropped
+    # The first remaining part loses the space after the separating comma it had
+    kept[0] = kept[0].lstrip()
+    return ",".join(kept), dropped
+
+
 def drop_bool_action_values(scope: str, action: str) -> tuple[str, list[str]]:
     """
     Return the action string with the value removed from every boolean action whose value is not true, and the
@@ -153,19 +178,24 @@ def drop_bool_action_values(scope: str, action: str) -> tuple[str, list[str]]:
 def upgrade():
     session = orm.Session(bind=op.get_bind())
     try:
-        for policy in session.scalars(sa.select(Policy).where(Policy.action.like("%=%"))):
-            action, dropped = drop_bool_action_values(policy.scope, policy.action)
+        for policy in session.scalars(sa.select(Policy).where(Policy.action.isnot(None))):
+            action, duplicates = drop_duplicate_actions(policy.action)
+            if duplicates:
+                log.warning(f"Policy '{policy.name}': removed the earlier occurrences of actions given more than once: "
+                            f"{', '.join(duplicates)}. The last occurrence, which the policy used, stays.")
+            action, dropped = drop_bool_action_values(policy.scope, action)
             if dropped:
                 log.warning(f"Policy '{policy.name}': removed the value of the boolean actions {', '.join(dropped)}. "
                             f"They stay enabled as before.")
+            if action != policy.action:
                 policy.action = action
         session.commit()
     except Exception as e:
         session.rollback()
-        log.error(f"Failed to remove the values of the boolean policy actions: {e!r}")
+        log.error(f"Failed to remove the values and duplicates of the policy actions: {e!r}")
         raise
 
 
 def downgrade():
-    # The action without a value means the same in every version, so it is kept
+    # The cleaned action string means the same in every version, so it is kept
     pass

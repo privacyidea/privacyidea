@@ -10,7 +10,8 @@
   same rights as before. The schema update logs a warning for every policy it changes, so check these policies and
   exclude the actions that were meant to be disabled, like `-policywrite`. From now on, saving a boolean action with
   the value `false` (in any case) or `0` stores the excluded action, and saving it with any other value fails, also
-  through the API and `pi-manage`. `pi-manage config import --skip-invalid` drops such actions instead.
+  through the API and `pi-manage`. Importing a policy (`pi-manage config import`) removes such values like the schema
+  update, so an exported policy stays enabled as before.
 
 ## Update from 3.13 to 3.14
 
