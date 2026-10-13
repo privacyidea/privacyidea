@@ -13,6 +13,10 @@
   user with that name is now refused instead of opening a session for the wrong account. The authentication log
   records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
 
+* **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
+  argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
+  these values, without applying the `!` and `*` search operators.
+
 * **Boolean policy actions with a value are cleaned up.** A boolean action like `policywrite=False` acted as enabled,
   because the policy matching only checks whether an action is set. Policies created from the WebUI template
   "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The schema update

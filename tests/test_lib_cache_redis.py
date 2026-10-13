@@ -47,12 +47,14 @@ from privacyidea.lib.cache.redis import (
     _deserialize,
     _SERIAL_KEY,
     _TXN_KEY,
+    _UPDATE_EXISTING_CHALLENGE,
     cache_challenge,
     evict_challenge,
     get_challenges_from_cache,
     get_redis,
 )
-from privacyidea.lib.challenge import delete_challenges, get_challenges, get_challenges_paginate
+from privacyidea.lib.challenge import (consume_challenge, delete_challenges, get_challenges,
+                                       get_challenges_paginate)
 from privacyidea.lib.crypto import decryptPassword
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_local_store
@@ -441,6 +443,67 @@ class TestRedisCacheOperations(_RealRedisBase):
             challenge.save()
             updated = get_challenges_from_cache(transaction_id='txn-rcache-006')
         self.assertEqual(updated[0].get_data(), {"mode": "push", "display_code": "1234"})
+
+    def test_consume_challenge_picks_one_user_of_a_cached_challenge(self):
+        """The cached branch of consume_challenge: only the call whose HDEL removed the field returns True,
+        so a request answering a cached challenge is accepted only if it claimed it."""
+        self._write_dto(_make_dto(serial='RCACHE_CONSUME', txn='txn-rcache-consume'))
+        with redis_in_store(self._real_client):
+            challenge = get_challenges_from_cache(transaction_id='txn-rcache-consume')[0]
+            second_reader = get_challenges_from_cache(transaction_id='txn-rcache-consume')[0]
+            self.assertTrue(consume_challenge(challenge))
+            self.assertFalse(consume_challenge(second_reader))
+
+    def test_the_save_script_compiles_and_reports_whether_it_wrote(self):
+        """The save path runs a Lua script. A broken one raises a Redis error, which the save path turns into
+        a cooldown - the cache would silently stop being written rather than fail. Compile it here, so a
+        mistake in the script says so, and check both of its answers."""
+        sha = self._real_client.script_load(_UPDATE_EXISTING_CHALLENGE)
+        self.assertEqual(40, len(sha))
+
+        txn_key, serial = _TXN_KEY.format('txn-rcache-script'), 'RCACHE_SCRIPT'
+        self.assertEqual(0, self._real_client.evalsha(sha, 1, txn_key, serial, 'payload', 60, 'txn'))
+        self._real_client.hset(txn_key, serial, 'payload')
+        self.assertEqual(1, self._real_client.evalsha(sha, 1, txn_key, serial, 'new-payload', 60, 'txn'))
+        self.assertEqual('new-payload', self._real_client.hget(txn_key, serial))
+
+    def test_save_does_not_restore_a_removed_challenge(self):
+        """A challenge another request consumed stays gone: a save() from a copy that was read before must
+        not put it back, or the consumed challenge would be served to a later request."""
+        from privacyidea.lib.cache import CacheState
+        self._write_dto(_make_dto(serial='RCACHE_STALE', txn='txn-rcache-stale'))
+        with redis_in_store(self._real_client):
+            stale = get_challenges_from_cache(transaction_id='txn-rcache-stale')[0]
+            # The request that accepted the answer removes the challenge
+            get_challenges_from_cache(transaction_id='txn-rcache-stale')[0].delete()
+            # The request that read it before saves its copy afterwards
+            stale.set_otp_status(True)
+            stale.save()
+            remaining = get_challenges_from_cache(transaction_id='txn-rcache-stale')
+        # The field was the last one, so the transaction hash is gone - not re-created by the save
+        self.assertIs(CacheState.MISS, remaining)
+
+    def test_save_leaves_a_sibling_of_the_same_transaction_alone(self):
+        """Removing one token's challenge does not stop a sibling of the same transaction from saving."""
+        self._write_dto(_make_dto(serial='RCACHE_SIB_A', txn='txn-rcache-sib'))
+        self._write_dto(_make_dto(serial='RCACHE_SIB_B', txn='txn-rcache-sib'))
+        with redis_in_store(self._real_client):
+            challenges = {c.serial: c for c in get_challenges_from_cache(transaction_id='txn-rcache-sib')}
+            challenges['RCACHE_SIB_A'].delete()
+            challenges['RCACHE_SIB_B'].set_otp_status(True)
+            challenges['RCACHE_SIB_B'].save()
+            remaining = get_challenges_from_cache(transaction_id='txn-rcache-sib')
+        self.assertEqual(['RCACHE_SIB_B'], [c.serial for c in remaining])
+        self.assertTrue(remaining[0].otp_valid)
+
+    def test_save_extends_the_ttl_but_never_shortens_it(self):
+        self._write_dto(_make_dto(serial='RCACHE_SAVETTL', txn='txn-rcache-savettl', offset_seconds=600))
+        ttl_before = self._real_client.ttl(_TXN_KEY.format('txn-rcache-savettl'))
+        with redis_in_store(self._real_client):
+            challenge = get_challenges_from_cache(transaction_id='txn-rcache-savettl')[0]
+            challenge.set_otp_status(True)
+            challenge.save()
+        self.assertGreaterEqual(self._real_client.ttl(_TXN_KEY.format('txn-rcache-savettl')), ttl_before - 5)
 
     def test_dto_delete_evicts_from_cache(self):
         from privacyidea.lib.cache import CacheState
