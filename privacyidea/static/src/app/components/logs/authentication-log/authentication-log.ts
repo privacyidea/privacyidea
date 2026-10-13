@@ -19,7 +19,7 @@
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { filterMatchTooltip } from "@utils/filter-hint.utils";
-import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
+import { DatePipe, formatDate, NgClass } from "@angular/common";
 import {
   Component,
   computed,
@@ -46,7 +46,6 @@ import { MatInput } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { MatSliderModule } from "@angular/material/slider";
 import {
   MatCell,
   MatCellDef,
@@ -70,6 +69,7 @@ import { ReasonCell } from "./cells/reason-cell/reason-cell";
 import { isRecord } from "./reason-detail";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
+import { TimeRangeSlider } from "./time-range-slider/time-range-slider";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -300,7 +300,6 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatTable,
     MatCellDef,
     NgClass,
-    NgTemplateOutlet,
     MatHeaderRowDef,
     MatHeaderRow,
     MatRowDef,
@@ -321,6 +320,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     ConditionalAccessCell,
     InfoCell,
     ReasonCell,
+    TimeRangeSlider,
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
     MatDivider,
@@ -329,7 +329,6 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatDatepickerModule,
     MatIconModule,
     MatMenuModule,
-    MatSliderModule,
     MatTooltipModule,
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective
@@ -520,22 +519,23 @@ export class AuthenticationLog {
   readonly rangeEnd = linkedSignal(() =>
     this.isoToSliderPos(this.authenticationLogService.timestampTo(), RANGE_SLIDER_STEPS)
   );
-  // The range summary shows the window's extent (its min/max), not the dragged thumbs, so it stays a stable reference
-  // for the axis; it drops the time-of-day once the window spans more than a day, and an open window reads "now" at its
-  // max.
-  private summaryFormat(ms: number): string {
-    const format = this.windowEndMs() - this.windowStartMs() > MS_PER_DAY ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm";
-    return formatDate(ms, format, "en-US");
+  // The moment a slider position stands for, as the summary under the slider and the thumbs' accessible values say it.
+  // Always with the time of day: a step of the track spans hours even in a window of weeks, so a date alone would not
+  // move while the thumb does. The window's right edge reads as whatever it actually ends at - the newest entry on the
+  // page, or a picked end - and says "now" only while no page has loaded and the window still runs to the present. Not
+  // keyed on openEndedWindow: that governs what the end thumb at its maximum commits (no end_time, so later entries are
+  // not excluded), which is a different question from where the track stops.
+  private positionLabel(pos: number): string {
+    if (pos >= RANGE_SLIDER_STEPS && this.windowEndMs() === this.nowAnchorMs()) {
+      return $localize`:@@common.now:now`;
+    }
+    const start = this.windowStartMs();
+    return formatDate(start + (pos / RANGE_SLIDER_STEPS) * (this.windowEndMs() - start), "yyyy-MM-dd HH:mm", "en-US");
   }
 
-  readonly rangeSummaryFrom = computed(() => this.summaryFormat(this.windowStartMs()));
-  // The right edge reads as whatever the window actually ends at - the newest entry on the page, or a picked end -
-  // and says "now" only while no page has loaded and the window still runs to the present. Not keyed on
-  // openEndedWindow: that governs what the end *thumb* at its maximum commits (no end_time, so later entries are not
-  // excluded), which is a different question from where the track stops.
-  readonly rangeSummaryTo = computed(() =>
-    this.windowEndMs() === this.nowAnchorMs() ? $localize`:@@common.now:now` : this.summaryFormat(this.windowEndMs())
-  );
+  // Where the thumbs are, updated while they are dragged, so the summary shows the range a release would apply.
+  readonly rangeSummaryFrom = computed(() => this.positionLabel(this.rangeStart()));
+  readonly rangeSummaryTo = computed(() => this.positionLabel(this.rangeEnd()));
 
   // Activity histogram drawn behind the slider: the loaded entries' timestamps are bucketed across the slider window,
   // with each bar normalized (0..1) to the busiest bucket; it reflects the current page only, an indication of
@@ -802,19 +802,8 @@ export class AuthenticationLog {
     }
   }
 
-  // Thumb value indicator: the format tracks the window's zoom - time-of-day for short windows, day for medium, month
-  // for the widest - while the exact from/to is always shown in the summary line.
-  readonly formatSliderThumb = (pos: number): string => {
-    const iso = this.sliderPosToIso(pos, false)!;
-    const windowMs = this.windowEndMs() - this.windowStartMs();
-    if (windowMs <= 3 * MS_PER_DAY) {
-      return formatDate(iso, "HH:mm", "en-US");
-    }
-    if (windowMs <= 100 * MS_PER_DAY) {
-      return formatDate(iso, "MMM d", "en-US");
-    }
-    return formatDate(iso, "MMM", "en-US");
-  };
+  // A thumb's accessible value, the same words as the summary under the slider.
+  readonly formatSliderThumb = (pos: number): string => this.positionLabel(pos);
 
   // Single writer of the time filter: sets timestampFrom/To (the source of truth for the API params) and mirrors them
   // into the filter text as start_time/end_time chips; a null bound removes both its chip and its API param.

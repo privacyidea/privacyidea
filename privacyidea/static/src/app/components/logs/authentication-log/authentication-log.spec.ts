@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { formatDate } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
@@ -660,6 +661,19 @@ describe("AuthenticationLog", () => {
       { id: 2, event_type: "PIN_FAIL", timestamp: "2026-03-01T09:00:00Z" }
     ]);
     expect(component.rangeSummaryTo()).toContain("2026-03-05");
+  });
+
+  it("summarises where a dragged thumb is, before it is let go", () => {
+    respondWithEntries([
+      { id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T00:00:00Z" },
+      { id: 2, event_type: "PIN_FAIL", timestamp: "2026-03-01T00:00:00Z" }
+    ]);
+    const middle = new Date("2026-03-03T00:00:00Z");
+
+    component.onRangeStartInput(component.rangeSliderSteps / 2);
+
+    expect(component.rangeSummaryFrom()).toBe(formatDate(middle, "yyyy-MM-dd HH:mm", "en-US"));
+    expect(service.timestampFrom()).toBeNull();
   });
 
   // A page spanning a single instant would divide the track by zero, so it is widened forward from the entry.
