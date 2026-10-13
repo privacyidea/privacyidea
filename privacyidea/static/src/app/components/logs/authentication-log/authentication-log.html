@@ -474,7 +474,7 @@
         </button>
       }
       <button
-        (click)="rangePicker.open()"
+        [matMenuTriggerFor]="dateRangeMenu"
         mat-menu-item>
         <mat-icon>date_range</mat-icon>
         <span>{{ dateRangeLabel() }}</span>
@@ -485,7 +485,7 @@
         thumb's value bubble, which the menu panel would clip - the summary under the slider shows the exact range. -->
       <div
         (click)="$event.stopPropagation()"
-        (keydown)="keepSliderKeysInMenu($event)"
+        (keydown)="keepControlKeysInMenu($event)"
         class="time-filter-custom-range menu-time-range"
         role="presentation">
         <span
@@ -514,6 +514,25 @@
   [options]="userRoleOptions"
   [selected]="selectedFilterValues('user_role')"
   (selectionChange)="setFilterValues('user_role', $event)" />
+
+<!-- The "More Filter" menu's date range, as a submenu beside it rather than the action row's picker: that picker anchors
+     to its button, which stays where it was while the row is collapsed. Picking keeps the menu open, so the range can be
+     refined on the menu's slider straight after. Not a menu item, for the same reasons as the menu's slider wrapper. -->
+<mat-menu
+  #dateRangeMenu="matMenu"
+  class="auth-log-date-range-menu">
+  <ng-template matMenuContent>
+    <div
+      (click)="$event.stopPropagation()"
+      (keydown)="keepControlKeysInMenu($event)"
+      role="presentation">
+      <mat-calendar
+        (selectedChange)="onCalendarDateSelected($event)"
+        [selected]="calendarRange()"
+        class="auth-log-datepicker" />
+    </div>
+  </ng-template>
+</mat-menu>
 
 <!-- The custom range slider over its activity histogram, shared by the action row and the scroll-collapsed
      "More Filter" menu. -->

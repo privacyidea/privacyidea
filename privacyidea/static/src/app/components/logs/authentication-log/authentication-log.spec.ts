@@ -874,6 +874,24 @@ describe("AuthenticationLog", () => {
       expect(component.rangePickerEnd()).toBeNull();
     });
 
+    it("the menu calendar starts a range on the first pick and ends it on a later one", () => {
+      component.onCalendarDateSelected(new Date(2026, 5, 2));
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toBeNull();
+
+      component.onCalendarDateSelected(new Date(2026, 5, 5));
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toEqual(new Date(2026, 5, 5, 23, 59, 59));
+    });
+
+    it("the menu calendar starts a new range on a pick before the open range's start", () => {
+      component.onCalendarDateSelected(new Date(2026, 5, 5));
+      component.onCalendarDateSelected(new Date(2026, 5, 2));
+
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toBeNull();
+    });
+
     it("clearTimeFilter resets from, to and removes keys from filter text", () => {
       component.onRangeStartDateChange(new Date(2026, 5, 2));
       component.clearTimeFilter();

@@ -1123,6 +1123,13 @@ tr.mat-mdc-row:not(:hover):not(:has(:focus-visible)) app-copyable:has(.cell-trun
   }
 }
 
+// The date-range submenu of the auth log's "More Filter" menu holds a calendar, sized like the datepicker's own popup
+// rather than capped at the menu's default max-width.
+.auth-log-date-range-menu.mat-mdc-menu-panel {
+  width: 296px;
+  max-width: min(90vw, 296px);
+}
+
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {

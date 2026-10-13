@@ -34,7 +34,12 @@ import {
 import { MatButtonModule } from "@angular/material/button";
 import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatDivider } from "@angular/material/divider";
-import { MatDatepickerModule } from "@angular/material/datepicker";
+import {
+  DateRange,
+  DefaultMatCalendarRangeStrategy,
+  MAT_DATE_RANGE_SELECTION_STRATEGY,
+  MatDatepickerModule
+} from "@angular/material/datepicker";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -328,7 +333,11 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [
+    provideNativeDateAdapter(),
+    DefaultMatCalendarRangeStrategy,
+    { provide: MAT_DATE_RANGE_SELECTION_STRATEGY, useExisting: DefaultMatCalendarRangeStrategy }
+  ],
   templateUrl: "./authentication-log.html",
   styleUrl: "./authentication-log.scss"
 })
@@ -366,6 +375,9 @@ export class AuthenticationLog {
   protected readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
     inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly rangeSelectionStrategy = inject<DefaultMatCalendarRangeStrategy<Date>>(
+    DefaultMatCalendarRangeStrategy
+  );
   sort = this.authenticationLogService.sort;
 
   readonly reasonOptions = computed<string[]>(() => this.authenticationLogService.reasons());
@@ -415,6 +427,7 @@ export class AuthenticationLog {
   readonly rangePickerEnd = computed<Date | null>(() =>
     this.hasTimeFilter() && !this.openEndedWindow() ? new Date(this.windowEndMs()) : null
   );
+  readonly calendarRange = computed(() => new DateRange<Date>(this.rangePickerStart(), this.rangePickerEnd()));
   // Label on the date-range button: the neutral default with no range set, a friendly "Last X" period when the active
   // range ends at ~now and matches a preset span, otherwise "Custom range".
   readonly dateRangeLabel = computed(() => {
@@ -733,15 +746,24 @@ export class AuthenticationLog {
   // other bound, and clearing a field (null) drops its bound; the picked range also zooms the slider window so the
   // selected span fills the track (e.g. a single day becomes 24 hours).
   onRangeStartDateChange(date: Date | null): void {
-    const fromIso = date ? startOfDayIso(date) : null;
-    const toIso = this.authenticationLogService.timestampTo();
-    this.zoomSliderToRange(fromIso, toIso);
-    this.applyTimeRange(fromIso, toIso);
+    this.applyPickedRange(date ? startOfDayIso(date) : null, this.authenticationLogService.timestampTo());
   }
 
   onRangeEndDateChange(date: Date | null): void {
-    const fromIso = this.authenticationLogService.timestampFrom();
-    const toIso = date ? endOfDayIso(date) : null;
+    this.applyPickedRange(this.authenticationLogService.timestampFrom(), date ? endOfDayIso(date) : null);
+  }
+
+  // A day picked on the "More Filter" menu's calendar: the first pick starts a range, a later one on or after its start
+  // ends it - the same steps the action row's range picker takes.
+  onCalendarDateSelected(date: Date | null): void {
+    if (!date) {
+      return;
+    }
+    const range = this.rangeSelectionStrategy.selectionFinished(date, this.calendarRange());
+    this.applyPickedRange(range.start ? startOfDayIso(range.start) : null, range.end ? endOfDayIso(range.end) : null);
+  }
+
+  private applyPickedRange(fromIso: string | null, toIso: string | null): void {
     this.zoomSliderToRange(fromIso, toIso);
     this.applyTimeRange(fromIso, toIso);
   }
@@ -769,9 +791,9 @@ export class AuthenticationLog {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
   }
 
-  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's
-  // focus. Escape and Tab still reach the menu, so it closes as usual.
-  keepSliderKeysInMenu(event: KeyboardEvent): void {
+  // The slider and the calendar inside the "More Filter" menu: their arrow/Home/End/Page keys move a thumb or the
+  // active day rather than the menu's focus. Escape and Tab still reach the menu, so it closes as usual.
+  keepControlKeysInMenu(event: KeyboardEvent): void {
     if (event.key !== "Escape" && event.key !== "Tab") {
       event.stopPropagation();
     }
