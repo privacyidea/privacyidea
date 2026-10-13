@@ -145,6 +145,10 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             AuthEventType.CHALLENGE_TRIGGER_FAIL,
             # A request that named no token type the endpoint can initialize - malformed, not a credential attempt.
             AuthEventType.INVALID_TOKEN_TYPE,
+            # The credential verified; the realm's resolver order is what the session cannot be built from. The user
+            # holds a working passkey and does nothing wrong, and every attempt ends the same way until an admin
+            # changes the realm, so counting it would lock the account out over a configuration the user cannot fix.
+            AuthEventType.LOGIN_NAME_NOT_UNIQUE,
             # The user aborted a push challenge they triggered themselves: abandonment, not an attempt that failed.
             # Counting it would spend part of a brute-force budget on users changing their mind. The other two
             # declines are counted - the repudiation because the attempt was somebody else's, and the unspecified

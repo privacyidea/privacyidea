@@ -16,12 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, signal } from "@angular/core";
 
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
-import { AuthService } from "@services/auth/auth.service";
 
 type WelcomeAction = "next" | "restart";
 
@@ -33,16 +32,13 @@ type WelcomeAction = "next" | "restart";
   styleUrl: "./welcome-dialog.component.scss"
 })
 export class WelcomeDialogComponent extends AbstractDialogComponent<void, void> {
-  private auth = inject(AuthService);
   step = signal<number>(0);
 
   readonly dialogTitle = computed(() => {
     switch (this.step()) {
       case 1:
         return $localize`:@@welcome.valueOpenSource:The value of open source`;
-      // The closing step recommends the Enterprise Edition just like step 2, so it carries the same heading.
       case 2:
-      case 4:
         return $localize`:@@welcome.addedValuePrivacyidea:The added value of privacyIDEA Enterprise Edition`;
       case 3:
         return $localize`:@@welcome.thankYouImproving:Thank you for improving your security!`;
@@ -69,17 +65,6 @@ export class WelcomeDialogComponent extends AbstractDialogComponent<void, void> 
         }
       ];
     }
-    if (this.step() === 4) {
-      return [
-        {
-          type: "confirm",
-          label: $localize`:@@welcome.okay:Okay`,
-          value: "next",
-          primary: true,
-          icon: "done"
-        }
-      ];
-    }
     return [
       {
         type: "auxiliary",
@@ -99,14 +84,8 @@ export class WelcomeDialogComponent extends AbstractDialogComponent<void, void> 
   }
 
   nextWelcome(): void {
-    let nextStep = this.step() + 1;
-
-    const status = this.auth.subscriptionStatus();
-    if (nextStep === 4 && !(status === 1)) {
-      nextStep = 5;
-    }
-
-    if (nextStep >= 5) {
+    const nextStep = this.step() + 1;
+    if (nextStep > 3) {
       this.close();
     } else {
       this.step.set(nextStep);

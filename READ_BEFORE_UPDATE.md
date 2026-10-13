@@ -2,6 +2,17 @@
 
 ## Update from 3.14 to 3.14.1
 
+* **Passkey and WebAuthn logins now apply the token's own limits** — A login answered with a credential ID is checked
+  like every other authentication: a revoked or disabled token, or one outside its validity period, over its
+  failcounter or past its authentication counter limits, is refused, and a successful login increases the token's
+  authentication counters. **Check your FIDO2 tokens for a validity period or an authentication limit before
+  updating** — these only take effect from this version on.
+
+* **A passkey login without a username needs an unambiguous login name** — Where a realm holds the same login name in
+  several resolvers, only the user the realm's resolver order finds first can log in this way; a passkey of another
+  user with that name is now refused instead of opening a session for the wrong account. The authentication log
+  records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
+
 * **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
   these values, without applying the `!` and `*` search operators.
