@@ -120,10 +120,10 @@ export class AppearanceService {
   };
   private readonly statusColorsGroup: LevelGroup<StatusColorLevel> = {
     levels: STATUS_COLOR_LEVELS,
-    fallback: "aaa",
+    fallback: "aa",
     classPrefix: "status-colors-",
     settingKey: "status_colors",
-    level: signal<StatusColorLevel>("aaa")
+    level: signal<StatusColorLevel>("aa")
   };
 
   public readonly depth: Signal<DepthLevel> = this.depthGroup.level.asReadonly();

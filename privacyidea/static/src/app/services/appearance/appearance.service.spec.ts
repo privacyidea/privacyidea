@@ -139,14 +139,14 @@ describe("AppearanceService", () => {
   });
 
   it("should apply a picked status color level", () => {
-    expect(service.statusColors()).toBe("aaa");
-
-    service.setStatusColors("aa");
-
     expect(service.statusColors()).toBe("aa");
-    expect(html().classList.contains("status-colors-aa")).toBe(true);
-    expect(html().classList.contains("status-colors-aaa")).toBe(false);
-    expect(userSettingsService.settings()?.status_colors).toBe("aa");
+
+    service.setStatusColors("aaa");
+
+    expect(service.statusColors()).toBe("aaa");
+    expect(html().classList.contains("status-colors-aaa")).toBe(true);
+    expect(html().classList.contains("status-colors-aa")).toBe(false);
+    expect(userSettingsService.settings()?.status_colors).toBe("aaa");
   });
 
   it("should apply a stored status color level without writing it back, and fall back on an unknown one", () => {
@@ -158,16 +158,16 @@ describe("AppearanceService", () => {
 
     service.applyStoredStatusColors("neon");
 
-    expect(service.statusColors()).toBe("aaa");
+    expect(service.statusColors()).toBe("aa");
   });
 
-  it("should put the status colors back on AAA with the other groups", () => {
+  it("should put the status colors back on AA with the other groups", () => {
     service.setStatusColors("a");
 
     service.resetToDefaults();
 
-    expect(service.statusColors()).toBe("aaa");
-    expect(userSettingsService.settings()?.status_colors).toBe("aaa");
+    expect(service.statusColors()).toBe("aa");
+    expect(userSettingsService.settings()?.status_colors).toBe("aa");
   });
 
   it("should replace the previous level of the same group only", () => {

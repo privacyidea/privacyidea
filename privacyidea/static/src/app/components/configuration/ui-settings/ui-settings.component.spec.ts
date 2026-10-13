@@ -76,7 +76,7 @@ describe("UISettingsComponent", () => {
       depth: signal<DepthLevel>("default"),
       lightSource: signal<LightSourceLevel>(DEFAULT_LIGHT_SOURCE),
       corners: signal<CornerLevel>("default"),
-      statusColors: signal<StatusColorLevel>("aaa"),
+      statusColors: signal<StatusColorLevel>("aa"),
       resetToDefaults: jest.fn(() => of(null)),
       setDepth: jest.fn((level: DepthLevel) => appearanceService.depth.set(level)),
       setLightSource: jest.fn((level: LightSourceLevel) => appearanceService.lightSource.set(level)),

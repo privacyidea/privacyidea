@@ -417,7 +417,7 @@ $corner-radii: (
 // Settings; AppearanceService stamps it on <html> as html.status-colors-<level>. The fills are the same in both
 // themes, so each level holds its contrast in light and dark:
 // - aaa: black ink, every fill at 7:1 or better.
-// - aa: white ink, every fill at 4.5:1 or better.
+// - aa: white ink, every fill at 4.5:1 or better (the default).
 // - a: white ink on the old WebUI orange and red, the privacyIDEA logo's green and blue and a mid grey. Green, orange,
 //   red and blue sit at 2.1:1, 2.3:1, 4.0:1 and 2.3:1 under white and the grey at 4.5:1, so this level has no contrast
 //   guarantee.
@@ -463,7 +463,7 @@ $status-colors: (
 
 // What holds before a level is applied: the default level, so the first paint already has every fill.
 :root {
-  @include status-colors(map.get($status-colors, "aaa"));
+  @include status-colors(map.get($status-colors, "aa"));
 }
 
 @each $name, $set in $status-colors {
