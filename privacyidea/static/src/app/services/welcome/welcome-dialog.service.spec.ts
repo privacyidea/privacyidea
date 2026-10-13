@@ -90,6 +90,31 @@ describe("WelcomeDialogService", () => {
     expect(openedDialogs()).toEqual([WelcomeDialogComponent, FreeTierDialogComponent]);
   });
 
+  it("does not open the free tier dialog when the welcome dialog is closed by a logout", () => {
+    login({ hide_welcome: false, subscription_status: 1 });
+
+    authMock.authData.set(null);
+    authMock.isAuthenticated.set(false);
+    TestBed.tick();
+    welcomeClosed.next();
+
+    expect(openedDialogs()).toEqual([WelcomeDialogComponent]);
+  });
+
+  it("does not open the free tier dialog of a previous session after the next login", () => {
+    login({ hide_welcome: false, subscription_status: 1 });
+
+    authMock.authData.set(null);
+    authMock.isAuthenticated.set(false);
+    TestBed.tick();
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true, subscription_status: 0 });
+    authMock.isAuthenticated.set(true);
+    TestBed.tick();
+    welcomeClosed.next();
+
+    expect(openedDialogs()).toEqual([WelcomeDialogComponent]);
+  });
+
   it("shows only the free tier dialog when hideWelcome hides the welcome dialog", () => {
     const service = login({ hide_welcome: true, subscription_status: 1 });
 
