@@ -1,3 +1,4 @@
+@use "sass:map";
 @use "sass:math";
 @use "sass:meta";
 @use "@angular/material" as mat;
@@ -409,6 +410,61 @@ $corner-radii: (
 @each $name, $radius in $corner-radii {
   html.corner-#{$name} {
     --border-radius: #{$radius};
+  }
+}
+
+// The fills of the status chips, dots, ribbons, bars and snackbars, and the ink drawn on them. The user picks one level in UI
+// Settings; AppearanceService stamps it on <html> as html.status-colors-<level>. The fills are the same in both
+// themes, so each level holds its contrast in light and dark:
+// - aaa: black ink, every fill at 7:1 or better.
+// - aa: white ink, every fill at 4.5:1 or better.
+// - a: white ink on the old WebUI palette (Bootstrap's success, warning and danger tones). Green, orange, red and blue
+//   sit at 2.8:1, 2.3:1, 4.0:1 and 2.1:1 under white and the grey at 4.5:1, so this level has no contrast guarantee.
+$status-colors: (
+  "aaa": (
+    "ink": black,
+    "green": hsl(120, 50%, 46%),
+    "blue": hsl(199, 80%, 50%),
+    "yellow": hsl(48, 95%, 50%),
+    "red": hsl(2, 75%, 68%),
+    "grey": hsl(0, 0%, 62%)
+  ),
+  "aa": (
+    "ink": white,
+    "green": hsl(120, 45%, 36%),
+    "blue": hsl(199, 66%, 38%),
+    // The brightest orange of this hue and saturation that holds 4.5:1 under white (4.51:1).
+    "yellow": #b26217,
+    "red": hsl(2, 64%, 52%),
+    "grey": hsl(0, 0%, 44%)
+  ),
+  "a": (
+    "ink": white,
+    "green": #4cae4c,
+    "blue": #5bc0de,
+    "yellow": #ec971f,
+    "red": #d9534f,
+    "grey": #777777
+  )
+);
+
+@mixin status-colors($set) {
+  --status-ink: #{map.get($set, "ink")};
+  --green-fill: #{map.get($set, "green")};
+  --blue-fill: #{map.get($set, "blue")};
+  --yellow-fill: #{map.get($set, "yellow")};
+  --red-fill: #{map.get($set, "red")};
+  --grey-fill: #{map.get($set, "grey")};
+}
+
+// What holds before a level is applied: the default level, so the first paint already has every fill.
+:root {
+  @include status-colors(map.get($status-colors, "aaa"));
+}
+
+@each $name, $set in $status-colors {
+  html.status-colors-#{$name} {
+    @include status-colors($set);
   }
 }
 

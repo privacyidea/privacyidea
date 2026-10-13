@@ -28,7 +28,7 @@ $corner-size-stacked: 132px;
   top: 24%;
   left: 24%;
   background-color: var(--yellow-fill);
-  color: black;
+  color: var(--status-ink);
   width: $band-width;
   padding: 4px 0;
   transform: translate(-50%, -50%) rotate(-45deg);

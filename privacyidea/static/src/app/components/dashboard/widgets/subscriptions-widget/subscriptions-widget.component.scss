@@ -185,8 +185,8 @@
   border-radius: 50%;
   background: var(--grey-fill);
   // Holds the glyph that carries the state alongside the colour. Small enough that the dot
-  // stays inside the single line every cell is. Paired with the dot fill rather than with the page surface: the ink is black on every fill in both themes.
-  color: hsl(0, 0%, 0%);
+  // stays inside the single line every cell is. Paired with the dot fill rather than with the page surface: the ink is the status ink in both themes.
+  color: var(--status-ink);
 
   .status-glyph {
     font-size: 13px;

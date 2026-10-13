@@ -4,7 +4,6 @@
 
 html {
   &.system {
-    --mint-bg: light-dark(#e9f5e0, #243328);
     --rose-bg: light-dark(#faebef, #282426);
     --rose-ripple: light-dark(#f4d7e0, #433d3e);
     --sky-bg: light-dark(#edf3f5, #283034);
@@ -56,12 +55,6 @@ html {
     --yellow-base-hover: light-dark(hsl(34, 85%, 45%), hsl(34, 85%, 32%));
     // Orange label/outline colour of warning-tone secondary actions, held clear of the surface in both modes.
     --warn-base: light-dark(hsl(34, 85%, 34%), hsl(34, 85%, 58%));
-    // Fills (green, yellow, red, grey) that carry black text: each holds 7:1 (WCAG AAA) against black in both
-    // themes, so they are the same in both.
-    --green-fill: hsl(120, 50%, 46%);
-    --yellow-fill: hsl(48, 95%, 50%);
-    --red-fill: hsl(2, 75%, 68%);
-    --grey-fill: hsl(0, 0%, 62%);
     // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
     --select-option-bg: light-dark(hsl(0, 0%, 100%), hsl(0, 0%, 27%));
 
@@ -92,7 +85,6 @@ html {
     --nav-item-border: light-dark(#d0d0d0, #333333);
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
-    --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
     @include mat.tooltip-overrides(
       (
         container-color: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 35%)),
@@ -103,7 +95,6 @@ html {
 
   &.light {
     color-scheme: light;
-    --mint-bg: #e9f5e0;
     --rose-bg: #faebef;
     --rose-ripple: #f4d7e0;
     --sky-bg: #edf3f5;
@@ -152,12 +143,6 @@ html {
     --yellow-light-active: hsl(34, 85%, 60%);
     --yellow-base-hover: hsl(34, 85%, 45%);
     --warn-base: hsl(34, 85%, 34%);
-    // Fills (green, yellow, red, grey) that carry black text: each holds 7:1 (WCAG AAA) against black in both
-    // themes, so they are the same in both.
-    --green-fill: hsl(120, 50%, 46%);
-    --yellow-fill: hsl(48, 95%, 50%);
-    --red-fill: hsl(2, 75%, 68%);
-    --grey-fill: hsl(0, 0%, 62%);
     // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
     --select-option-bg: hsl(0, 0%, 100%);
 
@@ -186,7 +171,6 @@ html {
     --nav-item-border: #d0d0d0;
 
     --inline-hint-bg: hsl(200, 65%, 91%);
-    --inline-warning-bg: hsl(0, 83%, 95%);
     @include mat.tooltip-overrides(
       (
         container-color: hsl(0, 0%, 95%),
@@ -197,7 +181,6 @@ html {
 
   &.dark {
     color-scheme: dark;
-    --mint-bg: #243328;
     --rose-bg: #282426;
     --rose-ripple: #433d3e;
     --sky-bg: #283034;
@@ -246,12 +229,6 @@ html {
     --yellow-light-active: hsl(34, 85%, 50%);
     --yellow-base-hover: hsl(34, 85%, 32%);
     --warn-base: hsl(34, 85%, 58%);
-    // Fills (green, yellow, red, grey) that carry black text: each holds 7:1 (WCAG AAA) against black in both
-    // themes, so they are the same in both.
-    --green-fill: hsl(120, 50%, 46%);
-    --yellow-fill: hsl(48, 95%, 50%);
-    --red-fill: hsl(2, 75%, 68%);
-    --grey-fill: hsl(0, 0%, 62%);
     // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
     --select-option-bg: hsl(0, 0%, 27%);
 
@@ -280,7 +257,6 @@ html {
     --nav-item-border: #363636;
 
     --inline-hint-bg: hsl(200, 65%, 20%);
-    --inline-warning-bg: hsl(0, 83%, 18%);
     @include mat.tooltip-overrides(
       (
         container-color: hsl(0, 0%, 35%),

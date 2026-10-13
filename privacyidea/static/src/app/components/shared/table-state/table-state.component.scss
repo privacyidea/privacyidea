@@ -58,8 +58,8 @@
 }
 
 .table-state-icon-frame-error {
-  background-color: var(--mat-sys-error-container);
-  color: var(--mat-sys-on-error-container);
+  background-color: var(--red-fill);
+  color: var(--status-ink);
 }
 
 .table-state-icon {

@@ -15,14 +15,16 @@
 
 .inline-warning {
   margin-bottom: 16px;
-  background: var(--inline-warning-bg);
+  background: var(--red-fill);
+  color: var(--status-ink);
   padding: 8px;
   border-radius: var(--border-radius);
 }
 
 .inline-success {
   margin-bottom: 16px;
-  background: var(--mint-bg);
+  background: var(--green-fill);
+  color: var(--status-ink);
   padding: 8px;
   border-radius: var(--border-radius);
 }

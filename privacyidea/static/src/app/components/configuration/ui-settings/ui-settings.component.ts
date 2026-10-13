@@ -39,7 +39,8 @@ import {
   DepthLevel,
   LIGHT_SOURCE_LEVELS,
   LIGHT_SOURCE_STEP_ANGLE,
-  LightSourceLevel
+  LightSourceLevel,
+  StatusColorLevel
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
@@ -86,6 +87,7 @@ export class UISettingsComponent {
   protected readonly depth = this.appearanceService.depth;
   protected readonly lightSource = this.appearanceService.lightSource;
   protected readonly corners = this.appearanceService.corners;
+  protected readonly statusColors = this.appearanceService.statusColors;
   protected readonly depthLevels: { value: DepthLevel; label: string }[] = [
     { value: "flat", label: $localize`:@@uiSettings.flat:Flat` },
     { value: "subtle", label: $localize`:@@uiSettings.subtle:Subtle` },
@@ -104,6 +106,11 @@ export class UISettingsComponent {
     { value: "default", label: $localize`:@@common.default:Default` },
     { value: "round", label: $localize`:@@uiSettings.round:Round` },
     { value: "extra-round", label: $localize`:@@uiSettings.extraRound:Extra round` }
+  ];
+  protected readonly statusColorLevels: { value: StatusColorLevel; label: string }[] = [
+    { value: "aaa", label: $localize`:@@uiSettings.statusColorsAaa:AAA - black text` },
+    { value: "aa", label: $localize`:@@uiSettings.statusColorsAa:AA - white text` },
+    { value: "a", label: $localize`:@@uiSettings.statusColorsA:A - white text, old WebUI colors` }
   ];
   protected readonly resetTooltip = $localize`:@@uiSettings.resetUiSettingsToDefaults:Reset UI settings to defaults`;
   protected readonly appearanceHint = $localize`:@@uiSettings.changesHowTheInterfaceLooks:Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
@@ -129,6 +136,10 @@ export class UISettingsComponent {
 
   protected selectCorners(level: CornerLevel): void {
     this.appearanceService.setCorners(level);
+  }
+
+  protected selectStatusColors(level: StatusColorLevel): void {
+    this.appearanceService.setStatusColors(level);
   }
 
   protected setShowLoadingUrls(show: boolean): void {

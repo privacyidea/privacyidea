@@ -36,6 +36,7 @@ export type UserSettingKey =
   | "depth"
   | "light_source"
   | "corner_radius"
+  | "status_colors"
   | "dashboard"
   | "starting_page";
 

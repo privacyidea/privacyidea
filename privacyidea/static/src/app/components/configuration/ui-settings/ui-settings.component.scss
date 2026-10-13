@@ -60,9 +60,9 @@
   width: calc(var(--input-width-l) * 2 + 8px);
 }
 
-.settings-group-appearance {
+.settings-group-panel {
   width: 100%;
-  justify-content: center;
+  justify-content: start;
 }
 
 .settings-item {
@@ -112,7 +112,7 @@ h4.settings-item-label {
 }
 
 // Header and body share one inset, so the title lines up with the items below it.
-.settings-appearance-panel {
+.settings-panel {
   --expansion-panel-header-padding: 0 16px;
   --expansion-panel-body-padding: 0 16px 16px;
 }

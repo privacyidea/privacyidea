@@ -272,9 +272,8 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
   max-height: 82vh;
 }
 
-// The status colors, darkened enough that the white text keeps 4.5:1 against every one of them in both themes.
-$snackbar-darken: 30%;
-
+// The success, error, warning and info snackbars wear the status fills (green, red, yellow, blue) and the status ink
+// the user picked in UI Settings.
 .mat-mdc-snack-bar-container.mdc-snackbar {
   margin-bottom: 76px;
 }
@@ -287,52 +286,52 @@ $snackbar-darken: 30%;
   &.success-snackbar {
     @include mat.snack-bar-overrides(
       (
-        container-color: color-mix(in srgb, var(--green-base), black #{$snackbar-darken}),
-        supporting-text-color: white
+        container-color: var(--green-fill),
+        supporting-text-color: var(--status-ink)
       )
     );
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
-      color: white;
+      color: var(--status-ink);
     }
   }
 
   &.error-snackbar {
     @include mat.snack-bar-overrides(
       (
-        container-color: color-mix(in srgb, var(--red-base), black #{$snackbar-darken}),
-        supporting-text-color: white
+        container-color: var(--red-fill),
+        supporting-text-color: var(--status-ink)
       )
     );
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
-      color: white;
+      color: var(--status-ink);
     }
   }
 
   &.warning-snackbar {
     @include mat.snack-bar-overrides(
       (
-        container-color: color-mix(in srgb, var(--yellow-base), black #{$snackbar-darken}),
-        supporting-text-color: white
+        container-color: var(--yellow-fill),
+        supporting-text-color: var(--status-ink)
       )
     );
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
-      color: white;
+      color: var(--status-ink);
     }
   }
 
   &.info-snackbar {
     @include mat.snack-bar-overrides(
       (
-        container-color: var(--mat-sys-surface-container-lowest),
-        supporting-text-color: var(--mat-sys-on-surface)
+        container-color: var(--blue-fill),
+        supporting-text-color: var(--status-ink)
       )
     );
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
-      color: var(--mat-sys-on-surface);
+      color: var(--status-ink);
     }
   }
 }
