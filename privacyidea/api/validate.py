@@ -127,6 +127,7 @@ from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
+from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
                                    TokenAdminError, EnrollmentError, ValidateError)
 from privacyidea.lib.event import event
@@ -343,7 +344,8 @@ def offlinerefill():
                     raise ParameterError(_("Machine can not be identified by user agent!"))
                 refilltoken_stored = token.get_tokeninfo("refilltoken_" + computer_name)
 
-            if refilltoken_stored and refilltoken_stored == refilltoken_request:
+            if (refilltoken_stored and isinstance(refilltoken_request, str)
+                    and safe_compare(refilltoken_stored, refilltoken_request)):
                 # We need the options to pass the count and the rounds for the next offline OTP values,
                 # which could have changed in the meantime.
                 options = token_attachments[0].get("options")

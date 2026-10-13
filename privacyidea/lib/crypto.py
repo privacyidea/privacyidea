@@ -83,7 +83,10 @@ from cryptography.hazmat.primitives.asymmetric import padding as asym_padding
 
 
 def safe_compare(a, b):
-    return hmac.compare_digest(to_bytes(a), to_bytes(b))
+    def encode(value):
+        # surrogatepass: a lone surrogate from a JSON request compares as a mismatch instead of raising
+        return value.encode("utf8", "surrogatepass") if isinstance(value, str) else value
+    return hmac.compare_digest(encode(a), encode(b))
 
 
 ROUNDS = 9
