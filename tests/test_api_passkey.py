@@ -2689,6 +2689,46 @@ class PasskeyRequestShapeTest(PasskeyAPITestBase):
                 self.assertEqual(400, res.status_code, res.json)
                 assert_authentication_log([])
 
+    def test_03a_a_gate_refuses_an_incomplete_request_like_any_other(self):
+        """
+        The checks above classify a request the gates let through. A locked owner is refused before anything about
+        the request is evaluated, whether it would succeed, fail or is malformed, so an incomplete request is logged
+        as the lock like every other request of that user.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        self._lock_user_for()
+        self.addCleanup(self._clear)
+        for endpoint, status in (("/validate/check", 200), ("/auth", 401)):
+            for missing in ("signature", "transaction_id", "Origin"):
+                with self.subTest(endpoint=endpoint, missing=missing):
+                    data = self._complete_assertion()
+                    data.pop(missing, None)
+                    res = self._post(endpoint, data, origin=missing != "Origin")
+                    self.assertEqual(status, res.status_code, res.json)
+                    assert_authentication_log([AuthEventType.USER_LOCKED])
+
+    def test_03b_an_exhausted_time_limit_refuses_an_incomplete_request_like_any_other(self):
+        """
+        The authentication time limit on /auth refuses a user regardless of the request too, so an incomplete
+        passkey request of a user over the limit is logged as the limit like every other request of that user.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        self.set_policy_with_cleanup("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=2/1m")
+        # Two failed logins put the time limit over its threshold (it counts the audit log)
+        for _ in range(2):
+            res = self._post("/auth", {"username": self.user.login, "realm": self.user.realm,
+                                       "password": "wrong"})
+            self.assertEqual(401, res.status_code, res.json)
+        for missing in ("signature", "transaction_id", "Origin"):
+            with self.subTest(missing=missing):
+                data = self._complete_assertion()
+                data.pop(missing, None)
+                res = self._post("/auth", data, origin=missing != "Origin")
+                self.assertEqual(401, res.status_code, res.json)
+                assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+
     def test_04_legacy_parameter_names_still_verify(self):
         """
         The shape check accepts the parameter names a legacy WebAuthn client sends.
