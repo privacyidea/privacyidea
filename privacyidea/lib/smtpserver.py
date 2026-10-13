@@ -433,6 +433,28 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     return smtp_server.id
 
 
+def replace_censored_secrets(identifier: str, password: str, private_key_password: str) -> tuple[str, str]:
+    """
+    Replace the CENSORED placeholder of the password and of the S/MIME key password with the stored, encrypted value
+    of the SMTP server definition *identifier*, as saving the definition keeps it. The sending code decrypts a stored
+    value. A placeholder for a definition that does not exist becomes an empty value.
+
+    :param identifier: the identifier of the SMTP server definition
+    :param password: the password as the request sent it
+    :param private_key_password: the S/MIME key password as the request sent it
+    :return: the password and the S/MIME key password to send with
+    """
+    if not (is_censored(password) or is_censored(private_key_password)):
+        return password, private_key_password
+    stored_servers = get_smtpservers(identifier=identifier)
+    stored = stored_servers[0].config if stored_servers else None
+    if is_censored(password):
+        password = stored.password if stored else ""
+    if is_censored(private_key_password):
+        private_key_password = (stored.private_key_password or "") if stored else ""
+    return password, private_key_password
+
+
 @log_with(log)
 def delete_smtpserver(identifier):
     """

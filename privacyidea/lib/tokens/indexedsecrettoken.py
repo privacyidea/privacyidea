@@ -97,7 +97,7 @@ class IndexedSecretTokenClass(TokenClass):
         :type ret: user defined
 
         :return: subsection if key exists or user defined
-        :rtype : s.o.
+        :rtype: dict or the type of ``ret``
         """
         res = {'type': 'indexedsecret',
                'title': _('Indexed Secret Token'),

@@ -786,35 +786,48 @@ class TestPiTokenJanitorActions:
             token = get_one_token(serial="HOTP0001")
             assert "info1" not in token.get_tokeninfo()
 
-    def test_set_tokeninfo_skips_an_entry_the_token_maintains(self, app, tokens):
+    def test_set_tokeninfo_writes_an_entry_the_token_maintains(self, app, tokens):
         """
-        Tests that a tokeninfo entry which the token type maintains itself is reported and skipped, and that the
-        run does not stop there, since a run can cover several token types.
+        Tests that a tokeninfo entry which the token type maintains itself, and which the token info endpoints of
+        the API refuse, is set by the command running on the server.
         """
         runner = app.test_cli_runner()
         result = runner.invoke(cli, ["find", "--tokenattribute", "serial=HOTP0001", "set_tokeninfo", "--tokeninfo",
                                      "hashlib=sha512"])
         assert result.exit_code == 0
-        assert "Skipped token HOTP0001" in result.output
+        assert "Set tokeninfo for token HOTP0001: hashlib=sha512" in result.output
 
         with app.app_context():
             token = get_one_token(serial="HOTP0001")
-            assert token.get_tokeninfo("hashlib") != "sha512"
+            assert token.is_owned_tokeninfo_key("hashlib")
+            assert token.get_tokeninfo("hashlib") == "sha512"
 
-    def test_remove_tokeninfo_skips_an_entry_the_token_maintains(self, app, tokens):
+    def test_remove_tokeninfo_removes_an_entry_the_token_maintains(self, app, tokens):
         """
-        Tests that removing a tokeninfo entry which the token needs to work is reported and skipped.
+        Tests that a tokeninfo entry which the token type maintains itself is removed by the command running on
+        the server, and that an empty key is refused instead of removing the whole tokeninfo.
         """
         runner = app.test_cli_runner()
         result = runner.invoke(cli,
                                ["find", "--tokenattribute", "serial=HOTP0001", "remove_tokeninfo",
                                 "--tokeninfo_key", "hashlib"])
         assert result.exit_code == 0
-        assert "Skipped token HOTP0001" in result.output
+        assert "Removed tokeninfo 'hashlib' for token HOTP0001" in result.output
 
         with app.app_context():
             token = get_one_token(serial="HOTP0001")
-            assert "hashlib" in token.get_tokeninfo()
+            assert "hashlib" not in token.get_tokeninfo()
+            token_info = token.get_tokeninfo()
+            assert token_info
+
+        result = runner.invoke(cli,
+                               ["find", "--tokenattribute", "serial=HOTP0001", "remove_tokeninfo",
+                                "--tokeninfo_key", ""])
+        assert result.exit_code == 2
+        assert "The key must not be empty" in result.output
+
+        with app.app_context():
+            assert get_one_token(serial="HOTP0001").get_tokeninfo() == token_info
 
     def test_export_pi_format(self, app, tokens):
         """

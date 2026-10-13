@@ -5,7 +5,7 @@ User Notification Handler Module
 
 .. index:: User Notification, Handler Modules
 
-The user notification handler module is used to send emails token owners or
+The user notification handler module is used to send emails to token owners or
 administrators in case of any event.
 
 Possible Actions
@@ -47,7 +47,10 @@ recipient type *email* takes a comma separated list of email addresses.
 
 **reply_to**
 
-Adds the specified ``Reply-To`` header to the email.
+Selects whose email address is set as ``Reply-To`` header: the same recipient types as for **To**
+(token owner, logged in user, admin realm, internal admin, email address). Depending on the type, enter
+the user attribute, the admin realm, the internal admin or the address in the field 'reply_to <type>'.
+For the type *email* only the first address of the list is used.
 
 **subject**
 
@@ -88,9 +91,9 @@ If the event is triggered by registering or rolling over a container, the tags a
 **attach_qrcode**
 
 Instead of sending the QR-Code as an inline data image (which is not supported
-by some email clients (i.e. Outlook) or GMail [#gmailimg]_), enabling this
+by some email clients (e.g. Outlook) or Gmail [#gmailimg]_), enabling this
 option sends the email as a multipart message with the QR-Code image as an
-attachment. The attached image can be referenced in a HTML body via CID
+attachment. The attached image can be referenced in an HTML body via CID
 URL [#cidurl]_ with the *Content-ID* ``token_image``::
 
   <img src="cid:token_image" alt="Token Image" style="..."/>
@@ -100,10 +103,9 @@ URL [#cidurl]_ with the *Content-ID* ``token_image``::
 sendsms
 .......
 
-.. todo:: Are SMS sent as utf-8? This might be expensive. Add a note to here.
-
-The *sendsms* action sends an SMS to the specified number each time the event
-handler is triggered.
+The *sendsms* action sends an SMS to the mobile number of the token owner (user
+attribute *mobile*) each time the event handler is triggered. If the token has
+no owner, no SMS is sent.
 
 **To**
 
@@ -137,8 +139,8 @@ The directory needs to be writable for the user *privacyidea*.
 
   * *required* option
   * The filename of the saved file. It can contain the tag
-    ``{random}`` which will create a 16 characters long
-    alpha numeric string. Thus you could have a filename like
+    ``{random}`` which will create a 16-character
+    alphanumeric string. Thus you could have a filename like
     ``notification-{random}.csv``.
 
 In addition you can use all tags that can be used in the body
@@ -161,9 +163,13 @@ The body may contain the following tags
 
   * {admin} name of the logged in user.
   * {realm} realm of the logged in user.
-  * {action} the action that the logged in user performed.
-  * {serial} the serial number of the token.
-  * {url} the URL of the privacyIDEA system.
+  * {action} the path of the request that triggered the event, e.g. ``/validate/check``.
+  * {serial} the serial number of the token. If the request names several tokens, the comma-separated list of their
+    serials ({tokentype} and {tokendescription} then belong to the first token). If the request, the response and the
+    audit entry name no token, the comma-separated serials of all tokens of the token owner ({tokentype} and
+    {tokendescription} are then empty).
+  * {url} the URL of the privacyIDEA system as set in ``PI_BASE_URL`` in ``pi.cfg`` (see :ref:`cfgfile`); empty if
+    it is not set.
   * {user} the given name of the token owner.
   * {givenname} the given name of the token owner.
   * {surname} the surname of the token owner.
@@ -176,10 +182,10 @@ The body may contain the following tags
   * {recipient_surname} the surname of the recipient.
   * {googleurl_value} is the KEY URI for a google authenticator.
   * {googleurl_img} is the data image source of the google authenticator QR code.
-  * {pushurl_value} is the KEY URI from a push token for enrolled in a authenticator app.
-  * {pushurl_img} is the data image source of a push token qr code for enrolled in a authenticator app.
+  * {pushurl_value} is the KEY URI of a push token for enrollment in an authenticator app.
+  * {pushurl_img} is the data image source of a push token QR code for enrollment in an authenticator app.
   * {container_url_value} is the KEY URI for a token container registration.
-  * {container_url_img} is the data image source of the token container qr code.
+  * {container_url_img} is the data image source of the token container QR code.
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD
   * {now} the current server timestamp including the date, the time and the time zone.
@@ -189,9 +195,12 @@ The body may contain the following tags
   * {ua_string} the complete user agent string (including version number), which issued the original request.
   * {pin} the PIN of the token when set with ``/token/setrandompin``. You can remove the
     PIN from the response using the *response mangler*.
-  * {container_serial} the serial number of the container.
-  * {container_url} the url for the registration of the container.
-  * {container_qr} the qr code for the registration of the container.
+  * {container_serial} the container serial given in the request (parameter ``container_serial``). The serial of a
+    container created by the request, or the container of the token, is not used.
+
+Literal braces in the body, the subject or the filename must be doubled (``{{`` and ``}}``), e.g. for CSS in an HTML
+email or JSON in a saved file. A tag the handler does not know (e.g. a typo), or a single brace, makes the action
+fail: nothing is sent or saved, the failure is logged and written to the audit log, and the request continues.
 
 
 Code
@@ -206,4 +215,4 @@ Code
 .. rubric:: Footnotes
 
 .. [#gmailimg] https://stackoverflow.com/a/42014708/7036742
-.. [#cidurl] https://tools.ietf.org/html/rfc2392
+.. [#cidurl] https://www.rfc-editor.org/rfc/rfc2392

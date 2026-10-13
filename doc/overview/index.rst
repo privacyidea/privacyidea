@@ -9,12 +9,12 @@ privacyIDEA is a system that is used to manage devices for two
 factor authentication. Using privacyIDEA you can enhance your existing
 applications like local login,
 VPN, remote access, SSH connections, access to web sites or web portals with
-a second factor during authentication. Thus boosting the security of your
+a second factor during authentication, thus boosting the security of your
 existing applications.
 
 In the beginning privacyIDEA was used to manage OTP tokens, but
 now also certificates, SSH keys, PUSH tokens, WebAuthn and more token
-types are supported. You may follow the development on Github.
+types are supported. You may follow the development on GitHub.
 
 privacyIDEA is a web application written in Python based on the
 `flask micro framework`_. You can use any webserver with a wsgi interface
@@ -24,7 +24,7 @@ A device or item used to authenticate is still called a
 "token". All token information is stored in an SQL database,
 while you may choose, which database you want to use.
 privacyIDEA uses `SQLAlchemy`_ to map the database to internal objects.
-Datebases that are known to work well are MySQL, MariaDB, Galera Cluster
+Databases that are known to work well are MySQL, MariaDB, Galera Cluster
 and PostgreSQL.
 
 The code is divided into three layers, the API, the library and the
@@ -36,9 +36,9 @@ manage authentication devices. Users can log in to the Web UI to manage their
 own tokens.
 
 Authentication is performed via the API or certain plugins for
-FreeRADIUS, SSO IdPs (simpleSAMLphp, Keycloak, Shibboleth, ADFS, Gluu),
+FreeRADIUS, SSO IdPs (SimpleSAMLphp, Keycloak, Shibboleth, AD FS),
 Windows Credential Provider, privacyIDEA PAM,
-Wordpress, Contao, Dokuwiki... to
+Nextcloud, ownCloud... to
 either provide default protocols like RADIUS or SAML or
 to integrate into applications directly.
 
@@ -48,16 +48,16 @@ We will take a look at common ways to setup privacyIDEA
 in the section :ref:`installation`
 but there are still many others.
 
-Productive Installation
+Production Installation
 -----------------------
 
-To come to a productive installation, among other things, you need
+To come to a production installation, among other things, you need
 to consider the following aspects:
 
 * Configure your DNS and ensure to use **FQDN**.
   Avoid static IP addresses.
 
-* Ensure a correct time. User **NTP**.
+* Ensure a correct time. Use **NTP**.
 
 * Setup a reliable **database**. If you are planning a redundant setup
   the redundancy is done via the database cluster.  Manage your database
@@ -69,7 +69,7 @@ to consider the following aspects:
   :ref:`admin_policies` and :ref:`user_policies`.
 
 * In privacyIDEA you have a lot
-  of possibilities to design automatation and **processes** like
+  of possibilities to design automation and **processes** like
   enrollment, revocation, leaving users and more. You will identify
   processes that are mandatory and others might not be relevant for you.
   You can use again :ref:`policies` and :ref:`eventhandler` to implement these.

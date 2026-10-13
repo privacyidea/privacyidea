@@ -600,6 +600,11 @@ class APIContainer(APIContainerTest):
         self.assert_audit_entry('POST /container/<string:container_serial>/info/<key>', success=1,
                                 container_serial=container_serial, action_detail="key=key1")
 
+        # An empty value is a value of its own
+        self.request_assert_success(f'/container/{container_serial}/info/key1',
+                                    {"value": ""}, self.at, 'POST')
+        self.assertEqual("", find_container_by_serial(container_serial).get_container_info_dict().get("key1"))
+
         delete_container_by_serial(container_serial)
 
     def test_15_set_container_info_fail(self):

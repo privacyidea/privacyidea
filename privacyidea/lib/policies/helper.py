@@ -59,19 +59,24 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
         return result, reply_dict
 
     policy_count, time_delta = parse_timelimit(list(max_fail_dict)[0])
+    # The identity is matched literally, since a login may contain "!" or "*". An empty value does not restrict.
+    identity = {key: value for key, value in user_search_dict.items() if value}
     fail_count = 0
     if check_validate_check:
         # Local admins can not authenticate at validate/check, no need to search the audit log for it
         # at validate/check users and admins are not distinguished: always search for user
-        search_dict = {"action": "*/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}",
-                       "user": user.login, "realm": user_search_dict.get("realm", "*")}
-        fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
+        search_dict = {"action": "*/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
+        validate_check_identity = {"user": user.login}
+        if "realm" in identity:
+            validate_check_identity["realm"] = identity["realm"]
+        fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta,
+                                              exact_params=validate_check_identity)
         log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_count} failed authentications with "
                   "/validate/check")
     # Exclude challenge-trigger entries from the count, as for */validate/check above.
     search_dict = {"action": "*/auth", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
-    search_dict.update(user_search_dict)
-    fail_auth_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
+    fail_auth_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta,
+                                               exact_params=identity)
     log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_auth_count} failed authentications with "
               "/auth")
     fail_count += fail_auth_count
@@ -103,18 +108,17 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
 
     # Check for maximum successful authentications
     policy_count, time_delta = parse_timelimit(list(max_success_dict)[0])
+    # The identity is matched literally, since a login may contain "!" or "*". An empty value does not restrict.
+    identity = {key: value for key, value in user_search_dict.items() if value}
     # Check the successful authentications for this user
     success_count = 0
     if check_validate_check:
-        search_dict = {"action": "*/validate/check"}
-        search_dict.update(user_search_dict)
-        success_count = g.audit_object.get_count(search_dict, success=True, timedelta=time_delta)
+        success_count = g.audit_object.get_count({"action": "*/validate/check"}, success=True, timedelta=time_delta,
+                                                 exact_params=identity)
         log.debug(f"Checking users timelimit {list(max_success_dict)[0]}: {success_count} successful "
                   "authentications with /validate/check")
-    search_dict = {"action": "*/auth"}
-    search_dict.update(user_search_dict)
-    success_auth_count = g.audit_object.get_count(search_dict,
-                                                  success=True, timedelta=time_delta)
+    success_auth_count = g.audit_object.get_count({"action": "*/auth"}, success=True, timedelta=time_delta,
+                                                  exact_params=identity)
     log.debug(f"Checking users timelimit {list(max_success_dict)[0]}: {success_auth_count} successful "
               "authentications with /auth")
     success_count += success_auth_count
@@ -331,6 +335,19 @@ def _policy_usernames(policy_users: list[str] | None, case_insensitive: bool) ->
     named_users = [user for user in dict.fromkeys(policy_users)
                    if user[:1] not in ("!", "-") and fold(user) not in excluded_folded]
     return (named_users, []) if named_users else None
+
+
+def policy_target_is_unrestricted(policy: dict) -> bool:
+    """
+    Whether an admin policy grants its actions on every target: its realm, resolver and user fields are each empty or
+    ``"*"``, read the way the policy engine matches them. Such a policy makes :func:`get_policy_visibility_scopes`
+    answer ``None``.
+
+    :param policy: the policy as the policy engine returns it
+    """
+    return (policy_realm_names(policy.get("realm")) is None
+            and _policy_field_names(policy.get("resolver"), get_resolver_list) is None
+            and _policy_usernames(policy.get("user"), bool(policy.get("user_case_insensitive"))) == ([], []))
 
 
 def _accounts_of(logins: list[str], realms: list[str]) -> list[tuple[str, str]]:

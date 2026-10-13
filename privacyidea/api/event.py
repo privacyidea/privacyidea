@@ -38,7 +38,7 @@ from ..lib.error import ParameterError
 from privacyidea.lib import _
 from flask import g
 import logging
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, check_global_config_action
 from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object, get_handler_modules
 from privacyidea.lib.utils import is_true
@@ -189,7 +189,7 @@ def get_module_conditions(handlermodule=None):
 
 @eventhandling_blueprint.route('', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def set_eventhandling():
     """
     Create or update an event handler binding. Pass an existing ``id`` to
@@ -213,9 +213,9 @@ def set_eventhandling():
     :jsonparam id: id of an existing binding to update; omit to create.
     :jsonparam name: human-readable name of the binding (required).
     :jsonparam event: comma-separated list of event names that should
-        trigger this binding (required); see :http:get:`/event/available`.
+        trigger this binding (required); see ``GET /event/available``.
     :jsonparam handlermodule: handler module identifier (required); see
-        :http:get:`/event/handlermodules`.
+        ``GET /event/handlermodules``.
     :jsonparam action: action the handler should perform (required); see
         :http:get:`/event/actions/(handlermodule)`.
     :jsonparam position: ``post`` (default) or ``pre`` — when in the
@@ -304,7 +304,7 @@ def set_eventhandling():
 
 @eventhandling_blueprint.route('/enable/<eventid>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def enable_event_api(eventid):
     """
     Enable an event handler binding.
@@ -322,7 +322,7 @@ def enable_event_api(eventid):
 
 @eventhandling_blueprint.route('/disable/<eventid>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def disable_event_api(eventid):
     """
     Disable an event handler binding. The binding is preserved but will
@@ -341,7 +341,7 @@ def disable_event_api(eventid):
 
 @eventhandling_blueprint.route('/<eid>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGWRITE)
+@prepolicy(check_global_config_action, request, PolicyAction.EVENTHANDLINGWRITE)
 def delete_eventid(eid=None):
     """
     Delete the event handler binding with the given id.

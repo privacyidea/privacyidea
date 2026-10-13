@@ -40,7 +40,7 @@ from ..lib.params import get_optional, get_pagination_params, get_required
 from ..lib.log import log_with
 from ..lib.event import event
 from ..lib.policies.actions import PolicyAction
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, check_global_config_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
 from ..lib.remembered_device import (get_client_device, get_client_devices,
@@ -94,7 +94,7 @@ clients_blueprint = Blueprint('clients_blueprint', __name__)
 
 
 @clients_blueprint.route('/', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_ADD)
+@prepolicy(check_global_config_action, request, PolicyAction.API_CLIENT_ADD)
 @event("api_client_add", request, g)
 @log_with(log)
 def create_client_api():
@@ -153,7 +153,7 @@ def list_clients_api(client_id=None):
 
 
 @clients_blueprint.route('/<client_id>', methods=['PATCH'])
-@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_EDIT)
+@prepolicy(check_global_config_action, request, PolicyAction.API_CLIENT_EDIT)
 @event("api_client_edit", request, g)
 @log_with(log)
 def update_client_api(client_id):
@@ -182,7 +182,7 @@ def update_client_api(client_id):
 
 
 @clients_blueprint.route('/<client_id>/rotate', methods=['POST'])
-@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_ROTATE)
+@prepolicy(check_global_config_action, request, PolicyAction.API_CLIENT_ROTATE)
 @event("api_client_rotate", request, g)
 @log_with(log)
 def rotate_client_api(client_id):
@@ -410,7 +410,7 @@ def revoke_client_remembered_device_api(client_id, device_id):
 
 
 @clients_blueprint.route('/<client_id>', methods=['DELETE'])
-@prepolicy(check_base_action, request, PolicyAction.API_CLIENT_DELETE)
+@prepolicy(check_global_config_action, request, PolicyAction.API_CLIENT_DELETE)
 @event("api_client_delete", request, g)
 @log_with(log)
 def delete_client_api(client_id):

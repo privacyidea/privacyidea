@@ -17,8 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output, provideZonelessChangeDetection } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  forwardRef,
+  input,
+  output,
+  provideZonelessChangeDetection,
+  signal,
+  viewChild
+} from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
+import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
+import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -57,8 +69,16 @@ class MockDescComp {
   descriptionChange = output<string>();
 }
 
-@Component({ selector: "app-edit-action-tab", standalone: true, template: "" })
+// Provided under the real class, so the panel's viewChild query for the action tab finds the mock.
+@Component({
+  selector: "app-edit-action-tab",
+  standalone: true,
+  template: "<div #searchAnchor></div>",
+  providers: [{ provide: EditActionTabComponent, useExisting: forwardRef(() => MockActionTab) }]
+})
 class MockActionTab {
+  searchAnchor = viewChild.required<ElementRef<HTMLElement>>("searchAnchor");
+  searchField = signal({} as PolicyActionSearchComponent);
   policy = input.required<PolicyDetail>();
   actionFilter = input<string>("");
   searchInHeader = input<boolean>(false);
@@ -126,6 +146,21 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
 
     component.setActiveTab("actions");
     expect(component.activeTab()).toBe("actions");
+  });
+
+  it("should pass the action tab's search anchor and field on to the page", () => {
+    const actionTab = fixture.debugElement.query(By.directive(MockActionTab)).componentInstance as MockActionTab;
+
+    expect(component.searchAnchor()).toBe(actionTab.searchAnchor().nativeElement);
+    expect(component.searchField()).toBe(actionTab.searchField());
+  });
+
+  it("should have no search anchor or field while the conditions tab is open", () => {
+    component.setActiveTab("conditions");
+    fixture.detectChanges();
+
+    expect(component.searchAnchor()).toBeUndefined();
+    expect(component.searchField()).toBeUndefined();
   });
 
   it("should set the active tab from a valid selector value", () => {

@@ -376,8 +376,11 @@ def import_periodictask(data, name=None):
     for res_data in data:
         if name and name != res_data.get('name'):
             continue
+        res_data.pop('id', None)
         res_data.pop('last_update')
         res_data.pop('last_runs')
-        rid = set_periodic_task(**res_data)
+        existing_id = db.session.scalars(
+            select(PeriodicTask.id).where(PeriodicTask.name == res_data.get('name'))).one_or_none()
+        rid = set_periodic_task(id=existing_id, **res_data)
         log.info('Import of periodictask "{!s}" finished,'
                  ' id: {!s}'.format(res_data['name'], rid))

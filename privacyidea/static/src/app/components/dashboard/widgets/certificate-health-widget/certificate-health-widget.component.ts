@@ -49,6 +49,7 @@ export class CertificateHealthWidgetComponent extends DashboardWidget implements
   static override readonly type = "certificate-health";
   static override readonly title = $localize`:@@dashboard.certificateHealth:Certificate Health`;
   static override readonly icon = "verified_user";
+  static override readonly requiredAction = "configread";
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 5 };
   static override readonly minSize: WidgetSize = { cols: 5, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: 16, rows: 10 };

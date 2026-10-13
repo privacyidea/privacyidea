@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, linkedSignal, model, Signal, viewChild } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, model, Signal, viewChild } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -53,6 +53,9 @@ import { ContainerTemplateEditBodyComponent } from "./container-template-edit-bo
   styleUrl: "./container-template-edit.component.scss"
 })
 export class ContainerTemplateEditComponent {
+  // An existing template keeps its name: containers are linked to the template, and saving under another name
+  // would create a second template
+  readonly nameEditable = input(true);
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
 
   private readonly editBody = viewChild(ContainerTemplateEditBodyComponent);

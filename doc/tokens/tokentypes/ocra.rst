@@ -5,7 +5,7 @@ OCRA
 
 .. index:: OCRA
 
-Starting with version 2.20 privacyIDEA supports common OCRA tokens.
+privacyIDEA supports common OCRA tokens.
 OCRA tokens can not be enrolled via the UI but need to be imported via a seed
 file.
 The OATH CSV seed file would look like this::
@@ -58,8 +58,7 @@ This will result in a response like this::
                    {
                     "attributes": {
                     "qrcode": "data:image/png;base64, iVBORw0KG..RK5CYII=",
-                    "original_challenge": "83507112  ~320,
-                  00~cfbGSopfdDROOMjeu3IR",
+                    "original_challenge": "1234567890~423,40~HaUkAhEWEXmaVV1b2RCP",
                     "challenge": "f8a1818f35ae0cc64fe8a191961ec829487dfa82"
                     },
                     "serial": "ocra1234",
@@ -69,15 +68,13 @@ This will result in a response like this::
                 "threadid": 139847557760768,
                 "attributes": {
                 "qrcode": "data:image/png;base64, iVBO...CYII=",
-                "original_challenge": "83507112  ~320,00~cfbGSopfdDROOMjeu3IR",
+                "original_challenge": "1234567890~423,40~HaUkAhEWEXmaVV1b2RCP",
                 "challenge": "f8a1818f35ae0cc64fe8a191961ec829487dfa82"
                 },
                 "message": "Please answer the challenge",
                 "serial": "ocra1234",
                 "transaction_id": "05221757445370623976"
      },
-     "versionnumber": "2.20.dev2",
-     "version": "privacyIDEA 2.20.dev2",
      "result": {
                 "status": true,
                 "value": false
@@ -114,8 +111,6 @@ privacyIDEA will respond with a usual authentication response::
                 "serial": "ocra1234",
                 "threadid": 139847549368064
                },
-     "versionnumber": "2.20.dev2",
-     "version": "privacyIDEA 2.20.dev2",
      "result": {
                 "status": true,
                 "value": true
@@ -125,4 +120,4 @@ privacyIDEA will respond with a usual authentication response::
     }
 
 
-.. [#displaytan] http://www.display-tan.com/
+.. [#displaytan] https://display-tan.com/

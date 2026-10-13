@@ -794,3 +794,81 @@ class TiQRTokenTestCase(MyApiTestCase):
 
         # Clean up
         remove_token(token.token.serial)
+
+
+class TiqrTokenWithoutSecretTestCase(MyApiTestCase):
+    """
+    A tiqr or OCRA token that holds no secret yet cannot answer a challenge. A tiqr token gets its secret only when
+    the app completes the enrollment; until then, a response calculated with an empty key is refused and the
+    challenge stays unanswered. After the enrollment the normal tiqr login works.
+    """
+    KEY20 = "3132333435363738393031323334353637383930"
+    PIN = "tiqr"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+
+    def _enroll_tiqr(self, serial: str) -> TiqrTokenClass:
+        # Same request as the WebUI enrollment: no otpkey, no genkey
+        token = init_token({"type": "tiqr", "serial": serial, "pin": self.PIN}, self.user)
+        self.addCleanup(remove_token, serial)
+        return token
+
+    def _trigger_challenge(self) -> tuple[str, str, str]:
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": self.PIN}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        detail = response.json["detail"]
+        # tiqrauth://<user>@<service>/<session>/<challenge>/<display name>
+        parts = detail["attributes"]["value"].split("/")
+        return detail["transaction_id"], parts[3], parts[4]
+
+    def _app_answer(self, session: str, response_value: str) -> str:
+        with self.app.test_request_context("/ttype/tiqr", method="POST",
+                                           data={"action": "authentication", "operation": "login",
+                                                 "userId": f"cornelius_{self.realm1}", "sessionKey": session,
+                                                 "response": response_value}):
+            return self.app.full_dispatch_request().get_data(as_text=True)
+
+    def _finish_login(self, transaction_id: str) -> dict:
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "",
+                                                 "transaction_id": transaction_id}):
+            return self.app.full_dispatch_request().json["result"]
+
+    def test_01_tiqr_without_secret_refuses_response(self):
+        token = self._enroll_tiqr("TIQRNOKEY")
+        self.assertEqual(b"", token.token.get_otpkey().getKey())
+        transaction_id, session, challenge = self._trigger_challenge()
+        empty_key_response = OCRA(token.get_tokeninfo("ocrasuite"), key=b"").get_response(challenge)
+
+        app_reply = self._app_answer(session, empty_key_response)
+        result = self._finish_login(transaction_id)
+        self.assertTrue(result["status"], result)
+        self.assertFalse(result["value"], f"app reply {app_reply!r}, login result {result}")
+        self.assertNotEqual("OK", app_reply)
+
+    def test_02_tiqr_after_app_enrollment_authenticates(self):
+        token = self._enroll_tiqr("TIQRKEYED")
+        session = token.get_init_detail()["tiqrenroll"]["value"].split("&session=")[1].split("&")[0]
+        with self.app.test_request_context("/ttype/tiqr", method="POST",
+                                           data={"action": "enrollment", "serial": "TIQRKEYED",
+                                                 "session": session, "secret": self.KEY20}):
+            self.assertEqual("OK", self.app.full_dispatch_request().get_data(as_text=True))
+        transaction_id, session, challenge = self._trigger_challenge()
+        response_value = OCRA(token.get_tokeninfo("ocrasuite"),
+                              key=binascii.unhexlify(self.KEY20)).get_response(challenge)
+
+        self.assertEqual("OK", self._app_answer(session, response_value))
+        result = self._finish_login(transaction_id)
+        self.assertTrue(result["value"], result)
+
+    def test_03_ocra_without_secret_refuses_response(self):
+        token = init_token({"type": "ocra", "serial": "OCRANOKEY", "ocrasuite": "OCRA-1:HOTP-SHA1-6:QN08"})
+        self.addCleanup(remove_token, "OCRANOKEY")
+        challenge = "12345678"
+        empty_key_response = OCRA("OCRA-1:HOTP-SHA1-6:QN08", key=b"").get_response(challenge)
+        self.assertEqual(-1, token.verify_response(passw=empty_key_response, challenge=challenge))

@@ -8,5 +8,4 @@ Conditional access endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: conditional_access_blueprint
-
    :include-empty-docstring:

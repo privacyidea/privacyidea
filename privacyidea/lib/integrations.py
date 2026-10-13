@@ -35,6 +35,10 @@ served from here. Describing them together takes three levels:
 The Authenticator App is deliberately never counted or blocked (``free_users=None`` on its
 product): its own requests are excluded from request-based metering. It keeps a real,
 subscribable product so the dashboard still reports its subscription state.
+
+FreeRADIUS is never blocked either, but for a different reason: it belongs to the server's
+own product, whose free tier must keep driving the server's subscription warning. So the
+integration, not the product, opts out of metering (``metered=False``).
 """
 
 import dataclasses
@@ -82,6 +86,9 @@ class Integration:
         this field only lets the dropdown be generated from one shared place.
     :ivar product_id: the :class:`Product` this integration is licensed under, or None for
         an integration that is never licensed at all (currently only the WebUI).
+    :ivar metered: whether this integration's requests are checked against its product's
+        free tier and subscription, and refused once that is exceeded. An unmetered
+        integration still shows its product's subscription on the dashboard.
     :ivar api_client: whether this integration is offered as an API client ``client_type``.
     :ivar dashboard: whether this integration gets its own row on the dashboard
         subscription overview.
@@ -105,6 +112,7 @@ class Integration:
     agent_names: tuple[str, ...]
     policy_value: str
     product_id: str | None
+    metered: bool = True
     api_client: bool = False
     dashboard: bool = False
     section: str | None = None
@@ -138,8 +146,9 @@ PRODUCTS: dict[str, Product] = {
         # Never counted or enforced, see the module docstring. Still a real, subscribable
         # product: the dashboard keeps reporting its subscription state.
         Product(id="privacyidea authenticator", label="privacyIDEA Authenticator", free_users=None),
-        # The privacyIDEA server's own subscription. FreeRADIUS traffic is metered against
-        # it, see the "freeradius" integration below.
+        # The privacyIDEA server's own subscription. Its free tier only drives a warning,
+        # see subscription_status(). FreeRADIUS is shown under it but never metered, see
+        # the "freeradius" integration below.
         Product(id="privacyidea", label="privacyIDEA Server", free_users=50),
     )
 }
@@ -172,6 +181,7 @@ CATALOG: tuple[Integration, ...] = (
         agent_names=("FreeRADIUS",),
         policy_value="FreeRADIUS",
         product_id="privacyidea",
+        metered=False,
         api_client=True,
         dashboard=True,
         section="use_cases",
@@ -315,6 +325,13 @@ INTEGRATION_TO_PRODUCT: dict[str, str] = {
     if integration.product_id is not None
 }
 
+# Integration id -> product id, only for integrations whose requests are metered against it.
+METERED_INTEGRATION_TO_PRODUCT: dict[str, str] = {
+    integration.id: integration.product_id
+    for integration in CATALOG
+    if integration.product_id is not None and integration.metered
+}
+
 # Dashboard rows, in :data:`CATALOG` order (which already follows the section grouping).
 DASHBOARD_INTEGRATIONS: tuple[Integration, ...] = tuple(i for i in CATALOG if i.dashboard)
 
@@ -336,6 +353,24 @@ def resolve_product(name: str) -> str:
     integration_id = AGENT_TO_INTEGRATION.get(key)
     if integration_id is not None:
         return INTEGRATION_TO_PRODUCT.get(integration_id, key)
+    return key
+
+
+def resolve_metered_product(name: str) -> str:
+    """
+    Resolve a client user-agent to the product its requests are metered against.
+
+    Like :func:`resolve_product`, except that an unmetered integration (e.g. FreeRADIUS)
+    resolves to its own integration id. That is no product, so the subscription check
+    lets it through, while :func:`resolve_product` still reports it under its product.
+
+    :param name: a client user-agent, plugin name, or product/integration id
+    :return: the lower-cased product id to meter against
+    """
+    key = (name or "").lower()
+    integration_id = AGENT_TO_INTEGRATION.get(key)
+    if integration_id is not None:
+        return METERED_INTEGRATION_TO_PRODUCT.get(integration_id, integration_id)
     return key
 
 

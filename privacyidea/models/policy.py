@@ -154,7 +154,7 @@ class Policy(TimestampMethodsMixin, db.Model):
         :param key: return the value for this key
         :type key: string
         :return: complete dict or single value
-        :rytpe: dict or value
+        :rtype: dict or value
         """
         d = {"name": self.name,
              "user_case_insensitive": self.user_case_insensitive,

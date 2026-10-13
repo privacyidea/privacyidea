@@ -78,7 +78,8 @@ def create(identifier=None):
     secret = get_required(param, "secret")
     retries = int(get_optional(param, "retries", default=3))
     timeout = int(get_optional(param, "timeout", default=5))
-    description = get_optional(param, "description", default="")
+    # Not passed, an existing server keeps its description
+    description = get_optional(param, "description")
     dictionary = get_optional(param, "dictionary", default="/etc/privacyidea/dictionary")
     options = get_optional(param, "options", default=None)
 

@@ -122,7 +122,7 @@ def get_users():
         Wildcard support is resolver-class-specific. A resolver that
         rejects an unknown search key is skipped for that request and
         reported back via ``detail.skipped_resolvers`` (see
-        :status:`200`); this applies to the SQL, LDAP and passwd
+        ``200``); this applies to the SQL, LDAP and passwd
         resolvers. HTTP-based resolvers (e.g. Keycloak, Entra ID) instead
         silently drop an unrecognised key and search without it, so an
         unmapped attribute is never reported as skipped there. The SCIM

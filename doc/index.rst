@@ -10,8 +10,8 @@ Using privacyIDEA you can enhance your existing applications like
 :ref:`SSH connections <pam_plugin>`,
 access to web sites or
 :ref:`web portals <rest_api>`
-with a second factor during authentication.
-Thus boosting the security of your existing applications.
+with a second factor during authentication,
+thus boosting the security of your existing applications.
 Originally it was used for OTP authentication devices.
 But other "devices" like challenge response and SSH keys are also available.
 It runs on Linux and is completely Open Source, licensed under the AGPLv3.
@@ -24,8 +24,8 @@ assigned to those users, either by administrators or by the users themselves.
 :ref:`Policies <policies>` define what a user is allowed to do in the web UI and
 what an administrator is allowed to do in the management interface.
 
-The system is written in python, uses flask as web framework and an
-SQL database as datastore. Thus it can be enrolled quite easily providing
+The system is written in Python, uses Flask as web framework and an
+SQL database as datastore. Thus it can be installed quite easily, providing
 a lean installation. (see :ref:`installation`)
 
 #################

@@ -20,6 +20,7 @@
 import {
   Component,
   computed,
+  ElementRef,
   inject,
   input,
   linkedSignal,
@@ -27,6 +28,7 @@ import {
   output,
   signal,
   Signal,
+  viewChild,
   WritableSignal
 } from "@angular/core";
 import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
@@ -51,6 +53,10 @@ export class EditActionTabComponent {
 
   readonly actionFilter = model<string>("");
   readonly searchInHeader = input<boolean>(false);
+
+  /** Top of the tab content, where the search field sits; the page compares it with its header. */
+  readonly searchAnchor = viewChild.required<ElementRef<HTMLElement>>("searchAnchor");
+  readonly searchField = viewChild.required(PolicyActionSearchComponent);
 
   readonly selectedAction: WritableSignal<{ name: string; value: string | boolean } | null> = linkedSignal({
     source: () => ({

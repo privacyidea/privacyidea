@@ -15,8 +15,9 @@ For reporting vulnerabilities see `SECURITY.md <https://github.com/privacyidea/p
 Continuous Integration & Security Scanning
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Every pull request is checked by the following tools, and some of them also
-run on a nightly schedule:
+Pull requests are checked by the following tools, some of them only when the
+pull request changes the files they check, and some of them also run on a
+nightly schedule:
 
 .. list-table::
    :header-rows: 1
@@ -31,12 +32,12 @@ run on a nightly schedule:
    * - **CodeQL**
      - Semantic analysis for Python and JavaScript. Results to the GitHub
        Security tab.
-   * - **pip-audit** (SCA)
-     - Dependency vulnerability scanning against the OSV database for Python
-       packages.
-   * - **OSV-Scanner**
-     - Dependency vulnerability scanning for the Angular frontend's npm
-       dependencies. Results uploaded to the GitHub Security tab as SARIF.
+   * - **OSV-Scanner** (SCA)
+     - Dependency vulnerability scanning against the OSV database, for the
+       Python dependencies (``requirements.txt``) and the npm dependencies of
+       the WebUI (``package-lock.json``). Runs on pull requests that change
+       these files and nightly. Results uploaded to the GitHub Security tab as
+       SARIF.
    * - **Ruff**
      - Fast Python linter catching real bugs (unused variables, undefined names,
        format-string mistakes) beyond style enforcement.
@@ -82,8 +83,8 @@ package on PyPI that does not match the recorded hash will be rejected at
 install time.
 
 Dependencies are updated manually on a deliberate schedule rather than via
-automated pull requests. Vulnerability detection is handled by pip-audit
-(Python) and OSV-Scanner (npm) in CI, giving the team visibility into the
+automated pull requests. Vulnerability detection is handled by OSV-Scanner
+(Python and npm) in CI, giving the team visibility into the
 security posture without turning every upstream CVE into an unplanned emergency.
 
 GitHub Actions versions are kept current via Dependabot (weekly).
@@ -93,21 +94,24 @@ Cryptographic Discipline
 
 - **No hand-rolled cryptography.** All operations use the ``cryptography``
   library or well-audited alternatives (``argon2-cffi``, ``bcrypt``).
-- **Symmetric encryption:** For key-file based encryption of token, config,
-  and value secrets, privacyIDEA uses AES-256-CBC with separate 256-bit keys
-  stored in an encrypted key file. Other AES-CBC based import/export or legacy
-  compatibility paths exist elsewhere in the codebase.
-- **Password and PIN hashing:** Argon2 (9 rounds). Admin passwords use an
-  additional per-installation pepper.
+- **Symmetric encryption:** For key-file based encryption of token and
+  configuration secrets, privacyIDEA uses AES-256-CBC with separate 256-bit
+  keys stored in a key file, which can additionally be encrypted with a
+  password (``pi-manage setup encrypt_enckey``). Other AES-CBC based
+  import/export or legacy compatibility paths exist elsewhere in the codebase.
+- **Password and PIN hashing:** Argon2 (9 rounds by default, see
+  ``PI_HASH_ALGO_PARAMS``). Admin passwords use an additional per-installation
+  pepper.
 - **Constant-time comparison:** ``hmac.compare_digest()`` for PIN and token
   verification (prevents timing attacks).
 - **Random generation:** Cryptographically secure randomness via
   ``os.urandom`` / ``secrets`` where appropriate.
 - **HSM support:** PKCS#11 interface for hardware-backed key storage.
 - **Audit trail signing:** RSA 2048-bit with SHA-256 (configurable).
-- **Safe parsing:** ``defusedxml`` for XML (prevents XXE), ``yaml.safe_load()``
-  for YAML.
-- **Security headers:** Flask-Talisman integration with Content Security Policy.
+- **Safe parsing:** ``defusedxml`` for XML parsed with ElementTree (prevents
+  XXE), ``yaml.safe_load()`` for YAML.
+- **Security headers:** Flask-Talisman with a strict Content Security Policy
+  when ``PI_ENABLE_CSP`` is set in :ref:`cfgfile` (off by default).
 
 See :ref:`crypto_considerations` for details on key management, hash algorithms,
 and audit signing.

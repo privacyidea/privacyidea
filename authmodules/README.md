@@ -7,4 +7,3 @@ forwards the the credentials to privacyIDEA using the REST API.
 
 The REST API is documented at http://privacyidea.readthedocs.org/en/latest/modules/api.html.
 
-Further plugins for Wordpress, Contao, Django and Dokuwiki are available at https://github.com/cornelinux?tab=repositories.
