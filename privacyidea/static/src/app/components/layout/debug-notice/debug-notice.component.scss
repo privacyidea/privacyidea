@@ -28,7 +28,7 @@ $corner-size-stacked: 132px;
   top: 24%;
   left: 24%;
   background-color: var(--yellow-fill);
-  color: white;
+  color: black;
   width: $band-width;
   padding: 4px 0;
   transform: translate(-50%, -50%) rotate(-45deg);
@@ -63,6 +63,5 @@ $corner-size-stacked: 132px;
 }
 
 .debug-ribbon-text-passwords {
-  background-color: var(--red-dark);
-  color: #fff;
+  background-color: var(--red-fill);
 }

@@ -56,10 +56,12 @@ html {
     --yellow-base-hover: light-dark(hsl(34, 85%, 45%), hsl(34, 85%, 32%));
     // Orange label/outline colour of warning-tone secondary actions, held clear of the surface in both modes.
     --warn-base: light-dark(hsl(34, 85%, 34%), hsl(34, 85%, 58%));
-    // Fills that carry white text: each holds 4.5:1 against white in both themes, so they are the same in both.
-    --green-fill: hsl(120, 45%, 36%);
-    --yellow-fill: hsl(34, 85%, 36%);
-    --red-fill: hsl(2, 64%, 52%);
+    // Fills (green, yellow, red, grey) that carry black text: each holds 7:1 (WCAG AAA) against black in both
+    // themes, so they are the same in both.
+    --green-fill: hsl(120, 50%, 46%);
+    --yellow-fill: hsl(48, 95%, 50%);
+    --red-fill: hsl(2, 75%, 68%);
+    --grey-fill: hsl(0, 0%, 62%);
     // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
     --select-option-bg: light-dark(hsl(0, 0%, 100%), hsl(0, 0%, 27%));
 
@@ -150,10 +152,12 @@ html {
     --yellow-light-active: hsl(34, 85%, 60%);
     --yellow-base-hover: hsl(34, 85%, 45%);
     --warn-base: hsl(34, 85%, 34%);
-    // Fills that carry white text: each holds 4.5:1 against white in both themes, so they are the same in both.
-    --green-fill: hsl(120, 45%, 36%);
-    --yellow-fill: hsl(34, 85%, 36%);
-    --red-fill: hsl(2, 64%, 52%);
+    // Fills (green, yellow, red, grey) that carry black text: each holds 7:1 (WCAG AAA) against black in both
+    // themes, so they are the same in both.
+    --green-fill: hsl(120, 50%, 46%);
+    --yellow-fill: hsl(48, 95%, 50%);
+    --red-fill: hsl(2, 75%, 68%);
+    --grey-fill: hsl(0, 0%, 62%);
     // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
     --select-option-bg: hsl(0, 0%, 100%);
 
@@ -242,10 +246,12 @@ html {
     --yellow-light-active: hsl(34, 85%, 50%);
     --yellow-base-hover: hsl(34, 85%, 32%);
     --warn-base: hsl(34, 85%, 58%);
-    // Fills that carry white text: each holds 4.5:1 against white in both themes, so they are the same in both.
-    --green-fill: hsl(120, 45%, 36%);
-    --yellow-fill: hsl(34, 85%, 36%);
-    --red-fill: hsl(2, 64%, 52%);
+    // Fills (green, yellow, red, grey) that carry black text: each holds 7:1 (WCAG AAA) against black in both
+    // themes, so they are the same in both.
+    --green-fill: hsl(120, 50%, 46%);
+    --yellow-fill: hsl(48, 95%, 50%);
+    --red-fill: hsl(2, 75%, 68%);
+    --grey-fill: hsl(0, 0%, 62%);
     // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
     --select-option-bg: hsl(0, 0%, 27%);
 

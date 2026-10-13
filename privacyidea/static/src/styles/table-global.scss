@@ -312,7 +312,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   display: block;
 }
 
-// The chips wear the fill colours that hold 4.5:1 under their white text.
+// The chips wear the status fills, which hold 7:1 under black text.
 .highlight-true,
 .highlight-warning,
 .highlight-false,
@@ -322,7 +322,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 .highlight-disabled {
   border-radius: var(--border-radius);
   padding: table.$highlight-padding;
-  color: white;
+  color: black;
   display: inline-block;
 
   &.highlight-true,
@@ -341,8 +341,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   }
 
   &.highlight-disabled {
-    // The grey stays darkened so the white text keeps 4.5:1 against it in both themes.
-    background-color: color-mix(in srgb, var(--grey-light), black 32%);
+    background-color: var(--grey-fill);
   }
 
   &.highlight-true-clickable,
