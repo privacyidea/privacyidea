@@ -546,6 +546,7 @@
       <mat-calendar
         (selectedChange)="onCalendarDateSelected($event)"
         [selected]="calendarRange()"
+        [startAt]="rangePickerStart()"
         class="auth-log-datepicker" />
     </div>
   </ng-template>
