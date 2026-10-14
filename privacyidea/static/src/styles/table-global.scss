@@ -312,7 +312,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   display: block;
 }
 
-// The chips wear the status fills, which carry the status ink.
+// The chips wear the status fills, which carry the status ink, and the fill's shaded edge like the dots and bars do.
 .highlight-true,
 .highlight-warning,
 .highlight-false,
@@ -328,20 +328,24 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   &.highlight-true,
   &.highlight-true-clickable {
     background-color: var(--green-fill);
+    box-shadow: inset 0 0 0 1px var(--green-edge);
   }
 
   &.highlight-warning,
   &.highlight-warning-clickable {
     background-color: var(--yellow-fill);
+    box-shadow: inset 0 0 0 1px var(--yellow-edge);
   }
 
   &.highlight-false,
   &.highlight-false-clickable {
     background-color: var(--red-fill);
+    box-shadow: inset 0 0 0 1px var(--red-edge);
   }
 
   &.highlight-disabled {
     background-color: var(--grey-fill);
+    box-shadow: inset 0 0 0 1px var(--grey-edge);
   }
 
   &.highlight-true-clickable,
