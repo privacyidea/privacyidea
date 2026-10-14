@@ -165,7 +165,31 @@ this case the policies for the corresponding client in 192.168.x.x apply.
 
    172.16.0.1
 
-The proxy 172.16.0.1 may mask as any arbitrary client IP.
+The proxy 172.16.0.1 may mask as any arbitrary client IP. This includes IPv6
+client addresses: the entry stands for both address families, so a client
+that the proxy reports as an IPv6 address (written with or without square
+brackets, and with or without a port) is mapped as well.
+
+Reverse proxies append to ``X-Forwarded-For`` what they received from the
+client, and some of them write a hop with its source port
+(``192.0.2.43:51234``), bracket an IPv6 address (``[2001:db8::1]``), or append
+a port to the bracketed form (``[2001:db8::1]:4711``). privacyIDEA accepts
+all of these spellings when it matches the hops against the configured proxy
+networks. An IPv4-mapped IPv6 address, as a dual-stack listener reports the
+peer of an IPv4 connection (``::ffff:10.0.0.1``), is treated as the IPv4
+address it stands for.
+
+A hop that is not a recognizable address in any of these spellings ends the
+chain there: the hops before it are still mapped, but everything after it is
+recorded in the authentication log without being trusted, because a chain
+with a gap in it cannot be matched position by position.
+
+The same applies to the ``client`` request parameter that the ``/ttype``,
+``/validate`` and JWT-auth endpoints accept: only a value that is a string
+and a recognizable address is a hop. A parameter sent with a different JSON
+type (a number, a boolean, an array) is ignored rather than an error, so a
+request cannot fail only because a client-supplied parameter arrived as the
+wrong type.
 
 ::
 
