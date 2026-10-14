@@ -29,7 +29,7 @@ from privacyidea.config import TestingConfig
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.crypto import CENSORED
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, ResolverError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
@@ -2089,6 +2089,30 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        remove_token(serial)
+
+    def test_33b_auth_passkey_of_named_user_with_failing_user_store(self):
+        """
+        Whether the passkey belongs to the named user can not be told while the user store fails to look the user up.
+        The login is refused and logged as a failing user store, not as a token of somebody else.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        # A login name the user store does not know, so that the expected row can be built while it answers
+        data.update({"transaction_id": transaction_id, "username": "doesnotexist", "realm": self.realm1.upper()})
+        with patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                   side_effect=ResolverError("The user store is not available")):
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self._verify_auth_fail_with_error(res, 4031)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.USER_STORE_UNAVAILABLE], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User(login="doesnotexist", realm=self.realm1),
+                                        transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
     def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):

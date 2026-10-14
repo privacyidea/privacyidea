@@ -1636,10 +1636,10 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("cn=alice,ou=example,o=test", resolver.getUserId("alice"))
         self.assertEqual("", resolver.getUserId("unknown_user"))
 
-        def search_with_result(result_code: int, description: str):
+        def search_with_result(result_code: int, description: str, response: list[dict] | None = None):
             # ldap3 without raise_exceptions reports the result of the operation only in connection.result
             def search(connection, *args, **kwargs):
-                connection.response = []
+                connection.response = response or []
                 connection.result = {"result": result_code, "description": description, "message": ""}
                 return False
             return search
@@ -1657,6 +1657,12 @@ class LDAPResolverTestCase(MyTestCase):
             with self.assertRaises(ResolverError) as error:
                 resolver.get_user_info("cn=bob,ou=example,o=test")
             self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A size limit answers with the entries up to the limit, which is no error
+        bob = {"type": "searchResEntry", "dn": "cn=bob,ou=example,o=test", "attributes": {"cn": "bob"}}
+        with mock.patch.object(ldap3mock.Connection, "search",
+                               search_with_result(RESULT_SIZE_LIMIT_EXCEEDED, "sizeLimitExceeded", [bob])):
+            self.assertEqual("cn=bob,ou=example,o=test", resolver.getUserId("bob"))
 
         # The DN of a user who was deleted from the directory does not exist any longer
         with mock.patch.object(ldap3mock.Connection, "search", search_with_result(32, "noSuchObject")):

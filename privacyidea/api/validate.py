@@ -223,7 +223,9 @@ def before_request():
         request.User = User(username, realm, resolver)
     except ResolverError:
         if request.blueprint == validate_blueprint.name:
-            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username, realm=realm)
+            # Lowercase like the realm of a User object, which this request could not build
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
+                               realm=realm.lower() if realm else None)
         raise
     request.all_data["realm"] = realm
 

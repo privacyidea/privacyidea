@@ -962,7 +962,9 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         try:
             with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
                             side_effect=ResolverError("The user store is not available")):
-                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "whatever"})
+                # The realm in another case is logged like the realm of a user
+                res = self._post('/validate/check',
+                                 {"user": "doesnotexist", "realm": self.realm1.upper(), "pass": "whatever"})
         finally:
             delete_policy("passonnouser")
         self.assertEqual(400, res.status_code, res.json)
@@ -1524,12 +1526,27 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
             try:
                 with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
                                 side_effect=ResolverError("The user store is not available")):
-                    self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "whatever"}, status=401)
+                    self._auth({"username": "doesnotexist", "realm": self.realm1.upper(), "password": "whatever"},
+                               status=401)
             finally:
                 delete_policy("authlog_login_mode")
             entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
             assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
                                             user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_user_store_failure_with_login_mode_disable_logs_user_store_unavailable(self):
+        # The disabled login is refused before the credential check, and is still logged as a failing user store
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        try:
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "test"}, status=403)
+        finally:
+            delete_policy("authlog_login_disabled")
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["authlog_login_disabled"])
 
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
