@@ -28,7 +28,6 @@ import { MatSelectModule } from "@angular/material/select";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   DURATION_UNIT_FACTORS,
-  DURATION_UNITS,
   DurationUnit,
   largestWholeDurationUnit
 } from "@utils/duration-unit.utils";

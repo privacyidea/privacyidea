@@ -476,6 +476,7 @@ $filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2
     #{$inner-class} {
       min-height: 0;
       overflow: hidden;
+      transition: visibility 0s;
     }
   }
 
@@ -483,6 +484,13 @@ $filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2
     #{$row-class} {
       grid-template-rows: 0fr;
       margin-bottom: 0;
+
+      // Collapsed to no height, the row's controls would still take Tab and screen reader focus, unseen. Hidden once
+      // the collapse has played out; shown again straight away when it expands.
+      #{$inner-class} {
+        visibility: hidden;
+        transition: visibility 0s 200ms;
+      }
     }
 
     #{$trigger-class} {

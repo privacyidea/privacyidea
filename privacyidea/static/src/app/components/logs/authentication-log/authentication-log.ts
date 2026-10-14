@@ -20,14 +20,18 @@ import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { filterMatchTooltip } from "@utils/filter-hint.utils";
 import { DatePipe, formatDate, NgClass } from "@angular/common";
+import { InteractivityChecker } from "@angular/cdk/a11y";
 import {
+  afterNextRender,
   Component,
   computed,
   effect,
   ElementRef,
   inject,
+  Injector,
   linkedSignal,
   signal,
+  viewChild,
   ViewChild,
   WritableSignal
 } from "@angular/core";
@@ -38,12 +42,13 @@ import {
   DateRange,
   DefaultMatCalendarRangeStrategy,
   MAT_DATE_RANGE_SELECTION_STRATEGY,
+  MatCalendar,
   MatDatepickerModule
 } from "@angular/material/datepicker";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import {
@@ -375,6 +380,8 @@ export class AuthenticationLog {
   protected readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
     inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly injector = inject(Injector);
+  private readonly interactivityChecker = inject(InteractivityChecker);
   private readonly rangeSelectionStrategy = inject<DefaultMatCalendarRangeStrategy<Date>>(
     DefaultMatCalendarRangeStrategy
   );
@@ -593,6 +600,13 @@ export class AuthenticationLog {
     }
   }
 
+  private readonly menuCalendar = viewChild<MatCalendar<Date>>(MatCalendar);
+  private readonly dateRangeTrigger = viewChild("dateRangeTrigger", { read: MatMenuTrigger });
+  private readonly dateRangeTriggerElement = viewChild<string, ElementRef<HTMLElement>>("dateRangeTrigger", {
+    read: ElementRef
+  });
+  private calendarOpenedByKeyboard = false;
+
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
 
@@ -794,12 +808,83 @@ export class AuthenticationLog {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
   }
 
-  // The slider and the calendar inside the "More Filter" menu: their arrow/Home/End/Page keys move a thumb or the
-  // active day rather than the menu's focus. Escape and Tab still reach the menu, so it closes as usual.
-  keepControlKeysInMenu(event: KeyboardEvent): void {
+  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's focus.
+  // Escape and Tab still reach the menu (see keepTabInMenu).
+  keepSliderKeysInMenu(event: KeyboardEvent): void {
     if (event.key !== "Escape" && event.key !== "Tab") {
       event.stopPropagation();
     }
+  }
+
+  // The "More Filter" menu closes on any Tab it sees. Tab instead moves on through its items and the slider's thumbs -
+  // all tabbable - and only a Tab past the last or before the first of them closes it.
+  keepTabInMenu(event: KeyboardEvent): void {
+    if (event.key === "Tab" && !this.tabLeaves(event)) {
+      event.stopPropagation();
+    }
+  }
+
+  private tabLeaves(event: KeyboardEvent): boolean {
+    const tabbable = this.tabbableIn(event.currentTarget as HTMLElement);
+    const edge = event.shiftKey ? tabbable[0] : tabbable[tabbable.length - 1];
+    return !edge || edge.contains(event.target as Node);
+  }
+
+  private tabbableIn(container: HTMLElement): HTMLElement[] {
+    return Array.from(container.querySelectorAll<HTMLElement>("*")).filter((el) =>
+      this.interactivityChecker.isTabbable(el)
+    );
+  }
+
+  // The date range submenu's calendar keeps every key but Escape: arrows/Home/End/Page move the active day and Tab
+  // moves through the calendar's controls. Escape closes just the submenu and hands focus back to its "Date range" item.
+  keepCalendarKeysInMenu(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      return;
+    }
+    event.stopPropagation();
+    if (event.key === "Tab" && this.tabLeaves(event)) {
+      event.preventDefault();
+      this.leaveCalendar(event.shiftKey);
+    }
+  }
+
+  // Tab leaves the calendar as if it sat right after its "Date range" item: Shift+Tab before its first control goes
+  // back to that item, Tab past its last moves on to what follows the item - the slider's start thumb.
+  private leaveCalendar(backwards: boolean): void {
+    const triggerElement = this.dateRangeTriggerElement()?.nativeElement;
+    this.dateRangeTrigger()?.closeMenu();
+    if (!triggerElement?.parentElement) {
+      return;
+    }
+    const menuTabbable = this.tabbableIn(triggerElement.parentElement);
+    const next = backwards ? undefined : menuTabbable[menuTabbable.indexOf(triggerElement) + 1];
+    (next ?? triggerElement).focus();
+  }
+
+  // Material's menu focuses a submenu's first item on a keyboard open; the date range submenu has none, so focus would
+  // stay on its "Date range" item. Enter, Space or Right arrow there move it on to the calendar's active day instead -
+  // once the submenu has opened, or straight away if hover already opened it. A hover alone leaves focus where it was.
+  focusCalendarOnKeyboardOpen(event: KeyboardEvent, trigger: MatMenuTrigger): void {
+    if (!["Enter", " ", "ArrowRight"].includes(event.key)) {
+      return;
+    }
+    if (trigger.menuOpen) {
+      this.focusCalendarAfterRender();
+    } else {
+      this.calendarOpenedByKeyboard = true;
+    }
+  }
+
+  focusCalendarIfOpenedByKeyboard(): void {
+    if (this.calendarOpenedByKeyboard) {
+      this.calendarOpenedByKeyboard = false;
+      this.focusCalendarAfterRender();
+    }
+  }
+
+  private focusCalendarAfterRender(): void {
+    afterNextRender(() => this.menuCalendar()?.focusActiveCell(), { injector: this.injector });
   }
 
   // A thumb's accessible value, the same words as the summary under the slider.

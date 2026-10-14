@@ -86,7 +86,7 @@
           </button>
           }
           <!-- Opens the range picker, whose selection sets the custom range below; the hidden range input only holds the
-            picker's model and anchors its overlay to the button. -->
+            picker's model and anchors its overlay to the button, so it is kept out of Tab and screen readers too. -->
           <div class="date-range-trigger">
             <button
               (click)="rangePicker.open()"
@@ -98,19 +98,22 @@
             </button>
             <mat-date-range-input
               [rangePicker]="rangePicker"
+              aria-hidden="true"
               class="date-range-hidden-input">
               <input
                 matStartDate
                 (dateChange)="onRangeStartDateChange($event.value)"
                 [value]="rangePickerStart()"
                 aria-label="Start date"
-                i18n-aria-label="@@authLog.startDate" />
+                i18n-aria-label="@@authLog.startDate"
+                tabindex="-1" />
               <input
                 matEndDate
                 (dateChange)="onRangeEndDateChange($event.value)"
                 [value]="rangePickerEnd()"
                 aria-label="End date"
-                i18n-aria-label="@@authLog.endDate" />
+                i18n-aria-label="@@authLog.endDate"
+                tabindex="-1" />
             </mat-date-range-input>
             <mat-date-range-picker
               #rangePicker
@@ -478,44 +481,53 @@
       #tableActionsMenu="matMenu"
       class="auth-log-filter-menu">
       <ng-template matMenuContent>
-        @if (!authService.isSelfServiceUser()) {
-          <button
-            [matMenuTriggerFor]="userRoleMenu.matMenu"
-            mat-menu-item>
-            <mat-icon class="ms--filter-list"></mat-icon>
-            <span i18n="@@authLog.userRole">User Role</span>
-          </button>
-        }
-        <button
-          [matMenuTriggerFor]="dateRangeMenu"
-          mat-menu-item>
-          <mat-icon>date_range</mat-icon>
-          <span>{{ dateRangeLabel() }}</span>
-        </button>
-        <mat-divider />
-        <!-- Not a menu item: a presentational wrapper that keeps the slider's clicks and keys from reaching the menu,
-          which would close or move focus on them - the slider's own thumbs are the focusable controls. -->
+        <!-- Tab moves through the menu's items and the slider's thumbs rather than closing it, as Material's menu
+          would on any Tab; only Tab past either end closes it. -->
         <div
-          (click)="$event.stopPropagation()"
-          (keydown)="keepControlKeysInMenu($event)"
-          class="time-filter-custom-range menu-time-range"
+          (keydown)="keepTabInMenu($event)"
           role="presentation">
-          <span
-            class="custom-range-label"
-            i18n="@@authLog.customRange"
-            >Custom range</span
-          >
-          <app-time-range-slider
-            (commit)="commitTimeRange()"
-            (endInput)="onRangeEndInput($event)"
-            (startInput)="onRangeStartInput($event)"
-            [displayWith]="formatSliderThumb"
-            [end]="rangeEnd()"
-            [histogram]="activityHistogram()"
-            [start]="rangeStart()"
-            [steps]="rangeSliderSteps"
-            [summaryFrom]="rangeSummaryFrom()"
-            [summaryTo]="rangeSummaryTo()" />
+          @if (!authService.isSelfServiceUser()) {
+            <button
+              [matMenuTriggerFor]="userRoleMenu.matMenu"
+              mat-menu-item>
+              <mat-icon class="ms--filter-list"></mat-icon>
+              <span i18n="@@authLog.userRole">User Role</span>
+            </button>
+          }
+          <button
+            #dateRangeTrigger="matMenuTrigger"
+            (keydown)="focusCalendarOnKeyboardOpen($event, dateRangeTrigger)"
+            (menuOpened)="focusCalendarIfOpenedByKeyboard()"
+            [matMenuTriggerFor]="dateRangeMenu"
+            mat-menu-item>
+            <mat-icon>date_range</mat-icon>
+            <span>{{ dateRangeLabel() }}</span>
+          </button>
+          <mat-divider />
+          <!-- Not a menu item: a presentational wrapper that keeps the slider's clicks and keys from reaching the menu,
+            which would close or move focus on them - the slider's own thumbs are the focusable controls. -->
+          <div
+            (click)="$event.stopPropagation()"
+            (keydown)="keepSliderKeysInMenu($event)"
+            class="time-filter-custom-range menu-time-range"
+            role="presentation">
+            <span
+              class="custom-range-label"
+              i18n="@@authLog.customRange"
+              >Custom range</span
+            >
+            <app-time-range-slider
+              (commit)="commitTimeRange()"
+              (endInput)="onRangeEndInput($event)"
+              (startInput)="onRangeStartInput($event)"
+              [displayWith]="formatSliderThumb"
+              [end]="rangeEnd()"
+              [histogram]="activityHistogram()"
+              [start]="rangeStart()"
+              [steps]="rangeSliderSteps"
+              [summaryFrom]="rangeSummaryFrom()"
+              [summaryTo]="rangeSummaryTo()" />
+          </div>
         </div>
       </ng-template>
     </mat-menu>
@@ -543,11 +555,13 @@
      refined on the menu's slider straight after. Not a menu item, for the same reasons as the menu's slider wrapper. -->
 <mat-menu
   #dateRangeMenu="matMenu"
-  class="auth-log-date-range-menu">
+  aria-label="Date range"
+  class="auth-log-date-range-menu"
+  i18n-aria-label="@@authLog.dateRange">
   <ng-template matMenuContent>
     <div
       (click)="$event.stopPropagation()"
-      (keydown)="keepControlKeysInMenu($event)"
+      (keydown)="keepCalendarKeysInMenu($event)"
       role="presentation">
       <mat-calendar
         (selectedChange)="onCalendarDateSelected($event)"
