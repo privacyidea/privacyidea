@@ -904,11 +904,65 @@ describe("AuthenticationLog", () => {
       expect(component.rangePickerEnd()).toEqual(new Date(2026, 5, 5, 23, 59, 59));
     });
 
-    it("the menu calendar starts a new range on a pick before the open range's start", () => {
+    describe("with a start narrowed on the slider", () => {
+      let narrowedFrom: string;
+
+      // Starts a range on 2 June 00:00 with an open end, so the slider window runs from 2 June to now, then drags the
+      // start thumb a quarter of the way in (50 of 200 steps): the active start is no longer midnight and lies weeks
+      // after 2 June (e.g. 5 July when run on 14 October 2026), while both calendars still show 2 June as the start.
+      beforeEach(() => {
+        component.onCalendarDateSelected(new Date(2026, 5, 2));
+        component.onRangeStartInput(50);
+        component.commitTimeRange();
+        narrowedFrom = service.timestampFrom()!;
+      });
+
+      it("the menu calendar keeps that start when it ends the range after it", () => {
+        const end = new Date(narrowedFrom);
+        end.setDate(end.getDate() + 3);
+        component.onCalendarDateSelected(end);
+
+        expect(service.timestampFrom()).toBe(narrowedFrom);
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59)
+        );
+      });
+
+      it("the menu calendar swaps an end picked before that start, which then ends the range", () => {
+        component.onCalendarDateSelected(new Date(2026, 5, 5));
+
+        const from = new Date(narrowedFrom);
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 5));
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(from.getFullYear(), from.getMonth(), from.getDate(), 23, 59, 59)
+        );
+      });
+
+      it("the action row picker swaps an end picked before that start as well", () => {
+        component.onRangeEndDateChange(new Date(2026, 5, 5));
+
+        const from = new Date(narrowedFrom);
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 5));
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(from.getFullYear(), from.getMonth(), from.getDate(), 23, 59, 59)
+        );
+      });
+    });
+
+    it("the menu calendar ends the range on a second pick before its start, as the earlier day", () => {
       component.onCalendarDateSelected(new Date(2026, 5, 5));
       component.onCalendarDateSelected(new Date(2026, 5, 2));
 
       expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toEqual(new Date(2026, 5, 5, 23, 59, 59));
+    });
+
+    it("the menu calendar starts a new range on a pick once both ends are set", () => {
+      component.onCalendarDateSelected(new Date(2026, 5, 2));
+      component.onCalendarDateSelected(new Date(2026, 5, 5));
+      component.onCalendarDateSelected(new Date(2026, 5, 10));
+
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 10));
       expect(component.rangePickerEnd()).toBeNull();
     });
 

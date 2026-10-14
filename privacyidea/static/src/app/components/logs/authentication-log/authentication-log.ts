@@ -40,7 +40,6 @@ import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatDivider } from "@angular/material/divider";
 import {
   DateRange,
-  DefaultMatCalendarRangeStrategy,
   MAT_DATE_RANGE_SELECTION_STRATEGY,
   MatCalendar,
   MatDatepickerModule
@@ -74,6 +73,7 @@ import { ReasonCell } from "./cells/reason-cell/reason-cell";
 import { isRecord } from "./reason-detail";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
+import { SortedRangeSelectionStrategy } from "./sorted-range-selection-strategy";
 import { TimeRangeSlider } from "./time-range-slider/time-range-slider";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
@@ -340,8 +340,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
   ],
   providers: [
     provideNativeDateAdapter(),
-    DefaultMatCalendarRangeStrategy,
-    { provide: MAT_DATE_RANGE_SELECTION_STRATEGY, useExisting: DefaultMatCalendarRangeStrategy }
+    { provide: MAT_DATE_RANGE_SELECTION_STRATEGY, useClass: SortedRangeSelectionStrategy }
   ],
   templateUrl: "./authentication-log.html",
   styleUrl: "./authentication-log.scss"
@@ -382,9 +381,6 @@ export class AuthenticationLog {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly injector = inject(Injector);
   private readonly interactivityChecker = inject(InteractivityChecker);
-  private readonly rangeSelectionStrategy = inject<DefaultMatCalendarRangeStrategy<Date>>(
-    DefaultMatCalendarRangeStrategy
-  );
   sort = this.authenticationLogService.sort;
 
   readonly reasonOptions = computed<string[]>(() => this.authenticationLogService.reasons());
@@ -766,18 +762,30 @@ export class AuthenticationLog {
     this.applyPickedRange(date ? startOfDayIso(date) : null, this.authenticationLogService.timestampTo());
   }
 
+  // An end picked on or after the active start keeps that start as it is - narrowed on the slider or set by a preset.
+  // One before it swaps the two, as SortedRangeSelectionStrategy does: the picked day starts the range and the active
+  // start's day ends it. Both calendars show the slider window's first day as the start, so neither knows the active
+  // start, which may lie after it.
   onRangeEndDateChange(date: Date | null): void {
-    this.applyPickedRange(this.authenticationLogService.timestampFrom(), date ? endOfDayIso(date) : null);
+    const fromIso = this.authenticationLogService.timestampFrom();
+    if (date && fromIso && new Date(endOfDayIso(date)) < new Date(fromIso)) {
+      this.applyPickedRange(startOfDayIso(date), endOfDayIso(new Date(fromIso)));
+      return;
+    }
+    this.applyPickedRange(fromIso, date ? endOfDayIso(date) : null);
   }
 
-  // A day picked on the "More Filter" menu's calendar: the first pick starts a range, a later one on or after its start
-  // ends it - the same steps the action row's range picker takes.
+  // A day picked on the "More Filter" menu's calendar: with no start yet, or both ends set, it starts a new range;
+  // otherwise it ends the open one, sorted against the active start as onRangeEndDateChange does.
   onCalendarDateSelected(date: Date | null): void {
     if (!date) {
       return;
     }
-    const range = this.rangeSelectionStrategy.selectionFinished(date, this.calendarRange());
-    this.applyPickedRange(range.start ? startOfDayIso(range.start) : null, range.end ? endOfDayIso(range.end) : null);
+    if (!this.authenticationLogService.timestampFrom() || this.authenticationLogService.timestampTo()) {
+      this.applyPickedRange(startOfDayIso(date), null);
+      return;
+    }
+    this.onRangeEndDateChange(date);
   }
 
   private applyPickedRange(fromIso: string | null, toIso: string | null): void {
