@@ -36,6 +36,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -954,6 +955,22 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
                                         endpoint=self.endpoint_path)
 
+    def test_user_store_failure_logs_user_store_unavailable(self):
+        # A user store that fails to answer is not a user that does not exist: the request fails with an error, also
+        # with a passOnNoUser policy, and the log tells the failure apart from an unknown user.
+        set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER, realm=self.realm1)
+        try:
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "whatever"})
+        finally:
+            delete_policy("passonnouser")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
     def test_pass_on_no_user_logs_login_success(self):
         # An unknown user accepted by a PASSONNOUSER policy is a successful login.
         set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,
@@ -1497,6 +1514,22 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
                                         endpoint=self.endpoint_path)
+
+    def test_user_store_failure_logs_user_store_unavailable(self):
+        # The login fails like the one of an unknown user, but the log tells the user store failure apart from it, in
+        # both login modes.
+        for login_mode in [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA]:
+            self._clear_log()
+            set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+            try:
+                with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                                side_effect=ResolverError("The user store is not available")):
+                    self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "whatever"}, status=401)
+            finally:
+                delete_policy("authlog_login_mode")
+            entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+            assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
 
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):

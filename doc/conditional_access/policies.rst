@@ -65,7 +65,9 @@ Policy settings
   it refuses, and never expire. ``SUSPENDED_API_KEY_USED`` cannot be tracked
   either: it describes the client a request arrived with rather than how an
   authentication ended, and can only be filtered for in the
-  :ref:`authentication_log`.
+  :ref:`authentication_log`. Neither can ``USER_STORE_UNAVAILABLE``: the user
+  did nothing wrong, and while a user store is down every login fails, so
+  counting it would lock users and block clients for the outage.
 
 **time window**
 

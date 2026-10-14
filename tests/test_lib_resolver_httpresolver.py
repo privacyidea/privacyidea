@@ -24,6 +24,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, RequestConfig,
                                                     CONFIG_GET_USER_GROUPS, ACTIVE, USER_GROUPS_ATTRIBUTE,
                                                     PI_USER_GROUPS_KEY)
 from privacyidea.lib.resolvers.KeycloakResolver import KeycloakResolver, REALM
+from privacyidea.lib.resolvers.UserIdResolver import USER_LOOKUP_FAILED
 from tests.base import MyTestCase
 
 
@@ -870,6 +871,35 @@ class HTTPResolverTestCase(MyTestCase):
                       body="""{"success": false}""")
         self.assertEqual("", resolver.getUserId('testuser'))
 
+    def test_07b_get_user_id_user_store_error(self):
+        # Only a 404 means that the user does not exist, any other error is a user store that failed to answer
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        for status in [401, 403, 500, 503]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://example.com/users/testuser", status=status,
+                                     body="""{"error": "failure"}""")
+                with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                    resolver.getUserId("testuser")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A proxy in front of the user store answers with a page that is not JSON
+        for status in [200, 502]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://example.com/users/testuser", status=status,
+                                     body="<html><body>Bad Gateway</body></html>")
+                with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                    resolver.getUserId("testuser")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # The user store can not be reached
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "https://example.com/users/testuser",
+                                 body=ConnectionError("connection refused"))
+            with self.assertRaises(ResolverError) as error:
+                resolver.getUserId("testuser")
+            self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
     def test_08_get_resolver_id(self):
         instance = HTTPResolver()
         rid = instance.getResolverId()
@@ -1111,12 +1141,22 @@ class HTTPResolverTestCase(MyTestCase):
         responses.add(
             responses.GET,
             "https://example.com/api/user",
-            status=400,
+            status=404,
             body="""{"error": "Not Found", "message": "User not found"}"""
         )
         success, description = HTTPResolver.testconnection(params)
         self.assertFalse(success)
         self.assertIn("No user found for username 'hans'", description)
+        # Any other error is a user store that failed to answer
+        responses.add(
+            responses.GET,
+            "https://example.com/api/user",
+            status=400,
+            body="""{"error": "Bad Request", "message": "Invalid request"}"""
+        )
+        success, description = HTTPResolver.testconnection(params)
+        self.assertFalse(success)
+        self.assertIn(f"Failed to get user by name: ERR907: {USER_LOOKUP_FAILED}", description)
 
         # passed username differs from resolved one
         params['test_username'] = 'lee'
@@ -2138,6 +2178,30 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual("", resolver.getUserId("../applications"))
         self.assertEqual("/v1.0/users/..%2Fapplications", responses.calls[0].request.path_url)
 
+    def test_11d_getUserId_user_store_error(self):
+        # Entra ID answers 202 when it is too busy to process the request
+        resolver = self.set_up_resolver()
+        for status in [202, 401, 429, 503]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV%40contoso.com",
+                                     status=status,
+                                     body=json.dumps({"error": {"code": "Failure", "message": "failure"}}))
+                with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                    resolver.getUserId("AdeleV@contoso.com")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # Only a 404 for a resource that does not exist is a user that does not exist, not one for a wrong endpoint
+        # or the page of a proxy in front of Entra ID
+        for status, body in [(404, json.dumps({"error": {"code": "Request_BadRequest", "message": "Invalid version"}})),
+                             (404, "<html><body>Not Found</body></html>"),
+                             (502, "<html><body>Bad Gateway</body></html>")]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users/AdeleV%40contoso.com",
+                                     status=status, body=body)
+                with self.assertRaises(ResolverError, msg=body) as error:
+                    resolver.getUserId("AdeleV@contoso.com")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
     @responses.activate
     def test_12_testconnection_success(self):
         params = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value, CLIENT_SECRET: "secret",
@@ -3127,6 +3191,24 @@ class KeycloakResolverTestCase(MyTestCase):
                                 {"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Smith",
                                  "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
         self.assertRaises(ResolverError, resolver.getUserId, user_name)
+
+    @responses.activate
+    def test_13b_getUserId_user_store_error(self):
+        resolver = self.set_up_resolver()
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=503,
+                      body="""{"error": "unavailable", "error_description": "Service Unavailable"}""")
+        with self.assertRaises(ResolverError) as error:
+            resolver.getUserId("elizabeth")
+        self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A proxy in front of Keycloak answers with a page that is not JSON
+        for status in [200, 502]:
+            responses.replace(responses.GET, "http://localhost:8080/admin/realms/master/users", status=status,
+                              body="<html><body>Bad Gateway</body></html>")
+            with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                resolver.getUserId("elizabeth")
+            self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+            self.assertEqual(status, responses.calls[-1].response.status_code)
 
     def test_14_getResolverClassDescriptor(self):
         descriptor = KeycloakResolver().getResolverClassDescriptor()

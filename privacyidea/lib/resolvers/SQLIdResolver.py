@@ -35,7 +35,7 @@ import yaml
 import binascii
 import re
 
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_, or_,
                         create_engine, select, insert, delete, update, RowMapping)
@@ -412,17 +412,14 @@ class IdResolver (UserIdResolver):
         return info.get('username', "")
 
     @track_resolver_op("get_user_id")
-    def getUserId(self, LoginName):
+    def getUserId(self, LoginName: str) -> str:
         """
         resolve the loginname to the userid.
 
         :param LoginName: The login name from the credentials
-        :type LoginName: string
-        :return: UserId as found for the LoginName
-        :rtype: str
+        :return: UserId as found for the LoginName, an empty string if the user store has no such user
+        :raises ResolverError: if the user store could not be queried
         """
-        userid = ""
-
         try:
             conditions = []
             column = self.map.get("username")
@@ -432,18 +429,20 @@ class IdResolver (UserIdResolver):
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
-            result = self.session.execute(select(self.TABLE).filter(filter_condition))
+            rows = self.session.execute(select(self.TABLE).filter(filter_condition)).mappings().all()
+        except Exception as error:
+            # A failed query is not "no such user": that would let the realm try its next resolver and the
+            # passOnNoUser policy accept the request. The session is cached for the request, see get_user_info.
+            self.session.rollback()
+            log.error(f"Could not look up the user {LoginName!r}: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
 
-            for r in result.mappings():
-                if userid != "":    # pragma: no cover
-                    raise Exception("More than one user with loginname"
-                                    f" {LoginName} found!")
-                user = self._get_user_from_mapped_object(r)
-                userid = convert_column_to_unicode(user["userid"])
-        except Exception as exx:    # pragma: no cover
-            log.error(f"Could not get the user ID: {exx!r}")
-
-        return userid
+        if not rows:
+            return ""
+        if len(rows) > 1:
+            log.error(f"More than one user with loginname {LoginName!r} found, using the first one.")
+        user = self._get_user_from_mapped_object(rows[0])
+        return convert_column_to_unicode(user["userid"])
 
     def _get_user_from_mapped_object(self, row: RowMapping, attributes: list[str] = None) -> dict:
         """

@@ -157,7 +157,7 @@ def before_request():
                         "action_detail": "",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
-    g.resolved_user = {"is_local_admin": False}
+    g.resolved_user = {"is_local_admin": False, "user_store_unavailable": False}
 
     request.User = User()
     username = request.all_data.get("username")
@@ -182,6 +182,9 @@ def before_request():
                 request.User = User(login_name, realm)
             except Exception as e:
                 request.User = None
+                # The login goes on, so that a local admin can still log in, and the user store failure is logged
+                # when it fails.
+                g.resolved_user["user_store_unavailable"] = isinstance(e, ResolverError)
                 log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
                 log.debug(f"{traceback.format_exc()!s}")
     elif credential_id:
@@ -776,6 +779,11 @@ def get_auth_token():
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
+    log_realm = None
+    if g.resolved_user.get("user_store_unavailable") and not admin_auth and not user_auth:
+        # Without the user, the credential check failed only because the user store did not answer
+        auth_event_type = AuthEventType.USER_STORE_UNAVAILABLE
+        log_realm = realm
     if auth_event_type is None and not terminal_event_suppressed:
         # When nothing classified the request: a success defaults to LOGIN_SUCCESS, and an unclassified failure logs
         # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure
@@ -789,6 +797,7 @@ def get_auth_token():
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,
+                       realm=log_realm,
                        internal_admin=internal_admin,
                        reasons=auth_reasons, reason_detail=auth_reason_detail)
 

@@ -188,6 +188,9 @@ type: ``bool``
 
 If the user does not exist, the authentication request is successful.
 
+A user store that fails to answer the lookup of the user, e.g. an LDAP server that is busy or an SQL query that fails,
+does not count as a user that does not exist: the authentication request fails with an error.
+
 .. warning:: Only use this if you know exactly what you are doing.
 
 .. versionadded:: 2.0
