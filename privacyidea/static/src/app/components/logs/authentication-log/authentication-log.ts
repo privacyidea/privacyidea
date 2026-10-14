@@ -763,6 +763,50 @@ export class AuthenticationLog {
     this.applyPickedRange(date ? startOfDayIso(date) : null, this.authenticationLogService.timestampTo());
   }
 
+  // One pick in the action-row picker can change both inputs, each firing its own dateChange - start first. They are
+  // gathered and handled together once the pick's events are through, so the end's handling reads the bounds as they
+  // were before the pick and not as the start's handling left them.
+  private pendingPick: { start?: Date | null; end?: Date | null } | null = null;
+
+  onRangePickerStartChange(date: Date | null): void {
+    this.queuePick({ start: date });
+  }
+
+  onRangePickerEndChange(date: Date | null): void {
+    this.queuePick({ end: date });
+  }
+
+  private queuePick(part: { start?: Date | null; end?: Date | null }): void {
+    if (!this.pendingPick) {
+      this.pendingPick = {};
+      queueMicrotask(() => this.flushPick());
+    }
+    Object.assign(this.pendingPick, part);
+  }
+
+  // The inputs hold the slider window's first day as the start, so a pick that ends the range from before it moves
+  // both: the strategy hands back the picked day as the start and the window's first day as the end. That picked day
+  // is the end pick, sorted against the active start. Any other pick changes one input, or clears the end.
+  private flushPick(): void {
+    const pick = this.pendingPick;
+    this.pendingPick = null;
+    if (!pick) {
+      return;
+    }
+    if (pick.start !== undefined && pick.end !== undefined) {
+      // Both changed: the end is either cleared by a pick that starts a new range, or the window's first day.
+      if (pick.end) {
+        this.onRangeEndDateChange(pick.start);
+      } else {
+        this.applyPickedRange(pick.start ? startOfDayIso(pick.start) : null, null);
+      }
+    } else if (pick.start !== undefined) {
+      this.onRangeStartDateChange(pick.start);
+    } else if (pick.end !== undefined) {
+      this.onRangeEndDateChange(pick.end);
+    }
+  }
+
   // An end picked on or after the active start keeps that start as it is - narrowed on the slider or set by a preset.
   // One before it swaps the two, as SortedRangeSelectionStrategy does: the picked day starts the range and the active
   // start's day ends it. Both calendars show the slider window's first day as the start, so neither knows the active

@@ -102,14 +102,14 @@
               class="date-range-hidden-input">
               <input
                 matStartDate
-                (dateChange)="onRangeStartDateChange($event.value)"
+                (dateChange)="onRangePickerStartChange($event.value)"
                 [value]="rangePickerStart()"
                 aria-label="Start date"
                 i18n-aria-label="@@authLog.startDate"
                 tabindex="-1" />
               <input
                 matEndDate
-                (dateChange)="onRangeEndDateChange($event.value)"
+                (dateChange)="onRangePickerEndChange($event.value)"
                 [value]="rangePickerEnd()"
                 aria-label="End date"
                 i18n-aria-label="@@authLog.endDate"

@@ -1162,6 +1162,44 @@ describe("AuthenticationLog", () => {
       });
     });
 
+    describe("action row date picker, with a start narrowed on the slider", () => {
+      async function pickDay(label: string): Promise<void> {
+        (fixture.nativeElement.querySelector(".date-range-trigger button") as HTMLElement).click();
+        await settle();
+        const cell = Array.from(document.querySelectorAll<HTMLElement>(".mat-calendar-body-cell")).find(
+          (candidate) => candidate.getAttribute("aria-label") === label
+        )!;
+        cell.click();
+        await settle();
+      }
+
+      beforeEach(() => {
+        component.onCalendarDateSelected(new Date(2026, 5, 2));
+        component.onRangeStartInput(50);
+        component.commitTimeRange();
+      });
+
+      it("ends the range on the active start when the picked day lies before it", async () => {
+        const narrowedFrom = new Date(service.timestampFrom()!);
+
+        await pickDay("June 1, 2026");
+
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 1));
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(narrowedFrom.getFullYear(), narrowedFrom.getMonth(), narrowedFrom.getDate(), 23, 59, 59)
+        );
+      });
+
+      it("keeps the active start when the picked day lies after it", async () => {
+        const narrowedFrom = service.timestampFrom();
+
+        await pickDay("June 30, 2026");
+
+        expect(service.timestampFrom()).toBe(narrowedFrom);
+        expect(new Date(service.timestampTo()!)).toEqual(new Date(2026, 5, 30, 23, 59, 59));
+      });
+    });
+
     describe("date range submenu", () => {
       function activeDay(): HTMLElement {
         return document.querySelector<HTMLElement>("mat-calendar .mat-calendar-body-active")!;
