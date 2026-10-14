@@ -49,7 +49,7 @@ export const PAGE_NAMES = {
   events: $localize`:@@common.eventHandlers:Event handlers`,
   machineResolvers: $localize`:@@pageTitle.machineResolvers:Machine resolvers`,
   machines: $localize`:@@common.machines:Machines`,
-  periodicTasks: $localize`:@@common.periodicTasks:Periodic tasks`,
+  periodicTasks: $localize`:@@common.periodicTasks:Periodic Tasks`,
   system: $localize`:@@pageTitle.system:System configuration`,
   tokenTypes: $localize`:@@pageTitle.tokenTypes:Token type configuration`,
   subscription: $localize`:@@common.subscription:Subscription`,

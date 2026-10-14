@@ -22,9 +22,18 @@
   }
   @include table.scroll-region-fits-table;
 
-  // In the self-service layout the scroll region takes its content height, not the full container.
-  :host-context(body.self-service-layout) & .table-scroll-region {
-    flex: 0 1 auto;
+  // The self-service layout shares this stylesheet but shows fewer columns (serial m + type s + status m
+  // + description xl + delete s, no select, user, realm or container realms), so the card and the
+  // table-state panel follow those tiers, and the scroll region takes its content height, not the
+  // full container. Its header row is a title, one button and the paginator, far narrower than the admin
+  // filter row that paginator-range-floor keeps the card above.
+  :host-context(body.self-service-layout) & {
+    min-width: min(#{table.table-width(m, s, m, xl, s)}, 100cqw);
+    @include table.page-table-state-size(table.table-width(m, s, m, xl, s));
+
+    .table-scroll-region {
+      flex: 0 1 auto;
+    }
   }
 
   @include table.actions-row-collapse(".container-actions-row", ".container-actions-row-inner");

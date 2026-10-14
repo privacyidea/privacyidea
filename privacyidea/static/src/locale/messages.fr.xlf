@@ -1367,7 +1367,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.periodicTasks" datatype="html">
-        <source>Periodic tasks</source>
+        <source>Periodic Tasks</source>
         <target>Tâches périodiques</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task.component.html</context>
@@ -18195,24 +18195,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.statusColorsAaa" datatype="html">
-        <source>AAA - black text</source>
-        <target state="new">AAA - black text</target>
+        <source>AAA - high contrast, black text</source>
+        <target state="new">AAA - high contrast, black text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/ui-settings/ui-settings.component.ts</context>
           <context context-type="linenumber">111</context>
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.statusColorsAa" datatype="html">
-        <source>AA - white text</source>
-        <target state="new">AA - white text</target>
+        <source>AA - default, white text</source>
+        <target state="new">AA - default, white text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/ui-settings/ui-settings.component.ts</context>
           <context context-type="linenumber">112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.statusColorsA" datatype="html">
-        <source>A - white text, old WebUI colors</source>
-        <target state="new">A - white text, old WebUI colors</target>
+        <source>A - old WebUI colors, white text</source>
+        <target state="new">A - old WebUI colors, white text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/ui-settings/ui-settings.component.ts</context>
           <context context-type="linenumber">113</context>
