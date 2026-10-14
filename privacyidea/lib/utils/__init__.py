@@ -548,14 +548,16 @@ def _parse_hop_address(hop_ip: str) -> "IPAddress | None":
     :class:`netaddr.IPAddress` call rejects:
 
     * ``a.b.c.d:port`` -- some proxies append the client's source port to an IPv4 hop.
-      Only this unambiguous form is stripped, so a bare IPv6 address (which contains
-      colons itself) is left alone.
+      Only this unambiguous form is stripped, and only for a valid port: a suffix such
+      as ``:junk`` leaves the hop unparsed, so a malformed hop cuts the chain. A bare
+      IPv6 address (which contains colons itself) is never mistaken for this form.
     * ``[2001:db8::1]`` and ``[2001:db8::1]:4711`` -- bracketed IPv6 addresses, with
       or without a port.
     * ``::ffff:10.0.0.1`` -- an IPv4-mapped IPv6 address, as a dual-stack socket
-      reports the peer of an IPv4 connection. privacyIDEA's proxy networks are written
-      in the family the admin sees, so the mapped spelling is canonicalized to IPv4
-      before it is matched against them.
+      reports the peer of an IPv4 connection. Hops are matched against the configured
+      networks in one family, so the mapped spelling is canonicalized to IPv4 before
+      it is matched; :func:`parse_proxy` canonicalizes entries written in the mapped
+      form the same way.
 
     Anything that still does not parse is reported as ``None`` rather than raising:
     the caller decides how far the chain is still trustworthy.
@@ -575,7 +577,12 @@ def _parse_hop_address(hop_ip: str) -> "IPAddress | None":
     elif candidate.count(":") == 1 and not candidate.startswith(":"):
         # "a.b.c.d:port": the only unambiguous IPv4-with-port form. A bare IPv6 address
         # has either no colon or more than one, and "::" starts a run of zeroes.
-        candidate = candidate.rsplit(":", 1)[0]
+        # The same port check as in the bracket branch: a suffix that is not a valid
+        # port is not a spelling any proxy writes, so the hop is left unparsed - and a
+        # malformed hop cuts the chain instead of being read as the address in it.
+        host, _, port = candidate.rpartition(":")
+        if re.fullmatch(r":\d{1,5}", f":{port}"):
+            candidate = host
     try:
         address = IPAddress(candidate)
     except AddrFormatError:
@@ -583,6 +590,19 @@ def _parse_hop_address(hop_ip: str) -> "IPAddress | None":
     if address.is_ipv4_mapped():
         address = address.ipv4()
     return address
+
+
+def _canonical_network(proxynet: IPNetwork) -> IPNetwork:
+    """
+    The network as it is matched against the path to client. An IPv4-mapped IPv6 entry -
+    the spelling a dual-stack listener reports for an IPv4 connection, and on such a
+    listener the only spelling that matched on master - is canonicalized to its IPv4
+    network, so it keeps matching once :func:`_parse_hop_address` canonicalizes the hops
+    the same way (issue #6002).
+    """
+    if proxynet.ip.is_ipv4_mapped() and proxynet.prefixlen >= 96:
+        return IPNetwork(f"{proxynet.ip.ipv4()!s}/{proxynet.prefixlen - 96}")
+    return proxynet
 
 
 def parse_proxy(proxy_settings):
@@ -607,7 +627,14 @@ def parse_proxy(proxy_settings):
         This is parsed to a proxy path ``(IPNetwork("10.0.0.12/32"), IPNetwork("192.168.0.0/24"))``.
     172.16.0.0/16
         Hosts in 172.16.x.x may rewrite to any client IP
-        This is parsed to a proxy path ``(IPNetwork("172.16.0.0/16"), IPNetwork("0.0.0.0/0"))``.
+        This is parsed to one proxy path per address family:
+        ``(IPNetwork("172.16.0.0/16"), IPNetwork("0.0.0.0/0"))`` and
+        ``(IPNetwork("172.16.0.0/16"), IPNetwork("::/0"))`` - whatever the entry's own
+        family, a bare entry may mask as any client IP of either family.
+
+    An entry written as an IPv4-mapped IPv6 network - the spelling a dual-stack listener
+    reports for an IPv4 connection - is canonicalized to its IPv4 network, so
+    ``::ffff:10.0.0.0/120`` is parsed like ``10.0.0.0/24``.
 
     Multiple such settings may be separated by comma.
 
@@ -621,19 +648,17 @@ def parse_proxy(proxy_settings):
         for proxy in proxies_list:
             p_list = proxy.split(">")
             if len(p_list) > 1:
-                proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
+                proxypath = tuple(_canonical_network(IPNetwork(proxynet.strip())) for proxynet in p_list)
                 proxy_set.add(proxypath)
             else:
                 # No mapping client, so we take the whole network. A bare entry is
                 # documented as "may mask as any arbitrary client IP", which covers
                 # IPv6 clients as well: an IPv6 address is not contained in an IPv4
-                # network, so the entry expands to one proxy path per address family.
-                proxynet = IPNetwork(p_list[0])
-                if proxynet.version == 4:
-                    proxy_set.add((proxynet, IPNetwork("0.0.0.0/0")))
-                    proxy_set.add((proxynet, IPNetwork("::/0")))
-                else:
-                    proxy_set.add((proxynet, IPNetwork("::/0")))
+                # network, so the entry expands to one proxy path per address family,
+                # whatever the entry's own family.
+                proxynet = _canonical_network(IPNetwork(p_list[0]))
+                proxy_set.add((proxynet, IPNetwork("0.0.0.0/0")))
+                proxy_set.add((proxynet, IPNetwork("::/0")))
 
     return proxy_set
 
@@ -841,8 +866,11 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
                 # Without a parseable peer there is nothing to map from, and index 0
                 # would not survive check_proxy_index() on an empty list.
                 return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
-            log.warning(f"Cutting the client IP chain at the unparseable hop {hop.ip!r}: the "
-                        "hops after it are recorded but no longer mapped.")
+            log.warning(
+                f"Cutting the client IP chain at the unparseable hop "
+                f"{hop.ip[:MAX_IP_CHAIN_HOP_LENGTH]!r}: the "
+                "hops after it are recorded but no longer mapped."
+            )
             break
         addresses.append(address)
         addressable.append((i, hop))
