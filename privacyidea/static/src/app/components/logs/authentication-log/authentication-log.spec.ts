@@ -1162,17 +1162,51 @@ describe("AuthenticationLog", () => {
       });
     });
 
-    describe("action row date picker, with a start narrowed on the slider", () => {
-      async function pickDay(label: string): Promise<void> {
-        (fixture.nativeElement.querySelector(".date-range-trigger button") as HTMLElement).click();
-        await settle();
-        const cell = Array.from(document.querySelectorAll<HTMLElement>(".mat-calendar-body-cell")).find(
-          (candidate) => candidate.getAttribute("aria-label") === label
-        )!;
-        cell.click();
-        await settle();
-      }
+    async function pickDay(label: string): Promise<void> {
+      (fixture.nativeElement.querySelector(".date-range-trigger button") as HTMLElement).click();
+      await settle();
+      const cell = Array.from(document.querySelectorAll<HTMLElement>(".mat-calendar-body-cell")).find(
+        (candidate) => candidate.getAttribute("aria-label") === label
+      )!;
+      cell.click();
+      await settle();
+    }
 
+    describe("action row date picker", () => {
+      it("starts a range on a first pick, with the end open", async () => {
+        const first = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        await pickDay(formatDate(first, "MMMM d, y", "en-US"));
+
+        expect(new Date(service.timestampFrom()!)).toEqual(first);
+        expect(service.timestampTo()).toBeNull();
+      });
+
+      it("starts a new range on a pick once both ends are set, dropping the old end", async () => {
+        component.onRangeStartDateChange(new Date(2026, 5, 2));
+        component.onRangeEndDateChange(new Date(2026, 5, 5));
+
+        await pickDay("June 10, 2026");
+
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 10));
+        expect(service.timestampTo()).toBeNull();
+      });
+
+      it("starts a new range on the day the picker shows as its start, whatever the slider narrowed", async () => {
+        component.onRangeStartDateChange(new Date(2026, 5, 2));
+        component.onRangeEndDateChange(new Date(2026, 5, 20));
+        component.onRangeStartInput(50);
+        component.commitTimeRange();
+        expect(new Date(service.timestampFrom()!)).not.toEqual(new Date(2026, 5, 2));
+
+        await pickDay("June 2, 2026");
+
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 2));
+        expect(service.timestampTo()).toBeNull();
+      });
+    });
+
+    describe("action row date picker, with a start narrowed on the slider", () => {
       beforeEach(() => {
         component.onCalendarDateSelected(new Date(2026, 5, 2));
         component.onRangeStartInput(50);

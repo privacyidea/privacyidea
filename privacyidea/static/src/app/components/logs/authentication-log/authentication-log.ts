@@ -201,6 +201,10 @@ function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | n
 // The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
 // other columns use; the keys mirror the backend's _FILTER_PARAMS (api/authentication_log.py) and are also typeable in
 // the main filter input as advanced filters.
+// What a pick in the action-row date picker changed, as each of its two inputs reports it; an input that did not change
+// leaves its part out.
+type PickedRangePart = { start?: Date | null; end?: Date | null };
+
 const OUTCOME_FILTER_KEYS = ["ca_action_type", "ca_policy_name", "ca_dry_run"];
 
 // The two values of the dry-run filter; "Both" is the absence of the key, reached the same way every other filter is
@@ -517,6 +521,8 @@ export class AuthenticationLog {
   // Whether the window runs up to "now" (an open upper bound): true for the default or start-only window, false once
   // an end date bounds it; this governs whether the end thumb at its max means open/"now" or a concrete end.
   private readonly openEndedWindow = signal(true);
+  // The parts of the action-row date picker's current pick that its inputs have reported so far (see queuePick).
+  private pendingPick: PickedRangePart | null = null;
   // Thumb positions (0 = window start .. RANGE_SLIDER_STEPS = window end) derive from the active time filter relative
   // to the window, staying writable during a drag and recomputing on the next timestamp or window change.
   readonly rangeStart = linkedSignal(() => this.isoToSliderPos(this.authenticationLogService.timestampFrom(), 0));
@@ -763,50 +769,6 @@ export class AuthenticationLog {
     this.applyPickedRange(date ? startOfDayIso(date) : null, this.authenticationLogService.timestampTo());
   }
 
-  // One pick in the action-row picker can change both inputs, each firing its own dateChange - start first. They are
-  // gathered and handled together once the pick's events are through, so the end's handling reads the bounds as they
-  // were before the pick and not as the start's handling left them.
-  private pendingPick: { start?: Date | null; end?: Date | null } | null = null;
-
-  onRangePickerStartChange(date: Date | null): void {
-    this.queuePick({ start: date });
-  }
-
-  onRangePickerEndChange(date: Date | null): void {
-    this.queuePick({ end: date });
-  }
-
-  private queuePick(part: { start?: Date | null; end?: Date | null }): void {
-    if (!this.pendingPick) {
-      this.pendingPick = {};
-      queueMicrotask(() => this.flushPick());
-    }
-    Object.assign(this.pendingPick, part);
-  }
-
-  // The inputs hold the slider window's first day as the start, so a pick that ends the range from before it moves
-  // both: the strategy hands back the picked day as the start and the window's first day as the end. That picked day
-  // is the end pick, sorted against the active start. Any other pick changes one input, or clears the end.
-  private flushPick(): void {
-    const pick = this.pendingPick;
-    this.pendingPick = null;
-    if (!pick) {
-      return;
-    }
-    if (pick.start !== undefined && pick.end !== undefined) {
-      // Both changed: the end is either cleared by a pick that starts a new range, or the window's first day.
-      if (pick.end) {
-        this.onRangeEndDateChange(pick.start);
-      } else {
-        this.applyPickedRange(pick.start ? startOfDayIso(pick.start) : null, null);
-      }
-    } else if (pick.start !== undefined) {
-      this.onRangeStartDateChange(pick.start);
-    } else if (pick.end !== undefined) {
-      this.onRangeEndDateChange(pick.end);
-    }
-  }
-
   // An end picked on or after the active start keeps that start as it is - narrowed on the slider or set by a preset.
   // One before it swaps the two, as SortedRangeSelectionStrategy does: the picked day starts the range and the active
   // start's day ends it. Both calendars show the slider window's first day as the start, so neither knows the active
@@ -818,6 +780,45 @@ export class AuthenticationLog {
       return;
     }
     this.applyPickedRange(fromIso, date ? endOfDayIso(date) : null);
+  }
+
+  // One pick in the action-row picker can change both inputs, each firing its own dateChange - start first. The parts
+  // are gathered and handled together once the pick's events are through, so the end's handling reads the bounds as they
+  // were before the pick.
+  onRangePickerStartChange(date: Date | null): void {
+    this.queuePick({ start: date });
+  }
+
+  onRangePickerEndChange(date: Date | null): void {
+    this.queuePick({ end: date });
+  }
+
+  private queuePick(part: PickedRangePart): void {
+    if (this.pendingPick) {
+      Object.assign(this.pendingPick, part);
+      return;
+    }
+    const pick = { ...part };
+    this.pendingPick = pick;
+    queueMicrotask(() => this.flushPick(pick));
+  }
+
+  // A pick that ends the range from before the slider window's first day, which the inputs hold as the start, moves
+  // both: the strategy hands back the picked day as the start and the window's first day as the end. That picked day is
+  // an end pick, sorted against the active start. A pick that clears the end starts a new range; when it changed only
+  // the end, the picked day is the window's first day, which the start input already holds. A pick after the window's
+  // first day changes the end alone, and a first pick with no range set the start alone.
+  private flushPick(pick: PickedRangePart): void {
+    this.pendingPick = null;
+    const { start, end } = pick;
+    if (end === null) {
+      const day = start === undefined ? this.rangePickerStart() : start;
+      this.applyPickedRange(day ? startOfDayIso(day) : null, null);
+    } else if (end) {
+      this.onRangeEndDateChange(start === undefined ? end : start);
+    } else if (start !== undefined) {
+      this.onRangeStartDateChange(start);
+    }
   }
 
   // A day picked on the "More Filter" menu's calendar: with no start yet, or both ends set, it starts a new range;
