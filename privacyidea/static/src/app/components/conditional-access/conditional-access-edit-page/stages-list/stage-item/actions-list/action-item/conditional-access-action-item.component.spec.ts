@@ -217,12 +217,25 @@ describe("ConditionalAccessActionItemComponent", () => {
       expect(component.durationValue()).toBe("2");
     });
 
-    it("should keep the unit while typing a value it divides", () => {
+    it("should keep the unit while typing a value a coarser unit divides", () => {
       setAction({ action_type: "LOCK_USER", action_value: 45 });
       expect(component.durationUnit()).toBe("seconds");
+      component.onDurationInput("60");
       setAction({ action_type: "LOCK_USER", action_value: 60 });
       expect(component.durationUnit()).toBe("seconds");
       expect(component.durationValue()).toBe("60");
+    });
+
+    it("should pick the unit afresh for another action's duration, even one the current unit divides", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 45 });
+      setAction({ action_type: "BLOCK_IP", action_value: 7200 });
+      expect(component.durationUnit()).toBe("hours");
+      expect(component.durationValue()).toBe("2");
+    });
+
+    it("should show a stored zero in seconds", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 0 });
+      expect(component.durationUnit()).toBe("seconds");
     });
 
     it("should keep the unit when the field is cleared", () => {

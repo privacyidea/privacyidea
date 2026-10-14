@@ -30,4 +30,8 @@ describe("largestWholeDurationUnit", () => {
   it("picks seconds when no coarser unit divides evenly", () => {
     expect(largestWholeDurationUnit(90)).toBe("seconds");
   });
+
+  it("picks seconds for zero, which every unit divides", () => {
+    expect(largestWholeDurationUnit(0)).toBe("seconds");
+  });
 });

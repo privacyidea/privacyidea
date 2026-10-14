@@ -313,19 +313,21 @@ export class ConditionalAccessActionItemComponent {
     return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
   }
 
-  // Starts in the coarsest unit the stored duration is a whole number of, and keeps the unit the admin works in for as
-  // long as it still divides the duration evenly - so typing "60" in seconds does not flip the field to "1" minute.
-  // A duration it no longer divides, e.g. once the list reuses this item for another action, picks the unit afresh.
+  // Starts in the coarsest unit the stored duration is a whole number of, and keeps the unit the admin works in while
+  // the duration is the one this item emitted - so typing "60" in seconds does not flip the field to "1" minute.
+  // Any other duration, e.g. once the list (tracked by index) reuses this item for another action, picks the unit
+  // afresh.
   readonly durationUnit = linkedSignal<number | null, DurationUnit>({
     source: () => this.durationSeconds(),
     computation: (seconds, previous) => {
       const unit = previous?.value;
-      if (unit && (seconds == null || seconds % DURATION_UNIT_FACTORS[unit] === 0)) {
+      if (unit && (seconds == null || seconds === this.emittedDurationSeconds)) {
         return unit;
       }
       return seconds == null ? "seconds" : largestWholeDurationUnit(seconds);
     }
   });
+  private emittedDurationSeconds: number | null = null;
 
   // The raw stored duration in seconds, or null if unset/invalid. Every shape the backend accepts is read,
   // not just the bare number this editor writes, so a duration set through the API renders in the field
@@ -369,7 +371,7 @@ export class ConditionalAccessActionItemComponent {
     }
     const parsed = parseInt(trimmed, 10);
     const seconds = Number.isNaN(parsed) ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
-    this.updateAction.emit({ action_value: seconds });
+    this.emitDuration(seconds);
   }
 
   onDurationUnitChange(unit: DurationUnit): void {
@@ -379,8 +381,13 @@ export class ConditionalAccessActionItemComponent {
     this.durationUnit.set(unit);
     const parsed = parseInt(current, 10);
     if (!Number.isNaN(parsed)) {
-      this.updateAction.emit({ action_value: parsed * DURATION_UNIT_FACTORS[unit] });
+      this.emitDuration(parsed * DURATION_UNIT_FACTORS[unit]);
     }
+  }
+
+  private emitDuration(seconds: number | null): void {
+    this.emittedDurationSeconds = seconds;
+    this.updateAction.emit({ action_value: seconds });
   }
 
   onEmailFieldInput(key: string, value: string): void {

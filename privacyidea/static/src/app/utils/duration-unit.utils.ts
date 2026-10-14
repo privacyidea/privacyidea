@@ -29,8 +29,12 @@ export const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
 };
 
 // The coarsest unit that divides the seconds evenly, so a stored duration shows as e.g. "10 minutes" rather than
-// "600 seconds". The unit the admin entered it in is not stored, so this is the most readable whole-number one.
+// "600 seconds". The unit the admin entered it in is not stored, so this is the most readable whole-number one. Zero,
+// which every unit divides, stays in seconds - in hours, the next number typed would be read as hours.
 export function largestWholeDurationUnit(seconds: number): DurationUnit {
+  if (seconds === 0) {
+    return "seconds";
+  }
   if (seconds % DURATION_UNIT_FACTORS.hours === 0) {
     return "hours";
   }
