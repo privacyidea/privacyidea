@@ -459,7 +459,7 @@ class IdResolver(UserIdResolver):
         return new_list
 
     @staticmethod
-    def _escape_loginname(loginname):
+    def _escape_loginname(loginname: str) -> str:
         """
         This function escapes the loginname according to
         https://msdn.microsoft.com/en-us/library/aa746475(v=vs.85).aspx
@@ -471,11 +471,12 @@ class IdResolver(UserIdResolver):
            achme*
            achemd*
 
+        Besides the characters of RFC 4515 (see :meth:`_escape_filter_value`) the slash is escaped.
+
         :param loginname: The loginname
         :return: The escaped loginname
         """
-        return loginname.replace("\\", "\\5c").replace("*", "\\2a").replace(
-            "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
+        return IdResolver._escape_filter_value(loginname).replace("/", "\\2f")
 
     @staticmethod
     def _escape_filter_value(filter_value: str or bytes, allow_wildcards: bool = False) -> str:

@@ -1622,6 +1622,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(r, "hans\\28\\29")
         r = LDAPResolver._escape_loginname("hans\\/")
         self.assertEqual(r, "hans\\5c\\2f")
+        self.assertEqual("hans\\00", LDAPResolver._escape_loginname("hans\x00"))
 
     @ldap3mock.activate
     def test_10b_search_error_is_not_an_unknown_user(self):
