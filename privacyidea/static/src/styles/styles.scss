@@ -434,8 +434,8 @@ $status-colors: (
   "aa": (
     "ink": white,
     "green": hsl(120, 45%, 36%),
-    // The logo's dark blue (#1d6b8f).
-    "blue": #1d6b8f,
+    // The logo's blue (#16536F), which is also the theme's primary blue (8.4:1 under white).
+    "blue": #16536f,
     // The brightest orange of this hue and saturation that holds 4.5:1 under white (4.51:1).
     "yellow": #b26217,
     "red": hsl(2, 64%, 52%),
