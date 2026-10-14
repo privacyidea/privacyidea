@@ -418,9 +418,8 @@ $corner-radii: (
 // themes, so each level holds its contrast in light and dark:
 // - aaa: black ink, every fill at 7:1 or better.
 // - aa: white ink, every fill at 4.5:1 or better (the default).
-// - a: white ink on the old WebUI green, orange and red, the privacyIDEA logo's bright blue and a mid grey. Green,
-//   orange, red and blue sit at 2.5:1, 2.0:1, 4.0:1 and 2.3:1 under white and the grey at 4.5:1, so this level has no
-//   contrast guarantee.
+// - a: white ink on the old WebUI green, orange, red and blue and a mid grey. Green, orange and red sit at 2.5:1, 2.0:1
+//   and 4.0:1 under white, blue and grey at 4.5:1, so this level has no contrast guarantee.
 $status-colors: (
   "aaa": (
     "ink": black,
@@ -444,9 +443,9 @@ $status-colors: (
   ),
   "a": (
     "ink": white,
-    // The old WebUI's green, orange and red, and the logo's bright blue.
+    // The old WebUI's green, blue, orange and red.
     "green": #5cb85c,
-    "blue": #00b4ff,
+    "blue": #337ab7,
     "yellow": #f0ad4e,
     "red": #d9534f,
     "grey": #777777
