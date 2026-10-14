@@ -291,6 +291,12 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
       )
     );
 
+    // The shaded edge keeps the snackbar apart from a page it barely differs from (the dark theme's blue in particular).
+    .mdc-snackbar__surface {
+      outline: 1px solid var(--green-edge);
+      outline-offset: -1px;
+    }
+
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
       color: var(--status-ink);
     }
@@ -303,6 +309,12 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
         supporting-text-color: var(--status-ink)
       )
     );
+
+    // The shaded edge keeps the snackbar apart from a page it barely differs from (the dark theme's blue in particular).
+    .mdc-snackbar__surface {
+      outline: 1px solid var(--red-edge);
+      outline-offset: -1px;
+    }
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
       color: var(--status-ink);
@@ -317,6 +329,12 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
       )
     );
 
+    // The shaded edge keeps the snackbar apart from a page it barely differs from (the dark theme's blue in particular).
+    .mdc-snackbar__surface {
+      outline: 1px solid var(--yellow-edge);
+      outline-offset: -1px;
+    }
+
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
       color: var(--status-ink);
     }
@@ -329,6 +347,12 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
         supporting-text-color: var(--status-ink)
       )
     );
+
+    // The shaded edge keeps the snackbar apart from a page it barely differs from (the dark theme's blue in particular).
+    .mdc-snackbar__surface {
+      outline: 1px solid var(--blue-edge);
+      outline-offset: -1px;
+    }
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
       color: var(--status-ink);

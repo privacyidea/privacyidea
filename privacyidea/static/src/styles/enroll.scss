@@ -31,10 +31,14 @@
 
 .inline-warning {
   background: var(--red-fill);
+  outline: 1px solid var(--red-edge);
+  outline-offset: -1px;
 }
 
 .inline-success {
   background: var(--green-fill);
+  outline: 1px solid var(--green-edge);
+  outline-offset: -1px;
 }
 
 // Content column of the token enrollment forms: as wide as the largest enrollment form needs.

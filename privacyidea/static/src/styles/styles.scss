@@ -459,6 +459,13 @@ $status-colors: (
   --yellow-fill: #{map.get($set, "yellow")};
   --red-fill: #{map.get($set, "red")};
   --grey-fill: #{map.get($set, "grey")};
+  // The edge of a fill that carries no text (dots, bars) or sits on a surface it barely differs from (snackbars,
+  // callouts): the fill shaded toward --status-edge-tone, which holds 3:1 against the page at every level in both themes.
+  --green-edge: color-mix(in srgb, var(--green-fill), var(--status-edge-tone) 55%);
+  --blue-edge: color-mix(in srgb, var(--blue-fill), var(--status-edge-tone) 55%);
+  --yellow-edge: color-mix(in srgb, var(--yellow-fill), var(--status-edge-tone) 55%);
+  --red-edge: color-mix(in srgb, var(--red-fill), var(--status-edge-tone) 55%);
+  --grey-edge: color-mix(in srgb, var(--grey-fill), var(--status-edge-tone) 55%);
 }
 
 // What holds before a level is applied: the default level, so the first paint already has every fill.

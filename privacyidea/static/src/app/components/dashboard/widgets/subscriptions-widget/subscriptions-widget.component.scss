@@ -182,6 +182,8 @@
   height: 16px;
   border-radius: 50%;
   background: var(--grey-fill);
+  // The dot is a graphic, so its edge, not only its fill, has to stand out from the card.
+  box-shadow: inset 0 0 0 1px var(--grey-edge);
   // Holds the glyph that carries the state alongside the colour. Small enough that the dot stays inside the single
   // line every cell is. The ink is the status ink in both themes, since it sits on the dot fill.
   color: var(--status-ink);
@@ -196,14 +198,17 @@
 
   &.dot-good {
     background: var(--green-fill);
+    box-shadow: inset 0 0 0 1px var(--green-edge);
   }
 
   &.dot-warn {
     background: var(--yellow-fill);
+    box-shadow: inset 0 0 0 1px var(--yellow-edge);
   }
 
   &.dot-bad {
     background: var(--red-fill);
+    box-shadow: inset 0 0 0 1px var(--red-edge);
   }
 
   // The exclamation mark and the cross are drawn a touch left of their box's middle.
