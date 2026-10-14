@@ -587,6 +587,19 @@ test instances and production instances. This way you can easily distinguish the
 
 .. versionadded:: 3.5
 
+show_appearance_settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The WebUI hides its appearance options until this policy is set. If it is set, the *Appearance* section of the UI
+Settings (corners, depth and light source) is shown, and the *Appearance* widget can be added to the dashboard. Without
+the policy, the section and the widget are hidden, and an Appearance widget already on a dashboard is removed.
+
+Hiding the options does not reset them: an appearance a user has already chosen stays in effect.
+
+.. versionadded:: 3.14
+
 show_seed
 ~~~~~~~~~
 

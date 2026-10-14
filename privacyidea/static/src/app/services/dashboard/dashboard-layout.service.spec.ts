@@ -541,6 +541,50 @@ describe("DashboardLayoutService", () => {
       expect(service.isWidgetTypeAllowed("news")).toBe(true);
     });
 
+    describe("appearance widget", () => {
+      const setShowAppearanceSettings = (show: boolean): void =>
+        auth.authData.update((data) => ({ ...data!, show_appearance_settings: show }));
+
+      it("should be hidden until the show_appearance_settings policy is set", () => {
+        build([]);
+
+        expect(service.isWidgetTypeAllowed("appearance")).toBe(false);
+
+        setShowAppearanceSettings(true);
+        expect(service.isWidgetTypeAllowed("appearance")).toBe(true);
+      });
+
+      it("should not be added while the policy is not set", () => {
+        build([]);
+
+        service.addWidget("appearance");
+
+        expect(service.hasWidgetOfType("appearance")).toBe(false);
+      });
+
+      it("should be removed from the layout and the stored layout while the policy is not set", () => {
+        setShowAppearanceSettings(true);
+        build();
+        service.addWidget("appearance");
+        setShowAppearanceSettings(false);
+
+        service.pruneForbiddenWidgets();
+
+        expect(service.hasWidgetOfType("appearance")).toBe(false);
+        expect(stored()?.some((widget) => widget.type === "appearance")).toBe(false);
+      });
+
+      it("should be kept in the layout once the policy is set", () => {
+        setShowAppearanceSettings(true);
+        build();
+        service.addWidget("appearance");
+
+        service.pruneForbiddenWidgets();
+
+        expect(service.hasWidgetOfType("appearance")).toBe(true);
+      });
+    });
+
     it("should offer the health widgets only with configread", () => {
       build([]);
       auth.actionAllowed.mockImplementation((action: string) => action !== "configread");

@@ -160,6 +160,7 @@ class PolicyAction:
     HIDE_BUTTONS = "hide_buttons"
     HIDE_WELCOME = "hide_welcome_info"
     SHOW_SEED = "show_seed"
+    SHOW_APPEARANCE_SETTINGS = "show_appearance_settings"
     CUSTOM_MENU = "custom_menu"
     CUSTOM_BASELINE = "custom_baseline"
     GDPR_LINK = "privacy_statement_link"

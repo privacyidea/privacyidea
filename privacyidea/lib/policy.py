@@ -3179,6 +3179,12 @@ def get_static_policy_definitions(scope=None):
                 'desc': _("If this is checked, there will be a confirmation prompt when "
                           "deleting policies, events, mresolver, resolver or periodic tasks!")
             },
+            PolicyAction.SHOW_APPEARANCE_SETTINGS: {
+                'type': 'bool',
+                'desc': _("If this is checked, the Appearance settings (corners, depth and light source) are "
+                          "shown in the UI Settings and the Appearance widget is offered on the dashboard. "
+                          "Without it, both are hidden.")
+            },
             PolicyAction.SHOW_SEED: {
                 'type': 'bool',
                 'desc': _("If this is checked, the seed "

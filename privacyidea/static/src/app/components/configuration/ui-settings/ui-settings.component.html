@@ -109,103 +109,105 @@
     </div>
   </div>
 
-  <mat-expansion-panel class="settings-panel">
-    <mat-expansion-panel-header>
-      <mat-panel-title i18n="@@uiSettings.accessibility">Accessibility</mat-panel-title>
-    </mat-expansion-panel-header>
+  @if (showAppearanceSettings()) {
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n="@@uiSettings.accessibility">Accessibility</mat-panel-title>
+      </mat-expansion-panel-header>
 
-    <div class="expansion-well">
-      <div class="settings-group settings-group-panel settings-group-start">
-        <div class="settings-item settings-item-field-l">
-          <h4
-            class="settings-item-label margin-8"
-            i18n="@@uiSettings.statusColors"
-            >Status colors</h4
+      <div class="expansion-well">
+        <div class="settings-group settings-group-panel settings-group-start">
+          <div class="settings-item settings-item-field-l">
+            <h4
+              class="settings-item-label margin-8"
+              i18n="@@uiSettings.statusColors"
+              >Status colors</h4
+            >
+            <mat-form-field
+              class="input-width-l margin-left-16"
+              subscriptSizing="dynamic">
+              <mat-select
+                (selectionChange)="selectStatusColors($event.value)"
+                [value]="statusColors()"
+                aria-label="Status colors"
+                i18n-aria-label="@@uiSettings.statusColors">
+                @for (level of statusColorLevels; track level.value) {
+                  <mat-option [value]="level.value">{{ level.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </div>
+    </mat-expansion-panel>
+
+    <mat-expansion-panel class="settings-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n="@@dashboard.appearance">Appearance</mat-panel-title>
+        <mat-panel-description>
+          <mat-icon
+            [attr.aria-label]="appearanceHint"
+            [matTooltip]="appearanceHint"
+            class="settings-appearance-hint"
+            >info_outline</mat-icon
           >
-          <mat-form-field
-            class="input-width-l margin-left-16"
-            subscriptSizing="dynamic">
-            <mat-select
-              (selectionChange)="selectStatusColors($event.value)"
-              [value]="statusColors()"
-              aria-label="Status colors"
-              i18n-aria-label="@@uiSettings.statusColors">
-              @for (level of statusColorLevels; track level.value) {
-                <mat-option [value]="level.value">{{ level.label }}</mat-option>
+        </mat-panel-description>
+      </mat-expansion-panel-header>
+
+      <div class="expansion-well">
+        <div class="settings-group settings-group-panel">
+          <div class="settings-item settings-item-m settings-item-center">
+            <h4
+              class="settings-item-label margin-8"
+              i18n="@@uiSettings.corners"
+              >Corners</h4
+            >
+            <mat-button-toggle-group
+              (change)="selectCorners($event.value)"
+              [hideSingleSelectionIndicator]="true"
+              [value]="corners()"
+              aria-label="Corners"
+              i18n-aria-label="@@uiSettings.corners">
+              @for (level of cornerLevels; track level.value) {
+                <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
               }
-            </mat-select>
-          </mat-form-field>
+            </mat-button-toggle-group>
+          </div>
+
+          <div class="settings-item settings-item-m settings-item-center">
+            <h4
+              class="settings-item-label margin-8"
+              i18n="@@uiSettings.depth"
+              >Depth</h4
+            >
+            <mat-button-toggle-group
+              (change)="selectDepth($event.value)"
+              [hideSingleSelectionIndicator]="true"
+              [value]="depth()"
+              aria-label="Depth"
+              i18n-aria-label="@@uiSettings.depth">
+              @for (level of depthLevels; track level.value) {
+                <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+          </div>
+
+          <div class="settings-item settings-item-m settings-item-center">
+            <h4
+              class="settings-item-label margin-8"
+              i18n="@@uiSettings.lightSource"
+              >Light Source</h4
+            >
+            <app-light-source-dial
+              [items]="lightSourceDialItems"
+              [selected]="lightSource()"
+              groupName="light-source"
+              legend="Light source"
+              i18n-legend="@@uiSettings.lightSource2"
+              (pick)="selectLightSource($event)" />
+          </div>
         </div>
       </div>
-    </div>
-  </mat-expansion-panel>
-
-  <mat-expansion-panel class="settings-panel">
-    <mat-expansion-panel-header>
-      <mat-panel-title i18n="@@dashboard.appearance">Appearance</mat-panel-title>
-      <mat-panel-description>
-        <mat-icon
-          [attr.aria-label]="appearanceHint"
-          [matTooltip]="appearanceHint"
-          class="settings-appearance-hint"
-          >info_outline</mat-icon
-        >
-      </mat-panel-description>
-    </mat-expansion-panel-header>
-
-    <div class="expansion-well">
-      <div class="settings-group settings-group-panel">
-        <div class="settings-item settings-item-m settings-item-center">
-          <h4
-            class="settings-item-label margin-8"
-            i18n="@@uiSettings.corners"
-            >Corners</h4
-          >
-          <mat-button-toggle-group
-            (change)="selectCorners($event.value)"
-            [hideSingleSelectionIndicator]="true"
-            [value]="corners()"
-            aria-label="Corners"
-            i18n-aria-label="@@uiSettings.corners">
-            @for (level of cornerLevels; track level.value) {
-              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-            }
-          </mat-button-toggle-group>
-        </div>
-
-        <div class="settings-item settings-item-m settings-item-center">
-          <h4
-            class="settings-item-label margin-8"
-            i18n="@@uiSettings.depth"
-            >Depth</h4
-          >
-          <mat-button-toggle-group
-            (change)="selectDepth($event.value)"
-            [hideSingleSelectionIndicator]="true"
-            [value]="depth()"
-            aria-label="Depth"
-            i18n-aria-label="@@uiSettings.depth">
-            @for (level of depthLevels; track level.value) {
-              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-            }
-          </mat-button-toggle-group>
-        </div>
-
-        <div class="settings-item settings-item-m settings-item-center">
-          <h4
-            class="settings-item-label margin-8"
-            i18n="@@uiSettings.lightSource"
-            >Light Source</h4
-          >
-          <app-light-source-dial
-            [items]="lightSourceDialItems"
-            [selected]="lightSource()"
-            groupName="light-source"
-            legend="Light source"
-            i18n-legend="@@uiSettings.lightSource2"
-            (pick)="selectLightSource($event)" />
-        </div>
-      </div>
-    </div>
-  </mat-expansion-panel>
+    </mat-expansion-panel>
+  }
 </div>

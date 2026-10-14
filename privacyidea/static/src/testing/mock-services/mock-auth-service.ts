@@ -66,6 +66,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly hideButtons = computed(() => this.authData()?.hide_buttons ?? false);
   readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation ?? false);
   readonly showSeed = computed(() => this.authData()?.show_seed ?? false);
+  readonly showAppearanceSettings = computed(() => this.authData()?.show_appearance_settings ?? false);
   readonly showNode = computed(() => this.authData()?.show_node ?? "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status ?? 0);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android ?? null);
@@ -129,6 +130,7 @@ export class MockAuthService implements AuthServiceInterface {
     hide_buttons: false,
     deletion_confirmation: false,
     show_seed: false,
+    show_appearance_settings: false,
     show_node: "",
     subscription_status: 0,
     qr_image_android: null,

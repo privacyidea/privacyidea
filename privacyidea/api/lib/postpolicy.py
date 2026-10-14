@@ -767,6 +767,8 @@ def get_webui_settings(request, response):
         default_container_type_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.DEFAULT_CONTAINER_TYPE,
                                                    user_object=user, user=username,
                                                    realm=realm).action_values(unique=True)
+        show_appearance_settings = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_APPEARANCE_SETTINGS,
+                                                 user_object=user, user=username, realm=realm).any()
         show_seed = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_SEED, user_object=user,
                                   user=username, realm=realm).any()
         show_node = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE, realm=realm,
@@ -854,6 +856,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["deletion_confirmation"] = deletion_confirmation
         content["result"]["value"]["show_seed"] = show_seed
+        content["result"]["value"]["show_appearance_settings"] = show_appearance_settings
         content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
         subscription_state = subscription_status()
         content["result"]["value"]["subscription_status"] = subscription_state
