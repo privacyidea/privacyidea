@@ -122,17 +122,7 @@
           <!-- Custom range slider, shown inline (not behind a trigger) so the range is adjustable without opening
             anything. -->
           <div class="time-filter-custom-range margin-left-16">
-            <app-time-range-slider
-              (commit)="commitTimeRange()"
-              (endInput)="onRangeEndInput($event)"
-              (startInput)="onRangeStartInput($event)"
-              [displayWith]="formatSliderThumb"
-              [end]="rangeEnd()"
-              [histogram]="activityHistogram()"
-              [start]="rangeStart()"
-              [steps]="rangeSliderSteps"
-              [summaryFrom]="rangeSummaryFrom()"
-              [summaryTo]="rangeSummaryTo()" />
+            <ng-container *ngTemplateOutlet="timeRangeSlider" />
           </div>
         </div>
       </div>
@@ -516,17 +506,7 @@
               i18n="@@authLog.customRange"
               >Custom range</span
             >
-            <app-time-range-slider
-              (commit)="commitTimeRange()"
-              (endInput)="onRangeEndInput($event)"
-              (startInput)="onRangeStartInput($event)"
-              [displayWith]="formatSliderThumb"
-              [end]="rangeEnd()"
-              [histogram]="activityHistogram()"
-              [start]="rangeStart()"
-              [steps]="rangeSliderSteps"
-              [summaryFrom]="rangeSummaryFrom()"
-              [summaryTo]="rangeSummaryTo()" />
+            <ng-container *ngTemplateOutlet="timeRangeSlider" />
           </div>
         </div>
       </ng-template>
@@ -570,3 +550,18 @@
     </div>
   </ng-template>
 </mat-menu>
+
+<!-- The time range slider, shared by the action row and the "More Filter" menu. -->
+<ng-template #timeRangeSlider>
+  <app-time-range-slider
+    (commit)="commitTimeRange()"
+    (endInput)="onRangeEndInput($event)"
+    (startInput)="onRangeStartInput($event)"
+    [displayWith]="formatSliderThumb"
+    [end]="rangeEnd()"
+    [histogram]="activityHistogram()"
+    [start]="rangeStart()"
+    [steps]="rangeSliderSteps"
+    [summaryFrom]="rangeSummaryFrom()"
+    [summaryTo]="rangeSummaryTo()" />
+</ng-template>

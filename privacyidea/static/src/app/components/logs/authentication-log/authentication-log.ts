@@ -19,7 +19,7 @@
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { filterMatchTooltip } from "@utils/filter-hint.utils";
-import { DatePipe, formatDate, NgClass } from "@angular/common";
+import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
 import { InteractivityChecker } from "@angular/cdk/a11y";
 import {
   afterNextRender,
@@ -329,6 +329,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
     MatDivider,
+    NgTemplateOutlet,
     MatIcon,
     MatButtonModule,
     MatDatepickerModule,
