@@ -3181,9 +3181,11 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.SHOW_APPEARANCE_SETTINGS: {
                 'type': 'bool',
-                'desc': _("If this is checked, the Appearance settings (corners, depth and light source) are "
-                          "shown in the UI Settings and the Appearance widget is offered on the dashboard. "
-                          "Without it, both are hidden.")
+                'desc': _("If this is checked, the Accessibility and Appearance settings are shown in the UI "
+                          "Settings and the Appearance widget is offered on the dashboard. Without it, they "
+                          "are hidden, and the theme switch sets the look: AAA status colors, default depth "
+                          "and a 280 degree light source for the dark theme, AA status colors and subtle "
+                          "depth for the light theme.")
             },
             PolicyAction.SHOW_SEED: {
                 'type': 'bool',

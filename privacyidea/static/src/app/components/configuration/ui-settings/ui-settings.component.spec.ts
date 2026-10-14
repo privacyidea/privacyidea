@@ -113,15 +113,18 @@ describe("UISettingsComponent", () => {
   });
 
   // Toggling is covered by ThemeToggleComponent's own spec.
-  it("should show the Appearance section when the show_appearance_settings policy is set", () => {
-    expect(host().querySelector(".settings-appearance-panel")).not.toBeNull();
+  const panelTitles = (): string[] =>
+    Array.from(host().querySelectorAll("mat-panel-title")).map((title) => title.textContent!.trim());
+
+  it("should show the Accessibility and Appearance sections when the show_appearance_settings policy is set", () => {
+    expect(panelTitles()).toEqual(["Accessibility", "Appearance"]);
   });
 
-  it("should hide the Appearance section until the show_appearance_settings policy is set", () => {
+  it("should hide the Accessibility and Appearance sections until the show_appearance_settings policy is set", () => {
     setShowAppearanceSettings(false);
     fixture.detectChanges();
 
-    expect(host().querySelector(".settings-appearance-panel")).toBeNull();
+    expect(panelTitles()).toEqual([]);
     // The rest of the settings stay.
     expect(host().querySelector(".language-field")).not.toBeNull();
   });

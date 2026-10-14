@@ -18,6 +18,7 @@
  **/
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { ThemeSwitcherComponent } from "./theme-switcher.component";
 
@@ -26,6 +27,8 @@ describe("ThemeSwitcherComponent", () => {
     currentTheme: ReturnType<typeof signal<"light" | "dark" | "system">>;
     setTheme: jest.Mock;
   };
+
+  let mockAppearanceService: { followTheme: jest.Mock };
 
   const setMatchMedia = (prefersDark: boolean) => {
     Object.defineProperty(window, "matchMedia", {
@@ -58,10 +61,14 @@ describe("ThemeSwitcherComponent", () => {
       currentTheme: signal<"light" | "dark" | "system">("light"),
       setTheme: jest.fn()
     };
+    mockAppearanceService = { followTheme: jest.fn() };
 
     await TestBed.configureTestingModule({
       imports: [ThemeSwitcherComponent],
-      providers: [{ provide: ThemeService, useValue: mockThemeService }]
+      providers: [
+        { provide: ThemeService, useValue: mockThemeService },
+        { provide: AppearanceService, useValue: mockAppearanceService }
+      ]
     }).compileComponents();
   });
 
@@ -116,5 +123,15 @@ describe("ThemeSwitcherComponent", () => {
     ctx = create(false, "system");
     ctx.component.toggleTheme();
     expect(mockThemeService.setTheme).toHaveBeenCalledWith("dark");
+  });
+
+  it("toggleTheme hands the new theme to the appearance service, which decides the status colors", () => {
+    let ctx = create(false, "light");
+    ctx.component.toggleTheme();
+    expect(mockAppearanceService.followTheme).toHaveBeenLastCalledWith("dark");
+
+    ctx = create(false, "dark");
+    ctx.component.toggleTheme();
+    expect(mockAppearanceService.followTheme).toHaveBeenLastCalledWith("light");
   });
 });

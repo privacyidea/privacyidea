@@ -18,12 +18,14 @@
  **/
 import { provideZonelessChangeDetection, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { ThemeToggleComponent } from "./theme-toggle.component";
 
 describe("ThemeToggleComponent", () => {
   let fixture: ComponentFixture<ThemeToggleComponent>;
   let component: ThemeToggleComponent;
+  let appearanceService: { followTheme: jest.Mock };
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
 
   const host = (): HTMLElement => fixture.nativeElement;
@@ -33,10 +35,15 @@ describe("ThemeToggleComponent", () => {
 
   beforeEach(async () => {
     themeService = { visualTheme: signal<"light" | "dark">("light"), setTheme: jest.fn() };
+    appearanceService = { followTheme: jest.fn() };
 
     await TestBed.configureTestingModule({
       imports: [ThemeToggleComponent],
-      providers: [provideZonelessChangeDetection(), { provide: ThemeService, useValue: themeService }]
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: ThemeService, useValue: themeService },
+        { provide: AppearanceService, useValue: appearanceService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ThemeToggleComponent);
@@ -74,6 +81,16 @@ describe("ThemeToggleComponent", () => {
     input().dispatchEvent(new Event("change"));
 
     expect(themeService.setTheme).toHaveBeenCalledWith("light");
+  });
+
+  it("should hand the new theme to the appearance service, which decides the status colors", () => {
+    input().dispatchEvent(new Event("change"));
+    expect(appearanceService.followTheme).toHaveBeenLastCalledWith("dark");
+
+    themeService.visualTheme.set("dark");
+    fixture.detectChanges();
+    input().dispatchEvent(new Event("change"));
+    expect(appearanceService.followTheme).toHaveBeenLastCalledWith("light");
   });
 
   it("should label itself with the mode it switches to", () => {
