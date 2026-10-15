@@ -514,6 +514,30 @@ describe("ContainerDetailsComponent", () => {
       expect(fn()).toBe(true);
     });
 
+    /** The mock resource has a writable value signal; the real one does not. */
+    const setDetailsLoaded = (loaded: boolean): void => {
+      const resource = containerService.containerDetailsResource as unknown as {
+        value: { set: (value: unknown) => void };
+      };
+      resource.value.set(loaded ? {} : undefined);
+    };
+
+    it("does not count an unloaded details resource as pending changes", () => {
+      // No rights means no request, which is exactly the resource state a logout leaves
+      // behind: the page must not claim unsaved changes and suspend the logout navigation
+      // behind the save-and-exit dialog while the session is already gone.
+      setDetailsLoaded(false);
+
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+    });
+
+    it("still blocks editing while the container details have not loaded", () => {
+      setDetailsLoaded(false);
+
+      expect(component.isAnyEditing()).toBe(true);
+    });
+
     it("ngOnDestroy clears all pending-changes registrations", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
@@ -638,4 +662,3 @@ describe("formatContainerTimestamp", () => {
     expect(result).toContain("2024");
   });
 });
-
