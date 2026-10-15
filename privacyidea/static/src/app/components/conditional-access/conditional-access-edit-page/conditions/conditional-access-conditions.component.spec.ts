@@ -103,6 +103,7 @@ describe("ConditionalAccessConditionsComponent", () => {
 
     const unknownRow = component.rows()[3];
     expect(unknownRow.valuesLabel).toBe("Client label");
+    component.onOperatorChange(unknownRow.type, "IN");
     expect(component.hintFor(unknownRow)).toBe("Restrict the values this policy is applied to.");
   });
 
@@ -130,8 +131,9 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(renderedLabels()).toEqual(["User realm", "User role", "Endpoint"]);
   });
 
-  it("should default a type without a condition to IN and no selected values", () => {
-    expect(component.selectedOperator("USER_REALM")).toBe("IN");
+  it("should select no operator and no values for a type without a condition", () => {
+    expect(component.selectedOperator("USER_REALM")).toBeNull();
+    expect(component.selectedOperators("USER_REALM")).toEqual([]);
     expect(component.selectedValues("USER_REALM")).toEqual([]);
   });
 
@@ -141,10 +143,17 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(component.selectedValues("USER_REALM")).toEqual(["sales"]);
   });
 
-  it("should add a condition carrying the current operator when values are picked", () => {
+  it("should add a condition with the operator IN when values are picked while no operator is selected", () => {
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onValuesChange("USER_REALM", ["sales", "support"]);
     expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "support"] }]);
+  });
+
+  it("should add a condition carrying the operator picked before the values", () => {
+    component.onOperatorChange("USER_REALM", "NOT_IN");
+    const spy = jest.spyOn(component.conditionsChange, "emit");
+    component.onValuesChange("USER_REALM", ["sales"]);
+    expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
   });
 
   // Without the pending-operator state the choice would be lost: a row with no values emits no condition, so there is
@@ -170,6 +179,122 @@ describe("ConditionalAccessConditionsComponent", () => {
     component.onOperatorChange("USER_REALM", "NOT_IN");
     setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
     expect(component.selectedOperator("USER_REALM")).toBe("IN");
+  });
+
+  describe("no operator selected", () => {
+    const toggles = (row: number): HTMLButtonElement[] =>
+      Array.from(
+        fixture.nativeElement.querySelectorAll(".ca-condition-row")[row].querySelectorAll("mat-button-toggle button")
+      );
+    const pressed = (row: number): boolean[] =>
+      toggles(row).map((toggle) => toggle.getAttribute("aria-pressed") === "true");
+
+    it("should show neither operator as selected for a type without a condition", () => {
+      expect(pressed(0)).toEqual([false, false]);
+    });
+
+    const valueSelectDisabled = (row: number): boolean => {
+      const rows = fixture.nativeElement.querySelectorAll(".ca-condition-row");
+      return rows[row].querySelector("mat-select").classList.contains("mat-mdc-select-disabled");
+    };
+
+    it("should disable the value select until an operator is selected", () => {
+      expect(valueSelectDisabled(0)).toBe(true);
+
+      toggles(0)[1].click();
+      fixture.detectChanges();
+      expect(valueSelectDisabled(0)).toBe(false);
+
+      toggles(0)[1].click();
+      fixture.detectChanges();
+      expect(valueSelectDisabled(0)).toBe(true);
+    });
+
+    it("should keep the value select enabled for a loaded condition and for an emptied row", () => {
+      setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+      expect(valueSelectDisabled(0)).toBe(false);
+
+      component.onValuesChange("USER_REALM", []);
+      setConditions([]);
+      expect(valueSelectDisabled(0)).toBe(false);
+    });
+
+    it("should show the selection indicator inside the selected toggle", () => {
+      toggles(0)[0].click();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll(".mat-button-toggle-checkbox-wrapper").length).toBeGreaterThan(0);
+    });
+
+    it("should show the operator of a condition as the only selected one", () => {
+      setConditions([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
+      expect(pressed(0)).toEqual([false, true]);
+    });
+
+    it("should select the pressed operator and replace the selected one", () => {
+      toggles(0)[0].click();
+      fixture.detectChanges();
+      expect(pressed(0)).toEqual([true, false]);
+
+      toggles(0)[1].click();
+      fixture.detectChanges();
+      expect(pressed(0)).toEqual([false, true]);
+      expect(component.selectedOperator("USER_REALM")).toBe("NOT_IN");
+    });
+
+    it("should leave none selected when the selected operator is pressed again", () => {
+      toggles(0)[0].click();
+      fixture.detectChanges();
+      toggles(0)[0].click();
+      fixture.detectChanges();
+
+      expect(pressed(0)).toEqual([false, false]);
+      expect(component.selectedOperator("USER_REALM")).toBeNull();
+    });
+
+    it("should leave none selected and remove the condition when the operator of a condition is pressed again", () => {
+      setConditions([
+        { condition_type: "USER_REALM", operator: "IN", value: ["sales"] },
+        { condition_type: "USER_ROLE", operator: "IN", value: ["user"] }
+      ]);
+      const spy = jest.spyOn(component.conditionsChange, "emit");
+
+      toggles(0)[0].click();
+      fixture.detectChanges();
+
+      expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
+      setConditions([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
+      expect(pressed(0)).toEqual([false, false]);
+      expect(pressed(1)).toEqual([true, false]);
+    });
+
+    it("should not emit when no operator is selected for a type without a condition", () => {
+      const spy = jest.spyOn(component.conditionsChange, "emit");
+      component.onOperatorChange("USER_REALM", "NOT_IN");
+      component.onOperatorChange("USER_REALM", null);
+      expect(spy).not.toHaveBeenCalled();
+      expect(component.selectedOperator("USER_REALM")).toBeNull();
+    });
+
+    it("should keep the operator of a condition whose values are cleared", () => {
+      setConditions([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
+      component.onValuesChange("USER_REALM", []);
+      setConditions([]);
+
+      expect(component.selectedOperator("USER_REALM")).toBe("NOT_IN");
+      expect(pressed(0)).toEqual([false, true]);
+    });
+
+    it("should hand the toggle group the same array for the same operator", () => {
+      setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["sales"] }]);
+      const first = component.selectedOperators("USER_REALM");
+      setConditions([{ condition_type: "USER_REALM", operator: "IN", value: ["support"] }]);
+      expect(component.selectedOperators("USER_REALM")).toBe(first);
+      expect(component.selectedOperators("USER_ROLE")).toBe(component.selectedOperators("USER_ENDPOINT"));
+    });
+
+    it("should show a hint that nothing is restricted", () => {
+      expect(component.hintFor(component.rows()[0])).toBe("Not restricted. Select an operator to add a condition.");
+    });
   });
 
   it("should replace the operator of an existing condition, keeping its values", () => {
@@ -288,6 +413,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   // either way, unlike the stale-value warning that replaces it.
   it("should show a hint that follows the operator, selected or not", () => {
     const [realmRow] = component.rows();
+    component.onOperatorChange("USER_REALM", "IN");
     expect(component.hintFor(realmRow)).toBe("Restrict the realms this policy is applied to.");
 
     component.onOperatorChange("USER_REALM", "NOT_IN");
@@ -319,6 +445,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   it("should render the endpoint row with its own copy and the paths verbatim", () => {
     const endpointRow = component.rows().find((row) => row.type === "ENDPOINT")!;
     expect(endpointRow.valuesLabel).toBe("Endpoints");
+    component.onOperatorChange("ENDPOINT", "IN");
     expect(component.hintFor(endpointRow)).toBe("Restrict the endpoints this policy is applied to.");
     // A path is what an admin recognizes an endpoint by, so it is not relabelled.
     expect(component.valueLabel(endpointRow, "/validate/check")).toBe("/validate/check");
