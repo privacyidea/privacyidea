@@ -243,7 +243,7 @@ describe("ConditionalAccessStateService", () => {
     const req = httpMock.expectOne((r) => r.url === BASE + "lock/users");
     expect(req.request.method).toBe("GET");
     expect(req.request.params.get("page")).toBe("1");
-    expect(req.request.params.get("page_size")).toBe("15");
+    expect(req.request.params.get("page_size")).toBe("10");
     expect(req.request.params.get("sort_column")).toBe("locked_at");
     expect(req.request.params.get("sort_order")).toBe("desc");
     expect(req.request.params.get("case_insensitive")).toBe("true");

@@ -1,0 +1,46 @@
+// Lays its two blocks out as items of the surrounding custom-range box, exactly as when they were its own children.
+:host {
+  display: contents;
+}
+
+.slider-with-histogram {
+  position: relative;
+}
+
+// Activity bars sit behind the slider track. Inset horizontally to roughly align with the track's usable span.
+.activity-histogram {
+  position: absolute;
+  inset: 8px 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.activity-bar {
+  flex: 1 1 0;
+  min-height: 1px;
+  background-color: var(--mat-sys-primary);
+  opacity: 0.4;
+  border-radius: 1px 1px 0 0;
+}
+
+.time-range-slider {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  // No side margin, so the slider spans the full block width.
+  margin: 0;
+}
+
+.range-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  height: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}

@@ -55,6 +55,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { normalizeDateTimeString } from "@utils/date-format.utils";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { DURATION_UNIT_FACTORS, DurationUnit, largestWholeDurationUnit } from "@utils/duration-unit.utils";
 import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
 import {
@@ -62,14 +63,6 @@ import {
   ConditionalAccessDryRunOffDialogData,
   ConditionalAccessDryRunOffDialogResult
 } from "../conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
-
-type TimeUnit = "seconds" | "minutes" | "hours";
-
-const TIME_UNIT_FACTORS: Record<TimeUnit, number> = {
-  seconds: 1,
-  minutes: 60,
-  hours: 3600
-};
 
 // The actions that state a standing verdict instead of reacting to a failure count. They are the only
 // ones a stage may carry at threshold 0, where they then apply to every request the policy covers -
@@ -412,7 +405,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // The time window is stored in seconds; the editor lets the admin pick a coarser unit and enter a
   // plain number, converted to seconds on the way into editPolicy.
-  timeWindowUnit = signal<TimeUnit>("seconds");
+  timeWindowUnit = signal<DurationUnit>("seconds");
   timeWindowValue = signal<number>(EMPTY_CONDITIONAL_ACCESS_POLICY.time_window_seconds);
 
   constructor() {
@@ -545,26 +538,20 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed) && parsed >= 1) {
       this.timeWindowValue.set(parsed);
-      this.updateEditPolicy({ time_window_seconds: parsed * TIME_UNIT_FACTORS[this.timeWindowUnit()] });
+      this.updateEditPolicy({ time_window_seconds: parsed * DURATION_UNIT_FACTORS[this.timeWindowUnit()] });
     }
   }
 
-  onTimeWindowUnitChange(unit: TimeUnit): void {
+  onTimeWindowUnitChange(unit: DurationUnit): void {
     this.timeWindowUnit.set(unit);
-    this.updateEditPolicy({ time_window_seconds: this.timeWindowValue() * TIME_UNIT_FACTORS[unit] });
+    this.updateEditPolicy({ time_window_seconds: this.timeWindowValue() * DURATION_UNIT_FACTORS[unit] });
   }
 
-  // Picks the coarsest unit that divides the stored seconds evenly, so a saved window shows as
-  // e.g. "10 minutes" rather than "600 seconds", and sets the displayed value in that unit.
+  // Shows a saved window in the coarsest unit that divides it evenly, e.g. "10 minutes" rather than "600 seconds".
   private syncTimeWindowFromSeconds(seconds: number): void {
-    let unit: TimeUnit = "seconds";
-    if (seconds % TIME_UNIT_FACTORS.hours === 0) {
-      unit = "hours";
-    } else if (seconds % TIME_UNIT_FACTORS.minutes === 0) {
-      unit = "minutes";
-    }
+    const unit = largestWholeDurationUnit(seconds);
     this.timeWindowUnit.set(unit);
-    this.timeWindowValue.set(seconds / TIME_UNIT_FACTORS[unit]);
+    this.timeWindowValue.set(seconds / DURATION_UNIT_FACTORS[unit]);
   }
 
   onPriorityInput(value: string): void {

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -26,6 +26,11 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  DURATION_UNIT_FACTORS,
+  DurationUnit,
+  largestWholeDurationUnit
+} from "@utils/duration-unit.utils";
 import {
   actionValueError,
   ConditionalAccessPolicyService,
@@ -55,16 +60,6 @@ const ACTION_DESCRIPTIONS: Record<ConditionalAccessActionType, string> = {
 // - "email": a JSON object with the fields listed in EMAIL_FIELDS.
 // - "none": the action takes no value (stored as null).
 type ActionValueMode = "duration" | "email" | "none";
-
-// The duration is always stored and sent to the backend in seconds; the unit select only changes
-// how it is entered and displayed.
-type DurationUnit = "seconds" | "minutes" | "hours";
-
-const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
-  seconds: 1,
-  minutes: 60,
-  hours: 3600
-};
 
 interface EmailField {
   key: string;
@@ -318,9 +313,21 @@ export class ConditionalAccessActionItemComponent {
     return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
   }
 
-  readonly durationUnit = signal<DurationUnit>("seconds");
-
-  readonly durationUnits: readonly DurationUnit[] = ["seconds", "minutes", "hours"];
+  // Starts in the coarsest unit the stored duration is a whole number of, and keeps the unit the admin works in while
+  // the duration is the one this item emitted - so typing "60" in seconds does not flip the field to "1" minute.
+  // Any other duration, e.g. once the list (tracked by index) reuses this item for another action, picks the unit
+  // afresh.
+  readonly durationUnit = linkedSignal<number | null, DurationUnit>({
+    source: () => this.durationSeconds(),
+    computation: (seconds, previous) => {
+      const unit = previous?.value;
+      if (unit && (seconds == null || seconds === this.emittedDurationSeconds)) {
+        return unit;
+      }
+      return seconds == null ? "seconds" : largestWholeDurationUnit(seconds);
+    }
+  });
+  private emittedDurationSeconds: number | null = null;
 
   // The raw stored duration in seconds, or null if unset/invalid. Every shape the backend accepts is read,
   // not just the bare number this editor writes, so a duration set through the API renders in the field
@@ -364,7 +371,7 @@ export class ConditionalAccessActionItemComponent {
     }
     const parsed = parseInt(trimmed, 10);
     const seconds = Number.isNaN(parsed) ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
-    this.updateAction.emit({ action_value: seconds });
+    this.emitDuration(seconds);
   }
 
   onDurationUnitChange(unit: DurationUnit): void {
@@ -374,8 +381,13 @@ export class ConditionalAccessActionItemComponent {
     this.durationUnit.set(unit);
     const parsed = parseInt(current, 10);
     if (!Number.isNaN(parsed)) {
-      this.updateAction.emit({ action_value: parsed * DURATION_UNIT_FACTORS[unit] });
+      this.emitDuration(parsed * DURATION_UNIT_FACTORS[unit]);
     }
+  }
+
+  private emitDuration(seconds: number | null): void {
+    this.emittedDurationSeconds = seconds;
+    this.updateAction.emit({ action_value: seconds });
   }
 
   onEmailFieldInput(key: string, value: string): void {

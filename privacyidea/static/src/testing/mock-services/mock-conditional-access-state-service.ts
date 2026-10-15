@@ -73,7 +73,7 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
   lockedUsersFilter = signal(new FilterValue());
   lockedUsersFilterParams = computed<Record<string, string>>(() => ({}));
   lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });
-  lockedUsersPageSize = signal(15);
+  lockedUsersPageSize = signal(10);
   lockedUsersPageIndex = signal(1);
 
   lockedUsersResource = new MockHttpResourceRef<PiResponse<LockedUsersPage> | undefined>(
