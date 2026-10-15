@@ -54,7 +54,7 @@ it, ours or not.
 See https://github.com/privacyidea/privacyidea/issues/5751
 
 Revision ID: e1f2a3b4c5d6
-Revises: b7c1e4d2a9f3
+Revises: 56529818c956
 Create Date: 2026-08-20 00:00:00.000000
 
 """
@@ -123,7 +123,7 @@ def _marked(column):
 
 # revision identifiers, used by Alembic.
 revision = 'e1f2a3b4c5d6'
-down_revision = 'b7c1e4d2a9f3'
+down_revision = '56529818c956'
 branch_labels = None
 depends_on = None
 
