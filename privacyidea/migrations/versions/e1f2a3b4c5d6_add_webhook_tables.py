@@ -171,6 +171,28 @@ _webhook = sa.table(
     sa.column('timeout', sa.Integer),
 )
 
+#: Name of the sequence feeding ``eventhandleroption.id`` (see privacyidea/models/event.py).
+_EVENTHANDLEROPTION_SEQUENCE = 'eventhandleropt_seq'
+
+
+def _next_eventhandleroption_id(conn):
+    """
+    Return the id for a new ``eventhandleroption`` row, or None to let the column supply it.
+
+    ``eventhandleroption.id`` is declared with a ``Sequence``, and a sequence is a thing the
+    inserter draws from, not a default on the column. On a backend that has real sequences -
+    MariaDB 10.3 and later, PostgreSQL - the column therefore has no default of its own and an
+    INSERT that omits the id fails; the ORM gets away with it because it fetches the next value
+    first. The Core INSERT in :func:`_run_data_migration` has to do the same. Everywhere else
+    (MySQL, SQLite) the column is an ordinary auto-increment and omitting the id is correct.
+
+    :param conn: the connection the migration runs on
+    :return: the next sequence value, or None if the column fills itself
+    """
+    if conn.dialect.supports_sequences:
+        return conn.scalar(sa.Sequence(_EVENTHANDLEROPTION_SEQUENCE))
+    return None
+
 
 def _sanitize_name(name):
     """Turn a handler name into a safe identifier fragment (ASCII, max 40 chars)."""
@@ -545,15 +567,17 @@ def _run_data_migration(conn):
             )
 
         # 7. Add a "webhook" option to the handler pointing at the identifier.
-        conn.execute(
-            _eventhandleroption.insert().values(
-                eventhandler_id=handler_id,
-                Key='webhook',
-                Value=identifier,
-                Type='',
-                Description=_option_description(handler_id),
-            )
-        )
+        option_values = {
+            'eventhandler_id': handler_id,
+            'Key': 'webhook',
+            'Value': identifier,
+            'Type': '',
+            'Description': _option_description(handler_id),
+        }
+        option_id = _next_eventhandleroption_id(conn)
+        if option_id is not None:
+            option_values['id'] = option_id
+        conn.execute(_eventhandleroption.insert().values(**option_values))
 
         migrated += 1
         log.info(

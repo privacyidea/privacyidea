@@ -766,3 +766,45 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         # And the upgrade can now start over cleanly.
         self.assertEqual(self._run_migration(), 1)
         self.assertEqual(Webhook.query.count(), 1)
+
+
+class EventHandlerOptionIdTestCase(MyTestCase):
+    """
+    The id the migration supplies for the ``eventhandleroption`` rows it writes.
+
+    ``eventhandleroption.id`` is declared with a ``Sequence``, so on MariaDB 10.3 and later and on
+    PostgreSQL the column carries no default and a Core INSERT has to draw from the sequence
+    itself. Neither the sequence branch nor a wrong sequence name shows up on SQLite or MySQL,
+    where the column is an ordinary auto-increment - hence these two checks.
+    """
+
+    def test_the_sequence_name_is_the_one_the_model_declares(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _EVENTHANDLEROPTION_SEQUENCE
+        )
+        self.assertEqual(EventHandlerOption.__table__.c.id.default.name,
+                         _EVENTHANDLEROPTION_SEQUENCE)
+
+    def test_the_id_comes_from_the_sequence_only_where_there_is_one(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _next_eventhandleroption_id, _EVENTHANDLEROPTION_SEQUENCE
+        )
+
+        class _Connection:
+            def __init__(self, supports_sequences):
+                self.dialect = type("_Dialect", (),
+                                    {"supports_sequences": supports_sequences})()
+                self.asked_for = []
+
+            def scalar(self, statement):
+                self.asked_for.append(statement)
+                return 42
+
+        with_sequences = _Connection(True)
+        self.assertEqual(_next_eventhandleroption_id(with_sequences), 42)
+        self.assertEqual([s.name for s in with_sequences.asked_for],
+                         [_EVENTHANDLEROPTION_SEQUENCE])
+
+        without_sequences = _Connection(False)
+        self.assertIsNone(_next_eventhandleroption_id(without_sequences))
+        self.assertEqual(without_sequences.asked_for, [])
