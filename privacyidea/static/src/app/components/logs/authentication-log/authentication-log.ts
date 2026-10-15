@@ -198,13 +198,16 @@ function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | n
   return typeof serial === "string" ? serial.replace(OVERFLOW_MARKER, "") : null;
 }
 
+// What a pick in the action-row date picker changed, as each of its two inputs reports it; an input that did not change
+// leaves its part out.
+interface PickedRangePart {
+  start?: Date | null;
+  end?: Date | null;
+}
+
 // The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
 // other columns use; the keys mirror the backend's _FILTER_PARAMS (api/authentication_log.py) and are also typeable in
 // the main filter input as advanced filters.
-// What a pick in the action-row date picker changed, as each of its two inputs reports it; an input that did not change
-// leaves its part out.
-type PickedRangePart = { start?: Date | null; end?: Date | null };
-
 const OUTCOME_FILTER_KEYS = ["ca_action_type", "ca_policy_name", "ca_dry_run"];
 
 // The two values of the dry-run filter; "Both" is the absence of the key, reached the same way every other filter is
