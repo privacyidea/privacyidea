@@ -152,6 +152,10 @@
           <mat-hint align="end">{{ editPolicy().name.length }} / 255</mat-hint>
           @if (showNameError() && nameTooLong()) {
             <mat-error i18n="@@conditionalAccess.nameMustNotExceed">Name must not exceed 255 characters.</mat-error>
+          } @else if (showNameError() && nameConflict()) {
+            <mat-error i18n="@@conditionalAccess.nameAlreadyUsed"
+              >A policy named "{{ nameConflict()?.name }}" already exists.</mat-error
+            >
           } @else if (showNameError()) {
             <mat-error i18n="@@conditionalAccess.nameRequired">Name is required.</mat-error>
           }

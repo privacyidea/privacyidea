@@ -243,6 +243,66 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.priorityError()).toBe("required");
   });
 
+  describe("name conflict", () => {
+    const rename = (name: string) => component.editPolicy.set({ ...component.editPolicy(), name });
+
+    beforeEach(() => {
+      policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    });
+
+    it("should not count the policy being edited as a conflict with itself", () => {
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should name the policy that already carries the new name and block saving", () => {
+      rename("Other");
+      expect(component.nameConflict()?.id).toBe(99);
+      expect(component.canSave()).toBe(false);
+      expect(component.saveBlockers()).toEqual(["A policy with this name already exists."]);
+    });
+
+    it("should ignore the case and trailing spaces, as MySQL and MariaDB do", () => {
+      rename("OTHER ");
+      expect(component.nameConflict()?.id).toBe(99);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should allow a change of the case of the own name", () => {
+      rename("brute force");
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should allow saving again once the name is free", () => {
+      rename("Other");
+      rename("Other 2");
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should never report the unchanged name, even when a case twin of it exists", () => {
+      policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "brute force", priority: 4 }]);
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should show the error message at once, without the name field having been left", () => {
+      rename("Other");
+      fixture.detectChanges();
+
+      expect(component.nameTouched()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('A policy named "Other" already exists.');
+    });
+
+    it("should not show the error message for a free name", () => {
+      rename("Another name");
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).not.toContain("already exists");
+    });
+  });
+
   it("should name a name that is too long", () => {
     component.editPolicy.set({ ...component.editPolicy(), name: "n".repeat(256) });
     expect(component.nameTooLong()).toBe(true);
@@ -823,6 +883,62 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should not offer delete for a new (unsaved) policy", async () => {
     await component.deletePolicy();
     expect(policyServiceMock.deleteWithConfirmDialog).not.toHaveBeenCalled();
+  });
+
+  describe("name conflict", () => {
+    const templateNamed = (name: string) => ({
+      key: "tpl",
+      description: "",
+      policy: { ...EMPTY_TEMPLATE_POLICY, name }
+    });
+
+    beforeEach(() => {
+      policyServiceMock.policies.set([{ ...mockPolicy, id: 7, name: "Password Brute-Force", priority: 3 }]);
+    });
+
+    it("should not report a conflict for the empty name of a new policy", () => {
+      expect(component.nameConflict()).toBeUndefined();
+    });
+
+    it("should show the error message at once when a template brings the name of an existing policy", () => {
+      policyServiceMock.templates.set([templateNamed("Password Brute-Force")]);
+
+      component.applyTemplate("tpl");
+      fixture.detectChanges();
+
+      expect(component.nameConflict()?.id).toBe(7);
+      expect(component.nameTouched()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('A policy named "Password Brute-Force" already exists.');
+    });
+
+    it("should block saving a policy under the name of an existing one", () => {
+      policyServiceMock.templates.set([templateNamed("password brute-force")]);
+
+      component.applyTemplate("tpl");
+
+      expect(component.canSave()).toBe(false);
+      expect(component.saveBlockers()).toContain("A policy with this name already exists.");
+    });
+
+    it("should not report a conflict for a template with a free name", () => {
+      policyServiceMock.templates.set([templateNamed("Free Name")]);
+
+      component.applyTemplate("tpl");
+      fixture.detectChanges();
+
+      expect(component.nameConflict()).toBeUndefined();
+      expect(fixture.nativeElement.textContent).not.toContain("already exists");
+    });
+
+    it("should clear the conflict when the template is cleared", () => {
+      policyServiceMock.templates.set([templateNamed("Password Brute-Force")]);
+      component.applyTemplate("tpl");
+      expect(component.nameConflict()).toBeDefined();
+
+      component.clearTemplateSelection();
+
+      expect(component.nameConflict()).toBeUndefined();
+    });
   });
 
   it("should prefill from a template and clear back to empty on clear template", () => {

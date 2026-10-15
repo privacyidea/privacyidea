@@ -150,6 +150,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   policyForm = form(this.editPolicy, (p) => {
     required(p.name);
     validate(p.name, (ctx) => (ctx.value().trim().length > 255 ? [{ kind: "maxlength" }] : []));
+    validate(p.name, () => (this.nameConflict() ? [{ kind: "nameTaken" }] : []));
   });
 
   // Options for the target select, falling back to a fixed enum until /targets loads so the
@@ -234,6 +235,21 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return this.policyService.policies().find((policy) => policy.priority === priority && policy.id !== currentId);
   });
   priorityUnique = computed(() => !this.priorityConflict());
+  // Names are unique across policies and the backend rejects a second one, so this surfaces the policy that
+  // already carries the name. The comparison ignores case (and trailing spaces) because MySQL and MariaDB do,
+  // so the clash is caught where the backend would treat both names as one. The policy's own entry is
+  // excluded by id, and a name left unchanged never collides, so an existing case twin stays editable.
+  nameConflict = computed<ConditionalAccessPolicy | undefined>(() => {
+    const name = this.editPolicy().name;
+    if (!name.trim() || name === this.policy().name) {
+      return undefined;
+    }
+    const folded = name.trimEnd().toLowerCase();
+    const currentId = this.editPolicy().id;
+    return this.policyService
+      .policies()
+      .find((policy) => policy.id !== currentId && policy.name.trimEnd().toLowerCase() === folded);
+  });
   // Tracked event types are required and have no default: a policy that counts nothing would never
   // trip, so the backend rejects an empty list too. Shown as an error straight away rather than on
   // touch, matching Priority - the other required field the editor starts empty.
@@ -347,6 +363,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       blockers.push($localize`:@@conditionalAccess.nameRequired:Name is required.`);
     } else if (this.nameTooLong()) {
       blockers.push($localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`);
+    } else if (this.nameConflict()) {
+      blockers.push($localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`);
     }
     if (!this.timeWindowValid()) {
       blockers.push($localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`);
@@ -426,6 +444,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         // signal-forms field itself (mat-error only renders once Material's own errorState sees it
         // touched) and the local flag mirroring it - so the "Name is required" hint is visible from the
         // start instead of only after the field is blurred.
+        this.policyForm.name().markAsTouched();
+        this.nameTouched.set(true);
+      }
+    });
+
+    // Save is blocked for a taken name, so the reason shows at once, also for a name that a template filled in
+    // without the field ever being focused.
+    effect(() => {
+      if (this.nameConflict()) {
         this.policyForm.name().markAsTouched();
         this.nameTouched.set(true);
       }
