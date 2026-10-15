@@ -40,6 +40,23 @@ POLICIES = {
     911: ("admin", "enable, enable"),
     912: ("admin", "enable, policywrite = False"),
     913: ("admin", "policywrite= true , policydelete= False "),
+    914: ("admin", "policywrite=tRuE"),
+    915: ("admin", "-policywrite=false"),
+    916: ("admin", "policywrite=false, -policywrite"),
+    917: ("admin", "policywrite=false, enable, policywrite"),
+    918: ("admin", "enable, policywrite = true"),
+    919: ("admin", "enable, this_action_is_gone"),
+    920: ("admin", "policywrite=0"),
+    921: ("admin", "policywrite, -policywrite"),
+    922: ("admin", "policywrite=hotp, policywrite"),
+    923: ("admin", "policywrite, policywrite=false"),
+    924: ("admin", "this_action_is_gone"),
+    925: ("admin", "policywrite=False"),
+    926: ("admin", "policywrite=hotp"),
+    927: ("admin", "policywrite="),
+    928: ("admin", "policywrite=True"),
+    929: ("admin", "policywrite=1"),
+    930: ("admin", "policywrite, policywrite"),
 }
 
 EXPECTED = {
@@ -64,6 +81,31 @@ EXPECTED = {
     912: "enable, policywrite = False",
     # The whitespace around a value is no part of the key, the true value stays and the false value is removed
     913: "policywrite= true , policydelete",
+    # Only "1" and "true" in the cases is_true accepts are true values
+    914: "policywrite",
+    # An excluded action keeps its value, the matching ignores it
+    915: "-policywrite=false",
+    # The false value is removed, the action and its exclusion stay
+    916: "policywrite, -policywrite",
+    # The earlier occurrence is removed, the other actions stay in their order
+    917: "enable, policywrite",
+    # The key "policywrite " never matched, also not with a true value
+    918: "enable, policywrite = true",
+    # An unknown action stays, the migration does not check the actions
+    919: "enable, this_action_is_gone",
+    920: "policywrite",
+    921: "policywrite, -policywrite",
+    # The last occurrence stays, whether it has the value or the earlier one
+    922: "policywrite",
+    923: "policywrite",
+    # A policy of an unknown action only stays as well
+    924: "this_action_is_gone",
+    925: "policywrite",
+    926: "policywrite",
+    927: "policywrite",
+    928: "policywrite=True",
+    929: "policywrite=1",
+    930: "policywrite",
 }
 
 
