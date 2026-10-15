@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { effect, inject, Injectable, signal, WritableSignal } from "@angular/core";
 import { DASHBOARD_COLUMNS, WidgetInstance, WidgetOptions, WidgetSettings, WidgetTypeId } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -60,6 +60,8 @@ export interface DashboardLayoutServiceInterface {
   persist(): void;
 
   resetLayout(): void;
+
+  ensureLoadedForSession(): void;
 }
 
 @Injectable({
@@ -75,9 +77,19 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   constructor() {
     this.loadLayout();
+    // The service lives in the root injector and therefore outlives a logout that does not
+    // reload the page. When the session the loaded layout belongs to ends, drop it: the next
+    // administrator starts from their own stored arrangement instead of the previous one's,
+    // and saving a change cannot overwrite a layout that is not theirs.
+    effect(() => {
+      if (!this.auth.isAuthenticated()) {
+        this.invalidate();
+      }
+    });
   }
 
   public beginEdit(): void {
+    this.ensureLoadedForSession();
     this.snapshot = this.widgets().map((widget) => ({ ...widget }));
     this.editMode.set(true);
   }
@@ -138,6 +150,22 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     // Guard against wiping the stored layout while auth data is not yet available:
     // an empty rights list would otherwise mark every widget as forbidden.
     if (!this.auth.isAuthenticated()) {
+      return;
+    }
+    // Before the stored layout has arrived, the widgets are the defaults this session starts
+    // with. Pruning them would write a pruned default layout over the stored one, so remember
+    // the request and prune once the load has settled the real layout (see loadLayout).
+    if (!this.loaded) {
+      this.pendingPrune = true;
+      // The defaults are on screen during the wait, so filter what is displayed
+      // rather than nothing: the administrator sees no widget they hold no right
+      // for. Only the view changes - nothing is persisted and no change is
+      // recorded - and the pending prune still acts on the stored layout once it
+      // arrives.
+      const visible = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
+      if (visible.length !== this.widgets().length) {
+        this.widgets.set(visible);
+      }
       return;
     }
     const allowed = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
@@ -203,17 +231,68 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private snapshot: WidgetInstance[] | null = null;
   private loaded = false;
   private changedWhileLoading = false;
+  // A prune that arrived before the stored layout did; it must act on the stored layout,
+  // never on the defaults the session starts with.
+  private pendingPrune = false;
+  // A load has started and not yet settled, so a second request must not be sent.
+  private loadRequested = false;
+  // Bumped by every invalidation; a response from a superseded load is dropped, so the
+  // layout of a session that ended cannot overwrite the one of the session that follows.
+  private loadGeneration = 0;
+
+  /**
+   * Discards the layout of the session that just ended. Resets to the plain defaults,
+   * deliberately without reconciling rights: with the session gone there is no role to
+   * reconcile against, and the next session loads its own stored layout anyway.
+   * @see ensureLoadedForSession for the reload; @see the constructor effect for the trigger.
+   */
+  private invalidate(): void {
+    this.loadGeneration++;
+    this.loadRequested = false;
+    this.loaded = false;
+    this.changedWhileLoading = false;
+    this.pendingPrune = false;
+    this.snapshot = null;
+    this.editMode.set(false);
+    this.widgets.set(this.defaultWidgets());
+  }
+
+  /**
+   * Loads the stored layout once per session. The constructor covers the first one; a later
+   * session (a logout and login without a page reload) enters the dashboard and pulls the
+   * stored layout of the principal who just signed in.
+   */
+  public ensureLoadedForSession(): void {
+    if (this.loaded || this.loadRequested) {
+      return;
+    }
+    this.loadLayout();
+  }
 
   private loadLayout(): void {
+    const generation = this.loadGeneration;
+    this.loadRequested = true;
     this.persistence.load().subscribe((stored) => {
+      // The session this response belongs to is over (or a newer load was started);
+      // what it carries is nobody's layout anymore, and the in-flight marker belongs
+      // to the load that is still running, so clearing it is left to the response
+      // that is still current.
+      if (generation !== this.loadGeneration) {
+        return;
+      }
+      this.loadRequested = false;
       this.loaded = true;
       // A layout the user changed while the request was in flight wins over the
       // stored one and is written back, so the change is not silently dropped.
       if (this.changedWhileLoading) {
         this.persist();
-        return;
+      } else {
+        this.widgets.set(stored ? this.reconcilePinned(stored) : this.allowedDefaultLayout());
       }
-      this.widgets.set(stored ? this.reconcilePinned(stored) : this.allowedDefaultLayout());
+      if (this.pendingPrune) {
+        this.pendingPrune = false;
+        this.pruneForbiddenWidgets();
+      }
     });
   }
 

@@ -30,14 +30,7 @@ import { catchError, map, Observable, of, shareReplay, tap, throwError } from "r
  * as well.
  */
 export type UserSettingKey =
-  | "theme"
-  | "locale"
-  | "show_loading_urls"
-  | "depth"
-  | "light_source"
-  | "corner_radius"
-  | "dashboard"
-  | "starting_page";
+  "theme" | "locale" | "show_loading_urls" | "depth" | "light_source" | "corner_radius" | "dashboard" | "starting_page";
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 
@@ -91,14 +84,24 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       return of(cached);
     }
     if (!this.request) {
-      this.request = this.http
+      const request: Observable<UserSettings> = this.http
         .get<PiResponse<UserSettings>>(this.baseUrl, { headers: this.authService.getHeaders() })
         .pipe(
           map((response) => response.result?.value ?? {}),
-          tap((settings) => this.store(settings)),
+          tap((settings) => {
+            // A response can land after its session ended: the logout that ended it
+            // cleared the cache and reset this request. Letting it fill the cache
+            // would serve the ended session's settings - the dashboard layout among
+            // them - to the administrator who signs in next, so only the request
+            // that is still current may store.
+            if (this.request === request) {
+              this.store(settings);
+            }
+          }),
           catchError((error) => this.fail(error, "Failed to load the user settings.")),
           shareReplay(1)
         );
+      this.request = request;
     }
     return this.request;
   }
@@ -112,9 +115,11 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       return of({});
     }
     return this.http
-      .post<
-        PiResponse<UserSettings>
-      >(this.baseUrl, { settings: { [key]: value } }, { headers: this.authService.getHeaders() })
+      .post<PiResponse<UserSettings>>(
+        this.baseUrl,
+        { settings: { [key]: value } },
+        { headers: this.authService.getHeaders() }
+      )
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.store(settings)),
