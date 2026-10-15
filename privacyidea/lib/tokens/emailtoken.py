@@ -82,6 +82,7 @@ from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options)
 from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
+from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL, SentOtpValidityMixin
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.utils import is_true, create_tag_dict
 
@@ -95,7 +96,7 @@ class EMAILACTION:
     EMAILAUTO = "emailautosend"
 
 
-class EmailTokenClass(HotpTokenClass):
+class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
     """
     Implementation of the EMail Token Class, that sends OTP values via SMTP.
     (Similar to SMSTokenClass)
@@ -244,6 +245,8 @@ class EmailTokenClass(HotpTokenClass):
                                                self.EMAIL_ADDRESS_KEY,
                                                allow_empty=True)
                 self.remove_tokeninfo(self.DYNAMIC_EMAIL_KEY)
+            # The new key resets the counter, the record of a value sent with the old key no longer applies
+            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
 
             # in case of the e-mail token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
@@ -318,6 +321,7 @@ class EmailTokenClass(HotpTokenClass):
                         message=message_template,
                         subject=subject_template,
                         mimetype=mimetype)
+                    self._record_sent_otp_validity(validity)
 
                 # Create the challenge in the database
                 if is_true(get_from_config("email.concurrent_challenges")):
@@ -360,6 +364,7 @@ class EmailTokenClass(HotpTokenClass):
         """
         options = options or {}
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+        ret = self._refuse_expired_sent_otp(ret, options)
 
         if ret < 0 and is_true(get_from_config("email.concurrent_challenges")):
             challenge_data = options.get("data", {})
@@ -377,6 +382,8 @@ class EmailTokenClass(HotpTokenClass):
                                                    message=message,
                                                    subject=subject,
                                                    mimetype=mimetype)
+            # The value is meant for a later login, so it has no time limit
+            self._record_sent_otp_validity(None)
             log.debug(f"AutoEmail: send new SMS: {success!s}")
             log.debug(f"AutoEmail: {message!r}")
         return ret
@@ -540,6 +547,8 @@ class EmailTokenClass(HotpTokenClass):
         # TODO: how should we handle errors when sending the mail?
         #  Currently we just return the message without checking the result
         _res, msg, _tid, _rdict = self.create_challenge(options=options)
+        # The enrollment can be verified later on, so the value has no time limit
+        self._record_sent_otp_validity(None)
         return {"message": msg}
 
     @classmethod

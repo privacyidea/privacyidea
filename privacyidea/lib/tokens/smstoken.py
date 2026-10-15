@@ -65,6 +65,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      get_smsgateway)
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL, SentOtpValidityMixin
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.token import create_challenge
 
@@ -81,7 +82,7 @@ class SMSAction:
     GATEWAYS = "sms_gateways"
 
 
-class SmsTokenClass(HotpTokenClass):
+class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
     """
     The SMS token sends an SMS containing an OTP via some kind of
     gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
@@ -291,6 +292,8 @@ class SmsTokenClass(HotpTokenClass):
                 phone = get_required(param, "phone", allow_empty=True)
                 self.write_tokeninfo("phone", phone)
                 self.remove_tokeninfo(self.DYNAMIC_PHONE_KEY)
+            # The new key resets the counter, the record of a value sent with the old key no longer applies
+            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
 
             # in case of the sms token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
@@ -355,6 +358,7 @@ class SmsTokenClass(HotpTokenClass):
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
                         message=message_template, options=options)
+                    self._record_sent_otp_validity(validity)
 
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):
@@ -395,6 +399,7 @@ class SmsTokenClass(HotpTokenClass):
         options = options or {}
 
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+        ret = self._refuse_expired_sent_otp(ret, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             challenge_data = options.get("data", {})
             saved_otp = challenge_data.get("otp") if challenge_data else None
@@ -406,6 +411,8 @@ class SmsTokenClass(HotpTokenClass):
             message = self._get_sms_text(options)
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message, options=options)
+            # The value is meant for a later login, so it has no time limit
+            self._record_sent_otp_validity(None)
             log.debug(f"AutoSMS: send new SMS: {success!s}")
             log.debug(f"AutoSMS: {message!r}")
         return ret
@@ -587,6 +594,8 @@ class SmsTokenClass(HotpTokenClass):
         # TODO: how should we handle errors when sending the SMS?
         #  Currently we just return the message without checking the result
         _res, msg, _tid, _rdict = self.create_challenge(options=options)
+        # The enrollment can be verified later on, so the value has no time limit
+        self._record_sent_otp_validity(None)
         return {"message": msg}
 
     @classmethod
