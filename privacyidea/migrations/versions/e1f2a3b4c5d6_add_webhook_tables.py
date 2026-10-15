@@ -251,7 +251,7 @@ def _collect_snapshot(conn):
 
     return {
         "revision": revision,
-        "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "created": datetime.datetime.now(datetime.UTC).isoformat(),
         "handler_ids": handler_ids,
         "eventhandleroption": options,
     }

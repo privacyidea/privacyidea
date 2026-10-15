@@ -4897,13 +4897,13 @@ class WebhookObjectHandlerTestCase(MyTestCase):
     INLINE_URL = "https://inline.example.com/endpoint"
 
     def setUp(self):
-        super(WebhookObjectHandlerTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
         self._cleanup()
 
     def tearDown(self):
         self._cleanup()
-        super(WebhookObjectHandlerTestCase, self).tearDown()
+        super().tearDown()
 
     @staticmethod
     def _cleanup():

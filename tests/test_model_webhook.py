@@ -3,7 +3,7 @@ Tests for the Webhook and WebhookHeader database models.
 
 See https://github.com/privacyidea/privacyidea/issues/5751 (step 1.1)
 """
-from privacyidea.lib.crypto import encryptPassword, decryptPassword
+from privacyidea.lib.crypto import encryptPassword
 from privacyidea.models import db
 from privacyidea.models.webhook import Webhook, WebhookHeader
 from .base import MyTestCase
