@@ -349,6 +349,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
   canSave = computed(
     () =>
+      this.savingName() === null &&
       this.policyForm().valid() &&
       this.timeWindowValid() &&
       this.priorityValid() &&
@@ -687,6 +688,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   savePolicy(): Promise<boolean> {
+    // A second save while one runs would create the policy twice.
+    if (this.savingName() !== null) {
+      return Promise.resolve(false);
+    }
     // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
     // the policy list revealed since then is caught here.
     if (this.nameConflict()) {
