@@ -1007,7 +1007,7 @@
         <target>Сохранить</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">75</context>
+          <context context-type="linenumber">85</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
@@ -1075,7 +1075,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.html</context>
-          <context context-type="linenumber">55</context>
+          <context context-type="linenumber">65</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component.ts</context>
@@ -1343,7 +1343,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">247</context>
+          <context context-type="linenumber">272</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-additional-conditions/edit-additional-conditions.component.ts</context>
@@ -1423,7 +1423,7 @@
         <target>Имя</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">147</context>
+          <context context-type="linenumber">157</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
@@ -4646,12 +4646,20 @@
         <source>Copy</source>
         <target>Копировать</target>
         <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
+          <context context-type="linenumber">76</context>
+        </context-group>
+        <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-table-actions/container-templates-table-actions.component.ts</context>
           <context context-type="linenumber">60</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table-actions/policies-table-actions.component.ts</context>
           <context context-type="linenumber">78</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.html</context>
+          <context context-type="linenumber">56</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/copy-button/copy-button.component.html</context>
@@ -5115,7 +5123,7 @@
         <target>Условия</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">338</context>
+          <context context-type="linenumber">348</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.ts</context>
@@ -7733,7 +7741,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">131</context>
+          <context context-type="linenumber">132</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.deletePolicies" datatype="html">
@@ -7773,7 +7781,7 @@
         <target>Приоритет</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">289</context>
+          <context context-type="linenumber">299</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
@@ -7917,7 +7925,7 @@
         <target>Редактировать политику</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">131</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.addActionsPolicy" datatype="html">
@@ -9357,7 +9365,7 @@
         <target>Пользователь</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">75</context>
+          <context context-type="linenumber">78</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditions/conditional-access-conditions.component.ts</context>
@@ -20167,7 +20175,7 @@
         <target state="new">Disabled</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">88</context>
+          <context context-type="linenumber">98</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
@@ -20359,7 +20367,7 @@
         <target state="new">Toggle Enabled</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">84</context>
+          <context context-type="linenumber">94</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
@@ -20375,7 +20383,7 @@
         <target state="new">Enabled</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">86</context>
+          <context context-type="linenumber">96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.toggleDryRunEvaluate" datatype="html">
@@ -20383,7 +20391,7 @@
         <target state="new">Toggle Dry Run (evaluate but do not enforce)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">98</context>
+          <context context-type="linenumber">108</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
@@ -20399,7 +20407,7 @@
         <target state="new">Dry run</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">99</context>
+          <context context-type="linenumber">109</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
@@ -20411,7 +20419,7 @@
         <target state="new">Events from before this instant are not counted towards the thresholds</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">105</context>
+          <context context-type="linenumber">115</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.countingEventsSince" datatype="html">
@@ -20419,7 +20427,7 @@
         <target state="new">Counting events since</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">106</context>
+          <context context-type="linenumber">116</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.startTemplate" datatype="html">
@@ -20427,7 +20435,7 @@
         <target state="new">Start from template</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">119</context>
+          <context context-type="linenumber">129</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.clearTemplateResetAll" datatype="html">
@@ -20435,7 +20443,7 @@
         <target state="new">Clear the template and reset all fields</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">131</context>
+          <context context-type="linenumber">141</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.prefillFieldsBelowReady" datatype="html">
@@ -20443,7 +20451,7 @@
         <target state="new">Prefill the fields below from a ready-made policy, then edit as needed.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">138</context>
+          <context context-type="linenumber">148</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.nameMustNotExceed" datatype="html">
@@ -20451,11 +20459,11 @@
         <target state="new">Name must not exceed 255 characters.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">154</context>
+          <context context-type="linenumber">164</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">372</context>
+          <context context-type="linenumber">375</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.nameRequired" datatype="html">
@@ -20463,11 +20471,11 @@
         <target state="new">Name is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">160</context>
+          <context context-type="linenumber">170</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">370</context>
+          <context context-type="linenumber">373</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.target" datatype="html">
@@ -20475,7 +20483,7 @@
         <target state="new">Target</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">170</context>
+          <context context-type="linenumber">180</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.targetWhichPolicyCounts" datatype="html">
@@ -20483,7 +20491,7 @@
         <target state="new">The target on which the policy counts events and performs triggered stage actions.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">179</context>
+          <context context-type="linenumber">189</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.countMode" datatype="html">
@@ -20491,7 +20499,7 @@
         <target state="new">Count Mode</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">187</context>
+          <context context-type="linenumber">197</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.countModeRequired" datatype="html">
@@ -20499,7 +20507,7 @@
         <target state="new">Count Mode is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">196</context>
+          <context context-type="linenumber">206</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.countModeNotAllowed" datatype="html">
@@ -20507,7 +20515,7 @@
         <target state="new">This count mode is not allowed for the selected target.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">199</context>
+          <context context-type="linenumber">209</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.howTrackedEventsCounted" datatype="html">
@@ -20515,7 +20523,7 @@
         <target state="new">How the tracked events are counted against the thresholds.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">203</context>
+          <context context-type="linenumber">213</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.resetCountSuccessfulLogin" datatype="html">
@@ -20523,7 +20531,7 @@
         <target state="new">Reset the count on a successful login</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">214</context>
+          <context context-type="linenumber">224</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.whenSuccessfulLoginClears" datatype="html">
@@ -20531,7 +20539,7 @@
         <target state="new">When on, a successful login clears the count, so every threshold of this policy - a deny decision included - measures consecutive failures since that login. When off, every tracked event in the window counts. Source-IP policies never reset.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">217</context>
+          <context context-type="linenumber">227</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.aboutResettingSuccess" datatype="html">
@@ -20539,7 +20547,7 @@
         <target state="new">About resetting on success</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">219</context>
+          <context context-type="linenumber">229</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindow" datatype="html">
@@ -20547,7 +20555,7 @@
         <target state="new">Time window</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">226</context>
+          <context context-type="linenumber">236</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.mustLeast" datatype="html">
@@ -20555,7 +20563,7 @@
         <target state="new">Must be at least 1.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">234</context>
+          <context context-type="linenumber">244</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.unit" datatype="html">
@@ -20563,7 +20571,7 @@
         <target state="new">Unit</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">241</context>
+          <context context-type="linenumber">251</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/actions-list/action-item/conditional-access-action-item.component.html</context>
@@ -20583,7 +20591,7 @@
         <target state="new">Seconds</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">248</context>
+          <context context-type="linenumber">258</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.minutes2" datatype="html">
@@ -20591,7 +20599,7 @@
         <target state="new">Minutes</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">253</context>
+          <context context-type="linenumber">263</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.hours2" datatype="html">
@@ -20599,7 +20607,7 @@
         <target state="new">Hours</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">258</context>
+          <context context-type="linenumber">268</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.trackedEventTypes2" datatype="html">
@@ -20607,7 +20615,7 @@
         <target state="new">Tracked event types</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">267</context>
+          <context context-type="linenumber">277</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.selectLeastOneEvent" datatype="html">
@@ -20615,7 +20623,7 @@
         <target state="new">Select at least one event type. A policy that counts nothing never trips.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">280</context>
+          <context context-type="linenumber">290</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityRequired" datatype="html">
@@ -20623,7 +20631,7 @@
         <target state="new">A priority is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">303</context>
+          <context context-type="linenumber">313</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityMustWholeNumber" datatype="html">
@@ -20631,7 +20639,7 @@
         <target state="new">Priority must be a whole number of at least 1.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">306</context>
+          <context context-type="linenumber">316</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityAlreadyUsed" datatype="html">
@@ -20639,7 +20647,7 @@
         <target state="new">Priority <x id="INTERPOLATION" equiv-text="{{ editPolicy().priority }}"/> is already used by &quot;<x id="INTERPOLATION_1" equiv-text="{{ priorityConflict()?.name }}"/>&quot;.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">310</context>
+          <context context-type="linenumber">320</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.orderAcrossPoliciesLowest" datatype="html">
@@ -20647,7 +20655,7 @@
         <target state="new">Order across policies, lowest first. Must be unique.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">316</context>
+          <context context-type="linenumber">326</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.savingBlockedUntilThese" datatype="html">
@@ -20655,7 +20663,7 @@
         <target state="new">Saving is blocked until these are fixed:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">328</context>
+          <context context-type="linenumber">338</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.conditionsRestrictWhichRequests" datatype="html">
@@ -20663,7 +20671,7 @@
         <target state="new">Conditions restrict which requests this policy applies to at all - they are checked before anything is counted. All of them must hold. Leave a condition empty to place no restriction on it; a policy with no conditions applies to every request.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">342</context>
+          <context context-type="linenumber">352</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.stagesActions" datatype="html">
@@ -20671,7 +20679,7 @@
         <target state="new">Stages &amp; Actions</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">350</context>
+          <context context-type="linenumber">360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.stageFiresWhenTracked" datatype="html">
@@ -20679,7 +20687,7 @@
         <target state="new">A stage fires when the tracked events reach its failure threshold within the time window, and then runs its actions. Add several stages with increasing thresholds to escalate. Only one stage of this policy runs per evaluation: the one with the highest threshold the count has reached. Other policies are evaluated on their own (see the policy Priority above).</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">354</context>
+          <context context-type="linenumber">364</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.leastOneStageRequired" datatype="html">
@@ -20687,7 +20695,7 @@
         <target state="new">At least one stage is required, and every stage needs a non-negative failure threshold.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">363</context>
+          <context context-type="linenumber">373</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.eachStageMustHave" datatype="html">
@@ -20695,7 +20703,7 @@
         <target state="new">Each stage must have a different failure threshold.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">370</context>
+          <context context-type="linenumber">380</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.someActionsNotAllowed" datatype="html">
@@ -20703,7 +20711,7 @@
         <target state="new">Some actions are not allowed for the selected target. Change the target or remove those actions.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">377</context>
+          <context context-type="linenumber">387</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.stageCarriesSameAction" datatype="html">
@@ -20711,7 +20719,7 @@
         <target state="new">A stage carries the same action twice, or two actions that contradict each other. Only the email actions may be repeated, and a stage cannot both lock temporarily and permanently, or both block temporarily and permanently.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">384</context>
+          <context context-type="linenumber">394</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.someActionsMissingValue" datatype="html">
@@ -20719,7 +20727,7 @@
         <target state="new">Some actions are missing a value they need to run: a lock or block needs a duration, an email needs a subject and body. Open the action to fix it.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">393</context>
+          <context context-type="linenumber">403</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.sourceIp" datatype="html">
@@ -20727,7 +20735,7 @@
         <target state="new">Source IP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">76</context>
+          <context context-type="linenumber">79</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
@@ -20743,7 +20751,7 @@
         <target state="new">Per Request</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">82</context>
+          <context context-type="linenumber">85</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.perAttempt" datatype="html">
@@ -20751,7 +20759,7 @@
         <target state="new">Per Attempt</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">83</context>
+          <context context-type="linenumber">86</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.distinctUsers" datatype="html">
@@ -20759,7 +20767,7 @@
         <target state="new">Distinct Users</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">84</context>
+          <context context-type="linenumber">87</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.createConditionalAccessPolicy" datatype="html">
@@ -20767,7 +20775,7 @@
         <target state="new">Create Conditional-Access Policy</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">142</context>
+          <context context-type="linenumber">145</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.editConditionalAccessPolicy" datatype="html">
@@ -20775,7 +20783,7 @@
         <target state="new">Edit Conditional-Access Policy</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">143</context>
+          <context context-type="linenumber">146</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.uniqueOrderAcrossPolicies" datatype="html">
@@ -20783,7 +20791,7 @@
         <target state="new">Unique order across policies, lowest first.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">178</context>
+          <context context-type="linenumber">181</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.aboutPriority" datatype="html">
@@ -20791,7 +20799,7 @@
         <target state="new">About priority</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">179</context>
+          <context context-type="linenumber">182</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindowMustLeast" datatype="html">
@@ -20799,7 +20807,7 @@
         <target state="new">Time window must be at least 1 second.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">377</context>
+          <context context-type="linenumber">380</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityRequiredMustWhole" datatype="html">
@@ -20807,7 +20815,7 @@
         <target state="new">Priority is required and must be a whole number of at least 1.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">381</context>
+          <context context-type="linenumber">384</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityMustUniqueAcross" datatype="html">
@@ -20815,7 +20823,7 @@
         <target state="new">Priority must be unique across policies.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">384</context>
+          <context context-type="linenumber">387</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.selectLeastOneTracked" datatype="html">
@@ -20823,7 +20831,7 @@
         <target state="new">Select at least one tracked event type.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">387</context>
+          <context context-type="linenumber">390</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.everyStageNeedsFailure" datatype="html">
@@ -20831,7 +20839,7 @@
         <target state="new">Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">391</context>
+          <context context-type="linenumber">394</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.eachStageMustHave2" datatype="html">
@@ -20839,7 +20847,7 @@
         <target state="new">Each stage must have a different failure threshold.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">396</context>
+          <context context-type="linenumber">399</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.someActionsNotAllowed2" datatype="html">
@@ -20847,7 +20855,7 @@
         <target state="new">Some actions are not allowed for the selected target.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">401</context>
+          <context context-type="linenumber">404</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.fixHighlightedActionValue" datatype="html">
@@ -20855,7 +20863,7 @@
         <target state="new">Fix the highlighted action value before saving.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">406</context>
+          <context context-type="linenumber">409</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.selectedCountModeNot" datatype="html">
@@ -20863,7 +20871,7 @@
         <target state="new">The selected count mode is not allowed for the selected target.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">411</context>
+          <context context-type="linenumber">414</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.conditionNamesValueNo" datatype="html">
@@ -20871,7 +20879,7 @@
         <target state="new">A condition names a value that no longer exists: <x id="PH" equiv-text="this.staleConditionValues().join(&quot;, &quot;)"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">416</context>
+          <context context-type="linenumber">419</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.noLongerValid" datatype="html">
@@ -24211,7 +24219,7 @@
         <target state="new">Delete Policy</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">273</context>
+          <context context-type="linenumber">298</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policy" datatype="html">
@@ -24219,7 +24227,7 @@
         <target state="new">policy</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">275</context>
+          <context context-type="linenumber">300</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.failedDeletePolicy" datatype="html">
@@ -24227,11 +24235,11 @@
         <target state="new">Failed to delete policy. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">285</context>
+          <context context-type="linenumber">310</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">292</context>
+          <context context-type="linenumber">317</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyDeleted" datatype="html">
@@ -24239,7 +24247,7 @@
         <target state="new">Policy deleted successfully.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">296</context>
+          <context context-type="linenumber">321</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.certificatesCheckedAt" datatype="html">
@@ -25139,7 +25147,7 @@
         <target state="new">A policy named &quot;<x id="INTERPOLATION" equiv-text="{{ nameConflict()?.name }}"/>&quot; already exists.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
-          <context context-type="linenumber">157</context>
+          <context context-type="linenumber">167</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.nameAlreadyUsedBlocker" datatype="html">
@@ -25147,11 +25155,11 @@
         <target state="new">A policy with this name already exists.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">374</context>
+          <context context-type="linenumber">377</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">663</context>
+          <context context-type="linenumber">694</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.noOperatorSelected" datatype="html">
@@ -25171,7 +25179,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">211</context>
+          <context context-type="linenumber">212</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-name-edit/policy-name-edit.component.html</context>
