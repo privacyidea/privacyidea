@@ -90,6 +90,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   let pendingChangesServiceMock: MockPendingChangesService;
   let routerMock: MockRouter;
   let dialogServiceMock: MockDialogService;
+  let notificationServiceMock: MockNotificationService;
   let paramMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
@@ -120,6 +121,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     pendingChangesServiceMock = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     routerMock = TestBed.inject(Router) as unknown as MockRouter;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     policyServiceMock.policies.set([mockPolicy]);
 
@@ -262,10 +264,49 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.saveBlockers()).toEqual(["A policy with this name already exists."]);
     });
 
-    it("should ignore the case and trailing spaces, as MySQL and MariaDB do", () => {
+    it("should ignore the case and surrounding spaces, as the backend and MySQL and MariaDB do", () => {
       rename("OTHER ");
       expect(component.nameConflict()?.id).toBe(99);
       expect(component.canSave()).toBe(false);
+
+      rename(" other");
+      expect(component.nameConflict()?.id).toBe(99);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not save a name that the list has revealed as taken, and say why", async () => {
+      rename("Other");
+      policyServiceMock.savePolicy.mockClear();
+
+      expect(await component.savePolicy()).toBe(false);
+
+      expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("A policy with this name already exists.");
+    });
+
+    it("should not report the name of a new policy as taken once the list holds it while the save runs", async () => {
+      component.isNewPolicy.set(true);
+      rename("Fresh");
+      let conflictDuringSave: ConditionalAccessPolicy | undefined;
+      policyServiceMock.savePolicy.mockImplementationOnce(async () => {
+        policyServiceMock.policies.set([...policyServiceMock.policies(), { ...mockPolicy, id: 100, name: "Fresh" }]);
+        conflictDuringSave = component.nameConflict();
+        return 100;
+      });
+
+      await component.savePolicy();
+
+      expect(conflictDuringSave).toBeUndefined();
+      expect(component.nameConflict()).toBeUndefined();
+    });
+
+    it("should report the name again when the save fails and another policy took it", async () => {
+      rename("Fresh");
+      policyServiceMock.savePolicy.mockResolvedValueOnce(undefined);
+      await component.savePolicy();
+      policyServiceMock.policies.set([...policyServiceMock.policies(), { ...mockPolicy, id: 100, name: "Fresh" }]);
+
+      expect(component.nameConflict()?.id).toBe(100);
     });
 
     it("should allow a change of the case of the own name", () => {

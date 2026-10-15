@@ -264,6 +264,15 @@ describe("PolicyEditPageComponent – create mode", () => {
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
+    it("tells the user why a taken name is not saved", async () => {
+      const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+      component.addPolicyEdit({ name: "helpdesk" });
+
+      await component.onSave();
+
+      expect(notificationService.error).toHaveBeenCalledWith("A policy with this name already exists.");
+    });
+
     it("does not save a name that the policy list reveals as taken after the pending-changes dialog opened", async () => {
       const pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
       const hasValidChanges = pendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;

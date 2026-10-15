@@ -235,20 +235,27 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return this.policyService.policies().find((policy) => policy.priority === priority && policy.id !== currentId);
   });
   priorityUnique = computed(() => !this.priorityConflict());
+  // The name of the policy while its save request runs. A new policy keeps no id once saved, and the reloaded list
+  // already holds it, so the name being saved is not reported as a clash with the policy itself.
+  private readonly savingName = signal<string | null>(null);
   // Names are unique across policies and the backend rejects a second one, so this surfaces the policy that
-  // already carries the name. The comparison ignores case (and trailing spaces) because MySQL and MariaDB do,
-  // so the clash is caught where the backend would treat both names as one. The policy's own entry is
-  // excluded by id, and a name left unchanged never collides, so an existing case twin stays editable.
+  // already carries the name. The comparison ignores case and surrounding spaces because the backend strips the
+  // name and MySQL and MariaDB ignore case, so the clash is caught where the backend would treat both names as one.
+  // The policy's own entry is excluded by id, and a name left unchanged never collides, so an existing case twin
+  // stays editable.
   nameConflict = computed<ConditionalAccessPolicy | undefined>(() => {
     const name = this.editPolicy().name;
     if (!name.trim() || name === this.policy().name) {
       return undefined;
     }
-    const folded = name.trimEnd().toLowerCase();
+    const folded = name.trim().toLowerCase();
+    if (folded === this.savingName()?.trim().toLowerCase()) {
+      return undefined;
+    }
     const currentId = this.editPolicy().id;
     return this.policyService
       .policies()
-      .find((policy) => policy.id !== currentId && policy.name.trimEnd().toLowerCase() === folded);
+      .find((policy) => policy.id !== currentId && policy.name.trim().toLowerCase() === folded);
   });
   // Tracked event types are required and have no default: a policy that counts nothing would never
   // trip, so the backend rejects an empty list too. Shown as an error straight away rather than on
@@ -649,6 +656,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   savePolicy(): Promise<boolean> {
+    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
+    // the policy list revealed since then is caught here.
+    if (this.nameConflict()) {
+      this.notificationService.error(
+        $localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`
+      );
+      return Promise.resolve(false);
+    }
+    this.savingName.set(this.editPolicy().name);
     // The engine evaluates stages by descending failure_threshold, so the thresholds the admin
     // entered are the order and nothing extra is derived here.
     const policy = this.editPolicy();
@@ -670,6 +686,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
           this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
           resolve(true);
         } else {
+          this.savingName.set(null);
           resolve(false);
         }
       });
