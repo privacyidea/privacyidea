@@ -1,5 +1,5 @@
 @use "sass:meta";
-@use "styles";
+@use "styles-api" as styles;
 
 .tile-size-scope {
   --tile-width: 12rem;

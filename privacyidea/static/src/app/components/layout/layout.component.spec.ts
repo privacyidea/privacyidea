@@ -103,8 +103,13 @@ describe("LayoutComponent", () => {
     const layoutElement = fixture.nativeElement.querySelector(".layout");
     expect(layoutElement).toBeTruthy();
 
-    const main = fixture.nativeElement.querySelector('main[aria-label="Main Router Outlet"]');
-    expect(main).toBeTruthy();
+    expect(layoutElement.querySelector("router-outlet")).toBeTruthy();
+  });
+
+  it("leaves the page's single main landmark to the app shell", () => {
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("main")).toBeNull();
   });
 
   describe("admin content padding", () => {

@@ -40,6 +40,7 @@ from privacyidea.lib.utils import (is_true, create_tag_dict,
                                    redacted_phone_number, redacted_email)
 
 from privacyidea.lib.token.query import get_one_token, get_tokens
+from privacyidea.models import db
 
 if TYPE_CHECKING:
     from privacyidea.models import Challenge
@@ -642,6 +643,27 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                                                                                reply_dict["message"]))
                 else:
                     # Challenge matches, token is active and token is fit for challenge
+                    from privacyidea.lib.challenge import cancel_challenge, delete_challenges
+                    transaction_id = str(options.get("transaction_id") or options.get("state"))
+                    token_object.challenge_janitor()
+                    # has_further_challenge reads the answered challenge of the token classes that keep it, so it
+                    # is asked before the challenge is consumed below.
+                    further_challenge_follows = token_object.has_further_challenge(options)
+                    if not token_object.consumes_answered_challenge:
+                        # The token class left the answered challenge in place, so this is the only point at which
+                        # this request can claim it. Of several requests answering the same step only the one that
+                        # removes the challenge continues; the others end like a response that did not match. An
+                        # intermediate step is claimed too, or one answer would buy a follow-up challenge per
+                        # request instead of one.
+                        # The commit ends the transaction that read the challenge, so the DELETE starts a new one
+                        # and MariaDB >= 11.6.2 does not refuse it with 1020 (as consume_challenge does the same).
+                        db.session.commit()
+                        if delete_challenges(serial=token_object.token.serial,
+                                             transaction_id=transaction_id).removed < 1:
+                            log.info(f"The challenge {transaction_id} of token {token_object.token.serial} has "
+                                     f"already been used by another request.")
+                            reply_dict["message"] = _("Response did not match the challenge.")
+                            continue
                     res = True
                     if increase_auth_counters:
                         token_object.inc_count_auth_success()
@@ -655,8 +677,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     if next_passw:
                         reply_dict["next_password_change"] = next_passw
                         reply_dict["password_change"] = token_object.is_pin_change(password=True)
-                    token_object.challenge_janitor()
-                    if token_object.has_further_challenge(options):
+                    if further_challenge_follows:
                         # The token creates further challenges, so create the new challenge
                         # and new transaction_id
                         create_challenges_from_tokens([token_object], reply_dict, options)
@@ -672,9 +693,7 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
 
                     # Clean up all challenges with this transaction_id from
                     # both Redis (when active) and the DB.
-                    from privacyidea.lib.challenge import cancel_challenge
-                    transaction_id = options.get("transaction_id") or options.get("state")
-                    cancel_challenge(str(transaction_id))
+                    cancel_challenge(transaction_id)
                     # Authentication is successful, stop here
                     break
 

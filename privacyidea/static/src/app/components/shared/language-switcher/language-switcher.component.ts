@@ -23,11 +23,12 @@ import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-language-switcher",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
+  imports: [TooltipAriaLabelDirective, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: "./language-switcher.component.html"
 })
 export class LanguageSwitcherComponent {

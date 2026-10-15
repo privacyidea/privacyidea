@@ -1,10 +1,9 @@
 @use "@angular/material" as mat;
 
-$focus-outline: 2px solid var(--mat-sys-primary-light);
+@forward "tokens";
 
 html {
   &.system {
-    --mint-bg: light-dark(#e9f5e0, #243328);
     --rose-bg: light-dark(#faebef, #282426);
     --rose-ripple: light-dark(#f4d7e0, #433d3e);
     --sky-bg: light-dark(#edf3f5, #283034);
@@ -29,13 +28,16 @@ html {
     --flat-border-light-2: light-dark(hsl(0, 0%, 86%), hsl(0, 0%, 42%));
     --flat-border-light-3: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 52%));
 
-    --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
-    --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
-    --mat-sys-primary-base-active: light-dark(hsl(198, 66%, 32.5%), hsl(198, 66%, 52.5%));
-    --mat-sys-primary-base-hover: light-dark(hsl(198, 66%, 40%), hsl(198, 66%, 47.5%));
-    --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
-    --mat-sys-primary-light-active: light-dark(hsl(198, 66%, 37.5%), hsl(198, 66%, 47.5%));
-    --mat-sys-primary-light-hover: light-dark(hsl(198, 66%, 45%), hsl(198, 66%, 45%));
+    // What a status fill is shaded toward for its edge (see --green-edge in styles.scss): dark on light, light on dark.
+    --status-edge-tone: light-dark(black, white);
+
+    --mat-sys-primary-dark: light-dark(hsl(199, 67%, 21%), hsl(198, 66%, 70%));
+    --mat-sys-primary-base: light-dark(hsl(199, 67%, 26%), hsl(198, 66%, 65%));
+    --mat-sys-primary-base-active: light-dark(hsl(199, 67%, 28.5%), hsl(198, 66%, 62.5%));
+    --mat-sys-primary-base-hover: light-dark(hsl(199, 67%, 36%), hsl(198, 66%, 57.5%));
+    --mat-sys-primary-light: light-dark(hsl(199, 67%, 31%), hsl(198, 66%, 60%));
+    --mat-sys-primary-light-active: light-dark(hsl(199, 67%, 33.5%), hsl(198, 66%, 57.5%));
+    --mat-sys-primary-light-hover: light-dark(hsl(199, 67%, 41%), hsl(198, 66%, 55%));
 
     --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 35%));
     --green-base: light-dark(hsl(120, 39%, 44%), hsl(120, 39%, 40%));
@@ -43,17 +45,21 @@ html {
     --green-light-active: light-dark(hsl(120, 39%, 54%), hsl(120, 39%, 50%));
     --green-base-hover: light-dark(hsl(120, 39%, 40%), hsl(120, 39%, 30%));
 
-    --red-dark: light-dark(hsl(342, 100%, 32%), hsl(342, 100%, 44%));
-    --red-base: light-dark(hsl(342, 100%, 37%), hsl(342, 100%, 50%));
-    --red-light: light-dark(hsl(342, 100%, 42%), hsl(342, 100%, 54%));
-    --red-light-active: light-dark(hsl(342, 100%, 57%), hsl(342, 100%, 58%));
-    --red-base-hover: light-dark(hsl(342, 100%, 60%), hsl(342, 100%, 30%));
+    --red-dark: light-dark(hsl(2, 64%, 44%), hsl(2, 64%, 50%));
+    --red-base: light-dark(hsl(2, 64%, 50%), hsl(2, 64%, 60%));
+    --red-light: light-dark(hsl(2, 64%, 52%), hsl(2, 64%, 62%));
+    --red-light-active: light-dark(hsl(2, 64%, 58%), hsl(2, 64%, 66%));
+    --red-base-hover: light-dark(hsl(2, 64%, 60%), hsl(2, 64%, 30%));
 
-    --yellow-dark: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 35%));
-    --yellow-base: light-dark(hsl(28, 85%, 50%), hsl(28, 85%, 40%));
-    --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
-    --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
-    --yellow-base-hover: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 32%));
+    --yellow-dark: light-dark(hsl(34, 85%, 45%), hsl(34, 85%, 35%));
+    --yellow-base: light-dark(hsl(34, 85%, 50%), hsl(34, 85%, 40%));
+    --yellow-light: light-dark(hsl(34, 85%, 55%), hsl(34, 85%, 45%));
+    --yellow-light-active: light-dark(hsl(34, 85%, 60%), hsl(34, 85%, 50%));
+    --yellow-base-hover: light-dark(hsl(34, 85%, 45%), hsl(34, 85%, 32%));
+    // Orange label/outline colour of warning-tone secondary actions, held clear of the surface in both modes.
+    --warn-base: light-dark(hsl(34, 85%, 34%), hsl(34, 85%, 58%));
+    // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
+    --select-option-bg: light-dark(hsl(0, 0%, 100%), hsl(0, 0%, 27%));
 
     --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
     --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
@@ -82,14 +88,16 @@ html {
     --nav-item-border: light-dark(#d0d0d0, #333333);
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
-    --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
-    --mat-tooltip-container-color: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 35%));
-    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+    @include mat.tooltip-overrides(
+      (
+        container-color: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 35%)),
+        supporting-text-color: var(--mat-sys-on-surface)
+      )
+    );
   }
 
   &.light {
     color-scheme: light;
-    --mint-bg: #e9f5e0;
     --rose-bg: #faebef;
     --rose-ripple: #f4d7e0;
     --sky-bg: #edf3f5;
@@ -112,13 +120,15 @@ html {
     --flat-border-light-2: hsl(0, 0%, 86%);
     --flat-border-light-3: hsl(0, 0%, 90%);
 
-    --mat-sys-primary-dark: hsl(198, 66%, 25%);
-    --mat-sys-primary-base: hsl(198, 66%, 30%);
-    --mat-sys-primary-base-active: hsl(198, 66%, 32.5%);
-    --mat-sys-primary-base-hover: hsl(198, 66%, 40%);
-    --mat-sys-primary-light: hsl(198, 66%, 35%);
-    --mat-sys-primary-light-active: hsl(198, 66%, 37.5%);
-    --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
+    --status-edge-tone: black;
+
+    --mat-sys-primary-dark: hsl(199, 67%, 21%);
+    --mat-sys-primary-base: hsl(199, 67%, 26%);
+    --mat-sys-primary-base-active: hsl(199, 67%, 28.5%);
+    --mat-sys-primary-base-hover: hsl(199, 67%, 36%);
+    --mat-sys-primary-light: hsl(199, 67%, 31%);
+    --mat-sys-primary-light-active: hsl(199, 67%, 33.5%);
+    --mat-sys-primary-light-hover: hsl(199, 67%, 41%);
 
     --green-dark: hsl(120, 39%, 39%);
     --green-base: hsl(120, 39%, 44%);
@@ -126,17 +136,20 @@ html {
     --green-light-active: hsl(120, 39%, 54%);
     --green-base-hover: hsl(120, 39%, 40%);
 
-    --red-dark: hsl(342, 100%, 32%);
-    --red-base: hsl(342, 100%, 37%);
-    --red-light: hsl(342, 100%, 42%);
-    --red-light-active: hsl(342, 100%, 57%);
-    --red-base-hover: hsl(342, 100%, 60%);
+    --red-dark: hsl(2, 64%, 44%);
+    --red-base: hsl(2, 64%, 50%);
+    --red-light: hsl(2, 64%, 52%);
+    --red-light-active: hsl(2, 64%, 58%);
+    --red-base-hover: hsl(2, 64%, 60%);
 
-    --yellow-dark: hsl(28, 85%, 45%);
-    --yellow-base: hsl(28, 85%, 50%);
-    --yellow-light: hsl(28, 85%, 55%);
-    --yellow-light-active: hsl(28, 85%, 60%);
-    --yellow-base-hover: hsl(28, 85%, 45%);
+    --yellow-dark: hsl(34, 85%, 45%);
+    --yellow-base: hsl(34, 85%, 50%);
+    --yellow-light: hsl(34, 85%, 55%);
+    --yellow-light-active: hsl(34, 85%, 60%);
+    --yellow-base-hover: hsl(34, 85%, 45%);
+    --warn-base: hsl(34, 85%, 34%);
+    // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
+    --select-option-bg: hsl(0, 0%, 100%);
 
     --grey-dark: hsl(0, 0%, 42%);
     --grey-base: hsl(0, 0%, 50%);
@@ -163,14 +176,16 @@ html {
     --nav-item-border: #d0d0d0;
 
     --inline-hint-bg: hsl(200, 65%, 91%);
-    --inline-warning-bg: hsl(0, 83%, 95%);
-    --mat-tooltip-container-color: hsl(0, 0%, 95%);
-    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+    @include mat.tooltip-overrides(
+      (
+        container-color: hsl(0, 0%, 95%),
+        supporting-text-color: var(--mat-sys-on-surface)
+      )
+    );
   }
 
   &.dark {
     color-scheme: dark;
-    --mint-bg: #243328;
     --rose-bg: #282426;
     --rose-ripple: #433d3e;
     --sky-bg: #283034;
@@ -193,13 +208,15 @@ html {
     --flat-border-light-2: hsl(0, 0%, 20%);
     --flat-border-light-3: hsl(0, 0%, 28%);
 
-    --mat-sys-primary-dark: hsl(198, 66%, 60%);
-    --mat-sys-primary-base: hsl(198, 66%, 55%);
-    --mat-sys-primary-base-active: hsl(198, 66%, 52.5%);
-    --mat-sys-primary-base-hover: hsl(198, 66%, 47.5%);
-    --mat-sys-primary-light: hsl(198, 66%, 50%);
-    --mat-sys-primary-light-active: hsl(198, 66%, 47.5%);
-    --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
+    --status-edge-tone: white;
+
+    --mat-sys-primary-dark: hsl(198, 66%, 70%);
+    --mat-sys-primary-base: hsl(198, 66%, 65%);
+    --mat-sys-primary-base-active: hsl(198, 66%, 62.5%);
+    --mat-sys-primary-base-hover: hsl(198, 66%, 57.5%);
+    --mat-sys-primary-light: hsl(198, 66%, 60%);
+    --mat-sys-primary-light-active: hsl(198, 66%, 57.5%);
+    --mat-sys-primary-light-hover: hsl(198, 66%, 55%);
 
     --green-dark: hsl(120, 39%, 35%);
     --green-base: hsl(120, 39%, 40%);
@@ -207,17 +224,20 @@ html {
     --green-light-active: hsl(120, 39%, 50%);
     --green-base-hover: hsl(120, 39%, 30%);
 
-    --red-dark: hsl(342, 100%, 44%);
-    --red-base: hsl(342, 100%, 50%);
-    --red-light: hsl(342, 100%, 54%);
-    --red-light-active: hsl(342, 100%, 58%);
-    --red-base-hover: hsl(342, 100%, 30%);
+    --red-dark: hsl(2, 64%, 50%);
+    --red-base: hsl(2, 64%, 60%);
+    --red-light: hsl(2, 64%, 62%);
+    --red-light-active: hsl(2, 64%, 66%);
+    --red-base-hover: hsl(2, 64%, 30%);
 
-    --yellow-dark: hsl(28, 85%, 35%);
-    --yellow-base: hsl(28, 85%, 40%);
-    --yellow-light: hsl(28, 85%, 45%);
-    --yellow-light-active: hsl(28, 85%, 50%);
-    --yellow-base-hover: hsl(28, 85%, 32%);
+    --yellow-dark: hsl(34, 85%, 35%);
+    --yellow-base: hsl(34, 85%, 40%);
+    --yellow-light: hsl(34, 85%, 45%);
+    --yellow-light-active: hsl(34, 85%, 50%);
+    --yellow-base-hover: hsl(34, 85%, 32%);
+    --warn-base: hsl(34, 85%, 58%);
+    // The raised tile of a select panel: white on the grey panel in the light theme, a step above the panel in the dark one.
+    --select-option-bg: hsl(0, 0%, 27%);
 
     --grey-dark: hsl(0, 0%, 50%);
     --grey-base: hsl(0, 0%, 55%);
@@ -244,9 +264,12 @@ html {
     --nav-item-border: #363636;
 
     --inline-hint-bg: hsl(200, 65%, 20%);
-    --inline-warning-bg: hsl(0, 83%, 18%);
-    --mat-tooltip-container-color: hsl(0, 0%, 35%);
-    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+    @include mat.tooltip-overrides(
+      (
+        container-color: hsl(0, 0%, 35%),
+        supporting-text-color: var(--mat-sys-on-surface)
+      )
+    );
   }
 
   @include mat.theme(

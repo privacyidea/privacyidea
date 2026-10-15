@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 // Cap the dialog so the intro text does not stretch it across a wide viewport.
 :host {

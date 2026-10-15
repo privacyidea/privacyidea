@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, ViewChild } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
+import { Component, computed, inject, input, viewChild } from "@angular/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenu, MatMenuModule } from "@angular/material/menu";
@@ -29,37 +28,51 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-user-table-actions",
-  imports: [
-    MatButtonModule,
-    MatFormField,
-    MatLabel,
-    MatMenuModule,
-    MatOption,
-    MatSelect,
-    MatIcon,
-    OverflowNavDirective
-  ],
-  templateUrl: "./user-table-actions.component.html",
-  styleUrl: "./user-table-actions.component.scss"
+  imports: [MatFormField, MatIcon, MatLabel, MatMenuModule, MatOption, MatSelect, TableActionsComponent],
+  templateUrl: "./user-table-actions.component.html"
 })
-export class UserTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class UserTableActionsComponent extends TableActionsHost {
+  private readonly realmMenu = viewChild.required<MatMenu>("realmMenu");
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly router = inject(Router);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   /** Off where the actions stand in for the table itself, which is no place to start creating a user. */
   readonly showCreateUser = input(true);
 
   anyEditableResolver = computed(() => this.resolverService.editableResolvers().length > 0);
+
+  protected readonly actions = computed<TableAction[]>(() => [
+    {
+      id: "select-realm",
+      label: $localize`:@@user.selectRealm:Select Realm`,
+      tone: "secondary",
+      width: "m",
+      icon: "public",
+      placement: "menu",
+      submenu: this.realmMenu()
+    },
+    {
+      id: "create-user",
+      label: $localize`:@@common.createUser:Create User`,
+      tone: "primary",
+      width: "m",
+      icon: "person",
+      menuIcon: "person_add",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.showCreateUser() && this.authService.actionAllowed("adduser") && this.anyEditableResolver(),
+      run: () => this.navigateToCreateUser()
+    }
+  ]);
 
   navigateToCreateUser() {
     this.router.navigateByUrl(ROUTE_PATHS.USERS_NEW);

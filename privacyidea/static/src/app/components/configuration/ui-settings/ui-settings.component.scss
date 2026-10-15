@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
+@use "@angular/material" as mat;
 
 .settings-container {
   @include styles.main-component-style;
@@ -59,9 +60,13 @@
   width: calc(var(--input-width-l) * 2 + 8px);
 }
 
-.settings-group-appearance {
+.settings-group-panel {
   width: 100%;
   justify-content: center;
+}
+
+.settings-group-start {
+  justify-content: start;
 }
 
 .settings-item {
@@ -77,6 +82,12 @@
 .settings-item-s {
   flex: 0 0 var(--input-width-l);
   max-width: var(--input-width-l);
+}
+
+// Wide enough for a large field and the 16px margin that aligns it with the fields of the other items.
+.settings-item-field-l {
+  flex: 0 0 calc(var(--input-width-l) + 16px);
+  max-width: calc(var(--input-width-l) + 16px);
 }
 
 .settings-item-m {
@@ -111,7 +122,7 @@ h4.settings-item-label {
 }
 
 // Header and body share one inset, so the title lines up with the items below it.
-.settings-appearance-panel {
+.settings-panel {
   --expansion-panel-header-padding: 0 16px;
   --expansion-panel-body-padding: 0 16px 16px;
 }
@@ -119,7 +130,11 @@ h4.settings-item-label {
 // Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
 // so plain properties would depend on stylesheet order.
 mat-button-toggle-group {
-  --mat-button-toggle-shape: var(--border-radius);
-  --mat-button-toggle-selected-state-background-color: var(--mat-sys-primary-light);
-  --mat-button-toggle-selected-state-text-color: var(--mat-sys-on-primary);
+  @include mat.button-toggle-overrides(
+    (
+      shape: var(--border-radius),
+      selected-state-background-color: var(--mat-sys-primary-light),
+      selected-state-text-color: var(--mat-sys-on-primary)
+    )
+  );
 }

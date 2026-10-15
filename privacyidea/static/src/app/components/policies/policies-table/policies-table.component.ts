@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -24,7 +25,7 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { MatSortModule, Sort } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatMenuModule } from "@angular/material/menu";
@@ -52,15 +53,21 @@ import { PoliciesTableActionsComponent } from "./policies-table-actions/policies
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
+import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+
+const DEFAULT_SORT: Sort = { active: "priority", direction: "asc" };
 
 @Component({
   selector: "app-policies-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
+    SortByLabelPipe,
+    FilterByLabelPipe,
     CommonModule,
     KeyValuePipe,
     MatTableModule,
-    MatSortModule,
     MatIconModule,
     MatButtonModule,
     MatSlideToggleModule,
@@ -118,7 +125,7 @@ export class PoliciesTableComponent {
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
-  readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
+  readonly sort = signal<Sort>(DEFAULT_SORT);
   readonly filterOptions: FilterOption<PolicyDetail>[] = createPolicyFilterOptions((name, scope, value) =>
     valueDisplayLabel(value, this.policyService.getDetailsOfAction(name, scope)?.value, {
       vocabulary: POLICY_VOCABULARY_ACTIONS.has(name)
@@ -191,8 +198,16 @@ export class PoliciesTableComponent {
 
   readonly keepOrder = () => 0;
 
-  onSortChange(sort: Sort): void {
-    this.sort.set(sort);
+  onSortClick(column: string): void {
+    this.tableUtilsService.onSortButtonClick(column, this.sort, DEFAULT_SORT);
+  }
+
+  ariaSort(column: string): "ascending" | "descending" | "none" {
+    const { active, direction } = this.sort();
+    if (active !== column || direction === "") {
+      return "none";
+    }
+    return direction === "asc" ? "ascending" : "descending";
   }
 
   onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
@@ -249,6 +264,12 @@ export class PoliciesTableComponent {
 
   isFilterable(columnKey: string): boolean {
     return this.filterOptions.some((o) => o.key === columnKey);
+  }
+
+  activeToggleLabel(policy: PolicyDetail): string {
+    return policy.active
+      ? $localize`:@@policy.deactivatePolicy:Deactivate policy`
+      : $localize`:@@policy.activatePolicy:Activate policy`;
   }
 
   togglePolicyActive(policy: PolicyDetail): void {

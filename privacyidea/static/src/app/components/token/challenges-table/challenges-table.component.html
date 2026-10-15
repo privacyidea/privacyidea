@@ -44,19 +44,7 @@
             [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
-        <button
-          [matMenuTriggerFor]="challengesTableActions.actionsMenu"
-          aria-label="Actions"
-          class="table-actions-trigger margin-left-8"
-          i18n-aria-label="@@common.actions"
-          i18n-matTooltip="@@common.actions"
-          mat-icon-button
-          matTooltip="Actions">
-          <span class="icon-badge">
-            <mat-icon>menu</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-          </span>
-        </button>
+        <app-table-actions-trigger [menu]="challengesTableActions.actionsMenu()" />
       </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
@@ -95,8 +83,7 @@
                   @if (apiFilterKeys.includes(column.key)) {
                     <button
                       (click)="onKeywordClick(column.key)"
-                      aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.label | filterByLabel"
                       class="filter-button"
                       mat-icon-button
                       type="button">
@@ -107,8 +94,7 @@
                   }
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label="@@common.sortBy"
+                    [attr.aria-label]="column.label | sortByLabel"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -121,24 +107,28 @@
               *matCellDef="let element"
               [ngClass]="'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        role="button"
-                        tabindex="0"
-                        (click)="serialClicked(element)"
-                        (keydown.enter)="serialClicked(element)"
-                        (keydown.space)="$event.preventDefault(); serialClicked(element)"
-                        class="flex ali-center">
-                        {{ element.serial }}
-                      </a>
-                      <app-filter-value-button
-                        column="serial"
-                        [value]="element.serial"
-                        (filterValue)="addFilterValue('serial', $event)" />
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          role="button"
+                          tabindex="0"
+                          (click)="serialClicked(element)"
+                          (keydown.enter)="serialClicked(element)"
+                          (keydown.space)="$event.preventDefault(); serialClicked(element)"
+                          class="flex ali-center">
+                          {{ element.serial }}
+                        </a>
+                        <app-filter-value-button
+                          column="serial"
+                          [value]="element.serial"
+                          (filterValue)="addFilterValue('serial', $event)" />
+                      </app-copyable>
+                    }
                   }
                   @case ("transaction_id") {
                     <span class="flex ali-center">
@@ -151,7 +141,7 @@
                     </span>
                   }
                   @case ("otp_received") {
-                    <div class="flex just-center width-100">
+                    <div class="flex just-center width-full">
                       <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
                         {{ element[column.key] }}
                       </span>

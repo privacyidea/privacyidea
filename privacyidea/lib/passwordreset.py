@@ -127,11 +127,17 @@ def check_recoverycode(user, recoverycode):
         pw_resets = db.session.scalars(stmt).all()
         for pwr in pw_resets:
             if verify_with_pepper(pwr.recoverycode, recoverycode):
-                recoverycode_valid = True
                 log.debug(f"Found valid recoverycode for user {user!r}")
-                # Delete the recovery code, so that it can only be used once!
-                r = pwr.delete()
-                log.debug(f"{r!s} used password recoverycode deleted.")
+                # Delete the recovery code, so that it can only be used once - also when a second request presents
+                # it at the same moment. Only the request that removes the row may reset the password, so the code
+                # is claimed by its id in a transaction of its own (MariaDB >= 11.6.2 refuses a DELETE of a row the
+                # current transaction has already read).
+                recoverycode_id = pwr.id
+                db.session.commit()
+                delete_used_stmt = delete(PasswordReset).where(PasswordReset.id == recoverycode_id)
+                recoverycode_valid = db.session.execute(delete_used_stmt).rowcount == 1
+                if not recoverycode_valid:
+                    log.info(f"The recoverycode of user {user!r} was used by another request.")
 
     db.session.commit()
     return recoverycode_valid

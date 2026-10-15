@@ -39,7 +39,7 @@
         @if (showSummary()) {
           <div
             class="news-summary"
-            [innerHTML]="item.summary"></div>
+            [innerHTML]="withImageAlt(item.summary)"></div>
         }
       </li>
     }

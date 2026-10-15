@@ -23,9 +23,12 @@
   [matTooltip]="tooltipText()"
   [matTooltipDisabled]="!isDisabled()"
   [subscriptSizing]="subscriptSizing()">
-  <mat-label>{{ label() }}</mat-label>
+  @if (label()) {
+    <mat-label>{{ label() }}</mat-label>
+  }
 
   <mat-select
+    [aria-label]="label() ? '' : ariaLabel()"
     [value]="selectedItems()"
     [multiple]="true"
     [disabled]="isDisabled()"

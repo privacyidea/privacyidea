@@ -109,7 +109,38 @@
     </div>
   </div>
 
-  <mat-expansion-panel class="settings-appearance-panel">
+  <mat-expansion-panel class="settings-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title i18n="@@uiSettings.accessibility">Accessibility</mat-panel-title>
+    </mat-expansion-panel-header>
+
+    <div class="expansion-well">
+      <div class="settings-group settings-group-panel settings-group-start">
+        <div class="settings-item settings-item-field-l">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.statusColors"
+            >Status colors</h4
+          >
+          <mat-form-field
+            class="input-width-l margin-left-16"
+            subscriptSizing="dynamic">
+            <mat-select
+              (selectionChange)="selectStatusColors($event.value)"
+              [value]="statusColors()"
+              aria-label="Status colors"
+              i18n-aria-label="@@uiSettings.statusColors">
+              @for (level of statusColorLevels; track level.value) {
+                <mat-option [value]="level.value">{{ level.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
+
+  <mat-expansion-panel class="settings-panel">
     <mat-expansion-panel-header>
       <mat-panel-title i18n="@@dashboard.appearance">Appearance</mat-panel-title>
       <mat-panel-description>
@@ -123,7 +154,7 @@
     </mat-expansion-panel-header>
 
     <div class="expansion-well">
-      <div class="settings-group settings-group-appearance">
+      <div class="settings-group settings-group-panel">
         <div class="settings-item settings-item-m settings-item-center">
           <h4
             class="settings-item-label margin-8"

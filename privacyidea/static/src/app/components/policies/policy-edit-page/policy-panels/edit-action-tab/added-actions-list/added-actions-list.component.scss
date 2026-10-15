@@ -1,4 +1,5 @@
-@use "styles";
+@use "styles-api" as styles;
+@use "@angular/material" as mat;
 
 .added-actions-list-container {
   .gap-div-8px {
@@ -9,13 +10,21 @@
   .action-button {
     flex-shrink: 0;
     margin: auto -6px;
-    --mat-icon-button-state-layer-color: var(--mat-sys-surface-container);
+    @include mat.icon-button-overrides(
+      (
+        state-layer-color: var(--mat-sys-surface-container)
+      )
+    );
   }
 
   .action-button-in-panel {
     flex-shrink: 0;
     margin: auto -4px;
-    --mat-icon-button-state-layer-color: var(--mat-sys-surface-container-high);
+    @include mat.icon-button-overrides(
+      (
+        state-layer-color: var(--mat-sys-surface-container-high)
+      )
+    );
   }
 
   .mat-mdc-button-ripple {
@@ -25,8 +34,12 @@
     height: 36px;
   }
 
-  --mat-expansion-container-background-color: transparent;
-  --mat-expansion-container-elevation-shadow: none;
+  @include mat.expansion-overrides(
+    (
+      container-background-color: transparent,
+      container-elevation-shadow: none
+    )
+  );
   --expansion-panel-header-padding: 8px 12px;
 
   // The panel above is flattened by the tokens above; this card carries the recess instead.

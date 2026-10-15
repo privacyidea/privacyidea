@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-@use "styles";
+@use "styles-api" as styles;
 
 // Lifts off the page container, so the shallow raise.
 :host {
@@ -26,20 +26,6 @@
   min-width: 0;
   box-sizing: border-box;
   padding: 8px;
-
-  ::ng-deep app-edit-buttons {
-    opacity: 0;
-    transition: opacity 120ms ease;
-    pointer-events: none;
-  }
-
-  &:hover ::ng-deep app-edit-buttons,
-  &.is-editing ::ng-deep app-edit-buttons,
-  ::ng-deep td.padding-0 app-edit-buttons,
-  ::ng-deep .detail-field--editing app-edit-buttons {
-    opacity: 1;
-    pointer-events: auto;
-  }
 }
 
 .details-card-toggle {

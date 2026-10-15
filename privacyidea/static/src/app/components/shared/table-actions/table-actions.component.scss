@@ -1,0 +1,16 @@
+.table-actions-roomy {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+// Keeps the badge's "+" clear of the label, which longer translations would otherwise crowd.
+.icon-badge-spaced {
+  margin-right: 6px;
+}
+
+// The spacer only marks where the overflow handling puts "More" and what it keeps in place after it. Taking no
+// space of its own, it adds no gap after the last button.
+.spacer {
+  display: none;
+}

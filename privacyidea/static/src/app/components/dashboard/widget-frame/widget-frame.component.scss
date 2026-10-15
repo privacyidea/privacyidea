@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-@use "styles";
+@use "styles-api" as styles;
 
 // Widgets stand on the recessed dashboard field, so they are raised.
 .widget-frame {

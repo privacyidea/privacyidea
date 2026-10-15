@@ -39,7 +39,7 @@ import {
   inclusiveBucketEnd
 } from "@components/dashboard/widgets/activity-range";
 import { WidgetRangeSetting } from "@components/dashboard/widgets/widget-range-setting";
-import { DashboardWidget, WidgetSize } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
   AuthenticationLogService,
@@ -51,6 +51,7 @@ import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { Observable, switchMap } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 const LOG_READ: PolicyAction = "authentication_log_read";
 
@@ -90,6 +91,7 @@ export interface ActivitySummary {
   selector: "app-authentication-activity-widget",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     InfoHintComponent,
     MatButtonToggleModule,
     MatIcon,
@@ -112,7 +114,7 @@ export class AuthenticationActivityWidgetComponent extends DashboardWidget {
   static override readonly titleLinkAction = LOG_READ;
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 8 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 7 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: Number.POSITIVE_INFINITY };
+  static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: Number.POSITIVE_INFINITY };
 
   // Read by the widget frame, which renders these in its header.
   override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");

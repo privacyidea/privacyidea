@@ -1,8 +1,8 @@
 @use "theme";
 @use "icon";
+@use "@angular/material" as mat;
 
 $button-height: 40px;
-$button-width: 240px;
 $keyword-height: 28px;
 $keyword-padding: 2px 8px;
 $button-gap-small: 10px;
@@ -32,22 +32,6 @@ $button-low-contrast-variant: linear-gradient(
   var(--mat-sys-surface-container-highest)
 );
 
-@mixin button-base($height, $width, $background-color, $border-color, $color) {
-  height: $height;
-  width: $width;
-  cursor: pointer;
-  border-radius: var(--border-radius);
-  background-color: $background-color !important;
-  border-color: $border-color !important;
-  color: $color !important;
-  justify-content: start;
-  display: flex;
-
-  &:disabled {
-    color: #909090 !important;
-  }
-}
-
 @mixin hover-or-active($bg, $shadow, $translate: false) {
   &:hover,
   &.active {
@@ -58,16 +42,6 @@ $button-low-contrast-variant: linear-gradient(
       transform: translateY(2px);
     }
   }
-}
-
-@mixin card-button-variant($background-color, $border-color, $color) {
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $background-color: $background-color,
-    $border-color: $border-color,
-    $color: $color
-  );
 }
 
 %linkish-btn {
@@ -127,64 +101,6 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.mat-mdc-outlined-button.card-button-1,
-.mat-mdc-outlined-button[class*="card-button-1"] {
-  --mat-button-outlined-state-layer-color: var(--mat-sys-surface-container-highest);
-  --mat-button-outlined-ripple-color: var(--mat-sys-surface-container-highest);
-  --mat-ripple-color: var(--mat-sys-surface-container-high);
-
-  &:hover {
-    background-color: var(--mat-sys-surface-container-high) !important;
-  }
-}
-
-.mat-mdc-outlined-button[class*="card-button-active"] {
-  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
-}
-
-.mat-mdc-outlined-button[class*="card-button-support"] {
-  --mat-button-outlined-state-layer-color: var(--mint-bg);
-  --mat-button-outlined-ripple-color: var(--mint-bg);
-  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
-
-  &:hover {
-    background-color: var(--mint-bg) !important;
-  }
-}
-
-.card-button-1 {
-  @include card-button-variant(
-    var(--mat-sys-surface-container),
-    var(--mat-sys-surface-container-highest),
-    var(--mat-sys-on-surface-variant)
-  );
-}
-
-.card-button-active {
-  @include card-button-variant(var(--sky-bg), var(--mat-sys-primary), var(--mat-sys-primary));
-}
-
-.card-button-support {
-  @include card-button-variant(
-    var(--mat-sys-surface-container-lowest),
-    var(--green-brand-light),
-    var(--green-brand-light)
-  );
-}
-
-.card-button-docs {
-  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
-}
-
-.mat-unthemed.mat-mdc-button-base[class^="card-button-1"],
-.mat-unthemed.mat-mdc-button-base[class*=" card-button"] {
-  min-width: $button-width;
-
-  mat-icon.mat-icon.notranslate.material-icons {
-    font-size: 20px;
-  }
-}
-
 .keyword-button {
   @extend %keyword-chip;
   padding: $keyword-padding;
@@ -229,7 +145,6 @@ $button-low-contrast-variant: linear-gradient(
   border-radius: 50%;
   background-color: transparent;
   color: var(--mat-sys-on-surface);
-  box-shadow: none !important;
   transition: background-color 0.2s ease-in-out;
 
   &:hover {
@@ -282,7 +197,11 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button {
-  --mat-button-outlined-container-shape: var(--border-radius);
+  @include mat.button-overrides(
+    (
+      outlined-container-shape: var(--border-radius)
+    )
+  );
   border-radius: var(--border-radius);
   padding: 8px 16px;
   border: 1px solid var(--mat-sys-outline);
@@ -322,75 +241,77 @@ $button-low-contrast-variant: linear-gradient(
     cursor: not-allowed;
     opacity: 0.5;
     background-color: var(--mat-sys-surface-variant);
-    color: var(--mat-sys-on-surface-variant);
-    border-color: var(--mat-sys-outline);
+    @include mat.button-overrides(
+      (
+        outlined-disabled-label-text-color: var(--mat-sys-on-surface-variant),
+        outlined-disabled-outline-color: var(--mat-sys-outline)
+      )
+    );
   }
 }
 
-@mixin action-button(
-  $bg,
-  $color,
-  $hover-bg,
-  $ripple: null,
-  $ripple-mdc: null,
-  $layer: null,
-  $border: true,
-  $primary: false
-) {
+@mixin action-button($bg, $color, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
   @extend %action-button-base;
   background-color: $bg;
 
+  // Material's outlined-button rule (.mat-mdc-outlined-button:not(:disabled) / [disabled]) reads the
+  // label and outline colours from these tokens. It has the same specificity as a plain
+  // color / border-color declaration here and is injected at runtime, so the tokens (not the
+  // properties) carry the colours; they work from the global sheet regardless of stylesheet order.
+  @include mat.button-overrides(
+    (
+      outlined-label-text-color: $color
+    )
+  );
+  @if $border {
+    @include mat.button-overrides(
+      (
+        outlined-outline-color: $color
+      )
+    );
+  } @else {
+    @include mat.button-overrides(
+      (
+        outlined-outline-width: 0
+      )
+    );
+    border-width: 0;
+  }
   @if $layer {
-    --mat-button-outlined-state-layer-color: #{$layer};
-    --mat-stroked-button-state-layer-color: #{$layer};
+    @include mat.button-overrides(
+      (
+        outlined-state-layer-color: $layer
+      )
+    );
   }
   @if $ripple {
-    --mat-button-outlined-ripple-color: #{$ripple};
-    --mat-stroked-button-ripple-color: #{$ripple};
+    @include mat.button-overrides(
+      (
+        outlined-ripple-color: $ripple
+      )
+    );
   }
   @if $ripple-mdc {
-    --mat-ripple-color: #{$ripple-mdc};
-  }
-
-  @if not $border {
-    border: none !important;
+    @include mat.ripple-overrides(
+      (
+        color: $ripple-mdc
+      )
+    );
   }
 
   &:not([disabled]) {
-    // Set the rest background here (not only at the top level) so it wins over
-    // Material's transparent outlined-button background; otherwise a stroked
-    // action button shows its container through and looks darker on a non-white
-    // surface (e.g. the recessed stage well) than on the white page.
-    //
-    // !important on background-color and color: Material's own default outlined-button rule
-    // (.mat-mdc-outlined-button:not(:disabled)) sets the label to the theme's primary color at the same
-    // selector specificity as this one, so which wins is a coin flip decided by stylesheet load order -
-    // it loses inside a dialog's CDK overlay, where the button's compiled styles can be injected after the
-    // global bundle. A secondary button's label color already matches Material's default (both are
-    // primary-colored text), so the loss is invisible there; a primary/delete-primary button's near-white
-    // label does not, and silently renders as unreadable same-color-as-background text.
-    background-color: $bg !important;
-    color: $color !important;
-    // Material reads the label color from this variable, not from the plain
-    // `color` property above, so without it the outlined-button label stays
-    // the theme's primary color regardless of $color.
-    --mat-button-outlined-label-text-color: #{$color};
-    @if $border {
-      border-color: $color;
-    }
-
-    &:hover {
-      background-color: $hover-bg;
-    }
+    // Rules in this sheet are nested in :root, which puts this one a pseudo-class above Material's
+    // .mat-mdc-outlined-button:not(:disabled), so the rest background stays through hover (the hover feedback is
+    // Material's state layer). The label colour is also set as a property because, inside a mat-toolbar, Material
+    // re-points --mat-button-outlined-label-text-color at the toolbar text colour
+    // (.mat-toolbar .mat-mdc-button-base.mat-mdc-button-base.mat-unthemed).
+    background-color: $bg;
+    color: $color;
   }
 
   @if $primary {
     &[disabled] {
-      background-color: var(--mat-sys-surface-container-high) !important;
-      color: var(--mat-sys-on-surface-variant) !important;
-      @if $border {
-        border-color: var(--mat-sys-surface-container-highest) !important;
-      }
+      background-color: var(--mat-sys-surface-container-high);
     }
   }
 }
@@ -399,7 +320,6 @@ $button-low-contrast-variant: linear-gradient(
   @include action-button(
     var(--mat-sys-primary),
     var(--mat-sys-surface-container-lowest),
-    var(--mat-sys-primary-base-active),
     $border: false,
     $primary: true
   );
@@ -414,44 +334,40 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .action-button-secondary {
-  @include action-button(
-    var(--mat-sys-surface-container-lowest),
-    var(--mat-sys-primary),
-    var(--sky-bg),
-    $ripple-mdc: var(--sky-bg)
-  );
+  @include action-button(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), $ripple-mdc: var(--sky-bg));
 }
 
-// The Material rule for an outlined button (.mat-mdc-outlined-button:not(:disabled)) sets the label
-// and outline colour with the same specificity as the class rules here, and it is injected at
-// runtime with the button component, so which of the two wins depends on the order the stylesheets
-// happen to land in. Setting Material's own tokens takes that order out of the picture: its rule
-// then paints the destructive colour itself, wherever the button is used.
 .action-button-delete-primary {
   @include action-button(
     var(--red-base),
     var(--mat-sys-surface-container-lowest),
-    var(--red-light),
     $ripple: var(--red-light-active),
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg),
     $border: false,
     $primary: true
   );
-  --mat-button-outlined-label-text-color: var(--mat-sys-surface-container-lowest);
 }
 
 .action-button-delete-secondary {
   @include action-button(
     var(--mat-sys-surface-container-lowest),
     var(--red-base),
-    var(--rose-bg),
     $ripple: var(--rose-ripple),
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg)
   );
-  --mat-button-outlined-label-text-color: var(--red-base);
-  --mat-button-outlined-outline-color: var(--red-base);
+}
+
+.action-button-warn-secondary {
+  // The orange of the warning ramp, set deep enough that the label keeps 4.5:1 on the card in both themes.
+  @include action-button(
+    var(--mat-sys-surface-container-lowest),
+    var(--warn-base),
+    $ripple: color-mix(in srgb, var(--warn-base) 20%, transparent),
+    $ripple-mdc: color-mix(in srgb, var(--warn-base) 12%, transparent),
+    $layer: color-mix(in srgb, var(--warn-base) 12%, transparent)
+  );
 }
 
 .filter-button {
@@ -461,11 +377,12 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
   padding: 0;
   margin-left: 8px;
-
-  span.mat-mdc-button-touch-target {
-    width: 24px !important;
-    height: 24px !important;
-  }
+  // Pins Material's 48px touch target to the visible 24px box.
+  @include mat.icon-button-overrides(
+    (
+      touch-target-size: 24px
+    )
+  );
 }
 
 // Compact icon buttons that sit inline with table text (column sorting, the
@@ -481,32 +398,11 @@ $button-low-contrast-variant: linear-gradient(
   height: 24px;
   width: 24px;
   padding: 0;
-
-  span.mat-mdc-button-touch-target {
-    width: 24px !important;
-    height: 24px !important;
-  }
-}
-
-.text-button {
-  background: none !important;
-  border: none !important;
-  color: var(--mat-sys-primary) !important;
-  padding: 0 8px;
-  cursor: pointer;
-  text-transform: none;
-  font-weight: 500;
-  transition: opacity 0.2s ease-in-out;
-
-  &:hover:not(:disabled) {
-    background-color: var(--sky-bg) !important;
-    border-radius: var(--border-radius);
-  }
-
-  &:disabled {
-    color: var(--grey-light) !important;
-    cursor: default;
-  }
+  @include mat.icon-button-overrides(
+    (
+      touch-target-size: 24px
+    )
+  );
 }
 
 // .add-action-button {
@@ -528,6 +424,11 @@ $button-low-contrast-variant: linear-gradient(
 
   &:hover {
     box-shadow: var(--elevation-8);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
   }
 }
 
@@ -602,4 +503,15 @@ $button-low-contrast-variant: linear-gradient(
 // does not change button-toggle groups used elsewhere.
 .settings-container .mat-button-toggle-appearance-standard:not(.mat-button-toggle-checked) {
   background-color: var(--table-color);
+}
+
+// Forced colors (Windows High Contrast) replace backgrounds with system colors, which takes a button's focus state
+// layer with them; an outline survives, so keyboard focus is marked with one.
+@media (forced-colors: active) {
+  .mdc-button:focus-visible,
+  .mdc-icon-button:focus-visible,
+  .mat-mdc-menu-item:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
 }

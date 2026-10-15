@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 // The reasons and the button that explains them: the button sits beside the list rather than under it, and shares its
 // centre line, so the glyph reads as belonging to the reasons rather than hanging below them. A cell of several
 // reasons therefore offers the button at the middle of the stack, which is the whole cell's centre too.
@@ -30,12 +32,15 @@
 }
 
 // Sized down to the line it sits beside, through Material's own size tokens: the button's box is what carries the
-// glyph, and at its default 40px it would stretch the cell past the row's other columns. The 48px touch target inside
-// the button's own view is pinned to match in styles/buttons.scss, which is the only part of this a component
-// stylesheet cannot reach.
+// glyph, and at its default 40px it would stretch the cell past the row's other columns. The 48px touch target is
+// pinned to match together with the other compact table buttons in styles/buttons.scss.
 .reason-detail-button {
-  --mat-icon-button-state-layer-size: 24px;
-  --mat-icon-button-icon-size: 20px;
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 24px,
+      icon-size: 20px
+    )
+  );
 }
 
 .reason-detail-icon {

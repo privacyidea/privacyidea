@@ -157,11 +157,11 @@ describe("NewsComponent", () => {
   });
 
   it("should be reachable under the news route for admins", () => {
-    expect(adminRoutes).toContainEqual({ path: "news", component: NewsComponent });
+    expect(adminRoutes).toContainEqual(expect.objectContaining({ path: "news", component: NewsComponent }));
   });
 
   it("should be reachable under the news route in self service", () => {
-    expect(selfServiceRoutes).toContainEqual({ path: "news", component: NewsComponent });
+    expect(selfServiceRoutes).toContainEqual(expect.objectContaining({ path: "news", component: NewsComponent }));
   });
 
   it("should use the news route path constant", () => {

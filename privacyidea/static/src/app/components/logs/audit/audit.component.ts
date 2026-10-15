@@ -62,6 +62,8 @@ import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 type AuditCellRenderType =
   | "status-span"
@@ -136,6 +138,8 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
 @Component({
   selector: "app-audit",
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -178,10 +182,6 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
   styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);

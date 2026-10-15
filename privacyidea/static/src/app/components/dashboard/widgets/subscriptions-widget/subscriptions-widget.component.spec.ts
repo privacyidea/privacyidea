@@ -237,13 +237,13 @@ describe("SubscriptionsWidgetComponent", () => {
 
     // In use and expiring: the two dots differ in glyph as well as in hue.
     const [serverUsage, serverSubscription] = dotsOf("privacyIDEA Server");
-    expect(serverUsage.textContent!.trim()).toBe("\u2713");
-    expect(serverSubscription.textContent!.trim()).toBe("!");
+    expect(serverUsage.textContent!.trim()).toBe("check");
+    expect(serverSubscription.textContent!.trim()).toBe("priority_high");
 
     // Not in use and no subscription: red against grey, again told apart by the glyph.
     const [radiusUsage, radiusSubscription] = dotsOf("FreeRADIUS");
-    expect(radiusUsage.textContent!.trim()).toBe("\u2715");
-    expect(radiusSubscription.textContent!.trim()).toBe("\u2013");
+    expect(radiusUsage.textContent!.trim()).toBe("close");
+    expect(radiusSubscription.textContent!.trim()).toBe("remove");
 
     // The reason is the cell's accessible name, not only its tooltip: the dot itself is
     // hidden from assistive technology.

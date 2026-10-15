@@ -51,7 +51,7 @@ export class ViewConditionsColumnComponent {
     admins: $localize`:@@policy.condition.admins:Admins`,
     realms: $localize`:@@common.realms:Realms`,
     resolvers: $localize`:@@common.resolvers:Resolvers`,
-    users: $localize`:@@nav.users:Users`,
+    users: $localize`:@@common.users:Users`,
     piNodes: $localize`:@@policy.condition.piNodes:privacyIDEA Nodes`,
     validTime: $localize`:@@policy.validTime:Valid time`,
     client: $localize`:@@common.client:Client`,

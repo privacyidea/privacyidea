@@ -448,6 +448,9 @@ class HotpTokenClass(TokenClass):
         otplen = int(self.token.otplen)
         secretHOtp = self.token.get_otpkey()
 
+        # A caller that brings its own counter checks values against that one, not against the stored counter, so
+        # only the stored-counter case advances the counter conditionally.
+        counter_from_token = counter is None
         if counter is None:
             counter = int(self.get_otp_count())
         if window is None:
@@ -462,7 +465,13 @@ class HotpTokenClass(TokenClass):
             res = self._autosync(hmac2Otp, anOtpVal)
         if res != -1:
             # on success, we save the counter
-            self.set_otp_count(res + 1)
+            if counter_from_token:
+                if not self.advance_otp_count(res + 1):
+                    # Another request used this OTP value first, so it is as spent as it is for a later replay.
+                    log.info(f"The OTP value of token {self.token.serial} was used by another request.")
+                    return -1
+            else:
+                self.set_otp_count(res + 1)
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 

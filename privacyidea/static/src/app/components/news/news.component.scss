@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-@use "styles";
+@use "styles-api" as styles;
 
 .news-page {
   @include styles.main-component-style;

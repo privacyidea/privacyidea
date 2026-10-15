@@ -60,17 +60,32 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, map, Observable, of } from "rxjs";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 interface BulkActionResult {
   serial: string;
   ok: boolean;
 }
 
+// The col-width-* tier (see --column-width-* in styles.scss) each column's header and cell are fixed to.
+const columnWidthTiers: Record<string, "s" | "m" | "l" | "xl"> = {
+  serial: "m",
+  tokentype: "s",
+  active: "s",
+  description: "l",
+  failcount: "s",
+  maxfail: "s",
+  container_serial: "m"
+};
+
 type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
 
 @Component({
   selector: "app-user-details-token-table",
   imports: [
+    ScrollFocusableDirective,
+    SortByLabelPipe,
     CopyableComponent,
     MatButton,
     MatCell,
@@ -96,11 +111,6 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
   styleUrl: "./user-details-token-table.component.scss"
 })
 export class UserDetailsTokenTableComponent {
-
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   /**
    * The two ways out of the empty state. They are passed as templates rather than projected content
    * because this component renders them in a different place depending on the table's state, and a
@@ -125,6 +135,10 @@ export class UserDetailsTokenTableComponent {
     "container_serial"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+
+  columnWidthClass(key: string): string {
+    return `col-width-${columnWidthTiers[key] ?? "m"}`;
+  }
 
   get displayedColumns(): string[] {
     return ["select", ...this.columnsKeyMap.map((column) => column.key)];

@@ -18,6 +18,7 @@
  **/
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
+import { PAGE_NAMES } from "@core/route-titles";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
 import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/auth.guard";
@@ -59,7 +60,7 @@ import { UiPolicyService } from "@services/ui-policy/ui-policy.service";
 import { UserService } from "@services/user/user.service";
 
 export const routes: Routes = [
-  { path: "login", component: LoginComponent, canActivate: [loginGuard] },
+  { path: "login", title: PAGE_NAMES.login, component: LoginComponent, canActivate: [loginGuard] },
   { path: "", redirectTo: "login", pathMatch: "full" },
   {
     path: "",

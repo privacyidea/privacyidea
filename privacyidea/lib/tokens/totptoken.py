@@ -363,7 +363,10 @@ class TotpTokenClass(HotpTokenClass):
 
         if res != -1:
             # on success, we have to save the last attempt
-            self.set_otp_count(res)
+            if not self.advance_otp_count(res):
+                # Another request used this OTP value first, so it is as spent as it is for a later replay.
+                log.info(f"The OTP value of token {self.token.serial} was used by another request.")
+                return -1
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
