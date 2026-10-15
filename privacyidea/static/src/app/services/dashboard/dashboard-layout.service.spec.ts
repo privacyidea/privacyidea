@@ -25,6 +25,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { DashboardLayoutService } from "./dashboard-layout.service";
 import { DashboardPersistenceService } from "./dashboard-persistence.service";
+import { Subject } from "rxjs";
 
 describe("DashboardLayoutService", () => {
   let service: DashboardLayoutService;
@@ -33,6 +34,12 @@ describe("DashboardLayoutService", () => {
 
   const overlaps = (a: WidgetInstance, b: WidgetInstance): boolean =>
     a.x < b.x + b.cols && a.x + a.cols > b.x && a.y < b.y + b.rows && a.y + a.rows > b.y;
+
+  /** Reads the layout currently persisted in the mocked user settings. */
+  const persisted = (): WidgetInstance[] | null => {
+    const settings = TestBed.inject(UserSettingsService) as unknown as MockUserSettingsService;
+    return (settings.settings()?.["dashboard"] as { widgets?: WidgetInstance[] } | undefined)?.widgets ?? null;
+  };
 
   /** Reads the stored layout back; the mocked user settings resolve synchronously. */
   const stored = (): WidgetInstance[] | null => {
@@ -402,8 +409,8 @@ describe("DashboardLayoutService", () => {
 
       const storedWidget = stored()?.find((widget) => widget.id === id);
       expect(storedWidget?.settings).toEqual({ realm: "realm1" });
-      });
     });
+  });
 
   describe("setWidgetOptions", () => {
     beforeEach(() => build());
@@ -593,6 +600,129 @@ describe("DashboardLayoutService", () => {
       service.pruneForbiddenWidgets();
 
       expect(service.widgets()).toHaveLength(before);
+    });
+  });
+
+  describe("session boundaries", () => {
+    /** A load whose response is held back until the test releases it. */
+    const buildWithDeferredLoad = (): { deferred: Subject<WidgetInstance[] | null> } => {
+      const deferred = new Subject<WidgetInstance[] | null>();
+      persistence = TestBed.inject(DashboardPersistenceService);
+      jest.spyOn(persistence, "load").mockReturnValue(deferred.asObservable());
+      service = TestBed.inject(DashboardLayoutService);
+      return { deferred };
+    };
+
+    it("drops an in-progress edit of the ended session along with its layout", () => {
+      build();
+      service.beginEdit();
+      expect(service.editMode()).toBe(true);
+
+      auth.isAuthenticated.set(false);
+      TestBed.flushEffects();
+
+      expect(service.editMode()).toBe(false);
+    });
+
+    it("does not carry the previous session's layout into the next one", () => {
+      const first: WidgetInstance[] = [{ id: "events-a", type: "events", x: 0, y: 0, cols: 8, rows: 5 }];
+      build(first);
+      expect(service.widgets()).toContainEqual(first[0]);
+
+      // Logout: the auth service ends the session, the layout service reacts to it.
+      auth.isAuthenticated.set(false);
+      TestBed.flushEffects();
+      expect(service.widgets()).not.toContainEqual(first[0]);
+
+      // Another administrator signs in without the page reloading; their stored layout differs.
+      const second: WidgetInstance[] = [{ id: "policies-b", type: "policies", x: 0, y: 0, cols: 10, rows: 5 }];
+      persistence.save(second).subscribe();
+      auth.isAuthenticated.set(true);
+      service.ensureLoadedForSession();
+
+      expect(service.widgets()).toContainEqual(second[0]);
+      expect(service.widgets()).not.toContainEqual(first[0]);
+    });
+
+    it("drops a load that a logout superseded", () => {
+      const { deferred } = buildWithDeferredLoad();
+
+      // The session ends while its load is still in flight.
+      auth.isAuthenticated.set(false);
+      TestBed.flushEffects();
+
+      // The response of the session that just ended arrives late: it must not apply.
+      deferred.next([{ id: "events-a", type: "events", x: 0, y: 0, cols: 8, rows: 5 }]);
+      deferred.complete();
+
+      expect(service.hasWidgetOfType("events")).toBe(false);
+      // The plain defaults, not reconciled: with the session gone there is no role to
+      // reconcile against, so the pinned widgets are absent as well.
+      expect(service.hasWidgetOfType("subscriptions")).toBe(false);
+
+      // The next session loads its own stored layout.
+      jest.restoreAllMocks();
+      const second: WidgetInstance[] = [{ id: "policies-b", type: "policies", x: 0, y: 0, cols: 10, rows: 5 }];
+      persistence.save(second).subscribe();
+      auth.isAuthenticated.set(true);
+      service.ensureLoadedForSession();
+
+      expect(service.widgets()).toContainEqual(second[0]);
+      expect(service.hasWidgetOfType("events")).toBe(false);
+    });
+
+    it("prunes the stored layout only after it has loaded, so pruned defaults are never saved over it", () => {
+      const { deferred } = buildWithDeferredLoad();
+      // The admin may not see the tokens widgets (tokenlist) but may see policies.
+      auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
+
+      // The dashboard mounts while the stored layout is still in flight and prunes.
+      service.pruneForbiddenWidgets();
+
+      // The stored layout arrives: one forbidden widget, one allowed.
+      deferred.next([
+        { id: "tokens-b", type: "tokens", x: 0, y: 0, cols: 6, rows: 4 },
+        { id: "policies-b", type: "policies", x: 6, y: 0, cols: 10, rows: 5 }
+      ]);
+      deferred.complete();
+
+      expect(service.hasWidgetOfType("tokens")).toBe(false);
+      expect(service.hasWidgetOfType("policies")).toBe(true);
+      // What is persisted is the stored layout minus the forbidden widget, not the defaults.
+      expect(persisted()?.some((widget) => widget.id === "policies-b")).toBe(true);
+      expect(persisted()?.some((widget) => widget.id === "tokens-b")).toBe(false);
+      expect(persisted()?.some((widget) => widget.type === "resolver-timing")).toBe(false);
+    });
+
+    it("keeps a layout the user changed while the load was in flight", () => {
+      const { deferred } = buildWithDeferredLoad();
+
+      // The user adds a widget before their stored layout arrives.
+      service.addWidget("events");
+      expect(service.hasWidgetOfType("events")).toBe(true);
+
+      deferred.next([{ id: "policies-a", type: "policies", x: 0, y: 0, cols: 10, rows: 5 }]);
+      deferred.complete();
+
+      // The in-flight change wins and is written back, and the stored layout does not apply.
+      expect(service.hasWidgetOfType("events")).toBe(true);
+      expect(service.widgets().some((widget) => widget.id === "policies-a")).toBe(false);
+      expect(persisted()?.some((widget) => widget.type === "events")).toBe(true);
+    });
+
+    it("does not start a second load while one is in flight, or after the layout settled", () => {
+      const { deferred } = buildWithDeferredLoad();
+      const loadSpy = persistence.load as jest.Mock;
+
+      service.ensureLoadedForSession();
+      expect(loadSpy).toHaveBeenCalledTimes(1);
+
+      deferred.next(null);
+      deferred.complete();
+      expect(loadSpy).toHaveBeenCalledTimes(1);
+
+      service.ensureLoadedForSession();
+      expect(loadSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

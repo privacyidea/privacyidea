@@ -106,6 +106,9 @@ export class DashboardComponent implements OnDestroy {
   private readonly trailingRows = 4;
 
   constructor() {
+    // A session that started after a logout (login without a page reload) has not loaded
+    // its stored layout yet; the prune must not act on the defaults before it arrives.
+    this.layoutService.ensureLoadedForSession();
     this.layoutService.pruneForbiddenWidgets();
     afterRenderEffect(() => {
       this.fieldHeight();
