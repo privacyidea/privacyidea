@@ -128,7 +128,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError, EnrollmentError, ValidateError)
+                                   TokenAdminError, EnrollmentError, ValidateError, ResolverError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -219,7 +219,14 @@ def before_request():
     # Check if a policy defines the realm
     realm = get_realm_for_authentication(g, username, realm)
     resolver = request.all_data.get("resolver")
-    request.User = User(username, realm, resolver)
+    try:
+        request.User = User(username, realm, resolver)
+    except ResolverError:
+        if request.blueprint == validate_blueprint.name:
+            # Lowercase like the realm of a User object, which this request could not build
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
+                               realm=realm.lower() if realm else None)
+        raise
     request.all_data["realm"] = realm
 
     # Replace the requested user with the user it was resolved to
