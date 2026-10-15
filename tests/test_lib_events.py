@@ -1378,7 +1378,46 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
+        # Neither a token nor a user: not fulfilled, although a token in the system is locked
+        options = self.setup_request(all_data={"type": "hotp"})
+        for value in ("True", "False"):
+            options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: value}}
+            self.assertFalse(uhandler.check_condition(options), value)
+
         token.delete_token()
+
+        # A user without tokens: not fulfilled
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        remove_token(user=user)
+        options = self.setup_request(all_data={"type": "hotp"}, user=user)
+        for value in ("True", "False"):
+            options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: value}}
+            self.assertFalse(uhandler.check_condition(options), value)
+
+        # A user with several tokens, none locked
+        first = init_token({"type": "hotp", "serial": "HOTP_LOCKED_1", "genkey": True}, user=user)
+        init_token({"type": "hotp", "serial": "HOTP_LOCKED_2", "genkey": True}, user=user)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        self.assertTrue(uhandler.check_condition(options))
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        self.assertFalse(uhandler.check_condition(options))
+
+        # One of the tokens of the user is locked
+        first.set_maxfail(1)
+        first.inc_failcount()
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        self.assertFalse(uhandler.check_condition(options))
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        self.assertTrue(uhandler.check_condition(options))
+
+        # A named token that does not exist: not fulfilled, whatever the tokens of the user are
+        options = self.setup_request(all_data={"serial": "UNKNOWN_SERIAL"}, user=user)
+        for value in ("True", "False"):
+            options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: value}}
+            self.assertFalse(uhandler.check_condition(options), value)
+
+        remove_token(user=user)
 
     def test_26_check_user_container_number(self):
         self.setUp_user_realms()

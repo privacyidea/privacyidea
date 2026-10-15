@@ -373,6 +373,11 @@ maximum failcounter is reached. In such a case the user cannot use the token
 to authenticate anymore. So an action to notify the user or enroll a new
 token can be triggered.
 
+If the request does not name a token, the condition looks at the tokens of the
+user of the request: *True* is fulfilled if one of them is locked, *False* if
+none is. Without any token to look at - no user, a user without tokens, or a
+named token that does not exist - the condition is not fulfilled.
+
 **token_validity_period**
 
 Checks if the token is in the current validity period or not. Can be set to

@@ -1006,9 +1006,15 @@ class BaseEventHandler:
 
         if not token_obj and not per_token_checked:
             if CONDITION.TOKEN_LOCKED in conditions:
-                # check all tokens of the user, if any token is maxfail
-                token_objects = get_tokens(user=user, maxfail=True)
-                if not ','.join([tok.get_serial() for tok in token_objects]):
+                if serial:
+                    log.debug(f"Condition token_locked not fulfilled: no token {serial} exists.")
+                    return False
+                # The request names no token: the condition is about the tokens of the user
+                if user.is_empty() or not get_tokens(user=user, count=True):
+                    log.debug("Condition token_locked not fulfilled: the request names no token or user with tokens.")
+                    return False
+                locked = get_tokens(user=user, maxfail=True, count=True) > 0
+                if is_true(conditions.get(CONDITION.TOKEN_LOCKED)) != locked:
                     return False
 
             if CONDITION.SERIAL in conditions and serial:
