@@ -22,7 +22,7 @@
     [initialValue]="intention()"
     [labels]="intentionLabels()"
     [values]="intentionValues"
-    class="intention-selector width-100" />
+    class="intention-selector width-full" />
   @if (intention() !== "uploadCert") {
     <div class="flex-row gap-16">
       <mat-form-field class="input-width-l">
@@ -73,7 +73,7 @@
       >
     }
     @case ("uploadRequest") {
-      <mat-form-field class="width-100">
+      <mat-form-field class="width-full">
         <mat-label i18n="@@token.certificateSigning">Certificate Signing Request (PEM)</mat-label>
         <textarea
           [formField]="pemForm"
@@ -87,7 +87,7 @@
       </mat-form-field>
     }
     @case ("uploadCert") {
-      <mat-form-field class="width-100">
+      <mat-form-field class="width-full">
         <mat-label i18n="@@token.certificatePem">Certificate (PEM)</mat-label>
         <textarea
           [formField]="pemForm"

@@ -66,6 +66,7 @@ KNOWN_SETTING_KEYS = {
     "depth",
     "light_source",
     "corner_radius",
+    "status_colors",
     "starting_page",
     "token_columns",
     "dashboard",

@@ -306,7 +306,9 @@
               Priority {{ editPolicy().priority }} is already used by "{{ priorityConflict()?.name }}".
             </mat-error>
           }
-          <mat-hint i18n="@@conditionalAccess.orderAcrossPoliciesLowest"
+          <mat-hint
+            class="ca-priority-hint"
+            i18n="@@conditionalAccess.orderAcrossPoliciesLowest"
             >Order across policies, lowest first. Must be unique.</mat-hint
           >
         </mat-form-field>

@@ -1,4 +1,4 @@
-@use "inputs";
+@use "styles-api" as styles;
 
 .motp-pin-input {
   display: flex;
@@ -13,6 +13,6 @@
   outline: none;
 
   &:focus {
-    outline: inputs.$input-focus-outline;
+    outline: styles.$focus-outline;
   }
 }

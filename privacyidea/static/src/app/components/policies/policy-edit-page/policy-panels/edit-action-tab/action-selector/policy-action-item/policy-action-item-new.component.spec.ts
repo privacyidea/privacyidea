@@ -101,6 +101,16 @@ describe("PolicyActionItemComponent", () => {
     expect(component.currentAction().value).toBe("myDefault");
   });
 
+  it("names the value input and the add button after the action", () => {
+    fixture.componentRef.setInput("selectableAction", { ...defaultAction, detail: { type: "str", desc: "A string" } });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("input.action-value-input").getAttribute("aria-label")).toBe(
+      "testAction"
+    );
+    expect(fixture.nativeElement.querySelector("button").getAttribute("aria-label")).toBe("Add testAction");
+  });
+
   it("should emit actionAdd with explicit value when addAction is called with a value", () => {
     const spy = jest.spyOn(component.actionAdd, "emit");
     component.addAction("explicitValue");

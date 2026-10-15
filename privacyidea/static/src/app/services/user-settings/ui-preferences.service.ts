@@ -219,6 +219,9 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
         if (settings.corner_radius !== undefined) {
           this.appearanceService.applyStoredCorners(settings.corner_radius);
         }
+        if (settings.status_colors !== undefined) {
+          this.appearanceService.applyStoredStatusColors(settings.status_colors);
+        }
         this.applyLocale(settings.locale);
       },
       error: () => undefined

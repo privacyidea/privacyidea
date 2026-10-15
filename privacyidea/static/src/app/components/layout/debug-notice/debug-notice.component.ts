@@ -20,13 +20,14 @@
 import { Component, computed, inject, signal } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface, LogLevel } from "@services/auth/auth.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 type DebugState = "normal" | "debug" | "debug-passwords";
 
 @Component({
   selector: "app-debug-notice",
   standalone: true,
-  imports: [MatTooltip],
+  imports: [TooltipAriaLabelDirective, MatTooltip],
   templateUrl: "./debug-notice.component.html",
   styleUrl: "./debug-notice.component.scss"
 })

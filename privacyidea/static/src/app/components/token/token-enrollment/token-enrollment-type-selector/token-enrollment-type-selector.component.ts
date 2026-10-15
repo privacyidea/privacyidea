@@ -28,6 +28,7 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { CUSTOM_TOOLTIP_OPTIONS } from "../token-enrollment.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-enrollment-type-selector",
@@ -35,6 +36,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
   styleUrl: "./token-enrollment-type-selector.component.scss",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatFormField,
     MatSelect,
     MatOption,

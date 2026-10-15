@@ -59,10 +59,20 @@ export type LightSourceLevel = string;
 
 /** 16 * 20 = 320 degrees: light from the upper right. */
 export const DEFAULT_LIGHT_SOURCE = "16";
+/** Must stay in step with the `:root` status colors in styles.scss. */
+export const DEFAULT_STATUS_COLORS = "aa";
 
 /** Levels of the global corner radius; the names are the $corner-radii keys in styles/styles.scss. */
 export const CORNER_LEVELS = ["square", "default", "round", "extra-round"] as const;
 export type CornerLevel = (typeof CORNER_LEVELS)[number];
+
+/**
+ * Contrast of the status colours (chips, dots, ribbons, bars) and the ink on them: AAA is black on light fills, AA is
+ * white on darker ones, A is white on the old WebUI palette. The names are the $status-colors
+ * keys in styles/styles.scss.
+ */
+export const STATUS_COLOR_LEVELS = ["aaa", "aa", "a"] as const;
+export type StatusColorLevel = (typeof STATUS_COLOR_LEVELS)[number];
 
 /** One group of mutually exclusive levels, exactly one of which is a class on <html> at a time. */
 interface LevelGroup<T extends string> {
@@ -74,7 +84,7 @@ interface LevelGroup<T extends string> {
 }
 
 /**
- * Owns the appearance the user picks in UI Settings: depth, light source and corner radius. Each
+ * Owns the appearance the user picks in UI Settings: depth, light source, corner radius and status colors. Each
  * group is a class on the <html> element, which the stylesheet turns into design-token values. A
  * cookie caches the levels for the first paint; for an authenticated principal the stored user
  * settings are authoritative and override that cache once they arrive.
@@ -110,10 +120,18 @@ export class AppearanceService {
     settingKey: "corner_radius",
     level: signal<CornerLevel>("default")
   };
+  private readonly statusColorsGroup: LevelGroup<StatusColorLevel> = {
+    levels: STATUS_COLOR_LEVELS,
+    fallback: DEFAULT_STATUS_COLORS,
+    classPrefix: "status-colors-",
+    settingKey: "status_colors",
+    level: signal<StatusColorLevel>(DEFAULT_STATUS_COLORS)
+  };
 
   public readonly depth: Signal<DepthLevel> = this.depthGroup.level.asReadonly();
   public readonly lightSource: Signal<LightSourceLevel> = this.lightSourceGroup.level.asReadonly();
   public readonly corners: Signal<CornerLevel> = this.cornerGroup.level.asReadonly();
+  public readonly statusColors: Signal<StatusColorLevel> = this.statusColorsGroup.level.asReadonly();
 
   /** Applies the cookie-cached levels at bootstrap, before any stored setting can arrive. */
   public initializeAppearance(): void {
@@ -121,7 +139,8 @@ export class AppearanceService {
     this.apply(this.depthGroup, cached["depth"]);
     this.apply(this.lightSourceGroup, cached["light_source"]);
     this.apply(this.cornerGroup, cached["corner_radius"]);
-    // One write for all three groups: caching per group would persist half-updated intermediate states.
+    this.apply(this.statusColorsGroup, cached["status_colors"]);
+    // One write for all groups: caching per group would persist half-updated intermediate states.
     this.cacheAppearance();
   }
 
@@ -135,6 +154,10 @@ export class AppearanceService {
 
   public setCorners(level: CornerLevel): void {
     this.set(this.cornerGroup, level);
+  }
+
+  public setStatusColors(level: StatusColorLevel): void {
+    this.set(this.statusColorsGroup, level);
   }
 
   /**
@@ -168,18 +191,30 @@ export class AppearanceService {
     this.cacheAppearance();
   }
 
+  public applyStoredStatusColors(level: unknown): void {
+    this.apply(this.statusColorsGroup, level);
+    this.cacheAppearance();
+  }
+
   /**
-   * Resets every group to its default and reports once all three writes have settled, so a
+   * Resets every group to its default and reports once all the writes have settled, so a
    * caller that also navigates away (switching locale is a full-page load) can wait for them
    * first -- otherwise the navigation would abort them mid-flight and the reset would only
    * half stick.
    */
   public resetToDefaults(): Observable<unknown> {
-    this.apply(this.depthGroup, this.depthGroup.fallback);
-    this.apply(this.lightSourceGroup, this.lightSourceGroup.fallback);
-    this.apply(this.cornerGroup, this.cornerGroup.fallback);
-    const written$ = this.storeAll([this.depthGroup, this.lightSourceGroup, this.cornerGroup]);
-    // One write for all three groups: caching per group would persist half-updated intermediate states.
+    return this.resetGroups([this.depthGroup, this.lightSourceGroup, this.cornerGroup, this.statusColorsGroup]);
+  }
+
+  /** Resets only the look of the surfaces (depth, light source, corners); the status colors stay as picked. */
+  public resetLook(): Observable<unknown> {
+    return this.resetGroups([this.depthGroup, this.lightSourceGroup, this.cornerGroup]);
+  }
+
+  private resetGroups(groups: LevelGroup<string>[]): Observable<unknown> {
+    groups.forEach((group) => this.apply(group, group.fallback));
+    const written$ = this.storeAll(groups);
+    // One write for all groups: caching per group would persist half-updated intermediate states.
     this.cacheAppearance();
     return written$;
   }
@@ -242,7 +277,8 @@ export class AppearanceService {
       JSON.stringify({
         depth: this.depthGroup.level(),
         light_source: this.lightSourceGroup.level(),
-        corner_radius: this.cornerGroup.level()
+        corner_radius: this.cornerGroup.level(),
+        status_colors: this.statusColorsGroup.level()
       })
     );
   }

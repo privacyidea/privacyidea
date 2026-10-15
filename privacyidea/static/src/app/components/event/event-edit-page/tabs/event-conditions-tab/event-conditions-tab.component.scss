@@ -1,11 +1,17 @@
+@use "@angular/material" as mat;
+
 .event-conditions-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
   width: 100%;
 
-  --mat-expansion-container-background-color: transparent;
-  --mat-expansion-container-elevation-shadow: none;
+  @include mat.expansion-overrides(
+    (
+      container-background-color: transparent,
+      container-elevation-shadow: none
+    )
+  );
   --expansion-panel-header-padding: 8px 12px;
 }
 

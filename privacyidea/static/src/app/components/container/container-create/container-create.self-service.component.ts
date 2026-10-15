@@ -32,10 +32,12 @@ import { UserAssignmentComponent } from "@components/token/user-assignment/user-
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { assert } from "@utils/assert";
 import { ContainerCreateComponent } from "./container-create.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-create-self-service",
   imports: [
+    TooltipAriaLabelDirective,
     MatButton,
     MatFormField,
     MatIcon,

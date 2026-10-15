@@ -32,6 +32,8 @@ import { MockMachineResolverService } from "@testing/mock-services/mock-machine-
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
 import { MachineResolverComponent } from "./machine-resolver.component";
+import { TableAction } from "@components/shared/table-actions/table-actions.component";
+import { grantRights, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -144,5 +146,57 @@ describe("MachineResolverComponent", () => {
     dialog.result$ = of(false);
     await component.onDeleteMachineResolver({ resolvername: "hosts1" } as MachineResolver);
     expect(machineResolverServiceMock.deleteMachineResolver).not.toHaveBeenCalled();
+  });
+
+  describe("toolbar actions", () => {
+    const hostsResolver = {
+      resolvername: "hosts1",
+      type: "hosts",
+      data: { resolver: "hosts1", type: "hosts" }
+    } as MachineResolver;
+    const newAction = (): TableAction => toolbarActions(component).find((candidate) => candidate.id === "new")!;
+
+    it("offers a single New Machine Resolver action", () => {
+      expect(toolbarActions(component).map((candidate) => candidate.id)).toEqual(["new"]);
+    });
+
+    it("shows New Machine Resolver with mresolverwrite", () => {
+      expect(newAction().visible).toBe(true);
+    });
+
+    it("hides New Machine Resolver without mresolverwrite", () => {
+      grantRights(["mresolverread", "mresolverdelete"]);
+      expect(newAction().visible).toBe(false);
+    });
+
+    it("keeps New Machine Resolver enabled", () => {
+      expect(newAction().disabled).toBeFalsy();
+    });
+
+    it("runs onNewMachineResolver from New Machine Resolver", () => {
+      const onNew = jest.spyOn(component, "onNewMachineResolver");
+
+      newAction().run!();
+
+      expect(onNew).toHaveBeenCalledTimes(1);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
+    });
+
+    it("renders the New Machine Resolver button and navigates when it is clicked", () => {
+      machineResolverServiceMock.machineResolvers.set([hostsResolver]);
+      fixture.detectChanges();
+
+      toolbarButton(fixture, "New Machine Resolver")!.click();
+
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_NEW);
+    });
+
+    it("renders no toolbar button without mresolverwrite", () => {
+      grantRights(["mresolverread", "mresolverdelete"]);
+      machineResolverServiceMock.machineResolvers.set([hostsResolver]);
+      fixture.detectChanges();
+
+      expect(toolbarButton(fixture, "New Machine Resolver")).toBeUndefined();
+    });
   });
 });

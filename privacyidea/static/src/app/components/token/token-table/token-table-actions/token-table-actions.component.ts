@@ -16,11 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject, LOCALE_ID, ViewChild } from "@angular/core";
+import { Component, computed, DOCUMENT, inject, LOCALE_ID } from "@angular/core";
 
-import { MatButtonModule } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -36,22 +33,21 @@ import { tap } from "rxjs/operators";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
 import { ToggleActiveAction, ToggleActiveDialogComponent } from "./toggle-active-dialog/toggle-active-dialog.component";
 
-import { MatMenu, MatMenuModule } from "@angular/material/menu";
-import { Router, RouterLink } from "@angular/router";
+import { Router } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { formatList, pluralize } from "@utils/i18n.utils";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
+  imports: [TableActionsComponent],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })
-export class TokenTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class TokenTableActionsComponent extends TableActionsHost {
   private readonly localeId: string = inject(LOCALE_ID);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -63,13 +59,88 @@ export class TokenTableActionsComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  readonly ROUTE_PATHS = ROUTE_PATHS;
   readonly advancedApiFilterKeys = this.tokenService.advancedApiFilterKeys;
   private router = inject(Router);
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   tokenSerial = this.tokenService.tokenSerial;
   tokenSelection = this.tokenService.tokenSelection;
+
+  protected readonly actions = computed<TableAction[]>(() => {
+    const bulkAllowed = this.authService.oneActionAllowed([
+      "delete",
+      "assign",
+      "unassign",
+      "enable",
+      "disable",
+      "reset"
+    ]);
+    const noSelection = !this.tokenSelection.hasSelection();
+    return [
+      {
+        id: "enroll",
+        label: $localize`:@@common.enrollToken:Enroll Token`,
+        tone: "primary",
+        width: "l",
+        icon: "shield",
+        iconClass: "icon-badge-pad-3",
+        badge: true,
+        pinned: true,
+        visible: this.authService.tokenEnrollmentAllowed(),
+        run: () => this.router.navigate([ROUTE_PATHS.TOKENS_ENROLLMENT])
+      },
+      {
+        id: "delete",
+        label: $localize`:@@common.delete:Delete`,
+        tone: "delete-secondary",
+        width: "l",
+        icon: "delete_sweep",
+        visible: bulkAllowed && this.authService.actionAllowed("delete"),
+        disabled: noSelection,
+        run: () => this.deleteSelectedTokens()
+      },
+      {
+        id: "assign",
+        label: $localize`:@@token.assign:Assign`,
+        tone: "secondary",
+        width: "l",
+        icon: "person_add",
+        visible: bulkAllowed && this.authService.actionAllowed("assign"),
+        disabled: noSelection,
+        run: () => this.assignSelectedTokens()
+      },
+      {
+        id: "unassign",
+        label: $localize`:@@common.unassign:Unassign`,
+        tone: "secondary",
+        width: "l",
+        icon: "person_remove",
+        visible: bulkAllowed && this.authService.actionAllowed("unassign"),
+        disabled: noSelection,
+        run: () => this.unassignSelectedTokens()
+      },
+      {
+        id: "toggle-active",
+        label: $localize`:@@common.deActivate:(De)activate`,
+        tone: "secondary",
+        width: "l",
+        icon: "toggle_on",
+        visible: bulkAllowed && this.authService.actionAllowed("enable") && this.authService.actionAllowed("disable"),
+        disabled: noSelection,
+        run: () => this.toggleActiveSelectedTokens()
+      },
+      {
+        id: "reset-failcounter",
+        label: $localize`:@@common.resetFailcounters:Reset Failcounters`,
+        tone: "secondary",
+        width: "l",
+        icon: "restart_alt",
+        visible: bulkAllowed && this.authService.actionAllowed("reset"),
+        disabled: noSelection,
+        run: () => this.resetFailcounterSelectedTokens()
+      }
+    ];
+  });
 
   toggleActive(): void {
     this.tokenService.toggleActive(this.tokenSerial(), this.tokenIsActive()).subscribe({

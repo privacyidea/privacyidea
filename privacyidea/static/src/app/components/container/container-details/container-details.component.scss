@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 :host {
@@ -58,29 +58,6 @@
   align-items: flex-start;
   gap: 16px;
 
-  ::ng-deep .actions-otp-container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-
-    > h4 {
-      display: none;
-    }
-
-    .flex-column {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    mat-divider {
-      display: none;
-    }
-  }
 }
 
 .details-grid {

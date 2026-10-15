@@ -21,6 +21,7 @@ import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltip } from "@angular/material/tooltip";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /** The least a picker needs of a choice: something to store it by, and something to show. */
 export interface PickerChoice {
@@ -38,7 +39,7 @@ export interface PickerChoice {
 @Component({
   selector: "app-widget-header-picker",
   standalone: true,
-  imports: [MatButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip],
+  imports: [TooltipAriaLabelDirective, MatButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip],
   templateUrl: "./widget-header-picker.component.html",
   styleUrl: "./widget-header-picker.component.scss"
 })

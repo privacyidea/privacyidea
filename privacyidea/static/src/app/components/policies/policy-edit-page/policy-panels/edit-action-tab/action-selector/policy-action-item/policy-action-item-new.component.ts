@@ -65,6 +65,12 @@ export class PolicyActionItemComponent {
   readonly highlight = input<string>("");
   readonly actionValue = input<string | number>();
 
+  // Names the value controls and the add button after the action they belong to.
+  readonly valueLabel = computed(() => this.selectableAction().label);
+  readonly addLabel = computed(() => {
+    const action = this.selectableAction().label;
+    return $localize`:@@policy.addAction:Add ${action}:ACTION:`;
+  });
   readonly isBooleanAction = computed(() => this.selectableAction().detail?.type === "bool");
   readonly inputIsValid = computed<boolean>(() => {
     const detail = this.selectableAction().detail;

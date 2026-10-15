@@ -37,6 +37,7 @@ describe("UiPreferencesService", () => {
     applyStoredDepth: jest.Mock;
     applyStoredLightSource: jest.Mock;
     applyStoredCorners: jest.Mock;
+    applyStoredStatusColors: jest.Mock;
   };
   let navigateSpy: jest.SpyInstance;
 
@@ -46,7 +47,8 @@ describe("UiPreferencesService", () => {
     appearanceService = {
       applyStoredDepth: jest.fn(),
       applyStoredLightSource: jest.fn(),
-      applyStoredCorners: jest.fn()
+      applyStoredCorners: jest.fn(),
+      applyStoredStatusColors: jest.fn()
     };
     TestBed.configureTestingModule({
       providers: [
@@ -141,13 +143,19 @@ describe("UiPreferencesService", () => {
 
   it("should apply the stored appearance levels", () => {
     create("en");
-    userSettingsService.settings.set({ depth: "flat", light_source: "8", corner_radius: "square" });
+    userSettingsService.settings.set({
+      depth: "flat",
+      light_source: "8",
+      corner_radius: "square",
+      status_colors: "aa"
+    });
 
     service.sync();
 
     expect(appearanceService.applyStoredDepth).toHaveBeenCalledWith("flat");
     expect(appearanceService.applyStoredLightSource).toHaveBeenCalledWith("8");
     expect(appearanceService.applyStoredCorners).toHaveBeenCalledWith("square");
+    expect(appearanceService.applyStoredStatusColors).toHaveBeenCalledWith("aa");
   });
 
   it("should leave the appearance alone when none is stored", () => {
@@ -159,6 +167,7 @@ describe("UiPreferencesService", () => {
     expect(appearanceService.applyStoredDepth).not.toHaveBeenCalled();
     expect(appearanceService.applyStoredLightSource).not.toHaveBeenCalled();
     expect(appearanceService.applyStoredCorners).not.toHaveBeenCalled();
+    expect(appearanceService.applyStoredStatusColors).not.toHaveBeenCalled();
   });
 
   it("should do nothing while nobody is logged in", () => {

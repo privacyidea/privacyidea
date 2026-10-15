@@ -1,13 +1,3 @@
-@forward "mixins";
-@forward "buttons";
-@forward "dialog";
-@forward "enroll";
-@forward "info";
-@forward "inputs";
-@forward "styles";
-@forward "tab";
-@forward "table";
-@forward "panel";
-@forward "theme";
-@forward "snackbar";
-@forward "animations";
+// The silent API for component stylesheets: mixins, functions, constants and tokens only, no CSS.
+// The concrete global rules are loaded once by styles.scss and table-global.scss.
+@forward "styles-api";

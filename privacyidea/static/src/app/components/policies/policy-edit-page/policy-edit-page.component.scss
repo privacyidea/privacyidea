@@ -1,5 +1,5 @@
-@use "styles";
-@use "buttons";
+@use "@angular/material" as mat;
+@use "styles-api" as styles;
 
 .edit-policy-layout {
   @include styles.main-component-style;
@@ -9,6 +9,12 @@
   box-sizing: border-box;
   width: min(calc(var(--input-width-xxl) + 2 * 16px), calc(100vw - 4 * 16px));
   margin-inline: auto;
+  // The hint and error lines under the form fields take a 16px line.
+  @include mat.form-field-overrides(
+    (
+      subscript-text-line-height: 16px
+    )
+  );
 }
 
 .action-search-field {

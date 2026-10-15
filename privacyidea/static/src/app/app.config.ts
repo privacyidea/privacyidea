@@ -26,8 +26,9 @@ import {
   provideZonelessChangeDetection
 } from "@angular/core";
 import { MatPaginatorIntl } from "@angular/material/paginator";
-import { provideRouter } from "@angular/router";
+import { provideRouter, TitleStrategy } from "@angular/router";
 import { localeBaseHref, scriptRoot } from "@core/locale";
+import { PageTitleStrategy } from "@core/page-title";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { routes } from "./app.routes";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
@@ -59,6 +60,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
+    { provide: TitleStrategy, useExisting: PageTitleStrategy },
     {
       provide: APP_BASE_HREF,
       useFactory: baseHrefFactory

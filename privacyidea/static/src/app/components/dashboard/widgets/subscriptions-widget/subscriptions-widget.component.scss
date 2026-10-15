@@ -46,13 +46,6 @@
     line-height: 18px;
   }
 
-  // The copy icon lives inside the copy button's own component.
-  ::ng-deep .copy-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    line-height: 18px;
-  }
 }
 
 .table-container {
@@ -99,16 +92,15 @@
     background: var(--mat-sys-surface-container-lowest);
   }
 
-  // Compact view: only three columns, so they share the width in proportion instead of
-  // leaving the two dots pressed against the right edge. Half for the name, a quarter
-  // for each status — which also gives both headers room to be read in full.
+  // Compact view: only three columns, so they share the width in proportion. Just under half for the name, over a
+  // quarter for each status, which gives both headers room to be read in full and centred over their dots.
   .application-cell {
-    width: 50%;
+    width: 46%;
   }
 
   .dot-column {
     text-align: center;
-    width: 25%;
+    width: 27%;
   }
 
   // Detailed view: it trades the two dot columns for the dates and versions, and the
@@ -149,6 +141,18 @@
     color: var(--grey-base);
   }
 
+  // A link is a 24px-high target (WCAG 2.5.8). Its cell gives up its vertical padding so the row is exactly one
+  // target tall, and the links of adjacent rows sit end to end instead of overlapping.
+  td:has(a) {
+    padding-block: 0;
+  }
+
+  a {
+    display: inline-block;
+    line-height: 24px;
+    vertical-align: top;
+  }
+
   // A client can have many versions in use. The list stays on one line and scrolls
   // inside its cell rather than wrapping, which would make the row (and with it the
   // whole widget) taller. The full list is in the cell's tooltip.
@@ -174,34 +178,45 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--grey-base);
-  // Holds the glyph that carries the state alongside the colour. Small enough, and with
-  // its own line height, that the dot stays inside the single line every cell is.
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 700;
-  // Paired with the dot fill rather than with the page surface: the fills are the same
-  // in both themes, so the ink on them has to be too.
-  color: hsl(0, 0%, 100%);
+  background: var(--grey-fill);
+  // The dot is a graphic, so its edge, not only its fill, has to stand out from the card.
+  box-shadow: inset 0 0 0 1px var(--grey-edge);
+  // Holds the glyph that carries the state alongside the colour. Small enough that the dot stays inside the single
+  // line every cell is. The ink is the status ink in both themes, since it sits on the dot fill.
+  color: var(--status-ink);
+
+  .status-glyph {
+    font-size: 13px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    font-weight: bold;
+  }
 
   &.dot-good {
-    background: var(--green-light);
+    background: var(--green-fill);
+    box-shadow: inset 0 0 0 1px var(--green-edge);
   }
 
   &.dot-warn {
-    background: var(--yellow-light-active);
-    // The yellow is too light to read white on.
-    color: hsl(0, 0%, 12%);
+    background: var(--yellow-fill);
+    box-shadow: inset 0 0 0 1px var(--yellow-edge);
   }
 
   &.dot-bad {
-    background: var(--red-light);
+    background: var(--red-fill);
+    box-shadow: inset 0 0 0 1px var(--red-edge);
   }
 
-  &.dot-none {
-    background: var(--grey-base);
+  // The exclamation mark and the cross are drawn a touch left of their box's middle.
+  &.dot-warn,
+  &.dot-bad {
+    .status-glyph {
+      position: relative;
+      right: -0.7px;
+    }
   }
 }

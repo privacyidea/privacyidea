@@ -17,11 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, ViewChild } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
@@ -30,17 +27,16 @@ import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { lastValueFrom } from "rxjs";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-policies-table-actions",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, MatMenuModule, OverflowNavDirective],
-  templateUrl: "./policies-table-actions.component.html",
-  styleUrl: "./policies-table-actions.component.scss"
+  imports: [TableActionsComponent],
+  templateUrl: "./policies-table-actions.component.html"
 })
-export class PoliciesTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class PoliciesTableActionsComponent extends TableActionsHost {
   readonly policySelection = input.required<PolicyDetail[]>();
   readonly selectedPolicyNames = computed(() => this.policySelection().map((policy) => policy.name));
 
@@ -48,6 +44,44 @@ export class PoliciesTableActionsComponent {
   readonly authService = inject(AuthService);
   readonly policyService = inject(PolicyService);
   private readonly router = inject(Router);
+
+  protected readonly actions = computed<TableAction[]>(() => {
+    const noSelection = this.policySelection().length < 1;
+    return [
+      {
+        id: "create",
+        label: $localize`:@@policy.createPolicy:Create Policy`,
+        tone: "primary",
+        width: "l",
+        icon: "gavel",
+        iconClass: "padding-right-4",
+        badge: true,
+        spacedBadge: true,
+        visible: this.authService.actionAllowed("policywrite"),
+        run: () => this.createNewPolicy()
+      },
+      {
+        id: "delete",
+        label: $localize`:@@common.delete:Delete`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete_sweep",
+        visible: this.authService.actionAllowed("policydelete"),
+        disabled: noSelection,
+        run: () => this.deleteSelectedPolicies()
+      },
+      {
+        id: "copy",
+        label: $localize`:@@common.copy:Copy`,
+        tone: "secondary",
+        width: "m",
+        icon: "content_copy",
+        visible: this.authService.actionAllowed("policywrite"),
+        disabled: noSelection,
+        run: () => this.copySelectedPolicies()
+      }
+    ];
+  });
 
   createNewPolicy(): void {
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_NEW);

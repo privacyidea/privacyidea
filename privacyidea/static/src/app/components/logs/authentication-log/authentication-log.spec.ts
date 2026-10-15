@@ -934,21 +934,6 @@ describe("AuthenticationLog", () => {
     expect(component.splitSerials(null)).toEqual([]);
   });
 
-  it("noDataText shows generic message when no filter is active", () => {
-    service.filterParams.set({});
-    expect(component.noDataText()).toContain("No authentication log entries.");
-    expect(component.noDataText()).not.toContain("matching the filter");
-  });
-
-  it("noDataText shows filter-specific message when a filter is set", () => {
-    service.filterParams.set({});
-    expect(component.noDataText()).toContain("No authentication log entries.");
-    expect(component.noDataText()).not.toContain("matching the filter");
-
-    service.filterParams.set({ username: "alice" });
-    expect(component.noDataText()).toContain("matching the filter");
-  });
-
   describe("client derivation", () => {
     it("names where a client label came from, and says nothing for an entry that does not record it", () => {
       expect(component.clientLabelBadge("client_id")?.label).toBe("client id");

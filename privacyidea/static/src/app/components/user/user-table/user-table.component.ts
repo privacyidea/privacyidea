@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
@@ -59,7 +60,6 @@ import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/inp
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -76,6 +76,7 @@ import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_
 import { TableState } from "@core/models/table_state/table-state";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so a table.page-table-state-size(table.table-width(...)) call in the .scss listing the same tiers
@@ -109,6 +110,9 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
 @Component({
   selector: "app-user-table",
   imports: [
+    TableActionsTriggerComponent,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
@@ -144,16 +148,11 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective,
     MatMenuModule,
-    MatTooltipModule
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
 })
 export class UserTableComponent implements OnDestroy {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
