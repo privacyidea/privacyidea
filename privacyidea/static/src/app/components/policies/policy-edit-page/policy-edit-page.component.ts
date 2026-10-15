@@ -37,6 +37,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -107,7 +108,7 @@ export class PolicyEditPageComponent implements OnDestroy {
    * The name being saved, from the save click until the save fails or the page is left. The service lists the
    * saved policy under that name right away, which must not count as a collision.
    */
-  private readonly savingName = signal<string | null>(null);
+  protected readonly savingName = signal<string | null>(null);
 
   /** Another policy already carries the entered name; the policy being edited does not collide with itself. */
   readonly nameTaken = computed(() => {
@@ -233,6 +234,30 @@ export class PolicyEditPageComponent implements OnDestroy {
       this._navigateBack();
     }
     return success;
+  }
+
+  /**
+   * Creates a new policy from the form as it currently is, edits not yet saved included, and leaves the policy being
+   * edited as it is stored.
+   */
+  async onCopy(): Promise<void> {
+    if (this.savingName() !== null) {
+      return;
+    }
+    const newName = await this.dialogService.openDialogAsync({
+      component: CopyPolicyDialogComponent,
+      data: this.policy().name
+    });
+    if (!newName || this.savingName() !== null) {
+      return;
+    }
+    this.savingName.set(newName);
+    const created = await this.policyService.saveNewPolicy({ ...this.editedPolicy(), name: newName });
+    if (created) {
+      this._navigateBack();
+    } else {
+      this.savingName.set(null);
+    }
   }
 
   onCancel(): void {

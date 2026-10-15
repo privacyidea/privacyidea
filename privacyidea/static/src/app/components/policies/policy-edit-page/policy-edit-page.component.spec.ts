@@ -18,7 +18,7 @@
  **/
 
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, input, output, signal } from "@angular/core";
+import { Component, input, output, Provider, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -30,6 +30,7 @@ import { PolicyActionSearchComponent } from "@components/policies/policy-edit-pa
 import { PolicyTab } from "@components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-panel-edit.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -42,6 +43,7 @@ import {
   MockPiResponse,
   MockPolicyService
 } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 
@@ -59,7 +61,7 @@ class MockPanel {
   searchField = signal<Partial<PolicyActionSearchComponent> | undefined>(undefined);
 }
 
-function createTestBed(paramName: string | null) {
+function createTestBed(paramName: string | null, extraProviders: Provider[] = []) {
   return TestBed.configureTestingModule({
     imports: [PolicyEditPageComponent],
     providers: [
@@ -75,7 +77,8 @@ function createTestBed(paramName: string | null) {
       { provide: ContentService, useClass: MockContentService },
       { provide: DialogService, useClass: MockDialogService },
       { provide: PendingChangesService, useClass: MockPendingChangesService },
-      { provide: NotificationService, useClass: MockNotificationService }
+      { provide: NotificationService, useClass: MockNotificationService },
+      ...extraProviders
     ]
   })
     .overrideComponent(PolicyEditPageComponent, {
@@ -654,6 +657,123 @@ describe("PolicyEditPageComponent – edit mode", () => {
       await component.deletePolicy();
       expect(notificationService.error).toHaveBeenCalledWith("Failed to delete policy. ");
       expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe("PolicyEditPageComponent – copy", () => {
+  let component: PolicyEditPageComponent;
+  let fixture: ComponentFixture<PolicyEditPageComponent>;
+  let policyService: MockPolicyService;
+  let dialogService: MockDialogService;
+  let pendingChangesService: MockPendingChangesService;
+  let authService: MockAuthService;
+  let router: Router;
+
+  const storedPolicy = (): PolicyDetail => ({
+    ...policyService.getEmptyPolicy(),
+    name: "TestPolicy",
+    description: "stored"
+  });
+  const copyButton = (): HTMLButtonElement | undefined =>
+    Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll(".sticky-controls button")).find((button) =>
+      button.textContent?.includes("Copy")
+    );
+
+  const setUp = async (paramName: string | null) => {
+    await createTestBed(paramName, [{ provide: AuthService, useClass: MockAuthService }]);
+    fixture = TestBed.createComponent(PolicyEditPageComponent);
+    component = fixture.componentInstance;
+    policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    router = TestBed.inject(Router);
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policywrite"] });
+    policyService.allPolicies.set([storedPolicy()]);
+    fixture.detectChanges();
+  };
+
+  describe("in edit mode", () => {
+    beforeEach(() => setUp("TestPolicy"));
+
+    it("offers the copy next to the save", () => {
+      expect(copyButton()).toBeDefined();
+    });
+
+    it("is not offered without the right to write policies", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.detectChanges();
+      expect(copyButton()).toBeUndefined();
+    });
+
+    it("asks for the name of the copy, starting from the stored name", async () => {
+      dialogService.openDialogAsync.mockResolvedValue(null);
+      await component.onCopy();
+      expect(dialogService.openDialogAsync).toHaveBeenCalledWith(expect.objectContaining({ data: "TestPolicy" }));
+      expect(policyService.saveNewPolicy).not.toHaveBeenCalled();
+    });
+
+    it("creates the copy from the form with the edits not yet saved and leaves the original alone", async () => {
+      dialogService.openDialogAsync.mockResolvedValue("TestPolicyCopy");
+      component.addPolicyEdit({ description: "edited", priority: 7 });
+
+      await component.onCopy();
+
+      expect(policyService.saveNewPolicy).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "TestPolicyCopy", description: "edited", priority: 7 })
+      );
+      expect(policyService.savePolicyEdits).not.toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES);
+    });
+
+    it("names the copy as chosen in the dialog, not as the name field of the form says", async () => {
+      dialogService.openDialogAsync.mockResolvedValue("FromDialog");
+      component.addPolicyEdit({ name: "TypedInForm" });
+
+      await component.onCopy();
+
+      expect(policyService.saveNewPolicy).toHaveBeenCalledWith(expect.objectContaining({ name: "FromDialog" }));
+    });
+
+    it("stays on the page, with the save available again, when the copy fails", async () => {
+      dialogService.openDialogAsync.mockResolvedValue("TestPolicyCopy");
+      policyService.saveNewPolicy.mockResolvedValue(false);
+      component.addPolicyEdit({ description: "edited" });
+
+      await component.onCopy();
+
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("blocks a second copy and the save while the copy is created", async () => {
+      dialogService.openDialogAsync.mockResolvedValue("TestPolicyCopy");
+      let finish!: (created: boolean) => void;
+      policyService.saveNewPolicy.mockReturnValue(new Promise<boolean>((resolve) => (finish = resolve)));
+      component.addPolicyEdit({ description: "edited" });
+
+      const copying = component.onCopy();
+      await Promise.resolve();
+      await Promise.resolve();
+      fixture.detectChanges();
+
+      expect(component.canSave()).toBe(false);
+      expect(copyButton()!.disabled).toBe(true);
+      await component.onCopy();
+      expect(dialogService.openDialogAsync).toHaveBeenCalledTimes(1);
+
+      finish(true);
+      await copying;
+    });
+  });
+
+  describe("in create mode", () => {
+    beforeEach(() => setUp(null));
+
+    it("is not offered, because the save already creates a new policy", () => {
+      expect(copyButton()).toBeUndefined();
     });
   });
 });

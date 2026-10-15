@@ -245,6 +245,83 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.priorityError()).toBe("required");
   });
 
+  describe("copy", () => {
+    const copyButton = (): HTMLButtonElement | undefined =>
+      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll(".action-buttons button")).find((button) =>
+        button.textContent?.includes("Copy")
+      );
+    const setRights = (rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+    const navigatedDraft = (): ConditionalAccessPolicySaveParams =>
+      routerMock.navigateByUrl.mock.calls.at(-1)![1].state.copyOf;
+
+    it("should offer the copy next to the save for an admin who may write policies", () => {
+      setRights(["conditional_access_policy_write"]);
+      expect(copyButton()).toBeDefined();
+    });
+
+    it("should not offer the copy without the right to write policies", () => {
+      setRights([]);
+      expect(copyButton()).toBeUndefined();
+    });
+
+    it("should open the create page with the policy as the draft", () => {
+      component.copyPolicy();
+
+      expect(routerMock.navigateByUrl).toHaveBeenCalledWith(
+        ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW,
+        expect.objectContaining({ state: { copyOf: expect.objectContaining({ name: "Brute Force" }) } })
+      );
+      expect(pendingChangesServiceMock.clearAllRegistrations).toHaveBeenCalled();
+    });
+
+    it("should leave the id, the priority and the enforcement date out of the draft", () => {
+      component.updateEditPolicy({ enforced_since: "2026-01-01T00:00:00" });
+      component.copyPolicy();
+
+      const draft = navigatedDraft();
+      expect(draft).not.toHaveProperty("id");
+      expect(draft.priority).toBeNull();
+      expect(draft.enforced_since).toBeNull();
+    });
+
+    it("should carry the unsaved edits of the editor into the draft and leave the stored policy alone", () => {
+      component.updateEditPolicy({ name: "Renamed", time_window_seconds: 1200 });
+      component.copyPolicy();
+
+      expect(navigatedDraft()).toEqual(expect.objectContaining({ name: "Renamed", time_window_seconds: 1200 }));
+      expect(navigatedDraft().stages).toEqual(mockPolicy.stages);
+      expect(component.policy().name).toBe("Brute Force");
+      expect(component.editPolicy().priority).toBe(1);
+    });
+
+    it("should not hand the draft the objects of the editor", () => {
+      component.copyPolicy();
+      navigatedDraft().stages[0].failure_threshold = 99;
+      expect(component.editPolicy().stages[0].failure_threshold).toBe(5);
+    });
+
+    it("should disable the copy while the policy is being saved", async () => {
+      setRights(["conditional_access_policy_write"]);
+      let finish!: (id: number | undefined) => void;
+      policyServiceMock.savePolicy.mockReturnValueOnce(
+        new Promise<number | undefined>((resolve) => (finish = resolve))
+      );
+
+      const saving = component.savePolicy();
+      fixture.detectChanges();
+      expect(copyButton()!.disabled).toBe(true);
+
+      finish(undefined);
+      await saving;
+      fixture.detectChanges();
+      expect(copyButton()!.disabled).toBe(false);
+    });
+  });
+
   describe("name conflict", () => {
     const rename = (name: string) => component.editPolicy.set({ ...component.editPolicy(), name });
 
@@ -924,6 +1001,66 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should not offer delete for a new (unsaved) policy", async () => {
     await component.deletePolicy();
     expect(policyServiceMock.deleteWithConfirmDialog).not.toHaveBeenCalled();
+  });
+
+  describe("a copy of a policy", () => {
+    const draft = (): ConditionalAccessPolicySaveParams => ({
+      ...mockPolicy,
+      id: undefined,
+      priority: null,
+      enforced_since: null,
+      time_window_seconds: 7200
+    });
+    const openWithDraft = (): ConditionalAccessEditPageComponent => {
+      history.replaceState({ copyOf: draft() }, "");
+      const copyFixture = TestBed.createComponent(ConditionalAccessEditPageComponent);
+      copyFixture.detectChanges();
+      return copyFixture.componentInstance;
+    };
+
+    afterEach(() => history.replaceState(null, ""));
+
+    it("should prefill the editor from the draft", () => {
+      policyServiceMock.policies.set([]);
+      const copy = openWithDraft();
+
+      expect(copy.isNewPolicy()).toBe(true);
+      expect(copy.editPolicy()).toEqual(expect.objectContaining({ name: "Brute Force", target: "user" }));
+      expect(copy.editPolicy().stages).toMatchObject(mockPolicy.stages);
+      expect(copy.timeWindowValue()).toBe(2);
+      expect(copy.timeWindowUnit()).toBe("hours");
+    });
+
+    it("should leave the priority empty, because a priority belongs to one policy only", () => {
+      const copy = openWithDraft();
+
+      expect(copy.priorityInput()).toBe("");
+      expect(copy.priorityValid()).toBe(false);
+      expect(copy.canSave()).toBe(false);
+    });
+
+    it("should report the name of the original as taken until it is changed", () => {
+      policyServiceMock.policies.set([mockPolicy]);
+      const copy = openWithDraft();
+
+      expect(copy.nameConflict()?.id).toBe(mockPolicy.id);
+      expect(copy.nameTouched()).toBe(true);
+
+      copy.updateEditPolicy({ name: "Brute Force 2", priority: 9 });
+      expect(copy.nameConflict()).toBeUndefined();
+      expect(copy.canSave()).toBe(true);
+    });
+
+    it("should count as a change, so that leaving the page asks about it", () => {
+      expect(openWithDraft().hasChanges()).toBe(true);
+    });
+
+    it("should start empty without a draft", () => {
+      history.replaceState(null, "");
+      const empty = TestBed.createComponent(ConditionalAccessEditPageComponent);
+      empty.detectChanges();
+      expect(empty.componentInstance.editPolicy().name).toBe("");
+    });
   });
 
   describe("name conflict", () => {

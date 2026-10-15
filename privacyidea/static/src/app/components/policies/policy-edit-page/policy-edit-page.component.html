@@ -46,6 +46,16 @@
         mat-stroked-button>
         <span i18n="@@common.cancel">Cancel</span>
       </button>
+      @if (mode() === "edit" && authService.actionAllowed("policywrite")) {
+        <button
+          (click)="onCopy()"
+          [disabled]="savingName() !== null"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <mat-icon>content_copy</mat-icon>
+          <span i18n="@@common.copy">Copy</span>
+        </button>
+      }
       <button
         (click)="onSave()"
         [disabled]="!canSave()"
