@@ -9,11 +9,21 @@ import json
 import os
 import tempfile
 
+import pytest
+
 from privacyidea.models import db
 from privacyidea.models.event import EventHandler, EventHandlerOption
 from privacyidea.lib.webhook import set_webhook
 from privacyidea.models.webhook import Webhook
 from .base import MyTestCase
+
+pytestmark = [
+    pytest.mark.migration,
+    pytest.mark.skipif(
+        not os.environ.get("TEST_DATABASE_URL"),
+        reason="TEST_DATABASE_URL environment variable is not set",
+    ),
+]
 
 
 def _create_webhook_handler(name, url, content_type="application/json",

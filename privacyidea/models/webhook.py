@@ -21,7 +21,7 @@ See https://github.com/privacyidea/privacyidea/issues/5751
 """
 import logging
 
-from sqlalchemy import (Sequence, Unicode, Integer, Boolean, ForeignKey,
+from sqlalchemy import (Identity, Unicode, Integer, Boolean, ForeignKey,
                         UnicodeText, delete)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -43,8 +43,12 @@ class Webhook(MethodsMixin, db.Model):
     """
     __tablename__ = 'webhook'
 
+    # Identity, not a Sequence: it is one id source per column, used by the ORM and by a raw
+    # INSERT alike - which the data migration does. A Sequence is known to the ORM only, so on a
+    # backend with real sequences (MariaDB) a raw INSERT that omits the column finds no default.
+    # Same choice as conditional_access_policies and authentication_log.
     id: Mapped[int] = mapped_column(
-        Integer, Sequence("webhook_seq"), primary_key=True)
+        Integer, Identity(always=False), primary_key=True)
     # Human-readable name used to reference this webhook from actions
     identifier: Mapped[str] = mapped_column(
         Unicode(255), nullable=False, unique=True)
@@ -190,7 +194,7 @@ class WebhookHeader(MethodsMixin, db.Model):
     __tablename__ = 'webhookheader'
 
     id: Mapped[int] = mapped_column(
-        Integer, Sequence("webhookheader_seq"), primary_key=True)
+        Integer, Identity(always=False), primary_key=True)
     webhook_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('webhook.id', ondelete='CASCADE'),
         nullable=False, index=True)

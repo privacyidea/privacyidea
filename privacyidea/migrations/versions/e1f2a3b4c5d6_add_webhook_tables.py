@@ -359,16 +359,16 @@ def _create_webhook_table():
         log.info("Table 'webhook' already exists, skipping creation.")
         return
 
-    try:
-        op.execute(sa.schema.CreateSequence(sa.Sequence("webhook_seq")))
-    except (OperationalError, ProgrammingError):
-        # Some dialects (sqlite, mysql) don't have sequences — SQLAlchemy
-        # falls back to autoincrement, which is fine.
-        pass
-
     op.create_table(
         'webhook',
-        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+        # Identity rather than a Sequence plus autoincrement: it renders as IDENTITY on
+        # PostgreSQL/Oracle, AUTO_INCREMENT on MySQL/MariaDB and the rowid on SQLite - one id
+        # source per column, used by the ORM and by the raw INSERT of the data migration below
+        # alike, with no sequence to create, advance or drop per dialect. A Sequence is known to
+        # the ORM only, so on MariaDB the raw INSERT would find no default for the column. BY
+        # DEFAULT rather than ALWAYS so an explicit id can still be inserted. Mirrors
+        # conditional_access_policies and authentication_log, and the model.
+        sa.Column('id', sa.Integer(), sa.Identity(always=False), primary_key=True),
         sa.Column('identifier', sa.Unicode(length=255), nullable=False),
         sa.Column('description', sa.Unicode(length=2000), nullable=True, server_default=''),
         sa.Column('url', sa.Unicode(length=2000), nullable=False),
@@ -404,14 +404,9 @@ def _create_webhookheader_table():
         log.info("Table 'webhookheader' already exists, skipping creation.")
         return
 
-    try:
-        op.execute(sa.schema.CreateSequence(sa.Sequence("webhookheader_seq")))
-    except (OperationalError, ProgrammingError):
-        pass
-
     op.create_table(
         'webhookheader',
-        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column('id', sa.Integer(), sa.Identity(always=False), primary_key=True),
         sa.Column('webhook_id', sa.Integer(), nullable=False, index=True),
         sa.Column('key', sa.Unicode(length=255), nullable=False),
         sa.Column('value', sa.UnicodeText(), nullable=True, server_default=''),
@@ -670,10 +665,6 @@ def downgrade():
         else:
             print("Could not remove table 'webhookheader'.")
             raise
-    try:
-        op.execute(sa.schema.DropSequence(sa.Sequence("webhookheader_seq")))
-    except (OperationalError, ProgrammingError):
-        pass
 
     try:
         op.drop_table('webhook')
@@ -684,7 +675,3 @@ def downgrade():
         else:
             print("Could not remove table 'webhook'.")
             raise
-    try:
-        op.execute(sa.schema.DropSequence(sa.Sequence("webhook_seq")))
-    except (OperationalError, ProgrammingError):
-        pass
