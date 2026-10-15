@@ -431,7 +431,10 @@ def _create_webhookheader_table():
         sa.Column('id', sa.Integer(), sa.Identity(always=False), primary_key=True),
         sa.Column('webhook_id', sa.Integer(), nullable=False, index=True),
         sa.Column('key', sa.Unicode(length=255), nullable=False),
-        sa.Column('value', sa.UnicodeText(), nullable=True, server_default=''),
+        # No server_default: MySQL rejects a DEFAULT on a TEXT column (error 1101), and the
+        # model gives the column a Python-side default instead - as it does for the other
+        # text column, webhook.default_payload.
+        sa.Column('value', sa.UnicodeText(), nullable=True),
         sa.Column('encrypted', sa.Boolean(), nullable=True, server_default='0'),
         sa.ForeignKeyConstraint(['webhook_id'], ['webhook.id'], ondelete='CASCADE'),
     )

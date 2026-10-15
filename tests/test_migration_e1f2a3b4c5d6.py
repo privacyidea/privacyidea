@@ -15,7 +15,7 @@ from privacyidea.models import db
 from privacyidea.models.event import EventHandler, EventHandlerOption
 from privacyidea.lib.webhook import set_webhook
 from privacyidea.models.webhook import Webhook
-from .base import MyTestCase
+from tests.migration_test_utils import MigrationTestBase
 
 pytestmark = [
     pytest.mark.migration,
@@ -58,39 +58,51 @@ def _create_webhook_handler(name, url, content_type="application/json",
     return eh
 
 
-class MigrateInlineWebhooksTestCase(MyTestCase):
+class WebhookMigrationTestBase(MigrationTestBase):
     """
-    Test the _run_data_migration function from the e1f2a3b4c5d6 migration.
+    Shared setup: a database whose schema alembic built, standing at this revision.
+
+    Like every other per-migration test the schema comes from the seed plus the migration
+    chain, never from ``db.create_all()``. The two differ in ways this migration runs into:
+    the seed gives ``eventhandleroption.id`` an AUTO_INCREMENT and a sequence starting past
+    the seeded rows, the models give it a sequence alone - and on a Galera node the models'
+    sequences cannot even be restarted, which is what the shared ``MyTestCase`` reset does.
+
+    The tables exist before each test so that the migration's own helpers can be called
+    directly, one step at a time; ``test_migrations.py`` covers running it through alembic.
     """
 
-    def _cleanup(self):
-        """Remove all test data so each test starts clean."""
-        for wh in Webhook.query.all():
-            wh.delete()
-        for eh in EventHandler.query.filter_by(handlermodule="WebHook").all():
-            db.session.delete(eh)
-        db.session.commit()
+    REVISION = "e1f2a3b4c5d6"
+    PARENT_REVISION = "56529818c956"
 
-    def setUp(self):
-        super().setUp()
-        self._cleanup()
+    @pytest.fixture(autouse=True)
+    def schema_at_this_revision(self, clean_database):
         self.tmpdir = tempfile.mkdtemp(prefix="pi-snapshot-test-")
         os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
         os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
-
-    def tearDown(self):
+        engine = self._engine()
+        try:
+            self._load_seed_and_upgrade_to_parent(engine)
+        finally:
+            engine.dispose()
+        self._upgrade()
+        # The upgrade ran through the app's engine; drop the session so the ORM below starts
+        # on a connection that sees the new tables.
+        db.session.remove()
+        yield
         os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
         os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
-        self._cleanup()
-        super().tearDown()
+        db.session.remove()
 
-    def _write_snapshot(self):
+    @staticmethod
+    def _write_snapshot():
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
             _write_snapshot
         )
         return _write_snapshot(db.session.connection())
 
-    def _run_migration(self):
+    @staticmethod
+    def _run_migration():
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
             _run_data_migration
         )
@@ -98,15 +110,25 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
         db.session.commit()
         return result
 
+    @staticmethod
+    def _webhook_option(handler_id):
+        return EventHandlerOption.query.filter_by(
+            eventhandler_id=handler_id, Key="webhook").first()
+
+
+class TestMigrateInlineWebhooks(WebhookMigrationTestBase):
+    """
+    Test the _run_data_migration function from the e1f2a3b4c5d6 migration.
+    """
+
     # ------------------------------------------------------------------
     # Core scenarios
     # ------------------------------------------------------------------
 
     def test_no_webhook_handlers(self):
         """Migration on a DB with 0 WebHook handlers is a no-op."""
-        migrated = self._run_migration()
-        self.assertEqual(migrated, 0)
-        self.assertEqual(Webhook.query.count(), 0)
+        assert self._run_migration() == 0
+        assert Webhook.query.count() == 0
 
     def test_one_handler(self):
         """A single WebHook handler produces one webhook object."""
@@ -116,38 +138,31 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
             content_type="application/json",
         )
 
-        migrated = self._run_migration()
-        self.assertEqual(migrated, 1)
+        assert self._run_migration() == 1
 
         # Verify webhook row
         webhooks = Webhook.query.all()
-        self.assertEqual(len(webhooks), 1)
+        assert len(webhooks) == 1
         wh = webhooks[0]
-        self.assertEqual(wh.url, "https://hooks.slack.com/services/T00/B00/xxx")
-        self.assertEqual(wh.content_type, "application/json")
-        self.assertEqual(wh.http_method, "POST")
-        self.assertEqual(wh.timeout, 10)  # preserved from old TIMEOUT constant
-        self.assertEqual(wh.auth_type, "none")
-        self.assertTrue(wh.verify_tls)
-        self.assertIn("Slack_Notify", wh.identifier)
-        self.assertIn(str(eh.id), wh.identifier)
+        assert wh.url == "https://hooks.slack.com/services/T00/B00/xxx"
+        assert wh.content_type == "application/json"
+        assert wh.http_method == "POST"
+        assert wh.timeout == 10  # preserved from old TIMEOUT constant
+        assert wh.auth_type == "none"
+        assert wh.verify_tls
+        assert "Slack_Notify" in wh.identifier
+        assert str(eh.id) in wh.identifier
 
         # Verify the "webhook" option was added to the handler
-        webhook_opt = EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="webhook"
-        ).first()
-        self.assertIsNotNone(webhook_opt)
-        self.assertEqual(webhook_opt.Value, wh.identifier)
+        webhook_opt = self._webhook_option(eh.id)
+        assert webhook_opt is not None
+        assert webhook_opt.Value == wh.identifier
 
         # Verify inline options are still present (not deleted)
-        url_opt = EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="URL"
-        ).first()
-        self.assertIsNotNone(url_opt)
-        data_opt = EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="data"
-        ).first()
-        self.assertIsNotNone(data_opt)
+        assert EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="URL").first() is not None
+        assert EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="data").first() is not None
 
     def test_two_handlers_same_url_no_dedup(self):
         """Two handlers with the same URL produce two separate webhook objects."""
@@ -155,25 +170,17 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
         eh1 = _create_webhook_handler(name="Hook A", url=shared_url)
         eh2 = _create_webhook_handler(name="Hook B", url=shared_url)
 
-        migrated = self._run_migration()
-        self.assertEqual(migrated, 2)
+        assert self._run_migration() == 2
 
         webhooks = Webhook.query.all()
-        self.assertEqual(len(webhooks), 2)
-
-        identifiers = {wh.identifier for wh in webhooks}
-        self.assertEqual(len(identifiers), 2)  # distinct identifiers
-
-        # Both point to the same URL
-        urls = {wh.url for wh in webhooks}
-        self.assertEqual(urls, {shared_url})
+        assert len(webhooks) == 2
+        # distinct identifiers, both pointing at the same URL
+        assert len({wh.identifier for wh in webhooks}) == 2
+        assert {wh.url for wh in webhooks} == {shared_url}
 
         # Each handler got its own "webhook" option
         for eh in [eh1, eh2]:
-            opt = EventHandlerOption.query.filter_by(
-                eventhandler_id=eh.id, Key="webhook"
-            ).first()
-            self.assertIsNotNone(opt)
+            assert self._webhook_option(eh.id) is not None
 
     def test_handler_with_null_name(self):
         """A handler with NULL name gets a fallback identifier."""
@@ -182,11 +189,8 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
             url="https://null-name.example.com",
         )
 
-        migrated = self._run_migration()
-        self.assertEqual(migrated, 1)
-
-        wh = Webhook.query.first()
-        self.assertEqual(wh.identifier, f"webhook_from_handler_{eh.id}")
+        assert self._run_migration() == 1
+        assert Webhook.query.one().identifier == f"webhook_from_handler_{eh.id}"
 
     def test_legacy_content_type_json(self):
         """Legacy content_type value 'json' is normalized to 'application/json'."""
@@ -198,8 +202,7 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
 
         self._run_migration()
 
-        wh = Webhook.query.first()
-        self.assertEqual(wh.content_type, "application/json")
+        assert Webhook.query.one().content_type == "application/json"
 
     def test_legacy_content_type_urlencoded(self):
         """Legacy content_type value 'urlencoded' is normalized."""
@@ -211,8 +214,7 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
 
         self._run_migration()
 
-        wh = Webhook.query.first()
-        self.assertEqual(wh.content_type, "application/x-www-form-urlencoded")
+        assert Webhook.query.one().content_type == "application/x-www-form-urlencoded"
 
     # ------------------------------------------------------------------
     # Edge cases
@@ -225,15 +227,10 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
             url=None,  # no URL option will be inserted
         )
 
-        migrated = self._run_migration()
-        self.assertEqual(migrated, 0)
-        self.assertEqual(Webhook.query.count(), 0)
-
+        assert self._run_migration() == 0
+        assert Webhook.query.count() == 0
         # No "webhook" option should have been added
-        opt = EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="webhook"
-        ).first()
-        self.assertIsNone(opt)
+        assert self._webhook_option(eh.id) is None
 
     def test_idempotency(self):
         """Running the migration twice produces the same result."""
@@ -242,16 +239,12 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
             url="https://idempotent.example.com",
         )
 
-        migrated_1 = self._run_migration()
-        self.assertEqual(migrated_1, 1)
-        count_after_first = Webhook.query.count()
-        self.assertEqual(count_after_first, 1)
+        assert self._run_migration() == 1
+        assert Webhook.query.count() == 1
 
-        # Run again
-        migrated_2 = self._run_migration()
-        self.assertEqual(migrated_2, 0)  # no new migrations
-        count_after_second = Webhook.query.count()
-        self.assertEqual(count_after_second, 1)  # still just 1
+        # Run again: nothing new, and still just the one webhook.
+        assert self._run_migration() == 0
+        assert Webhook.query.count() == 1
 
     def test_non_webhook_handlers_ignored(self):
         """Handlers with a different handlermodule are not touched."""
@@ -271,19 +264,10 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
             url="https://real.example.com",
         )
 
-        migrated = self._run_migration()
-        self.assertEqual(migrated, 1)
-        self.assertEqual(Webhook.query.count(), 1)
-
-        # The non-webhook handler should not have a "webhook" option
-        opt = EventHandlerOption.query.filter_by(
-            eventhandler_id=eh_other.id, Key="webhook"
-        ).first()
-        self.assertIsNone(opt)
-
-        # Clean up the non-webhook handler
-        db.session.delete(eh_other)
-        db.session.commit()
+        assert self._run_migration() == 1
+        assert Webhook.query.count() == 1
+        # The non-webhook handler did not get a "webhook" option
+        assert self._webhook_option(eh_other.id) is None
 
     def test_special_chars_in_name_sanitized(self):
         """Handler names with special characters are sanitized in the identifier."""
@@ -294,13 +278,11 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
 
         self._run_migration()
 
-        wh = Webhook.query.first()
+        identifier = Webhook.query.one().identifier
         # Special chars replaced with underscores
-        self.assertNotIn("/", wh.identifier)
-        self.assertNotIn("<", wh.identifier)
-        self.assertNotIn(">", wh.identifier)
-        self.assertNotIn("!", wh.identifier)
-        self.assertIn(str(eh.id), wh.identifier)
+        for char in "/<>!":
+            assert char not in identifier
+        assert str(eh.id) in identifier
 
     def test_an_unusable_content_type_is_skipped(self):
         """
@@ -312,15 +294,13 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
         eh = _create_webhook_handler(name="Bad", url="https://bad.example.com",
                                      content_type="nonsense")
 
-        self.assertEqual(self._run_migration(), 0)
+        assert self._run_migration() == 0
 
-        self.assertEqual(0, Webhook.query.count())
-        self.assertIsNone(EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="webhook").first())
+        assert Webhook.query.count() == 0
+        assert self._webhook_option(eh.id) is None
         # Its inline configuration is untouched, so nothing was lost.
-        self.assertEqual("https://bad.example.com",
-                         EventHandlerOption.query.filter_by(
-                             eventhandler_id=eh.id, Key="URL").one().Value)
+        assert EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="URL").one().Value == "https://bad.example.com"
 
     def test_an_empty_content_type_gets_the_default_like_a_missing_one(self):
         # Absent and present-but-empty are the same thing - a setting nobody made - and the inline
@@ -328,9 +308,9 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
         # what it does. `opts.get(key, default)` only covers the absent half.
         _create_webhook_handler(name="Empty", url="https://empty.example.com", content_type="")
 
-        self.assertEqual(self._run_migration(), 1)
+        assert self._run_migration() == 1
 
-        self.assertEqual("application/json", Webhook.query.one().content_type)
+        assert Webhook.query.one().content_type == "application/json"
 
     def test_missing_content_type_defaults_to_json(self):
         """A handler without a content_type option defaults to application/json."""
@@ -342,11 +322,10 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
 
         self._run_migration()
 
-        wh = Webhook.query.first()
-        self.assertEqual(wh.content_type, "application/json")
+        assert Webhook.query.one().content_type == "application/json"
 
 
-class WebhookMigrationSnapshotTestCase(MyTestCase):
+class TestWebhookMigrationSnapshot(WebhookMigrationTestBase):
     """
     Test the pre-migration snapshot ("automatic backup") and its restore path.
 
@@ -356,47 +335,13 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
     migration may touch.
     """
 
-    def _cleanup(self):
-        for wh in Webhook.query.all():
-            wh.delete()
-        for eh in EventHandler.query.filter_by(handlermodule="WebHook").all():
-            db.session.delete(eh)
-        db.session.commit()
-
-    def setUp(self):
-        super().setUp()
-        self._cleanup()
-        self.tmpdir = tempfile.mkdtemp(prefix="pi-snapshot-test-")
-        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
-        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
-
-    def tearDown(self):
-        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
-        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
-        self._cleanup()
-        super().tearDown()
-
-    def _write_snapshot(self):
-        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _write_snapshot
-        )
-        return _write_snapshot(db.session.connection())
-
-    def _run_migration(self):
-        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _run_data_migration
-        )
-        result = _run_data_migration(db.session.connection())
-        db.session.commit()
-        return result
-
     # ------------------------------------------------------------------
     # Snapshot creation
     # ------------------------------------------------------------------
 
     def test_no_snapshot_when_nothing_to_migrate(self):
         """With no WebHook handlers there is nothing worth snapshotting."""
-        self.assertIsNone(self._write_snapshot())
+        assert self._write_snapshot() is None
 
     def test_snapshot_captures_handler_options(self):
         """The snapshot contains every option row of every WebHook handler."""
@@ -405,25 +350,25 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
             content_type="application/json")
 
         path = self._write_snapshot()
-        self.assertIsNotNone(path)
-        self.assertTrue(os.path.exists(path))
+        assert path is not None
+        assert os.path.exists(path)
 
         with open(path, encoding="utf-8") as fh:
             snapshot = json.load(fh)
 
-        self.assertEqual(snapshot["revision"], "e1f2a3b4c5d6")
-        self.assertEqual(snapshot["handler_ids"], [eh.id])
+        assert snapshot["revision"] == "e1f2a3b4c5d6"
+        assert snapshot["handler_ids"] == [eh.id]
 
         keys = {opt["Key"] for opt in snapshot["eventhandleroption"]}
-        self.assertEqual(keys, {"URL", "content_type", "data", "replace"})
+        assert keys == {"URL", "content_type", "data", "replace"}
         # No "webhook" option yet - this is the pre-migration state.
-        self.assertNotIn("webhook", keys)
+        assert "webhook" not in keys
 
     def test_snapshot_file_is_owner_only(self):
         """The snapshot may contain endpoint URLs, so restrict its permissions."""
         _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
         path = self._write_snapshot()
-        self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+        assert os.stat(path).st_mode & 0o777 == 0o600
 
     def test_snapshot_refuses_to_write_through_a_symlink(self):
         """
@@ -446,61 +391,24 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
 
         # The write fails rather than following the link, and the failure is swallowed so the
         # upgrade itself still proceeds.
-        self.assertIsNone(self._write_snapshot())
+        assert self._write_snapshot() is None
         with open(target, encoding="utf-8") as fh:
-            self.assertEqual("do not clobber me", fh.read())
+            assert fh.read() == "do not clobber me"
 
     def test_snapshot_can_be_disabled(self):
         """PRIVACYIDEA_MIGRATION_NO_SNAPSHOT=1 skips snapshot creation."""
         _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
         os.environ["PRIVACYIDEA_MIGRATION_NO_SNAPSHOT"] = "1"
-        self.assertIsNone(self._write_snapshot())
+        assert self._write_snapshot() is None
 
     def test_unwritable_directory_does_not_break_migration(self):
         """A snapshot failure must never abort an otherwise healthy upgrade."""
         _create_webhook_handler(name="Slack", url="https://hooks.slack.com/x")
         os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = "/proc/definitely/not/writable"
 
-        self.assertIsNone(self._write_snapshot())
+        assert self._write_snapshot() is None
         # The data migration itself still works.
-        self.assertEqual(self._run_migration(), 1)
-
-    # ------------------------------------------------------------------
-    # Snapshot directory selection (alignment with pi-manage backup)
-    # ------------------------------------------------------------------
-
-    def test_env_var_wins_over_everything(self):
-        """An explicit PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR always takes priority."""
-        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _snapshot_directory
-        )
-        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
-        self.assertEqual(_snapshot_directory(), self.tmpdir)
-
-    def test_falls_back_to_pi_backup_dir_when_available(self):
-        """Without an override, snapshots go next to 'pi-manage backup create' output."""
-        import privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables as mig
-
-        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
-        original = mig.PI_BACKUP_DIR
-        try:
-            # Point the "pi-manage backup" dir at a real, writable directory.
-            mig.PI_BACKUP_DIR = self.tmpdir
-            self.assertEqual(mig._snapshot_directory(), self.tmpdir)
-        finally:
-            mig.PI_BACKUP_DIR = original
-
-    def test_falls_back_to_tempdir_when_backup_dir_missing(self):
-        """On a system without /var/lib/privacyidea/backup, use the temp dir."""
-        import privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables as mig
-
-        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
-        original = mig.PI_BACKUP_DIR
-        try:
-            mig.PI_BACKUP_DIR = "/nonexistent/privacyidea/backup"
-            self.assertEqual(mig._snapshot_directory(), tempfile.gettempdir())
-        finally:
-            mig.PI_BACKUP_DIR = original
+        assert self._run_migration() == 1
 
     # ------------------------------------------------------------------
     # Restore
@@ -521,8 +429,8 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
         }
 
         path = self._write_snapshot()
-        self.assertEqual(self._run_migration(), 1)
-        self.assertEqual(Webhook.query.count(), 1)
+        assert self._run_migration() == 1
+        assert Webhook.query.count() == 1
 
         restore_snapshot(db.session.connection(), path)
         db.session.commit()
@@ -532,9 +440,9 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
             (o.Key, o.Value)
             for o in EventHandlerOption.query.filter_by(eventhandler_id=eh.id).all()
         }
-        self.assertEqual(before, after)
+        assert before == after
         # The migration-created webhook object is gone again.
-        self.assertEqual(Webhook.query.count(), 0)
+        assert Webhook.query.count() == 0
 
     def test_migration_is_replayable_after_restore(self):
         """After a restore, re-running the migration produces the same result."""
@@ -545,14 +453,14 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
 
         path = self._write_snapshot()
         self._run_migration()
-        identifier_first = Webhook.query.first().identifier
+        identifier_first = Webhook.query.one().identifier
 
         restore_snapshot(db.session.connection(), path)
         db.session.commit()
         db.session.expire_all()
 
-        self.assertEqual(self._run_migration(), 1)
-        self.assertEqual(Webhook.query.first().identifier, identifier_first)
+        assert self._run_migration() == 1
+        assert Webhook.query.one().identifier == identifier_first
 
     def test_restore_rejects_foreign_snapshot(self):
         """A snapshot from a different revision must not be applied."""
@@ -564,11 +472,11 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
             json.dump({"revision": "deadbeef1234", "handler_ids": [],
                        "eventhandleroption": []}, fh)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             restore_snapshot(db.session.connection(), path)
 
 
-class MigrationOwnershipMarkerTestCase(MyTestCase):
+class TestMigrationOwnershipMarker(WebhookMigrationTestBase):
     """
     Which ``webhook`` rows belong to this migration is recorded on the rows themselves
     (``MIGRATION_MARKER`` in their description), not inferred from the
@@ -579,39 +487,6 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
     ``downgrade()`` needs none of it - it drops the table - and is covered here for the one
     thing it does have to get right: the ``eventhandleroption`` rows, which survive it.
     """
-
-    def _cleanup(self):
-        for wh in Webhook.query.all():
-            wh.delete()
-        for eh in EventHandler.query.filter_by(handlermodule="WebHook").all():
-            db.session.delete(eh)
-        db.session.commit()
-
-    def setUp(self):
-        super().setUp()
-        self._cleanup()
-        self.tmpdir = tempfile.mkdtemp(prefix="pi-snapshot-test-")
-        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
-        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
-
-    def tearDown(self):
-        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
-        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
-        self._cleanup()
-        super().tearDown()
-
-    def _run_migration(self):
-        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _run_data_migration
-        )
-        result = _run_data_migration(db.session.connection())
-        db.session.commit()
-        return result
-
-    @staticmethod
-    def _webhook_option(handler_id):
-        return EventHandlerOption.query.filter_by(
-            eventhandler_id=handler_id, Key="webhook").first()
 
     @staticmethod
     def _drop_webhook_option(handler_id):
@@ -633,13 +508,12 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
             MIGRATION_MARKER
         )
         eh = _create_webhook_handler(name="Siem", url="https://siem.example.com")
-        self.assertEqual(self._run_migration(), 1)
+        assert self._run_migration() == 1
 
         webhook = Webhook.query.one()
-        self.assertTrue(webhook.description.startswith(MIGRATION_MARKER), webhook.description)
+        assert webhook.description.startswith(MIGRATION_MARKER), webhook.description
         # The link row carries provenance for whoever reads it later, but nothing matches on it.
-        option = self._webhook_option(eh.id)
-        self.assertIn("webhook migration", option.Description)
+        assert "webhook migration" in self._webhook_option(eh.id).Description
 
     # ------------------------------------------------------------------
     # Resume after a partial failure
@@ -651,16 +525,16 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         # it stopped." Before the marker, this raised a UNIQUE violation on webhook.identifier
         # and every later upgrade attempt failed the same way.
         eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
-        self.assertEqual(self._run_migration(), 1)
+        assert self._run_migration() == 1
         identifier = Webhook.query.one().identifier
         self._drop_webhook_option(eh.id)
 
-        self.assertEqual(self._run_migration(), 1)
+        assert self._run_migration() == 1
 
         # The leftover row was adopted rather than duplicated, and the handler is linked to it.
-        self.assertEqual(Webhook.query.count(), 1)
-        self.assertEqual(Webhook.query.one().identifier, identifier)
-        self.assertEqual(self._webhook_option(eh.id).Value, identifier)
+        assert Webhook.query.count() == 1
+        assert Webhook.query.one().identifier == identifier
+        assert self._webhook_option(eh.id).Value == identifier
 
     def test_re_run_after_a_resume_is_still_idempotent(self):
         eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
@@ -668,10 +542,10 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         self._drop_webhook_option(eh.id)
         self._run_migration()
 
-        self.assertEqual(self._run_migration(), 0)
-        self.assertEqual(Webhook.query.count(), 1)
-        self.assertEqual(EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="webhook").count(), 1)
+        assert self._run_migration() == 0
+        assert Webhook.query.count() == 1
+        assert EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="webhook").count() == 1
 
     def test_a_foreign_webhook_of_the_same_name_is_not_hijacked(self):
         # An unmarked row of that name belongs to someone else. Adopting it would point the
@@ -681,13 +555,13 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         set_webhook(f"from_Siem_Hook_{eh.id}", url="https://somewhere.else.example/hook")
         db.session.commit()
 
-        self.assertEqual(self._run_migration(), 0)
+        assert self._run_migration() == 0
 
-        self.assertIsNone(self._webhook_option(eh.id))
-        self.assertEqual(Webhook.query.one().url, "https://somewhere.else.example/hook")
+        assert self._webhook_option(eh.id) is None
+        assert Webhook.query.one().url == "https://somewhere.else.example/hook"
         # The inline configuration the handler falls back to is untouched.
-        inline = EventHandlerOption.query.filter_by(eventhandler_id=eh.id, Key="URL").one()
-        self.assertEqual(inline.Value, "https://siem.example.com")
+        assert EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="URL").one().Value == "https://siem.example.com"
 
     # ------------------------------------------------------------------
     # Downgrade
@@ -704,11 +578,10 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         db.session.commit()
         db.session.expire_all()
 
-        self.assertIsNone(self._webhook_option(eh.id))
+        assert self._webhook_option(eh.id) is None
         # The inline options are never deleted, so the handler simply works as it did before.
-        self.assertEqual(
-            EventHandlerOption.query.filter_by(eventhandler_id=eh.id, Key="URL").one().Value,
-            "https://siem.example.com")
+        assert EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="URL").one().Value == "https://siem.example.com"
 
     def test_downgrade_drops_a_hand_made_link_too(self):
         # A link an administrator wrote by hand goes as well, and that is the kinder outcome: the
@@ -716,7 +589,7 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         # both point at nothing and make the next upgrade skip this handler (the idempotency check
         # keys on exactly that row), so it would never be given a working webhook object either.
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _remove_webhook_handler_options, _run_data_migration
+            _remove_webhook_handler_options
         )
         eh = _create_webhook_handler(name="Manual", url="https://manual.example.com")
         set_webhook("from_manual", url="https://manual.example.com/hook")
@@ -727,7 +600,7 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         _remove_webhook_handler_options(db.session.connection())
         db.session.commit()
         db.session.expire_all()
-        self.assertIsNone(self._webhook_option(eh.id))
+        assert self._webhook_option(eh.id) is None
 
         # DROP TABLE takes every webhook row; emptying the table stands in for it, since the test
         # database keeps its schema across the cycle.
@@ -736,10 +609,9 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         db.session.commit()
 
         # Upgrading again migrates the handler cleanly instead of skipping it.
-        self.assertEqual(_run_data_migration(db.session.connection()), 1)
-        db.session.commit()
+        assert self._run_migration() == 1
         db.session.expire_all()
-        self.assertEqual(self._webhook_option(eh.id).Value, Webhook.query.one().identifier)
+        assert self._webhook_option(eh.id).Value == Webhook.query.one().identifier
 
     # ------------------------------------------------------------------
     # Restore after a partial failure
@@ -751,10 +623,10 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         # Finding the rows through those options would leave exactly that one behind, and the
         # next upgrade would collide with it.
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
-            _write_snapshot, restore_snapshot
+            restore_snapshot
         )
         eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
-        path = _write_snapshot(db.session.connection())
+        path = self._write_snapshot()
         self._run_migration()
         self._drop_webhook_option(eh.id)
 
@@ -762,28 +634,58 @@ class MigrationOwnershipMarkerTestCase(MyTestCase):
         db.session.commit()
         db.session.expire_all()
 
-        self.assertEqual(Webhook.query.count(), 0)
+        assert Webhook.query.count() == 0
         # And the upgrade can now start over cleanly.
-        self.assertEqual(self._run_migration(), 1)
-        self.assertEqual(Webhook.query.count(), 1)
+        assert self._run_migration() == 1
+        assert Webhook.query.count() == 1
 
 
-class EventHandlerOptionIdTestCase(MyTestCase):
+class TestSnapshotDirectory:
+    """
+    Where the snapshot is written. No database is involved, so these need no schema.
+    """
+
+    def test_env_var_wins_over_everything(self, monkeypatch, tmp_path):
+        """An explicit PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR always takes priority."""
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _snapshot_directory
+        )
+        monkeypatch.setenv("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", str(tmp_path))
+        assert _snapshot_directory() == str(tmp_path)
+
+    def test_falls_back_to_pi_backup_dir_when_available(self, monkeypatch, tmp_path):
+        """Without an override, snapshots go next to 'pi-manage backup create' output."""
+        import privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables as mig
+
+        monkeypatch.delenv("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", raising=False)
+        # Point the "pi-manage backup" dir at a real, writable directory.
+        monkeypatch.setattr(mig, "PI_BACKUP_DIR", str(tmp_path))
+        assert mig._snapshot_directory() == str(tmp_path)
+
+    def test_falls_back_to_tempdir_when_backup_dir_missing(self, monkeypatch):
+        """On a system without /var/lib/privacyidea/backup, use the temp dir."""
+        import privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables as mig
+
+        monkeypatch.delenv("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", raising=False)
+        monkeypatch.setattr(mig, "PI_BACKUP_DIR", "/nonexistent/privacyidea/backup")
+        assert mig._snapshot_directory() == tempfile.gettempdir()
+
+
+class TestEventHandlerOptionId:
     """
     The id the migration supplies for the ``eventhandleroption`` rows it writes.
 
-    ``eventhandleroption.id`` is declared with a ``Sequence``, so on MariaDB 10.3 and later and on
-    PostgreSQL the column carries no default and a Core INSERT has to draw from the sequence
-    itself. Neither the sequence branch nor a wrong sequence name shows up on SQLite or MySQL,
-    where the column is an ordinary auto-increment - hence these two checks.
+    ``eventhandleroption.id`` is declared with a ``Sequence``, so on MariaDB 10.3 and later and
+    on PostgreSQL the sequence - not the column - is what hands out ids, and a Core INSERT has
+    to draw from it. Neither the sequence branch nor a wrong sequence name shows up on SQLite
+    or MySQL, where the column is an ordinary auto-increment, hence these two checks.
     """
 
     def test_the_sequence_name_is_the_one_the_model_declares(self):
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
             _EVENTHANDLEROPTION_SEQUENCE
         )
-        self.assertEqual(EventHandlerOption.__table__.c.id.default.name,
-                         _EVENTHANDLEROPTION_SEQUENCE)
+        assert EventHandlerOption.__table__.c.id.default.name == _EVENTHANDLEROPTION_SEQUENCE
 
     def test_the_id_comes_from_the_sequence_only_where_there_is_one(self):
         from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
@@ -801,10 +703,9 @@ class EventHandlerOptionIdTestCase(MyTestCase):
                 return 42
 
         with_sequences = _Connection(True)
-        self.assertEqual(_next_eventhandleroption_id(with_sequences), 42)
-        self.assertEqual([s.name for s in with_sequences.asked_for],
-                         [_EVENTHANDLEROPTION_SEQUENCE])
+        assert _next_eventhandleroption_id(with_sequences) == 42
+        assert [s.name for s in with_sequences.asked_for] == [_EVENTHANDLEROPTION_SEQUENCE]
 
         without_sequences = _Connection(False)
-        self.assertIsNone(_next_eventhandleroption_id(without_sequences))
-        self.assertEqual(without_sequences.asked_for, [])
+        assert _next_eventhandleroption_id(without_sequences) is None
+        assert without_sequences.asked_for == []
