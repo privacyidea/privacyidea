@@ -82,6 +82,11 @@
       vertical-align: top;
     }
 
+    // The header checkbox sits over the checkboxes of the rows, which are centered in their cells.
+    th.table-checkbox {
+      text-align: center;
+    }
+
     td.table-checkbox,
     td.col-priority,
     td.col-scope,
