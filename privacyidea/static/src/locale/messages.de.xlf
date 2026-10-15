@@ -25144,7 +25144,7 @@
       </trans-unit>
       <trans-unit id="conditionalAccess.nameAlreadyUsed" datatype="html">
         <source>A policy named &quot;<x id="INTERPOLATION" equiv-text="{{ nameConflict()?.name }}"/>&quot; already exists.</source>
-        <target state="new">A policy named &quot;<x id="INTERPOLATION" equiv-text="{{ nameConflict()?.name }}"/>&quot; already exists.</target>
+        <target>Eine Richtlinie mit dem Namen &quot;<x id="INTERPOLATION" equiv-text="{{ nameConflict()?.name }}"/>&quot; existiert bereits.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">167</context>
@@ -25152,7 +25152,7 @@
       </trans-unit>
       <trans-unit id="conditionalAccess.nameAlreadyUsedBlocker" datatype="html">
         <source>A policy with this name already exists.</source>
-        <target state="new">A policy with this name already exists.</target>
+        <target>Eine Richtlinie mit diesem Namen existiert bereits.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
           <context context-type="linenumber">377</context>
@@ -25164,7 +25164,7 @@
       </trans-unit>
       <trans-unit id="conditionalAccess.noOperatorSelected" datatype="html">
         <source>Not restricted. Select an operator to add a condition.</source>
-        <target state="new">Not restricted. Select an operator to add a condition.</target>
+        <target>Nicht eingeschränkt. Wählen Sie einen Operator, um eine Bedingung hinzuzufügen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditions/conditional-access-conditions.component.ts</context>
           <context context-type="linenumber">138</context>
@@ -25172,7 +25172,7 @@
       </trans-unit>
       <trans-unit id="policy.nameAlreadyExists" datatype="html">
         <source>A policy with this name already exists.</source>
-        <target state="new">A policy with this name already exists.</target>
+        <target>Eine Richtlinie mit diesem Namen existiert bereits.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
           <context context-type="linenumber">30</context>
@@ -25188,7 +25188,7 @@
       </trans-unit>
       <trans-unit id="policy.copyingPolicyFailed" datatype="html">
         <source>Copying the policy to <x id="NAME" equiv-text="newName"/> failed<x id="DETAIL" equiv-text="detail"/></source>
-        <target state="new">Copying the policy to <x id="NAME" equiv-text="newName"/> failed<x id="DETAIL" equiv-text="detail"/></target>
+        <target>Kopieren der Richtlinie nach <x id="NAME" equiv-text="newName"/> fehlgeschlagen<x id="DETAIL" equiv-text="detail"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table-actions/policies-table-actions.component.ts</context>
           <context context-type="linenumber">145</context>
