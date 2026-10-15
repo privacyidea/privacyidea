@@ -140,6 +140,15 @@ the same conditions.
    I.e. if a request does not contain a *serial* or if the serial can not be determined, this condition will be
    evaluated as fulfilled.
 
+   If a request names several tokens - e.g. ``POST /token/unassign`` with a user, which unassigns all tokens of that
+   user - the token conditions are checked for each token, and the :ref:`tokenhandler` only acts on the tokens that
+   fulfil them. All other handlers run once if at least one of the tokens fulfils the conditions; the serials they
+   use, e.g. in the ``{serial}`` tag, are still all serials of the request.
+
+   Post handlers of the event *token_delete* run after the tokens are deleted, so their token conditions can not be
+   checked: they count as fulfilled, ``serial`` is matched against the serials of the request and ``token_locked`` is
+   not fulfilled.
+
    Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend
    testing your definitions thoroughly to assure your expected outcome.
 
@@ -367,6 +376,11 @@ The action is only triggered if the token in the event is locked, i.e. the
 maximum failcounter is reached. In such a case the user cannot use the token
 to authenticate anymore. So an action to notify the user or enroll a new
 token can be triggered.
+
+If the request does not name a token, the condition looks at the tokens of the
+user of the request: *True* is fulfilled if one of them is locked, *False* if
+none is. Without any token to look at - no user, a user without tokens, or a
+named token that does not exist - the condition is not fulfilled.
 
 **token_validity_period**
 

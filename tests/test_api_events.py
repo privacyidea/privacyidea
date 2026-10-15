@@ -7,7 +7,7 @@ from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.counter import read as read_counter
+from privacyidea.lib.counter import read as read_counter, reset as reset_counter
 from privacyidea.lib.token import init_token, remove_token, get_one_token, get_tokens
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.user import User
@@ -1656,3 +1656,135 @@ class ChallengeConditionTestCase(MyApiTestCase):
         self.assertEqual([1, 2, 3], [entry[1] for entry in observed])
         # A definition with a challenge condition does not fire when two challenges match (ambiguous)
         self.assertEqual(observed[1][2], observed[2][2])
+
+
+class BulkTokenConditionTestCase(MyApiTestCase):
+    """
+    Token conditions of an event definition are checked per token when a request names several tokens.
+    """
+    hotp_serial = "HOTP_BULK_COND"
+    totp_serial = "TOTP_BULK_COND"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        remove_token(user=self.user)
+        init_token({"type": "hotp", "serial": self.hotp_serial, "otpkey": self.otpkey}, user=self.user)
+        init_token({"type": "totp", "serial": self.totp_serial, "otpkey": self.otpkey}, user=self.user)
+        self.event_ids = []
+
+    def tearDown(self) -> None:
+        for event_id in self.event_ids:
+            delete_event(event_id)
+        for serial in (self.hotp_serial, self.totp_serial):
+            if get_tokens(serial=serial):
+                remove_token(serial)
+        super().tearDown()
+
+    def _add_event(self, event: str, action: str, conditions: dict, options: dict | None = None) -> None:
+        self.event_ids.append(set_event(f"bulk_{event}", event=[event], handlermodule="Token", action=action,
+                                        conditions=conditions, options=options or {}, position="post"))
+
+    def _request(self, url: str, method: str, data: dict) -> dict:
+        with self.app.test_request_context(url, method=method, data=data, headers={"Authorization": self.at}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json["result"]["value"]
+
+    def _remaining(self) -> list[str]:
+        return [serial for serial in (self.hotp_serial, self.totp_serial) if get_tokens(serial=serial)]
+
+    def test_01_tokentype_condition_is_checked_per_token(self):
+        self._add_event("token_unassign", "set tokeninfo", {"tokentype": "totp"}, {"key": "probe", "value": "hit"})
+        value = self._request("/token/unassign", "POST", {"user": "cornelius", "realm": self.realm1})
+        self.assertEqual(2, value["count_success"])
+        self.assertIsNone(get_one_token(serial=self.hotp_serial).get_tokeninfo("probe"))
+        self.assertEqual("hit", get_one_token(serial=self.totp_serial).get_tokeninfo("probe"))
+
+    def test_02_delete_action_spares_tokens_that_do_not_match(self):
+        self._add_event("token_unassign", "delete", {"tokentype": "totp"})
+        self._request("/token/unassign", "POST", {"user": "cornelius", "realm": self.realm1})
+        self.assertListEqual([self.hotp_serial], self._remaining())
+
+    def test_03_no_matching_token_does_not_fire(self):
+        self._add_event("token_unassign", "delete", {"tokentype": "spass"})
+        self._request("/token/unassign", "POST", {"user": "cornelius", "realm": self.realm1})
+        self.assertListEqual([self.hotp_serial, self.totp_serial], self._remaining())
+
+    def test_04_definition_without_token_conditions_acts_on_all_tokens(self):
+        self._add_event("token_unassign", "delete", {})
+        self._request("/token/unassign", "POST", {"user": "cornelius", "realm": self.realm1})
+        self.assertListEqual([], self._remaining())
+
+    def test_05_single_serial(self):
+        self._add_event("token_disable", "delete", {"tokentype": "totp"})
+        self._request("/token/disable", "POST", {"serial": self.hotp_serial})
+        self.assertListEqual([self.hotp_serial, self.totp_serial], self._remaining())
+        self._request("/token/disable", "POST", {"serial": self.totp_serial})
+        self.assertListEqual([self.hotp_serial], self._remaining())
+
+
+class TokenLockedWithoutSingleTokenTestCase(MyApiTestCase):
+    """
+    token_locked compares its value with the lock state of the user's tokens when the request names no token.
+    """
+    serials = ["HOTP_LOCKED_A", "HOTP_LOCKED_B"]
+    unowned_serial = "HOTP_LOCKED_UNOWNED"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("cornelius", self.realm1)
+        remove_token(user=self.user)
+        for serial in self.serials:
+            init_token({"type": "hotp", "serial": serial, "otpkey": self.otpkey}, user=self.user)
+        init_token({"type": "hotp", "serial": self.unowned_serial, "otpkey": self.otpkey})
+        self.event_ids = [
+            set_event(f"locked_{value}", event=["token_list"], handlermodule="Counter", action="increase_counter",
+                      conditions={"token_locked": value}, options={"counter_name": f"locked_{value}"},
+                      position="post")
+            for value in ("True", "False")]
+
+    def tearDown(self) -> None:
+        for event_id in self.event_ids:
+            delete_event(event_id)
+        for serial in self.serials + [self.unowned_serial]:
+            remove_token(serial)
+        self._reset_counters()
+        super().tearDown()
+
+    @staticmethod
+    def _reset_counters() -> None:
+        for value in ("True", "False"):
+            reset_counter(f"locked_{value}")
+
+    @staticmethod
+    def _lock(serial: str) -> None:
+        token = get_one_token(serial=serial)
+        token.set_failcount(token.get_max_failcount())
+        token.save()
+
+    def _fired(self, data: dict) -> dict:
+        self._reset_counters()
+        with self.app.test_request_context("/token/", method="GET", query_string=data,
+                                           headers={"Authorization": self.at}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        return {value: read_counter(f"locked_{value}") for value in ("True", "False")}
+
+    def test_01_user_without_locked_token(self):
+        self.assertDictEqual({"True": 0, "False": 1}, self._fired({"user": "cornelius", "realm": self.realm1}))
+
+    def test_02_user_with_locked_token(self):
+        self._lock(self.serials[0])
+        self.assertDictEqual({"True": 1, "False": 0}, self._fired({"user": "cornelius", "realm": self.realm1}))
+
+    def test_03_no_user_does_not_look_at_all_tokens(self):
+        self._lock(self.unowned_serial)
+        self.assertDictEqual({"True": 0, "False": 0}, self._fired({}))
+
+    def test_04_single_token(self):
+        self._lock(self.serials[0])
+        self.assertDictEqual({"True": 1, "False": 0}, self._fired({"serial": self.serials[0]}))
+        self.assertDictEqual({"True": 0, "False": 1}, self._fired({"serial": self.serials[1]}))
