@@ -90,6 +90,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   let pendingChangesServiceMock: MockPendingChangesService;
   let routerMock: MockRouter;
   let dialogServiceMock: MockDialogService;
+  let notificationServiceMock: MockNotificationService;
   let paramMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
@@ -120,6 +121,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     pendingChangesServiceMock = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     routerMock = TestBed.inject(Router) as unknown as MockRouter;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     policyServiceMock.policies.set([mockPolicy]);
 
@@ -241,6 +243,200 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.priorityConflict()).toBeUndefined();
     expect(component.priorityUnique()).toBe(true);
     expect(component.priorityError()).toBe("required");
+  });
+
+  describe("copy", () => {
+    const copyButton = (): HTMLButtonElement | undefined =>
+      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll(".action-buttons button")).find((button) =>
+        button.textContent?.includes("Copy")
+      );
+    const setRights = (rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+    const navigatedDraft = (): ConditionalAccessPolicySaveParams =>
+      routerMock.navigateByUrl.mock.calls.at(-1)![1].state.copyOf;
+
+    it("should offer the copy next to the save for an admin who may write policies", () => {
+      setRights(["conditional_access_policy_write"]);
+      expect(copyButton()).toBeDefined();
+    });
+
+    it("should not offer the copy without the right to write policies", () => {
+      setRights([]);
+      expect(copyButton()).toBeUndefined();
+    });
+
+    it("should open the create page with the policy as the draft", () => {
+      component.copyPolicy();
+
+      expect(routerMock.navigateByUrl).toHaveBeenCalledWith(
+        ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW,
+        expect.objectContaining({ state: { copyOf: expect.objectContaining({ name: "Brute Force" }) } })
+      );
+      expect(pendingChangesServiceMock.clearAllRegistrations).toHaveBeenCalled();
+    });
+
+    it("should leave the id, the priority and the enforcement date out of the draft", () => {
+      component.updateEditPolicy({ enforced_since: "2026-01-01T00:00:00" });
+      component.copyPolicy();
+
+      const draft = navigatedDraft();
+      expect(draft).not.toHaveProperty("id");
+      expect(draft.priority).toBeNull();
+      expect(draft.enforced_since).toBeNull();
+    });
+
+    it("should carry the unsaved edits of the editor into the draft and leave the stored policy alone", () => {
+      component.updateEditPolicy({ name: "Renamed", time_window_seconds: 1200 });
+      component.copyPolicy();
+
+      expect(navigatedDraft()).toEqual(expect.objectContaining({ name: "Renamed", time_window_seconds: 1200 }));
+      expect(navigatedDraft().stages).toEqual(mockPolicy.stages);
+      expect(component.policy().name).toBe("Brute Force");
+      expect(component.editPolicy().priority).toBe(1);
+    });
+
+    it("should not hand the draft the objects of the editor", () => {
+      component.copyPolicy();
+      navigatedDraft().stages[0].failure_threshold = 99;
+      expect(component.editPolicy().stages[0].failure_threshold).toBe(5);
+    });
+
+    it("should send one request for two saves in a row and allow the save again when it fails", async () => {
+      component.updateEditPolicy({ name: "Fresh" });
+      let finish!: (id: number | undefined) => void;
+      policyServiceMock.savePolicy.mockClear();
+      policyServiceMock.savePolicy.mockReturnValueOnce(
+        new Promise<number | undefined>((resolve) => (finish = resolve))
+      );
+
+      const first = component.savePolicy();
+      expect(component.canSave()).toBe(false);
+      expect(await component.savePolicy()).toBe(false);
+      expect(policyServiceMock.savePolicy).toHaveBeenCalledTimes(1);
+
+      finish(undefined);
+      expect(await first).toBe(false);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should disable the copy while the policy is being saved", async () => {
+      setRights(["conditional_access_policy_write"]);
+      let finish!: (id: number | undefined) => void;
+      policyServiceMock.savePolicy.mockReturnValueOnce(
+        new Promise<number | undefined>((resolve) => (finish = resolve))
+      );
+
+      const saving = component.savePolicy();
+      fixture.detectChanges();
+      expect(copyButton()!.disabled).toBe(true);
+
+      finish(undefined);
+      await saving;
+      fixture.detectChanges();
+      expect(copyButton()!.disabled).toBe(false);
+    });
+  });
+
+  describe("name conflict", () => {
+    const rename = (name: string) => component.editPolicy.set({ ...component.editPolicy(), name });
+
+    beforeEach(() => {
+      policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "Other", priority: 4 }]);
+    });
+
+    it("should not count the policy being edited as a conflict with itself", () => {
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should name the policy that already carries the new name and block saving", () => {
+      rename("Other");
+      expect(component.nameConflict()?.id).toBe(99);
+      expect(component.canSave()).toBe(false);
+      expect(component.saveBlockers()).toEqual(["A policy with this name already exists."]);
+    });
+
+    it("should ignore the case and surrounding spaces, as the backend and MySQL and MariaDB do", () => {
+      rename("OTHER ");
+      expect(component.nameConflict()?.id).toBe(99);
+      expect(component.canSave()).toBe(false);
+
+      rename(" other");
+      expect(component.nameConflict()?.id).toBe(99);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not save a name that the list has revealed as taken, and say why", async () => {
+      rename("Other");
+      policyServiceMock.savePolicy.mockClear();
+
+      expect(await component.savePolicy()).toBe(false);
+
+      expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("A policy with this name already exists.");
+    });
+
+    it("should not report the name of a new policy as taken once the list holds it while the save runs", async () => {
+      component.isNewPolicy.set(true);
+      rename("Fresh");
+      let conflictDuringSave: ConditionalAccessPolicy | undefined;
+      policyServiceMock.savePolicy.mockImplementationOnce(async () => {
+        policyServiceMock.policies.set([...policyServiceMock.policies(), { ...mockPolicy, id: 100, name: "Fresh" }]);
+        conflictDuringSave = component.nameConflict();
+        return 100;
+      });
+
+      await component.savePolicy();
+
+      expect(conflictDuringSave).toBeUndefined();
+      expect(component.nameConflict()).toBeUndefined();
+    });
+
+    it("should report the name again when the save fails and another policy took it", async () => {
+      rename("Fresh");
+      policyServiceMock.savePolicy.mockResolvedValueOnce(undefined);
+      await component.savePolicy();
+      policyServiceMock.policies.set([...policyServiceMock.policies(), { ...mockPolicy, id: 100, name: "Fresh" }]);
+
+      expect(component.nameConflict()?.id).toBe(100);
+    });
+
+    it("should allow a change of the case of the own name", () => {
+      rename("brute force");
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should allow saving again once the name is free", () => {
+      rename("Other");
+      rename("Other 2");
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should never report the unchanged name, even when a case twin of it exists", () => {
+      policyServiceMock.policies.set([mockPolicy, { ...mockPolicy, id: 99, name: "brute force", priority: 4 }]);
+      expect(component.nameConflict()).toBeUndefined();
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("should show the error message at once, without the name field having been left", () => {
+      rename("Other");
+      fixture.detectChanges();
+
+      expect(component.nameTouched()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('A policy named "Other" already exists.');
+    });
+
+    it("should not show the error message for a free name", () => {
+      rename("Another name");
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).not.toContain("already exists");
+    });
   });
 
   it("should name a name that is too long", () => {
@@ -823,6 +1019,122 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
   it("should not offer delete for a new (unsaved) policy", async () => {
     await component.deletePolicy();
     expect(policyServiceMock.deleteWithConfirmDialog).not.toHaveBeenCalled();
+  });
+
+  describe("a copy of a policy", () => {
+    const draft = (): ConditionalAccessPolicySaveParams => ({
+      ...mockPolicy,
+      id: undefined,
+      priority: null,
+      enforced_since: null,
+      time_window_seconds: 7200
+    });
+    const openWithDraft = (): ConditionalAccessEditPageComponent => {
+      history.replaceState({ copyOf: draft() }, "");
+      const copyFixture = TestBed.createComponent(ConditionalAccessEditPageComponent);
+      copyFixture.detectChanges();
+      return copyFixture.componentInstance;
+    };
+
+    afterEach(() => history.replaceState(null, ""));
+
+    it("should prefill the editor from the draft", () => {
+      policyServiceMock.policies.set([]);
+      const copy = openWithDraft();
+
+      expect(copy.isNewPolicy()).toBe(true);
+      expect(copy.editPolicy()).toEqual(expect.objectContaining({ name: "Brute Force", target: "user" }));
+      expect(copy.editPolicy().stages).toMatchObject(mockPolicy.stages);
+      expect(copy.timeWindowValue()).toBe(2);
+      expect(copy.timeWindowUnit()).toBe("hours");
+    });
+
+    it("should leave the priority empty, because a priority belongs to one policy only", () => {
+      const copy = openWithDraft();
+
+      expect(copy.priorityInput()).toBe("");
+      expect(copy.priorityValid()).toBe(false);
+      expect(copy.canSave()).toBe(false);
+    });
+
+    it("should report the name of the original as taken until it is changed", () => {
+      policyServiceMock.policies.set([mockPolicy]);
+      const copy = openWithDraft();
+
+      expect(copy.nameConflict()?.id).toBe(mockPolicy.id);
+      expect(copy.nameTouched()).toBe(true);
+
+      copy.updateEditPolicy({ name: "Brute Force 2", priority: 9 });
+      expect(copy.nameConflict()).toBeUndefined();
+      expect(copy.canSave()).toBe(true);
+    });
+
+    it("should count as a change, so that leaving the page asks about it", () => {
+      expect(openWithDraft().hasChanges()).toBe(true);
+    });
+
+    it("should start empty without a draft", () => {
+      history.replaceState(null, "");
+      const empty = TestBed.createComponent(ConditionalAccessEditPageComponent);
+      empty.detectChanges();
+      expect(empty.componentInstance.editPolicy().name).toBe("");
+    });
+  });
+
+  describe("name conflict", () => {
+    const templateNamed = (name: string) => ({
+      key: "tpl",
+      description: "",
+      policy: { ...EMPTY_TEMPLATE_POLICY, name }
+    });
+
+    beforeEach(() => {
+      policyServiceMock.policies.set([{ ...mockPolicy, id: 7, name: "Password Brute-Force", priority: 3 }]);
+    });
+
+    it("should not report a conflict for the empty name of a new policy", () => {
+      expect(component.nameConflict()).toBeUndefined();
+    });
+
+    it("should show the error message at once when a template brings the name of an existing policy", () => {
+      policyServiceMock.templates.set([templateNamed("Password Brute-Force")]);
+
+      component.applyTemplate("tpl");
+      fixture.detectChanges();
+
+      expect(component.nameConflict()?.id).toBe(7);
+      expect(component.nameTouched()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('A policy named "Password Brute-Force" already exists.');
+    });
+
+    it("should block saving a policy under the name of an existing one", () => {
+      policyServiceMock.templates.set([templateNamed("password brute-force")]);
+
+      component.applyTemplate("tpl");
+
+      expect(component.canSave()).toBe(false);
+      expect(component.saveBlockers()).toContain("A policy with this name already exists.");
+    });
+
+    it("should not report a conflict for a template with a free name", () => {
+      policyServiceMock.templates.set([templateNamed("Free Name")]);
+
+      component.applyTemplate("tpl");
+      fixture.detectChanges();
+
+      expect(component.nameConflict()).toBeUndefined();
+      expect(fixture.nativeElement.textContent).not.toContain("already exists");
+    });
+
+    it("should clear the conflict when the template is cleared", () => {
+      policyServiceMock.templates.set([templateNamed("Password Brute-Force")]);
+      component.applyTemplate("tpl");
+      expect(component.nameConflict()).toBeDefined();
+
+      component.clearTemplateSelection();
+
+      expect(component.nameConflict()).toBeUndefined();
+    });
   });
 
   it("should prefill from a template and clear back to empty on clear template", () => {

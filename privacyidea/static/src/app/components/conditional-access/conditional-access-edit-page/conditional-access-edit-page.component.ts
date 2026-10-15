@@ -67,6 +67,9 @@ import {
 // The actions that state a standing verdict instead of reacting to a failure count. They are the only
 // ones a stage may carry at threshold 0, where they then apply to every request the policy covers -
 // mirroring DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access.
+// Key of the navigation state that hands the copy of a policy from its edit page to the create page.
+const COPY_DRAFT_STATE_KEY = "copyOf";
+
 const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
 
 // Human-readable labels for the policy targets served by /conditionalaccess/targets; a target missing here falls back
@@ -150,6 +153,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   policyForm = form(this.editPolicy, (p) => {
     required(p.name);
     validate(p.name, (ctx) => (ctx.value().trim().length > 255 ? [{ kind: "maxlength" }] : []));
+    validate(p.name, () => (this.nameConflict() ? [{ kind: "nameTaken" }] : []));
   });
 
   // Options for the target select, falling back to a fixed enum until /targets loads so the
@@ -234,6 +238,28 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     return this.policyService.policies().find((policy) => policy.priority === priority && policy.id !== currentId);
   });
   priorityUnique = computed(() => !this.priorityConflict());
+  // The name of the policy while its save request runs. A new policy keeps no id once saved, and the reloaded list
+  // already holds it, so the name being saved is not reported as a clash with the policy itself.
+  protected readonly savingName = signal<string | null>(null);
+  // Names are unique across policies and the backend rejects a second one, so this surfaces the policy that
+  // already carries the name. The comparison ignores case and surrounding spaces because the backend strips the
+  // name and MySQL and MariaDB ignore case, so the clash is caught where the backend would treat both names as one.
+  // The policy's own entry is excluded by id, and a name left unchanged never collides, so an existing case twin
+  // stays editable.
+  nameConflict = computed<ConditionalAccessPolicy | undefined>(() => {
+    const name = this.editPolicy().name;
+    if (!name.trim() || name === this.policy().name) {
+      return undefined;
+    }
+    const folded = name.trim().toLowerCase();
+    if (folded === this.savingName()?.trim().toLowerCase()) {
+      return undefined;
+    }
+    const currentId = this.editPolicy().id;
+    return this.policyService
+      .policies()
+      .find((policy) => policy.id !== currentId && policy.name.trim().toLowerCase() === folded);
+  });
   // Tracked event types are required and have no default: a policy that counts nothing would never
   // trip, so the backend rejects an empty list too. Shown as an error straight away rather than on
   // touch, matching Priority - the other required field the editor starts empty.
@@ -323,6 +349,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
   canSave = computed(
     () =>
+      this.savingName() === null &&
       this.policyForm().valid() &&
       this.timeWindowValid() &&
       this.priorityValid() &&
@@ -347,6 +374,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       blockers.push($localize`:@@conditionalAccess.nameRequired:Name is required.`);
     } else if (this.nameTooLong()) {
       blockers.push($localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`);
+    } else if (this.nameConflict()) {
+      blockers.push($localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`);
     }
     if (!this.timeWindowValid()) {
       blockers.push($localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`);
@@ -426,6 +455,16 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         // signal-forms field itself (mat-error only renders once Material's own errorState sees it
         // touched) and the local flag mirroring it - so the "Name is required" hint is visible from the
         // start instead of only after the field is blurred.
+        this.policyForm.name().markAsTouched();
+        this.nameTouched.set(true);
+        this.applyCopyDraft(history.state?.[COPY_DRAFT_STATE_KEY]);
+      }
+    });
+
+    // Save is blocked for a taken name, so the reason shows at once, also for a name that a template filled in
+    // without the field ever being focused.
+    effect(() => {
+      if (this.nameConflict()) {
         this.policyForm.name().markAsTouched();
         this.nameTouched.set(true);
       }
@@ -528,6 +567,33 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     this.syncPriorityInput(policy.priority);
   }
 
+  // The copy of a policy arrives from the edit page of that policy as navigation state; it prefills the whole editor
+  // like a template, so the name and the priority, which both have to be unique, are validated like any other entry.
+  private applyCopyDraft(draft: ConditionalAccessPolicySaveParams | undefined): void {
+    if (!draft) {
+      return;
+    }
+    this.editPolicy.set(deepCopy(draft));
+    this.syncTimeWindowFromSeconds(draft.time_window_seconds);
+    this.syncPriorityInput(draft.priority);
+  }
+
+  // Opens the create page with the editor as it is now, unsaved edits included, and leaves the policy being edited as
+  // it is stored. The copy carries no id, no priority and no enforcement date: it is a new policy that has to take a
+  // priority of its own, and it has not been enforced yet.
+  copyPolicy(): void {
+    const draft: ConditionalAccessPolicySaveParams = {
+      ...deepCopy(this.editPolicy()),
+      priority: null,
+      enforced_since: null
+    };
+    delete draft.id;
+    this.pendingChangesService.clearAllRegistrations();
+    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW, {
+      state: { [COPY_DRAFT_STATE_KEY]: draft }
+    });
+  }
+
   // The template select's clear button: drops the selected template and resets the prefilled
   // fields back to an empty policy.
   clearTemplateSelection(): void {
@@ -622,6 +688,19 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   savePolicy(): Promise<boolean> {
+    // A second save while one runs would create the policy twice.
+    if (this.savingName() !== null) {
+      return Promise.resolve(false);
+    }
+    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
+    // the policy list revealed since then is caught here.
+    if (this.nameConflict()) {
+      this.notificationService.error(
+        $localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`
+      );
+      return Promise.resolve(false);
+    }
+    this.savingName.set(this.editPolicy().name);
     // The engine evaluates stages by descending failure_threshold, so the thresholds the admin
     // entered are the order and nothing extra is derived here.
     const policy = this.editPolicy();
@@ -643,6 +722,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
           this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
           resolve(true);
         } else {
+          this.savingName.set(null);
           resolve(false);
         }
       });
