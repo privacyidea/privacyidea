@@ -2576,25 +2576,48 @@ class PolicyTestCase(MyTestCase):
         with self.assertRaises(ParameterError):
             validate_actions(SCOPE.AUTH, f"{PolicyAction.OTPPIN}=userstore, {PolicyAction.OTPPIN}=token")
 
+        # A disabled action is stored as its exclusion, so it is the same action as the exclusion, in a string as in
+        # a dict
+        for action in [f"{PolicyAction.ENABLE}=false, -{PolicyAction.ENABLE}",
+                       f"{PolicyAction.ENABLE}=false,-{PolicyAction.ENABLE}=false",
+                       {PolicyAction.ENABLE: "false", f"-{PolicyAction.ENABLE}": True},
+                       {PolicyAction.ENABLE: "false", f"-{PolicyAction.ENABLE}": "false"},
+                       {PolicyAction.ENABLE: "0", f"-{PolicyAction.ENABLE}": True}]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy("duplicate", scope=SCOPE.ADMIN, action=action)
+            self.assertIn(f"Actions given more than once: ['-{PolicyAction.ENABLE}']", exception.exception.message)
+            self.assertFalse(get_policies(name="duplicate"))
+
+        # Actions that differ only in the whitespace around them are the same action
+        for action in [f" {PolicyAction.DISABLE}, {PolicyAction.DISABLE} ",
+                       {f" {PolicyAction.DISABLE}": True, PolicyAction.DISABLE: True}]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy("duplicate", scope=SCOPE.ADMIN, action=action)
+            self.assertIn(f"Actions given more than once: ['{PolicyAction.DISABLE}']", exception.exception.message)
+            self.assertFalse(get_policies(name="duplicate"))
+
         # An action and its exclusion are different actions, an escaped comma does not separate actions
-        set_policy("duplicate", scope=SCOPE.ADMIN, action=f"{PolicyAction.POLICYWRITE}, -{PolicyAction.POLICYWRITE}")
-        self.assertEqual({PolicyAction.POLICYWRITE: True, f"-{PolicyAction.POLICYWRITE}": True},
-                         get_policies(name="duplicate")[0].get("action"))
+        for action in [f"{PolicyAction.POLICYWRITE}, -{PolicyAction.POLICYWRITE}",
+                       {PolicyAction.POLICYWRITE: True, f"-{PolicyAction.POLICYWRITE}": True}]:
+            set_policy("duplicate", scope=SCOPE.ADMIN, action=action)
+            self.assertEqual({PolicyAction.POLICYWRITE: True, f"-{PolicyAction.POLICYWRITE}": True},
+                             get_policies(name="duplicate")[0].get("action"))
         delete_policy("duplicate")
         self.assertTrue(validate_actions(SCOPE.AUTH, f"{PolicyAction.CHALLENGETEXT}=a\\, "
                                                      f"{PolicyAction.CHALLENGETEXT}=b"))
 
     def test_52f_import_policy_keeps_bool_actions_with_a_value_enabled(self):
         # Older versions stored any value of a boolean action and it acted as enabled, so the import removes a value
-        # that is not true, like the migration f8a498439814 does, and keeps the other values and actions as they are
+        # that is not true, like the migration f8a498439814 does, and keeps the other values and actions as they are.
+        # A value is true as it is when the policy is saved, so an empty value stays and "tRuE" is removed.
         action = {PolicyAction.POLICYWRITE: "False", PolicyAction.ENABLE: "hotp", PolicyAction.DISABLE: False,
                   PolicyAction.REVOKE: "", PolicyAction.RESYNC: None, PolicyAction.DELETE: True,
-                  PolicyAction.SETPIN: "1", f"-{PolicyAction.RESET}": "hotp"}
+                  PolicyAction.SETPIN: "1", PolicyAction.UNASSIGN: "tRuE", f"-{PolicyAction.RESET}": "hotp"}
         self.assertEqual(({PolicyAction.POLICYWRITE: True, PolicyAction.ENABLE: True, PolicyAction.DISABLE: True,
-                           PolicyAction.REVOKE: True, PolicyAction.RESYNC: None, PolicyAction.DELETE: True,
-                           PolicyAction.SETPIN: "1", f"-{PolicyAction.RESET}": "hotp"},
+                           PolicyAction.REVOKE: "", PolicyAction.RESYNC: None, PolicyAction.DELETE: True,
+                           PolicyAction.SETPIN: "1", PolicyAction.UNASSIGN: True, f"-{PolicyAction.RESET}": "hotp"},
                           [f"{PolicyAction.POLICYWRITE}=False", f"{PolicyAction.ENABLE}=hotp",
-                           f"{PolicyAction.DISABLE}=False", f"{PolicyAction.REVOKE}="]),
+                           f"{PolicyAction.DISABLE}=False", f"{PolicyAction.UNASSIGN}=tRuE"]),
                          drop_bool_action_values(SCOPE.ADMIN, action))
         self.assertEqual((f"{PolicyAction.CHALLENGETEXT}=Hello\\, enter the OTP, {PolicyAction.PASSONNOTOKEN}, "
                           f"{PolicyAction.PASSONNOUSER}=TRUE",
@@ -2619,6 +2642,88 @@ class PolicyTestCase(MyTestCase):
                                           "action": {PolicyAction.POLICYWRITE: "False"}}]))
         self.assertEqual({PolicyAction.POLICYWRITE: True}, get_policies(name="imported")[0].get("action"))
         delete_policy("imported")
+
+        # The whitespace around a value is removed, a false value with whitespace is removed as well
+        import_policy([{"name": "imported", "scope": SCOPE.ADMIN,
+                        "action": f"{PolicyAction.POLICYWRITE}= False , {PolicyAction.ENABLE}= true , "
+                                  f"{PolicyAction.REVOKE}= "}])
+        self.assertEqual({PolicyAction.POLICYWRITE: True, PolicyAction.ENABLE: "true", PolicyAction.REVOKE: True},
+                         get_policies(name="imported")[0].get("action"))
+        delete_policy("imported")
+
+    def test_52h_import_policy_rejects_actions_with_whitespace_in_the_key(self):
+        # An action with whitespace before the "=" never matched in older versions, so the import treats it as an
+        # unknown action: it is rejected, with skip_invalid it is removed
+        for action in [f"{PolicyAction.ENABLE}, {PolicyAction.POLICYWRITE} = False",
+                       f"{PolicyAction.ENABLE}, {PolicyAction.POLICYWRITE} = true ",
+                       {PolicyAction.ENABLE: True, f"{PolicyAction.POLICYWRITE} ": "False"}]:
+            with self.assertRaises(PolicyError) as exception:
+                import_policy([{"name": "imported", "scope": SCOPE.ADMIN, "action": action}])
+            self.assertIn(f"Invalid actions ['{PolicyAction.POLICYWRITE} ']", exception.exception.message)
+            self.assertFalse(get_policies(name="imported"))
+            with self.assertRaises(ParameterError):
+                import_policies(f'[imported]\nscope = {SCOPE.ADMIN}\naction = "{action!r}"\n')
+            self.assertFalse(get_policies(name="imported"))
+
+            import_policy([{"name": "imported", "scope": SCOPE.ADMIN, "action": action}], skip_invalid=True)
+            self.assertEqual({PolicyAction.ENABLE: True}, get_policies(name="imported")[0].get("action"))
+            delete_policy("imported")
+
+    def test_52i_import_policy_keeps_the_last_of_duplicate_actions_with_skip_invalid(self):
+        # Older versions used only the last value of an action given more than once. The import rejects such a
+        # policy, with skip_invalid it keeps the last value, like the migration f8a498439814 does.
+        for action, expected in [(f"{PolicyAction.POLICYWRITE}=hotp, {PolicyAction.POLICYWRITE}",
+                                  {PolicyAction.POLICYWRITE: True}),
+                                 (f"{PolicyAction.POLICYWRITE}, {PolicyAction.POLICYWRITE}=false",
+                                  {PolicyAction.POLICYWRITE: True}),
+                                 (f"{PolicyAction.POLICYWRITE}=false, {PolicyAction.ENABLE}, "
+                                  f"{PolicyAction.POLICYWRITE}",
+                                  {PolicyAction.POLICYWRITE: True, PolicyAction.ENABLE: True}),
+                                 (f" {PolicyAction.POLICYWRITE}, {PolicyAction.POLICYWRITE}",
+                                  {PolicyAction.POLICYWRITE: True})]:
+            with self.assertRaises(PolicyError) as exception:
+                import_policy([{"name": "imported", "scope": SCOPE.ADMIN, "action": action}])
+            self.assertIn(f"Actions given more than once: ['{PolicyAction.POLICYWRITE}']", exception.exception.message)
+            self.assertFalse(get_policies(name="imported"))
+            with self.assertRaises(ParameterError):
+                import_policies(f'[imported]\nscope = {SCOPE.ADMIN}\naction = "{action!r}"\n')
+            self.assertFalse(get_policies(name="imported"))
+
+            with self.assertLogs("privacyidea.lib.policy", level="WARNING") as logs:
+                import_policy([{"name": "imported", "scope": SCOPE.ADMIN, "action": action}], skip_invalid=True)
+            self.assertEqual(expected, get_policies(name="imported")[0].get("action"))
+            self.assertTrue(any("removed the earlier occurrences of actions given more than once" in line
+                                for line in logs.output), logs.output)
+            delete_policy("imported")
+
+        # An action and its exclusion are no duplicates, also not after the false value is removed
+        import_policy([{"name": "imported", "scope": SCOPE.ADMIN,
+                        "action": f"{PolicyAction.POLICYWRITE}=false, -{PolicyAction.POLICYWRITE}"}])
+        self.assertEqual({PolicyAction.POLICYWRITE: True, f"-{PolicyAction.POLICYWRITE}": True},
+                         get_policies(name="imported")[0].get("action"))
+        delete_policy("imported")
+
+    def test_52g_set_policy_removes_whitespace_around_actions(self):
+        # The whitespace around the keys and values is removed, so a boolean action with whitespace is checked and
+        # negated like one without
+        set_policy("whitespace", scope=SCOPE.ADMIN, action=f"{PolicyAction.POLICYWRITE} = false")
+        self.assertEqual({f"-{PolicyAction.POLICYWRITE}": True}, get_policies(name="whitespace")[0].get("action"))
+        set_policy("whitespace", scope=SCOPE.ADMIN, action=f" {PolicyAction.ENABLE} , {PolicyAction.DISABLE}= true ")
+        self.assertEqual({PolicyAction.ENABLE: True, PolicyAction.DISABLE: "true"},
+                         get_policies(name="whitespace")[0].get("action"))
+        set_policy("whitespace", scope=SCOPE.ADMIN, action={f" {PolicyAction.ENABLE} ": True,
+                                                            PolicyAction.DISABLE: " true "})
+        self.assertEqual({PolicyAction.ENABLE: True, PolicyAction.DISABLE: "true"},
+                         get_policies(name="whitespace")[0].get("action"))
+        with self.assertRaises(ParameterError):
+            set_policy("whitespace", scope=SCOPE.ADMIN, action=f"{PolicyAction.ENABLE} = hotp")
+        delete_policy("whitespace")
+
+        # The value of an action of another type loses the whitespace around it, not the whitespace inside it
+        set_policy("whitespace", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGETEXT: "  Enter the OTP  "})
+        self.assertEqual({PolicyAction.CHALLENGETEXT: "Enter the OTP"},
+                         get_policies(name="whitespace")[0].get("action"))
+        delete_policy("whitespace")
 
     def test_53_set_policy_validate_realms(self):
         """

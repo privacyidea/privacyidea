@@ -38,6 +38,8 @@ POLICIES = {
     909: ("admin", "policywrite=hotp, -policywrite"),
     910: ("authentication", "otppin=userstore, passOnNoToken, otppin=token"),
     911: ("admin", "enable, enable"),
+    912: ("admin", "enable, policywrite = False"),
+    913: ("admin", "policywrite= true , policydelete= False "),
 }
 
 EXPECTED = {
@@ -58,6 +60,10 @@ EXPECTED = {
     910: "passOnNoToken, otppin=token",
     # A policy without any value is cleaned up as well
     911: "enable",
+    # The key "policywrite " with the whitespace never matched, the policy stays as it is
+    912: "enable, policywrite = False",
+    # The whitespace around a value is no part of the key, the true value stays and the false value is removed
+    913: "policywrite= true , policydelete",
 }
 
 
