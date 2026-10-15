@@ -57,6 +57,7 @@ POLICIES = {
     928: ("admin", "policywrite=True"),
     929: ("admin", "policywrite=1"),
     930: ("admin", "policywrite, policywrite"),
+    931: ("admin", "policywrite= true"),
 }
 
 EXPECTED = {
@@ -106,6 +107,8 @@ EXPECTED = {
     928: "policywrite=True",
     929: "policywrite=1",
     930: "policywrite",
+    # The whitespace before a true value stays, the migration only removes false values
+    931: "policywrite= true",
 }
 
 
