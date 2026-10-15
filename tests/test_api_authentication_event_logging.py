@@ -223,7 +223,7 @@ class _AuthLogContractTests(_ContractHost):
         # False for a type that may not do challenge-response, and then check_pin never runs.
         self._enable_challenge_response()
         set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
-        set_policy("authlog_force_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.FORCE_CHALLENGE_RESPONSE}=hotp")
+        set_policy("authlog_force_cr", scope=SCOPE.AUTH, action=PolicyAction.FORCE_CHALLENGE_RESPONSE)
         try:
             self._assert_failed(self._authenticate("wrongpassword755224"))
         finally:
