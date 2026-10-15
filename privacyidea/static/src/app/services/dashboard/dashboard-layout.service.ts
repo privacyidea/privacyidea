@@ -123,7 +123,11 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   public isWidgetTypeAllowed(type: string): boolean {
-    const requiredAction = this.registry.get(type)?.requiredAction;
+    const widget = this.registry.get(type);
+    if (widget?.availableWhen && !widget.availableWhen(this.auth)) {
+      return false;
+    }
+    const requiredAction = widget?.requiredAction;
     // Length rather than truthiness, so an empty list reads as "no requirement" like null does.
     if (!requiredAction?.length) {
       return true;

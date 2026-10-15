@@ -81,6 +81,7 @@ export interface AuthData {
   hide_buttons: boolean;
   deletion_confirmation: boolean;
   show_seed: boolean;
+  show_appearance_settings: boolean;
   show_node: string;
   subscription_status: number;
   qr_image_android: string | null;
@@ -231,6 +232,7 @@ export interface AuthServiceInterface {
   readonly hideButtons: Signal<boolean>;
   readonly deletionConfirmation: Signal<boolean>;
   readonly showSeed: Signal<boolean>;
+  readonly showAppearanceSettings: Signal<boolean>;
   readonly showNode: Signal<string>;
   readonly subscriptionStatus: Signal<number>;
   readonly qrImageAndroid: Signal<string | null>;
@@ -341,6 +343,7 @@ export class AuthService implements AuthServiceInterface {
   readonly hideButtons = computed(() => this.authData()?.hide_buttons || false);
   readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);
   readonly showSeed = computed(() => this.authData()?.show_seed || false);
+  readonly showAppearanceSettings = computed(() => this.authData()?.show_appearance_settings || false);
   readonly showNode = computed(() => this.authData()?.show_node || "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);

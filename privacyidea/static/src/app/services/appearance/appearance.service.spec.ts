@@ -161,6 +161,64 @@ describe("AppearanceService", () => {
     expect(service.statusColors()).toBe("aa");
   });
 
+  describe("followTheme", () => {
+    const setShowAppearanceSettings = (show: boolean): void =>
+      authService.authData.update((data) => ({ ...data!, show_appearance_settings: show }));
+
+    it("should give dark AAA status colors, the default depth and light from 280 degrees while the options are hidden", () => {
+      service.setDepth("strong");
+
+      service.followTheme("dark");
+
+      expect(service.statusColors()).toBe("aaa");
+      expect(service.depth()).toBe("default");
+      expect(service.lightSource()).toBe("14");
+      expect(html().classList.contains("status-colors-aaa")).toBe(true);
+      expect(html().classList.contains("depth-default")).toBe(true);
+      expect(html().classList.contains("light-source-14")).toBe(true);
+      expect(userSettingsService.settings()).toEqual(
+        expect.objectContaining({ status_colors: "aaa", depth: "default", light_source: "14" })
+      );
+      expect(cachedAppearance()).toEqual(
+        expect.objectContaining({ status_colors: "aaa", depth: "default", light_source: "14" })
+      );
+    });
+
+    it("should give light AA status colors, subtle depth and the default light source while the options are hidden", () => {
+      service.followTheme("dark");
+
+      service.followTheme("light");
+
+      expect(service.statusColors()).toBe("aa");
+      expect(service.depth()).toBe("subtle");
+      expect(service.lightSource()).toBe(DEFAULT_LIGHT_SOURCE);
+      expect(userSettingsService.settings()).toEqual(
+        expect.objectContaining({ status_colors: "aa", depth: "subtle", light_source: DEFAULT_LIGHT_SOURCE })
+      );
+    });
+
+    it("should leave the corners as they are", () => {
+      service.setCorners("round");
+
+      service.followTheme("dark");
+
+      expect(service.corners()).toBe("round");
+    });
+
+    it("should leave every level alone while the appearance options are shown", () => {
+      setShowAppearanceSettings(true);
+      service.setStatusColors("a");
+      service.setDepth("strong");
+      service.setLightSource("12");
+
+      service.followTheme("dark");
+
+      expect(service.statusColors()).toBe("a");
+      expect(service.depth()).toBe("strong");
+      expect(service.lightSource()).toBe("12");
+    });
+  });
+
   it("should put the status colors back on AA with the other groups", () => {
     service.setStatusColors("a");
 

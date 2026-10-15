@@ -42,6 +42,7 @@ import {
   LightSourceLevel,
   StatusColorLevel
 } from "@services/appearance/appearance.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
@@ -67,6 +68,9 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
 export class UISettingsComponent {
   private readonly themeService = inject(ThemeService);
   private readonly appearanceService = inject(AppearanceService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  // The Appearance section is offered only once the show_appearance_settings policy is set.
+  protected readonly showAppearanceSettings = this.authService.showAppearanceSettings;
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;

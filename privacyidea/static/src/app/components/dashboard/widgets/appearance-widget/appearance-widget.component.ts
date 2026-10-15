@@ -35,6 +35,7 @@ import {
   LIGHT_SOURCE_LEVELS,
   LightSourceLevel
 } from "@services/appearance/appearance.service";
+import { AuthServiceInterface } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { ThemeToggleComponent } from "@components/shared/theme-toggle/theme-toggle.component";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
@@ -109,6 +110,7 @@ function presetLabel(preset: AppearancePreset): string {
 })
 export class AppearanceWidgetComponent extends DashboardWidget {
   static override readonly type = "appearance";
+  static override readonly availableWhen = (auth: AuthServiceInterface): boolean => auth.showAppearanceSettings();
   static override readonly title = $localize`:@@dashboard.appearance:Appearance`;
   static override readonly icon = "palette";
   // Minimum is the width the three controls need side by side; the fixed-circle dial never grows.

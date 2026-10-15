@@ -20,6 +20,7 @@ import { Component, computed, inject, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
@@ -35,6 +36,7 @@ type ThemeIcon = "light_mode" | "dark_mode";
 export class ThemeSwitcherComponent {
   private readonly systemPrefersDark = signal(window.matchMedia("(prefers-color-scheme: dark)").matches);
   private readonly themeService = inject(ThemeService);
+  private readonly appearanceService = inject(AppearanceService);
   readonly isDark = computed(() => {
     const current = this.themeService.currentTheme();
     return current === "dark" || (current === "system" && this.systemPrefersDark());
@@ -43,6 +45,8 @@ export class ThemeSwitcherComponent {
   readonly icon = computed<ThemeIcon>(() => (this.isDark() ? "light_mode" : "dark_mode"));
 
   toggleTheme(): void {
-    this.themeService.setTheme(this.isDark() ? "light" : "dark");
+    const next = this.isDark() ? "light" : "dark";
+    this.themeService.setTheme(next);
+    this.appearanceService.followTheme(next);
   }
 }
