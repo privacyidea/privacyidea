@@ -16,13 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideZonelessChangeDetection } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { MockNotificationService } from "@testing/mock-services";
 import { DashboardLayoutService } from "./dashboard-layout.service";
 import { DashboardPersistenceService } from "./dashboard-persistence.service";
 import { Subject } from "rxjs";
@@ -724,5 +728,134 @@ describe("DashboardLayoutService", () => {
       service.ensureLoadedForSession();
       expect(loadSpy).toHaveBeenCalledTimes(1);
     });
+
+    it("hides forbidden default widgets while the stored layout is on its way", () => {
+      const { deferred } = buildWithDeferredLoad();
+      // The admin may not see the tokens widgets, but may see policies.
+      auth.actionAllowed.mockImplementation((action: string) => action !== "tokenlist");
+
+      // The dashboard mounts before the stored layout arrives and prunes.
+      service.pruneForbiddenWidgets();
+
+      // The displayed defaults are filtered for the wait...
+      expect(service.hasWidgetOfType("tokens")).toBe(false);
+      expect(service.hasWidgetOfType("policies")).toBe(true);
+      // ...without anything being written over the stored layout that has not arrived yet.
+      expect(persisted()).toBeNull();
+
+      // The stored layout arrives; the pending prune acts on it, and what is
+      // persisted is the stored layout minus the forbidden widget, not the defaults.
+      deferred.next([
+        { id: "tokens-b", type: "tokens", x: 0, y: 0, cols: 6, rows: 4 },
+        { id: "policies-b", type: "policies", x: 6, y: 0, cols: 10, rows: 5 }
+      ]);
+      deferred.complete();
+
+      expect(service.hasWidgetOfType("tokens")).toBe(false);
+      expect(service.hasWidgetOfType("policies")).toBe(true);
+      expect(persisted()?.some((widget) => widget.id === "tokens-b")).toBe(false);
+      expect(persisted()?.some((widget) => widget.id === "policies-b")).toBe(true);
+    });
+
+    it("keeps the in-flight marker when a superseded response arrives late", () => {
+      const loads: Subject<WidgetInstance[] | null>[] = [];
+      persistence = TestBed.inject(DashboardPersistenceService);
+      jest.spyOn(persistence, "load").mockImplementation(() => {
+        const subject = new Subject<WidgetInstance[] | null>();
+        loads.push(subject);
+        return subject.asObservable();
+      });
+      service = TestBed.inject(DashboardLayoutService);
+      expect(loads).toHaveLength(1);
+
+      // The session ends while its load is in flight; the next one starts its own.
+      auth.isAuthenticated.set(false);
+      TestBed.flushEffects();
+      auth.isAuthenticated.set(true);
+      service.ensureLoadedForSession();
+      expect(loads).toHaveLength(2);
+
+      // The superseded response arrives late: it must not apply...
+      loads[0].next([{ id: "events-a", type: "events", x: 0, y: 0, cols: 8, rows: 5 }]);
+      loads[0].complete();
+      expect(service.hasWidgetOfType("events")).toBe(false);
+
+      // ...and it must not clear the in-flight marker of the load that follows:
+      // opening an edit while that load is still pending starts no third request.
+      service.beginEdit();
+      service.cancelEdit();
+      expect(loads).toHaveLength(2);
+
+      // The load that is still current settles and applies.
+      loads[1].next([{ id: "policies-b", type: "policies", x: 0, y: 0, cols: 10, rows: 5 }]);
+      loads[1].complete();
+      expect(service.hasWidgetOfType("policies")).toBe(true);
+    });
+  });
+});
+
+describe("DashboardLayoutService over the real user settings service", () => {
+  // The session-boundary tests above mock persistence.load; this one runs the real
+  // pipeline, because the cache of the user settings service outlives a logout and
+  // can hand the layout of the ended session to the administrator who follows.
+  let service: DashboardLayoutService;
+  let auth: MockAuthService;
+  let httpMock: HttpTestingController;
+  let userSettings: UserSettingsService;
+
+  const respondWith = (widgets: WidgetInstance[]): void => {
+    const request = httpMock.expectOne("/user/settings");
+    request.flush({ result: { status: true, value: { dashboard: { widgets } } } });
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        UserSettingsService,
+        DashboardPersistenceService
+      ]
+    });
+    auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    auth.actionAllowed.mockReturnValue(true);
+    httpMock = TestBed.inject(HttpTestingController);
+    userSettings = TestBed.inject(UserSettingsService);
+    service = TestBed.inject(DashboardLayoutService);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it("does not serve the dashboard of an ended session to the next one", () => {
+    // Administrator A opens the dashboard; their settings request is on its way.
+    const requestA = httpMock.expectOne("/user/settings");
+
+    // A logs out: the session ends and the auth service drops the settings cache.
+    auth.isAuthenticated.set(false);
+    TestBed.flushEffects();
+    userSettings.clearCache();
+
+    // A's response lands after the logout: it must not fill the cleared cache.
+    requestA.flush({
+      result: {
+        status: true,
+        value: { dashboard: { widgets: [{ id: "events-a", type: "events", x: 0, y: 0, cols: 8, rows: 5 }] } }
+      }
+    });
+    expect(userSettings.settings()).toBeNull();
+
+    // B signs in without the page reloading and opens the dashboard: a fresh
+    // request is sent, and their own stored layout applies.
+    auth.isAuthenticated.set(true);
+    service.ensureLoadedForSession();
+    respondWith([{ id: "policies-b", type: "policies", x: 0, y: 0, cols: 10, rows: 5 }]);
+
+    expect(service.widgets().some((widget) => widget.id === "policies-b")).toBe(true);
+    expect(service.widgets().some((widget) => widget.id === "events-a")).toBe(false);
   });
 });

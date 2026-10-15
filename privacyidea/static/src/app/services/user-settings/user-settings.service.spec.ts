@@ -238,6 +238,33 @@ describe("UserSettingsService", () => {
     });
   });
 
+  it("should not let a response that lands after a logout repopulate the cache", () => {
+    // The settings request of a session whose logout already cleared the cache can
+    // still be in flight; when it resolves late it must not fill the cache again,
+    // or the administrator who signs in next reads the ended session's document.
+    let first: UserSettings | null = null;
+    service.getSettings().subscribe((settings) => {
+      first = settings;
+    });
+    const request = httpMock.expectOne("/user/settings");
+
+    service.clearCache();
+
+    request.flush({ result: { status: true, value: { theme: "dark" } } } as PiResponse<UserSettings>);
+    // The ended session's own subscriber still receives its response...
+    expect(first).toEqual({ theme: "dark" });
+    // ...but the cache stays empty, so nothing leaks into the next session.
+    expect(service.settings()).toBeNull();
+
+    // The next session fetches its own document instead of reading the late one.
+    let second: UserSettings | null = null;
+    service.getSettings().subscribe((settings) => {
+      second = settings;
+    });
+    respondWith({ theme: "light" });
+    expect(second).toEqual({ theme: "light" });
+  });
+
   it("should drop the cached document on clearCache", () => {
     service.getSettings().subscribe();
     respondWith({ theme: "dark" });

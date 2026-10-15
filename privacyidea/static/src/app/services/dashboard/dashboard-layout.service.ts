@@ -157,6 +157,15 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     // the request and prune once the load has settled the real layout (see loadLayout).
     if (!this.loaded) {
       this.pendingPrune = true;
+      // The defaults are on screen during the wait, so filter what is displayed
+      // rather than nothing: the administrator sees no widget they hold no right
+      // for. Only the view changes - nothing is persisted and no change is
+      // recorded - and the pending prune still acts on the stored layout once it
+      // arrives.
+      const visible = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
+      if (visible.length !== this.widgets().length) {
+        this.widgets.set(visible);
+      }
       return;
     }
     const allowed = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
@@ -264,12 +273,14 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     const generation = this.loadGeneration;
     this.loadRequested = true;
     this.persistence.load().subscribe((stored) => {
-      this.loadRequested = false;
       // The session this response belongs to is over (or a newer load was started);
-      // what it carries is nobody's layout anymore.
+      // what it carries is nobody's layout anymore, and the in-flight marker belongs
+      // to the load that is still running, so clearing it is left to the response
+      // that is still current.
       if (generation !== this.loadGeneration) {
         return;
       }
+      this.loadRequested = false;
       this.loaded = true;
       // A layout the user changed while the request was in flight wins over the
       // stored one and is written back, so the change is not silently dropped.
