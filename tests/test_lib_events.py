@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, UTC
 
 from unittest import mock
 import requests.exceptions
+import socket
+
 import responses
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -54,6 +56,8 @@ from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.webhook import set_webhook
+from privacyidea.models.webhook import Webhook
 from privacyidea.models import Challenge
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.models import db, EventHandler
@@ -4881,3 +4885,366 @@ class WebhookTestCase(MyTestCase):
         # The unformatted data is still sent — the webhook call itself is not aborted
         posted = mock_post.call_args.kwargs["data"]
         self.assertEqual(posted, data)
+
+
+class WebhookObjectHandlerTestCase(MyTestCase):
+    """
+    The WebHookHandler posting to a configured webhook object instead of to
+    an inline URL. See https://github.com/privacyidea/privacyidea/issues/5751
+    """
+
+    WEBHOOK_URL = "https://hook.example.com/endpoint"
+    INLINE_URL = "https://inline.example.com/endpoint"
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super().tearDown()
+
+    @staticmethod
+    def _cleanup():
+        for wh in Webhook.query.all():
+            wh.delete()
+
+    def _make_g(self, username='hans', realm=None):
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': username, 'realm': realm or self.realm1}
+        return g
+
+    def _make_options(self, g, handler_opts, request=None):
+        opts = {"g": g, "handler_def": {"options": handler_opts}}
+        if request is not None:
+            opts["request"] = request
+        return opts
+
+    def _do_webhook(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        return WebHookHandler().do(action, options=options)
+
+    @responses.activate
+    def test_01_webhook_object_is_used(self):
+        """A selected webhook supplies the endpoint; the handler supplies the body."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.WEBHOOK_URL)
+        self.assertEqual(request.body, '{"a": 1}')
+        self.assertEqual(request.headers["Content-Type"], "application/json")
+
+    @responses.activate
+    def test_02_webhook_wins_over_the_inline_url(self):
+        """A migrated definition carries both shapes; the webhook object wins."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem",
+                                   "URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, self.WEBHOOK_URL)
+
+    @responses.activate
+    def test_03_unknown_webhook_sends_nothing(self):
+        """A dangling reference is a configuration error, not a request."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "does-not-exist", "data": "x"})
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.assertFalse(self._do_webhook(opts))
+            mock_log.assert_any_call(
+                "The webhook 'does-not-exist' configured in this event handler does not exist.")
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_04_failing_webhook_is_reported_not_raised(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"no": True}, status=500)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "data": '{"a": 1}'})
+        self.assertFalse(self._do_webhook(opts))
+
+    @responses.activate
+    def test_05_tags_are_replaced_as_json(self):
+        """The webhook's content type decides how the payload is substituted."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01"}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": '{"user": "{logged_in_user}", "serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        posted = json.loads(responses.calls[0].request.body)
+        self.assertEqual(posted["user"], "hans")
+        self.assertEqual(posted["serial"], "SPASS01")
+
+    @responses.activate
+    def test_05b_a_plain_text_payload_is_replaced_under_a_json_webhook(self):
+        """
+        The payload decides how it is substituted, not only the content type. Substituting a JSON
+        body key by key exists so a tag carrying a quote cannot break the document - a reason that
+        does not apply to a payload which is not a document. Before, json.loads() simply raised and
+        the text was returned untouched, which in the UI is indistinguishable from `replace` being
+        switched off: the admin sees the placeholders arrive verbatim at the endpoint.
+        """
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method="POST", data={"serial": "SPASS01"}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01"}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": "this is the handler {token_serial}, {logged_in_user}"},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual("this is the handler SPASS01, hans", responses.calls[0].request.body)
+
+    @responses.activate
+    def test_05c_a_json_payload_is_still_substituted_key_by_key(self):
+        # The fallback must not cost the document-safe path: a value carrying a quote still has to
+        # be escaped into the JSON rather than pasted into the text.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method="POST", data={"serial": 'SP"01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": 'SP"01'}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True, "data": '{"serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual({"serial": 'SP"01'}, json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_06_tags_are_replaced_as_plain_text(self):
+        """A non-JSON webhook substitutes the payload as plain text."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL,
+                    content_type="application/x-www-form-urlencoded")
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "replace": True,
+                                   "data": "user={logged_in_user}"})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, "user=hans")
+
+    @responses.activate
+    def test_07_empty_data_falls_back_to_the_default_payload(self):
+        """An empty payload lets the webhook's own default_payload apply."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"from": "webhook"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": ""})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, '{"from": "webhook"}')
+
+    @responses.activate
+    def test_08_the_url_is_never_logged(self):
+        """The webhook object may embed a token in its URL; log the name instead."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": "x"})
+        with self.assertLogs("privacyidea.lib.eventhandler.webhookeventhandler",
+                             level="INFO") as logs:
+            self.assertTrue(self._do_webhook(opts))
+        self.assertTrue(any("siem" in line for line in logs.output))
+        self.assertFalse(any(self.WEBHOOK_URL in line for line in logs.output))
+
+    @responses.activate
+    def test_09_inline_definition_still_fires(self):
+        """The legacy reader stays: a definition without a webhook keeps working."""
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        opts = self._make_options(self._make_g(),
+                                  {"URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, self.INLINE_URL)
+
+    def test_10_the_dropdown_offers_the_configured_webhooks(self):
+        set_webhook("siem", url=self.WEBHOOK_URL)
+        set_webhook("ticket", url=self.WEBHOOK_URL)
+
+        options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
+        self.assertEqual(options["webhook"]["value"], ["siem", "ticket"])
+        # The inline fields are no longer mandatory, since a webhook may
+        # supply the endpoint instead.
+        self.assertFalse(options["URL"]["required"])
+        self.assertFalse(options["content_type"]["required"])
+
+    def test_10b_no_option_of_this_action_is_mandatory(self):
+        """
+        Every option here has a meaningful empty state, so requiring any of them only blocks a
+        valid configuration:
+
+        * `data` empty is what makes the selected webhook's own default_payload apply - the reason
+          the payload lives on the webhook object at all
+        * `replace` off is a plain choice, and the editor counts an untouched checkbox as empty, so
+          a required one cannot be saved until it has been switched on once
+        * `URL` / `content_type` belong to the inline shape, which a selected webhook supersedes
+        * `webhook` is empty for a definition that stays on the inline shape
+        """
+        options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
+
+        required = sorted(name for name, option in options.items() if option.get("required"))
+        self.assertListEqual([], required)
+
+    @responses.activate
+    def test_10c_an_empty_payload_sends_the_webhooks_own_default(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"source": "privacyidea"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem"})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual({"source": "privacyidea"}, json.loads(responses.calls[0].request.body))
+
+    # --- audit (run_details lands in the audit "info" column, see lib.event) ---
+
+    def _run(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        """Run the handler and hand back the object, so its run_details can be read."""
+        handler = WebHookHandler()
+        return handler.do(action, options=options), handler
+
+    @responses.activate
+    def test_11_a_fired_webhook_is_audited_by_identifier_and_status(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual("webhook 'siem': HTTP 200", handler.run_details)
+
+    @responses.activate
+    def test_12_a_failing_webhook_is_audited_with_the_reason(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"no": True}, status=500)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertFalse(result)
+        self.assertIn("siem", handler.run_details)
+        self.assertIn("500", handler.run_details)
+
+    @responses.activate
+    def test_13_the_audit_entry_never_carries_the_webhook_url(self):
+        """
+        The URL is a property of the webhook object, not of the handler definition, so it appears
+        nowhere else in the audit entry - and it may embed a token. A transport error quotes the
+        endpoint it failed on, which is the way it would otherwise get in.
+        """
+        secret_url = "https://siem.example.com/t/SUPERSECRETTOKEN"
+        responses.add(responses.POST, secret_url,
+                      body=requests.exceptions.ConnectionError(
+                          "HTTPSConnectionPool(host='siem.example.com', port=443): "
+                          "Max retries exceeded with url: /t/SUPERSECRETTOKEN"))
+        set_webhook("siem", url=secret_url)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertFalse(result)
+        self.assertNotIn("SUPERSECRETTOKEN", handler.run_details)
+        self.assertIn("siem", handler.run_details)
+
+    @responses.activate
+    def test_14_a_dangling_reference_is_audited(self):
+        _, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "does-not-exist", "data": "x"}))
+
+        self.assertEqual("webhook 'does-not-exist' is not configured", handler.run_details)
+
+    @responses.activate
+    def test_15_the_inline_path_is_audited_too(self):
+        # The pre-3.15 shape. Its URL is part of the handler definition, which the audit entry
+        # already carries in action_detail, so naming it here reveals nothing new.
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"URL": self.INLINE_URL,
+                             "content_type": ContentType.JSON,
+                             "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(f"{self.INLINE_URL}: HTTP 200", handler.run_details)
+
+    @responses.activate
+    def test_16_the_inline_path_obeys_the_outbound_guard(self):
+        """
+        The inline shape does not go through fire_webhook(), so without its own check it would be
+        the one way to reach an address the guard refuses - and it is the older, more widely used
+        shape, configured by whoever holds eventhandling_write rather than webhook_write.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                           "", ("127.0.0.1", 80))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertFalse(result)
+            self.assertIn("outbound request guard", handler.run_details)
+            self.assertEqual(0, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_17_the_inline_path_still_sends_while_the_guard_is_off(self):
+        # The default, and the upgrade-safety case: an installation that has not opted in must see
+        # the behaviour of privacyIDEA 3.14 and older.
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        with mock.patch("socket.getaddrinfo",
+                        return_value=[(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                       "", ("127.0.0.1", 80))]):
+            result, _ = self._run(self._make_options(
+                self._make_g(), {"URL": self.INLINE_URL,
+                                 "content_type": ContentType.JSON,
+                                 "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(1, len(responses.calls))

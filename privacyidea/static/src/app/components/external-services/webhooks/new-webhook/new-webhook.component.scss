@@ -1,0 +1,54 @@
+@use "styles";
+
+.webhook-page-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.webhook-page-container {
+  @include styles.main-component-style;
+  min-width: calc(var(--config-form-width) + 32px);
+  display: grid;
+  position: relative;
+}
+
+.webhook-dialog-content {
+  min-width: var(--config-form-width);
+  margin-left: 16px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-note {
+  margin: 8px 0 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.test-result {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--mat-sys-surface-container);
+}
+
+.test-result-body {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: monospace;
+}
+
+.test-result-failed {
+  color: var(--mat-sys-error);
+}

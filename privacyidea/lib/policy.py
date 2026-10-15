@@ -2177,6 +2177,20 @@ def get_static_policy_definitions(scope=None):
                                                     "SMS gateway definitions."),
                                           'mainmenu': [MAIN_MENU.CONFIG],
                                           'group': GROUP.SYSTEM},
+            PolicyAction.WEBHOOKWRITE: {'type': 'bool',
+                                        'desc': _("Admin is allowed to write "
+                                                  "and modify webhook "
+                                                  "definitions. Note that a "
+                                                  "webhook can point at any "
+                                                  "URL the privacyIDEA server "
+                                                  "can reach."),
+                                        'mainmenu': [MAIN_MENU.CONFIG],
+                                        'group': GROUP.SYSTEM},
+            PolicyAction.WEBHOOKREAD: {'type': 'bool',
+                                       'desc': _("Admin is allowed to read "
+                                                 "webhook definitions."),
+                                       'mainmenu': [MAIN_MENU.CONFIG],
+                                       'group': GROUP.SYSTEM},
             PolicyAction.CLIENTTYPE: {'type': 'bool',
                                       'desc': _("Admin is allowed to get the list "
                                                 "of authenticated clients and their "

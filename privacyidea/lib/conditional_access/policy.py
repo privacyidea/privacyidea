@@ -73,8 +73,9 @@ values must be
 must be :class:`~privacyidea.lib.conditional_access.engine.ConditionalAccessAction` names; anything else is a
 :class:`~privacyidea.lib.error.ParameterError` (fail-closed - a typo must not silently create a policy that never
 matches or an action that never fires). Within one stage an action may appear only once - except
-``EMAIL_ADMIN``/``EMAIL_USER`` (:data:`REPEATABLE_ACTIONS`), where a second copy is how one stage notifies a
-second set of recipients - and no stage may hold two actions of the same mutually exclusive group
+``EMAIL_ADMIN``/``EMAIL_USER``/``WEBHOOK`` (:data:`REPEATABLE_ACTIONS`), where a second copy is how one stage
+notifies a second set of recipients resp. a second system - and no stage may hold two actions of the same
+mutually exclusive group
 (``_EXCLUSIVE_ACTION_GROUPS``: timed vs permanent lock, timed vs permanent block).
 
 ``action_value`` is validated under that same rule, against what the engine actually reads (see
@@ -87,6 +88,8 @@ second set of recipients - and no stage may hold two actions of the same mutuall
   ``mimetype`` (``plain``/``html``) and - for ``EMAIL_ADMIN`` - ``recipient_group``.
   ``smtp_identifier`` names the SMTP server that sends it and may be left blank until one is configured, which
   is the one thing the engine needs that the write path does not insist on.
+* ``WEBHOOK`` - an object with a non-empty ``webhook`` (the identifier of the webhook definition that owns the
+  endpoint) and an optional ``payload`` template. Without a payload the webhook's own ``default_payload`` is sent.
 * ``PERMANENT_LOCK_USER`` / ``PERMANENT_BLOCK_IP`` / ``DENY`` - no value. These never expire and never read
   one, so a duration on them would only describe an expiry that does not happen.
 
@@ -164,11 +167,13 @@ DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 # different recipient_group (or a different subject and body) is the one case where a second copy of an
 # action does something the first cannot - see
 # :func:`~privacyidea.lib.conditional_access.engine._send_action_email`, which resolves its recipients per
-# action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
-# or silently overwrites the first.
+# action. WEBHOOK is the same case with a different transport: each copy names its own webhook definition, so a
+# stage that has to tell both a SIEM and a chat channel needs two of them. Every other action writes one piece
+# of state or one verdict, so a second copy either does nothing or silently overwrites the first.
 #: The actions a stage may carry more than once - the notifications, where a second copy reaches a
-#: different set of recipients.
-REPEATABLE_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER})
+#: different set of recipients resp. a different system.
+REPEATABLE_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER,
+                                ConditionalAccessAction.WEBHOOK})
 
 # Actions that contradict each other within one stage: the timed and permanent variants write the same
 # lock resp. block row, and the upsert refuses to downgrade a permanent restriction to a timed one, so
@@ -376,19 +381,23 @@ def validate_error_message(error_message: str | None) -> str | None:
 
 
 # The actions each target permits: a user policy locks/notifies the user, a source-IP policy blocks the IP or alerts
-# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY.
+# the admin (LOCK_USER/EMAIL_USER have no user to act on); both may also refuse the request pre-auth via DENY, and
+# both may notify a machine via WEBHOOK - it reports what tripped rather than acting on a subject, so unlike the
+# email pair it needs nothing from the target to be meaningful.
 _ACTIONS_BY_TARGET = {
     ConditionalAccessTarget.USER: {
         ConditionalAccessAction.LOCK_USER,
         ConditionalAccessAction.PERMANENT_LOCK_USER,
         ConditionalAccessAction.EMAIL_USER,
         ConditionalAccessAction.EMAIL_ADMIN,
+        ConditionalAccessAction.WEBHOOK,
         ConditionalAccessAction.DENY,
     },
     ConditionalAccessTarget.SOURCE_IP: {
         ConditionalAccessAction.BLOCK_IP,
         ConditionalAccessAction.PERMANENT_BLOCK_IP,
         ConditionalAccessAction.EMAIL_ADMIN,
+        ConditionalAccessAction.WEBHOOK,
         ConditionalAccessAction.DENY,
     },
 }
@@ -617,6 +626,7 @@ _EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "su
 # The email fields with no sensible default: without them the engine has nothing to send and skips.
 _EMAIL_REQUIRED_TEXT = ("subject", "body")
 _EMAIL_MIMETYPES = frozenset({"plain", "html"})
+_WEBHOOK_KEYS = frozenset({"webhook", "payload"})
 
 
 def _validate_duration_action_value(action_type: str, action_value) -> None:
@@ -689,6 +699,39 @@ def _validate_email_action_value(action_type: str, action_value) -> None:
                              f"addresses.")
 
 
+def _validate_webhook_action_value(action_type: str, action_value) -> None:
+    """
+    Validate the ``action_value`` of a ``WEBHOOK`` action: the object
+    :func:`~privacyidea.lib.conditional_access.engine._fire_action_webhook` reads, with a non-empty ``webhook``
+    identifier and an optional ``payload`` template.
+
+    Unlike ``smtp_identifier`` on the ``EMAIL_*`` actions, the identifier is **required**: an email action without
+    one still describes a message that an admin can complete later, while a webhook without one describes nothing
+    at all - there is no endpoint, no method and no credentials, so the action could only ever be skipped.
+
+    Whether that identifier still names an existing webhook is deliberately *not* checked, which mirrors the email
+    validator: a webhook may be deleted long after the policy was written, and refusing to save an unrelated edit
+    to such a policy would be a worse failure than the log line the engine writes when it fires. The editor flags a
+    stale identifier inline instead.
+
+    ``payload`` is optional because a webhook carries its own ``default_payload``; an empty one is accepted as
+    "send the webhook's default", which is what the engine does with it.
+    """
+    if not isinstance(action_value, dict):
+        raise ParameterError(f"The action_value of '{action_type}' must be an object with the webhook settings "
+                             f"(webhook, payload).")
+    unknown = set(action_value) - _WEBHOOK_KEYS
+    if unknown:
+        raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
+                             f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_WEBHOOK_KEYS))}.")
+    for key, value in action_value.items():
+        if value is not None and not isinstance(value, str):
+            raise ParameterError(f"'{key}' in the action_value of '{action_type}' must be a string.")
+    if not (action_value.get("webhook") or "").strip():
+        raise ParameterError(f"Action '{action_type}' needs a non-empty 'webhook' in its action_value: the "
+                             f"identifier of the webhook definition that owns the endpoint.")
+
+
 def _validate_no_action_value(action_type: str, action_value) -> None:
     """
     Validate the ``action_value`` of an action that takes none: the ``PERMANENT_*`` restrictions and the
@@ -711,6 +754,7 @@ _ACTION_VALUE_VALIDATORS = {
     str(ConditionalAccessAction.BLOCK_IP): _validate_duration_action_value,
     str(ConditionalAccessAction.EMAIL_ADMIN): _validate_email_action_value,
     str(ConditionalAccessAction.EMAIL_USER): _validate_email_action_value,
+    str(ConditionalAccessAction.WEBHOOK): _validate_webhook_action_value,
     str(ConditionalAccessAction.PERMANENT_LOCK_USER): _validate_no_action_value,
     str(ConditionalAccessAction.PERMANENT_BLOCK_IP): _validate_no_action_value,
     str(ConditionalAccessAction.DENY): _validate_no_action_value,
@@ -724,7 +768,7 @@ def _validate_threshold_for_actions(threshold: int, actions: list[StageActionDef
     A threshold counts failures, so 1 is the lowest meaningful value for anything
     that reacts to a count. "Lock the user after 0 failures" is not a rule, it is
     a typo, so :attr:`ConditionalAccessAction.LOCK_USER`, ``BLOCK_IP``, the ``PERMANENT_*``
-    variants and the ``EMAIL_*`` actions all require at least 1.
+    variants and the reporting ``EMAIL_*`` / ``WEBHOOK`` actions all require at least 1.
 
     ``DENY`` is the exception, because it does not react to a count at all - it
     states a standing verdict, and re-triggers by default, so at threshold 0 it
