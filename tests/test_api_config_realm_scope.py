@@ -222,6 +222,7 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
             self.assertEqual(403, res.status_code, res.json)
         self.assertEqual(REALM_A, get_default_realm())
         self._restrict_to_realm_a()
+        set_policy(name="admin_write_b", scope=SCOPE.ADMIN, action=PolicyAction.RESOLVERWRITE, realm=REALM_B)
         res = self._request(f"/realm/{REALM_A}", "DELETE")
         self.assertEqual(200, res.status_code, res.json)
         self.assertNotIn(REALM_A, get_realms())
@@ -464,3 +465,10 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         set_policy(name="pol_reso_b", scope=SCOPE.AUTH, action=AUTH_ACTION, resolver=RESO_B)
         self._grant(user="operator")
         self.assertEqual({"admin_config", "pol_b", "pol_reso_b"}, self._policy_names())
+
+    def test_47_delete_default_realm_refused_when_promoted_realm_not_writable(self) -> None:
+        self._restrict_to_realm_a()
+        res = self._request(f"/realm/{REALM_A}", "DELETE")
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertIn(REALM_A, get_realms())
+        self.assertEqual(REALM_A, get_default_realm())

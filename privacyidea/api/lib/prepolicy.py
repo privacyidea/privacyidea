@@ -490,24 +490,34 @@ def default_realm_access(request: Request = None, action: str = None) -> bool:
 def _check_default_realm_granted(request: Request, action: str) -> None:
     """
     The default realm part of :func:`default_realm_access`, which :func:`realm_membership_access` runs as well for
-    ``DELETE /realm/<realm>``.
+    ``DELETE /realm/<realm>``. :func:`~privacyidea.lib.realm.delete_realm` makes the last remaining realm the default
+    realm if no default realm is left, so that realm needs ``resolverwrite`` for the whole realm, like
+    ``POST /defaultrealm/<realm>``.
 
-    :raises PolicyError: if the admin's policies do not grant the whole current or new default realm
+    :raises PolicyError: if the admin's policies do not grant the whole current, new or promoted default realm
     """
     default_realm = get_default_realm()
     new_realm = normalize_realm_name(request.view_args["realm"]) if request.method == "POST" else None
-    if not default_realm and not new_realm:
-        return
-    deleted_realm = normalize_realm_name(request.view_args.get("realm", default_realm))
-    if request.method == "DELETE" and deleted_realm != default_realm:
+    promoted_realm = None
+    if request.method == "DELETE" and "realm" in request.view_args:
+        deleted_realm = normalize_realm_name(request.view_args["realm"])
+        if default_realm and deleted_realm != default_realm:
+            return
+        remaining_realms = [realm for realm in get_realms() if realm != deleted_realm]
+        if len(remaining_realms) == 1:
+            promoted_realm = remaining_realms[0]
+    if not default_realm and not new_realm and not promoted_realm:
         return
     granted_realms = admin_granted_realms(action, whole_realms=True)
-    if granted_realms is None:
-        return
-    if default_realm and default_realm not in granted_realms:
-        raise PolicyError(_("You are not allowed to change the default realm {0!s}.").format(default_realm))
-    if new_realm and new_realm not in granted_realms:
-        raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(new_realm))
+    if granted_realms is not None:
+        if default_realm and default_realm not in granted_realms:
+            raise PolicyError(_("You are not allowed to change the default realm {0!s}.").format(default_realm))
+        if new_realm and new_realm not in granted_realms:
+            raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(new_realm))
+    if promoted_realm:
+        writable_realms = admin_granted_realms(PolicyAction.RESOLVERWRITE, whole_realms=True)
+        if writable_realms is not None and promoted_realm not in writable_realms:
+            raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(promoted_realm))
 
 
 def _field_matches(policy_values: list[str] | None, value: str, case_insensitive: bool = False) -> bool:

@@ -1019,11 +1019,17 @@ that is part of no realm, and so a new resolver, needs a policy without a realm.
 policy that names users grants no resolver. The default realm is only shown if it is
 one of these realms.
 
+Changing, testing or deleting a resolver needs the right for it in every realm it is
+part of, as the change affects the users of all these realms. Seeing it needs the right
+in one of them.
+
 Adding a resolver to a realm, removing it from a realm or changing its priority in
-a realm needs the right for the resolver as well. Changing or removing the default realm needs the right for the
-whole current default realm: a policy for the realm that also names resolvers or
-users does not grant it. Deleting a realm removes all of its resolvers and, for the
-default realm, the default realm, so it needs these rights as well.
+a realm needs the right for the resolver as well. Setting, changing or removing the
+default realm needs the right for the whole current and the whole new default realm:
+a policy for the realm that also names resolvers or users does not grant it. Deleting a
+realm removes all of its resolvers and, for the default realm, the default realm, so it
+needs these rights as well. If only one realm is left after deleting the default realm,
+that realm becomes the default realm, which needs ``resolverwrite`` for the whole realm.
 
 .. versionchanged:: 3.14 Realm and resolver conditions are considered to restrict these admin rights.
 
