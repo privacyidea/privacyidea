@@ -233,7 +233,6 @@ describe("RealmService", () => {
       expect(realmService.realms()).toEqual(realms);
       expect(realmService.realmOptions()).toEqual(["realmA", "realmB"]);
 
-      httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
       httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
     });
 
@@ -251,7 +250,6 @@ describe("RealmService", () => {
       expect(realmService.realms()).toEqual({});
       expect(realmService.realmOptions()).toEqual([]);
 
-      httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
       httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
     });
   });
@@ -266,7 +264,6 @@ describe("RealmService", () => {
 
     expect(realmService.realmOptions()).toEqual(["realmA"]);
 
-    httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
     httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
   });
 
@@ -286,7 +283,6 @@ describe("RealmService", () => {
 
       expect(realmService.adminRealmOptions()).toEqual(realms);
 
-      httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
       httpMock.expectOne(`${environment.proxyUrl}/realm/`);
     });
 
@@ -303,7 +299,6 @@ describe("RealmService", () => {
 
       expect(realmService.adminRealmOptions()).toEqual([]);
 
-      httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
       httpMock.expectOne(`${environment.proxyUrl}/realm/`);
     });
   });
@@ -313,26 +308,31 @@ describe("RealmService", () => {
       expect(realmService.defaultRealm()).toBe("");
     });
 
-    it("should update defaultRealm from resource", async () => {
+    it("takes the default realm from the realm list without requesting /defaultrealm", async () => {
       contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
-      const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
-      const realms = { realmA: { default: true, id: 1, option: "optA", resolver: [] } };
-      req.flush(MockPiResponse.fromValue(realms));
+      const req = httpMock.expectOne(`${environment.proxyUrl}/realm/`);
+      req.flush(
+        MockPiResponse.fromValue({
+          realmA: { default: false, id: 1, option: "optA", resolver: [] },
+          realmB: { default: true, id: 2, option: "optB", resolver: [] }
+        })
+      );
       await Promise.resolve();
 
-      expect(realmService.defaultRealm()).toBe("realmA");
+      expect(realmService.defaultRealm()).toBe("realmB");
+      expect(realmService.defaultRealmResolved()).toBe(true);
 
       httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
-      httpMock.expectOne(`${environment.proxyUrl}/realm/`);
+      httpMock.expectNone(`${environment.proxyUrl}/defaultrealm`);
     });
 
     it("should fallback to empty string on error", async () => {
       contentService.onAnyUsersRoute = signal(true);
       TestBed.tick();
 
-      const req = httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
+      const req = httpMock.expectOne(`${environment.proxyUrl}/realm/`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
         status: 403,
         statusText: "Permission denied"
@@ -342,7 +342,6 @@ describe("RealmService", () => {
       expect(realmService.defaultRealm()).toBe("");
 
       httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
-      httpMock.expectOne(`${environment.proxyUrl}/realm/`);
     });
   });
 });

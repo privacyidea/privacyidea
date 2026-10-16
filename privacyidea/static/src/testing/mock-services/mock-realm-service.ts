@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 import { HttpResourceRef } from "@angular/common/http";
-import { computed, Signal, signal } from "@angular/core";
+import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { AdminRealms, Realm, Realms, RealmServiceInterface } from "@services/realm/realm.service";
 import { of } from "rxjs";
@@ -21,18 +21,9 @@ export class MockRealmService implements RealmServiceInterface {
 
   realmOptions = signal<string[]>([]);
 
-  defaultRealmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(
-    MockPiResponse.fromValue<Realms>({
-      realm1: { default: true, id: 1, option: "", resolver: [] }
-    })
-  );
+  defaultRealm = signal<string>("realm1");
 
-  defaultRealm: Signal<string> = computed(() => {
-    const data = this.defaultRealmResource.value()?.result?.value;
-    return data ? (Object.keys(data)[0] ?? "") : "";
-  });
-
-  defaultRealmResolved: Signal<boolean> = computed(() => !this.defaultRealmResource.isLoading());
+  defaultRealmResolved = signal<boolean>(true);
 
   createRealm = jest
     .fn()
@@ -78,11 +69,7 @@ export class MockRealmService implements RealmServiceInterface {
 
     this.realmResource.set(MockPiResponse.fromValue<Realms>(next));
 
-    this.defaultRealmResource.set(
-      MockPiResponse.fromValue<Realms>({
-        [realm]: next[realm] ?? { default: true, id: 1, option: "", resolver: [] }
-      })
-    );
+    this.defaultRealm.set(realm);
 
     return of(MockPiResponse.fromValue<number>(1));
   });

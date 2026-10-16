@@ -98,7 +98,6 @@ def get_resolvers(resolver=None):
 
 @resolver_blueprint.route('/<resolver>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 @prepolicy(resolver_config_access, request, PolicyAction.RESOLVERWRITE)
 def set_resolver(resolver=None):
     """
@@ -151,7 +150,6 @@ def set_resolver(resolver=None):
 
 @resolver_blueprint.route('/<resolver>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 @prepolicy(resolver_config_access, request, PolicyAction.RESOLVERDELETE)
 def delete_resolver_api(resolver=None):
     """
@@ -174,7 +172,6 @@ def delete_resolver_api(resolver=None):
 
 @resolver_blueprint.route('/test', methods=["POST"])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 @prepolicy(resolver_config_access, request, PolicyAction.RESOLVERWRITE)
 def test_resolver():
     """

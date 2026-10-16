@@ -99,7 +99,7 @@ export class TokenDetailsUserComponent {
 
   toggleUserEdit(): void {
     this.isEditingUser.update((b) => !b);
-    this.realmService.defaultRealmResource.reload();
+    this.realmService.realmResource.reload();
   }
 
   cancelUserEdit(): void {

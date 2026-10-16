@@ -677,7 +677,6 @@ describe("RealmTableComponent", () => {
     expect(realmService.setDefaultRealm).toHaveBeenCalledWith("realmA");
     expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
-    expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });
 
   it("onSetDefaultRealm should show an error when the service call fails", () => {

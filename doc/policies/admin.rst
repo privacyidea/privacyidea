@@ -985,10 +985,11 @@ type: ``bool``
 
 Allow the administrator to write, read or delete policies.
 
-If the admin policy is bound to user realms, the administrator sees the policies that
-apply to one of these realms, also those without a realm, which apply to every realm.
-The policy check is limited to these realms. An admin policy that names users or
-resolvers but no realm does not restrict which policies the administrator sees.
+If the admin policy is bound to user realms or resolvers, the administrator sees the
+policies that apply to one of these realms and resolvers, also those without a realm or
+resolver, which apply to every realm or resolver. The policy check is limited to these
+realms. An admin policy that names users but no realm or resolver does not restrict which
+policies the administrator sees, but it does not grant writing or deleting policies.
 
 .. note:: Writing and deleting policies require a policy that does not restrict
    its target, see :ref:`configuration for all realms <admin_policies_global_configuration>`.
@@ -1024,7 +1025,7 @@ whole current default realm: a policy for the realm that also names resolvers or
 users does not grant it. Deleting a realm removes all of its resolvers and, for the
 default realm, the default realm, so it needs these rights as well.
 
-.. versionchanged:: 3.14 The realm of the admin policy restricts the resolvers.
+.. versionchanged:: 3.14 Realm and resolver conditions are considered to restrict these admin rights.
 
 The WebUI also needs ``resolverread`` to offer editing and creating users: the *Edit*
 button in the user details needs ``updateuser`` and ``resolverread``, and *Create User*

@@ -62,7 +62,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
 from ..api.lib.prepolicy import prepolicy, check_base_action, check_global_config_action
 from ..lib.realm import split_realms
-from ..lib.policies.helper import admin_granted_realms, realms_granted
+from ..lib.policies.helper import admin_granted_realms, realms_granted, admin_granted_resolvers, resolvers_granted
 
 from flask import g
 from werkzeug.datastructures import FileStorage
@@ -365,6 +365,7 @@ def get_policy(name=None, export=None):
         active = is_true(active)
 
     granted_realms = admin_granted_realms(PolicyAction.POLICYREAD, unrestricted_without_realm=True)
+    granted_resolvers = admin_granted_resolvers(PolicyAction.POLICYREAD, ignore_users=True)
     if not export:
         log.debug(f"retrieving policy name: {name!s}, realm: {realm!s}, scope: {scope!s}")
 
@@ -372,7 +373,8 @@ def get_policy(name=None, export=None):
     else:
         # We want to export all policies
         policies = get_policies()
-    policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
+    policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)
+                and resolvers_granted(policy.get("resolver"), granted_resolvers)]
     ret = send_file(export_policies(policies), export, content_type='text/plain') if export else send_result(policies)
 
     g.audit_object.log({"success": True,

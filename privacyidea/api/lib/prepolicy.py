@@ -398,30 +398,33 @@ def resolver_realm_access(request=None, action=None):
     return True
 
 
-def resolver_config_access(request=None, action=None):
+def resolver_config_access(request: Request = None, action: str = None) -> bool:
     """
-    Bind the configuration of the resolver named in the request to the resolvers the admin's policies grant, see
-    :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. A request without a resolver name configures
+    Verify the action like :func:`check_base_action` and bind the configuration of the resolver named in the request
+    to the resolvers the admin's policies grant in every realm the resolver is part of, see
+    :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. A changed resolver changes the users of all
+    these realms, like a stored bind password sent to another server. A request without a resolver name configures
     no stored resolver and passes.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.RESOLVERWRITE
+    :return: True
+    :raises PolicyError: if the admin may not administer the resolver
     """
-    if g.logged_in_user.get("role") != ROLE.ADMIN:
-        return True
+    check_base_action(request=request, action=action)
     resolver = get_optional(request.all_data, "resolver")
     if not resolver:
         return True
-    granted_resolvers = admin_granted_resolvers(action)
+    granted_resolvers = admin_granted_resolvers(action, every_realm=True)
     if granted_resolvers is not None and resolver not in granted_resolvers:
         raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
     return True
 
 
-def realm_membership_access(request=None, action=None):
+def realm_membership_access(request: Request = None, action: str = None) -> bool:
     """
-    Allow a request to change the resolvers of a realm only if the admin's policies grant every resolver the realm
-    contains on any node, before and after the request, see
+    Verify the action like :func:`check_base_action` and allow a request to change the resolvers of a realm only if
+    the admin's policies grant every resolver the realm contains on any node, before and after the request, see
     :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. The priorities decide which resolver a login
     name of the realm is resolved in, so any change to a realm with a resolver the admin may not administer, a
     priority as well, can redirect the users of that resolver. A policy for the whole realm grants all of its
@@ -429,14 +432,18 @@ def realm_membership_access(request=None, action=None):
 
     Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter),
     ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body) and
-    ``DELETE /realm/<realm>``, which removes every resolver of the realm on every node.
+    ``DELETE /realm/<realm>``, which removes every resolver of the realm on every node and, for the default realm,
+    the default realm, see :func:`default_realm_access`.
     Malformed resolver entries are left to the endpoint, which refuses them.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.RESOLVERWRITE
+    :return: True
+    :raises PolicyError: if the admin may not administer a resolver of the realm or the default realm
     """
-    if g.logged_in_user.get("role") != ROLE.ADMIN:
-        return True
+    check_base_action(request=request, action=action)
+    if request.method == "DELETE":
+        _check_default_realm_granted(request, action)
     granted_resolvers = admin_granted_resolvers(action)
     if granted_resolvers is None:
         return True
@@ -448,8 +455,8 @@ def realm_membership_access(request=None, action=None):
         names = []
     elif node:
         entries = params.get("resolver")
-        names = [entry.get("name") for entry in entries if isinstance(entry, dict)] \
-            if isinstance(entries, list) else []
+        names = ([entry.get("name") for entry in entries if isinstance(entry, dict)]
+                 if isinstance(entries, list) else [])
     else:
         resolvers = params.get("resolvers") or []
         names = resolvers if isinstance(resolvers, list) else resolvers.split(",")
@@ -462,28 +469,45 @@ def realm_membership_access(request=None, action=None):
     return True
 
 
-def default_realm_access(request=None, action=None):
+def default_realm_access(request: Request = None, action: str = None) -> bool:
     """
-    Allow changing or removing the default realm only if the admin's policies grant the current default realm. The
-    default realm decides where users without a realm are looked up, so replacing it changes the realm of those users.
-    The new default realm of ``POST /defaultrealm/<realm>`` is checked by :func:`check_base_action`.
+    Verify the action like :func:`check_base_action` and allow changing or removing the default realm only if the
+    admin's policies grant the whole current default realm and, for ``POST /defaultrealm/<realm>``, the whole new one.
+    The default realm decides where users without a realm are looked up, so replacing it changes the realm of those
+    users. :func:`check_base_action` alone also accepts a policy for the new realm that grants only some of its users.
     ``DELETE /realm/<realm>`` only removes the default realm if it deletes that realm, so only then it is checked.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.RESOLVERDELETE
+    :return: True
+    :raises PolicyError: if the admin's policies do not grant the whole current or new default realm
     """
-    if g.logged_in_user.get("role") != ROLE.ADMIN:
-        return True
+    check_base_action(request=request, action=action)
+    _check_default_realm_granted(request, action)
+    return True
+
+
+def _check_default_realm_granted(request: Request, action: str) -> None:
+    """
+    The default realm part of :func:`default_realm_access`, which :func:`realm_membership_access` runs as well for
+    ``DELETE /realm/<realm>``.
+
+    :raises PolicyError: if the admin's policies do not grant the whole current or new default realm
+    """
     default_realm = get_default_realm()
-    if not default_realm:
-        return True
+    new_realm = normalize_realm_name(request.view_args["realm"]) if request.method == "POST" else None
+    if not default_realm and not new_realm:
+        return
     deleted_realm = normalize_realm_name(request.view_args.get("realm", default_realm))
     if request.method == "DELETE" and deleted_realm != default_realm:
-        return True
+        return
     granted_realms = admin_granted_realms(action, whole_realms=True)
-    if granted_realms is not None and default_realm not in granted_realms:
+    if granted_realms is None:
+        return
+    if default_realm and default_realm not in granted_realms:
         raise PolicyError(_("You are not allowed to change the default realm {0!s}.").format(default_realm))
-    return True
+    if new_realm and new_realm not in granted_realms:
+        raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(new_realm))
 
 
 def _field_matches(policy_values: list[str] | None, value: str, case_insensitive: bool = False) -> bool:
