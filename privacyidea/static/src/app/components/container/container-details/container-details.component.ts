@@ -371,7 +371,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
       case "user_name":
         this.isEditingUser.update((b) => !b);
         if (this.isEditingUser() && !this.userService.selectedUserRealm()) {
-          this.realmService.defaultRealmResource.reload();
+          this.realmService.realmResource.reload();
         }
         return;
       default:

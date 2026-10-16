@@ -628,7 +628,6 @@ export class RealmTableComponent implements OnDestroy, OnInit {
             $localize`:@@realm.realmSetAsDefault:Realm "${row.name}:NAME:" set as default.`
           );
           this.realmService.realmResource.reload?.();
-          this.realmService.defaultRealmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;

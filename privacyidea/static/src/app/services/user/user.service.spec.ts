@@ -24,7 +24,7 @@ import { TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
-import { Realms, RealmService } from "@services/realm/realm.service";
+import { RealmService } from "@services/realm/realm.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import { EditUserData, UserAttributePolicy, UserData, UserService } from "./user.service";
 
@@ -147,16 +147,13 @@ describe("UserService", () => {
 
   it("selectedUserRealm switches to the default realm when it resolves after the realm options", () => {
     contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
-    realmService.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
-    realmService.defaultRealmResource.isLoading.set(true);
+    realmService.defaultRealm.set("");
+    realmService.defaultRealmResolved.set(false);
     realmService.realmOptions.set(["aRealm", "zRealm"]);
     expect(userService.selectedUserRealm()).toBe("aRealm");
 
-    // The answer settles the resource, so the load ends with the value rather than after it.
-    realmService.defaultRealmResource.set(
-      MockPiResponse.fromValue<Realms>({ zRealm: { default: true, id: 1, option: "", resolver: [] } })
-    );
-    expect(realmService.defaultRealmResource.isLoading()).toBe(false);
+    realmService.defaultRealm.set("zRealm");
+    realmService.defaultRealmResolved.set(true);
     expect(userService.selectedUserRealm()).toBe("zRealm");
   });
 

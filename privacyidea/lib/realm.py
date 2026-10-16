@@ -361,8 +361,7 @@ def set_realm(realm, resolvers=None):
     added = []
     failed = []
     realm_created = False
-    realm = realm.lower().strip()
-    realm = realm.replace(" ", "-")
+    realm = normalize_realm_name(realm)
     sanity_name_check(realm, r"^[A-Za-z0-9_\-\.]+$")
 
     # create new realm if it does not exist
@@ -437,6 +436,17 @@ def import_realms(data, name=None):
             set_default_realm(realm)
         log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
                  f'failed: {failed!s}')
+
+
+def normalize_realm_name(realm: str) -> str:
+    """
+    The name :func:`set_realm` stores the realm *realm* under: lowercase, stripped, with "-" for every space. A check
+    on a realm named in a request reads the name with this function, so it looks at the realm that is acted on.
+
+    :param realm: the realm name of a request
+    :return: the stored realm name
+    """
+    return realm.lower().strip().replace(" ", "-")
 
 
 def split_realms(value: str | list | None) -> list[str]:
