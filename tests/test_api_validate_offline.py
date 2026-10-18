@@ -141,6 +141,9 @@ class AValidateOfflineTestCase(MyApiTestCase):
             # Check the number of OTP values
             self.assertEqual(len(offline.get("response")), 100)
             self.assertEqual(offline.get("username"), "cornelius")
+            # A HOTP offline item is a mapping of counter values to hashed OTP values, so it carries no FIDO2
+            # user verification requirement
+            self.assertNotIn("userVerification", offline.get("response"))
             refilltoken_1 = offline.get("refilltoken")
             self.assertEqual(len(refilltoken_1), 2 * REFILLTOKEN_LENGTH)
             # check the token counter

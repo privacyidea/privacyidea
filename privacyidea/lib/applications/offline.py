@@ -157,7 +157,25 @@ class MachineApplication(MachineApplicationBase):
         return otps
 
     @staticmethod
-    def get_authentication_item(token_type, serial, challenge=None, options=None, filter_param=None, user_agent=None):
+    def _add_user_verification(response, user_verification):
+        """
+        Add the resolved FIDO2 user verification requirement to the ``response`` part of an offline auth item.
+
+        The field is only added if a value was provided. The client entry type detection keys on the fields
+        ``credentialId``, ``rpId`` and ``pubKey`` only, and clients that do not know the field ignore it, so
+        adding it keeps the offline data contract backwards compatible for existing clients.
+
+        :param response: the ``response`` dictionary of the offline auth item
+        :type response: dict
+        :param user_verification: the user verification requirement or None
+        :type user_verification: basestring
+        """
+        if user_verification:
+            response["userVerification"] = user_verification
+
+    @staticmethod
+    def get_authentication_item(token_type, serial, challenge=None, options=None, filter_param=None, user_agent=None,
+                                user_verification=None):
         """
         :param token_type: the type of the token. At the moment
                            we support HOTP and WebAuthn/Passkey tokens.
@@ -168,6 +186,13 @@ class MachineApplication(MachineApplicationBase):
         :param options: options
         :param filter_param: parameters
         :param user_agent: The user agent of the request
+        :param user_verification: The FIDO2 user verification requirement ("required", "preferred" or
+                           "discouraged") resolved from the policy by the caller, which has the policy
+                           context. It is handed to the client together with the offline data of WebAuthn
+                           and Passkey tokens, so that the machine enforces the same user verification
+                           requirement offline as the server does online. This function is static and has
+                           no access to ``g``, so the value is passed in rather than resolved here. It is
+                           not used for HOTP tokens.
         :return auth_item: A list of hashed OTP values or pubKey, rpId and credentialId for WebAuthn token
         """
         ret = {}
@@ -197,6 +222,7 @@ class MachineApplication(MachineApplicationBase):
                     "credentialId": token.decrypt_otpkey(),
                     "rpId": token.get_tokeninfo("relying_party_id")
                 })
+                MachineApplication._add_user_verification(ret["response"], user_verification)
             elif token_type == "hotp":
                 if password:
                     success, otppin, _ = token.split_pin_pass(password)
@@ -215,6 +241,7 @@ class MachineApplication(MachineApplicationBase):
                     "rpId": token.get_tokeninfo("relying_party_id"),
                     "credentialId": token.token.get_otpkey().getKey().decode("utf-8")
                 })
+                MachineApplication._add_user_verification(ret["response"], user_verification)
         else:
             log.info(f"Token {serial} of type {token_type} is not supported by OFFLINE application module")
 

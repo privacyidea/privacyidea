@@ -1556,7 +1556,8 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                  'response': {
                      'pubKey': 'a50102032620012158203f98500ddcedc3aa16d34ae9b7c12...ea3e37193f8f3d',
                      'credentialId': 'RuBlEInU7ycsILST7u6AoT7rdqN...4xM2SHltwbtBwApFYnbQXO8g5bgrb4kFh1NErnzsT6xA',
-                     'rpId': 'netknights.it'},
+                     'rpId': 'netknights.it',
+                     'userVerification': 'preferred'},
                  'serial': 'WAN0001D434'}]}
             """
             response = auth_items.get("offline")[0].get("response")
@@ -1565,6 +1566,9 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
             self.assertEqual(self.recorded_allow_credentials, response.get("credentialId"))
             self.assertIn("pubKey", response)
             self.assertEqual(self.rp_id, response.get("rpId"))
+            # The user verification requirement resolved from the policy travels with the offline data, so that
+            # the client enforces it offline as well. Without a policy it is the default "preferred".
+            self.assertEqual("preferred", response.get("userVerification"))
             self.refilltokens.append(auth_items.get("offline")[0].get("refilltoken"))
 
             # Set the sign count back to be able to use the same data for authentication again
@@ -1661,3 +1665,37 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                                                headers=headers):
                 res = self.app.full_dispatch_request()
                 self._assert_err_905(res)
+
+    def test_07_offline_data_carries_the_user_verification_policy(self):
+        """
+        The user verification requirement that the SCOPE.AUTH policy sets is handed to the client together with
+        the offline data, so that the machine enforces the same requirement offline as the server does online.
+
+        This runs after the refill tests, because a further authentication rotates the refill tokens they use.
+        """
+        # test_06 detached the offline application from the token again
+        attach_token(self.serial, "offline")
+        token = get_one_token(serial=self.serial)
+        # Set the sign count back to be able to use the same data for authentication again
+        token.set_otp_count(0)
+
+        set_policy("uv_offline", scope=SCOPE.AUTH,
+                   action="webauthn_user_verification_requirement=discouraged")
+        try:
+            headers = {"Host": "puck.office.netknights.it",
+                       "Origin": "https://puck.office.netknights.it",
+                       "User-Agent": self.user_agents[0]}
+
+            transaction_id = self._trigger_and_modify_challenge(headers)
+            res = self._validate_check(headers, transaction_id)
+            self.assertEqual(200, res.status_code)
+            data = res.json
+            self.assertTrue(data.get("result").get("value"))
+            offline = data.get("auth_items").get("offline")[0]
+            self.assertEqual("discouraged", offline.get("response").get("userVerification"))
+            # The fields the client uses to detect the entry type and to verify the assertion are untouched
+            self.assertEqual(self.recorded_allow_credentials, offline["response"].get("credentialId"))
+            self.assertEqual(self.rp_id, offline["response"].get("rpId"))
+            self.assertIn("pubKey", offline["response"])
+        finally:
+            delete_policy("uv_offline")

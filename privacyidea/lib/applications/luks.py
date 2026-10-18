@@ -41,7 +41,8 @@ class MachineApplication(MachineApplicationBase):
                                 challenge=None,
                                 options=None,
                                 filter_param=None,
-                                user_agent=None):
+                                user_agent=None,
+                                user_verification=None):
         """
         :param token_type: the type of the token. At the moment
                            we only support yubikeys, tokentype "TOTP".

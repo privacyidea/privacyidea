@@ -98,13 +98,16 @@ class MachineApplication:
                                 challenge=None,
                                 options=None,
                                 filter_param=None,
-                                user_agent=None):
+                                user_agent=None,
+                                user_verification=None):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
 
         :param filter_param: Additional URL request parameters
         :type filter_param: dict
+        :param user_verification: The FIDO2 user verification requirement resolved from the policy by the
+            caller, if the application can make use of it. Applications that do not use it ignore it.
         """
         return "nothing"
 
@@ -124,7 +127,7 @@ class MachineApplication:
 
 @log_with(log)
 def get_auth_item(application, token_type,serial,
-                  challenge=None, options=None, filter_param=None, user_agent=None):
+                  challenge=None, options=None, filter_param=None, user_agent=None, user_verification=None):
 
     options = options or {}
     # application_module from application
@@ -136,7 +139,8 @@ def get_auth_item(application, token_type,serial,
                                                    challenge=challenge,
                                                    options=options,
                                                    filter_param=filter_param,
-                                                   user_agent=user_agent)
+                                                   user_agent=user_agent,
+                                                   user_verification=user_verification)
     return auth_item
 
 

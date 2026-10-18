@@ -623,6 +623,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("value", res.json["result"])
             self.assertEqual(1, res.json["result"]["value"])
 
+        # The user verification requirement resolved from the SCOPE.AUTH policy travels with the offline data,
+        # so that the client enforces it offline as well.
+        self.set_policy_with_cleanup("uv_offline", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
+
         # A successful authentication should return the offline data now
         challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = challenge["transaction_id"]
@@ -662,6 +667,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.rp_id, response["rpId"])
             self.assertIn("pubKey", response)
             self.assertIn("credentialId", response)
+            # The user verification requirement from the policy rides with the offline data; the entry type
+            # detection of the client only looks at credentialId, rpId and pubKey.
+            self.assertEqual("discouraged", response["userVerification"])
             # Verify that the returned values are correct
             token = get_tokens(serial=serial)[0]
             public_key = token.get_tokeninfo("public_key")
@@ -750,6 +758,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action=action)
         self.set_policy_with_cleanup("enroll_passkey_offline", scope=SCOPE.AUTH,
                                      action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE}=true")
+        # The user verification requirement resolved from the SCOPE.AUTH policy has to ride with the offline data
+        # that is handed out at the end of the enrollment as well.
+        self.set_policy_with_cleanup("uv_offline", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
         self.pk_headers.update({"User-Agent": "privacyidea-cp/1.1.1 Windows/Laptop-1231312"})
         # Using the spass token should result in a challenge to enroll a passkey
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
@@ -876,6 +888,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.rp_id, response["rpId"])
             self.assertIn("pubKey", response)
             self.assertIn("credentialId", response)
+            # The policy value is handed out with the offline data of the enrollment
+            self.assertEqual("discouraged", response["userVerification"])
             # Verify that the returned values are correct
             token = get_tokens(serial=passkey_serial)[0]
             public_key = token.get_tokeninfo("public_key")

@@ -16,7 +16,11 @@ from privacyidea.lib.applications import (get_auth_item,
                                           is_application_allow_bulk_call,
                                           get_application_types)
 from privacyidea.lib.token import init_token, get_tokens
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.models import Token
 import passlib.hash
 import mock
 
@@ -37,6 +41,8 @@ SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx377" \
          "XTFi5hBmd0aWTC+ph79mmEtu3dokA2YbLa7uWkAIXvX/HHauGLM" \
          "TyCOpYi1BxN47c/kccxyNgjPw== user@example.com"
 OTPKEY = "3132333435363738393031323334353637383930"
+# A user agent that identifies the client machine, needed to hand out FIDO2 offline data
+USER_AGENT = "privacyidea-cp/1.1.1 Windows/UNIT-TEST-1"
 
 
 class SSHApplicationTestCase(MyTestCase):
@@ -178,6 +184,85 @@ class OfflineApplicationTestCase(MyTestCase):
         auth_item = OfflineApplication.get_authentication_item("unsupported",
                                                                "s")
         self.assertEqual(auth_item, {})
+
+
+def _create_offline_fido2_token(serial, token_type):
+    """
+    Create a WebAuthn or Passkey token with the data the offline application hands out, without running a
+    full FIDO2 enrollment.
+    """
+    db_token = Token(serial, tokentype=token_type)
+    db_token.save()
+    token = WebAuthnTokenClass(db_token) if token_type == "webauthn" else PasskeyTokenClass(db_token)
+    # "relying_party_id" and the key material are owned token info keys, so they are written the way server side
+    # code writes them.
+    token.write_tokeninfo("relying_party_id", "netknights.it")
+    if token_type == "webauthn":
+        token.write_tokeninfo("pubKey", "a5b1d7")
+        # WebAuthn stores the credential_id hex encoded in the otpkey, see WebAuthnTokenClass.update
+        token.set_otpkey(hexlify_and_unicode(b"a-credential-id"))
+    else:
+        token.write_tokeninfo("public_key", "a5b1d7")
+        # The passkey stores the base64url encoded credential_id in the otpkey, see PasskeyTokenClass.update
+        token.set_otpkey("a-credential-id")
+    return token
+
+
+class OfflineApplicationUserVerificationTestCase(MyTestCase):
+    """
+    The FIDO2 user verification requirement is resolved from the policy by the caller and passed on with the
+    offline data, so that the client can enforce it offline as well.
+    """
+
+    def test_01_hotp_has_no_user_verification(self):
+        serial = "UVHOTP1"
+        self.setUp_user_realms()
+        user = User("cornelius", realm=self.realm1)
+        init_token({"serial": serial, "type": "hotp", "otpkey": OTPKEY}, user=user)
+
+        # The HOTP response is a mapping of counter values to hashed OTP values, the FIDO2 only field does not
+        # belong there and the entry type detection of the client only looks at credentialId, rpId and pubKey.
+        auth_item = OfflineApplication.get_authentication_item("hotp", serial, user_verification="required")
+        self.assertNotIn("userVerification", auth_item["response"])
+
+    def test_02_webauthn_carries_user_verification(self):
+        serial = "UVWAN1"
+        _create_offline_fido2_token(serial, "webauthn")
+
+        auth_item = OfflineApplication.get_authentication_item("webauthn", serial, user_agent=USER_AGENT,
+                                                               user_verification="discouraged")
+        response = auth_item["response"]
+        # The data the client needs to verify an assertion offline is unchanged
+        self.assertIn("pubKey", response)
+        self.assertIn("credentialId", response)
+        self.assertEqual("netknights.it", response.get("rpId"))
+        self.assertEqual("discouraged", response.get("userVerification"))
+
+        # Without a value from the caller the field stays out of the response
+        auth_item = OfflineApplication.get_authentication_item("webauthn", serial, user_agent=USER_AGENT)
+        self.assertNotIn("userVerification", auth_item["response"])
+
+    def test_03_passkey_carries_user_verification(self):
+        serial = "UVPAS1"
+        _create_offline_fido2_token(serial, "passkey")
+
+        auth_item = OfflineApplication.get_authentication_item("passkey", serial, user_agent=USER_AGENT,
+                                                               user_verification="required")
+        response = auth_item["response"]
+        self.assertIn("pubKey", response)
+        self.assertIn("credentialId", response)
+        self.assertEqual("required", response.get("userVerification"))
+
+        auth_item = OfflineApplication.get_authentication_item("passkey", serial, user_agent=USER_AGENT)
+        self.assertNotIn("userVerification", auth_item["response"])
+
+    def test_04_get_auth_item_passes_user_verification_through(self):
+        serial = "UVWAN2"
+        _create_offline_fido2_token(serial, "webauthn")
+
+        auth_item = get_auth_item("offline", "webauthn", serial, user_agent=USER_AGENT,
+                                  user_verification="required")
+        self.assertEqual("required", auth_item["response"]["userVerification"])
 
 
 class BaseApplicationTestCase(MyTestCase):

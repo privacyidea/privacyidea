@@ -78,7 +78,8 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)
-from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age, container_registration_config
+from .prepolicy import (check_max_token_user, check_max_token_realm, fido2_enroll, rss_age,
+                        container_registration_config, get_user_verification_requirement)
 from ...lib.challenge import get_challenges
 from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
                               create_container_tokens_from_template, get_container_challenge_user)
@@ -648,6 +649,9 @@ def offline_info(request, response):
     If for the given Token an offline application is defined, the hashes of OTP values or FIDO2 credential information
     is added to the response.
 
+    The FIDO2 user verification requirement is resolved here, at a place that has the policy context, and is passed
+    on with the offline data: the client enforces the requirement offline and cannot resolve the policy itself.
+
     """
     content = response.json
     # check if the authentication was successful
@@ -656,9 +660,15 @@ def offline_info(request, response):
         serial = content.get("detail", {}).get("serial")
         if serial:
             try:
+                # The offline client enforces the user verification requirement on its own, so the policy value
+                # has to travel with the offline data. It is the SCOPE.AUTH value, which is the one the client
+                # already sees in the online challenge of the same authentication.
+                user_verification = get_user_verification_requirement(
+                    SCOPE.AUTH, user=request.User if hasattr(request, "User") else None)
                 auth_items = get_auth_items(serial=serial, application="offline",
                                             challenge=request.all_data.get("pass"),
-                                            user_agent=request.user_agent.string)
+                                            user_agent=request.user_agent.string,
+                                            user_verification=user_verification)
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))

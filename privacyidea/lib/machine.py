@@ -459,7 +459,8 @@ def _get_host_identifier(hostname, machine_id, resolver_name):
     return machine_id, resolver_name
 
 
-def get_auth_items(hostname=None, application=None, serial=None, challenge=None, filter_param=None, user_agent=None):
+def get_auth_items(hostname=None, application=None, serial=None, challenge=None, filter_param=None, user_agent=None,
+                   user_verification=None):
     """
     Return the authentication items for a given hostname and the application.
     The hostname is used to identify the machine object. Then all attached
@@ -475,6 +476,10 @@ def get_auth_items(hostname=None, application=None, serial=None, challenge=None,
     :type filter_param: dict
     :param user_agent: The user agent header of the request
     :type user_agent: str
+    :param user_verification: The FIDO2 user verification requirement resolved from the policy by the caller.
+        Applications that can use it (e.g. the offline application for WebAuthn and Passkey tokens) hand it
+        to the client, so that the client enforces the same requirement offline as the server does online.
+    :type user_verification: str
     :return: dictionary of lists of the application auth items
 
     **Example response**:
@@ -504,7 +509,8 @@ def get_auth_items(hostname=None, application=None, serial=None, challenge=None,
                                       challenge,
                                       options=machine_token.get("options"),
                                       filter_param=filter_param,
-                                      user_agent=user_agent)
+                                      user_agent=user_agent,
+                                      user_verification=user_verification)
         except PrivacyIDEAError as error:
             # A token that refuses to hand out its item, e.g. an SSH key that fails its integrity check, must not
             # take the items of the other tokens with it: an SSH server would lose every authorized key at once.
