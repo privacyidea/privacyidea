@@ -854,6 +854,36 @@ Allow the administrator to write, read or delete policies.
    or realms. Having the right to read policies will allow the
    administrator to see all policies.
 
+.. _policywrite_scoped:
+
+policywrite_<scope>, policydelete_<scope>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+Allow the administrator to write (create, modify, enable, disable, rename) or to delete
+**policies of one scope only** — the scope is taken from the policy the request touches: from the
+request body for a new policy, from the database for an existing one.
+
+The available names are ``policywrite_<scope>`` and ``policydelete_<scope>`` for ``authentication``,
+``authorization``, ``audit``, ``user``, ``enrollment``, ``webui``, ``register``, ``container``,
+``token``, ``hardening`` and ``conditional_access``. **There is no such name for the ``admin``
+scope** and there will not be one: that is the point. Use these rights for machine accounts (a panel
+or a script) that have to change authentication or enrollment policies while being unable to rewrite
+an admin policy and grant themselves everything.
+
+.. note:: The full ``policywrite`` and ``policydelete`` keep working exactly as before, and they do
+   cover the ``admin`` scope — existing installations and clients are unaffected.
+
+.. note:: Changing the scope of an existing policy, and importing policies
+   (``POST /policy/import/<filename>``), require the full ``policywrite``: the scope-limited right
+   is deliberately not enough for either of them.
+
+.. note:: The same restriction as for the full rights applies to these names: they count only in an
+   admin policy that does not restrict its target, see :ref:`admin_policies_global_configuration`.
+   A policy granted for individual realms, resolvers or users does not cover a policy, whichever
+   spelling of the right it names.
+
 .. _resolverwrite:
 .. _resolverread:
 .. _resolverdelete:

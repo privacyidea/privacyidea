@@ -250,6 +250,26 @@ class PolicyAction:
     BLOCKLIST_RESET = "blocklist_reset"
     BLOCKLIST_SET = "blocklist_set"
 
+    # Policy write scoped to the **target scope**: `POLICYWRITE`/`POLICYDELETE` remain full rights
+    # (backwards compatibility: existing accounts and clients keep their abilities), while the names
+    # `<POLICYWRITE>_<scope>` cover only a policy of that scope. The `admin` scope is deliberately
+    # absent from this list and will stay absent — an account with a narrow right must not be able to
+    # write an administrative policy, so the boundary lives in the engine, not in client code.
+    POLICY_WRITE_SCOPES = ("authentication", "authorization", "audit", "user", "enrollment",
+                           "webui", "register", "container", "token", "hardening",
+                           "conditional_access")
+
+
+def policy_write_action(scope: str, delete: bool = False) -> str | None:
+    """Nazwa prawa zapisu polityki dla zakresu docelowego (``None``, gdy takiego prawa nie ma).
+
+    :param scope: the scope of the policy the request touches (e.g. ``authentication``)
+    :param delete: ``True`` for deleting a policy (``policydelete_<scope>``)
+    """
+    if scope not in PolicyAction.POLICY_WRITE_SCOPES:
+        return None
+    return f"policydelete_{scope}" if delete else f"policywrite_{scope}"
+
 
 # Admin actions on objects that belong to no realm, resolver or user: policies, event handlers, conditional-access
 # policies, API clients and the IP blocklist. An admin policy grants them only if it does not restrict its target, and
@@ -259,6 +279,12 @@ ADMIN_ACTIONS_WITHOUT_TARGET = frozenset({
     PolicyAction.CONDITIONAL_ACCESS_POLICY_WRITE, PolicyAction.API_CLIENT_ADD, PolicyAction.API_CLIENT_EDIT,
     PolicyAction.API_CLIENT_ROTATE, PolicyAction.API_CLIENT_DELETE, PolicyAction.BLOCKLIST_READ,
     PolicyAction.BLOCKLIST_SET, PolicyAction.BLOCKLIST_RESET,
+    # The scope-limited policy write rights address the same object without a realm (a policy), so
+    # the same rule applies: an administrative policy that restricts its target does not grant them
+    # and the WebUI then does not offer them. Full `policywrite`/`policydelete` and the `<right>_admin`
+    # names, which do not exist, are unchanged.
+    *(policy_write_action(scope, delete)
+      for delete in (False, True) for scope in PolicyAction.POLICY_WRITE_SCOPES),
 })
 
 

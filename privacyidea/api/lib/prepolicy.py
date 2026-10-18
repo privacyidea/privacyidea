@@ -92,7 +92,8 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
-from privacyidea.lib.policies.actions import PolicyAction, ADMIN_ACTIONS_WITHOUT_TARGET
+from privacyidea.lib.policies.actions import (PolicyAction, policy_write_action,
+                                              ADMIN_ACTIONS_WITHOUT_TARGET)
 from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
                                              DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names,
                                              get_policy_visibility_scopes)
@@ -1531,6 +1532,95 @@ def check_global_config_action(request: Request = None, action: str = None) -> b
     return True
 
 
+def check_scoped_policy_write(request=None, action=None, delete=False):
+    """Write access to a policy — the full right or a right scoped to the target policy's scope.
+
+    The full right (``policywrite``/``policydelete``) is checked the way the base checks an object that
+    belongs to no realm. If the admin does not hold it, we accept
+    ``policywrite_<scope>``/``policydelete_<scope>`` matching the scope of the policy the request touches:
+
+    * ``POST /policy/<name>`` — scope from the request body (new policy) or from the stored policy
+      (update); **changing the scope of an existing policy needs the full right**,
+    * ``POST /policy/enable|disable/<name>``, ``PATCH /policy/<name>``, ``DELETE /policy/<name>`` —
+      scope from the stored policy.
+
+    The scope-limited names do not exist for the ``admin`` scope, so a service account holding them
+    cannot write an admin policy at all: the boundary lives in the engine instead of the client's
+    code (see the engine repository's issue #40).
+
+    Both the full and the scope-limited right go through the base's rule for a realm-less object
+    (:func:`check_global_config_action`): a permission restricted to individual realms, resolvers or
+    users does not cover a policy. Without the second step a scope-limited right would be weaker than
+    the full one — a target-restricted admin policy would grant what the full right refuses.
+    """
+    if action not in (PolicyAction.POLICYWRITE, PolicyAction.POLICYDELETE):
+        # Not our path (a route that keeps the full right): the base's check for a realm-less object.
+        return check_global_config_action(request=request, action=action)
+
+    def sprawdz(name: str) -> tuple[bool, PolicyError | None]:
+        """(czy prawo jest, blad do oddania gdy prawo jest, ale zawezone do realmu/resolvera/uzytkownika).
+
+        Kolejnosc i komunikat jak w ``check_global_config_action``: najpierw „czy prawo jest", potem
+        „czy nie jest zawezone do celu". Administrator ma odroznic brak prawa od prawa zawezonego —
+        to drugie jest w naszym przypadku regula bezpieczenstwa, nie brakiem uprawnienia.
+        """
+        try:
+            check_base_action(request=request, action=name)
+        except PolicyError:
+            return False, None
+        if get_policy_visibility_scopes(name) is not None:
+            return False, PolicyError(f"The action {name} changes a configuration that applies to all realms. "
+                                      "It requires an administrator permission that is not restricted to individual "
+                                      "realms, resolvers or users.")
+        return True, None
+
+    trzyma, blad = sprawdz(action)
+    if trzyma:
+        return True
+
+    scope = _policy_target_scope(request)
+    scoped = policy_write_action(scope, delete=delete) if scope else None
+    if scoped:
+        trzyma, blad_zawezonego = sprawdz(scoped)
+        if trzyma:
+            return True
+        blad = blad or blad_zawezonego
+    if blad is not None:
+        raise blad
+    raise PolicyError(f"Admin actions are defined, but neither the action {action} nor "
+                      f"{scoped or 'a scope-limited write right'} is allowed!")
+
+
+def check_scoped_policy_delete(request=None, action=None):
+    """``check_scoped_policy_write`` for deleting a policy.
+
+    Osobna funkcja, bo dekorator ``prepolicy`` przekazuje tylko ``request`` i ``action``
+    (``prepolicy.__init__(self, function, request, action=None)``) — there is no fourth argument to pass it through.
+    """
+    return check_scoped_policy_write(request=request, action=action, delete=True)
+
+
+def _policy_target_scope(request):
+    """Scope of the policy a write request touches (``None`` = full right required).
+
+    For an existing policy the scope comes from the database. If the request asks for a different
+    scope than the stored one, we return ``None`` on purpose: moving a policy between scopes with a
+    scope-limited right would let an admin push a policy into a scope they must not touch.
+    """
+    view_args = getattr(request, "view_args", None) or {}
+    name = view_args.get("name") or view_args.get("old_name")
+    if not name:
+        return None
+    stored = PolicyClass().list_policies(name=name)
+    stored_scope = stored[0].get("scope") if stored else None
+    requested_scope = request.all_data.get("scope")
+    if stored_scope is None:
+        return requested_scope
+    if requested_scope and requested_scope != stored_scope:
+        return None
+    return stored_scope
+
+
 def check_token_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER. This decorator
@@ -2542,6 +2632,31 @@ def get_policy_value_set(policy_action: str, scope: str, user: User | None = Non
     policies = (Match.user(g, scope=scope, action=policy_action, user_object=user)
                .action_values(unique=False, allow_white_space_in_action=True))
     return list(set(value for policy in policies for value in policy.split()))
+
+
+def get_user_verification_requirement(scope: str, user: User | None = None) -> str:
+    """
+    Resolve the FIDO2 user verification requirement (webauthn_user_verification_requirement) for the given
+    scope and user. If no policy matches, DEFAULT_USER_VERIFICATION_REQUIREMENT is returned.
+
+    A configured value that is not one of USER_VERIFICATION_LEVELS also falls back to the default instead of
+    raising: the resolved value is handed out to clients (e.g. together with the offline data), and a
+    misconfigured policy must not turn an otherwise successful response into an error. The policy is resolved
+    without being written to the audit log, since it only enriches a response and does not restrict anything.
+
+    :param scope: the policy scope to resolve the action in, e.g. SCOPE.AUTH
+    :param user: the user used to match user, realm and resolver scoped policies
+    :return: "required", "preferred" or "discouraged"
+    """
+    policies = Match.user(g, scope=scope, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+                          user_object=user).action_values(unique=True, allow_white_space_in_action=True,
+                                                          write_to_audit_log=False)
+    policy_value = list(policies)[0] if policies else DEFAULT_USER_VERIFICATION_REQUIREMENT
+    if policy_value not in USER_VERIFICATION_LEVELS:
+        log.warning(f"Invalid value {policy_value!r} for {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT} in "
+                    f"scope {scope!r}. Falling back to {DEFAULT_USER_VERIFICATION_REQUIREMENT!r}.")
+        policy_value = DEFAULT_USER_VERIFICATION_REQUIREMENT
+    return policy_value
 
 
 def fido2_enroll(request, action):
