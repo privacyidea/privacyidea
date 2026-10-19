@@ -33,18 +33,31 @@ class TestMigration9e8487714b46(MigrationTestBase):
     def _index_columns(engine: Engine) -> list[list[str]]:
         return [index["column_names"] for index in inspect(engine).get_indexes("tokenrealm")]
 
+    @staticmethod
+    def _indexes(engine: Engine) -> set[tuple[str, tuple[str, ...]]]:
+        return {(index["name"], tuple(index["column_names"])) for index in inspect(engine).get_indexes("tokenrealm")}
+
     def test_upgrade_adds_the_index_and_downgrade_removes_it(self, flask_app):
-        """The upgrade adds the index on (realm_id, token_id), the downgrade removes it."""
+        """
+        The upgrade adds the index on (realm_id, token_id), the downgrade removes it. The downgrade ends with the
+        indexes the table had before the upgrade, and a second upgrade with the ones of the first.
+        """
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
             assert REALM_TOKEN_COLUMNS not in self._index_columns(engine)
+            indexes_before = self._indexes(engine)
 
             self._upgrade()
             assert REALM_TOKEN_COLUMNS in self._index_columns(engine)
+            indexes_after_upgrade = self._indexes(engine)
 
             self._downgrade()
             assert REALM_TOKEN_COLUMNS not in self._index_columns(engine)
+            assert indexes_before == self._indexes(engine)
+
+            self._upgrade()
+            assert indexes_after_upgrade == self._indexes(engine)
         finally:
             engine.dispose()
 
