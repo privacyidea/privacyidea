@@ -42,7 +42,7 @@ import ldap3
 import yaml
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Tls
-from ldap3.core.exceptions import LDAPOperationResult
+from ldap3.core.exceptions import LDAPException, LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED, RESULT_SUCCESS, RESULT_NO_SUCH_OBJECT
 from ldap3.utils.conv import escape_bytes
 from passlib.hash import ldap_salted_sha1
@@ -644,13 +644,18 @@ class IdResolver(UserIdResolver):
             for a search based on the DN of a user, which is gone when the user is.
         :return: The entries found, without search result references if the resolver does not follow referrals
         :raises ResolverError: if the bind failed, or with the message USER_LOOKUP_FAILED if the LDAP server did not
-            answer the search
+            answer the search, e.g. with an error result, a receive timeout or a dropped connection
         """
         self._bind()
-        self.connection.search(search_base=search_base,
-                               search_scope=self.scope,
-                               search_filter=search_filter,
-                               attributes=attributes)
+        try:
+            self.connection.search(search_base=search_base,
+                                   search_scope=self.scope,
+                                   search_filter=search_filter,
+                                   attributes=attributes)
+        except LDAPException as error:
+            # ldap3 raises communication errors whatever raise_exceptions is set to
+            log.error(f"LDAP search in {search_base!r} with filter {search_filter!r} failed: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         # Without raise_exceptions, ldap3 reports a failed search (e.g. busy, unavailable, time limit exceeded) only in
         # the result code and an empty response, which must not be read as "no such entry". A size limit still
         # answers with the entries up to it, which callers check for themselves. ldap3mock sets no result.

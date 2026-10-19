@@ -1310,7 +1310,8 @@ class HTTPResolver(UserIdResolver):
     def _is_lookup_failure(response: Response) -> bool:
         """
         Tells a user store that could not answer a user lookup apart from one that answered "no such user". Only a
-        404 or a response matching the configured special error handling means the user does not exist. A 404 is what
+        404 or a successful (2xx) response matching the configured special error handling means the user does not
+        exist; the special error handling is for APIs that answer every request with 200 OK. A 404 is what
         a REST API answers for a resource that does not exist, here the user. It is also the answer to an endpoint
         that does not exist, e.g. a typo in the configured path, which can not be told apart from an unknown user.
 

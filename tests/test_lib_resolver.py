@@ -23,7 +23,7 @@ from contextlib import contextmanager
 import ldap3
 import mock
 import responses
-from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
+from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
 from testfixtures import LogCapture
@@ -1657,6 +1657,14 @@ class LDAPResolverTestCase(MyTestCase):
             with self.assertRaises(ResolverError) as error:
                 resolver.get_user_info("cn=bob,ou=example,o=test")
             self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A receive timeout or a connection dropped after the bind raises, whatever raise_exceptions is set to
+        with mock.patch.object(ldap3mock.Connection, "search", side_effect=LDAPSocketReceiveError("timed out")):
+            for read in [lambda: resolver.getUserId("bob"),
+                         lambda: resolver.get_user_info("cn=bob,ou=example,o=test")]:
+                with self.assertRaises(ResolverError) as error:
+                    read()
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
 
         # A size limit answers with the entries up to the limit, which is no error
         bob = {"type": "searchResEntry", "dn": "cn=bob,ou=example,o=test", "attributes": {"cn": "bob"}}
