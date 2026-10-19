@@ -1071,6 +1071,15 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(openWithDraft().hasChanges()).toBe(true);
     });
 
+    it("should consume the draft, so that a later visit of the history entry starts empty", () => {
+      openWithDraft();
+      expect(history.state?.copyOf).toBeUndefined();
+
+      const revisited = TestBed.createComponent(ConditionalAccessEditPageComponent);
+      revisited.detectChanges();
+      expect(revisited.componentInstance.editPolicy().name).toBe("");
+    });
+
     it("should start empty without a draft", () => {
       history.replaceState(null, "");
       const empty = TestBed.createComponent(ConditionalAccessEditPageComponent);

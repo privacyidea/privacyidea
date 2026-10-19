@@ -206,13 +206,14 @@ export class PolicyEditPageComponent implements OnDestroy {
   }
 
   async onSave(): Promise<boolean> {
-    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
-    // the policy list revealed since then is caught here, and so is a second save while one is running.
-    if (this.nameTaken()) {
-      this.notificationService.error($localize`:@@policy.nameAlreadyExists:A policy with this name already exists.`);
+    // A second save while one is running is a no-op, not a collision with the policy that is being saved.
+    if (this.savingName() !== null) {
       return false;
     }
-    if (this.savingName() !== null) {
+    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
+    // the policy list revealed since then is caught here.
+    if (this.nameTaken()) {
+      this.notificationService.error($localize`:@@policy.nameAlreadyExists:A policy with this name already exists.`);
       return false;
     }
     this.savingName.set(this.editedPolicy().name);

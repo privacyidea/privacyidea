@@ -290,6 +290,23 @@ describe("PolicyEditPageComponent – create mode", () => {
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
+    it("ignores a second save while one runs, without reporting a collision", async () => {
+      component.addPolicyEdit({ name: "new-policy" });
+      let finishSave: (success: boolean) => void = () => undefined;
+      jest
+        .spyOn(policyService, "saveNewPolicy")
+        .mockReturnValue(new Promise<boolean>((resolve) => (finishSave = resolve)));
+      const saving = component.onSave();
+      component.addPolicyEdit({ name: "helpdesk" });
+      const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+      expect(await component.onSave()).toBe(false);
+      expect(notificationService.error).not.toHaveBeenCalled();
+
+      finishSave(false);
+      await saving;
+    });
+
     it("disables saving while the save is pending and enables it again after a failure", async () => {
       component.addPolicyEdit({ name: "new-policy" });
       let finishSave: (success: boolean) => void = () => undefined;

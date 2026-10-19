@@ -20,7 +20,7 @@
 import { Component, computed, effect, inject, signal } from "@angular/core";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-import { form, FormField, validate } from "@angular/forms/signals";
+import { form, FormField, pattern, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -40,6 +40,8 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
   readonly nameSignal = signal(this.data ?? "");
   readonly nameField = form(this.nameSignal, (f) => {
     validate(f, (ctx) => (!ctx.value() ? [{ kind: "required" }] : []));
+    // The characters the name field of the edit page allows.
+    pattern(f, /^[a-zA-Z0-9._-]*$/);
     validate(f, (ctx) => (ctx.value() === this.data ? [{ kind: "notChanged" }] : []));
     // The unchanged original name is reported as "notChanged" only.
     validate(f, (ctx) =>

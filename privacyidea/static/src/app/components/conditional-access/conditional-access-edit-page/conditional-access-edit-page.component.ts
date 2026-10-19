@@ -573,6 +573,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     if (!draft) {
       return;
     }
+    // The draft belongs to the navigation that carried it. Left in the history entry it would come back with
+    // the browser's Back button, long after the copy was saved.
+    history.replaceState({ ...history.state, [COPY_DRAFT_STATE_KEY]: undefined }, "");
     this.editPolicy.set(deepCopy(draft));
     this.syncTimeWindowFromSeconds(draft.time_window_seconds);
     this.syncPriorityInput(draft.priority);

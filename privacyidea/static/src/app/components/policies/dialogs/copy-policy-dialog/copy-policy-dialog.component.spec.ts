@@ -107,6 +107,30 @@ describe("CopyPolicyDialogComponent", () => {
           .some((e) => e.kind === "required")
       ).toBe(true);
     });
+
+    it.each(["a b", "name!", "ä"])("should reject the name '%s' with a 'pattern' error", (name) => {
+      component.nameSignal.set(name);
+      expect(
+        component
+          .nameField()
+          .errors()
+          .some((e) => e.kind === "pattern")
+      ).toBe(true);
+      expect(component.nameField().valid()).toBe(false);
+    });
+
+    it("should show the invalid characters error at once and disable the confirm action", () => {
+      component.nameSignal.set("a b");
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("invalid characters");
+      expect(component.actions()[0].disabled).toBe(true);
+    });
+
+    it("should accept alphanumerics, dots, underscores and hyphens", () => {
+      component.nameSignal.set("New.Policy_name-2");
+      expect(component.nameField().valid()).toBe(true);
+    });
   });
 
   describe("1b. Name collision", () => {

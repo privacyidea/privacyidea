@@ -1343,7 +1343,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">273</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-additional-conditions/edit-additional-conditions.component.ts</context>
@@ -7673,7 +7673,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.ts</context>
-          <context context-type="linenumber">57</context>
+          <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.pleaseEnterUnique" datatype="html">
@@ -7721,7 +7721,7 @@
         <target>Benzersiz bir tanımlayıcı olmalıdır</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
-          <context context-type="linenumber">33</context>
+          <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.createPolicy" datatype="html">
@@ -8379,6 +8379,10 @@
       <trans-unit id="policy.policyNameContains" datatype="html">
         <source>Policy name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
         <target>Politika adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>geçersiz karakterler<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> içeriyor. Yalnızca alfanümerik karakterler, noktalar, alt çizgiler ve tireler kullanılabilir.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
+          <context context-type="linenumber">31</context>
+        </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-name-edit/policy-name-edit.component.html</context>
           <context context-type="linenumber">38</context>
@@ -24219,7 +24223,7 @@
         <target state="new">Delete Policy</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">298</context>
+          <context context-type="linenumber">299</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policy" datatype="html">
@@ -24227,7 +24231,7 @@
         <target state="new">policy</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">300</context>
+          <context context-type="linenumber">301</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.failedDeletePolicy" datatype="html">
@@ -24235,11 +24239,11 @@
         <target state="new">Failed to delete policy. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">310</context>
+          <context context-type="linenumber">311</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">317</context>
+          <context context-type="linenumber">318</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyDeleted" datatype="html">
@@ -24247,7 +24251,7 @@
         <target state="new">Policy deleted successfully.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">321</context>
+          <context context-type="linenumber">322</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.certificatesCheckedAt" datatype="html">
@@ -25159,7 +25163,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
-          <context context-type="linenumber">699</context>
+          <context context-type="linenumber">702</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.noOperatorSelected" datatype="html">
@@ -25175,11 +25179,11 @@
         <target state="new">A policy with this name already exists.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
-          <context context-type="linenumber">30</context>
+          <context context-type="linenumber">36</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
-          <context context-type="linenumber">212</context>
+          <context context-type="linenumber">216</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-name-edit/policy-name-edit.component.html</context>
