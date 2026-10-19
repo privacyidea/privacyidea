@@ -300,6 +300,9 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
 
         reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config("email.validtime", 120))
+        # One time limit for the challenge, the record of the sent value and the response, so OTP PIN plus OTP value
+        # and the answer with the transaction_id expire at the same moment
+        valid_until = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=validity)
 
         if self.is_active() is True:
             # At this point we must not bail out in case of a
@@ -312,7 +315,7 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                     sent_counter = self._claim_otp_count_to_send()
                     otp = self._calc_otp(sent_counter)
                     # Before sending: a transport that fails after it delivered the value must not leave it unlimited
-                    self._record_sent_otp_validity(sent_counter, validity)
+                    self._record_sent_otp_validity(sent_counter, valid_until)
                     message_template, mimetype = self._get_email_text_or_subject(options)
                     subject_template, _n = self._get_email_text_or_subject(options,
                                                                            EMAILACTION.EMAILSUBJECT,
@@ -332,7 +335,8 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                                                challenge=options.get("challenge"),
                                                data=data,
                                                session=options.get("session"),
-                                               validitytime=validity)
+                                               validitytime=validity,
+                                               expiration=valid_until.replace(tzinfo=None))
                 transactionid = transactionid or db_challenge.transaction_id
 
             except Exception as e:
@@ -344,8 +348,7 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
-        expiry_date = datetime.datetime.now() + \
-                      datetime.timedelta(seconds=validity)
+        expiry_date = valid_until.astimezone().replace(tzinfo=None)
         reply_dict['attributes']['valid_until'] = f"{expiry_date!s}"
 
         return success, return_message, transactionid, reply_dict

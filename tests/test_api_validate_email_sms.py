@@ -23,6 +23,7 @@ from unittest import mock
 import responses
 
 import privacyidea.lib.tokens.emailtoken as emailtoken_module
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.error import ConflictError
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -251,6 +252,42 @@ class SentOtpValidityTests(_TestHost):
         with clock_moved_forward(2):
             self.assertFalse(self._check({"pass": self.pin + token._calc_otp(2)}))
 
+    def test_challenge_and_record_share_the_deadline(self):
+        serial = self._enroll()
+        transaction_id, _ = self._trigger(serial)
+        record = get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL)
+        challenge = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        self.assertEqual(challenge.expiration, datetime.fromisoformat(record.split(" ", 1)[1]).replace(tzinfo=None),
+                         record)
+
+    def test_send_from_before_a_reinit_does_not_extend_the_new_value(self):
+        # An old-key send claims counter 1, the token is re-initialized and the new key sends its value at counter 1.
+        # The old-key send records only after that value expired: it keeps the deadline it computed before its claim.
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 1)
+        real_record = SentOtpValidityMixin._record_sent_otp_validity
+        new_key = "3031323334353637383930313233343536373839"
+        old_key_counters = []
+
+        def reinit_and_record_late(token: SentOtpValidityMixin, counter: int, *args, **kwargs) -> None:
+            if old_key_counters:
+                real_record(token, counter, *args, **kwargs)
+                return
+            old_key_counters.append(counter)
+            init_token({"serial": serial, "type": self.token_type, "otpkey": new_key, **self.contact},
+                       user=User("cornelius", self.realm1))
+            get_one_token(serial=serial).create_challenge()
+            with clock_moved_forward(2):
+                real_record(token, counter, *args, **kwargs)
+
+        with mock.patch.object(SentOtpValidityMixin, "_record_sent_otp_validity", reinit_and_record_late):
+            get_one_token(serial=serial).create_challenge()
+        token = get_one_token(serial=serial)
+        self.assertListEqual([1], old_key_counters)
+        self.assertEqual(1, token.token.count)
+        with clock_moved_forward(2):
+            self.assertFalse(self._check({"pass": self.pin + token._calc_otp(1)}))
+
     def test_send_from_before_a_reinit_does_not_block_the_new_key(self):
         # An old-key send claims its counter, then the token is re-initialized and the new key sends its first value,
         # then the old-key send records
@@ -306,10 +343,11 @@ class SentOtpValidityTests(_TestHost):
         serial = self._enroll()
         token = get_one_token(serial=serial)
         token.set_otp_count(6)
-        token._record_sent_otp_validity(5, 120)
-        token._record_sent_otp_validity(4, 120)
+        valid_until = datetime.now(timezone.utc) + timedelta(seconds=120)
+        token._record_sent_otp_validity(5, valid_until)
+        token._record_sent_otp_validity(4, valid_until)
         self.assertEqual("5", get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
-        token._record_sent_otp_validity(6, 120)
+        token._record_sent_otp_validity(6, valid_until)
         self.assertEqual("6", get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
 
     def test_failed_reinit_keeps_record(self):

@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 
 from sqlalchemy import select
@@ -58,7 +58,7 @@ class SentOtpValidityMixin:
                 return current + 1
         raise ConflictError(f"Could not claim an OTP counter for token {self.token.serial}.")
 
-    def _record_sent_otp_validity(self, counter: int, validity_seconds: int) -> None:
+    def _record_sent_otp_validity(self, counter: int, valid_until: datetime) -> None:
         """
         Store until when the sent OTP value at the given counter may be used without a transaction_id. A send that
         claimed its counter earlier can finish later than another one, so the record of a higher counter is kept.
@@ -66,7 +66,7 @@ class SentOtpValidityMixin:
         claimed, and a record of the old key would keep the values of the new key from being recorded.
 
         :param counter: The counter of the sent value, see _claim_otp_count_to_send()
-        :param validity_seconds: The validity time of the value
+        :param valid_until: Until when the value may be used, the expiry of its challenge
         """
         # Serialize on the token row like inc_failcount(), so the comparison and the write are not interleaved with
         # those of another send. write_tokeninfo() commits and releases the lock.
@@ -79,7 +79,6 @@ class SentOtpValidityMixin:
         if token_count < counter or (recorded and self._recorded_counter(recorded) > counter):
             db.session.commit()
             return
-        valid_until = datetime.now(timezone.utc) + timedelta(seconds=validity_seconds)
         self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{counter} {valid_until.isoformat()}")
 
     def _remove_sent_otp_validity(self) -> None:
