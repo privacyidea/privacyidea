@@ -165,6 +165,28 @@ describe("CopyPolicyDialogComponent", () => {
       );
     });
 
+    it("should show the error message of the original name at once once the name was edited", () => {
+      component.nameSignal.set("Free_Name");
+      fixture.detectChanges();
+      component.nameSignal.set(initialPolicyName);
+      fixture.detectChanges();
+
+      expect(component.nameField().touched()).toBe(true);
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("must be different");
+    });
+
+    it("should show the error message of an emptied name at once", () => {
+      component.nameSignal.set("");
+      fixture.detectChanges();
+
+      expect(component.nameField().touched()).toBe(true);
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("required");
+    });
+
+    it("should not show the error of the original name before the name was edited", () => {
+      expect(component.nameField().touched()).toBe(false);
+    });
+
     it("should leave the field untouched while the name is free", () => {
       component.nameSignal.set("Free_Name");
       fixture.detectChanges();

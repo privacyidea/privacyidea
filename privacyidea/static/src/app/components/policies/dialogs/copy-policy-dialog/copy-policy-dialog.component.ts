@@ -48,11 +48,9 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
   });
 
   readonly isInvalid = computed(() => this.nameField().errors().length > 0);
-  private readonly nameTaken = computed(() =>
-    this.nameField()
-      .errors()
-      .some((e) => e.kind === "nameTaken")
-  );
+  // Set once the name has differed from the original, so that an error is shown from then on even when the
+  // user types the original name back.
+  private edited = false;
 
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
@@ -65,9 +63,12 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
 
   constructor() {
     super();
-    // Copy is disabled for a taken name, so the reason shows while the field still has focus.
+    // Copy is disabled for an invalid name, so the reason shows while the field still has focus.
     effect(() => {
-      if (this.nameTaken()) {
+      if (this.nameSignal() !== this.data) {
+        this.edited = true;
+      }
+      if (this.edited && this.isInvalid()) {
         this.nameField().markAsTouched();
       }
     });

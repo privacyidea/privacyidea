@@ -128,11 +128,6 @@ const OPERATOR_FALLBACK: ConditionOperatorMeta[] = [
   { name: "NOT_IN", label: $localize`:@@conditionalAccess.notOne:is not one of` }
 ];
 
-// Operator a condition takes when values arrive while none is selected, which the select does not allow
-// but the component's API does: the registry's first operator is the membership one, and restricting reads
-// as the less surprising default than exempting.
-const DEFAULT_OPERATOR: KnownConditionOperator = "IN";
-
 // Shown while no operator is selected, which is the state of a row that carries no condition and whose
 // values cannot be picked.
 const NO_OPERATOR_HINT = $localize`:@@conditionalAccess.noOperatorSelected:Not restricted. Select an operator to add a condition.`;
@@ -303,18 +298,20 @@ export class ConditionalAccessConditionsComponent {
   // rejects an empty list, and "restrict to nothing" has no useful reading -- dead under IN,
   // equivalent to no condition under NOT_IN.
   onValuesChange(type: string, values: string[]): void {
+    // Values need an operator to apply under; the select is disabled while none is selected.
+    const operator = this.selectedOperator(type);
+    if (operator === null) {
+      return;
+    }
     if (values.length === 0) {
       // The operator stays selected, so an emptied row does not snap to none.
-      const operator = this.selectedOperator(type);
-      if (operator !== null) {
-        this.pendingOperators.set({ ...this.pendingOperators(), [type]: operator });
-      }
+      this.pendingOperators.set({ ...this.pendingOperators(), [type]: operator });
       this.conditionsChange.emit(this.conditions().filter((condition) => condition.condition_type !== type));
       return;
     }
     this.emitUpsert(type, {
       condition_type: type,
-      operator: this.selectedOperator(type) ?? DEFAULT_OPERATOR,
+      operator,
       value: values
     });
   }

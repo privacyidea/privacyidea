@@ -67,10 +67,10 @@ import {
 // The actions that state a standing verdict instead of reacting to a failure count. They are the only
 // ones a stage may carry at threshold 0, where they then apply to every request the policy covers -
 // mirroring DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access.
+const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
+
 // Key of the navigation state that hands the copy of a policy from its edit page to the create page.
 const COPY_DRAFT_STATE_KEY = "copyOf";
-
-const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
 
 // Human-readable labels for the policy targets served by /conditionalaccess/targets; a target missing here falls back
 // to its raw value.

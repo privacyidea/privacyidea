@@ -143,10 +143,11 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(component.selectedValues("USER_REALM")).toEqual(["sales"]);
   });
 
-  it("should add a condition with the operator IN when values are picked while no operator is selected", () => {
+  it("should not add a condition when values arrive while no operator is selected", () => {
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onValuesChange("USER_REALM", ["sales", "support"]);
-    expect(spy).toHaveBeenCalledWith([{ condition_type: "USER_REALM", operator: "IN", value: ["sales", "support"] }]);
+    expect(spy).not.toHaveBeenCalled();
+    expect(component.selectedOperator("USER_REALM")).toBeNull();
   });
 
   it("should add a condition carrying the operator picked before the values", () => {
@@ -354,6 +355,7 @@ describe("ConditionalAccessConditionsComponent", () => {
   // diff would misread that reordering as an unsaved change.
   it("should emit a newly added condition in condition_type order, not appended", () => {
     setConditions([{ condition_type: "USER_ROLE", operator: "IN", value: ["user"] }]);
+    component.onOperatorChange("USER_REALM", "IN");
     const spy = jest.spyOn(component.conditionsChange, "emit");
     component.onValuesChange("USER_REALM", ["sales"]);
     expect(spy).toHaveBeenCalledWith([
@@ -421,6 +423,16 @@ describe("ConditionalAccessConditionsComponent", () => {
 
     setConditions([{ condition_type: "USER_REALM", operator: "NOT_IN", value: ["sales"] }]);
     expect(fixture.nativeElement.querySelector("mat-hint").textContent.trim()).toBe("Exclude realms from this policy.");
+  });
+
+  // Pressing one operator releases the other, which the toggles alone do not tell a screen reader.
+  it("should describe each operator group as allowing at most one operator", () => {
+    const groups: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll("mat-button-toggle-group"));
+    expect(groups.length).toBeGreaterThan(0);
+    for (const group of groups) {
+      const hint = fixture.nativeElement.querySelector(`#${group.getAttribute("aria-describedby")}`);
+      expect(hint.textContent.trim()).toBe("Choose at most one operator.");
+    }
   });
 
   // The operator is whatever the backend serves, so the wording table can be missing an entry for it.

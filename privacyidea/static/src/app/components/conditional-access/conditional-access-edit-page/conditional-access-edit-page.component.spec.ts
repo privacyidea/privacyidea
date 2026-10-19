@@ -304,24 +304,6 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.editPolicy().stages[0].failure_threshold).toBe(5);
     });
 
-    it("should send one request for two saves in a row and allow the save again when it fails", async () => {
-      component.updateEditPolicy({ name: "Fresh" });
-      let finish!: (id: number | undefined) => void;
-      policyServiceMock.savePolicy.mockClear();
-      policyServiceMock.savePolicy.mockReturnValueOnce(
-        new Promise<number | undefined>((resolve) => (finish = resolve))
-      );
-
-      const first = component.savePolicy();
-      expect(component.canSave()).toBe(false);
-      expect(await component.savePolicy()).toBe(false);
-      expect(policyServiceMock.savePolicy).toHaveBeenCalledTimes(1);
-
-      finish(undefined);
-      expect(await first).toBe(false);
-      expect(component.canSave()).toBe(true);
-    });
-
     it("should disable the copy while the policy is being saved", async () => {
       setRights(["conditional_access_policy_write"]);
       let finish!: (id: number | undefined) => void;
@@ -757,6 +739,22 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     const result = await component.savePolicy();
     expect(result).toBe(false);
     expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("should send one request for two saves in a row and allow the save again when it fails", async () => {
+    component.updateEditPolicy({ name: "Fresh" });
+    let finish!: (id: number | undefined) => void;
+    policyServiceMock.savePolicy.mockClear();
+    policyServiceMock.savePolicy.mockReturnValueOnce(new Promise<number | undefined>((resolve) => (finish = resolve)));
+
+    const first = component.savePolicy();
+    expect(component.canSave()).toBe(false);
+    expect(await component.savePolicy()).toBe(false);
+    expect(policyServiceMock.savePolicy).toHaveBeenCalledTimes(1);
+
+    finish(undefined);
+    expect(await first).toBe(false);
+    expect(component.canSave()).toBe(true);
   });
 
   it("should delete and navigate to the list", async () => {

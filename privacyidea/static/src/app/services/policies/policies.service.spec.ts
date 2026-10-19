@@ -87,6 +87,7 @@ describe("PolicyService", () => {
       expect(service.isPolicyEdited(original, original)).toBeFalsy();
     });
   });
+
   describe("isPolicyNameTaken", () => {
     beforeEach(() => {
       service.allPolicies.set([
@@ -162,6 +163,7 @@ describe("PolicyService", () => {
       expect(service.isPolicyNameTaken("helpdesk")).toBe(false);
     });
   });
+
   describe("Condition Checks", () => {
     it("should detect user conditions", () => {
       const policy = service.getEmptyPolicy();

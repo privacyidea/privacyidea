@@ -751,12 +751,16 @@ describe("PolicyEditPageComponent – copy", () => {
     it("blocks a second copy and the save while the copy is created", async () => {
       dialogService.openDialogAsync.mockResolvedValue("TestPolicyCopy");
       let finish!: (created: boolean) => void;
-      policyService.saveNewPolicy.mockReturnValue(new Promise<boolean>((resolve) => (finish = resolve)));
+      let creationStarted!: () => void;
+      const started = new Promise<void>((resolve) => (creationStarted = resolve));
+      policyService.saveNewPolicy.mockImplementation(() => {
+        creationStarted();
+        return new Promise<boolean>((resolve) => (finish = resolve));
+      });
       component.addPolicyEdit({ description: "edited" });
 
       const copying = component.onCopy();
-      await Promise.resolve();
-      await Promise.resolve();
+      await started;
       fixture.detectChanges();
 
       expect(component.canSave()).toBe(false);
