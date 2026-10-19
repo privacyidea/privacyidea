@@ -31,7 +31,8 @@ from requests.exceptions import HTTPError, Timeout, ConnectionError, RequestExce
 from privacyidea.lib.user import User
 from privacyidea.lib.error import UserError, ResourceNotFoundError
 from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
-                                     get_webhook_identifiers, outbound_guard_check)
+                                     get_webhook_identifiers, guard_target,
+                                     outbound_guard_check)
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -335,7 +336,12 @@ class WebHookHandler(BaseEventHandler):
         # whoever holds eventhandling_write rather than webhook_write. A control that covers only
         # the new shape protects the installation that has not migrated yet least of all.
         try:
-            mode, rejection = outbound_guard_check(webhook_url)
+            # guard_target(), not the URL itself: requests runs with trust_env=True, so an
+            # http_proxy/https_proxy in the server's environment is used for the post below even
+            # though this shape cannot configure one. The connection then goes to the proxy, and
+            # checking the destination would approve an address nothing connects to - and refuse a
+            # destination that is only ever reached through a proxy the allowlist permits.
+            mode, rejection = outbound_guard_check(guard_target(webhook_url))
         except Exception as ex:
             # Reading the config or parsing the URL must not break the handler; the request below
             # is what this method is for, and a guard that cannot judge is a guard that does not.

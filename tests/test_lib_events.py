@@ -4887,6 +4887,22 @@ class WebhookTestCase(MyTestCase):
         self.assertEqual(posted, data)
 
 
+def _fake_getaddrinfo(mapping):
+    """
+    Stand-in for socket.getaddrinfo() that resolves each hostname in *mapping* to the given
+    addresses and raises socket.gaierror for anything else. Needed wherever a test has to tell
+    the destination and a proxy apart, which a single flat return value cannot.
+    """
+
+    def fake(host, port, *args, **kwargs):
+        if host not in mapping:
+            raise socket.gaierror(f"no mock DNS entry for {host!r}")
+        return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, port or 0))
+                for ip in mapping[host]]
+
+    return fake
+
+
 class WebhookObjectHandlerTestCase(MyTestCase):
     """
     The WebHookHandler posting to a configured webhook object instead of to
@@ -5248,3 +5264,56 @@ class WebhookObjectHandlerTestCase(MyTestCase):
 
         self.assertTrue(result)
         self.assertEqual(1, len(responses.calls))
+
+    @responses.activate
+    def test_18_the_inline_path_guards_the_proxy_from_the_environment(self):
+        """
+        requests runs with trust_env=True, so http(s)_proxy in the server's environment is used
+        for the inline post even though this shape cannot configure a proxy of its own. Checking
+        the destination would then protect against nothing: the connection goes to the proxy,
+        which resolves the destination itself.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+            dns = _fake_getaddrinfo({"inline.example.com": ["203.0.113.5"],
+                                     "proxy.internal": ["10.9.9.9"]})
+
+            with patch.dict(os.environ,
+                            {"https_proxy": "https://proxy.internal:3128"}, clear=False):
+                with mock.patch("socket.getaddrinfo", dns):
+                    result, handler = self._run(self._make_options(
+                        self._make_g(), {"URL": self.INLINE_URL,
+                                         "content_type": ContentType.JSON,
+                                         "data": '{"a": 1}'}))
+
+            # The destination is public, but the environment proxy the connection actually goes
+            # to resolves into blocked space.
+            self.assertFalse(result)
+            self.assertIn("outbound request guard", handler.run_details)
+            self.assertEqual(0, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_19_no_proxy_puts_the_inline_destination_back_in_scope(self):
+        # The other half: get_environ_proxies() applies no_proxy, so a destination excluded there
+        # is checked as itself rather than as a proxy it never goes through.
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+            dns = _fake_getaddrinfo({"inline.example.com": ["203.0.113.5"]})
+
+            with patch.dict(os.environ,
+                            {"https_proxy": "https://proxy.internal:3128",
+                             "no_proxy": "inline.example.com"}, clear=False):
+                with mock.patch("socket.getaddrinfo", dns):
+                    result, _ = self._run(self._make_options(
+                        self._make_g(), {"URL": self.INLINE_URL,
+                                         "content_type": ContentType.JSON,
+                                         "data": '{"a": 1}'}))
+
+            self.assertTrue(result)
+            self.assertEqual(1, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)

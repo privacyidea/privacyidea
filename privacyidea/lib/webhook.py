@@ -945,26 +945,36 @@ def outbound_guard_check(url):
     return mode, check_outbound_target(url, mode=mode, allowlist=allowlist)
 
 
-def _guard_target(config):
+def guard_target(url, proxies=None):
     """
-    Return the URL the guard should check for this webhook's request.
+    Return the URL the outbound request guard should check for a request to *url*.
 
     When a proxy is used, the connection goes to the proxy, so the proxy is what the guard must
     check -- the destination host is resolved by the proxy, not by us, and checking it would
     protect against nothing.
 
     That holds for a proxy out of the environment too. ``requests`` runs with ``trust_env=True``,
-    so ``http_proxy`` / ``https_proxy`` in the server's environment are used even for a webhook
-    that configures none; the guard would otherwise resolve and approve a destination the
+    so ``http_proxy`` / ``https_proxy`` in the server's environment are used even by a caller that
+    passes no proxies at all; the guard would otherwise resolve and approve a destination the
     connection never goes to. ``get_environ_proxies()`` applies ``no_proxy`` as well, so a
     destination excluded there is correctly checked as itself.
+
+    Every caller that is about to send a request has to go through this, not just the ones that
+    can configure a proxy: the environment applies to all of them.
+
+    :param url: the destination the caller means to reach
+    :param proxies: the ``proxies`` dict the request will be sent with, if any
+    :return: the proxy URL where one applies, else *url* unchanged
     """
-    url = config["url"]
     scheme = urlsplit(url).scheme
-    proxies = _build_proxies(config) or {}
-    # A proxy on the webhook wins, exactly as it does for the request itself.
-    proxy = proxies.get(scheme) or requests.utils.get_environ_proxies(url).get(scheme)
+    # A proxy passed by the caller wins, exactly as it does for the request itself.
+    proxy = (proxies or {}).get(scheme) or requests.utils.get_environ_proxies(url).get(scheme)
     return proxy or url
+
+
+def _guard_target(config):
+    """Return the URL the guard should check for this webhook's request."""
+    return guard_target(config["url"], _build_proxies(config))
 
 
 def _record_webhook_call(identifier, start, success, error=False):

@@ -10,7 +10,7 @@ from unittest.mock import patch
 import responses
 
 from privacyidea.lib.webhook import (
-    GuardMode, check_outbound_target, fire_webhook, set_webhook,
+    GuardMode, check_outbound_target, fire_webhook, guard_target, set_webhook,
 )
 from privacyidea.models.webhook import Webhook
 from .base import MyTestCase
@@ -37,6 +37,51 @@ def _fake_getaddrinfo(mapping):
         return results
 
     return fake
+
+
+class GuardTargetTestCase(MyTestCase):
+    """
+    Direct tests of guard_target(), which decides *what* the guard judges.
+
+    Every caller that is about to send a request goes through it, including the ones that cannot
+    configure a proxy themselves - the environment applies to those too.
+    """
+
+    DEST = "https://public.example/hook"
+
+    def test_without_a_proxy_the_destination_is_the_target(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(self.DEST, guard_target(self.DEST))
+
+    def test_a_passed_proxy_is_the_target(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual("https://proxy.internal:3128",
+                             guard_target(self.DEST,
+                                          {"https": "https://proxy.internal:3128"}))
+
+    def test_an_environment_proxy_is_the_target(self):
+        # The case the inline event handler shape runs into: it passes no proxies at all, but
+        # requests honours the environment, so the connection goes to the proxy.
+        with patch.dict(os.environ, {"https_proxy": "https://proxy.internal:3128"}, clear=True):
+            self.assertEqual("https://proxy.internal:3128", guard_target(self.DEST))
+
+    def test_a_passed_proxy_wins_over_the_environment(self):
+        # Mirrors what requests itself does with session/request proxies.
+        with patch.dict(os.environ, {"https_proxy": "https://env.internal:3128"}, clear=True):
+            self.assertEqual("https://passed.internal:3128",
+                             guard_target(self.DEST,
+                                          {"https": "https://passed.internal:3128"}))
+
+    def test_the_proxy_of_another_scheme_is_ignored(self):
+        # An http_proxy does not apply to an https destination, so the destination stays the
+        # target. Reading the wrong scheme would judge an address nothing connects to.
+        with patch.dict(os.environ, {"http_proxy": "http://proxy.internal:3128"}, clear=True):
+            self.assertEqual(self.DEST, guard_target(self.DEST))
+
+    def test_no_proxy_puts_the_destination_back_in_scope(self):
+        with patch.dict(os.environ, {"https_proxy": "https://proxy.internal:3128",
+                                     "no_proxy": "public.example"}, clear=True):
+            self.assertEqual(self.DEST, guard_target(self.DEST))
 
 
 class CheckOutboundTargetTestCase(MyTestCase):
