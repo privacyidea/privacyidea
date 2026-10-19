@@ -22,6 +22,7 @@ import logging
 from sqlalchemy import select
 
 from privacyidea.lib.error import ConflictError
+from privacyidea.lib.tokenclass import lock_token_row
 from privacyidea.models import Token, TokenInfo, db
 
 log = logging.getLogger(__name__)
@@ -71,7 +72,8 @@ class SentOtpValidityMixin:
         # those of another send. write_tokeninfo() commits and releases the lock.
         token_id = self.token.id
         db.session.commit()
-        token_count = db.session.scalar(select(Token.count).where(Token.id == token_id).with_for_update())
+        lock_token_row(Token.id == token_id)
+        token_count = db.session.scalar(select(Token.count).where(Token.id == token_id))
         recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
                                                                    TokenInfo.Key == SENT_OTP_VALID_UNTIL))
         if token_count < counter or (recorded and self._recorded_counter(recorded) > counter):

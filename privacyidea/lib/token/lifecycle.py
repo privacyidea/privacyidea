@@ -25,7 +25,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import (libpolicy,
                                               config_lost_token)
-from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass
+from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass, lock_token_row
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (BASE58, hexlify_and_unicode, check_serial_valid)
@@ -474,9 +474,7 @@ def _activate_replacement(serial: str, new_serial: str) -> None:
     :param serial: Serial number of the lost token
     :param new_serial: Serial number of the reserved replacement token
     """
-    # Only the id is selected, because the eagerly loaded realms of the whole entity would turn
-    # the statement into an outer join, which PostgreSQL refuses to lock.
-    db.session.execute(select(Token.id).where(Token.serial == serial).with_for_update()).first()
+    lock_token_row(Token.serial == serial)
 
     replacement = db.session.scalars(select(Token).where(Token.serial == new_serial)).unique().one()
     predecessors = select(Token).join(TokenInfo, TokenInfo.token_id == Token.id).where(
