@@ -48,7 +48,6 @@ import logging
 from dataclasses import dataclass
 from hashlib import sha256
 import secrets
-import random
 import string
 import binascii
 import ctypes
@@ -1083,8 +1082,9 @@ def generate_password(size=6, characters=string.ascii_lowercase + string.ascii_u
     passwd = [secrets.choice(str) for str in requirements]
     # fill the password until size with allowed characters
     passwd.extend(secrets.choice(characters) for _x in range(size - len(requirements)))
-    # Shuffle, so that we mix the requirements and the generic characters
-    random.shuffle(passwd)
+    # Shuffle, so that we mix the requirements and the generic characters. The positions are part of the password,
+    # so they come from the system random generator as well.
+    secrets.SystemRandom().shuffle(passwd)
     return "".join(passwd)
 
 

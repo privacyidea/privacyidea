@@ -9,6 +9,8 @@ import unittest
 import mock
 import pytest
 from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
 from testfixtures import LogCapture
 
@@ -573,6 +575,29 @@ class CertificateTokenTestCase(MyTestCase):
         p = CertificateTokenClass.get_default_settings(g, params)
         self.assertEqual(["/etc/privacyidea/trusted_attestation_ca"],
                          p.get(ACTION.TRUSTED_CA_PATH))
+
+    def test_05a_pkcs12_container_with_an_empty_pin(self):
+        # An empty PIN is no PIN: the container is encrypted with a random password, which is returned. A PIN that is
+        # set encrypts the container and is not returned.
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        private_key_pem = private_key.private_bytes(serialization.Encoding.PEM,
+                                                    serialization.PrivateFormat.TraditionalOpenSSL,
+                                                    serialization.NoEncryption()).decode()
+        token = init_token({"type": "certificate", "serial": "CERTEMPTYPIN"})
+        try:
+            token.set_pin("")
+            passphrase, pkcs12_data = token._create_pkcs12_bin(None, private_key_pem)
+            self.assertTrue(passphrase)
+            loaded_key, _certificate, _additional = pkcs12.load_key_and_certificates(pkcs12_data, passphrase.encode())
+            self.assertIsNotNone(loaded_key)
+
+            token.set_pin("tokenpin")
+            passphrase, pkcs12_data = token._create_pkcs12_bin(None, private_key_pem)
+            self.assertIsNone(passphrase)
+            loaded_key, _certificate, _additional = pkcs12.load_key_and_certificates(pkcs12_data, b"tokenpin")
+            self.assertIsNotNone(loaded_key)
+        finally:
+            remove_token("CERTEMPTYPIN")
 
     def test_06_certificate_token_export(self):
         # Set up the certificate token for testing
