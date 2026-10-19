@@ -22,6 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { RouterOutlet } from "@angular/router";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { DebugNoticeComponent } from "@components/layout/debug-notice/debug-notice.component";
+import { SubscriptionExpiredNoticeComponent } from "@components/layout/subscription-expired-notice/subscription-expired-notice.component";
 import { LayoutComponent } from "@components/layout/layout.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -82,7 +83,8 @@ describe("LayoutComponent", () => {
             NavigationStubComponent,
             NavigationSelfServiceStubComponent,
             NavigationSelfServiceWizardStubComponent,
-            DebugNoticeComponent
+            DebugNoticeComponent,
+            SubscriptionExpiredNoticeComponent
           ]
         }
       })
