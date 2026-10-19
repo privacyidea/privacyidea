@@ -6,6 +6,7 @@
   flex-direction: column;
   gap: 16px;
   margin-bottom: 32px;
+  margin-left: 8px;
 }
 
 // The three parts read as one sentence, so they stay on a line and wrap together
@@ -15,6 +16,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 16px;
+}
+
+// The value select is pinned to the right edge of the row: the toggle beside it changes its width with the selection
+// indicator, and the select must not move with it.
+.ca-condition-row mat-form-field {
+  margin-left: auto;
 }
 
 .ca-condition-subject {

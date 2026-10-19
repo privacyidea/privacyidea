@@ -47,6 +47,7 @@ class MockDialogService {
 @Component({ selector: "app-policy-name-edit", standalone: true, template: "" })
 class MockNameComp {
   policyName = input<string>("");
+  nameTaken = input<boolean>(false);
   policyNameChange = output<string>();
 }
 
@@ -126,6 +127,16 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
     });
 
     fixture.detectChanges();
+  });
+
+  it("should hand the name collision of the page to the name field", () => {
+    const nameField = () => fixture.debugElement.query(By.directive(MockNameComp)).componentInstance as MockNameComp;
+    expect(nameField().nameTaken()).toBe(false);
+
+    fixture.componentRef.setInput("nameTaken", true);
+    fixture.detectChanges();
+
+    expect(nameField().nameTaken()).toBe(true);
   });
 
   it("should accumulate multiple edits correctly", () => {
