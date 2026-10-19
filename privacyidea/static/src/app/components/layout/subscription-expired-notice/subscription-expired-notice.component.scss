@@ -18,6 +18,7 @@
  **/
 .subscription-expired-notice {
   padding: 8px 16px;
+  border-radius: var(--border-radius);
   background-color: var(--yellow-fill);
   color: var(--status-ink);
   font-weight: 500;
