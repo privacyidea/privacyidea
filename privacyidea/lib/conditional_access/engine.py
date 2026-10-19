@@ -45,6 +45,7 @@ from privacyidea.lib.conditional_access.conditions import (condition_sql_filters
 from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
+from privacyidea.lib.utils import safe_format as _safe_format
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
                                 ConditionalAccessPolicyCounterType, ConditionalAccessPolicyStage,
                                 ConditionalAccessStageAction, UserLockState)
@@ -585,7 +586,7 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
         if last_success is not None:
             lower_bound = AuthenticationLog.timestamp > last_success
     conditions = [*subject, AuthenticationLog.event_type.in_(type_values), lower_bound,
-                 AuthenticationLog.timestamp <= window_end]
+                  AuthenticationLog.timestamp <= window_end]
     if exclude_row_ids:
         conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     stmt = select(func.count()).select_from(AuthenticationLog).where(*conditions)
@@ -829,9 +830,9 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     conditions = [*subject,
-                 AuthenticationLog.timestamp >= window_start,
-                 AuthenticationLog.timestamp <= window_end,
-                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in NON_REPRESENTATIVE_EVENT_TYPES))]
+                  AuthenticationLog.timestamp >= window_start,
+                  AuthenticationLog.timestamp <= window_end,
+                  AuthenticationLog.event_type.notin_(sorted(str(event) for event in NON_REPRESENTATIVE_EVENT_TYPES))]
     if exclude_row_ids:
         conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     rows = get_ca_session().scalars(select(AuthenticationLog).where(*conditions)).all()
@@ -1950,27 +1951,6 @@ def parse_lock_duration_seconds(action_value: Any) -> int | None:
         # can arrive here straight from a request body.
         return None
     return seconds if 0 < seconds <= MAX_LOCK_DURATION_SECONDS else None
-
-
-class _SafeFormatDict(dict):
-    """A ``str.format_map`` mapping that leaves unknown ``{placeholders}`` as-is
-    instead of raising ``KeyError``, so an admin's typo in a template never turns
-    a notification into an exception."""
-
-    def __missing__(self, key: str) -> str:
-        return "{" + key + "}"
-
-
-def _safe_format(template: str, tags: dict) -> str:
-    """
-    Substitute ``{tag}`` placeholders in *template* from *tags*. Unknown
-    placeholders are left untouched and malformed templates are returned verbatim
-    — rendering an admin-supplied string must never raise.
-    """
-    try:
-        return template.format_map(_SafeFormatDict(tags))
-    except Exception:
-        return template
 
 
 def _base_action_tags(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage, context: CAContext,

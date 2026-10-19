@@ -4692,52 +4692,50 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_error(self, mock_post):
-        with mock.patch("logging.Logger.warning") as mock_log:
-            with mock.patch("logging.Logger.info") as mock_info:
-                mock_post.return_value.status_code = 200
+    def test_08_an_unknown_tag_is_kept_and_costs_nothing_else(self, mock_post):
+        """
+        An unknown placeholder is left as written. It used to abort the whole substitution, which
+        delivered a payload in which nothing at all was replaced - and the only sign of it was a
+        log line, while the webhook reported success.
+        """
+        mock_post.return_value.status_code = 200
 
-                g = self._make_g(username='cornelius')
-                data = '{"{token_serial}": "{token_owner} {unknown_tag}"}'
-                opts = self._make_options(g, data=data, replace=True)
-                res, _ = self._do_webhook(opts)
-                self.assertTrue(res)
-                mock_log.assert_any_call(
-                    "Unable to replace placeholder: ('unknown_tag')!"
-                    " Please check the webhooks data option.")
-                mock_info.assert_any_call(
-                    f"A webhook is called at 'http://test.com' with data: '{data}'")
-                mock_info.assert_called_with(200)
+        g = self._make_g(username='cornelius')
+        opts = self._make_options(
+            g, data='{"user": "{logged_in_user}", "nope": "{unknown_tag}"}', replace=True)
+        res, _ = self._do_webhook(opts)
+
+        self.assertTrue(res)
+        posted = self._posted_json(mock_post)
+        self.assertEqual("cornelius", posted["user"])
+        self.assertEqual("{unknown_tag}", posted["nope"])
 
     @patch('requests.post')
-    def test_09_replace_function_typo(self, mock_post):
-        with mock.patch("logging.Logger.warning") as mock_log:
-            with mock.patch("logging.Logger.info") as mock_info:
-                mock_post.return_value.status_code = 200
+    def test_09_a_typo_no_longer_suppresses_the_other_tags(self, mock_post):
+        mock_post.return_value.status_code = 200
 
-                init_token({"serial": "SPASS01", "type": "spass"},
-                           User("cornelius", self.realm1))
-                g = FakeFlaskG()
-                builder = EnvironBuilder(method='POST',
-                                         data={'serial': "SPASS01"},
-                                         headers={})
-                env = builder.get_environ()
-                env["REMOTE_ADDR"] = "10.0.0.1"
-                g.client_ip = env["REMOTE_ADDR"]
-                req = Request(env)
-                req.all_data = {"serial": "SPASS01"}
-                req.User = User("cornelius", self.realm1)
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01"}
+        req.User = User("cornelius", self.realm1)
 
-                data = '{"text": "The token serial is {token_seril}"}'
-                opts = self._make_options(g, data=data, replace=True, request=req)
-                res, _ = self._do_webhook(opts)
-                self.assertTrue(res)
-                mock_log.assert_any_call(
-                    "Unable to replace placeholder: ('token_seril')!"
-                    " Please check the webhooks data option.")
-                mock_info.assert_any_call(
-                    f"A webhook is called at 'http://test.com' with data: '{data}'")
-                mock_info.assert_called_with(200)
+        opts = self._make_options(
+            g, data='{"typo": "{token_seril}", "correct": "{token_serial}"}',
+            replace=True, request=req)
+        res, _ = self._do_webhook(opts)
+
+        self.assertTrue(res)
+        posted = self._posted_json(mock_post)
+        # The misspelled one arrives verbatim, so the admin can see what went wrong...
+        self.assertEqual("{token_seril}", posted["typo"])
+        # ...and the one spelled correctly is still substituted.
+        self.assertEqual("SPASS01", posted["correct"])
 
     @patch('requests.post')
     def test_10_content_type_header_is_set_correctly(self, mock_post):

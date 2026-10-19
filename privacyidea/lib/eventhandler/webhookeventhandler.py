@@ -23,7 +23,7 @@ api requests and reduce your traffic this way.
 
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib import _
-from privacyidea.lib.utils import create_tag_dict, is_true
+from privacyidea.lib.utils import create_tag_dict, is_true, safe_format
 import json
 import logging
 import requests
@@ -174,8 +174,11 @@ class WebHookHandler(BaseEventHandler):
         value, so that a tag containing a quote cannot break the document.
         Any other content type is substituted as plain text.
 
-        A payload that cannot be substituted is returned unchanged, with a
-        warning: a broken tag must not cost the whole notification.
+        Substitution is :func:`~privacyidea.lib.utils.safe_format` throughout, the same treatment
+        a Conditional Access WEBHOOK payload gets: an unknown placeholder is left as written
+        rather than costing the substitution of every other one. The payload is what the
+        receiving system reads, and one typo should not deliver a message in which nothing at
+        all was replaced.
 
         :param webhook_text: the configured payload
         :param content_type: the MIME type the payload will be sent as
@@ -223,13 +226,13 @@ class WebHookHandler(BaseEventHandler):
             def replace_recursive(val):
                 if isinstance(val, dict):
                     return {
-                        k.format(**tags): replace_recursive(v)
+                        safe_format(k, tags): replace_recursive(v)
                         for k, v in val.items()
                     }
                 elif isinstance(val, list):
                     return [replace_recursive(item) for item in val]
                 elif isinstance(val, str):
-                    return val.format(**tags)
+                    return safe_format(val, tags)
                 else:
                     # numbers, booleans, None – pass through unchanged
                     return val
@@ -255,7 +258,7 @@ class WebHookHandler(BaseEventHandler):
                 webhook_text = json.dumps(replace_recursive(document))
             else:
                 # Plain text: a urlencoded body, or a JSON-typed payload that is not a document.
-                webhook_text = webhook_text.format(**tags)
+                webhook_text = safe_format(webhook_text, tags)
         except (KeyError, AttributeError, IndexError) as err:
             log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
         except (ValueError, TypeError) as err:
