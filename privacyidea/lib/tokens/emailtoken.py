@@ -311,6 +311,8 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                     # Only if this is NOT a multichallenge enrollment, we try to send the email
                     sent_counter = self._claim_otp_count_to_send()
                     otp = self._calc_otp(sent_counter)
+                    # Before sending: a transport that fails after it delivered the value must not leave it unlimited
+                    self._record_sent_otp_validity(sent_counter, validity)
                     message_template, mimetype = self._get_email_text_or_subject(options)
                     subject_template, _n = self._get_email_text_or_subject(options,
                                                                            EMAILACTION.EMAILSUBJECT,
@@ -321,7 +323,6 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                         subject=subject_template,
                         mimetype=mimetype,
                         otp=otp)
-                    self._record_sent_otp_validity(sent_counter, validity)
 
                     # Create the challenge in the database
                     if is_true(get_from_config("email.concurrent_challenges")):

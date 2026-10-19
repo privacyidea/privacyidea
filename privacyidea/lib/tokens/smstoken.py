@@ -356,10 +356,11 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
                 if options.get("session") != ChallengeSession.ENROLLMENT:
                     sent_counter = self._claim_otp_count_to_send()
                     otp = self._calc_otp(sent_counter)
+                    # Before sending: a transport that fails after it delivered the value must not leave it unlimited
+                    self._record_sent_otp_validity(sent_counter, validity)
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
                         message=message_template, options=options, otp=otp)
-                    self._record_sent_otp_validity(sent_counter, validity)
 
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):

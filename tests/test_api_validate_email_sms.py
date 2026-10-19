@@ -213,27 +213,23 @@ class SentOtpValidityTests(_TestHost):
         self.assertEqual(2, get_one_token(serial=serial).token.count)
 
     def test_overlapping_sends_keep_the_time_limit_of_the_later_value(self):
-        # The second send claims its counter, sends and records its value while the first one is still sending
+        # The second send claims its counter and records its value after the first one claimed its counter and before
+        # the first one records
         if db.engine.dialect.name == "sqlite":
             self.skipTest("SQLite serializes the writers, the interleaving cannot be reproduced")
         serial = self._enroll()
         set_privacyidea_config(self.validity_key, 1)
-        first_is_sending = threading.Event()
+        first_has_claimed = threading.Event()
         second_has_recorded = threading.Event()
-        delayed_thread = threading.local()
-        real_send = getattr(self.transport, self.transport_send)
         real_record = SentOtpValidityMixin._record_sent_otp_validity
 
-        def slow_first_send(*args, **kwargs):
-            if not first_is_sending.is_set():
-                delayed_thread.delayed = True
-                first_is_sending.set()
+        def record_after_the_other(token: SentOtpValidityMixin, *args, **kwargs) -> None:
+            if not first_has_claimed.is_set():
+                first_has_claimed.set()
                 second_has_recorded.wait(10)
-            return real_send(*args, **kwargs)
-
-        def record_and_report(token: SentOtpValidityMixin, *args, **kwargs) -> None:
-            real_record(token, *args, **kwargs)
-            if not getattr(delayed_thread, "delayed", False):
+                real_record(token, *args, **kwargs)
+            else:
+                real_record(token, *args, **kwargs)
                 second_has_recorded.set()
 
         def trigger() -> dict:
@@ -242,11 +238,10 @@ class SentOtpValidityTests(_TestHost):
                                    headers={"Authorization": self.at}).json
 
         def second_trigger() -> dict:
-            first_is_sending.wait(10)
+            first_has_claimed.wait(10)
             return trigger()
 
-        with (mock.patch.object(self.transport, self.transport_send, slow_first_send),
-              mock.patch.object(SentOtpValidityMixin, "_record_sent_otp_validity", record_and_report)):
+        with mock.patch.object(SentOtpValidityMixin, "_record_sent_otp_validity", record_after_the_other):
             results = results_of(run_in_parallel(self.app, [trigger, second_trigger]))
 
         self.assertTrue(all(isinstance(result, dict) and result.get("status") for result in results), results)
@@ -255,6 +250,27 @@ class SentOtpValidityTests(_TestHost):
         self.assertEqual("2", token.get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
         with clock_moved_forward(2):
             self.assertFalse(self._check({"pass": self.pin + token._calc_otp(2)}))
+
+    def test_value_delivered_before_the_transport_fails_keeps_its_time_limit(self):
+        # The transport delivers the value and then fails, e.g. SMTP quit or a gateway response that times out
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 1)
+        real_send = getattr(self.transport, self.transport_send)
+
+        def deliver_then_fail(*args, **kwargs):
+            real_send(*args, **kwargs)
+            raise ConnectionError("connection lost after delivery")
+
+        with mock.patch.object(self.transport, self.transport_send, deliver_then_fail):
+            with self.app.test_request_context("/validate/triggerchallenge", method="POST",
+                                               data={"serial": serial}, headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        token = get_one_token(serial=serial)
+        self.assertEqual(1, token.token.count)
+        self.assertEqual("1", token.get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+        with clock_moved_forward(2):
+            self.assertFalse(self._check({"pass": self.pin + token._calc_otp(1)}))
 
     def test_older_send_keeps_the_record_of_a_newer_one(self):
         # A send that claimed its counter earlier finishes after a send that claimed a higher one
