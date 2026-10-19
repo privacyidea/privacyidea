@@ -254,7 +254,7 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
         if not verify:
             # The new key resets the counter, the record of a value sent with the old key no longer applies. Removed
             # only once the update succeeded, a failed one keeps the old key and counter.
-            self._remove_sent_otp_validity()
+            self._remove_sent_otp_validity_of_replaced_key()
         return
 
     @log_with(log, hide_args=[1])

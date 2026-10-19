@@ -350,6 +350,40 @@ class SentOtpValidityTests(_TestHost):
         token._record_sent_otp_validity(6, valid_until)
         self.assertEqual("6", get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
 
+    def _send_during_a_reinit(self, sends_before: int) -> None:
+        # The new key sends a value after the re-initialization committed the new key and before it removes the
+        # record of the old key
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 1)
+        for _ in range(sends_before):
+            self._trigger(serial)
+        hotp_update = HotpTokenClass.update
+
+        def update_then_send(token: HotpTokenClass, *args, **kwargs) -> None:
+            hotp_update(token, *args, **kwargs)
+            get_one_token(serial=serial).create_challenge()
+
+        with mock.patch.object(HotpTokenClass, "update", update_then_send):
+            with self.app.test_request_context("/token/init", method="POST",
+                                               data={"serial": serial, "type": self.token_type,
+                                                     "otpkey": self.otpkey, **self.contact},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        token = get_one_token(serial=serial)
+        self.assertEqual(1, token.token.count)
+        self.assertEqual("1", token.get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+        with clock_moved_forward(2):
+            self.assertFalse(self._check({"pass": self.pin + token._calc_otp(1)}))
+
+    def test_value_sent_during_a_reinit_keeps_its_record(self):
+        # The old key's record has the same counter as the new value
+        self._send_during_a_reinit(1)
+
+    def test_value_sent_during_a_reinit_replaces_a_higher_record_of_the_old_key(self):
+        # The old key's record has a higher counter than the new value
+        self._send_during_a_reinit(3)
+
     def test_failed_reinit_keeps_record(self):
         # A re-initialization that fails keeps the old key and counter, so the sent value keeps its time limit
         serial = self._enroll()

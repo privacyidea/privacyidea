@@ -62,8 +62,11 @@ class SentOtpValidityMixin:
         """
         Store until when the sent OTP value at the given counter may be used without a transaction_id. A send that
         claimed its counter earlier can finish later than another one, so the record of a higher counter is kept.
-        Nothing is stored for a counter above the token counter: the token was re-initialized since the counter was
-        claimed, and a record of the old key would keep the values of the new key from being recorded.
+
+        A send records only a counter it claimed, and the claim moves the token counter there, so the counter of a
+        record of the current key is never above the token counter. Only a re-initialization moves the token counter
+        back: nothing is stored for a counter above the token counter, which was claimed with the replaced key, and a
+        record with a counter above the token counter, which belongs to the replaced key, is replaced.
 
         :param counter: The counter of the sent value, see _claim_otp_count_to_send()
         :param valid_until: Until when the value may be used, the expiry of its challenge
@@ -76,7 +79,7 @@ class SentOtpValidityMixin:
         token_count = db.session.scalar(select(Token.count).where(Token.id == token_id))
         recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
                                                                    TokenInfo.Key == SENT_OTP_VALID_UNTIL))
-        if token_count < counter or (recorded and self._recorded_counter(recorded) > counter):
+        if token_count < counter or (recorded and counter < self._recorded_counter(recorded) <= token_count):
             db.session.commit()
             return
         self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{counter} {valid_until.isoformat()}")
@@ -86,6 +89,26 @@ class SentOtpValidityMixin:
         Remove the record of the last sent OTP value, for a value that has no time limit.
         """
         self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
+
+    def _remove_sent_otp_validity_of_replaced_key(self) -> None:
+        """
+        Remove the record of a value sent with the key the token had before it was re-initialized. A value the new key
+        sent since then keeps its record: its counter is not above the reset token counter, unlike the counter of a
+        value sent with the old key.
+        """
+        # Serialize on the token row like _record_sent_otp_validity(), so a send of the new key is not interleaved
+        token_id = self.token.id
+        db.session.commit()
+        lock_token_row(Token.id == token_id)
+        token_count = db.session.scalar(select(Token.count).where(Token.id == token_id))
+        recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
+                                                                   TokenInfo.Key == SENT_OTP_VALID_UNTIL))
+        recorded_counter = self._recorded_counter(recorded) if recorded else None
+        if recorded_counter is not None and (recorded_counter < 0 or recorded_counter > token_count):
+            # remove_tokeninfo() commits and releases the lock
+            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
+        else:
+            db.session.commit()
 
     @staticmethod
     def _recorded_counter(record: str) -> int:
