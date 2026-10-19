@@ -37,6 +37,35 @@ from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
 log = logging.getLogger(__name__)
 TIMEOUT = 10
 
+#: Handler definitions already reported as using the deprecated inline shape. The warning belongs
+#: in the log once per definition, not once per event: a WebHook handler on validate_check fires
+#: on every authentication, and a line per request would bury what it is trying to say.
+_INLINE_DEPRECATION_REPORTED = set()
+
+
+def _warn_inline_shape_is_deprecated(handler_def):
+    """
+    Report a handler definition that still posts to an inline URL, once per process.
+
+    The inline shape keeps working for now, so this changes nothing about the delivery. It is the
+    only notice an administrator gets who never opens the handler in the WebUI, which is the
+    normal state of a definition that was set up once and has fired ever since.
+
+    :param handler_def: the event handler definition being run
+    """
+    key = handler_def.get("id") or handler_def.get("name")
+    if key in _INLINE_DEPRECATION_REPORTED:
+        return
+    _INLINE_DEPRECATION_REPORTED.add(key)
+    log.warning(
+        f"WebHook handler {handler_def.get('name')!r} posts to an inline URL. The URL and "
+        f"content_type options are deprecated since privacyIDEA 3.15 and will be removed in "
+        f"3.17; the handler then sends nothing until it is repaired. Configure a webhook under "
+        f"Config -> Webhooks and select it in the handler's 'webhook' option. Unlike the inline "
+        f"URL, a webhook can carry authentication, headers, TLS, proxy and timeout settings, and "
+        f"keeps its URL out of the audit log."
+    )
+
 
 class ContentType:
     """
@@ -102,14 +131,16 @@ class WebHookHandler(BaseEventHandler):
             "URL": {
                 "type": "str",
                 "required": False,
-                "description": _("The URL the WebHook is posted to. Only used when no webhook is selected above.")
+                "description": _("DEPRECATED, removed in privacyIDEA 3.17: the URL the WebHook is posted to. Only "
+                                 "used when no webhook is selected above, and it can carry no authentication. "
+                                 "Configure a webhook instead and select it above.")
             },
             "content_type": {
                 "type": "str",
                 "required": False,
-                "description": _("The MIME type (Content-Type) used for the WebHook payload, for example "
-                                 "application/json or application/x-www-form-urlencoded. Only used when no webhook "
-                                 "is selected above."),
+                "description": _("DEPRECATED, removed in privacyIDEA 3.17: the MIME type (Content-Type) used for "
+                                 "the WebHook payload, for example application/json or "
+                                 "application/x-www-form-urlencoded. Only used when no webhook is selected above."),
                 "value": [
                     ContentType.JSON,
                     ContentType.URLENCODED]
@@ -253,6 +284,7 @@ class WebHookHandler(BaseEventHandler):
         if webhook_identifier:
             return self._post_to_webhook_object(webhook_identifier, webhook_text, replace, g, request)
 
+        _warn_inline_shape_is_deprecated(handler_def)
         return self._post_inline(handler_options, webhook_text, replace, g, request)
 
     def _post_to_webhook_object(self, identifier, webhook_text, replace, g, request):

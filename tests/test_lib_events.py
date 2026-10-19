@@ -5296,6 +5296,50 @@ class WebhookObjectHandlerTestCase(MyTestCase):
             self.app.config.pop("PI_OUTBOUND_GUARD", None)
 
     @responses.activate
+    def test_20_the_inline_shape_is_reported_as_deprecated_once_per_definition(self):
+        """
+        The handler definition is the unit, not the event: a WebHook handler on validate_check
+        fires on every authentication, and a warning per request would bury what it says.
+        """
+        import privacyidea.lib.eventhandler.webhookeventhandler as weh
+        weh._INLINE_DEPRECATION_REPORTED.clear()
+        self.addCleanup(weh._INLINE_DEPRECATION_REPORTED.clear)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+        options = self._make_options(self._make_g(),
+                                     {"URL": self.INLINE_URL,
+                                      "content_type": ContentType.JSON,
+                                      "data": '{"a": 1}'})
+        options["handler_def"]["id"] = 7
+        options["handler_def"]["name"] = "Coffee maker"
+
+        with mock.patch.object(weh.log, "warning") as mock_warning:
+            self.assertTrue(self._run(options)[0])
+            self.assertTrue(self._run(options)[0])
+
+        deprecations = [call.args[0] for call in mock_warning.call_args_list
+                        if "deprecated" in call.args[0]]
+        self.assertEqual(1, len(deprecations), deprecations)
+        self.assertIn("Coffee maker", deprecations[0])
+        self.assertIn("3.17", deprecations[0])
+        # Both runs still delivered - a deprecation notice must not change what the handler does.
+        self.assertEqual(2, len(responses.calls))
+
+    @responses.activate
+    def test_21_a_webhook_object_is_not_reported_as_deprecated(self):
+        import privacyidea.lib.eventhandler.webhookeventhandler as weh
+        weh._INLINE_DEPRECATION_REPORTED.clear()
+        self.addCleanup(weh._INLINE_DEPRECATION_REPORTED.clear)
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        with mock.patch.object(weh.log, "warning") as mock_warning:
+            self.assertTrue(self._do_webhook(self._make_options(
+                self._make_g(), {"webhook": "siem", "data": '{"a": 1}'})))
+
+        self.assertEqual([], [call.args[0] for call in mock_warning.call_args_list
+                              if "deprecated" in call.args[0]])
+
+    @responses.activate
     def test_19_no_proxy_puts_the_inline_destination_back_in_scope(self):
         # The other half: get_environ_proxies() applies no_proxy, so a destination excluded there
         # is checked as itself rather than as a proxy it never goes through.
