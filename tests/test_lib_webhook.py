@@ -156,6 +156,38 @@ class WebhookCrudTestCase(MyTestCase):
             set_webhook("no-url")
 
     # ------------------------------------------------------------------
+    # Identifiers the API could store but never address again
+    # ------------------------------------------------------------------
+
+    def test_an_identifier_the_api_can_not_address_is_refused(self):
+        """
+        Every route but the listing puts the identifier in a path segment, which is Flask's
+        single-segment string converter. A name the rule cannot match would be listed and then be
+        unreadable, unsaveable, undeletable and untestable - see
+        test_api_webhook.WebhookApiIdentifierTestCase for the round trip.
+        """
+        for identifier in ("team/siem", "a\\b", ".", "..", "with\tcontrol"):
+            with self.subTest(identifier=identifier):
+                with self.assertRaises(ParameterError):
+                    set_webhook(identifier, url="https://example.com/hook")
+                self.assertNotIn(identifier, get_webhook_identifiers())
+
+    def test_names_that_survive_the_round_trip_are_still_accepted(self):
+        # The restriction is about reachability, not about looking like an identifier: all of
+        # these come back unchanged once the client percent-encodes them.
+        for identifier in ("My Hook", "a.b", "...", "hook#1", "a?b", "Gr\u00fc\u00dfe"):
+            with self.subTest(identifier=identifier):
+                set_webhook(identifier, url="https://example.com/hook")
+                self.assertIn(identifier, get_webhook_identifiers())
+
+    def test_an_import_can_not_smuggle_one_in(self):
+        # The import is the only way such a name gets in: the API cannot express it, because the
+        # route that would create it is the route that cannot match it.
+        with self.assertRaises(ParameterError):
+            import_webhook({"team/siem": {"url": "https://example.com/hook"}})
+        self.assertNotIn("team/siem", get_webhook_identifiers())
+
+    # ------------------------------------------------------------------
     # Secrets
     # ------------------------------------------------------------------
 

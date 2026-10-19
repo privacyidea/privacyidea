@@ -5017,6 +5017,52 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertEqual(posted["serial"], "SPASS01")
 
     @responses.activate
+    def test_05d_a_content_type_with_parameters_is_still_json(self):
+        """
+        A Content-Type is a media type plus optional parameters, and the field that stores it
+        offers "any valid MIME type". Comparing the whole string sends the document down the
+        plain-text branch, where str.format() reads its own braces as placeholder syntax and
+        raises - leaving the template unreplaced while the delivery still reports success.
+        """
+        for content_type in ("application/json; charset=utf-8",
+                             "APPLICATION/JSON ;charset=UTF-8",
+                             "application/json"):
+            with self.subTest(content_type=content_type):
+                responses.reset()
+                responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+                set_webhook("siem", url=self.WEBHOOK_URL, content_type=content_type)
+
+                opts = self._make_options(
+                    self._make_g(),
+                    {"webhook": "siem", "replace": True,
+                     "data": '{"user": "{logged_in_user}"}'})
+                self.assertTrue(self._do_webhook(opts))
+
+                self.assertEqual({"user": "hans"},
+                                 json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_05e_a_quote_is_still_escaped_under_a_parameterised_content_type(self):
+        # The document-safe path is the whole reason the JSON branch exists, so the parameters
+        # must not cost it either.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL,
+                    content_type="application/json; charset=utf-8")
+
+        builder = EnvironBuilder(method="POST", data={"serial": 'SP"01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": 'SP"01'}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": '{"serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual('SP"01', json.loads(responses.calls[0].request.body)["serial"])
+
+    @responses.activate
     def test_05b_a_plain_text_payload_is_replaced_under_a_json_webhook(self):
         """
         The payload decides how it is substituted, not only the content type. Substituting a JSON

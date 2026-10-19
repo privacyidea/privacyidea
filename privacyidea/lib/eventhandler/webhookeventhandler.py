@@ -32,7 +32,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.error import UserError, ResourceNotFoundError
 from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
                                      get_webhook_identifiers, guard_target,
-                                     outbound_guard_check)
+                                     media_type, outbound_guard_check)
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
@@ -235,7 +235,11 @@ class WebHookHandler(BaseEventHandler):
                     return val
 
             document = None
-            if content_type == ContentType.JSON:
+            # The media type, not the stored string: a webhook may carry parameters
+            # ("application/json; charset=utf-8"), and those name the same type. Comparing the
+            # string would send a JSON document down the plain-text branch below, where its own
+            # braces are read as placeholder syntax and the substitution fails outright.
+            if media_type(content_type) == ContentType.JSON:
                 try:
                     document = json.loads(webhook_text)
                 except (ValueError, TypeError) as err:

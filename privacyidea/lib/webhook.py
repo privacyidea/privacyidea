@@ -26,6 +26,7 @@ from urllib.parse import urlsplit
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter
+from werkzeug.http import parse_options_header
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (encryptPassword, decryptPassword,
@@ -115,6 +116,40 @@ def _decrypt_or_empty(value):
     return decrypted
 
 
+def _validate_identifier(identifier: str) -> None:
+    """
+    Reject an identifier that the API could store but then never address again.
+
+    Every route but the listing puts the identifier in a path segment
+    (``/webhook/<identifier>``), which is Flask's single-segment string converter. A WSGI server
+    percent-decodes ``PATH_INFO`` before routing, so a ``/`` in the name cannot be escaped on the
+    way in: ``encodeURIComponent()`` turns it into ``%2F``, that is decoded back to ``/``, and the
+    rule no longer matches. Such a webhook appears in the listing and can then be neither read,
+    saved, deleted nor tested. The same goes for ``.`` and ``..``, which path normalisation
+    removes, and for control characters, which have no business in a URL at all.
+
+    The restriction is deliberately narrow. Spaces, dots, ``#``, ``?`` and non-ASCII letters all
+    survive the round trip once the client encodes them, and names like "My Hook" are in use, so
+    there is no reason to require an identifier-shaped identifier.
+
+    :param identifier: the identifier to check
+    :raises ParameterError: if the identifier could not be addressed by the API
+    """
+    for character in ("/", "\\"):
+        if character in identifier:
+            raise ParameterError(
+                f"The webhook identifier must not contain {character!r}: the API addresses a "
+                f"webhook by its name in the URL path, and such a name can not be reached there.")
+    if any(ord(character) < 32 or ord(character) == 127 for character in identifier):
+        raise ParameterError(
+            "The webhook identifier must not contain control characters: the API addresses a "
+            "webhook by its name in the URL path.")
+    if identifier in (".", ".."):
+        raise ParameterError(
+            f"{identifier!r} is not a usable webhook identifier: the API addresses a webhook by "
+            f"its name in the URL path, where it would be removed as a path segment.")
+
+
 def _validate(identifier: str, url: str | None, http_method: str | None,
               content_type: str | None, auth_type: str | None,
               timeout, username: str | None,
@@ -128,6 +163,7 @@ def _validate(identifier: str, url: str | None, http_method: str | None,
     """
     if not identifier or not identifier.strip():
         raise ParameterError("The webhook identifier must not be empty.")
+    _validate_identifier(identifier)
     if not url or not url.strip():
         raise ParameterError("The webhook URL must not be empty.")
     url = url.strip()
@@ -656,6 +692,27 @@ def _build_auth_and_cert(config):
     return None, None, None
 
 
+def media_type(content_type):
+    """
+    Return the bare media type of a ``Content-Type`` value, lower-cased.
+
+    A Content-Type is a media type plus optional parameters, so
+    ``application/json; charset=utf-8`` names the same type as ``application/json`` - and a
+    webhook stores whatever an administrator types, the field offering "any valid MIME type".
+    Every decision that turns on "is this JSON?" therefore has to compare the media type rather
+    than the whole string.
+
+    Comparing the whole string is not merely imprecise, it breaks the case the comparison is
+    there for: a JSON body then takes the plain-text path, where ``str.format()`` reads the
+    document's own braces as placeholder syntax and the substitution fails outright, leaving the
+    template unreplaced.
+
+    :param content_type: the stored Content-Type, which may be None or empty
+    :return: the media type in lower case, or "" when there is none
+    """
+    return parse_options_header(content_type or "")[0].strip().lower()
+
+
 def _resolve_body(config, payload):
     """
     Determine the request body.
@@ -674,7 +731,7 @@ def _resolve_body(config, payload):
     if payload is None or payload == "":
         return None
     if isinstance(payload, (dict, list)):
-        if config["content_type"] == ContentType.JSON:
+        if media_type(config["content_type"]) == ContentType.JSON:
             return json.dumps(payload)
         # Let requests form-encode a dict for urlencoded and friends.
         return payload

@@ -5,9 +5,12 @@ Tests for the webhook REST API (privacyidea/api/webhook.py).
 
 See https://github.com/privacyidea/privacyidea/issues/5751 (step 4.1)
 """
+from urllib.parse import quote
+
 import responses
 
 from privacyidea.lib.crypto import CENSORED
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.webhook import get_webhook, set_webhook, AuthType
@@ -435,6 +438,54 @@ class WebhookAPITestCase(MyApiTestCase):
             action="POST /webhook/<identifier>/test")
         self.assertIn("audited", entry["info"])
         self.assertNotIn("SUPERSECRETTOKEN", str(entry))
+
+
+class WebhookApiIdentifierTestCase(MyApiTestCase):
+    """
+    Every identifier the lib accepts must stay reachable through the API.
+
+    All routes but the listing address a webhook as ``/webhook/<identifier>``, Flask's
+    single-segment string converter. A WSGI server percent-decodes PATH_INFO before routing, so
+    a name the rule cannot match is not fixable on the client side: ``encodeURIComponent()``
+    sends ``%2F`` and the server sees ``/`` again. Such a webhook would be listed and then be
+    unreachable for every other operation.
+    """
+
+    def _cleanup(self):
+        for webhook in Webhook.query.all():
+            webhook.delete()
+
+    def setUp(self):
+        super().setUp()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super().tearDown()
+
+    def _status(self, path, method="GET"):
+        with self.app.test_request_context(path, method=method,
+                                           headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request().status_code
+
+    def test_every_stored_identifier_can_be_addressed(self):
+        # The names that motivated the narrow restriction: each survives the round trip once the
+        # client encodes it, so each has to be manageable and not merely listable.
+        for identifier in ("My Hook", "a.b", "hook#1", "Gr\u00fc\u00dfe"):
+            with self.subTest(identifier=identifier):
+                set_webhook(identifier, url=URL)
+                quoted = quote(identifier, safe="")
+                self.assertEqual(200, self._status(f"/webhook/{quoted}"))
+                self.assertEqual(200, self._status(f"/webhook/{quoted}", method="DELETE"))
+
+    def test_a_name_the_routes_can_not_match_can_not_be_stored(self):
+        # Belt and braces for the finding itself: were the lib to accept it again, this fails
+        # rather than leaving an unmanageable row behind.
+        with self.assertRaises(ParameterError):
+            set_webhook("team/siem", url=URL)
+
+        self.assertEqual(404, self._status("/webhook/team%2Fsiem"))
+        self.assertEqual(404, self._status("/webhook/team/siem"))
 
 
 class WebhookAPIPolicyTestCase(MyApiTestCase):
