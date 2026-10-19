@@ -1140,9 +1140,9 @@ def _finalize_auth_response(context):
                 except Exception as e:
                     log.debug(f"Could not find container for token {serial}: {e}")
 
-            # Client Mode Per User Policy
+            # Client Mode Per User Policy: an opt-in, the last used token type is only stored when the policy is set
             if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                          user_object=user).allowed():
+                          user_object=user).enforced():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)

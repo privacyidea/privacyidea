@@ -133,8 +133,11 @@ class EntraIDResolver(HTTPResolver):
             self.client_credential = get_required(self.config, CLIENT_SECRET)
 
         try:
+            # MSAL does the OIDC discovery here and requests the access tokens later. Without a timeout, an
+            # endpoint that does not answer would block the request forever.
             self.ms_graph_app = msal.ConfidentialClientApplication(self.client_id, authority=self.authority,
-                                                                   client_credential=self.client_credential)
+                                                                   client_credential=self.client_credential,
+                                                                   timeout=self.timeout)
         except ValueError as error:
             raise ParameterError(f"Invalid Authorization Configuration: {error}")
 

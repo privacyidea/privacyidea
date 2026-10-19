@@ -63,6 +63,10 @@ class UserIdResolver:
     # If the resolver could be configured editable
     updateable = False
 
+    # Configuration keys for which a numeric 0 is a value of its own and is stored. For all other keys,
+    # save_resolver() treats 0 like an empty value and removes the entry, so the default applies.
+    zero_is_a_value: frozenset[str] = frozenset()
+
     def close(self):
         """
         Hook to close down the resolver after one request

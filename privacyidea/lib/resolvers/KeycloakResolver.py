@@ -134,6 +134,9 @@ class KeycloakResolver(HTTPResolver):
         Searches for a user by its name. Keycloak does not have an explicit endpoint for this purpose. Hence, we use
         the endpoint to get all users but filter for the username.
         """
+        if not login_name:
+            # An empty username would not filter at all and match every user of the realm
+            return ""
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
         try:

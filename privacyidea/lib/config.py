@@ -79,10 +79,10 @@ class SharedConfigClass:
     to store the current configuration with resolvers, realms, policies
     and event handler definitions along with the timestamp of the configuration.
 
-    The method ``_reload_from_db()`` compares this timestamp against the
-    timestamp in the database (while taking the PI_CHECK_RELOAD_CONFIG
-    setting into account). If the database timestamp is newer, the current
-    configuration is updated.
+    The method ``_reload_from_db()`` compares the database timestamp that was read
+    with the current configuration against the timestamp in the database (while
+    taking the PI_CHECK_RELOAD_CONFIG setting into account). If the database
+    timestamp has changed, the current configuration is updated.
 
     However, app code must not access the config stored in the shared object!
     Instead, it must use ``reload_and_clone()`` to retrieve
@@ -98,6 +98,8 @@ class SharedConfigClass:
         self.policies = []
         self.events = []
         self.timestamp = None
+        # The database timestamp that was read with the loaded configuration
+        self.loaded_db_timestamp = None
         self.caconnectors = []
 
     def _reload_from_db(self):
@@ -112,7 +114,7 @@ class SharedConfigClass:
                 seconds=check_reload_config) < datetime.datetime.now():
             stmt = select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)
             db_ts = db.session.scalars(stmt).first()
-            if reload_db(self.timestamp, db_ts):
+            if reload_db(self.loaded_db_timestamp, db_ts):
                 log.debug("Reloading shared config from database")
                 config = {}
                 resolverconfig = {}
@@ -212,6 +214,9 @@ class SharedConfigClass:
                     self.policies = policies
                     self.events = events
                     self.timestamp = timestamp
+                    # db_ts was read before the configuration, so a change that was committed
+                    # while the configuration was read makes the next request reload again
+                    self.loaded_db_timestamp = db_ts.Value if db_ts else None
                     self.caconnectors = caconnectors
 
     def _clone(self):
