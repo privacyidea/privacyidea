@@ -27,9 +27,8 @@ describe("SubscriptionExpiredNoticeComponent", () => {
   let mockAuthService: MockAuthService;
   let fixture: ComponentFixture<SubscriptionExpiredNoticeComponent>;
 
-  const setStatus = (status: number, role: "admin" | "user" = "admin") => {
-    mockAuthService.authData.update((data) => ({ ...data!, subscription_status: status }));
-    mockAuthService.role.set(role);
+  const setStatus = (status: number, rights: string[] = ["managesubscription"]) => {
+    mockAuthService.authData.update((data) => ({ ...data!, subscription_status: status, rights }));
     fixture.detectChanges();
   };
   const notice = () => fixture.nativeElement.querySelector(".subscription-expired-notice");
@@ -46,31 +45,40 @@ describe("SubscriptionExpiredNoticeComponent", () => {
     fixture.detectChanges();
   });
 
-  it("is shown to an admin whose subscription status is 2", () => {
+  it("is shown when the subscription status is 2", () => {
     setStatus(2);
 
     expect(fixture.componentInstance.visible()).toBe(true);
     expect(notice()).toBeTruthy();
-    expect(notice().getAttribute("role")).toBe("alert");
+    expect(notice().getAttribute("role")).toBe("status");
   });
 
-  it("links to the subscription page", () => {
+  it("links to the subscription page for an admin who may manage the subscription", () => {
     setStatus(2);
 
     expect(notice().querySelector("a").getAttribute("href")).toBe("/configuration/subscription");
   });
 
-  it.each([0, 1])("is hidden for subscription status %i", (status) => {
+  it("shows the warning without a link for an admin who may not manage the subscription", () => {
+    setStatus(2, []);
+
+    expect(notice()).toBeTruthy();
+    expect(notice().querySelector("a")).toBeNull();
+    expect(notice().textContent).toContain("contact an administrator");
+  });
+
+  it.each([0, 1, 3])("is hidden for subscription status %i", (status) => {
     setStatus(status);
 
     expect(fixture.componentInstance.visible()).toBe(false);
     expect(notice()).toBeNull();
   });
 
-  it("is hidden from a self-service user even when the status is 2", () => {
-    setStatus(2, "user");
+  it("disappears when the status changes from 2 to 3", () => {
+    setStatus(2);
+    expect(notice()).toBeTruthy();
 
-    expect(fixture.componentInstance.visible()).toBe(false);
+    setStatus(3);
     expect(notice()).toBeNull();
   });
 });

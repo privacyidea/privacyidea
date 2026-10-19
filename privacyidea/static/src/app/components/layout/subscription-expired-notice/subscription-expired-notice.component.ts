@@ -35,8 +35,7 @@ export class SubscriptionExpiredNoticeComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly subscriptionPath = ROUTE_PATHS.SUBSCRIPTION;
-  // The subscription page is an admin page, so the warning is for administrators only.
-  readonly visible = computed(
-    () => this.authService.role() === "admin" && this.authService.subscriptionStatus() === SUBSCRIPTION_INVALID
-  );
+  readonly visible = computed(() => this.authService.subscriptionStatus() === SUBSCRIPTION_INVALID);
+  // Without this right the subscription page loads no data, so only administrators holding it get the link.
+  readonly canManageSubscription = computed(() => this.authService.actionAllowed("managesubscription"));
 }

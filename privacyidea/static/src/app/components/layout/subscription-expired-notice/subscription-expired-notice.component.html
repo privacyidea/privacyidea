@@ -19,11 +19,18 @@
 @if (visible()) {
   <div
     class="subscription-expired-notice margin-top-16"
-    role="alert">
-    <span i18n="@@subscription.notValidAnymore"
-      >Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired.
-      Please check, if you need to renew your
-      <a [routerLink]="subscriptionPath">subscription</a>.</span
-    >
+    role="status">
+    @if (canManageSubscription()) {
+      <span i18n="@@subscription.notValidAnymore"
+        >Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired.
+        Please check, if you need to renew your
+        <a [routerLink]="subscriptionPath">subscription</a>.</span
+      >
+    } @else {
+      <span i18n="@@subscription.notValidAnymoreNoRight"
+        >Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired.
+        Please contact an administrator who can manage the subscription.</span
+      >
+    }
   </div>
 }
