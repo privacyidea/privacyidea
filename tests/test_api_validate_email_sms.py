@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import threading
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import responses
@@ -41,7 +42,15 @@ from .base import MyApiTestCase, clock_moved_forward
 from .test_api_parallel_requests import results_of, run_in_parallel
 
 
-class SentOtpValidityTests:
+# The type checker treats _TestHost as the test case class, so self.assertEqual, self.app, self.at, etc. resolve; at
+# runtime the base is plain object, because a TestCase base here would be collected and run without a token type.
+if TYPE_CHECKING:
+    _TestHost = MyApiTestCase
+else:
+    _TestHost = object
+
+
+class SentOtpValidityTests(_TestHost):
     """
     The validity time of a sent OTP value also applies when the user sends OTP PIN and OTP value together, without a
     transaction_id. The tests run for every token class that sends the OTP value, the subclass sets up the token type
@@ -290,7 +299,8 @@ class EmailSentOtpValidityTestCase(SentOtpValidityTests, MyApiTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.enterContext(smtpmock.mock)
+        smtpmock.mock.__enter__()
+        self.addCleanup(smtpmock.mock.__exit__, None, None, None)
         smtpmock.setdata(response={"hans@dampf.com": (200, "OK")})
 
 
@@ -304,7 +314,8 @@ class SmsSentOtpValidityTestCase(SentOtpValidityTests, MyApiTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.enterContext(responses.mock)
+        responses.mock.__enter__()
+        self.addCleanup(responses.mock.__exit__, None, None, None)
         setup_sms_gateway()
 
     def tearDown(self) -> None:
