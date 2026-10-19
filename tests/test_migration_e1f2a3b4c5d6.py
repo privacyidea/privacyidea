@@ -13,7 +13,7 @@ import pytest
 
 from privacyidea.models import db
 from privacyidea.models.event import EventHandler, EventHandlerOption
-from privacyidea.lib.webhook import set_webhook
+from privacyidea.lib.webhook import get_webhook, set_webhook
 from privacyidea.models.webhook import Webhook
 from tests.migration_test_utils import MigrationTestBase
 
@@ -549,19 +549,34 @@ class TestMigrationOwnershipMarker(WebhookMigrationTestBase):
 
     def test_a_foreign_webhook_of_the_same_name_is_not_hijacked(self):
         # An unmarked row of that name belongs to someone else. Adopting it would point the
-        # handler at an endpoint nobody chose for it, so the handler is left on its inline
-        # configuration - which still works, because those options are never removed.
+        # handler at an endpoint nobody chose for it. Leaving the handler on its inline
+        # configuration is no answer either: that shape is being removed, so the handler would
+        # keep working until the release that drops it and then silently send nothing. It gets
+        # its own webhook under the next free name.
         eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
-        set_webhook(f"from_Siem_Hook_{eh.id}", url="https://somewhere.else.example/hook")
+        foreign = f"from_Siem_Hook_{eh.id}"
+        set_webhook(foreign, url="https://somewhere.else.example/hook")
         db.session.commit()
 
-        assert self._run_migration() == 0
+        assert self._run_migration() == 1
 
-        assert self._webhook_option(eh.id) is None
-        assert Webhook.query.one().url == "https://somewhere.else.example/hook"
-        # The inline configuration the handler falls back to is untouched.
-        assert EventHandlerOption.query.filter_by(
-            eventhandler_id=eh.id, Key="URL").one().Value == "https://siem.example.com"
+        # The foreign webhook is untouched, and the handler points at a new one of its own.
+        assert get_webhook(foreign)["url"] == "https://somewhere.else.example/hook"
+        identifier = self._webhook_option(eh.id).Value
+        assert identifier == f"{foreign}_2"
+        assert get_webhook(identifier)["url"] == "https://siem.example.com"
+
+    def test_several_foreign_webhooks_push_the_name_further_along(self):
+        # The suffix search has to keep going, not give up on the first taken variant.
+        eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
+        base = f"from_Siem_Hook_{eh.id}"
+        set_webhook(base, url="https://one.example/hook")
+        set_webhook(f"{base}_2", url="https://two.example/hook")
+        db.session.commit()
+
+        assert self._run_migration() == 1
+
+        assert self._webhook_option(eh.id).Value == f"{base}_3"
 
     # ------------------------------------------------------------------
     # Downgrade

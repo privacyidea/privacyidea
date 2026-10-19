@@ -31,7 +31,7 @@ from privacyidea.lib.counter import increase as counter_increase
 from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
-                                   enable_event)
+                                   enable_event, import_event, IMPORT_MARKER)
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
@@ -56,7 +56,7 @@ from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
-from privacyidea.lib.webhook import set_webhook
+from privacyidea.lib.webhook import get_webhook, set_webhook
 from privacyidea.models.webhook import Webhook
 from privacyidea.models import Challenge
 from privacyidea.models import EventCounter, TokenOwner
@@ -5361,3 +5361,189 @@ class WebhookObjectHandlerTestCase(MyTestCase):
             self.assertEqual(1, len(responses.calls))
         finally:
             self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+
+class ImportInlineWebhookHandlerTestCase(MyTestCase):
+    """
+    pi-manage config import converting the pre-3.15 inline WebHook shape.
+
+    An import is not an upgrade: a configuration exported from 3.14 or older re-creates the inline
+    options on an installation that migrated long ago, where no migration will ever see them
+    again. See https://github.com/privacyidea/privacyidea/issues/5751
+    """
+
+    URL = "https://inline.example.com/hook"
+
+    def setUp(self):
+        super().setUp()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super().tearDown()
+
+    @staticmethod
+    def _cleanup():
+        for handler in EventConfiguration().events:
+            delete_event(handler["id"])
+        for webhook in Webhook.query.all():
+            webhook.delete()
+
+    @staticmethod
+    def _exported(name="Coffee maker", options=None, handlermodule="WebHook",
+                  action="post_webhook", handler_id=1):
+        """A single entry as export_event() writes it for a pre-3.15 definition."""
+        return [{
+            "id": handler_id,
+            "name": name,
+            "active": True,
+            "ordering": 0,
+            "position": "post",
+            "abort_on_error": False,
+            "event": ["validate_check"],
+            "handlermodule": handlermodule,
+            "action": action,
+            "condition": None,
+            "conditions": {},
+            "options": options if options is not None else {
+                "URL": "https://inline.example.com/hook",
+                "content_type": "application/json",
+                "data": '{"a": 1}',
+            },
+        }]
+
+    def test_an_inline_definition_gets_a_webhook_object(self):
+        import_event(self._exported())
+
+        handler = EventConfiguration().events[0]
+        identifier = handler["options"]["webhook"]
+        self.assertEqual(f"from_Coffee_maker_{handler['id']}", identifier)
+
+        webhook = get_webhook(identifier)
+        self.assertEqual(self.URL, webhook["url"])
+        self.assertEqual("application/json", webhook["content_type"])
+        self.assertEqual("POST", webhook["http_method"])
+        self.assertEqual("none", webhook["auth_type"])
+        self.assertTrue(webhook["verify_tls"])
+        # The inline shape's fixed TIMEOUT, so the imported handler behaves as it did.
+        self.assertEqual(10, webhook["timeout"])
+        self.assertTrue(webhook["description"].startswith(IMPORT_MARKER), webhook["description"])
+
+    def test_the_inline_options_are_kept(self):
+        # Exactly as the migration keeps them: the webhook option wins in do(), and they stay
+        # readable until the release that removes the inline shape drops them.
+        import_event(self._exported())
+
+        options = EventConfiguration().events[0]["options"]
+        self.assertEqual(self.URL, options["URL"])
+        self.assertEqual("application/json", options["content_type"])
+        self.assertEqual('{"a": 1}', options["data"])
+
+    def test_a_legacy_content_type_is_normalised(self):
+        import_event(self._exported(options={"URL": self.URL, "content_type": "urlencoded"}))
+
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual("application/x-www-form-urlencoded",
+                         get_webhook(identifier)["content_type"])
+
+    def test_a_missing_content_type_gets_the_default(self):
+        import_event(self._exported(options={"URL": self.URL}))
+
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual("application/json", get_webhook(identifier)["content_type"])
+
+    def test_a_definition_that_already_names_a_webhook_is_untouched(self):
+        set_webhook("siem", url="https://siem.example.com/hook")
+        import_event(self._exported(options={"URL": self.URL, "webhook": "siem"}))
+
+        self.assertEqual("siem", EventConfiguration().events[0]["options"]["webhook"])
+        # No second webhook was created for it.
+        self.assertEqual(["siem"], [w.identifier for w in Webhook.query.all()])
+
+    def test_a_definition_without_a_url_is_skipped(self):
+        # It sends nothing as it stands and cannot be given a webhook, so storing it would put a
+        # handler into the database that the release removing the inline shape cannot repair.
+        import_event(self._exported(options={"data": '{"a": 1}'}))
+
+        self.assertEqual([], EventConfiguration().events)
+        self.assertEqual(0, Webhook.query.count())
+
+    def test_a_definition_with_an_unusable_content_type_is_skipped(self):
+        # The inline handler refuses the value, so this one sends nothing either. Reading it as
+        # JSON would be a guess about what was meant.
+        import_event(self._exported(options={"URL": self.URL, "content_type": "nonsense"}))
+
+        self.assertEqual([], EventConfiguration().events)
+        self.assertEqual(0, Webhook.query.count())
+
+    def test_skipping_one_definition_does_not_stop_the_import(self):
+        broken = self._exported(name="Broken", options={"URL": self.URL,
+                                                        "content_type": "nonsense"},
+                                handler_id=1)
+        intact = self._exported(name="Intact", handler_id=2)
+
+        import_event(broken + intact)
+
+        names = [handler["name"] for handler in EventConfiguration().events]
+        self.assertEqual(["Intact"], names)
+        self.assertEqual(1, Webhook.query.count())
+
+    def test_a_webhook_definition_without_a_url_is_imported(self):
+        # No URL is only a defect in the inline shape. A definition that names a webhook has no
+        # business carrying one.
+        set_webhook("siem", url="https://siem.example.com/hook")
+        import_event(self._exported(options={"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertEqual("siem", EventConfiguration().events[0]["options"]["webhook"])
+
+    def test_a_foreign_webhook_of_the_same_name_is_not_hijacked(self):
+        # Adopting it would point the handler at an endpoint nobody chose for it. Leaving the
+        # handler inline is no answer either - that shape is being removed - so it gets its own
+        # webhook under the next free name.
+        import_event(self._exported())
+        taken = EventConfiguration().events[0]["options"]["webhook"]
+        self._cleanup()
+        set_webhook(taken, url="https://somewhere.else.example/hook")
+
+        import_event(self._exported())
+
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual(f"{taken}_2", identifier)
+        self.assertEqual(self.URL, get_webhook(identifier)["url"])
+        # The foreign webhook keeps its endpoint.
+        self.assertEqual("https://somewhere.else.example/hook", get_webhook(taken)["url"])
+
+    def test_several_foreign_webhooks_push_the_name_further_along(self):
+        import_event(self._exported())
+        base = EventConfiguration().events[0]["options"]["webhook"]
+        self._cleanup()
+        set_webhook(base, url="https://one.example/hook")
+        set_webhook(f"{base}_2", url="https://two.example/hook")
+
+        import_event(self._exported())
+
+        self.assertEqual(f"{base}_3",
+                         EventConfiguration().events[0]["options"]["webhook"])
+
+    def test_importing_the_same_configuration_twice_reuses_its_own_webhook(self):
+        import_event(self._exported())
+        import_event(self._exported())
+
+        self.assertEqual(1, len(EventConfiguration().events))
+        self.assertEqual(1, Webhook.query.count())
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual(self.URL, get_webhook(identifier)["url"])
+
+    def test_a_handler_without_a_name_gets_the_fallback_identifier(self):
+        import_event(self._exported(name=None))
+
+        handler = EventConfiguration().events[0]
+        self.assertEqual(f"webhook_from_handler_{handler['id']}",
+                         handler["options"]["webhook"])
+
+    def test_another_handler_module_is_untouched(self):
+        import_event(self._exported(handlermodule="UserNotification", action="sendmail",
+                                    options={"URL": self.URL}))
+
+        self.assertNotIn("webhook", EventConfiguration().events[0]["options"])
+        self.assertEqual(0, Webhook.query.count())

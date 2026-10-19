@@ -37,8 +37,11 @@ keep working, but they can not carry authentication.
     anyway (no ``URL``, or a ``content_type`` that is neither JSON nor urlencoded). Those have to be linked
     by hand. Each one is named in the upgrade log.
 
-    Note that a configuration imported with ``pi-manage config import`` from an export taken before 3.15
-    can re-create the old shape at any time; such a handler needs converting too.
+    A configuration imported with ``pi-manage config import`` from an export taken before 3.15 carries the
+    old shape too, and is converted on import, so an old export stays usable after the inline shape is
+    gone. A definition that cannot be converted because it sends nothing as it stands -- no ``URL``, or a
+    ``content_type`` that is neither JSON nor urlencoded -- is not imported at all, and the import log
+    names it. Correct it in the exported configuration and import again.
 
 None of the options is mandatory - each has a meaningful empty state.
 

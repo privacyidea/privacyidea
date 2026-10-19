@@ -444,6 +444,53 @@ def _create_webhookheader_table():
 # Data migration (inline WebHook handlers → webhook objects)
 # ---------------------------------------------------------------------------
 
+def _free_identifier(conn, base, handler_id):
+    """
+    Return the identifier to create this handler's webhook under, and whether it already exists.
+
+    A name that is already taken belongs either to a previous, interrupted run of this migration
+    or to somebody else. The first is adopted: migrations run under AUTOCOMMIT (see
+    migrations/env.py), so a webhook row is durable the moment it is written and survives a run
+    that fails before writing the option row that links it. The resume check in
+    :func:`_run_data_migration` keys on that option row, so on a re-run this handler is not
+    skipped and the identifier would collide - leaving the upgrade permanently stuck on a UNIQUE
+    violation, which is the state the printed "just re-run" advice promises to resolve.
+
+    Somebody else's webhook is not adopted; that would point the handler at an endpoint nobody
+    chose for it. The handler is not left on its inline configuration either, which is what this
+    used to do: that shape is being removed, so a working handler left behind this way keeps
+    working until the release that drops it and then silently sends nothing. It gets a numeric
+    suffix instead, which costs an ugly name and nothing else.
+
+    :param conn: the connection the migration runs on
+    :param base: the identifier the naming rule produces for this handler
+    :param handler_id: the handler being migrated, for the log messages
+    :return: a ``(identifier, reused)`` tuple; *reused* is True when the row already exists and
+        belongs to this migration, so the caller must not insert it again
+    """
+    candidate = base
+    suffix = 1
+    while True:
+        existing = conn.execute(
+            sa.select(_webhook.c.description).where(_webhook.c.identifier == candidate)
+        ).fetchone()
+        if existing is None:
+            if candidate != base:
+                log.warning(
+                    f"Webhook '{base}' already exists and was not created by this migration, so "
+                    f"WebHook handler {handler_id} is migrated to '{candidate}' instead."
+                )
+            return candidate, False
+        if str(existing.description or "").startswith(MIGRATION_MARKER):
+            log.info(
+                f"Webhook '{candidate}' already exists from an earlier, interrupted run of this "
+                f"migration - reusing it."
+            )
+            return candidate, True
+        suffix += 1
+        candidate = f"{base}_{suffix}"
+
+
 def _run_data_migration(conn):
     """
     Convert inline WebHook handler options to first-class webhook objects.
@@ -532,11 +579,8 @@ def _run_data_migration(conn):
         #    handler and the identifier would collide with the row already there - leaving the
         #    upgrade permanently stuck on a UNIQUE violation, which is precisely the state the
         #    printed advice to "just re-run" promises to resolve. So the leftover is adopted instead.
-        existing = conn.execute(
-            sa.select(_webhook.c.identifier, _webhook.c.description)
-            .where(_webhook.c.identifier == identifier)
-        ).fetchone()
-        if existing is None:
+        identifier, reused = _free_identifier(conn, identifier, handler_id)
+        if not reused:
             #    timeout=10 matches the handler's current TIMEOUT constant to preserve
             #    existing behaviour (the new default for manually created webhooks is 3).
             conn.execute(
@@ -550,23 +594,6 @@ def _run_data_migration(conn):
                     verify_tls=True,
                     timeout=10,
                 )
-            )
-        elif not str(existing.description or "").startswith(MIGRATION_MARKER):
-            # Someone else's webhook happens to carry this name. Adopting it would silently point
-            # the handler at an endpoint nobody chose for it, so the handler is left alone: its
-            # inline URL/content_type options are still in place, so it keeps working exactly as
-            # before and an admin can link it by hand.
-            log.warning(
-                f"WebHook handler {handler_id} would migrate to webhook '{identifier}', but a "
-                f"webhook of that name already exists and was not created by this migration. "
-                f"Leaving the handler on its inline configuration; link it by hand if you want it "
-                f"to use a webhook object."
-            )
-            continue
-        else:
-            log.info(
-                f"Webhook '{identifier}' already exists from an earlier, interrupted run of this "
-                f"migration - reusing it."
             )
 
         # 7. Add a "webhook" option to the handler pointing at the identifier.
