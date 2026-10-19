@@ -56,6 +56,7 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.error import ConflictError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
@@ -65,7 +66,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      get_smsgateway)
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL, SentOtpValidityMixin
+from privacyidea.lib.tokens.sent_otp_validity import SentOtpValidityMixin
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.token import create_challenge
 
@@ -301,7 +302,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         if not verify:
             # The new key resets the counter, the record of a value sent with the old key no longer applies. Removed
             # only once the update succeeded, a failed one keeps the old key and counter.
-            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
+            self._remove_sent_otp_validity()
         return
 
     @log_with(log)
@@ -346,8 +347,6 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         validity = self._get_sms_timeout()
 
         if self.is_active() is True:
-            counter = self.get_otp_count()
-            log.debug(f"counter={counter!r}")
             # At this point we must not bail out in case of a
             # Gateway error, since checkPIN is successful. A bailout
             # would cancel the checking of the other tokens
@@ -355,15 +354,16 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
                 data = None
                 # Only if this is NOT a multichallenge enrollment, we try to send the sms
                 if options.get("session") != ChallengeSession.ENROLLMENT:
-                    self.inc_otp_counter(counter, reset=False)
+                    sent_counter = self._claim_otp_count_to_send()
+                    otp = self._calc_otp(sent_counter)
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
-                        message=message_template, options=options)
-                    self._record_sent_otp_validity(validity)
+                        message=message_template, options=options, otp=otp)
+                    self._record_sent_otp_validity(sent_counter, validity)
 
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):
-                        data = {"otp": self.get_otp()[2]}
+                        data = {"otp": otp}
                 db_challenge = create_challenge(self.token.serial,
                                                 transaction_id=transactionid,
                                                 challenge=options.get("challenge"),
@@ -411,27 +411,29 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         if ret >= 0 and self._get_auto_sms(options):
             # get message template from user specific policies
             message = self._get_sms_text(options)
-            self.inc_otp_counter(ret, reset=False)
-            success, message = self._send_sms(message=message, options=options)
-            # The value is meant for a later login, so it has no time limit
-            self._record_sent_otp_validity(None)
-            log.debug(f"AutoSMS: send new SMS: {success!s}")
-            log.debug(f"AutoSMS: {message!r}")
+            # The value is meant for a later login and has no time limit: its counter is above every record
+            try:
+                sent_counter = self._claim_otp_count_to_send()
+            except ConflictError as e:
+                # The authentication succeeded, the next login triggers a new value instead
+                log.warning(f"AutoSMS: no new OTP value sent: {e.message}")
+            else:
+                success, message = self._send_sms(message=message, options=options,
+                                                  otp=self._calc_otp(sent_counter))
+                log.debug(f"AutoSMS: send new SMS: {success!s}")
+                log.debug(f"AutoSMS: {message!r}")
         return ret
 
     @log_with(log)
-    def _send_sms(self, message="<otp>", options=None):
+    def _send_sms(self, message: str = "<otp>", options: dict | None = None, *, otp: str) -> tuple[bool, str]:
         """
         send sms
 
         :param message: the sms submit message - could contain placeholders
             like <otp> or <serial>
-        :type message: string
         :param options: Additional options from the request
-        :type options: dict
-
-        :return: submitted message
-        :rtype: string
+        :param otp: the OTP value to send
+        :return: whether the SMS was sent, and the submitted message
         """
         if is_true(self.get_tokeninfo(self.DYNAMIC_PHONE_KEY)):
             phone = self.user.get_user_phone("mobile")
@@ -442,7 +444,6 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
             phone = self.get_tokeninfo("phone")
         if not phone:  # pragma: no cover
             log.warning(f"Token {self.token.serial!s} does not have a phone number!")
-        otp = self.get_otp()[2]
         serial = self.get_serial()
         User = options.get("user")
 
@@ -597,7 +598,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         #  Currently we just return the message without checking the result
         _res, msg, _tid, _rdict = self.create_challenge(options=options)
         # The enrollment can be verified later on, so the value has no time limit
-        self._record_sent_otp_validity(None)
+        self._remove_sent_otp_validity()
         return {"message": msg}
 
     @classmethod

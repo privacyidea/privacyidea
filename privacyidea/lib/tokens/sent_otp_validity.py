@@ -19,10 +19,17 @@
 from datetime import datetime, timedelta, timezone
 import logging
 
+from sqlalchemy import select
+
+from privacyidea.lib.error import ConflictError
+from privacyidea.models import Token, TokenInfo, db
+
 log = logging.getLogger(__name__)
 
 # Token info holding the counter of the OTP value last sent to the user and until when it may be used
 SENT_OTP_VALID_UNTIL = "sent_otp_valid_until"
+# How often a send tries to claim a counter while other requests keep moving it on
+CLAIM_ATTEMPTS = 10
 
 
 class SentOtpValidityMixin:
@@ -34,19 +41,61 @@ class SentOtpValidityMixin:
 
     owned_tokeninfo_keys = frozenset({SENT_OTP_VALID_UNTIL})
 
-    def _record_sent_otp_validity(self, validity_seconds: int | None) -> None:
+    def _claim_otp_count_to_send(self) -> int:
         """
-        Store until when the OTP value at the current counter, which was just sent to the user, may be used without
-        a transaction_id.
+        Move the OTP counter on by one for a value that is about to be sent and return the counter of that value. The
+        conditional update gives every send a counter of its own and never moves the counter backwards, also when
+        several requests send at the same time.
 
-        :param validity_seconds: The validity time of the value, None for a value without a time limit, e.g. one
-            that is sent for a later login
+        :return: The counter of the value to send
+        :raises ConflictError: If other requests kept moving the counter on
         """
-        if validity_seconds is None:
-            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
-        else:
-            valid_until = datetime.now(timezone.utc) + timedelta(seconds=validity_seconds)
-            self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{self.token.count} {valid_until.isoformat()}")
+        token_id = self.token.id
+        for _ in range(CLAIM_ATTEMPTS):
+            current = db.session.scalar(select(Token.count).where(Token.id == token_id))
+            if self.advance_otp_count(current + 1):
+                return current + 1
+        raise ConflictError(f"Could not claim an OTP counter for token {self.token.serial}.")
+
+    def _record_sent_otp_validity(self, counter: int, validity_seconds: int) -> None:
+        """
+        Store until when the sent OTP value at the given counter may be used without a transaction_id. A send that
+        claimed its counter earlier can finish later than another one, so the record of a higher counter is kept.
+
+        :param counter: The counter of the sent value, see _claim_otp_count_to_send()
+        :param validity_seconds: The validity time of the value
+        """
+        # Serialize on the token row like inc_failcount(), so the comparison and the write are not interleaved with
+        # those of another send. write_tokeninfo() commits and releases the lock.
+        token_id = self.token.id
+        db.session.commit()
+        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
+                                                                   TokenInfo.Key == SENT_OTP_VALID_UNTIL))
+        if recorded and self._recorded_counter(recorded) > counter:
+            db.session.commit()
+            return
+        valid_until = datetime.now(timezone.utc) + timedelta(seconds=validity_seconds)
+        self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{counter} {valid_until.isoformat()}")
+
+    def _remove_sent_otp_validity(self) -> None:
+        """
+        Remove the record of the last sent OTP value, for a value that has no time limit.
+        """
+        self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
+
+    @staticmethod
+    def _recorded_counter(record: str) -> int:
+        """
+        The counter of a record of a sent OTP value.
+
+        :param record: The record, see _record_sent_otp_validity()
+        :return: The counter, -1 if the record can not be read
+        """
+        try:
+            return int(record.split(" ", 1)[0])
+        except ValueError:
+            return -1
 
     def _get_sent_otp_record(self, options: dict) -> str | None:
         """

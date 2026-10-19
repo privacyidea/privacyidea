@@ -74,7 +74,7 @@ from privacyidea.lib.token import create_challenge
 from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ValidateError
+from privacyidea.lib.error import ConflictError, ValidateError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match
@@ -82,7 +82,7 @@ from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options)
 from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
-from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL, SentOtpValidityMixin
+from privacyidea.lib.tokens.sent_otp_validity import SentOtpValidityMixin
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
 from privacyidea.lib.utils import is_true, create_tag_dict
 
@@ -254,7 +254,7 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
         if not verify:
             # The new key resets the counter, the record of a value sent with the old key no longer applies. Removed
             # only once the update succeeded, a failed one keeps the old key and counter.
-            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
+            self._remove_sent_otp_validity()
         return
 
     @log_with(log, hide_args=[1])
@@ -302,9 +302,6 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
         validity = int(get_from_config("email.validtime", 120))
 
         if self.is_active() is True:
-            counter = self.get_otp_count()
-            log.debug(f"counter={counter!r}")
-
             # At this point we must not bail out in case of a
             # Gateway error, since checkPIN is successful. A bailout
             # would cancel the checking of the other tokens
@@ -312,7 +309,8 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                 data = None
                 if options.get("session") != ChallengeSession.ENROLLMENT:
                     # Only if this is NOT a multichallenge enrollment, we try to send the email
-                    self.inc_otp_counter(counter, reset=False)
+                    sent_counter = self._claim_otp_count_to_send()
+                    otp = self._calc_otp(sent_counter)
                     message_template, mimetype = self._get_email_text_or_subject(options)
                     subject_template, _n = self._get_email_text_or_subject(options,
                                                                            EMAILACTION.EMAILSUBJECT,
@@ -321,12 +319,13 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                         options=options,
                         message=message_template,
                         subject=subject_template,
-                        mimetype=mimetype)
-                    self._record_sent_otp_validity(validity)
+                        mimetype=mimetype,
+                        otp=otp)
+                    self._record_sent_otp_validity(sent_counter, validity)
 
-                # Create the challenge in the database
-                if is_true(get_from_config("email.concurrent_challenges")):
-                    data = {"otp": self.get_otp()[2]}
+                    # Create the challenge in the database
+                    if is_true(get_from_config("email.concurrent_challenges")):
+                        data = {"otp": otp}
                 db_challenge = create_challenge(self.token.serial,
                                                transaction_id=transactionid,
                                                challenge=options.get("challenge"),
@@ -379,15 +378,20 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
             subject, _ = self._get_email_text_or_subject(options,
                                                          action=EMAILACTION.EMAILSUBJECT,
                                                          default="Your OTP")
-            self.inc_otp_counter(ret, reset=False)
-            success, message = self._compose_email(options=options,
-                                                   message=message,
-                                                   subject=subject,
-                                                   mimetype=mimetype)
-            # The value is meant for a later login, so it has no time limit
-            self._record_sent_otp_validity(None)
-            log.debug(f"AutoEmail: send new SMS: {success!s}")
-            log.debug(f"AutoEmail: {message!r}")
+            # The value is meant for a later login and has no time limit: its counter is above every record
+            try:
+                sent_counter = self._claim_otp_count_to_send()
+            except ConflictError as e:
+                # The authentication succeeded, the next login triggers a new value instead
+                log.warning(f"AutoEmail: no new OTP value sent: {e.message}")
+            else:
+                success, message = self._compose_email(options=options,
+                                                       message=message,
+                                                       subject=subject,
+                                                       mimetype=mimetype,
+                                                       otp=self._calc_otp(sent_counter))
+                log.debug(f"AutoEmail: send new SMS: {success!s}")
+                log.debug(f"AutoEmail: {message!r}")
         return ret
 
     @staticmethod
@@ -452,23 +456,22 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
         return autosms
 
     @log_with(log)
-    def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain", options=None):
+    def _compose_email(self, message: str = "<otp>", subject: str = "Your OTP", mimetype: str = "plain",
+                       options: dict | None = None, *, otp: str) -> tuple[bool, str]:
         """
         send email
 
         :param message: the email submit message - could contain placeholders
             like <otp> or <serial>
-        :type message: string
+        :param subject: the email subject - could contain the same placeholders
         :param mimetype: the message MIME type - one of "plain", "html"
-        :type mimetype: basestring
-
-        :return: submitted message
-        :rtype: string
+        :param options: Additional options from the request
+        :param otp: the OTP value to send
+        :return: whether the email was sent, and the submitted message
         """
         ret = None
 
         recipient = self._email_address
-        otp = self.get_otp()[2]
         serial = self.get_serial()
         options = options or {}
         challenge = options.get("challenge")
@@ -550,7 +553,7 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
         #  Currently we just return the message without checking the result
         _res, msg, _tid, _rdict = self.create_challenge(options=options)
         # The enrollment can be verified later on, so the value has no time limit
-        self._record_sent_otp_validity(None)
+        self._remove_sent_otp_validity()
         return {"message": msg}
 
     @classmethod

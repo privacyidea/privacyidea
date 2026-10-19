@@ -15,23 +15,30 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import threading
 from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 import responses
 
+import privacyidea.lib.tokens.emailtoken as emailtoken_module
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
+from privacyidea.lib.error import ConflictError
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway
 from privacyidea.lib.token import get_tokens, init_token, remove_token, get_one_token
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
-from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL
+from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL, SentOtpValidityMixin
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
+from privacyidea.models import db
 from . import smtpmock
 from .api_validate_common import setup_sms_gateway
 from .base import MyApiTestCase, clock_moved_forward
+from .test_api_parallel_requests import results_of, run_in_parallel
 
 
 class SentOtpValidityTests:
@@ -45,6 +52,9 @@ class SentOtpValidityTests:
     validity_key: str
     autosend_action: str
     contact: dict[str, str]
+    # The object and the name of the function that hands the message to the transport
+    transport: object
+    transport_send: str
 
     def setUp(self) -> None:
         super().setUp()
@@ -150,6 +160,103 @@ class SentOtpValidityTests:
               mock.patch.object(HotpTokenClass, "check_otp", check_otp_while_another_request_sends)):
             self.assertFalse(self._check({"pass": self.pin + otp}))
 
+    def test_lost_counter_claim_is_retried(self):
+        # Another request moved the counter on between the read and the conditional update of this send
+        serial = self._enroll()
+        advance = TokenClass.advance_otp_count
+        lost = []
+
+        def lose_first_claim(token, new_count):
+            if not lost:
+                lost.append(new_count)
+                return False
+            return advance(token, new_count)
+
+        with mock.patch.object(TokenClass, "advance_otp_count", lose_first_claim):
+            _, otp = self._trigger(serial)
+        token = get_one_token(serial=serial)
+        self.assertListEqual([1], lost)
+        self.assertEqual(1, token.token.count)
+        self.assertEqual("1", token.get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+        self.assertTrue(self._check({"pass": self.pin + otp}))
+
+    def test_send_fails_when_no_counter_can_be_claimed(self):
+        serial = self._enroll()
+        with mock.patch.object(TokenClass, "advance_otp_count", return_value=False):
+            with self.app.test_request_context("/validate/triggerchallenge", method="POST",
+                                               data={"serial": serial}, headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"], res.json)
+        token = get_one_token(serial=serial)
+        self.assertEqual(0, token.token.count)
+        self.assertIsNone(token.get_tokeninfo(SENT_OTP_VALID_UNTIL))
+
+    def test_autosend_without_a_counter_keeps_the_login(self):
+        # The authentication succeeded before autosend claims the counter of the next value
+        serial = self._enroll()
+        set_policy("validity_autosend", scope=SCOPE.AUTH, action=self.autosend_action)
+        self.policies.append("validity_autosend")
+        _, otp = self._trigger(serial)
+        with mock.patch.object(SentOtpValidityMixin, "_claim_otp_count_to_send",
+                               side_effect=ConflictError("counter moved on")):
+            self.assertTrue(self._check({"pass": self.pin + otp}))
+        self.assertEqual(2, get_one_token(serial=serial).token.count)
+
+    def test_overlapping_sends_keep_the_time_limit_of_the_later_value(self):
+        # The second send claims its counter, sends and records its value while the first one is still sending
+        if db.engine.dialect.name == "sqlite":
+            self.skipTest("SQLite serializes the writers, the interleaving cannot be reproduced")
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 1)
+        first_is_sending = threading.Event()
+        second_has_recorded = threading.Event()
+        delayed_thread = threading.local()
+        real_send = getattr(self.transport, self.transport_send)
+        real_record = SentOtpValidityMixin._record_sent_otp_validity
+
+        def slow_first_send(*args, **kwargs):
+            if not first_is_sending.is_set():
+                delayed_thread.delayed = True
+                first_is_sending.set()
+                second_has_recorded.wait(10)
+            return real_send(*args, **kwargs)
+
+        def record_and_report(token: SentOtpValidityMixin, *args, **kwargs) -> None:
+            real_record(token, *args, **kwargs)
+            if not getattr(delayed_thread, "delayed", False):
+                second_has_recorded.set()
+
+        def trigger() -> dict:
+            with self.app.test_client() as client:
+                return client.post("/validate/triggerchallenge", data={"serial": serial},
+                                   headers={"Authorization": self.at}).json
+
+        def second_trigger() -> dict:
+            first_is_sending.wait(10)
+            return trigger()
+
+        with (mock.patch.object(self.transport, self.transport_send, slow_first_send),
+              mock.patch.object(SentOtpValidityMixin, "_record_sent_otp_validity", record_and_report)):
+            results = results_of(run_in_parallel(self.app, [trigger, second_trigger]))
+
+        self.assertTrue(all(isinstance(result, dict) and result.get("status") for result in results), results)
+        token = get_one_token(serial=serial)
+        self.assertEqual(2, token.token.count)
+        self.assertEqual("2", token.get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+        with clock_moved_forward(2):
+            self.assertFalse(self._check({"pass": self.pin + token._calc_otp(2)}))
+
+    def test_older_send_keeps_the_record_of_a_newer_one(self):
+        # A send that claimed its counter earlier finishes after a send that claimed a higher one
+        serial = self._enroll()
+        token = get_one_token(serial=serial)
+        token._record_sent_otp_validity(5, 120)
+        token._record_sent_otp_validity(4, 120)
+        self.assertEqual("5", get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+        token._record_sent_otp_validity(6, 120)
+        self.assertEqual("6", get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+
     def test_failed_reinit_keeps_record(self):
         # A re-initialization that fails keeps the old key and counter, so the sent value keeps its time limit
         serial = self._enroll()
@@ -178,6 +285,8 @@ class EmailSentOtpValidityTestCase(SentOtpValidityTests, MyApiTestCase):
     validity_key = "email.validtime"
     autosend_action = EMAILACTION.EMAILAUTO
     contact = {"email": "hans@dampf.com"}
+    transport = emailtoken_module
+    transport_send = "send_email_data"
 
     def setUp(self) -> None:
         super().setUp()
@@ -190,6 +299,8 @@ class SmsSentOtpValidityTestCase(SentOtpValidityTests, MyApiTestCase):
     validity_key = "sms.providerTimeout"
     autosend_action = SMSAction.SMSAUTO
     contact = {"phone": "123456"}
+    transport = HttpSMSProvider
+    transport_send = "submit_message"
 
     def setUp(self) -> None:
         super().setUp()
