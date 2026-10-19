@@ -134,7 +134,8 @@ class EntraIDResolver(HTTPResolver):
 
         try:
             self.ms_graph_app = msal.ConfidentialClientApplication(self.client_id, authority=self.authority,
-                                                                   client_credential=self.client_credential)
+                                                                   client_credential=self.client_credential,
+                                                                   timeout=self.timeout)
         except ValueError as error:
             raise ParameterError(f"Invalid Authorization Configuration: {error}")
 
