@@ -245,15 +245,16 @@ class EmailTokenClass(SentOtpValidityMixin, HotpTokenClass):
                                                self.EMAIL_ADDRESS_KEY,
                                                allow_empty=True)
                 self.remove_tokeninfo(self.DYNAMIC_EMAIL_KEY)
-            # The new key resets the counter, the record of a value sent with the old key no longer applies
-            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
-
             # in case of the e-mail token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
             if 'genkey' not in param and 'otpkey' not in param:
                 param['genkey'] = 1
 
         HotpTokenClass.update(self, param, reset_failcount)
+        if not verify:
+            # The new key resets the counter, the record of a value sent with the old key no longer applies. Removed
+            # only once the update succeeded, a failed one keeps the old key and counter.
+            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
         return
 
     @log_with(log, hide_args=[1])

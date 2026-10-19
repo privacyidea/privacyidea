@@ -15,6 +15,8 @@
 #
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+from datetime import datetime, timedelta, timezone
+
 import responses
 
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
@@ -128,6 +130,28 @@ class SentOtpValidityTests:
         token = get_one_token(serial=serial)
         self.assertEqual(0, token.token.count)
         self.assertIsNone(token.get_tokeninfo(SENT_OTP_VALID_UNTIL))
+
+    def test_failed_reinit_keeps_record(self):
+        # A re-initialization that fails keeps the old key and counter, so the sent value keeps its time limit
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 120)
+        before_send = datetime.now(timezone.utc)
+        _, otp = self._trigger(serial)
+        after_send = datetime.now(timezone.utc)
+        record = get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL)
+        sent_counter, valid_until = record.split(" ", 1)
+        self.assertEqual(get_one_token(serial=serial).token.count, int(sent_counter), record)
+        self.assertTrue(before_send + timedelta(seconds=120) <= datetime.fromisoformat(valid_until)
+                        <= after_send + timedelta(seconds=120), record)
+
+        with self.app.test_request_context("/token/init", method="POST",
+                                           data={"serial": serial, "type": self.token_type, "otpkey": self.otpkey,
+                                                 "otpkeyformat": "unknown", **self.contact},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(record, get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL))
+        self.assertTrue(self._check({"pass": self.pin + otp}))
 
 
 class EmailSentOtpValidityTestCase(SentOtpValidityTests, MyApiTestCase):
