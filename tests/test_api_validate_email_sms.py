@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from datetime import datetime, timedelta, timezone
+from unittest import mock
 
 import responses
 
@@ -24,6 +25,7 @@ from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway
 from privacyidea.lib.token import get_tokens, init_token, remove_token, get_one_token
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
+from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.sent_otp_validity import SENT_OTP_VALID_UNTIL
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
@@ -130,6 +132,23 @@ class SentOtpValidityTests:
         token = get_one_token(serial=serial)
         self.assertEqual(0, token.token.count)
         self.assertIsNone(token.get_tokeninfo(SENT_OTP_VALID_UNTIL))
+
+    def test_value_sent_during_the_check_keeps_the_limit(self):
+        # Another request sends a value after the expired one matched and moved the counter on, but before its time
+        # limit is checked. The check is still decided by the record of the matched value.
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 1)
+        _, otp = self._trigger(serial)
+        hotp_check_otp = HotpTokenClass.check_otp
+
+        def check_otp_while_another_request_sends(token, *args, **kwargs):
+            result = hotp_check_otp(token, *args, **kwargs)
+            get_one_token(serial=serial).create_challenge()
+            return result
+
+        with (clock_moved_forward(2),
+              mock.patch.object(HotpTokenClass, "check_otp", check_otp_while_another_request_sends)):
+            self.assertFalse(self._check({"pass": self.pin + otp}))
 
     def test_failed_reinit_keeps_record(self):
         # A re-initialization that fails keeps the old key and counter, so the sent value keeps its time limit

@@ -48,36 +48,45 @@ class SentOtpValidityMixin:
             valid_until = datetime.now(timezone.utc) + timedelta(seconds=validity_seconds)
             self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{self.token.count} {valid_until.isoformat()}")
 
-    def _is_sent_otp_expired(self, counter: int) -> bool:
+    def _get_sent_otp_record(self, options: dict) -> str | None:
+        """
+        Read the record of the last sent OTP value for a check without a transaction_id. It is read before the OTP
+        check moves the counter on, so that a value another request sends meanwhile does not replace the record the
+        check is decided by. With a transaction_id the expiry of the challenge applies instead.
+
+        :param options: The request options
+        :return: The record, None if there is none or the request has a transaction_id
+        """
+        if options.get("transaction_id") or options.get("state"):
+            return None
+        return self.get_tokeninfo(SENT_OTP_VALID_UNTIL)
+
+    def _is_sent_otp_expired(self, counter: int, record: str) -> bool:
         """
         Whether the OTP value at the given counter was sent with a validity time that has passed.
 
         :param counter: The counter of the matched OTP value
+        :param record: The record of the last sent OTP value, see _get_sent_otp_record()
         :return: True if the value was sent and its validity time has passed, also if the record can not be read
         """
-        recorded = self.get_tokeninfo(SENT_OTP_VALID_UNTIL)
-        if not recorded:
-            return False
         try:
-            sent_counter, valid_until = recorded.split(" ", 1)
+            sent_counter, valid_until = record.split(" ", 1)
             return (int(sent_counter) == counter
                     and datetime.now(timezone.utc) > datetime.fromisoformat(valid_until))
         except (ValueError, TypeError):
-            log.warning(f"Invalid value '{recorded}' in the token info {SENT_OTP_VALID_UNTIL} of token "
+            log.warning(f"Invalid value '{record}' in the token info {SENT_OTP_VALID_UNTIL} of token "
                         f"{self.token.serial}, the OTP value is refused.")
             return True
 
-    def _refuse_expired_sent_otp(self, counter: int, options: dict) -> int:
+    def _refuse_expired_sent_otp(self, counter: int, record: str | None) -> int:
         """
-        Refuse a matched OTP value that was sent with a validity time that has passed, if the request has no
-        transaction_id. With a transaction_id the expiry of the challenge already applies.
+        Refuse a matched OTP value that was sent with a validity time that has passed.
 
         :param counter: The counter of the matched OTP value, or -1
-        :param options: The request options
+        :param record: The record read before the OTP check, see _get_sent_otp_record()
         :return: The counter, or -1 if the value is refused
         """
-        if counter >= 0 and not (options.get("transaction_id") or options.get("state")):
-            if self._is_sent_otp_expired(counter):
-                log.debug(f"The OTP value of token {self.token.serial} was sent longer ago than its validity time.")
-                return -1
+        if counter >= 0 and record and self._is_sent_otp_expired(counter, record):
+            log.debug(f"The OTP value of token {self.token.serial} was sent longer ago than its validity time.")
+            return -1
         return counter

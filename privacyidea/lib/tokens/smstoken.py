@@ -399,8 +399,9 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         """
         options = options or {}
 
+        sent_otp_record = self._get_sent_otp_record(options)
         ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
-        ret = self._refuse_expired_sent_otp(ret, options)
+        ret = self._refuse_expired_sent_otp(ret, sent_otp_record)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             challenge_data = options.get("data", {})
             saved_otp = challenge_data.get("otp") if challenge_data else None
