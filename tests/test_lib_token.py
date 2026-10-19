@@ -24,6 +24,7 @@ import mock
 from dateutil import parser
 from dateutil.tz import tzlocal
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from testfixtures import log_capture
 
 from privacyidea.lib.challenge import get_challenges
@@ -2692,3 +2693,19 @@ class TokenTestCase(MyTestCase):
         self.assertIn("ORPHAN001", result.failed_tokens)
         # The persisted row must have been rolled back, not left orphaned
         self.assertEqual(get_tokens(serial="ORPHAN001"), [])
+
+
+class InitTokenFailingSaveTestCase(MyTestCase):
+
+    def test_01_a_failing_save_reports_its_own_error(self):
+        # The token can not be saved, e.g. because of a duplicate primary key: init_token raises the
+        # database error, leaves no token behind and the session can be used again
+        def failing_save(token: Token) -> None:
+            db.session.add(token)
+            raise IntegrityError("INSERT INTO token", {}, Exception("duplicate primary key"))
+
+        with mock.patch.object(Token, "save", failing_save):
+            with self.assertRaises(IntegrityError):
+                init_token({"type": "hotp", "genkey": 1, "serial": "SAVEFAILS"})
+
+        self.assertEqual([], get_tokens(serial="SAVEFAILS"))

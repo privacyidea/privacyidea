@@ -233,6 +233,8 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
     if user and user.realm:
         realms.append(user.realm)
 
+    # Set before the try, so that a failing save is reported with its own error
+    token = None
     try:
         # Save the token to the database
         if token_count == 0:
@@ -261,10 +263,16 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
         log.debug(f"{traceback.format_exc()}")
         # Delete the newly created token from the db
         if token_count == 0:
-            if token:
-                token.delete_token()
-            else:
-                db_token.delete()
+            try:
+                if token:
+                    token.delete_token()
+                else:
+                    db_token.delete()
+            except Exception as cleanup_error:
+                # E.g. the token could not be saved at all, so there is nothing to delete. The error that ended
+                # the creation is the one to report.
+                log.warning(f"Could not remove the token that failed to be created: {cleanup_error}")
+                db.session.rollback()
         raise
 
     # We only set the tokenkind here if it was explicitly set in the init_token call.

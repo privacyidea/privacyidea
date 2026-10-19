@@ -13,13 +13,16 @@ from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.token import (convert_token_objects_to_dicts, get_tokens, get_tokens_paginate, init_token,
                                    remove_token)
+from privacyidea.lib.token import query as token_query
+from privacyidea.lib.token.tokengroups import set_tokengroups
+from privacyidea.lib.tokengroup import delete_tokengroup, set_tokengroup
 from privacyidea.lib.user import User
-from privacyidea.models import db, Token, TokenContainerToken, TokenOwner
+from privacyidea.models import db, NodeName, Token, TokenContainerToken, TokenOwner
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -230,9 +233,8 @@ class TokenListLookupTestCase(MyTestCase):
         original_resolver = owner.resolver
 
         # An assignment that names no resolver leaves the login name unknowable, so that token is
-        # marked while the rest of the page renders. Such a token is not reachable through the
-        # paginated list, whose node filter matches the owner against the configured resolvers, so
-        # this goes through the conversion the container endpoints use.
+        # marked while the rest of the page renders. This goes through the conversion the container
+        # endpoints use.
         owner.resolver = ""
         db.session.commit()
         try:
@@ -352,3 +354,123 @@ class TokenListLookupTestCase(MyTestCase):
         self.assertEqual(NUM_TOKENS, len(result["tokens"]), result)
         container_serials = {token["container_serial"] for token in result["tokens"]}
         self.assertSetEqual({self.container_serial}, container_serials, container_serials)
+
+    @ldap3mock.activate
+    def test_12_token_details_of_a_page_are_read_with_one_query_each(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        set_tokengroup("listgroup")
+        set_tokengroups("LIST03", ["listgroup"])
+        try:
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+            # The token info, the token groups and the owners are read once for the page, not per token
+            self.assertEqual(1, count_containing(statements, "FROM tokeninfo"), statements)
+            self.assertEqual(1, count_containing(statements, "tokentokengroup"), statements)
+            self.assertEqual(1, count_containing(statements, "FROM tokenowner"), statements)
+
+            # The page is the same as when every token reads its own details
+            with mock.patch("privacyidea.lib.token.query._load_page_details"):
+                result_per_token = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+            self.assertEqual(result_per_token["tokens"], result["tokens"])
+            tokens = {token["serial"]: token for token in result["tokens"]}
+            self.assertEqual(["listgroup"], tokens["LIST03"]["tokengroup"], tokens["LIST03"])
+            self.assertEqual("ldapreso", tokens["LIST05"]["resolver"], tokens["LIST05"])
+            self.assertEqual("5", tokens["LIST05"]["user_id"], tokens["LIST05"])
+            self.assertIn("tokenkind", tokens["LIST05"]["info"], tokens["LIST05"])
+        finally:
+            set_tokengroups("LIST03", [])
+            delete_tokengroup("listgroup")
+
+    @ldap3mock.activate
+    def test_13_token_details_that_can_not_be_read_for_the_page_are_read_per_token(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        expected = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        with mock.patch("privacyidea.lib.token.query.selectinload",
+                        side_effect=Exception("the details of the page can not be read")):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        self.assertEqual(expected["tokens"], result["tokens"])
+
+    @ldap3mock.activate
+    def test_14_a_token_whose_owners_could_not_be_read_reads_its_owner_itself(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        token_id = get_tokens(serial="LIST05")[0].token.id
+        original_select_owners = token_query._select_owners
+
+        def failing_select_owners(token_ids: list[int]) -> list[TokenOwner]:
+            # The page query, its retry and the query of the one token fail
+            if len(token_ids) > 1 or token_ids == [token_id]:
+                raise Exception("the owners can not be read")
+            return original_select_owners(token_ids)
+
+        with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=failing_select_owners):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        # The token is not shown without an owner: it still reads its owner, only its login name is unknown
+        tokens = {token["serial"]: token for token in result["tokens"]}
+        self.assertEqual("ldapreso", tokens["LIST05"]["resolver"], tokens["LIST05"])
+        self.assertEqual("5", tokens["LIST05"]["user_id"], tokens["LIST05"])
+        self.assertEqual("ldapreso", tokens["LIST06"]["resolver"], tokens["LIST06"])
+        self.assertEqual("user06", tokens["LIST06"]["username"], tokens["LIST06"])
+
+    @ldap3mock.activate
+    def test_15_the_owners_are_only_joined_for_node_specific_resolvers(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+
+        # Without a resolver that is restricted to a node, every node serves every owner: the list neither
+        # joins the owners nor filters by node
+        with count_statements() as statements:
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+        count_statement = [statement for statement in statements if "count(" in statement.lower()][0]
+        self.assertNotIn("tokenowner", count_statement)
+        self.assertEqual(NUM_TOKENS, result["count"], result)
+
+        other_node = "11111111-2222-3333-4444-555555555555"
+        db.session.add(NodeName(id=other_node, name="OtherNode"))
+        db.session.commit()
+        set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
+        try:
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+            count_statement = [statement for statement in statements if "count(" in statement.lower()][0]
+            self.assertIn("tokenowner", count_statement)
+            self.assertEqual(NUM_TOKENS, result["count"], result)
+        finally:
+            delete_realm("noderealm")
+            db.session.execute(delete(NodeName).where(NodeName.id == other_node))
+            db.session.commit()
+
+    @ldap3mock.activate
+    def test_16_the_realm_filter_uses_the_realm_ids(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+
+        for realm_filter in ("ldaprealm", "LDAPrealm", "ldap*", "*realm", "other,ldaprealm"):
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1,
+                                             realm=realm_filter)
+            self.assertEqual(NUM_TOKENS, result["count"], realm_filter)
+            # The realm names are matched without a query on the realm table
+            self.assertEqual(0, count_containing(statements, "FROM realm"), statements)
+
+        self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, realm="ldap")["count"])
+        self.assertEqual(NUM_TOKENS, get_tokens_paginate(serial=self.serial_wildcard,
+                                                         allowed_realms=["LdapRealm"])["count"])
+        self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, allowed_realms=["ldap*"])["count"])
+
+
+class RealmIdsTestCase(MyTestCase):
+
+    def test_01_get_realm_ids(self):
+        realms = {"realm1": {"id": 1}, "Realm.Two": {"id": 2}, "realm_3": {"id": 3}, "realmx3": {"id": 4}}
+
+        # Exact names compare case-insensitively
+        self.assertEqual([1], token_query._get_realm_ids(realms, ["REALM1"]))
+        self.assertEqual([2], token_query._get_realm_ids(realms, ["realm.two"]))
+        # "*" matches any characters, "." and "_" only themselves
+        self.assertEqual([1, 2, 3, 4], token_query._get_realm_ids(realms, [], ["realm*"]))
+        self.assertEqual([2], token_query._get_realm_ids(realms, [], ["*.two"]))
+        self.assertEqual([3], token_query._get_realm_ids(realms, [], ["realm_*"]))
+        self.assertEqual([1, 3], token_query._get_realm_ids(realms, ["realm1"], ["*_3"]))
+        self.assertEqual([], token_query._get_realm_ids(realms, ["realm"], ["x*"]))
