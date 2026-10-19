@@ -18,11 +18,8 @@
  **/
 import { Component, computed, inject } from "@angular/core";
 import { RouterLink } from "@angular/router";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthService, AuthServiceInterface, SUBSCRIPTION_STATUS } from "@services/auth/auth.service";
 import { ROUTE_PATHS } from "@app/route_paths";
-
-// subscription_status value of an invalid subscription: expired, or more tokens in use than the subscription allows
-const SUBSCRIPTION_INVALID = 2;
 
 @Component({
   selector: "app-subscription-expired-notice",
@@ -35,7 +32,7 @@ export class SubscriptionExpiredNoticeComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly subscriptionPath = ROUTE_PATHS.SUBSCRIPTION;
-  readonly visible = computed(() => this.authService.subscriptionStatus() === SUBSCRIPTION_INVALID);
+  readonly visible = computed(() => this.authService.subscriptionStatus() === SUBSCRIPTION_STATUS.INVALID);
   // Without this right the subscription page loads no data, so only administrators holding it get the link.
   readonly canManageSubscription = computed(() => this.authService.actionAllowed("managesubscription"));
 }
