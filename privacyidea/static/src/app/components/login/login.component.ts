@@ -41,7 +41,13 @@ import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.compon
 import { resolveLandingPath$ } from "@app/guards/auth.guard";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
-import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
+import {
+  AuthResponse,
+  AuthService,
+  AuthServiceInterface,
+  MultiChallenge,
+  PasswordLoginParams
+} from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
@@ -54,6 +60,25 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 // A "-" entry in the realmdropdown policy is the privacyIDEA "no realm" sentinel:
 // it is offered as a selectable option but must not be sent as a realm parameter.
 const NO_REALM_SENTINEL = "-";
+
+/**
+ * Each WebAuthn token of the user gets its own entry in multi_challenge, but all of them share the
+ * challenge of the transaction. The browser can only be asked once, so the allowed credentials of
+ * all entries are combined into one sign request; otherwise only the first token could be used.
+ */
+export function mergeWebAuthnSignRequests(challenges: MultiChallenge[]): WebAuthnSignRequest | null {
+  const signRequests = challenges
+    .filter((c) => c.type === "webauthn")
+    .map((c) => c.attributes?.webAuthnSignRequest)
+    .filter((r): r is WebAuthnSignRequest => !!r);
+  if (!signRequests.length) {
+    return null;
+  }
+  const allowCredentials = signRequests
+    .flatMap((r) => r.allowCredentials)
+    .filter((cred, index, all) => all.findIndex((other) => other.id === cred.id) === index);
+  return { ...signRequests[0], allowCredentials };
+}
 
 @Component({
   selector: "app-login",
@@ -335,9 +360,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       if (response.detail.multi_challenge?.length) {
         this.transactionId = response.detail.transaction_id || "";
         this.pushTriggered.set(response.detail.multi_challenge.some((c) => c.type === "push"));
-        const webAuthnChallenge = response.detail.multi_challenge.find((c) => c.type === "webauthn");
-        if (webAuthnChallenge?.attributes?.webAuthnSignRequest) {
-          this.webAuthnTriggered.set(webAuthnChallenge.attributes.webAuthnSignRequest); // This is now an object
+        const webAuthnSignRequest = mergeWebAuthnSignRequests(response.detail.multi_challenge);
+        if (webAuthnSignRequest) {
+          this.webAuthnTriggered.set(webAuthnSignRequest);
         }
         if (this.pushTriggered()) {
           this.startPushPolling();

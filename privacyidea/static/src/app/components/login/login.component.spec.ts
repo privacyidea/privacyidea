@@ -286,6 +286,56 @@ describe("LoginComponent", () => {
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
+    it("should combine the allowed credentials of all WebAuthn tokens into one sign request", () => {
+      const signRequest = (credentialId: string) => ({
+        allowCredentials: [
+          {
+            id: credentialId,
+            transports: ["usb", "nfc"] as AuthenticatorTransport[],
+            type: "public-key" as PublicKeyCredentialType
+          }
+        ],
+        challenge: "shared-transaction-challenge",
+        rpId: "example.com",
+        timeout: 60000,
+        userVerification: "preferred" as UserVerificationRequirement
+      });
+      const webAuthnChallenge = (serial: string, credentialId: string) => ({
+        attributes: { webAuthnSignRequest: signRequest(credentialId) },
+        client_mode: "webauthn",
+        message: `Please confirm with your WebAuthn token (${serial})`,
+        serial,
+        transaction_id: "tx-two-keys",
+        type: "webauthn"
+      });
+      authService.authenticate.mockReturnValue(
+        of(
+          new MockPiResponse<AuthData, AuthDetail>({
+            detail: {
+              transaction_id: "tx-two-keys",
+              multi_challenge: [
+                webAuthnChallenge("WAN00000001", "credential-key-1"),
+                webAuthnChallenge("WAN00000002", "credential-key-2"),
+                // the same credential must not be offered twice
+                webAuthnChallenge("WAN00000003", "credential-key-1")
+              ]
+            },
+            result: { authentication: "CHALLENGE", status: true }
+          })
+        )
+      );
+
+      component.onSubmit();
+
+      expect(component.webAuthnTriggered()).toEqual({
+        ...signRequest("credential-key-1"),
+        allowCredentials: [
+          ...signRequest("credential-key-1").allowCredentials,
+          ...signRequest("credential-key-2").allowCredentials
+        ]
+      });
+    });
+
     it("should handle a challenge response", () => {
       const challengeResponse = new MockPiResponse<AuthData, AuthDetail>({
         detail: { message: "Please enter OTP" }, // Use detail.message for simple cases
