@@ -251,6 +251,34 @@ class SentOtpValidityTests(_TestHost):
         with clock_moved_forward(2):
             self.assertFalse(self._check({"pass": self.pin + token._calc_otp(2)}))
 
+    def test_send_from_before_a_reinit_does_not_block_the_new_key(self):
+        # An old-key send claims its counter, then the token is re-initialized and the new key sends its first value,
+        # then the old-key send records
+        serial = self._enroll()
+        set_privacyidea_config(self.validity_key, 1)
+        for _ in range(3):
+            self._trigger(serial)
+        real_record = SentOtpValidityMixin._record_sent_otp_validity
+        new_key = "3031323334353637383930313233343536373839"
+        old_key_counters = []
+
+        def reinit_before_the_old_key_records(token: SentOtpValidityMixin, counter: int, *args, **kwargs) -> None:
+            if not old_key_counters:
+                old_key_counters.append(counter)
+                init_token({"serial": serial, "type": self.token_type, "otpkey": new_key, **self.contact},
+                           user=User("cornelius", self.realm1))
+                get_one_token(serial=serial).create_challenge()
+            real_record(token, counter, *args, **kwargs)
+
+        with mock.patch.object(SentOtpValidityMixin, "_record_sent_otp_validity", reinit_before_the_old_key_records):
+            get_one_token(serial=serial).create_challenge()
+        token = get_one_token(serial=serial)
+        self.assertListEqual([4], old_key_counters)
+        self.assertEqual(1, token.token.count)
+        self.assertEqual("1", token.get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])
+        with clock_moved_forward(2):
+            self.assertFalse(self._check({"pass": self.pin + token._calc_otp(1)}))
+
     def test_value_delivered_before_the_transport_fails_keeps_its_time_limit(self):
         # The transport delivers the value and then fails, e.g. SMTP quit or a gateway response that times out
         serial = self._enroll()
@@ -273,9 +301,11 @@ class SentOtpValidityTests(_TestHost):
             self.assertFalse(self._check({"pass": self.pin + token._calc_otp(1)}))
 
     def test_older_send_keeps_the_record_of_a_newer_one(self):
-        # A send that claimed its counter earlier finishes after a send that claimed a higher one
+        # A send that claimed its counter earlier finishes after a send that claimed a higher one. The sends claimed
+        # their counters, so the token counter is at the highest of them.
         serial = self._enroll()
         token = get_one_token(serial=serial)
+        token.set_otp_count(6)
         token._record_sent_otp_validity(5, 120)
         token._record_sent_otp_validity(4, 120)
         self.assertEqual("5", get_one_token(serial=serial).get_tokeninfo(SENT_OTP_VALID_UNTIL).split(" ")[0])

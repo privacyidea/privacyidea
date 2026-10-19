@@ -61,6 +61,8 @@ class SentOtpValidityMixin:
         """
         Store until when the sent OTP value at the given counter may be used without a transaction_id. A send that
         claimed its counter earlier can finish later than another one, so the record of a higher counter is kept.
+        Nothing is stored for a counter above the token counter: the token was re-initialized since the counter was
+        claimed, and a record of the old key would keep the values of the new key from being recorded.
 
         :param counter: The counter of the sent value, see _claim_otp_count_to_send()
         :param validity_seconds: The validity time of the value
@@ -69,10 +71,10 @@ class SentOtpValidityMixin:
         # those of another send. write_tokeninfo() commits and releases the lock.
         token_id = self.token.id
         db.session.commit()
-        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        token_count = db.session.scalar(select(Token.count).where(Token.id == token_id).with_for_update())
         recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
                                                                    TokenInfo.Key == SENT_OTP_VALID_UNTIL))
-        if recorded and self._recorded_counter(recorded) > counter:
+        if token_count < counter or (recorded and self._recorded_counter(recorded) > counter):
             db.session.commit()
             return
         valid_until = datetime.now(timezone.utc) + timedelta(seconds=validity_seconds)
