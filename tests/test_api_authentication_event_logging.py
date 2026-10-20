@@ -999,6 +999,30 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unknown_user,
                                         endpoint=self.endpoint_path)
 
+    def test_user_store_failure_on_a_rewritten_user_logs_user_store_unavailable(self):
+        # The user is found in its realm, then a set_realm policy moves the request to a realm whose user store fails
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        rewritten_user = User("doesnotexist", "sqliterealm")
+        set_policy("authlog_setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=sqliterealm",
+                   realm=self.realm1)
+        # The resolver loaded for the user above would be used again within the same app context
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "x",
+                                                     "transaction_id": "8901234567"})
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_policy("authlog_setrealm")
+            delete_realm("sqliterealm")
+            delete_resolver("sqlite_resolver")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=rewritten_user,
+                                        transaction_id="8901234567", endpoint=self.endpoint_path)
+
     def test_user_store_failure_logs_the_transaction_of_the_request(self):
         # The answer to a challenge is logged with its transaction, also under the RADIUS name of the parameter
         for parameter in ["transaction_id", "state"]:

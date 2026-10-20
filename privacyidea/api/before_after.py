@@ -33,7 +33,7 @@ import copy
 from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
                         get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
                         logged_in_user_from_token, hide_specific_error_message, construct_radius_response,
-                        resolve_token_owner, report_owner_lookup_error)
+                        resolve_token_owner, report_owner_lookup_error, get_optional_one_of)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from .lib.conditional_access import restore_rejection_audit
@@ -41,7 +41,7 @@ from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_c
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
-from ..lib.user import get_user_from_param
+from ..lib.user import get_user_from_param, split_user
 import logging
 from flask import request, g
 from privacyidea.lib.lifecycle import call_finalizers
@@ -842,18 +842,28 @@ def privacyidea_error(error):
 
 def _log_unclassified_user_store_failure() -> None:
     """
-    Log a login at ``/auth`` that a failing user store ended after its user was looked up, e.g. on a later lookup of
-    the token owner, as ``USER_STORE_UNAVAILABLE``, like ``/validate/check`` does. A login the view already
-    classified as failed keeps its event. A login it classified as successful issued no session, e.g. when the user
+    Log an authentication at ``/auth`` or ``/validate/`` that a failing user store ended after its user was looked
+    up as ``USER_STORE_UNAVAILABLE``: at ``/auth`` e.g. on a later lookup of the token owner, at ``/validate/`` when a
+    pre-policy (``set_realm``, ``mangle``) looks up the user with another realm or login name. A request already
+    classified as failed keeps its event. A login classified as successful issued no session, e.g. when the user
     store failed on the lookup of the WebUI rights, so it is reclassified.
     """
-    if not (request.blueprint == "jwtauth" and request.path.endswith("/auth")):
+    is_auth = request.blueprint == "jwtauth" and request.path.endswith("/auth")
+    if not (is_auth or request.blueprint == validate_blueprint.name):
         return
     context = peek_ca_context()
     classifying = context.classifying if context is not None else None
-    if classifying is None:
+    params = getattr(request, "all_data", None) or {}
+    if classifying is None and is_auth:
         log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, user=getattr(request, "User", None),
-                           transaction_id=get_optional(getattr(request, "all_data", None) or {}, "transaction_id"))
+                           transaction_id=get_optional(params, "transaction_id"))
+    elif classifying is None:
+        # The login name and realm as the pre-policies left them, the user they were looked up for
+        login_name, realm = split_user(get_optional(params, "user") or "")
+        realm = get_optional(params, "realm") or realm
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=login_name or None,
+                           realm=realm.lower() if realm else None,
+                           transaction_id=get_optional_one_of(params, ["transaction_id", "state"]))
     elif classifying.event_type == AuthEventType.LOGIN_SUCCESS:
         context.reclassify(AuthEventType.USER_STORE_UNAVAILABLE)
         g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.REJECT})
