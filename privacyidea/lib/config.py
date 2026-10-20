@@ -97,21 +97,25 @@ class SharedConfigClass:
         self.default_realm = None
         self.policies = []
         self.events = []
+        # Local time of the last reload, the request-local configuration objects get it as their timestamp
         self.timestamp = None
+        # Local time of the last comparison of the database timestamp with loaded_db_timestamp. The next comparison
+        # is due PI_CHECK_RELOAD_CONFIG seconds later.
+        self.last_check_time = None
         # The database timestamp that was read with the loaded configuration
         self.loaded_db_timestamp = None
         self.caconnectors = []
 
     def _reload_from_db(self):
         """
-        Read the timestamp from the database. If the timestamp is newer than
-        the internal timestamp, then read the complete data
-        :return:
+        Reload the configuration if the timestamp in the database differs from the one that was read with the
+        loaded configuration. The database timestamp is read at most once every PI_CHECK_RELOAD_CONFIG seconds.
         """
         from .resolver import get_resolver_class
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
-        if not self.timestamp or self.timestamp + datetime.timedelta(
-                seconds=check_reload_config) < datetime.datetime.now():
+        check_time = datetime.datetime.now()
+        if not self.last_check_time or self.last_check_time + datetime.timedelta(
+                seconds=check_reload_config) < check_time:
             stmt = select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)
             db_ts = db.session.scalars(stmt).first()
             if reload_db(self.loaded_db_timestamp, db_ts):
@@ -218,6 +222,9 @@ class SharedConfigClass:
                     # while the configuration was read makes the next request reload again
                     self.loaded_db_timestamp = db_ts.Value if db_ts else None
                     self.caconnectors = caconnectors
+            # Set only after the check and the reload succeeded, so that a failed reload is retried by the next
+            # request
+            self.last_check_time = check_time
 
     def _clone(self):
         """

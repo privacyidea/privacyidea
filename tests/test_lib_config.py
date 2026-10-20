@@ -5,6 +5,7 @@ The lib.config only depends on the database model.
 """
 import importlib
 import time
+from datetime import timedelta
 from unittest import mock
 
 from sqlalchemy import select
@@ -25,7 +26,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
-                                    this, get_config_object, invalidate_config_object,
+                                    this, get_config_object, invalidate_config_object, get_shared_config_object,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators,
                                     check_node_uuid_exists)
@@ -314,6 +315,31 @@ class ConfigTestCase(MyTestCase):
         self._write_config_value_in_database("reload_key", "v2")
         invalidate_config_object()
         self.assertEqual("v1", get_from_config("reload_key"))
+
+    def test_09d_database_timestamp_is_checked_once_per_interval(self):
+        # With PI_CHECK_RELOAD_CONFIG, the database timestamp is checked at most once per interval. A check that
+        # finds no change starts a new interval, and the first check after the interval picks up a change.
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+        shared_config = get_shared_config_object()
+
+        with mock.patch.dict(self.app.config, {"PI_CHECK_RELOAD_CONFIG": 60}):
+            # The last reload and the last check are longer ago than the interval, the configuration is unchanged
+            shared_config.timestamp -= timedelta(seconds=120)
+            shared_config.last_check_time -= timedelta(seconds=120)
+            invalidate_config_object()
+            self.assertEqual("v1", get_from_config("reload_key"))
+
+            # A change within the interval after that check is not seen yet
+            self._write_config_value_in_database("reload_key", "v2", timestamp=str(time.time()))
+            invalidate_config_object()
+            self.assertEqual("v1", get_from_config("reload_key"))
+
+            # The first check after the interval picks it up
+            shared_config.last_check_time -= timedelta(seconds=61)
+            invalidate_config_object()
+            self.assertEqual("v2", get_from_config("reload_key"))
 
     def test_10_enrollable_tokentypes(self):
         # Execute the function twice to ensure the cache works

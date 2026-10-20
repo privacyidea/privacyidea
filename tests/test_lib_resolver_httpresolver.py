@@ -1544,11 +1544,12 @@ class HTTPResolverTestCase(MyTestCase):
 
 class ConfidentialClientApplicationMock:
     def __init__(self, client_id: str, authority: str, client_credential: str | dict[str, str],
-                 timeout: float | None = None):
+                 timeout: float | None = None, verify: bool | str = True):
         self.client_id = client_id
         self.authority = authority
         self.client_credential = client_credential
         self.timeout = timeout
+        self.verify = verify
         if isinstance(client_credential, dict):
             get_required(client_credential, "private_key")
             get_required(client_credential, "thumbprint")
@@ -1592,6 +1593,19 @@ class EntraIDResolverTestCase(MyTestCase):
 
         resolver = self.set_up_resolver({TIMEOUT: 10})
         self.assertEqual(10, resolver.ms_graph_app.timeout)
+
+    def test_00b_msal_application_uses_the_resolver_tls_settings(self):
+        # The MSAL application gets the TLS settings of the resolver, like the requests to the Graph API: verification
+        # against the default CAs, no verification, or verification against the configured CA file
+        resolver = self.set_up_resolver()
+        self.assertIs(True, resolver.ms_graph_app.verify)
+
+        resolver = self.set_up_resolver({VERIFY_TLS: False})
+        self.assertIs(False, resolver.ms_graph_app.verify)
+
+        resolver = self.set_up_resolver({VERIFY_TLS: True, TLS_CA_PATH: "/path/to/ca.crt"})
+        self.assertEqual("/path/to/ca.crt", resolver.ms_graph_app.verify)
+        self.assertEqual(resolver.tls, resolver.ms_graph_app.verify)
 
     def test_01_load_config_success(self):
         resolver = EntraIDResolver()
