@@ -82,38 +82,4 @@ $table-cell-font-size: 0.875rem;
   .border-top {
     border-top: 1px solid $border-color;
   }
-
-  .mat-mdc-list-item {
-    padding: 0;
-  }
-
-  .mat-mdc-text-field-wrapper {
-    padding-left: 5px;
-  }
-
-  .mat-mdc-form-field {
-    font-size: 14px;
-  }
-
-  .mat-mdc-form-field-infix {
-    padding-top: 24px;
-    padding-bottom: 4px;
-  }
-}
-
-.margin-top-20 {
-  margin-top: 20px;
-}
-
-
-// Widen the app-info-hint tooltips so a two-sentence explanation stays readable
-// (the overlay renders outside component scope, so this lives in the global sheet).
-// The background follows the theme-driven tooltip token rather than a fixed light color: hardcoded
-// against --mat-tooltip-supporting-text-color (light text in dark mode) it left white-on-light-grey.
-.info-hint-tooltip .mdc-tooltip__surface {
-  background-color: var(--mat-tooltip-container-color);
-  max-width: 320px;
-  text-align: left;
-  // A line break in the text starts a new line, e.g. one per group in a filter input's match tooltip.
-  white-space: pre-line;
 }

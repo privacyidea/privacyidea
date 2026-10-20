@@ -16,12 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { InteractivityChecker } from "@angular/cdk/a11y";
+import { formatDate } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource } from "@angular/material/table";
 import { provideRouter } from "@angular/router";
 import {
+  AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE,
   AuthenticationLogEntry,
   AuthenticationLogService
 } from "@services/authentication-log/authentication-log.service";
@@ -184,12 +187,17 @@ describe("AuthenticationLog", () => {
 
   it("offers the total number of entries as a page size, sorted among the presets", () => {
     component.totalLength.set(37);
-    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 37, 50]);
+    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 37, 50, 100]);
   });
 
   it("leaves the page-size options untouched for an empty result", () => {
     component.totalLength.set(0);
-    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 50]);
+    expect(component.pageSizeOptions()).toEqual([5, 10, 15, 25, 50, 100]);
+  });
+
+  it("keeps offering the default page size after another one is picked", () => {
+    component.onPageEvent({ pageIndex: 0, pageSize: 25 } as PageEvent);
+    expect(component.pageSizeOptions()).toContain(AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE);
   });
 
   it("onKeywordClick toggles the keyword in the filter for free-text columns", () => {
@@ -656,6 +664,19 @@ describe("AuthenticationLog", () => {
     expect(component.rangeSummaryTo()).toContain("2026-03-05");
   });
 
+  it("summarises where a dragged thumb is, before it is let go", () => {
+    respondWithEntries([
+      { id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T00:00:00Z" },
+      { id: 2, event_type: "PIN_FAIL", timestamp: "2026-03-01T00:00:00Z" }
+    ]);
+    const middle = new Date("2026-03-03T00:00:00Z");
+
+    component.onRangeStartInput(component.rangeSliderSteps / 2);
+
+    expect(component.rangeSummaryFrom()).toBe(formatDate(middle, "yyyy-MM-dd HH:mm", "en-US"));
+    expect(service.timestampFrom()).toBeNull();
+  });
+
   // A page spanning a single instant would divide the track by zero, so it is widened forward from the entry.
   it("gives a page of one timestamp a day of width, starting at that entry", () => {
     respondWithEntries([{ id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T09:00:00Z" }]);
@@ -853,6 +874,16 @@ describe("AuthenticationLog", () => {
       expect(new Date(service.timestampTo()!).getTime()).toBeLessThan(endBefore);
     });
 
+    it("clearing the picker's end field (null) drops the end and keeps the start", () => {
+      component.onRangeStartDateChange(new Date(2026, 5, 2));
+      component.onRangeEndDateChange(new Date(2026, 5, 5));
+      const from = service.timestampFrom();
+      component.onRangeEndDateChange(null);
+
+      expect(service.timestampFrom()).toBe(from);
+      expect(service.timestampTo()).toBeNull();
+    });
+
     it("clearing a picker field (null) drops that bound and keeps the other", () => {
       component.onRangeStartDateChange(new Date(2026, 5, 2));
       component.onRangeEndDateChange(new Date(2026, 5, 5));
@@ -871,6 +902,78 @@ describe("AuthenticationLog", () => {
       component.onRangeStartDateChange(new Date(2026, 5, 2));
 
       expect(component.rangePickerStart()).toBeInstanceOf(Date);
+      expect(component.rangePickerEnd()).toBeNull();
+    });
+
+    it("the menu calendar starts a range on the first pick and ends it on a later one", () => {
+      component.onCalendarDateSelected(new Date(2026, 5, 2));
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toBeNull();
+
+      component.onCalendarDateSelected(new Date(2026, 5, 5));
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toEqual(new Date(2026, 5, 5, 23, 59, 59));
+    });
+
+    describe("with a start narrowed on the slider", () => {
+      let narrowedFrom: string;
+
+      // Starts a range on 2 June 00:00 with an open end, so the slider window runs from 2 June to now, then drags the
+      // start thumb a quarter of the way in (50 of 200 steps): the active start is no longer midnight and lies weeks
+      // after 2 June (e.g. 5 July when run on 14 October 2026), while both calendars still show 2 June as the start.
+      beforeEach(() => {
+        component.onCalendarDateSelected(new Date(2026, 5, 2));
+        component.onRangeStartInput(50);
+        component.commitTimeRange();
+        narrowedFrom = service.timestampFrom()!;
+      });
+
+      it("the menu calendar keeps that start when it ends the range after it", () => {
+        const end = new Date(narrowedFrom);
+        end.setDate(end.getDate() + 3);
+        component.onCalendarDateSelected(end);
+
+        expect(service.timestampFrom()).toBe(narrowedFrom);
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59)
+        );
+      });
+
+      it("the menu calendar swaps an end picked before that start, which then ends the range", () => {
+        component.onCalendarDateSelected(new Date(2026, 5, 5));
+
+        const from = new Date(narrowedFrom);
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 5));
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(from.getFullYear(), from.getMonth(), from.getDate(), 23, 59, 59)
+        );
+      });
+
+      it("the action row picker swaps an end picked before that start as well", () => {
+        component.onRangeEndDateChange(new Date(2026, 5, 5));
+
+        const from = new Date(narrowedFrom);
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 5));
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(from.getFullYear(), from.getMonth(), from.getDate(), 23, 59, 59)
+        );
+      });
+    });
+
+    it("the menu calendar ends the range on a second pick before its start, as the earlier day", () => {
+      component.onCalendarDateSelected(new Date(2026, 5, 5));
+      component.onCalendarDateSelected(new Date(2026, 5, 2));
+
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 2));
+      expect(component.rangePickerEnd()).toEqual(new Date(2026, 5, 5, 23, 59, 59));
+    });
+
+    it("the menu calendar starts a new range on a pick once both ends are set", () => {
+      component.onCalendarDateSelected(new Date(2026, 5, 2));
+      component.onCalendarDateSelected(new Date(2026, 5, 5));
+      component.onCalendarDateSelected(new Date(2026, 5, 10));
+
+      expect(component.rangePickerStart()).toEqual(new Date(2026, 5, 10));
       expect(component.rangePickerEnd()).toBeNull();
     });
 
@@ -934,27 +1037,273 @@ describe("AuthenticationLog", () => {
     expect(component.splitSerials(null)).toEqual([]);
   });
 
-  it("noDataText shows generic message when no filter is active", () => {
-    service.filterParams.set({});
-    expect(component.noDataText()).toContain("No authentication log entries.");
-    expect(component.noDataText()).not.toContain("matching the filter");
-  });
-
-  it("noDataText shows filter-specific message when a filter is set", () => {
-    service.filterParams.set({});
-    expect(component.noDataText()).toContain("No authentication log entries.");
-    expect(component.noDataText()).not.toContain("matching the filter");
-
-    service.filterParams.set({ username: "alice" });
-    expect(component.noDataText()).toContain("matching the filter");
-  });
-
   describe("client derivation", () => {
     it("names where a client label came from, and says nothing for an entry that does not record it", () => {
       expect(component.clientLabelBadge("client_id")?.label).toBe("client id");
       expect(component.clientLabelBadge("user_agent")?.label).toBe("user agent");
       expect(component.clientLabelBadge(null)).toBeNull();
       expect(component.clientLabelBadge("something_new")).toBeNull();
+    });
+  });
+
+  describe("keyboard in the More Filter menu", () => {
+    // jsdom lays nothing out, so CDK would find no element tabbable; buttons and inputs in the Tab order stand in.
+    beforeEach(() => {
+      jest
+        .spyOn(TestBed.inject(InteractivityChecker), "isTabbable")
+        .mockImplementation(
+          (el) => (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) && el.tabIndex >= 0
+        );
+      service.authenticationLogResource.set(
+        MockPiResponse.fromValue({
+          auth_logs: [{ id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00" }],
+          count: 1,
+          current: 1,
+          prev: null,
+          next: null
+        })
+      );
+      fixture.detectChanges();
+    });
+
+    async function settle(): Promise<void> {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve));
+      fixture.detectChanges();
+    }
+
+    async function openMoreFilter(): Promise<void> {
+      (fixture.nativeElement.querySelector(".table-actions-trigger") as HTMLElement).click();
+      await settle();
+    }
+
+    function menuItem(label: string): HTMLElement {
+      const items = Array.from(document.querySelectorAll<HTMLElement>(".mat-mdc-menu-item"));
+      return items.find((item) => item.textContent?.includes(label))!;
+    }
+
+    // Found by its icon: its label names the active range.
+    function dateRangeItem(): HTMLElement {
+      return menuItem("date_range");
+    }
+
+    function sliderThumbs(): HTMLInputElement[] {
+      return Array.from(document.querySelectorAll<HTMLInputElement>(".menu-time-range input"));
+    }
+
+    async function openDateRangeSubmenu(): Promise<void> {
+      await openMoreFilter();
+      dateRangeItem().click();
+      await settle();
+    }
+
+    // As the browser does for a button, Enter goes on to a click.
+    async function openDateRangeSubmenuByKeyboard(): Promise<void> {
+      await openMoreFilter();
+      const item = dateRangeItem();
+      press(item, "Enter");
+      item.click();
+      await settle();
+    }
+
+    // Material's menu reads keyCode rather than key.
+    const KEY_CODES: Record<string, number> = { Tab: 9, Enter: 13, Escape: 27, ArrowLeft: 37, ArrowRight: 39 };
+
+    function press(target: HTMLElement, key: string, shiftKey = false): KeyboardEvent {
+      const event = new KeyboardEvent("keydown", {
+        key,
+        keyCode: KEY_CODES[key],
+        shiftKey,
+        bubbles: true,
+        cancelable: true
+      });
+      jest.spyOn(event, "stopPropagation");
+      target.dispatchEvent(event);
+      return event;
+    }
+
+    describe("Tab through the menu", () => {
+      it("moves on from an item or a thumb that is not the last", async () => {
+        await openMoreFilter();
+
+        expect(press(menuItem("User Role"), "Tab").stopPropagation).toHaveBeenCalled();
+        expect(press(sliderThumbs()[0], "Tab").stopPropagation).toHaveBeenCalled();
+        expect(press(sliderThumbs()[1], "Tab", true).stopPropagation).toHaveBeenCalled();
+      });
+
+      it("reaches the menu, which closes, past the end thumb or before the first item", async () => {
+        await openMoreFilter();
+
+        expect(press(sliderThumbs()[1], "Tab").stopPropagation).not.toHaveBeenCalled();
+        expect(press(menuItem("User Role"), "Tab", true).stopPropagation).not.toHaveBeenCalled();
+      });
+
+      it("keeps the slider's arrow keys from the menu, but not Escape", async () => {
+        await openMoreFilter();
+
+        expect(press(sliderThumbs()[0], "ArrowRight").stopPropagation).toHaveBeenCalled();
+        expect(press(sliderThumbs()[0], "Escape").stopPropagation).not.toHaveBeenCalled();
+      });
+    });
+
+    async function pickDay(label: string): Promise<void> {
+      (fixture.nativeElement.querySelector(".date-range-trigger button") as HTMLElement).click();
+      await settle();
+      const cell = Array.from(document.querySelectorAll<HTMLElement>(".mat-calendar-body-cell")).find(
+        (candidate) => candidate.getAttribute("aria-label") === label
+      )!;
+      cell.click();
+      await settle();
+    }
+
+    describe("action row date picker", () => {
+      it("starts a range on a first pick, with the end open", async () => {
+        const first = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        await pickDay(formatDate(first, "MMMM d, y", "en-US"));
+
+        expect(new Date(service.timestampFrom()!)).toEqual(first);
+        expect(service.timestampTo()).toBeNull();
+      });
+
+      it("starts a new range on a pick once both ends are set, dropping the old end", async () => {
+        component.onRangeStartDateChange(new Date(2026, 5, 2));
+        component.onRangeEndDateChange(new Date(2026, 5, 5));
+
+        await pickDay("June 10, 2026");
+
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 10));
+        expect(service.timestampTo()).toBeNull();
+      });
+
+      it("starts a new range on the day the picker shows as its start, whatever the slider narrowed", async () => {
+        component.onRangeStartDateChange(new Date(2026, 5, 2));
+        component.onRangeEndDateChange(new Date(2026, 5, 20));
+        component.onRangeStartInput(50);
+        component.commitTimeRange();
+        expect(new Date(service.timestampFrom()!)).not.toEqual(new Date(2026, 5, 2));
+
+        await pickDay("June 2, 2026");
+
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 2));
+        expect(service.timestampTo()).toBeNull();
+      });
+    });
+
+    describe("action row date picker, with a start narrowed on the slider", () => {
+      beforeEach(() => {
+        component.onCalendarDateSelected(new Date(2026, 5, 2));
+        component.onRangeStartInput(50);
+        component.commitTimeRange();
+      });
+
+      it("ends the range on the active start when the picked day lies before it", async () => {
+        const narrowedFrom = new Date(service.timestampFrom()!);
+
+        await pickDay("June 1, 2026");
+
+        expect(new Date(service.timestampFrom()!)).toEqual(new Date(2026, 5, 1));
+        expect(new Date(service.timestampTo()!)).toEqual(
+          new Date(narrowedFrom.getFullYear(), narrowedFrom.getMonth(), narrowedFrom.getDate(), 23, 59, 59)
+        );
+      });
+
+      it("keeps the active start when the picked day lies after it", async () => {
+        const narrowedFrom = service.timestampFrom();
+
+        await pickDay("June 30, 2026");
+
+        expect(service.timestampFrom()).toBe(narrowedFrom);
+        expect(new Date(service.timestampTo()!)).toEqual(new Date(2026, 5, 30, 23, 59, 59));
+      });
+    });
+
+    describe("date range submenu", () => {
+      function activeDay(): HTMLElement {
+        return document.querySelector<HTMLElement>("mat-calendar .mat-calendar-body-active")!;
+      }
+
+      it("opens on the month the time filter starts in, with the range selected", async () => {
+        component.onRangeStartDateChange(new Date(2026, 2, 3));
+        component.onRangeEndDateChange(new Date(2026, 2, 10));
+
+        await openDateRangeSubmenu();
+
+        expect(document.querySelector(".mat-calendar-period-button")?.textContent?.trim()).toBe("MAR 2026");
+        expect(component.calendarRange().start).toEqual(new Date(2026, 2, 3));
+      });
+
+      it("moves focus to the active day when opened with the keyboard", async () => {
+        await openDateRangeSubmenuByKeyboard();
+
+        expect(document.activeElement).toBe(activeDay());
+      });
+
+      it("moves focus to the active day on Right arrow when hover already opened it", async () => {
+        await openDateRangeSubmenu();
+        const item = dateRangeItem();
+        item.focus();
+
+        press(item, "ArrowRight");
+        await settle();
+
+        expect(document.activeElement).toBe(activeDay());
+      });
+
+      it("leaves focus on its Date range item for a key that does not open it", async () => {
+        await openDateRangeSubmenu();
+        const item = dateRangeItem();
+        item.focus();
+
+        press(item, "ArrowLeft");
+        await settle();
+
+        expect(document.activeElement).toBe(item);
+      });
+
+      it("leaves focus where it was when opened without the keyboard", async () => {
+        await openDateRangeSubmenu();
+
+        expect(document.querySelector("mat-calendar")!.contains(document.activeElement)).toBe(false);
+      });
+
+      it("keeps arrow keys and a Tab within the calendar from the menu, but not Escape", async () => {
+        await openDateRangeSubmenu();
+        const periodButton = document.querySelector<HTMLElement>(".mat-calendar-period-button")!;
+
+        expect(press(activeDay(), "ArrowLeft").stopPropagation).toHaveBeenCalled();
+        const tab = press(periodButton, "Tab");
+        expect(tab.stopPropagation).toHaveBeenCalled();
+        expect(tab.defaultPrevented).toBe(false);
+        expect(press(activeDay(), "Escape").stopPropagation).not.toHaveBeenCalled();
+      });
+
+      it("closes on Tab past the calendar and moves on to the slider's start thumb", async () => {
+        await openDateRangeSubmenuByKeyboard();
+
+        const tab = press(activeDay(), "Tab");
+        await settle();
+
+        expect(tab.defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(sliderThumbs()[0]);
+      });
+
+      it("closes on Shift+Tab before the calendar and goes back to its Date range item", async () => {
+        await openDateRangeSubmenuByKeyboard();
+
+        press(document.querySelector<HTMLElement>(".mat-calendar-period-button")!, "Tab", true);
+        await settle();
+
+        expect(document.activeElement).toBe(dateRangeItem());
+      });
+    });
+
+    it("ignores a cleared calendar pick", () => {
+      component.onCalendarDateSelected(null);
+
+      expect(service.timestampFrom()).toBeNull();
+      expect(service.timestampTo()).toBeNull();
     });
   });
 });

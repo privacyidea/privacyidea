@@ -32,11 +32,13 @@ import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-subscription",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatButtonModule,
     MatExpansionModule,
     MatIconModule,

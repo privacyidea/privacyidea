@@ -44,11 +44,15 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 @Component({
   selector: "app-container-table-self-service",
   standalone: true,
   imports: [
+    ScrollFocusableDirective,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     MatTableModule,
     MatFormFieldModule,

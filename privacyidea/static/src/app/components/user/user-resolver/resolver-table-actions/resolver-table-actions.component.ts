@@ -17,26 +17,36 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, ViewChild } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatMenu, MatMenuModule } from "@angular/material/menu";
+import { Component, computed, inject } from "@angular/core";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-resolver-table-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, OverflowNavDirective],
-  templateUrl: "./resolver-table-actions.component.html",
-  styleUrl: "./resolver-table-actions.component.scss"
+  imports: [TableActionsComponent],
+  templateUrl: "./resolver-table-actions.component.html"
 })
-export class ResolverTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class ResolverTableActionsComponent extends TableActionsHost {
   protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+
+  protected readonly actions = computed<TableAction[]>(() => [
+    {
+      id: "new",
+      label: $localize`:@@resolver.newResolver:New Resolver`,
+      tone: "primary",
+      width: "m",
+      fontIcon: "ms--database",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("resolverwrite"),
+      run: () => this.onNewResolver()
+    }
+  ]);
 
   onNewResolver(): void {
     this.router.navigate([ROUTE_PATHS.USERS_RESOLVERS, "new"]);

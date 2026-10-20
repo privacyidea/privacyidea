@@ -1193,10 +1193,158 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _action_definitions_for_scope(scope: str) -> dict:
+    """Return the definitions of the actions of the given scope (static + dynamic), keyed by the action name."""
+    from .token import get_dynamic_policy_definitions
+    return get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
+
+
 def _allowed_actions_for_scope(scope: str) -> set:
     """Return the set of action names defined for the given scope (static + dynamic)."""
-    from .token import get_dynamic_policy_definitions
-    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+    return set(_action_definitions_for_scope(scope))
+
+
+def _bool_actions_for_scope(scope: str) -> set:
+    """Return the names of the boolean actions of the given scope."""
+    return {name for name, definition in _action_definitions_for_scope(scope).items()
+            if definition.get("type") == "bool"}
+
+
+def _bool_action_value(value) -> bool | None:
+    """
+    What the value of a boolean action means: True for an empty value or a value is_true accepts, False for False, 0,
+    "0" and "false" in any case, None for any other value, like "hotp".
+    """
+    if isinstance(value, str):
+        value = value.strip()
+        if value.lower() in ("false", "0"):
+            return False
+        return True if value == "" or is_true(value) else None
+    if value is None or is_true(value):
+        return True
+    return False if value is False or value == 0 else None
+
+
+def negate_disabled_bool_actions(scope: str, action: str | dict) -> str | dict:
+    """
+    Turn a boolean action with a false value (like ``policywrite=False``) into the excluded action ``-policywrite``.
+    The policy matching only checks whether an action is set, so it would ignore the value and treat the action as
+    enabled. A boolean action with an empty value is stored without the value, any other value stays as it is.
+    ``validate_actions`` rejects the values that are neither true nor false.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: The policy actions in the same form
+    """
+    bool_actions = _bool_actions_for_scope(scope)
+
+    def stored_key(key, value):
+        # The key a boolean action is stored with, or None if it keeps its value
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return key
+        if _bool_action_value(value) is False:
+            return f"-{key}"
+        return None
+
+    if isinstance(action, dict):
+        negated_action = {}
+        for key, value in action.items():
+            new_key = stored_key(key, value) if key in bool_actions else None
+            if new_key:
+                negated_action[new_key] = True
+            else:
+                negated_action[key] = value
+        return negated_action
+
+    # Only replace the changed actions, so that the other actions are stored exactly as given
+    parts = []
+    for part in re.split(r'(?<!\\),', action):
+        key_value = part.strip().split("=", 1)
+        if len(key_value) == 2 and key_value[0] in bool_actions:
+            new_key = stored_key(*key_value)
+            if new_key:
+                # Keep the space after the separating comma
+                part = part[:len(part) - len(part.lstrip())] + new_key
+        parts.append(part)
+    return ",".join(parts)
+
+
+def drop_bool_action_values(scope: str | None, action: str | dict) -> tuple[str | dict, list[str]]:
+    """
+    Remove the value of every boolean action whose value is not true, like ``policywrite=False`` or
+    ``triggerchallenge=hotp``. Older versions stored such values without checking them and the policy matching ignores
+    the value, so the action acted as enabled and stays enabled without the value. The import treats an exported
+    policy like this, as the migration f8a498439814 does with the stored policies.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: The policy actions in the same form and the boolean actions whose value was removed, as ``key=value``
+    """
+    bool_actions = _bool_actions_for_scope(scope) if scope else set()
+
+    dropped = []
+    if isinstance(action, dict):
+        cleaned_action = {}
+        for key, value in action.items():
+            if key in bool_actions and _bool_action_value(value) is not True:
+                dropped.append(f"{key}={value}")
+                value = True
+            cleaned_action[key] = value
+        return cleaned_action, dropped
+    if not isinstance(action, str):
+        return action, dropped
+
+    # Only replace the changed actions, so that the other actions stay exactly as given
+    parts = []
+    for part in re.split(r'(?<!\\),', action):
+        key_value = part.strip().split("=", 1)
+        if len(key_value) == 2 and key_value[0] in bool_actions and _bool_action_value(key_value[1]) is not True:
+            dropped.append(part.strip())
+            # Keep the space after the separating comma
+            part = part[:len(part) - len(part.lstrip())] + key_value[0]
+        parts.append(part)
+    return ",".join(parts), dropped
+
+
+def _duplicate_actions(scope: str, action: str | dict) -> list[str]:
+    """
+    Return the actions that are given or stored more than once. Parsing the stored string keeps only the last value of
+    such an action, so the earlier ones have no effect. This also finds actions that only become the same when they
+    are stored, like ``policywrite=false`` and ``-policywrite``, in a string as in a dict. An action and its exclusion,
+    like ``policywrite`` and ``-policywrite``, are different actions.
+    """
+    if isinstance(action, dict):
+        items = [{key: value} for key, value in action.items()]
+    else:
+        items = [parse_action_string(part) for part in re.split(r'(?<!\\),', action)]
+    items = [_trim_actions(item) for item in items]
+    given_keys = [next(iter(item)) for item in items]
+    stored_keys = [next(iter(negate_disabled_bool_actions(scope, item))) for item in items]
+    return sorted({key for keys in (given_keys, stored_keys) for key in keys if key and keys.count(key) > 1})
+
+
+def _trim_actions(action: dict) -> dict:
+    """
+    Remove the whitespace around the keys and values of the actions, like ``policywrite = true`` to
+    ``policywrite=true``.
+
+    :param action: The policy actions
+    :return: The policy actions without the whitespace
+    """
+    return {key.strip() if isinstance(key, str) else key: value.strip() if isinstance(value, str) else value
+            for key, value in action.items()}
+
+
+def _reject_whitespace_in_action_keys(action: str | dict):
+    """
+    Raise a ParameterError for an action whose key has whitespace around it, like ``policywrite`` in
+    ``policywrite = false``. Older versions stored the key with the whitespace, so it never matched. The import rejects
+    it like an unknown action, ``set_policy`` would remove the whitespace and enable the action.
+    """
+    actions = parse_action_string(action) if isinstance(action, str) else action
+    invalid_actions = [key for key in actions if isinstance(key, str) and key != key.strip()]
+    if invalid_actions:
+        raise ParameterError(f"Invalid actions {invalid_actions}!")
 
 
 def validate_actions(scope: str, action: str | dict) -> bool:
@@ -1214,6 +1362,12 @@ def validate_actions(scope: str, action: str | dict) -> bool:
         actions = parse_action_string(action)
     else:
         raise ParameterError(f"Invalid actions type {type(action)}. Must be a string or a dictionary.")
+    actions = _trim_actions(actions)
+
+    duplicate_actions = _duplicate_actions(scope, action)
+    if duplicate_actions:
+        raise ParameterError(f"Actions given more than once: {duplicate_actions}!")
+
     action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
@@ -1231,6 +1385,13 @@ def validate_actions(scope: str, action: str | dict) -> bool:
                 evaluator(action_value)
             except ParameterError as e:
                 raise ParameterError(f"Invalid value for action '{action_key}': {e.message}")
+
+    # A boolean action with a value that is neither true nor false would act as enabled, whatever was meant by it
+    bool_actions = _bool_actions_for_scope(scope)
+    for action_key, action_value in actions.items():
+        if action_key in bool_actions and _bool_action_value(action_value) is None:
+            raise ParameterError(f"Invalid value for action '{action_key}': '{action_value}' is neither true nor "
+                                 f"false!")
 
     return True
 
@@ -1509,11 +1670,15 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     # validate action values
     if action is not None:
         if scope is not None:
-            validate_actions(scope, action)
+            action_scope = scope
         elif policy:
-            validate_actions(policy.scope, action)
+            action_scope = policy.scope
         else:
             raise ParameterError("Scope is required to set action values!")
+        validate_actions(action_scope, action)
+        if isinstance(action, str):
+            action = parse_action_string(action)
+        action = negate_disabled_bool_actions(action_scope, _trim_actions(action))
     if isinstance(action, dict):
         action_list = []
         for k, v in action.items():
@@ -1698,8 +1863,13 @@ def import_policies(file_contents):
     policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
     res = 0
     for policy_name, policy in policies.items():
+        action, dropped_values = drop_bool_action_values(policy.get("scope"), ast.literal_eval(policy.get("action")))
+        if dropped_values:
+            log.warning(f'Policy "{policy_name}": removed the value of the boolean actions {dropped_values}, they '
+                        f'stay enabled as before.')
+        _reject_whitespace_in_action_keys(action)
         ret = set_policy(name=policy_name,
-                         action=ast.literal_eval(policy.get("action")),
+                         action=action,
                          scope=policy.get("scope"),
                          realm=ast.literal_eval(policy.get("realm", "[]")),
                          user=ast.literal_eval(policy.get("user", "[]")),
@@ -3933,12 +4103,22 @@ def import_policy(data, name=None, skip_invalid=False):
         policy_name = res_data.get('name')
         if name and name != policy_name:
             continue
+        action, dropped_values = drop_bool_action_values(res_data.get('scope'), res_data.get('action', {}))
+        if dropped_values:
+            log.warning(f'Policy "{policy_name}": removed the value of the boolean actions {dropped_values}, they '
+                        f'stay enabled as before.')
+        res_data['action'] = action
         if skip_invalid:
+            duplicates = _duplicate_actions(res_data.get('scope'), action)
+            if duplicates:
+                log.warning(f'Policy "{policy_name}": removed the earlier occurrences of actions given more than '
+                            f'once: {duplicates}. The last occurrence, which the policy used, stays.')
             cleaned, dropped = filter_invalid_actions(res_data.get('scope'),
                                                       res_data.get('action', {}))
             if dropped:
                 log.warning(f'Policy "{policy_name}": dropping actions not valid '
                             f'for this version: {dropped}')
+            if dropped or duplicates:
                 res_data['action'] = cleaned
             # Only skip when dropping actions emptied the policy. A policy that
             # had no actions to begin with has nothing invalid and must import
@@ -3949,6 +4129,7 @@ def import_policy(data, name=None, skip_invalid=False):
                 skipped.append(policy_name)
                 continue
         try:
+            _reject_whitespace_in_action_keys(res_data.get('action', {}))
             rid = set_policy(**res_data)
         except Exception as e:
             log.warning(f'Could not import policy "{policy_name}": {e!r}')

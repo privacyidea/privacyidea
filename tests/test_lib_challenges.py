@@ -9,7 +9,8 @@ from datetime import timedelta
 from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
 from privacyidea.lib.challenge import (get_challenges, extract_answered_challenges, delete_challenges,
-                                       cancel_enrollment_via_multichallenge, get_challenges_paginate)
+                                       cancel_enrollment_via_multichallenge, get_challenges_paginate,
+                                       consume_challenge)
 from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
@@ -155,6 +156,28 @@ class ChallengeTestCase(MyTestCase):
         self.assertEqual(1, len(get_challenges(transaction_id=transaction_id)))
         delete_challenges(transaction_id=transaction_id)
         self.assertEqual(0, len(get_challenges(transaction_id=transaction_id)))
+
+    def test_03a_consume_challenge_picks_one_user(self):
+        token = init_token({"type": "hotp", "genkey": 1, "pin": "pin"})
+        self.assertFalse(check_serial_pass(token.get_serial(), "pin")[0])
+        challenge = get_challenges(serial=token.get_serial())[0]
+
+        # Only the call that removes the challenge may let its request succeed
+        self.assertTrue(consume_challenge(challenge))
+        self.assertEqual([], get_challenges(serial=token.get_serial()))
+        self.assertFalse(consume_challenge(challenge))
+        remove_token(token.get_serial())
+
+    def test_03b_consume_challenge_without_a_serial(self):
+        # A FIDO2 challenge is not bound to a token: it carries serial="", which Oracle stores as NULL, so it is
+        # consumed by its id and not by its serial.
+        challenge = Challenge("", challenge="nonce", validitytime=120)
+        challenge.save()
+        # Read it before the consume: that commit expires the object, and a reload of a deleted row raises.
+        transaction_id = challenge.transaction_id
+
+        self.assertTrue(consume_challenge(challenge))
+        self.assertEqual([], get_challenges(transaction_id=transaction_id))
 
     def test_04_cancel_enrollment_failures(self):
         transaction_id = get_rand_digit_str()

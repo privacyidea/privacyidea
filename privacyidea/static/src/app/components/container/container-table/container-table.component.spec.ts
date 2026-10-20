@@ -280,12 +280,6 @@ describe("ContainerTableComponent (Jest)", () => {
         "Select container CONT-1"
       );
     });
-
-    it("linkLabel appends 'link' to the given label", () => {
-      expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("CONT-1")).toBe(
-        "CONT-1 link"
-      );
-    });
   });
 
   describe("inline cell filter", () => {

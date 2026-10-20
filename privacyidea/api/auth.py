@@ -96,19 +96,23 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError, ResolverError
 from privacyidea.lib.event import event, EventConfiguration
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge, ChallengeExpiredError
+from privacyidea.lib.fido2.challenge import (verify_fido2_challenge, has_unbound_challenge,
+                                             ChallengeExpiredError, check_fido2_token_state,
+                                             record_fido2_login_success)
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthntoken import require_fido2_assertion
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.user import User, split_user, log_used_user
+from privacyidea.lib.user import User, split_user, log_used_user, get_user_from_param
 from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
 
@@ -216,6 +220,36 @@ def _realm_parameter_fits_remote_user(remote_user: str) -> bool:
     return realm_parameter.lower() == (remote_user_realm or "").lower()
 
 
+def _owner_is_session_user(token: TokenClass, owner: User) -> bool:
+    """
+    Whether a session built from the owner's login name and realm - which is all the JWT carries - would act as
+    the owner themselves.
+
+    A usernameless passkey login identifies its user by resolver and user id, while every later request of the
+    session resolves the login name through the realm's resolver order. The two part company when the same login
+    name exists in a resolver the order finds first, and the session then acts as that other user.
+    """
+    try:
+        # The same lookup `before_after.resolve_logged_in_user` makes for a role-user request, which takes the
+        # login name and the realm out of the JWT and leaves the resolver to the realm's resolver order.
+        session_user = get_user_from_param({"user": owner.login, "realm": owner.realm})
+    except ResolverError:
+        # A user store that cannot be asked is not an ambiguous login name. The failure belongs to whoever reports
+        # a failing store, so it passes through instead of being classified here.
+        raise
+    except Exception as error:
+        log.warning(f"The login name {owner.login} of the owner of {token.get_serial()} could not be resolved in "
+                    f"realm {owner.realm}: {error!s}")
+        return False
+    if ((session_user.resolver or "").lower() == (owner.resolver or "").lower()
+            and str(session_user.uid) == str(owner.uid)):
+        return True
+    log.warning(f"The login name {owner.login} of the owner of {token.get_serial()} (resolver {owner.resolver}) "
+                f"resolves to resolver {session_user.resolver} in realm {owner.realm}; the passkey login is "
+                f"refused.")
+    return False
+
+
 @jwtauth.route('', methods=['POST'])
 # The conditional-access gate sits above the pre-policies (decorators run top-down) so it can refuse a locked user
 # before auth_timelimit logs a trackable event for them; see conditional_access_login_gate.
@@ -280,6 +314,16 @@ def get_auth_token():
     :jsonparam transaction_id: transaction id from a prior
         :http:post:`/validate/initialize` (required for passkey and
         for the second leg of a challenge-response flow).
+
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (passkey), then ``username`` with ``password``.
+    A request that does not carry everything the selected method needs
+    is malformed and is answered with a 400, without counting as an
+    authentication attempt. A passkey request needs ``transaction_id``,
+    the ``Origin`` header and the assertion itself:
+    ``authenticatorData``, ``clientDataJSON`` and ``signature``, or
+    their legacy spellings ``authenticatordata``, ``clientdata`` and
+    ``signaturedata``.
 
     :status 200: success — the JWT is in ``result.value.token``;
         or first leg of a challenge-response — ``result.value`` is
@@ -354,6 +398,13 @@ def get_auth_token():
         # A passkey request without its transaction_id is malformed, not an authentication attempt: nothing was
         # checked, so the parameter error is not logged as an authentication event.
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # The same applies to the parameters the assertion is verified with: they are read in the token class,
+        # after the checks below have classified the request, so an incomplete request would be logged as a
+        # failed authentication. Requiring them here keeps it the malformed request it is.
+        require_fido2_assertion(request.all_data)
+        # The origin binds the answer to the site it was made for and is taken from the request environment,
+        # never from a parameter, so it is required from there.
+        get_required(request.environ, "HTTP_ORIGIN")
         # The passkey branch is the only one that consumes the transaction it was given, so it is where the
         # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
         # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
@@ -380,20 +431,22 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+        token_state = check_fido2_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            g.audit_object.log({"info": log_used_user(user, token_state.message),
                                 "success": False,
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
-            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
+            # The user owns this passkey but it may not authenticate -> NO_USABLE_TOKEN
             log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
                                transaction_id=transaction_id,
-                               reasons=[AuthEventReason.TOKEN_DISABLED],
+                               reasons=[token_state.reason],
                                reason_detail=build_reason_detail(
-                                   reasons={token.get_serial(): AuthEventReason.TOKEN_DISABLED}))
-            return send_result(False, rid=2, details={"message": "Token is disabled"})
+                                   reasons={token.get_serial(): token_state.reason}))
+            return send_result(False, rid=2, details={"message": token_state.message})
 
         if not token.user:
             log_authentication(AuthEventType.USER_UNKNOWN, request, transaction_id=transaction_id)
@@ -456,6 +509,17 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise
         if passkey_login_result.success > 0:
+            if not username and not _owner_is_session_user(token, login_user):
+                # The session would act as another user of the realm with the same login name, so the login is
+                # refused rather than issuing a JWT that does not name its owner. A login that named the user
+                # cannot get here: token_belongs_to_user already compared the owner above.
+                g.audit_object.log({"user": login_user.login, "realm": login_user.realm,
+                                    "resolver": login_user.resolver,
+                                    "authentication": AUTH_RESPONSE.REJECT,
+                                    "serial": token.get_serial(), "token_type": token.get_type()})
+                log_authentication(AuthEventType.LOGIN_NAME_NOT_UNIQUE, request, user=login_user,
+                                   serial=token.get_serial(), transaction_id=transaction_id)
+                raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             user = login_user
             login_name = user.login
             realm = user.realm
@@ -464,6 +528,9 @@ def get_auth_token():
             auth_event_type = AuthEventType.LOGIN_SUCCESS
             # Record the passkey serial for the authentication log
             serials = token.get_serial()
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
             # Passkey login bypasses check_token_list, so the reset_all_user_tokens
             # policy is applied explicitly here (mirrors the /validate FIDO2 path).
             if reset_all_user_tokens_active(g, user):

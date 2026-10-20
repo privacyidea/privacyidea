@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .tokengroups-container {
@@ -23,12 +23,4 @@
   overflow: hidden;
 
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
-}
-
-.actions-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  width: 100%;
 }

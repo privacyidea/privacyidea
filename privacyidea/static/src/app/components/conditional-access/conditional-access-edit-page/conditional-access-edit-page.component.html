@@ -66,6 +66,16 @@
               <span i18n="@@common.delete">Delete</span>
             </button>
           }
+          @if (!isNewPolicy() && authService.actionAllowed("conditional_access_policy_write")) {
+            <button
+              (click)="$event.stopPropagation(); copyPolicy()"
+              [disabled]="savingName() !== null"
+              class="action-button-secondary button-width-s"
+              mat-stroked-button>
+              <mat-icon>content_copy</mat-icon>
+              <span i18n="@@common.copy">Copy</span>
+            </button>
+          }
           <button
             (click)="$event.stopPropagation(); savePolicy()"
             [disabled]="!canSave() || !hasChanges()"
@@ -152,6 +162,10 @@
           <mat-hint align="end">{{ editPolicy().name.length }} / 255</mat-hint>
           @if (showNameError() && nameTooLong()) {
             <mat-error i18n="@@conditionalAccess.nameMustNotExceed">Name must not exceed 255 characters.</mat-error>
+          } @else if (showNameError() && nameConflict()) {
+            <mat-error i18n="@@conditionalAccess.nameAlreadyUsed"
+              >A policy named "{{ nameConflict()?.name }}" already exists.</mat-error
+            >
           } @else if (showNameError()) {
             <mat-error i18n="@@conditionalAccess.nameRequired">Name is required.</mat-error>
           }
@@ -306,7 +320,9 @@
               Priority {{ editPolicy().priority }} is already used by "{{ priorityConflict()?.name }}".
             </mat-error>
           }
-          <mat-hint i18n="@@conditionalAccess.orderAcrossPoliciesLowest"
+          <mat-hint
+            class="ca-priority-hint"
+            i18n="@@conditionalAccess.orderAcrossPoliciesLowest"
             >Order across policies, lowest first. Must be unique.</mat-hint
           >
         </mat-form-field>

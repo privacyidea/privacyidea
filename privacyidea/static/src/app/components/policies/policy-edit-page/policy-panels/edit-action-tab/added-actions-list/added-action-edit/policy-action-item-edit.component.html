@@ -35,6 +35,7 @@
           @if (actionDetail()?.multiple) {
             <app-multi-select-only
               class="flex-2"
+              [ariaLabel]="valueLabel()"
               subscriptSizing="dynamic"
               i18n-placeholder="@@policy.selectOptions"
               placeholder="Select options..."
@@ -58,6 +59,7 @@
               class="flex-1"
               subscriptSizing="dynamic">
               <mat-select
+                [aria-label]="valueLabel()"
                 [value]="isNumber(action().value) ? +action().value : action().value"
                 (selectionChange)="handleUpdateAction($event.value)">
                 @for (option of valueOptions(); track option.value) {
@@ -70,6 +72,7 @@
           @switch (actionDetail()?.type) {
             @case ("str") {
               <input
+                [attr.aria-label]="valueLabel()"
                 type="text"
                 class="action-value-input flex-2"
                 [value]="action().value"
@@ -77,6 +80,7 @@
             }
             @case ("int") {
               <input
+                [attr.aria-label]="valueLabel()"
                 type="number"
                 class="action-value-input flex-2"
                 [value]="action().value"
@@ -84,6 +88,7 @@
             }
             @case ("text") {
               <textarea
+                [attr.aria-label]="valueLabel()"
                 class="action-value-textarea flex-2"
                 [value]="action().value"
                 (input)="handleUpdateAction($any($any($event.target).value))"></textarea>

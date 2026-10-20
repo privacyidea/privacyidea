@@ -3,10 +3,13 @@ This test file tests the lib.tokens.yubikeytoken
 
 """
 import logging
+from unittest import mock
+
 from testfixtures import log_capture
 
 from testfixtures import LogCapture
 from .base import MyTestCase
+from .compare_helpers import recorded_compare_digest
 from privacyidea.lib.tokens.yubikeytoken import (YubikeyTokenClass,
                                                  yubico_api_signature,
                                                  yubico_check_api_signature)
@@ -181,6 +184,24 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertEqual(yubico_check_api_signature(data, api_key,
                                                     signature), True)
         self.assertEqual(yubico_check_api_signature(data, api_key), True)
+
+    def test_09a_api_signature_is_compared_in_constant_time(self):
+        """The given and the expected API signature are compared in constant time."""
+        api_key = "LqeG/IZscF1f7/oGQBqNnGY7MLk="
+        data = {"otp": "ececegecejeeedehfftnecrrfcfibfbklhvetghgrvtjdtvv",
+                "nonce": "blablafoo",
+                "timestamp": "time"}
+        expected = yubico_api_signature(data, api_key)
+        given = "A" * len(expected)
+
+        with recorded_compare_digest() as spy:
+            self.assertFalse(yubico_check_api_signature(data, api_key, given))
+        self.assertTrue(spy.saw(expected, given))
+
+        # A missing signature is still refused, and the right one still verifies
+        self.assertFalse(yubico_check_api_signature(data, api_key))
+        data["h"] = expected
+        self.assertTrue(yubico_check_api_signature(data, api_key))
 
     def test_10_api_endpoint(self):
         fixed = "ebedeeefegeheiej"
@@ -391,6 +412,20 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue(r > old_r, (r, old_r))
         # Clean up
         remove_token(token.token.serial)
+
+    def test_23_otp_value_used_by_another_request(self):
+        """The OTP value verifies, but another request advanced the counter past it first."""
+        serial = "UBAM_LOSTRACE"
+        db_token = Token(serial, tokentype="yubikey")
+        db_token.save()
+        token = YubikeyTokenClass(db_token)
+        token.set_otpkey(self.otpkey)
+        token.set_otplen(48)
+        token.save()
+
+        with mock.patch.object(YubikeyTokenClass, "advance_otp_count", return_value=False):
+            self.assertEqual(-1, token.check_otp(self.valid_otps[0]))
+        remove_token(serial)
 
     def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

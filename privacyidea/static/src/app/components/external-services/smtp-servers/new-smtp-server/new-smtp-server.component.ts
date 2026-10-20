@@ -38,6 +38,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { reservedNames } from "@utils/reserved-names.utils";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 interface SmtpFormModel {
   identifier: string;
@@ -81,6 +82,7 @@ const EMPTY_SMTP_FORM: SmtpFormModel = {
   selector: "app-smtp-edit-dialog",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     FormField,
     MatFormFieldModule,
     MatInputModule,

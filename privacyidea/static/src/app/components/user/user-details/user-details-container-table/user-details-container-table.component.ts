@@ -63,10 +63,14 @@ import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { forkJoin } from "rxjs";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 @Component({
   selector: "app-user-details-container-table",
   imports: [
+    ScrollFocusableDirective,
+    SortByLabelPipe,
     CopyableComponent,
     MatHeaderRowDef,
     MatRowDef,
@@ -92,10 +96,6 @@ import { forkJoin } from "rxjs";
   styleUrl: "./user-details-container-table.component.scss"
 })
 export class UserDetailsContainerTableComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   /**
    * The way out of the empty state. Passed as a template rather than projected content because this
    * component renders it in a different place depending on the table's state, and a single
@@ -112,6 +112,19 @@ export class UserDetailsContainerTableComponent {
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+
+  /** Width tier of each data column; the row-select column keeps its own checkbox width. */
+  private readonly columnWidthTiers: Record<string, "s" | "m" | "l" | "xl"> = {
+    serial: "m",
+    type: "s",
+    states: "s",
+    description: "l",
+    realms: "m"
+  };
+
+  columnWidthClass(key: string): string {
+    return `col-width-${this.columnWidthTiers[key] ?? "m"}`;
+  }
 
   get displayedColumns(): string[] {
     return ["select", ...this.columnsKeyMap.map((c) => c.key)];

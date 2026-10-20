@@ -19,6 +19,14 @@
     }
   }
 
+  // Two icon buttons (80px) and the cell padding. The four col-width-s data columns and this one add up
+  // to 678px, which with the table's 2px of collapsed outer border fills the 680px the card holds.
+  .col-actions {
+    width: 118px;
+    min-width: 118px;
+    max-width: 118px;
+  }
+
   .container-details-action-row {
     padding: 0 16px 0 32px;
     display: flex;

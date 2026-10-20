@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 .create-user-layout {
   @include styles.main-component-style;

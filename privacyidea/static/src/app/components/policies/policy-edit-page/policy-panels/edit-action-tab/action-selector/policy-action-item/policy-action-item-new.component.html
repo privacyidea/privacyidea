@@ -34,6 +34,7 @@
         @if (selectableAction().detail.multiple) {
           <app-multi-select-only
             class="flex-2"
+            [ariaLabel]="valueLabel()"
             subscriptSizing="dynamic"
             i18n-placeholder="@@policy.selectOptions"
             placeholder="Select options..."
@@ -60,6 +61,7 @@
               subscriptSizing="dynamic">
               <mat-select
                 #selectElement
+                [aria-label]="valueLabel()"
                 [value]="currentAction().value"
                 (selectionChange)="updateSelectedActionValue($event.value)">
                 @for (option of valueOptions(); track option.value) {
@@ -74,6 +76,7 @@
           @case ("str") {
             <input
               #inputElement
+              [attr.aria-label]="valueLabel()"
               type="text"
               class="action-value-input flex-2"
               [value]="currentAction().value"
@@ -83,6 +86,7 @@
           @case ("int") {
             <input
               #inputElement
+              [attr.aria-label]="valueLabel()"
               type="number"
               class="action-value-input flex-2"
               [value]="currentAction().value"
@@ -92,6 +96,7 @@
           @case ("text") {
             <textarea
               #inputElement
+              [attr.aria-label]="valueLabel()"
               class="action-value-textarea flex-2"
               [value]="currentAction().value"
               (input)="updateSelectedActionValue($any($event.target).value)"></textarea>
@@ -105,6 +110,7 @@
       <button
         #buttonElement
         mat-icon-button
+        [attr.aria-label]="addLabel()"
         [disabled]="!inputIsValid()"
         (click)="$event.stopPropagation(); addAction()">
         <mat-icon>add</mat-icon>

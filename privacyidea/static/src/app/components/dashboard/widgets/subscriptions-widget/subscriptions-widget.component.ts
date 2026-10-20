@@ -36,6 +36,7 @@ import {
   SubscriptionState,
   SubscriptionStatus
 } from "@services/subscription/subscription.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /**
  * A row of the overview: the server, a section header, or one component. Section
@@ -88,6 +89,7 @@ function sectionLabel(section: string): string {
   selector: "app-subscriptions-widget",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     WidgetStateComponent,
     MatTooltipModule,
     MatIcon,
@@ -248,20 +250,19 @@ export class SubscriptionsWidgetComponent extends DashboardWidget implements OnI
   }
 
   /**
-   * The glyph shown inside a status dot. Without it the usage column would be a green
-   * dot against a red one, which is the pair colour-blind admins cannot separate, so
-   * every state carries a shape next to its colour.
+   * The Material icon shown inside a status dot. Without it the usage column would be a green dot against a red
+   * one, which is the pair colour-blind admins cannot separate, so every state carries a shape next to its colour.
    */
   protected dotGlyph(dotClass: string): string {
     switch (dotClass) {
       case "dot-good":
-        return "\u2713";
+        return "check";
       case "dot-warn":
-        return "!";
+        return "priority_high";
       case "dot-bad":
-        return "\u2715";
+        return "close";
       default:
-        return "\u2013";
+        return "remove";
     }
   }
 

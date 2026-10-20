@@ -127,6 +127,11 @@ class AuthEventType(str, Enum):
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
+    # The credential identified its user, but the login name and realm that a session carries do not lead back to
+    # them: another user of the realm has the same login name and the realm's resolver order finds them first, so
+    # the session would act as that other user. Unlike USER_UNKNOWN the login name resolves - just to somebody
+    # else.
+    LOGIN_NAME_NOT_UNIQUE = "LOGIN_NAME_NOT_UNIQUE"
     # User is known but has no tokens assigned, or the requested token does not exist.
     NO_TOKEN = "NO_TOKEN"
     # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
@@ -401,6 +406,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.TOKEN_ONLY_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.MFA_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE: AuthEventOutcome.FAILURE,
     AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.INVALID_TOKEN_TYPE: AuthEventOutcome.FAILURE,
@@ -586,6 +592,10 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
     AuthEventType.USER_UNKNOWN,
+    # Next to USER_UNKNOWN, which it is the counterpart of: the login name resolves, just not to the user the
+    # credential identified. Like it, it classifies a request the endpoint refused before any token flow ran, so
+    # it never actually reaches reduce_request_events and is ranked here to satisfy the invariant.
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE,
     # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
     # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
     # is the better classification. In practice neither reduces against anything - the endpoints that emit them

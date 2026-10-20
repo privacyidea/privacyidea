@@ -609,6 +609,30 @@ class APIPolicyTestCase(MyApiTestCase):
             result = data.get("result")
             self.assertEqual(result['error'], {'code': 302, 'message': 'ERR302: Invalid client definition!'})
 
+    def test_06_disabled_bool_action_is_negated(self):
+        # A boolean action with the value False would be stored and act as enabled, it is stored as excluded action
+        for action in [f"{PolicyAction.PASSONNOTOKEN}=False", {PolicyAction.PASSONNOTOKEN: False}]:
+            with self.app.test_request_context('/policy/boolValue',
+                                               method='POST',
+                                               json={"scope": SCOPE.AUTH, "action": action},
+                                               headers={'PI-Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res.json)
+            self.assertEqual({f"-{PolicyAction.PASSONNOTOKEN}": True}, get_policies(name="boolValue")[0].get("action"))
+        delete_policy("boolValue")
+
+        # A value that is neither true nor false is rejected
+        for action in [f"{PolicyAction.PASSONNOTOKEN}=hotp", {PolicyAction.PASSONNOTOKEN: "hotp"}]:
+            with self.app.test_request_context('/policy/boolValue',
+                                               method='POST',
+                                               json={"scope": SCOPE.AUTH, "action": action},
+                                               headers={'PI-Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 400, res.json)
+                self.assertIn(f"Invalid value for action '{PolicyAction.PASSONNOTOKEN}'",
+                              res.json["result"]["error"]["message"])
+            self.assertFalse(get_policies(name="boolValue"))
+
     def test_02_rename_policy(self):
         # create a policy pol_old
         with self.app.test_request_context(

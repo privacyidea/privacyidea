@@ -56,7 +56,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.radiusserver import get_radius, get_temporary_radius_server
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, consume_challenge
 from privacyidea.lib.token import create_challenge
 from privacyidea.lib.policydecorators import challenge_response_allowed
 
@@ -332,17 +332,21 @@ class RadiusTokenClass(RemoteTokenClass):
                     radius_response = self._check_radius(passw, options=options, radius_state=state)
                     if radius_response == AccessAccept:
                         # We found the matching challenge,
-                        # and the RADIUS server returned AccessAccept
-                        challengeobject.delete()
-                        otp_counter = 1
+                        # and the RADIUS server returned AccessAccept. Only the request that removes the
+                        # challenge is accepted.
+                        otp_counter = 1 if consume_challenge(challengeobject) else -1
                         break
                     elif radius_response == AccessChallenge:
                         # The response was valid but triggered a new challenge
                         # Note: The second challenge currently does not work correctly
                         # see https://github.com/privacyidea/privacyidea/issues/1792
-                        challengeobject.delete()
-                        _, _, transaction_id, _ = self.create_challenge(options=options)
-                        options["transaction_id"] = transaction_id
+                        # Only the request that removes the answered challenge continues the conversation, so
+                        # one answer buys one follow-up challenge and not one per request.
+                        if consume_challenge(challengeobject):
+                            _, _, transaction_id, _ = self.create_challenge(options=options)
+                            options["transaction_id"] = transaction_id
+                        else:
+                            log.info(f"The challenge of token {self.token.serial} was used by another request.")
                         otp_counter = -1
                         break
                     else:

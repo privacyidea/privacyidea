@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { filterMatchTooltip } from "@utils/filter-hint.utils";
@@ -32,7 +34,6 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -69,12 +70,16 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { UserRoleBadge, userRoleBadge } from "../user-roles";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-locked-users",
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     InfoHintComponent,
     MatSuffix,
     TableStateComponent,
@@ -99,8 +104,7 @@ import { concatMap, reduce } from "rxjs/operators";
     NgClass,
     DatePipe,
     PaginatorPageSizeTooltipDirective,
-    PaginatorCompactRangeDirective,
-    MatMenuModule
+    PaginatorCompactRangeDirective
   ]
 })
 export class LockedUsersComponent {
@@ -181,6 +185,31 @@ export class LockedUsersComponent {
     source: () =>
       this.casService.lockedUsersResource.hasValue() ? this.casService.lockedUsersResource.value() : undefined,
     computation: () => []
+  });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => {
+    const canReset = this.authService.actionAllowed("user_lock_reset");
+    return [
+      {
+        id: "unlock",
+        label: $localize`:@@common.unlock:Unlock`,
+        tone: "secondary",
+        width: "m",
+        icon: "lock_open",
+        visible: canReset,
+        disabled: this.selection().length === 0,
+        run: () => this.resetSelected()
+      },
+      {
+        id: "delete-expired",
+        label: $localize`:@@token.deleteExpired:Delete Expired`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete_sweep",
+        visible: canReset,
+        run: () => this.deleteExpired()
+      }
+    ];
   });
 
   displayLogin(row: LockedUserEntry): string {

@@ -26,21 +26,13 @@ import { MatSelectModule } from "@angular/material/select";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { DURATION_UNIT_FACTORS, DURATION_UNITS, DurationUnit } from "@utils/duration-unit.utils";
 
 // What the dialog hands back: a null duration means a block that does not expire.
 export interface BlocklistBlockDialogResult {
   ip: string;
   durationSeconds: number | null;
 }
-
-// The duration is always sent in seconds; the unit only changes how it is entered.
-type DurationUnit = "seconds" | "minutes" | "hours";
-
-const DURATION_UNIT_FACTORS: Record<DurationUnit, number> = {
-  seconds: 1,
-  minutes: 60,
-  hours: 3600
-};
 
 @Component({
   selector: "app-blocklist-block-dialog",
@@ -63,7 +55,7 @@ export class BlocklistBlockDialogComponent extends AbstractDialogComponent<void,
   readonly mode = signal<"permanent" | "timed">("permanent");
   readonly durationInput = signal("");
   readonly durationUnit = signal<DurationUnit>("minutes");
-  readonly durationUnits: readonly DurationUnit[] = ["seconds", "minutes", "hours"];
+  readonly durationUnits = DURATION_UNITS;
 
   readonly durationSeconds = computed<number | null>(() => {
     const parsed = Number.parseInt(this.durationInput().trim(), 10);

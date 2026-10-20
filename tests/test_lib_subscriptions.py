@@ -249,19 +249,42 @@ class SubscriptionApplicationTestCase(MyTestCase):
         mock_get_subscription.assert_not_called()
         mock_token_users.assert_not_called()
 
-    def test_07_freeradius_is_metered_like_the_server(self):
-        # FreeRADIUS is covered by the server's subscription and counts against the same
-        # free tier, so it resolves to "privacyidea" for metering and for display.
-        self.assertEqual("privacyidea", get_metered_application("FreeRADIUS"))
+    def test_07_freeradius_is_never_enforced(self):
+        # FreeRADIUS is shown under the server's subscription, but the server only has a
+        # soft limit, so RADIUS authentications must never be refused, however many users
+        # have tokens.
         self.assertEqual("privacyidea", get_subscription_owner("FreeRADIUS"))
-        self.assertEqual(APPLICATIONS["privacyidea"], APPLICATIONS[get_metered_application("FreeRADIUS")])
+        self.assertNotIn(get_metered_application("FreeRADIUS"), APPLICATIONS)
 
-        with mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
-                        return_value=0):
-            with mock.patch("privacyidea.lib.subscriptions.get_subscription",
-                            return_value=[]) as mock_get_subscription:
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+        with (mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens",
+                         return_value=100_000) as mock_token_users,
+              mock.patch("random.randrange", return_value=100_000),
+              mock.patch("privacyidea.lib.subscriptions.get_subscription",
+                         return_value=[]) as mock_get_subscription):
+            for _ in range(20):
                 self.assertTrue(check_subscription("FreeRADIUS"))
-        mock_get_subscription.assert_called_once_with("privacyidea")
+            mock_get_subscription.assert_not_called()
+            mock_token_users.assert_not_called()
+
+            # The same setup refuses a metered client, so the checks above did exceed a limit.
+            with self.assertRaises(SubscriptionError):
+                check_subscription("privacyidea-cp")
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+
+    def test_07a_server_status_warns_over_the_free_tier(self):
+        # The server's free tier is only a warning: subscription_status() reports it, and
+        # the WebUI shows it, while authentications go on.
+        with mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[]):
+            with mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=50):
+                self.assertEqual(0, subscription_status())
+            with mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=51):
+                self.assertEqual(1, subscription_status())
+
+        expired = {"application": "privacyidea", "date_till": datetime.now() - timedelta(days=100)}
+        with (mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[expired]),
+              mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=51)):
+            self.assertEqual(2, subscription_status())
 
     def test_08_simplesamlphp_checks_the_legacy_application_name_too(self):
         # "simplesamlphp" and "privacyidea-simplesamlphp" were merged into one product
