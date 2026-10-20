@@ -23,19 +23,13 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import {
-  AuthData,
-  AuthDetail,
-  AuthService,
-  MultiChallenge,
-  WebAuthnSignRequestData
-} from "@services/auth/auth.service";
+import { AuthData, AuthDetail, AuthService, MultiChallenge, WebAuthnSignRequest } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
-import { ValidateService, WebAuthnSignRequest } from "@services/validate/validate.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
   MockAuthDetail,
   MockLocalService,
@@ -48,6 +42,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
 import { of, throwError } from "rxjs";
 import { LoginComponent } from "./login.component";
 
@@ -223,7 +218,7 @@ describe("LoginComponent", () => {
     });
 
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
-      const webAuthnSignRequestData: WebAuthnSignRequestData = {
+      const webAuthnSignRequestData: WebAuthnSignRequest = {
         allowCredentials: [
           {
             id: "sLGtMkbtYaEl2sYAD4iDdsVRUyihBfPBDhkVQemXUujuLE2G7WdSO5sb0IfGE-dwsABqT00mcqR9oTntiP0mEQ",
@@ -287,37 +282,14 @@ describe("LoginComponent", () => {
     });
 
     it("should combine the allowed credentials of all WebAuthn tokens into one sign request", () => {
-      const signRequest = (credentialId: string) => ({
-        allowCredentials: [
-          {
-            id: credentialId,
-            transports: ["usb", "nfc"] as AuthenticatorTransport[],
-            type: "public-key" as PublicKeyCredentialType
-          }
-        ],
-        challenge: "shared-transaction-challenge",
-        rpId: "example.com",
-        timeout: 60000,
-        userVerification: "preferred" as UserVerificationRequirement
-      });
-      const webAuthnChallenge = (serial: string, credentialId: string) => ({
-        attributes: { webAuthnSignRequest: signRequest(credentialId) },
-        client_mode: "webauthn",
-        message: `Please confirm with your WebAuthn token (${serial})`,
-        serial,
-        transaction_id: "tx-two-keys",
-        type: "webauthn"
-      });
       authService.authenticate.mockReturnValue(
         of(
           new MockPiResponse<AuthData, AuthDetail>({
             detail: {
-              transaction_id: "tx-two-keys",
+              transaction_id: "tx-webauthn",
               multi_challenge: [
-                webAuthnChallenge("WAN00000001", "credential-key-1"),
-                webAuthnChallenge("WAN00000002", "credential-key-2"),
-                // the same credential must not be offered twice
-                webAuthnChallenge("WAN00000003", "credential-key-1")
+                mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1")),
+                mockWebAuthnChallenge("WAN00000002", mockWebAuthnSignRequest("credential-key-2"))
               ]
             },
             result: { authentication: "CHALLENGE", status: true }
@@ -328,12 +300,54 @@ describe("LoginComponent", () => {
       component.onSubmit();
 
       expect(component.webAuthnTriggered()).toEqual({
-        ...signRequest("credential-key-1"),
+        ...mockWebAuthnSignRequest("credential-key-1"),
         allowCredentials: [
-          ...signRequest("credential-key-1").allowCredentials,
-          ...signRequest("credential-key-2").allowCredentials
+          ...mockWebAuthnSignRequest("credential-key-1").allowCredentials,
+          ...mockWebAuthnSignRequest("credential-key-2").allowCredentials
         ]
       });
+    });
+
+    it("should drop the WebAuthn sign request when the next challenge has no WebAuthn entry", () => {
+      const hotpChallenge = (transactionId: string): MultiChallenge => ({
+        client_mode: "interactive",
+        message: "please enter otp: ",
+        serial: "OATH00000001",
+        transaction_id: transactionId,
+        type: "hotp"
+      });
+      authService.authenticate
+        .mockReturnValueOnce(
+          of(
+            new MockPiResponse<AuthData, AuthDetail>({
+              detail: {
+                transaction_id: "tx-webauthn",
+                multi_challenge: [
+                  mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1")),
+                  hotpChallenge("tx-webauthn")
+                ]
+              },
+              result: { authentication: "CHALLENGE", status: true }
+            })
+          )
+        )
+        .mockReturnValueOnce(
+          of(
+            new MockPiResponse<AuthData, AuthDetail>({
+              detail: { transaction_id: "tx-next", multi_challenge: [hotpChallenge("tx-next")] },
+              result: { authentication: "CHALLENGE", status: true }
+            })
+          )
+        );
+
+      component.onSubmit();
+      expect(component.webAuthnTriggered()).not.toBeNull();
+
+      component.otp.set("123456");
+      component.onSubmit();
+
+      expect(component.webAuthnTriggered()).toBeNull();
+      expect((component as unknown as { transactionId: string }).transactionId).toBe("tx-next");
     });
 
     it("should handle a challenge response", () => {
