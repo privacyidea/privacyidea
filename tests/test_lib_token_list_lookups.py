@@ -24,7 +24,7 @@ from privacyidea.lib.token import query as token_query
 from privacyidea.lib.token.tokengroups import set_tokengroups
 from privacyidea.lib.tokengroup import delete_tokengroup, set_tokengroup
 from privacyidea.lib.user import User
-from privacyidea.models import db, NodeName, Token, TokenContainerToken, TokenOwner
+from privacyidea.models import db, NodeName, Realm, Token, TokenContainerToken, TokenOwner
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -323,6 +323,40 @@ class TokenListLookupTestCase(MyTestCase):
         finally:
             db.session.rollback()
         self.assertEqual("user00", get_tokens(serial="LIST00")[0].user.login)
+
+    @ldap3mock.activate
+    def test_07d_the_node_filter_keeps_tokens_without_owner_realm_or_realm_resolver(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        owner_without_realm, owner_in_a_realm_without_resolver = db.session.scalars(
+            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id)
+            .where(Token.serial.in_(["LIST02", "LIST03"])).order_by(Token.serial)
+        ).unique().all()
+        original_realm_id = owner_without_realm.realm_id
+        other_node = "11111111-2222-3333-4444-555555555555"
+        init_token({"type": "hotp", "genkey": 1, "serial": "LISTUNASSIGNED"})
+        set_realm("realmwithoutresolver", [])
+        db.session.add(NodeName(id=other_node, name="OtherNode"))
+        db.session.commit()
+        set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
+        try:
+            # With a node-specific resolver in the configuration, the token without an owner, the owner without a
+            # realm and the owner in a realm without a resolver are all listed
+            owner_without_realm.realm_id = None
+            owner_in_a_realm_without_resolver.realm_id = db.session.scalar(
+                select(Realm.id).where(Realm.name == "realmwithoutresolver"))
+            db.session.commit()
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS + 1, page=1)
+            self.assertEqual(NUM_TOKENS + 1, result["count"], result)
+            self.assertIn("LISTUNASSIGNED", [token["serial"] for token in result["tokens"]])
+        finally:
+            owner_without_realm.realm_id = original_realm_id
+            owner_in_a_realm_without_resolver.realm_id = original_realm_id
+            db.session.commit()
+            delete_realm("noderealm")
+            delete_realm("realmwithoutresolver")
+            remove_token("LISTUNASSIGNED")
+            db.session.execute(delete(NodeName).where(NodeName.id == other_node))
+            db.session.commit()
 
     @ldap3mock.activate
     def test_08_tokens_sharing_an_owner_are_looked_up_once(self):

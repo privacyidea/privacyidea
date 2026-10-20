@@ -19,6 +19,7 @@ import datetime
 import hashlib
 import json
 import logging
+from typing import Any
 
 import mock
 from dateutil import parser
@@ -1440,7 +1441,8 @@ class TokenTestCase(MyTestCase):
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=1,
                                      sortdir="desc")
-        self.assertTrue(len(tokens.get("tokens")), token_count - 1)
+        # The token of an unknown type is counted, but not listed
+        self.assertEqual(token_count - 1, len(tokens.get("tokens")))
         self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") is None, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
@@ -1464,29 +1466,17 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(1, len(tokens))
         self.assertEqual(hotp_token.get_serial(), tokens[0]["serial"])
 
+        def token_types(**filters: Any) -> set[str]:
+            return {token["tokentype"] for token in get_tokens_paginate(psize=100, **filters)["tokens"]}
+
         # filter by type list
-        tokens_pag = get_tokens_paginate(token_type_list="spass,totp")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["spass", "totp"])
-
+        self.assertSetEqual({"spass", "totp"}, token_types(token_type_list=["spass", "totp"]))
         # type wildcard
-        tokens_pag = get_tokens_paginate(tokentype="*otp*")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["hotp", "totp"])
-
+        self.assertSetEqual({"hotp", "totp"}, token_types(tokentype="*otp*"))
         # filter by type list and wildcard
-        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="*otp*")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["totp"])
-
+        self.assertSetEqual({"totp"}, token_types(token_type_list=["spass", "totp"], tokentype="*otp*"))
         # filter by type list and type
-        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="totp")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["totp"])
+        self.assertSetEqual({"totp"}, token_types(token_type_list=["spass", "totp"], tokentype="totp"))
 
         # Filter by container_serial
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -1672,17 +1662,23 @@ class TokenTestCase(MyTestCase):
         second_owner.save()
         db.session.commit()
 
-        # get_tokens(count=True) must return 1, not 2
-        count = get_tokens(serial=serial, count=True)
+        # get_tokens(count=True) must return 1, not 2. The assigned filter joins the owners, which is what yields
+        # a row per owner.
+        count = get_tokens(serial=serial, assigned=True, count=True)
         self.assertEqual(1, count,
                          "count must reflect distinct tokens, not raw joined rows")
 
         # The de-duplicated token list must also have length 1
-        token_list = get_tokens(serial=serial)
+        token_list = get_tokens(serial=serial, assigned=True)
         self.assertEqual(1, len(token_list))
 
         # count and list length must agree
         self.assertEqual(count, len(token_list))
+
+        # The same for the paginated list
+        result = get_tokens_paginate(serial=serial, assigned=True)
+        self.assertEqual(1, result["count"], result)
+        self.assertEqual(1, len(result["tokens"]), result)
 
         # Clean up the extra owner row and the token
         db.session.delete(second_owner)
