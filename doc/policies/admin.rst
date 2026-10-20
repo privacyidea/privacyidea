@@ -37,11 +37,13 @@ means that the administrator *frank* in the admin-realm *helpdesk* is allowed
 to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
 do not name the administrator, but the users the administrator may act on.
 
-.. note:: Configuration objects that belong to no realm, like SMTP, RADIUS and
-   privacyIDEA servers, SMS gateways, CA connectors, the system configuration and
-   periodic tasks, serve every realm. The user realm of an admin policy does not
-   restrict them: an administrator with ``smtpserver_write`` changes the SMTP servers
-   of all realms, whatever realm the policy names. The same holds for
+.. note:: Configuration objects that belong to no realm, like policies, event handlers,
+   conditional-access policies, API clients, SMTP, RADIUS and privacyIDEA servers, SMS
+   gateways, CA connectors, the system configuration and periodic tasks, serve every
+   realm. The user realm of an admin policy does not restrict them: an administrator
+   with ``smtpserver_write`` changes the SMTP servers of all realms, and an
+   administrator with ``policywrite`` can write a policy without a realm, also an admin
+   policy, which then applies to every realm. The same holds for
    ``system_documentation``. Do not give such actions to administrators who should
    only act in some realms.
 
