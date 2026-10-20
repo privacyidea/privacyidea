@@ -36,6 +36,7 @@ from sqlalchemy.exc import OperationalError
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                           AuthEventReason, AuthLogUserRole)
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
 from privacyidea.lib.error import ResolverError
@@ -1555,6 +1556,7 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         # A single failed lookup leaves the login without its user. A passOnNoUser policy must not take that for a
         # user who does not exist, even when the user store answers again for the rest of the request.
         original_get_user_id = PasswdIdResolver.getUserId
+        flush_user_cache()
         with mock.patch.object(PasswdIdResolver, "getUserId", return_value=""):
             unresolved_user = User(self.username, self.realm1)
         # Not only a resolver error: an SQL user store that can not be reached fails while its table is loaded
@@ -1574,6 +1576,8 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                     return original_get_user_id(resolver, login_name)
 
                 set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+                # The user cache would answer for the user store
+                flush_user_cache()
                 with mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_once):
                     res = self._auth({"username": self.username, "realm": self.realm1, "password": "wrong"},
                                      status=401)

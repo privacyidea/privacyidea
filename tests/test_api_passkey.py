@@ -27,6 +27,7 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
+from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.crypto import CENSORED
@@ -2136,6 +2137,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
                     raise ResolverError("The user store is not available")
                 return original_get_username(resolver, user_id)
 
+            # The user cache would answer for the user store
+            flush_user_cache()
             with patch.object(PasswdIdResolver, "getUsername", get_username):
                 with self.app.test_request_context(endpoint, method='POST', data=data,
                                                    headers={"Origin": self.expected_origin}):
@@ -2166,7 +2169,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
         data = dict(self.authentication_response_uv)
         data["transaction_id"] = transaction_id
-        # The owner is looked up by user ID, the session user by login name
+        # The owner is looked up by user ID, the session user by login name. The user cache would answer for both.
+        flush_user_cache()
         with patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("The user store is not available")):
             with self.app.test_request_context('/auth', method='POST', data=data,
                                                headers={"Origin": self.expected_origin}):
