@@ -418,20 +418,22 @@ $corner-radii: (
 // The fills of the status chips, dots, ribbons, bars and snackbars, and the ink drawn on them. The user picks one level in UI
 // Settings; AppearanceService stamps it on <html> as html.status-colors-<level>. The fills are the same in both
 // themes, so each level holds its contrast in light and dark:
-// - aaa: black ink, every fill at 7:1 or better.
+// - aaa: black ink, every fill at 7:1 or better and the fills spaced in lightness.
 // - aa: white ink, every fill at 4.5:1 or better and the fills spaced in lightness (the default).
 // - a: white ink on the old WebUI green, orange, red and blue and a mid grey. Green, orange and red sit at 2.5:1, 2.0:1
 //   and 4.0:1 under white, blue and grey at 4.5:1, so this level has no contrast guarantee.
 $status-colors: (
   "aaa": (
     "ink": black,
+    // Black ink only sets a floor, so the fills spread upward from the darkest of them (green, at 7.5:1) to the lightest
+    // (yellow, at 14:1). Every pair holds at least 1.15:1 in lightness, so the fills stay apart without relying on hue.
     "green": hsl(120, 50%, 46%),
-    // The logo's bright blue (#00b4ff), darkened to 7.06:1 under black.
-    "blue": #009ee8,
-    // The old WebUI's orange, which holds 10.8:1 under black.
-    "yellow": #f0ad4e,
-    "red": hsl(2, 75%, 68%),
-    "grey": hsl(0, 0%, 62%)
+    // The logo's bright blue (#00b4ff), lightened to a sky blue that holds 10.6:1 under black.
+    "blue": hsl(200, 100%, 65%),
+    // The old WebUI's orange, lightened.
+    "yellow": hsl(35, 84%, 78%),
+    "red": hsl(2, 75%, 74%),
+    "grey": hsl(0, 0%, 78%)
   ),
   "aa": (
     "ink": white,

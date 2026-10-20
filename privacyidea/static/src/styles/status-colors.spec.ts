@@ -106,8 +106,11 @@ describe("status colors", () => {
     }
   });
 
-  it("level aa spaces the fills in lightness, so they stay apart without relying on hue", () => {
-    const fills = all["aa"].fills;
+  it.each([
+    ["aaa", 1.15],
+    ["aa", 1.3]
+  ])("level %s spaces the fills in lightness, so they stay apart without relying on hue", (level, trioMinimum) => {
+    const fills = all[level].fills;
     const ratio = (a: string, b: string) => contrast(fills[a], fills[b]);
     for (let i = 0; i < FILLS.length; i++) {
       for (let j = i + 1; j < FILLS.length; j++) {
@@ -123,7 +126,7 @@ describe("status colors", () => {
       ["green", "red"],
       ["yellow", "red"]
     ]) {
-      expect({ pair: [a, b], ok: ratio(a, b) >= 1.3 }).toEqual({ pair: [a, b], ok: true });
+      expect({ pair: [a, b], ok: ratio(a, b) >= trioMinimum }).toEqual({ pair: [a, b], ok: true });
     }
   });
 
