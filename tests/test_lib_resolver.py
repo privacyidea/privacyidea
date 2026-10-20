@@ -839,6 +839,16 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual("3", resolver.getUserId("cornelius"))
         self.assertEqual("", resolver.getUserId("unknown_user"))
 
+    def test_13d_get_user_id_of_a_row_without_user_id(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        for user_id in [None, ""]:
+            with mock.patch.object(resolver.session, "execute") as mock_execute:
+                mock_execute.return_value.mappings.return_value.all.return_value = [
+                    {"id": user_id, "username": "cornelius"}]
+                self.assertEqual("", resolver.getUserId("cornelius"), user_id)
+
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
         self.parameters['Database'] = "does_not_exist"

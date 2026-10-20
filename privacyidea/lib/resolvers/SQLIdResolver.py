@@ -442,7 +442,8 @@ class IdResolver (UserIdResolver):
         if len(rows) > 1:
             log.error(f"More than one user with loginname {LoginName!r} found, using the first one.")
         user = self._get_user_from_mapped_object(rows[0])
-        return convert_column_to_unicode(user["userid"])
+        # A row without a value in the user ID column is no user
+        return convert_column_to_unicode(user.get("userid", ""))
 
     def _get_user_from_mapped_object(self, row: RowMapping, attributes: list[str] = None) -> dict:
         """
