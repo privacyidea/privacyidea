@@ -28,6 +28,11 @@
   through the API and `pi-manage`. Importing a policy (`pi-manage config import`) removes such values like the schema
   update, so an exported policy stays enabled as before.
 
+* **Tokens whose owner has no resolver** — A token whose user assignment names no resolver was left out of every token
+  list, so it could neither be found nor deleted through the WebUI, the API or the token janitors. Such a token belongs
+  to no node and is now listed on every node, so the token lists can show tokens that were not visible before. Its
+  user is shown as `**resolver error**`; unassign or delete the token.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

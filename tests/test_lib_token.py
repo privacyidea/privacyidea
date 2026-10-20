@@ -508,11 +508,11 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             get_token_owner_without_lookup("does not exist")
 
-    def test_08a_get_owner_by_token_id_retries_once_after_a_transient_failure(self):
+    def test_08a_get_owners_by_token_id_retries_once_after_a_transient_failure(self):
         # A page-wide owner query that fails once (e.g. a lock-wait timeout) is retried
         # after a rollback, and the retry recovers the owner in one go.
         token_id = get_tokens(serial="hotptoken")[0].token.id
-        expected_owner = token_query._get_owner_by_token_id([token_id])[token_id]
+        expected_owner = token_query._get_owners_by_token_id([token_id])[token_id][0]
         real_select_owners = token_query._select_owners
         calls = []
 
@@ -523,19 +523,20 @@ class TokenTestCase(MyTestCase):
             return real_select_owners(token_ids)
 
         with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=flaky_select_owners):
-            owner_by_token_id = token_query._get_owner_by_token_id([token_id])
+            owners_by_token_id = token_query._get_owners_by_token_id([token_id])
 
         self.assertEqual(2, len(calls))
-        self.assertEqual(expected_owner.resolver, owner_by_token_id[token_id].resolver)
-        self.assertEqual(expected_owner.user_id, owner_by_token_id[token_id].user_id)
+        self.assertEqual(1, len(owners_by_token_id[token_id]), owners_by_token_id)
+        self.assertEqual(expected_owner.resolver, owners_by_token_id[token_id][0].resolver)
+        self.assertEqual(expected_owner.user_id, owners_by_token_id[token_id][0].user_id)
 
-    def test_08b_get_owner_by_token_id_falls_back_per_token_after_two_failures(self):
+    def test_08b_get_owners_by_token_id_falls_back_per_token_after_two_failures(self):
         # A page-wide owner query that keeps failing even after the retry falls back to
         # resolving each token's owner individually, so only the tokens that keep
         # failing (whether they have no owner or the per-token query itself keeps
-        # failing) are left without an owner.
+        # failing) are left without an owner. The tokens whose query keeps failing are reported.
         token_id = get_tokens(serial="hotptoken")[0].token.id
-        expected_owner = token_query._get_owner_by_token_id([token_id])[token_id]
+        expected_owner = token_query._get_owners_by_token_id([token_id])[token_id][0]
         real_select_owners = token_query._select_owners
         poison_id = -1
 
@@ -544,13 +545,16 @@ class TokenTestCase(MyTestCase):
                 raise Exception("simulated persistent DB error")
             return real_select_owners(token_ids)
 
+        unread_token_ids = set()
         with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=flaky_select_owners):
-            owner_by_token_id = token_query._get_owner_by_token_id([token_id, 999999999, poison_id])
+            owners_by_token_id = token_query._get_owners_by_token_id([token_id, 999999999, poison_id],
+                                                                     unread_token_ids)
 
-        self.assertEqual(expected_owner.resolver, owner_by_token_id[token_id].resolver)
-        self.assertEqual(expected_owner.user_id, owner_by_token_id[token_id].user_id)
-        self.assertNotIn(999999999, owner_by_token_id)
-        self.assertNotIn(poison_id, owner_by_token_id)
+        self.assertEqual(expected_owner.resolver, owners_by_token_id[token_id][0].resolver)
+        self.assertEqual(expected_owner.user_id, owners_by_token_id[token_id][0].user_id)
+        self.assertNotIn(999999999, owners_by_token_id)
+        self.assertNotIn(poison_id, owners_by_token_id)
+        self.assertSetEqual({poison_id}, unread_token_ids)
 
     def test_09_get_tokenclass_info(self):
         info = get_tokenclass_info("hotp")
@@ -2709,3 +2713,16 @@ class InitTokenFailingSaveTestCase(MyTestCase):
                 init_token({"type": "hotp", "genkey": 1, "serial": "SAVEFAILS"})
 
         self.assertEqual([], get_tokens(serial="SAVEFAILS"))
+
+    def test_02_a_token_that_can_not_be_removed_after_a_failed_creation_is_logged(self):
+        # The token is saved, its creation fails afterwards and it can not be removed either: init_token raises the
+        # error of the creation and logs the one of the removal as an error
+        with (mock.patch.object(TokenClass, "update", side_effect=ValueError("the creation fails")),
+              mock.patch.object(TokenClass, "delete_token", side_effect=Exception("the removal fails")),
+              self.assertLogs("privacyidea.lib.token.lifecycle", level="ERROR") as logs):
+            with self.assertRaises(ValueError):
+                init_token({"type": "hotp", "genkey": 1, "serial": "REMOVALFAILS"})
+
+        self.assertTrue(any("Could not remove the token REMOVALFAILS" in line and "the removal fails" in line
+                            for line in logs.output), logs.output)
+        remove_token("REMOVALFAILS")

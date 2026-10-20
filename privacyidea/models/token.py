@@ -19,7 +19,7 @@ import binascii
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText, Index, inspect
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
@@ -169,7 +169,7 @@ class Token(MethodsMixin, db.Model):
 
     @property
     def first_owner(self):
-        if "owner_list" not in inspect(self).unloaded:
+        if "owner_list" in self.__dict__:
             # Filled by a token list that read the owners of its whole page in one query
             return self.owner_list[0] if self.owner_list else None
         return self.owners.first()

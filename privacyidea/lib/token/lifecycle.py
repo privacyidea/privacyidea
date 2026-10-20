@@ -235,10 +235,12 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
 
     # Set before the try, so that a failing save is reported with its own error
     token = None
+    token_saved = False
     try:
         # Save the token to the database
         if token_count == 0:
             db_token.save()
+            token_saved = True
 
         # The tokenclass object is created
         token = create_tokenclass_object(db_token)
@@ -262,17 +264,19 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
         log.error(f"token create failed: {e}")
         log.debug(f"{traceback.format_exc()}")
         # Delete the newly created token from the db
-        if token_count == 0:
+        if token_saved:
             try:
                 if token:
                     token.delete_token()
                 else:
                     db_token.delete()
             except Exception as cleanup_error:
-                # E.g. the token could not be saved at all, so there is nothing to delete. The error that ended
-                # the creation is the one to report.
-                log.warning(f"Could not remove the token that failed to be created: {cleanup_error}")
+                # The error that ended the creation is the one to report
+                log.error(f"Could not remove the token {serial} that failed to be created: {cleanup_error}")
                 db.session.rollback()
+        elif token_count == 0:
+            # The token could not be saved, so there is nothing to delete, only the session to roll back
+            db.session.rollback()
         raise
 
     # We only set the tokenkind here if it was explicitly set in the init_token call.

@@ -3,16 +3,15 @@
 """Token lookup and retrieval helpers (read-only queries)."""
 
 import logging
-import re
 import traceback
 from collections.abc import Callable, Iterator
 from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
 from sqlalchemy import and_, false, func, or_, select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import lazyload, selectinload
 from sqlalchemy.orm.attributes import set_committed_value
-from sqlalchemy.sql import Select
+from sqlalchemy.sql import ColumnElement, Select
 
 from privacyidea.lib import _
 from privacyidea.lib.config import (get_token_class)
@@ -67,6 +66,36 @@ def create_tokenclass_object(db_token: Token) -> TokenClass | None:
     return token_object
 
 
+def _matches_wildcard(value: str, pattern: str) -> bool:
+    """
+    Check whether the value matches the pattern, in which "*" matches any characters, including none, and every
+    other character only itself.
+
+    The pieces between the wildcards are searched from left to right, each one behind the one before. The leftmost
+    place of a piece leaves the most room for the pieces after it, so no other place has to be tried and the time
+    the check takes grows only linearly with the lengths of the value and the pattern.
+
+    :param value: The value to check
+    :param pattern: The pattern
+    :return: True if the value matches the pattern
+    """
+    pieces = pattern.split("*")
+    if len(pieces) == 1:
+        return value == pattern
+    first_piece, *middle_pieces, last_piece = pieces
+    if (len(value) < len(first_piece) + len(last_piece) or not value.startswith(first_piece)
+            or not value.endswith(last_piece)):
+        return False
+    position = len(first_piece)
+    end = len(value) - len(last_piece)
+    for piece in middle_pieces:
+        position = value.find(piece, position, end)
+        if position < 0:
+            return False
+        position += len(piece)
+    return True
+
+
 def _get_realm_ids(realms: dict, exact_names: list[str], wildcard_patterns: list[str] | None = None) -> list[int]:
     """
     Return the IDs of the configured realms whose name is one of the exact names or matches one of the
@@ -79,10 +108,22 @@ def _get_realm_ids(realms: dict, exact_names: list[str], wildcard_patterns: list
     :return: The IDs of the matching realms
     """
     exact = {name.lower() for name in exact_names}
-    patterns = [re.compile(".*".join(re.escape(part) for part in pattern.lower().split("*")), re.DOTALL)
-                for pattern in wildcard_patterns or []]
+    patterns = [pattern.lower() for pattern in wildcard_patterns or []]
     return [realm_data["id"] for realm_name, realm_data in realms.items()
-            if realm_name.lower() in exact or any(pattern.fullmatch(realm_name.lower()) for pattern in patterns)]
+            if realm_name.lower() in exact
+            or any(_matches_wildcard(realm_name.lower(), pattern) for pattern in patterns)]
+
+
+def _in_realms(realm_ids: list[int]) -> ColumnElement[bool]:
+    """
+    The condition for the tokens that are in one of the given realms. The realm IDs are compared in chunks, as a
+    database limits the number of values in an ``IN`` clause.
+
+    :param realm_ids: The database IDs of the realms
+    :return: The condition on ``Token.id``
+    """
+    return Token.id.in_(select(TokenRealm.token_id).where(
+        or_(false(), *[TokenRealm.realm_id.in_(chunk) for chunk in _chunked(realm_ids)])))
 
 
 def _create_token_query(tokentype: str | None = None, token_type_list: list[str] | None = None,
@@ -141,14 +182,10 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         # Separate wildcard entries from exact entries
         exact_realms = [r for r in realm_list if "*" not in r]
         wildcard_realms = [r for r in realm_list if "*" in r]
-        realm_ids = _get_realm_ids(realms, exact_realms, wildcard_realms)
-        sql_query = sql_query.where(
-            Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(realm_ids))))
+        sql_query = sql_query.where(_in_realms(_get_realm_ids(realms, exact_realms, wildcard_realms)))
 
     if allowed_realms is not None:
-        allowed_realm_ids = _get_realm_ids(realms, allowed_realms)
-        sql_query = sql_query.where(
-            Token.id.in_(select(TokenRealm.token_id).where(TokenRealm.realm_id.in_(allowed_realm_ids))))
+        sql_query = sql_query.where(_in_realms(_get_realm_ids(realms, allowed_realms)))
 
     # Filtering by tokentype
     if tokentype and tokentype.strip("*"):
@@ -300,9 +337,9 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             sql_query = sql_query.where(Token.id.in_(subquery))
 
     # Node-specific resolver and realm configuration: the tokens of owners that another node serves are left out.
-    # A token belongs to no node if the resolver of its owner is in no realm at all, e.g. because the resolver was
-    # deleted, or if the realm of its owner has no resolver. Such a token is shown on every node, as it could
-    # otherwise neither be found nor deleted anywhere.
+    # A token belongs to no node if its owner names no resolver, if the resolver of its owner is in no realm at all,
+    # e.g. because the resolver was deleted, or if the realm of its owner has no resolver. Such a token is shown on
+    # every node, as it could otherwise neither be found nor deleted anywhere.
     if filter_by_node:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
         resolvers = []
@@ -322,6 +359,8 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         # Build the resolver filter condition
         resolver_filter = or_(
             TokenOwner.id.is_(None),
+            # Compared on its own, as NULL is neither in nor not in a list of names
+            TokenOwner.resolver.is_(None),
             TokenOwner.resolver.in_(resolvers),
             TokenOwner.resolver.not_in(sorted(resolvers_of_any_node)),
         )
@@ -406,8 +445,10 @@ def _chunked(items: list, size: int = PAGE_QUERY_CHUNK_SIZE) -> Iterator[list]:
 
 
 def _select_owners(token_ids: list[int]) -> list[TokenOwner]:
+    # The tokens of the page are already loaded, so they are not joined again
     return db.session.scalars(
         select(TokenOwner).where(TokenOwner.token_id.in_(token_ids)).order_by(TokenOwner.id)
+        .options(lazyload(TokenOwner.token))
     ).unique().all()
 
 
@@ -483,20 +524,6 @@ def _get_owners_by_token_id(token_ids: list[int],
     return owners_by_token_id
 
 
-def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
-    """
-    Return the owner of each of the given tokens, with one query for the whole page.
-
-    A token can have several owners, in which case the first one is returned, just like
-    ``Token.first_owner`` does for a single token.
-
-    :param token_ids: The database IDs of the tokens
-    :return: dictionary mapping a token ID to its owner. Tokens without an owner (or whose
-             owner could not be read even one by one) are not contained.
-    """
-    return {token_id: owners[0] for token_id, owners in _get_owners_by_token_id(token_ids).items()}
-
-
 def _load_page_details(tokens: list[Token], owners_by_token_id: dict[int, list[TokenOwner]],
                        unread_owner_token_ids: set[int]) -> None:
     """
@@ -513,9 +540,11 @@ def _load_page_details(tokens: list[Token], owners_by_token_id: dict[int, list[T
     """
     try:
         for chunk in _chunked([token.id for token in tokens]):
+            # The tokens are already loaded with their realms, so the realms are not joined again
             db.session.scalars(
                 select(Token).where(Token.id.in_(chunk))
-                .options(selectinload(Token.info_list), selectinload(Token.tokengroup_list))
+                .options(lazyload(Token.realm_list), selectinload(Token.info_list),
+                         selectinload(Token.tokengroup_list))
             ).unique().all()
     except Exception as error:
         log.error(f"Could not read the token info and token groups of a page of tokens: {error!s}")
@@ -635,6 +664,7 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
     token_ids = [token.token.id for token in token_objects]
     unread_owner_token_ids = set()
     owners_by_token_id = _get_owners_by_token_id(token_ids, unread_owner_token_ids)
+    # The first owner of a token with several owners, like Token.first_owner
     owner_by_token_id = {token_id: owners[0] for token_id, owners in owners_by_token_id.items()}
     login_by_owner, editable_by_resolver, unresolvable_owners = _resolve_owner_logins(
         list(owner_by_token_id.values()))
@@ -689,6 +719,12 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
         token_dict["container_serial"] = container_serial_by_token_id.get(token.token.id, "")
 
         token_dict_list.append(token_dict)
+
+    # The owners handed over to the tokens only serve building the dictionaries. Reading the owner of a token
+    # afterwards queries the database again, so that it sees the changes made in the meantime.
+    for token in token_objects:
+        if "owner_list" in token.token.__dict__:
+            db.session.expire(token.token, ["owner_list"])
 
     return token_dict_list
 

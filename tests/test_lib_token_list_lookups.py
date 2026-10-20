@@ -248,6 +248,54 @@ class TokenListLookupTestCase(MyTestCase):
             db.session.commit()
 
     @ldap3mock.activate
+    def test_07b_a_token_whose_owner_has_no_resolver_is_listed(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        owner = db.session.scalars(
+            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id).where(Token.serial == "LIST00")
+        ).unique().one()
+        original_resolver = owner.resolver
+        other_node = "11111111-2222-3333-4444-555555555555"
+
+        # The token belongs to no node, so it is listed with and without node-specific resolvers
+        owner.resolver = None
+        db.session.add(NodeName(id=other_node, name="OtherNode"))
+        db.session.commit()
+        try:
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+            self.assertEqual(NUM_TOKENS, result["count"], result)
+            usernames = {token["serial"]: token["username"] for token in result["tokens"]}
+            self.assertEqual("**resolver error**", usernames["LIST00"], usernames)
+
+            set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
+            try:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+                self.assertEqual(NUM_TOKENS, result["count"], result)
+                self.assertEqual(1, len(get_tokens(serial="LIST00")))
+            finally:
+                delete_realm("noderealm")
+        finally:
+            db.session.execute(delete(NodeName).where(NodeName.id == other_node))
+            owner.resolver = original_resolver
+            db.session.commit()
+
+    @ldap3mock.activate
+    def test_07c_the_owner_of_a_listed_token_is_read_again_afterwards(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial="LIST00")
+        token_dicts = convert_token_objects_to_dicts(tokens, user=None, user_role="admin")
+        self.assertEqual("user00", token_dicts[0]["username"], token_dicts)
+
+        # The owner is removed in the same transaction, after the list was built: the token does not report the
+        # owner the list read
+        db_token = tokens[0].token
+        db.session.execute(delete(TokenOwner).where(TokenOwner.token_id == db_token.id))
+        try:
+            self.assertIsNone(db_token.first_owner)
+        finally:
+            db.session.rollback()
+        self.assertEqual("user00", get_tokens(serial="LIST00")[0].user.login)
+
+    @ldap3mock.activate
     def test_08_tokens_sharing_an_owner_are_looked_up_once(self):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
         init_token({"type": "hotp", "genkey": 1, "serial": "LISTSHARED"},
@@ -368,6 +416,8 @@ class TokenListLookupTestCase(MyTestCase):
             self.assertEqual(1, count_containing(statements, "FROM tokeninfo"), statements)
             self.assertEqual(1, count_containing(statements, "tokentokengroup"), statements)
             self.assertEqual(1, count_containing(statements, "FROM tokenowner"), statements)
+            # The realms are joined to the page query only, not again to read the details
+            self.assertEqual(1, count_containing(statements, "JOIN tokenrealm"), statements)
 
             # The page is the same as when every token reads its own details
             with mock.patch("privacyidea.lib.token.query._load_page_details"):
@@ -458,6 +508,25 @@ class TokenListLookupTestCase(MyTestCase):
         self.assertEqual(NUM_TOKENS, get_tokens_paginate(serial=self.serial_wildcard,
                                                          allowed_realms=["LdapRealm"])["count"])
         self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, allowed_realms=["ldap*"])["count"])
+        self.assertEqual(NUM_TOKENS, get_tokens_paginate(serial=self.serial_wildcard,
+                                                         realm="*" * 50 + "realm")["count"])
+        self.assertEqual(0, get_tokens_paginate(serial=self.serial_wildcard, realm="*" * 50 + "x")["count"])
+
+    @ldap3mock.activate
+    def test_17_the_realm_ids_are_compared_in_chunks(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        set_realm("chunkrealm", [{"name": "ldapreso"}])
+        chunked = token_query._chunked
+        try:
+            with (mock.patch.object(token_query, "_chunked", lambda items: chunked(items, size=1)),
+                  count_statements() as statements):
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1,
+                                             realm="ldaprealm,chunkrealm", allowed_realms=["chunkrealm", "ldaprealm"])
+            self.assertEqual(NUM_TOKENS, result["count"], result)
+            count_statement = [statement for statement in statements if "count(" in statement.lower()][0]
+            self.assertEqual(4, count_statement.count("tokenrealm.realm_id IN"), count_statement)
+        finally:
+            delete_realm("chunkrealm")
 
 
 class RealmIdsTestCase(MyTestCase):
@@ -474,3 +543,23 @@ class RealmIdsTestCase(MyTestCase):
         self.assertEqual([3], token_query._get_realm_ids(realms, [], ["realm_*"]))
         self.assertEqual([1, 3], token_query._get_realm_ids(realms, ["realm1"], ["*_3"]))
         self.assertEqual([], token_query._get_realm_ids(realms, ["realm"], ["x*"]))
+
+    def test_02_matches_wildcard(self):
+        matching = [("realm1", "realm1"), ("realm1", "*"), ("realm1", "realm*"), ("realm1", "*1"),
+                    ("realm1", "*alm*"), ("realm1", "r*a*1"), ("realm1", "r**1"), ("realm1", "***"),
+                    ("realm1", "realm1*"), ("realm1", "*realm1"), ("aa", "a*a"), ("aaa", "*a*a*"), ("", "*")]
+        for value, pattern in matching:
+            self.assertTrue(token_query._matches_wildcard(value, pattern), (value, pattern))
+
+        not_matching = [("realm1", "realm"), ("realm1", "realm1x"), ("realm1", "x*"), ("realm1", "*x"),
+                        ("realm1", "*1*1"), ("a", "a*a"), ("realm1", "realm*11*"), ("realm1", "r*z*1"),
+                        ("ab", "*b*a*"), ("", "x*")]
+        for value, pattern in not_matching:
+            self.assertFalse(token_query._matches_wildcard(value, pattern), (value, pattern))
+
+        # A pattern with many wildcards, in a row or in between other characters, is checked as fast as a short
+        # one
+        self.assertFalse(token_query._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "x"))
+        self.assertTrue(token_query._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "m"))
+        self.assertFalse(token_query._matches_wildcard("a" * 200, "*a" * 100 + "b"))
+        self.assertTrue(token_query._matches_wildcard("a" * 200, "*a" * 100 + "*"))
