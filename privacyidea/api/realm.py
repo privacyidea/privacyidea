@@ -59,7 +59,6 @@ from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import ConditionCheck, Match
 from ..lib.policies.actions import PolicyAction
-from ..lib.policies.helper import admin_granted_realms
 import logging
 
 log = logging.getLogger(__name__)
@@ -215,14 +214,8 @@ def get_realms_api():
 
     .. versionchanged:: 3.10 The response contains the node and priority of the resolver
     """
+    all_realms = get_realms()
     g.audit_object.log({"success": True})
-    return send_result(_visible_realms())
-
-
-def _visible_realms() -> dict:
-    """
-    The realms the logged-in admin's policies name, with their configuration, see :func:`reduce_realms`.
-    """
     # This endpoint is called by admins anyway
     luser = g.logged_in_user
     policies = Match.generic(g, scope=luser.get("role", ROLE.ADMIN),
@@ -230,7 +223,9 @@ def _visible_realms() -> dict:
                              adminuser=luser.get("username"),
                              active=True,
                              extended_condition_check=ConditionCheck.DO_NOT_CHECK_AT_ALL).policies()
-    return reduce_realms(get_realms(), policies)
+    realms = reduce_realms(all_realms, policies)
+
+    return send_result(realms)
 
 
 @realm_blueprint.route('/superuser', methods=['GET'])
@@ -279,10 +274,12 @@ def set_default_realm_api(realm=None):
     Requires admin authentication and the policy action :ref:`resolverwrite`.
 
     :param realm: path component, the name of the realm to make the
-        default. Lower-cased and stripped before lookup.
+        default. Lower-cased and stripped, with "-" for every space, before
+        lookup, as the name of a realm is stored.
     :reqheader PI-Authorization: authentication token.
     :status 200: database id of the new default realm in
         ``result.value``.
+    :status 400: the realm name is empty.
     :status 404: no realm with the given name exists.
 
     **Example request**:
@@ -309,7 +306,10 @@ def set_default_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
-    realm = realm.lower().strip()
+    realm = normalize_realm_name(realm)
+    if not realm:
+        # An empty name would clear the default realm, which is what DELETE /defaultrealm does
+        raise ParameterError(_("The name of the default realm must not be empty."))
     r = set_default_realm(realm)
     g.audit_object.log({"success": True,
                         "info": realm})
@@ -368,9 +368,8 @@ def delete_default_realm_api(realm=None):
 def get_default_realm_api():
     """
     Return the default realm with its resolver list. If no realm is
-    currently flagged as default, or the admin policies do not grant
-    :ref:`resolverread` for the default realm, the response value is an
-    empty dictionary.
+    currently flagged as default, the response value is an empty
+    dictionary.
 
     Requires admin authentication.
 
@@ -410,8 +409,7 @@ def get_default_realm_api():
     """
     res = {}
     defRealm = get_default_realm()
-    granted_realms = admin_granted_realms(PolicyAction.RESOLVERREAD)
-    if defRealm and (granted_realms is None or defRealm in granted_realms):
+    if defRealm:
         res = get_realms(defRealm)
 
     g.audit_object.log({"success": True,
@@ -487,6 +485,7 @@ def delete_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
+    realm = normalize_realm_name(realm)
     delete_custom_attributes = is_true(get_optional(request.all_data, "delete_custom_attributes"))
     confirm_ca_policies = is_true(get_optional(request.all_data, "confirm_ca_policies"))
     ret = delete_realm(realm, delete_custom_attributes=delete_custom_attributes,

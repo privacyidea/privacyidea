@@ -99,6 +99,7 @@ from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth
 from privacyidea.lib.policy import Match, PolicyClass, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.realm import get_realms, split_realms, normalize_realm_name, get_ordered_resolvers
+from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -400,11 +401,11 @@ def resolver_realm_access(request=None, action=None):
 
 def resolver_config_access(request: Request = None, action: str = None) -> bool:
     """
-    Verify the action like :func:`check_base_action` and bind the configuration of the resolver named in the request
-    to the resolvers the admin's policies grant in every realm the resolver is part of, see
+    Verify the action like :func:`check_base_action` and bind the configuration of the stored resolver named in the
+    request to the resolvers the admin's policies grant in every realm the resolver is part of, see
     :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. A changed resolver changes the users of all
-    these realms, like a stored bind password sent to another server. A request without a resolver name configures
-    no stored resolver and passes.
+    these realms, like a stored bind password sent to another server. A request without a resolver name, or with the
+    name of a resolver that does not exist yet, configures no stored resolver and passes.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.RESOLVERWRITE
@@ -413,11 +414,14 @@ def resolver_config_access(request: Request = None, action: str = None) -> bool:
     """
     check_base_action(request=request, action=action)
     resolver = get_optional(request.all_data, "resolver")
-    if not resolver:
+    # The name of a stored resolver also matches it in another case, see save_resolver
+    stored_resolvers = get_resolver_list(filter_resolver_name=resolver) if resolver else {}
+    if not stored_resolvers:
         return True
     granted_resolvers = admin_granted_resolvers(action, every_realm=True)
-    if granted_resolvers is not None and resolver not in granted_resolvers:
-        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+    denied = sorted(set(stored_resolvers) - granted_resolvers) if granted_resolvers is not None else []
+    if denied:
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(", ".join(denied)))
     return True
 
 
@@ -428,12 +432,13 @@ def realm_membership_access(request: Request = None, action: str = None) -> bool
     :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. The priorities decide which resolver a login
     name of the realm is resolved in, so any change to a realm with a resolver the admin may not administer, a
     priority as well, can redirect the users of that resolver. A policy for the whole realm grants all of its
-    resolvers, but not a resolver the request adds to it.
+    resolvers and the resolvers that are part of no realm, but not a resolver of another realm the request adds to it.
 
     Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter),
     ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body) and
     ``DELETE /realm/<realm>``, which removes every resolver of the realm on every node and, for the default realm,
-    the default realm, see :func:`default_realm_access`.
+    the default realm, see :func:`default_realm_access`. A POST that creates or changes the only realm also makes it
+    the default realm, which needs ``resolverwrite`` for the whole realm, like ``POST /defaultrealm/<realm>``.
     Malformed resolver entries are left to the endpoint, which refuses them.
 
     :param request: The HTTP request
@@ -441,14 +446,17 @@ def realm_membership_access(request: Request = None, action: str = None) -> bool
     :return: True
     :raises PolicyError: if the admin may not administer a resolver of the realm or the default realm
     """
+    realm = _normalize_realm_of_path(request)
     check_base_action(request=request, action=action)
     if request.method == "DELETE":
         _check_default_realm_granted(request, action)
+    elif get_default_realm() != realm and not [other for other in get_realms() if other != realm]:
+        # set_realm makes the only realm the default realm
+        _check_promoted_default_realm_granted(realm)
     granted_resolvers = admin_granted_resolvers(action)
     if granted_resolvers is None:
         return True
     params = request.all_data
-    realm = normalize_realm_name(params.get("realm"))
     node = params.get("nodeid") if "nodeid" in request.view_args else None
     deletes = request.method == "DELETE"
     if deletes:
@@ -482,9 +490,26 @@ def default_realm_access(request: Request = None, action: str = None) -> bool:
     :return: True
     :raises PolicyError: if the admin's policies do not grant the whole current or new default realm
     """
+    _normalize_realm_of_path(request)
     check_base_action(request=request, action=action)
     _check_default_realm_granted(request, action)
     return True
+
+
+def _normalize_realm_of_path(request: Request) -> str | None:
+    """
+    Write the realm of the request path to the request data as the endpoint reads it, with
+    :func:`~privacyidea.lib.realm.normalize_realm_name`, so :func:`check_base_action` matches the policies against
+    the realm that is acted on and not against another spelling of it, like a space for "-".
+
+    :param request: The HTTP request
+    :return: the normalized realm, or None if the path has no realm
+    """
+    if "realm" not in request.view_args:
+        return None
+    realm = normalize_realm_name(request.view_args["realm"])
+    request.all_data["realm"] = realm
+    return realm
 
 
 def _check_default_realm_granted(request: Request, action: str) -> None:
@@ -515,9 +540,20 @@ def _check_default_realm_granted(request: Request, action: str) -> None:
         if new_realm and new_realm not in granted_realms:
             raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(new_realm))
     if promoted_realm:
-        writable_realms = admin_granted_realms(PolicyAction.RESOLVERWRITE, whole_realms=True)
-        if writable_realms is not None and promoted_realm not in writable_realms:
-            raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(promoted_realm))
+        _check_promoted_default_realm_granted(promoted_realm)
+
+
+def _check_promoted_default_realm_granted(realm: str) -> None:
+    """
+    A realm that becomes the default realm as a side effect - the only realm that is left or created - needs
+    ``resolverwrite`` for the whole realm, like ``POST /defaultrealm/<realm>``.
+
+    :param realm: the realm that becomes the default realm
+    :raises PolicyError: if the admin's policies do not grant ``resolverwrite`` for the whole realm
+    """
+    writable_realms = admin_granted_realms(PolicyAction.RESOLVERWRITE, whole_realms=True)
+    if writable_realms is not None and realm not in writable_realms:
+        raise PolicyError(_("You are not allowed to set the realm {0!s} as default realm.").format(realm))
 
 
 def _field_matches(policy_values: list[str] | None, value: str, case_insensitive: bool = False) -> bool:

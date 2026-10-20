@@ -165,13 +165,13 @@ describe("TokenDetailsUserComponent", () => {
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
   });
 
-  it("toggleUserEdit flips the flag and reloads the realms", () => {
+  it("toggleUserEdit flips the flag and reloads default realm", () => {
     expect(isEditingUser()).toBe(false);
 
     component.toggleUserEdit();
 
     expect(isEditingUser()).toBe(true);
-    expect(realmService.realmResource.reload).toHaveBeenCalled();
+    expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });
 
   it("cancelUserEdit flips the flag back and clears the selection filter", () => {

@@ -226,8 +226,7 @@ def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilitySco
     return None
 
 
-def admin_granted_realms(action: str, whole_realms: bool = False,
-                         unrestricted_without_realm: bool = False) -> list[str] | None:
+def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] | None:
     """
     The realms the logged-in admin's policies grant for *action*, as the union over every applicable policy.
 
@@ -261,8 +260,6 @@ def admin_granted_realms(action: str, whole_realms: bool = False,
 
     :param action: the policy action whose realm scoping to read
     :param whole_realms: only count the policies that grant every user of their realms
-    :param unrestricted_without_realm: a policy that restricts no realm is unrestricted, even if it names users or
-        resolvers, for callers whose objects are bound to realms and not to users, like policies
     :return: the granted realm names, ``None`` for unrestricted, or an empty list for "refuse"
     """
     if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
@@ -276,7 +273,7 @@ def admin_granted_realms(action: str, whole_realms: bool = False,
             continue
         realm_names = policy_realm_names(policy.get("realm"))
         if realm_names is None:
-            if not unrestricted_without_realm and (policy.get("resolver") or policy.get("user")):
+            if policy.get("resolver") or policy.get("user"):
                 # Scoped along a dimension a realm list cannot carry, so it contributes no realm. If no
                 # other policy names one either, the empty result refuses rather than widening to every realm.
                 continue
@@ -285,33 +282,32 @@ def admin_granted_realms(action: str, whole_realms: bool = False,
     return list(granted_realms)
 
 
-def admin_granted_resolvers(action: str, every_realm: bool = False, ignore_users: bool = False) -> set[str] | None:
+def admin_granted_resolvers(action: str, every_realm: bool = False) -> set[str] | None:
     """
     The resolvers the logged-in admin's policies grant for *action*, as the union over every applicable policy.
 
     A resolver belongs to the realms it is part of, so a policy grants the resolvers of the realms in its realm field,
-    narrowed to the resolvers in its resolver field if that is set. A policy with only a resolver field grants the
-    resolvers it names, whether they are part of a realm or not, and whether they exist yet or not. A resolver that is
-    part of no realm is therefore granted only by a policy that names it or that restricts no realm.
+    narrowed to the resolvers in its resolver field if that is set. Such a policy also grants the resolvers that are
+    part of no realm, narrowed the same way: they serve no user of any realm yet, and an admin adds a new user store
+    to a realm by creating the resolver first. A policy with only a resolver field grants the resolvers it names,
+    whether they are part of a realm or not, and whether they exist yet or not.
 
-    A policy scoped by user grants no resolver: the configuration of a user store concerns all of its users.
+    The user field of a policy restricts nothing here: the configuration of a user store is not bound to any of its
+    users, so a policy that names users grants the resolvers the same policy without them grants.
 
     :param action: the policy action whose scoping to read, like ``resolverread``
     :param every_realm: a resolver granted through realms is only granted if it is granted in every realm it is part
         of, on any node, for callers that change the resolver and so the users of all these realms
-    :param ignore_users: read the user field of a policy as unrestricted, for callers whose objects are bound to
-        resolvers and not to users, like policies
     :return: ``None`` for unrestricted - no active admin policy at all, or an applicable policy restricting neither
-        realm, resolver nor user - otherwise the set of granted resolver names, which may be empty
+        realm nor resolver - otherwise the set of granted resolver names, which may be empty
     """
     if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
         return None
     granted_resolvers = set()
     granting_realms = defaultdict(set)
     all_realms = None
+    resolvers_without_realm = set()
     for policy in Match.admin(g, action=action).policies():
-        if not ignore_users and _policy_usernames(policy.get("user"), case_insensitive=False) != ([], []):
-            continue
         realm_names = policy_realm_names(policy.get("realm"))
         resolver_names = _policy_field_names(policy.get("resolver"), get_resolver_list)
         if realm_names is None and resolver_names is None:
@@ -319,8 +315,16 @@ def admin_granted_resolvers(action: str, every_realm: bool = False, ignore_users
         if realm_names is None:
             granted_resolvers.update(resolver_names)
             continue
+        if not realm_names:
+            # A realm field that matches no realm grants nothing
+            continue
         if all_realms is None:
             all_realms = get_realms()
+            resolvers_in_realms = {entry.get("name") for config in all_realms.values()
+                                   for entry in config.get("resolver", [])}
+            resolvers_without_realm = set(get_resolver_list()) - resolvers_in_realms
+        granted_resolvers.update(resolver for resolver in resolvers_without_realm
+                                 if resolver_names is None or resolver in resolver_names)
         for realm in realm_names:
             for entry in all_realms.get(realm, {}).get("resolver", []):
                 if resolver_names is None or entry.get("name") in resolver_names:
@@ -333,51 +337,6 @@ def admin_granted_resolvers(action: str, every_realm: bool = False, ignore_users
         granting_realms = {resolver: realms for resolver, realms in granting_realms.items()
                            if realms_of_resolver[resolver] <= realms}
     return granted_resolvers | set(granting_realms)
-
-
-def realms_granted(policy_realms: list[str] | None, granted_realms: list[str] | None,
-                   every_realm: bool = False) -> bool:
-    """
-    Whether an admin with *granted_realms* may act on an object bound to *policy_realms*, like a policy by its realm
-    field.
-
-    Reading an object needs it to apply to one of the granted realms. A realm field that is empty, or ``"*"`` without
-    exclusions, applies to every realm, so to the granted ones as well. With *every_realm* it has to apply to granted
-    realms only, like the realms a request names.
-
-    :param policy_realms: a realm field, read like :func:`policy_realm_names`
-    :param granted_realms: the result of :func:`admin_granted_realms`
-    :param every_realm: every realm of the field has to be granted, as
-        :func:`~privacyidea.api.lib.prepolicy.check_base_action` requires for the realms a request sets. An empty
-        field and a field with ``"*"`` are never granted entirely, as they also cover the realms created later.
-    :return: True if the admin is unrestricted or the field applies to granted realms as required; nothing is granted
-        by an empty grant
-    """
-    if granted_realms is None:
-        return True
-    if not granted_realms:
-        return False
-    realm_names = policy_realm_names(policy_realms)
-    if every_realm:
-        return (bool(realm_names) and "*" not in policy_realms
-                and set(realm_names) <= set(granted_realms))
-    return realm_names is None or bool(set(realm_names) & set(granted_realms))
-
-
-def resolvers_granted(policy_resolvers: list[str] | None, granted_resolvers: set[str] | None) -> bool:
-    """
-    Whether an admin with *granted_resolvers* may read an object bound to *policy_resolvers*, like a policy by its
-    resolver field. It has to apply to one of the granted resolvers. A resolver field that is empty, or ``"*"``
-    without exclusions, applies to every resolver, so to the granted ones as well.
-
-    :param policy_resolvers: a resolver field, read the way the policy engine matches it
-    :param granted_resolvers: the result of :func:`admin_granted_resolvers`
-    :return: True if the admin is unrestricted or the field applies to a granted resolver
-    """
-    if granted_resolvers is None:
-        return True
-    resolver_names = _policy_field_names(policy_resolvers, get_resolver_list)
-    return resolver_names is None or bool(set(resolver_names) & granted_resolvers)
 
 
 def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:

@@ -324,8 +324,8 @@ describe("TokensWidgetComponent", () => {
     it("waits for the default realm instead of counting without one", () => {
       TestBed.inject(DashboardDataStore).invalidate();
       realmMock.realmOptions.set([]);
-      realmMock.defaultRealmResolved.set(false);
-      realmMock.defaultRealm.set("");
+      realmMock.defaultRealmResource.isLoading.set(true);
+      realmMock.defaultRealmResource.value.set(undefined);
       tokenMock.getTokenCount.mockClear();
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
@@ -340,7 +340,7 @@ describe("TokensWidgetComponent", () => {
 
     it("takes the first realm there is when none is the default one", () => {
       TestBed.inject(DashboardDataStore).invalidate();
-      realmMock.defaultRealm.set("");
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
       realmMock.realmOptions.set(["realm2", "realm3"]);
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
@@ -355,7 +355,7 @@ describe("TokensWidgetComponent", () => {
 
     it("says so when there is no realm at all, instead of counting every realm", () => {
       TestBed.inject(DashboardDataStore).invalidate();
-      realmMock.defaultRealm.set("");
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
       realmMock.realmOptions.set([]);
       tokenMock.getTokenCount.mockClear();
 
@@ -422,7 +422,7 @@ describe("TokensWidgetComponent", () => {
     it("drops the cache entries of a stored realm that turns out not to exist, when no realm is left", () => {
       const store = TestBed.inject(DashboardDataStore);
       realmMock.realmResource.value.set(undefined);
-      realmMock.defaultRealm.set("");
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
       realmMock.realmOptions.set([]);
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", { ...instance, settings: { realm: "oldrealm" } });

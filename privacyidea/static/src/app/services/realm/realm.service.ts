@@ -83,6 +83,7 @@ export interface RealmServiceInterface {
   realmOptions: Signal<string[]>;
   adminRealmResource: HttpResourceRef<PiResponse<AdminRealms> | undefined>;
   adminRealmOptions: Signal<string[]>;
+  defaultRealmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
   defaultRealm: Signal<string>;
   defaultRealmResolved: Signal<boolean>;
 
@@ -179,19 +180,45 @@ export class RealmService implements RealmServiceInterface {
     return realms ? realms : [];
   });
 
-  // Taken from the realm list, as /defaultrealm only answers admins who may read the resolvers of the default realm.
-  defaultRealm = computed<string>(() => {
-    const realms = this.realms();
-    return Object.keys(realms).find((name) => realms[name]?.default) ?? "";
+  defaultRealmResource = httpResource<PiResponse<Realms>>(() => {
+    // Do not load the default realm for non-admin users.
+    if (this.authService.role() === "user") {
+      return undefined;
+    }
+    // Only load the default realm on relevant routes.
+    if (!this.onAllowedRoute()) {
+      return undefined;
+    }
+
+    return {
+      url: environment.proxyUrl + "/defaultrealm",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
 
-  // False while the realm request is still in flight, so consumers can
+  defaultRealm = computed<string>(() => {
+    let defaultRealm = "";
+    if (this.defaultRealmResource.hasValue()) {
+      const data = this.defaultRealmResource.value();
+      if (data?.result?.value) {
+        defaultRealm = Object.keys(data.result?.value)[0] ?? "";
+      }
+    }
+    return defaultRealm;
+  });
+
+  // False while the default realm request is still in flight, so consumers can
   // avoid latching onto a provisional realm before the real default is known.
-  defaultRealmResolved = computed<boolean>(() => !this.realmResource.isLoading());
+  defaultRealmResolved = computed<boolean>(() => !this.defaultRealmResource.isLoading());
 
   constructor() {
     effect(() => {
       this.notificationService.handleResourceError(this.realmResource.error(), "realms");
+    });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.defaultRealmResource.error(), "default realm");
     });
 
     effect(() => {
