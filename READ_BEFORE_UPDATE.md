@@ -35,8 +35,8 @@
       realm, or when it is the only realm left after another realm is deleted. This requires `resolverwrite` for the
       whole realm as well.
 
-  The `user` field of a policy does not limit these actions. `realm` set to `*` names no realm, `*, !realm_b` names
-  every realm but `realm_b`. The rights the WebUI receives at login still contain the actions, so the WebUI offers
+  Apart from the default realm, the `user` field of a policy does not limit these actions. `realm` set to `*` names no
+  realm, `*, !realm_b` names every realm but `realm_b`. The rights the WebUI receives at login still contain the actions, so the WebUI offers
   them and shows the error the server answers with. Nothing changes for installations without admin policies or for
   policies that name no realm and no resolver. If an administrator manages resolvers or realms that are shared with
   other realms, or the default realm, grant the actions for all of these realms or in a policy without `realm` and
