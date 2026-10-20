@@ -92,10 +92,9 @@ from privacyidea.lib.crypto import generate_password
 from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
-from privacyidea.lib.policies.actions import PolicyAction, ADMIN_ACTIONS_WITHOUT_TARGET
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
-                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names,
-                                             get_policy_visibility_scopes)
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names)
 from privacyidea.lib.policy import Match, PolicyClass, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.realm import get_realms, split_realms, get_ordered_resolvers
@@ -1503,32 +1502,6 @@ def check_admin_base_action(request=None, action=None, anonymous=False):
     if g.logged_in_user.get("role") == ROLE.USER:
         return True
     return check_base_action(request=request, action=action, anonymous=anonymous)
-
-
-def check_global_config_action(request: Request = None, action: str = None) -> bool:
-    """
-    Verify the given action like :func:`check_base_action` for an endpoint that changes a configuration object that
-    applies to all realms: a policy, a conditional-access policy, an event handler or an API client. Such an object
-    belongs to no realm, resolver or user, which are the only targets an admin policy restricts an action to, so a
-    permission restricted to named targets does not cover it, whatever realm the request names.
-
-    The action must be one of :data:`~privacyidea.lib.policies.actions.ADMIN_ACTIONS_WITHOUT_TARGET`, which the
-    rights shown in the WebUI are reduced by in the same way.
-
-    :param request: the request
-    :param action: the policy action the endpoint requires
-    :return: True
-    :raises PolicyError: if the logged-in user does not hold the action, or holds it only for individual realms,
-        resolvers or users
-    """
-    if action not in ADMIN_ACTIONS_WITHOUT_TARGET:
-        raise ValueError(f"The action {action} is not in ADMIN_ACTIONS_WITHOUT_TARGET, so the WebUI would offer it to "
-                         f"administrators this endpoint refuses.")
-    check_base_action(request=request, action=action)
-    if get_policy_visibility_scopes(action) is not None:
-        raise PolicyError(f"The action {action} changes a configuration that applies to all realms. It requires an "
-                          "administrator permission that is not restricted to individual realms, resolvers or users.")
-    return True
 
 
 def check_token_action(request: Request = None, action: str = None):
