@@ -426,9 +426,9 @@ def delete_realm_api(realm=None):
     Delete a realm. The realm can only be deleted if no user from
     this realm is still attached to a token or a container.
 
-    If the deleted realm was the default realm and exactly one realm
-    remains afterwards, that remaining realm is automatically promoted
-    to default.
+    If exactly one realm remains afterwards and no realm is the default
+    realm, because the deleted realm was the default realm or because
+    there was none, the remaining realm becomes the default realm.
 
     Custom user attributes are bound to the realm. If users in this realm have
     custom attributes and ``delete_custom_attributes`` is not set, the deletion

@@ -298,10 +298,6 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confir
         log.warning(f"Deleting realm '{realm_name}' although it is still referenced by conditional-access "
                     f"policies ({', '.join(ca_policy_names)}).")
 
-    # Check if there is a default realm
-    def_realm = get_default_realm()
-    had_def_realm_before = (def_realm != "")
-
     # Delete relationships
     stmt = delete(TokenRealm).where(TokenRealm.realm_id == realm.id)
     db.session.execute(stmt)
@@ -316,16 +312,12 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confir
     save_config_timestamp()
     db.session.commit()
 
-    # If there was a default realm before
-    # and if there is only one realm left, we set the
-    # remaining realm the default realm
-    if had_def_realm_before is True:
-        def_realm = get_default_realm()
-        if not def_realm:
-            realms = get_realms()
-            if len(realms) == 1:
-                for key in realms:
-                    set_default_realm(key)
+    # The only realm that is left becomes the default realm, whether there was a default realm before or not
+    if not get_default_realm():
+        realms = get_realms()
+        if len(realms) == 1:
+            for key in realms:
+                set_default_realm(key)
 
     return realm_id
 
