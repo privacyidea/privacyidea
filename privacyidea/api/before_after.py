@@ -84,7 +84,7 @@ from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
 from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
-                         PolicyError, ResourceNotFoundError)
+                         PolicyError, ResourceNotFoundError, ResolverError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.api.lib.utils import log_authentication
@@ -835,7 +835,24 @@ def privacyidea_error(error):
     """
     if "audit_object" in g:
         g.audit_object.log({"info": str(error)})
+    if isinstance(error, ResolverError):
+        _log_unclassified_user_store_failure()
     return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
+
+
+def _log_unclassified_user_store_failure() -> None:
+    """
+    Log a login at ``/auth`` that a failing user store ended after its user was looked up, e.g. on a later lookup of
+    the token owner, as ``USER_STORE_UNAVAILABLE``, like ``/validate/check`` does. A login the view already
+    classified keeps its event.
+    """
+    if not (request.blueprint == "jwtauth" and request.path.endswith("/auth")):
+        return
+    context = peek_ca_context()
+    if context is not None and context.classifying is not None:
+        return
+    log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, user=getattr(request, "User", None),
+                       transaction_id=get_optional(getattr(request, "all_data", None) or {}, "transaction_id"))
 
 
 @system_blueprint.app_errorhandler(NotImplementedError)

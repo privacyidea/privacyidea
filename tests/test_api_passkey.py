@@ -2157,6 +2157,28 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                             transaction_id=transaction_id, endpoint=endpoint)
             remove_token(serial)
 
+    def test_33d_auth_passkey_without_username_user_store_fails_after_verification(self):
+        """
+        The owner of the passkey is looked up, the passkey is verified, and the user store fails on the lookup of the
+        user the session would act as. The login is refused and logged as a failing user store.
+        """
+        serial = self._enroll_static_passkey()
+        transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        # The owner is looked up by user ID, the session user by login name
+        with patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("The user store is not available")):
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.USER_STORE_UNAVAILABLE], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        transaction_id=transaction_id, endpoint='/auth')
+        remove_token(serial)
+
     def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):
         """
         A passkey answering a challenge that was triggered with the user and PIN also has to verify the user at /auth.
