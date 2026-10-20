@@ -412,7 +412,16 @@ def _conditional_access_identity():
             token = get_fido2_token_by_credential_id(credential_id)
     except Exception as ex:
         log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
-    return token.user if (token and token.user) else request.User
+    if not token:
+        return request.User
+    try:
+        owner = token.user
+    except Exception:
+        # The request is refused with the error, which has to be logged here as the view never runs
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=token.get_serial(),
+                           transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
+    return owner or request.User
 
 
 def _challenge_owner(challenge) -> User:
@@ -662,6 +671,10 @@ def check():
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
             # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
             _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
+        raise
+    except ResolverError:
+        # A user store that failed after the request was let in, e.g. on a later lookup of the token owner
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_STORE_UNAVAILABLE
         raise
     finally:
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the

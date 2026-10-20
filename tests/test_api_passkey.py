@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import itertools
 from datetime import datetime, timedelta, timezone
 
 from dateutil.tz import tzlocal
@@ -30,6 +31,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError, ResolverError
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
@@ -2114,6 +2116,46 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         user=User(login="doesnotexist", realm=self.realm1),
                                         transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
+
+    def test_33c_passkey_without_username_with_failing_user_store(self):
+        """
+        A passkey login without a username is for the token owner. If the user store fails to look the owner up, the
+        login is refused and logged, also if the user store answers again later in the request.
+        """
+        original_get_username = PasswdIdResolver.getUsername
+        for endpoint, mode in itertools.product(["/validate/check", "/auth"], ["always", "once"]):
+            serial = self._enroll_static_passkey()
+            transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
+            data = dict(self.authentication_response_uv)
+            data["transaction_id"] = transaction_id
+            lookups = []
+
+            def get_username(resolver: PasswdIdResolver, user_id: str) -> str:
+                lookups.append(user_id)
+                if mode == "always" or len(lookups) == 1:
+                    raise ResolverError("The user store is not available")
+                return original_get_username(resolver, user_id)
+
+            with patch.object(PasswdIdResolver, "getUsername", get_username):
+                with self.app.test_request_context(endpoint, method='POST', data=data,
+                                                   headers={"Origin": self.expected_origin}):
+                    res = self.app.full_dispatch_request()
+            if endpoint == "/auth":
+                self._verify_auth_fail_with_error(res, 4031)
+            else:
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+            # /validate refuses in the conditional access pre-check, before the answer is shown to continue the
+            # challenge, so its row starts an attempt of its own
+            auth_log_entries = assert_authentication_log(
+                [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.USER_STORE_UNAVAILABLE],
+                transaction_id=transaction_id, same_attempt=endpoint == "/auth")
+            # The authentication log looks the owner of the serial up itself, which succeeds once the user store
+            # answers again
+            assert_authentication_log_entry(auth_log_entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=self.user if mode == "once" else None, serials={serial},
+                                            transaction_id=transaction_id, endpoint=endpoint)
+            remove_token(serial)
 
     def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):
         """

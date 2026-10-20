@@ -125,11 +125,19 @@ jwtauth = Blueprint('jwtauth', __name__)
 @dataclass
 class FailedUserLookup:
     """
-    The login a user store failed to look up in ``before_request``. The login goes on so that a local admin of the
-    same name can still log in, and every refusal of it is logged as ``USER_STORE_UNAVAILABLE`` for this login.
+    The user of a login that the user store failed to look up in ``before_request``: the user the request names, or
+    the owner of the passkey a login without a username is made with. The login goes on, so that a local admin of
+    the same name can still log in, and every refusal of it is logged as ``USER_STORE_UNAVAILABLE`` with what is
+    known about the user.
+
+    :ivar login_name: The login name the request names, None for a login without a username
+    :ivar realm: The realm of the named login, None for a login without a username
+    :ivar serial: The passkey of a login without a username. None for a named login, as the authentication log would
+        take the token owner as the user of the row, who is not necessarily the user named.
     """
-    login_name: str
-    realm: str
+    login_name: str | None = None
+    realm: str | None = None
+    serial: str | None = None
 
 
 @jwtauth.before_request
@@ -200,7 +208,13 @@ def before_request():
         # Get user for passkey and webauthn login
         token = get_fido2_token_by_credential_id(credential_id)
         if token:
-            request.User = token.user
+            try:
+                request.User = token.user
+            except Exception as e:
+                # Refused in the view, after the conditional access gate, without looking the owner up again
+                request.User = None
+                g.resolved_user["failed_user_lookup"] = FailedUserLookup(serial=token.get_serial())
+                log.warning(f"Problem resolving the owner of the token {token.get_serial()}: {e!s}")
 
 
 def _refuse_disabled_login(login_disabled_policies: list[str], user: User, serial: str | None = None,
@@ -448,16 +462,16 @@ def get_auth_token():
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        # The WebAuthn second factor sends the username along; it may only be answered with a token of that user.
-        # A passkey login without a username authenticates the token owner.
         failed_lookup = g.resolved_user.get("failed_user_lookup")
-        if username and failed_lookup:
-            # Whether the token belongs to the named user can not be told without the user store. The row names no
-            # serial: the log would take the token owner as the user of the row, who is not the user named here.
-            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, transaction_id=transaction_id,
-                               username=failed_lookup.login_name, realm=failed_lookup.realm)
+        if failed_lookup:
+            # Without the user store, neither the token owner nor whether the token belongs to the named user is known
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=failed_lookup.serial,
+                               transaction_id=transaction_id, username=failed_lookup.login_name,
+                               realm=failed_lookup.realm)
             raise AuthError(_("Authentication failure using passkey."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+        # The WebAuthn second factor sends the username along; it may only be answered with a token of that user.
+        # A passkey login without a username authenticates the token owner.
         if username and not token_belongs_to_user(token, user):
             log.warning(f"The token {token.get_serial()} does not belong to the user {username} named in the "
                         "request.")
