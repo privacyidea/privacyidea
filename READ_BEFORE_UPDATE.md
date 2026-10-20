@@ -356,14 +356,6 @@
   out, as an excluded realm or user always was. Check your policies with such resolver exclusions: they now apply to
   fewer users.
 
-* **Configuration that applies to all realms needs an admin policy without realm, resolver or user** — Policies,
-  conditional-access policies, event handlers and API clients belong to no realm. Creating, changing or deleting them
-  now requires an admin policy granting the action with `realm`, `resolver` and `user` each empty or `*`. A policy
-  that grants the action only for named realms, resolvers or users no longer does, whatever realm the request names:
-  the API refuses the request, and the rights the WebUI receives at login no longer contain the action. Reading this
-  configuration is not affected. If an administrator manages this configuration with a realm-restricted admin policy,
-  grant the actions in a policy without these fields.
-
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
   metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
