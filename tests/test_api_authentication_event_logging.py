@@ -1579,15 +1579,53 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                 # The user cache would answer for the user store
                 flush_user_cache()
                 with mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_once):
-                    res = self._auth({"username": self.username, "realm": self.realm1, "password": "wrong"},
-                                     status=401)
+                    res = self._auth({"username": self.username, "realm": self.realm1, "password": "wrong",
+                                      "transaction_id": "8901234567"}, status=401)
                 self.assertNotIn("value", res.json["result"], f"{login_mode}, {lookup_error!r}: {res.json}")
                 entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
                 assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unresolved_user,
-                                                endpoint=self.endpoint_path)
+                                                transaction_id="8901234567", endpoint=self.endpoint_path)
         finally:
             delete_policy("authlog_login_mode")
             delete_policy("authlog_passonnouser")
+
+    def test_user_store_failure_on_the_token_owner_logs_user_store_unavailable(self):
+        # The user is looked up, then the user store fails on the lookup of the owner of the user's token
+        self._enable_privacyidea_login()
+        flush_user_cache()
+        try:
+            with mock.patch.object(PasswdIdResolver, "getUsername",
+                                   side_effect=ResolverError("The user store is not available")):
+                self._auth({"username": self.username, "realm": self.realm1, "password": f"{self.pin}123456"},
+                           status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        endpoint=self.endpoint_path)
+
+    def test_user_store_failure_after_the_login_succeeded_is_no_success(self):
+        # The credentials are correct, then the user store fails on the lookup of the WebUI rights. No session is
+        # issued, so the login is no success.
+        original_get_user_id = PasswdIdResolver.getUserId
+        lookups = []
+
+        def get_user_id_failing_after_the_first(resolver: PasswdIdResolver, login_name: str) -> str:
+            lookups.append(login_name)
+            if len(lookups) > 1:
+                raise ResolverError("The user store is not available")
+            return original_get_user_id(resolver, login_name)
+
+        # A cached user would be served from the user cache without asking the user store a second time
+        with (mock.patch("privacyidea.lib.cache.user._cache_client", return_value=None),
+              mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_after_the_first)):
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=400)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        endpoint=self.endpoint_path)
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(0, audit_entry["success"], audit_entry)
 
     def test_user_store_failure_with_login_mode_disable_logs_user_store_unavailable(self):
         # The disabled login is refused before the credential check, and is still logged as a failing user store

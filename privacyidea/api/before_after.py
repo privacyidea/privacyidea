@@ -844,15 +844,19 @@ def _log_unclassified_user_store_failure() -> None:
     """
     Log a login at ``/auth`` that a failing user store ended after its user was looked up, e.g. on a later lookup of
     the token owner, as ``USER_STORE_UNAVAILABLE``, like ``/validate/check`` does. A login the view already
-    classified keeps its event.
+    classified as failed keeps its event. A login it classified as successful issued no session, e.g. when the user
+    store failed on the lookup of the WebUI rights, so it is reclassified.
     """
     if not (request.blueprint == "jwtauth" and request.path.endswith("/auth")):
         return
     context = peek_ca_context()
-    if context is not None and context.classifying is not None:
-        return
-    log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, user=getattr(request, "User", None),
-                       transaction_id=get_optional(getattr(request, "all_data", None) or {}, "transaction_id"))
+    classifying = context.classifying if context is not None else None
+    if classifying is None:
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, user=getattr(request, "User", None),
+                           transaction_id=get_optional(getattr(request, "all_data", None) or {}, "transaction_id"))
+    elif classifying.event_type == AuthEventType.LOGIN_SUCCESS:
+        context.reclassify(AuthEventType.USER_STORE_UNAVAILABLE)
+        g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.REJECT})
 
 
 @system_blueprint.app_errorhandler(NotImplementedError)

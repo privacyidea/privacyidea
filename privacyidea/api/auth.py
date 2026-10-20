@@ -740,7 +740,8 @@ def get_auth_token():
                 # The credentials can not be checked without the user, and a passOnNoUser policy would take the empty
                 # user for one that does not exist and accept the login
                 log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=failed_lookup.login_name,
-                                   realm=failed_lookup.realm)
+                                   realm=failed_lookup.realm,
+                                   transaction_id=get_optional(request.all_data, "transaction_id"))
                 raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
