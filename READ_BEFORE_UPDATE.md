@@ -17,6 +17,36 @@
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
   these values, without applying the `!` and `*` search operators.
 
+* **Resolvers and realms are configured within the realms and resolvers of the admin policy** — An admin policy that
+  grants `resolverread`, `resolverwrite` or `resolverdelete` for named realms or resolvers now also decides which
+  resolvers and realms the administrator configures:
+
+    * `resolverread` lists the resolvers of these realms, the resolvers the policy names and the resolvers that are
+      part of no realm.
+    * Changing, testing or deleting a resolver requires the action for every realm the resolver is part of, so a
+      resolver that is shared with a realm outside the policy is refused.
+    * Changing a realm - its resolvers, their priorities or their nodes - or deleting it requires the action for every
+      resolver the realm contains, before and after the change. A resolver of a realm outside the policy can not be
+      added. Creating a resolver and adding it, or a resolver that is part of no realm, to a realm of the policy stays
+      possible.
+    * Setting the default realm (`resolverwrite`) or removing it (`resolverdelete`) requires the action for the whole
+      current and the whole new default realm, i.e. in a policy for these realms without `resolver` and `user`. A realm
+      also becomes the default realm on its own when it is the only realm: when it is created or changed as the only
+      realm, or when it is the only realm left after another realm is deleted. This requires `resolverwrite` for the
+      whole realm as well.
+
+  The `user` field of a policy does not limit these actions. `realm` set to `*` names no realm, `*, !realm_b` names
+  every realm but `realm_b`. The rights the WebUI receives at login still contain the actions, so the WebUI offers
+  them and shows the error the server answers with. Nothing changes for installations without admin policies or for
+  policies that name no realm and no resolver. If an administrator manages resolvers or realms that are shared with
+  other realms, or the default realm, grant the actions for all of these realms or in a policy without `realm` and
+  `resolver`.
+
+* **HTTP API change** - `POST /defaultrealm/<realm>` and `DELETE /realm/<realm>` read the realm name the way
+  `POST /realm/<realm>` stores it: lowercase, with `-` for every space. `DELETE /realm/<realm>` deletes the realm in
+  any spelling of its name. `POST /defaultrealm/` with an empty realm name is refused with a 400; remove the default
+  realm with `DELETE /defaultrealm`.
+
 * **Boolean policy actions with a value are cleaned up.** A boolean action like `policywrite=False` acted as enabled,
   because the policy matching only checks whether an action is set. Policies created from the WebUI template
   "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The schema update
