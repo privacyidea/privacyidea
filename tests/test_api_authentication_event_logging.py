@@ -976,6 +976,20 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
                                         user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
 
+    def test_user_store_failure_logs_the_transaction_of_the_request(self):
+        # The answer to a challenge is logged with its transaction, also under the RADIUS name of the parameter
+        for parameter in ["transaction_id", "state"]:
+            self._clear_log()
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "123456",
+                                                     parameter: "8901234567"})
+            self.assertEqual(400, res.status_code, res.json)
+            entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE], transaction_id="8901234567")
+            assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=User("doesnotexist", self.realm1), transaction_id="8901234567",
+                                            endpoint=self.endpoint_path)
+
     def test_pass_on_no_user_logs_login_success(self):
         # An unknown user accepted by a PASSONNOUSER policy is a successful login.
         set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,

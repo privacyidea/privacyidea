@@ -225,7 +225,8 @@ def before_request():
         if request.blueprint == validate_blueprint.name:
             # Lowercase like the realm of a User object, which this request could not build
             log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
-                               realm=realm.lower() if realm else None)
+                               realm=realm.lower() if realm else None,
+                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
         raise
     request.all_data["realm"] = realm
 
