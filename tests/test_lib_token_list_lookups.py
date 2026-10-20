@@ -6,7 +6,9 @@ Assert how many user store and database lookups one page of the token list costs
 The counts are what keeps the token list from resolving its owners and containers one token at a
 time. A timing assertion would say the same thing far less reliably, so this counts round trips.
 """
+import re
 from contextlib import contextmanager
+from itertools import product
 
 import mock
 from sqlalchemy import delete, event, select
@@ -250,14 +252,17 @@ class TokenListLookupTestCase(MyTestCase):
     @ldap3mock.activate
     def test_07b_a_token_whose_owner_has_no_resolver_is_listed(self):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
-        owner = db.session.scalars(
-            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id).where(Token.serial == "LIST00")
-        ).unique().one()
-        original_resolver = owner.resolver
+        owner_without_resolver, owner_of_deleted_resolver = db.session.scalars(
+            select(TokenOwner).join(Token, Token.id == TokenOwner.token_id)
+            .where(Token.serial.in_(["LIST00", "LIST01"])).order_by(Token.serial)
+        ).unique().all()
+        original_resolver = owner_without_resolver.resolver
         other_node = "11111111-2222-3333-4444-555555555555"
 
-        # The token belongs to no node, so it is listed with and without node-specific resolvers
-        owner.resolver = None
+        # These tokens belong to no node: they are listed with and without node-specific resolvers, also if only
+        # another node serves the realm of their owner
+        owner_without_resolver.resolver = None
+        owner_of_deleted_resolver.resolver = "deletedreso"
         db.session.add(NodeName(id=other_node, name="OtherNode"))
         db.session.commit()
         try:
@@ -265,6 +270,7 @@ class TokenListLookupTestCase(MyTestCase):
             self.assertEqual(NUM_TOKENS, result["count"], result)
             usernames = {token["serial"]: token["username"] for token in result["tokens"]}
             self.assertEqual("**resolver error**", usernames["LIST00"], usernames)
+            self.assertEqual("**resolver error**", usernames["LIST01"], usernames)
 
             set_realm("noderealm", [{"name": "ldapreso", "node": other_node}])
             try:
@@ -273,9 +279,32 @@ class TokenListLookupTestCase(MyTestCase):
                 self.assertEqual(1, len(get_tokens(serial="LIST00")))
             finally:
                 delete_realm("noderealm")
+
+            # Only the other node serves the realm of the owners: the tokens of the owners it serves are left out
+            set_realm("ldaprealm", [{"name": "ldapreso", "node": other_node}])
+            try:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+                self.assertSetEqual({"LIST00", "LIST01"}, {token["serial"] for token in result["tokens"]}, result)
+                self.assertEqual(1, len(get_tokens(serial="LIST00")))
+                self.assertEqual(1, len(get_tokens(serial="LIST01")))
+                self.assertEqual([], get_tokens(serial="LIST02"))
+                self.assertEqual(1, len(get_tokens(serial="LIST02", all_nodes=True)))
+
+                # The resolver of the other owners also serves this node, in another realm: the realm of the
+                # owners still leaves their tokens out
+                set_realm("localrealm", [{"name": "ldapreso"}])
+                try:
+                    result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+                    self.assertSetEqual({"LIST00", "LIST01"}, {token["serial"] for token in result["tokens"]},
+                                        result)
+                finally:
+                    delete_realm("localrealm")
+            finally:
+                set_realm("ldaprealm", [{"name": "ldapreso"}])
         finally:
             db.session.execute(delete(NodeName).where(NodeName.id == other_node))
-            owner.resolver = original_resolver
+            owner_without_resolver.resolver = original_resolver
+            owner_of_deleted_resolver.resolver = original_resolver
             db.session.commit()
 
     @ldap3mock.activate
@@ -416,8 +445,6 @@ class TokenListLookupTestCase(MyTestCase):
             self.assertEqual(1, count_containing(statements, "FROM tokeninfo"), statements)
             self.assertEqual(1, count_containing(statements, "tokentokengroup"), statements)
             self.assertEqual(1, count_containing(statements, "FROM tokenowner"), statements)
-            # The realms are joined to the page query only, not again to read the details
-            self.assertEqual(1, count_containing(statements, "JOIN tokenrealm"), statements)
 
             # The page is the same as when every token reads its own details
             with mock.patch("privacyidea.lib.token.query._load_page_details"):
@@ -462,6 +489,7 @@ class TokenListLookupTestCase(MyTestCase):
         tokens = {token["serial"]: token for token in result["tokens"]}
         self.assertEqual("ldapreso", tokens["LIST05"]["resolver"], tokens["LIST05"])
         self.assertEqual("5", tokens["LIST05"]["user_id"], tokens["LIST05"])
+        self.assertEqual("", tokens["LIST05"]["username"], tokens["LIST05"])
         self.assertEqual("ldapreso", tokens["LIST06"]["resolver"], tokens["LIST06"])
         self.assertEqual("user06", tokens["LIST06"]["username"], tokens["LIST06"])
 
@@ -528,6 +556,40 @@ class TokenListLookupTestCase(MyTestCase):
         finally:
             delete_realm("chunkrealm")
 
+    @ldap3mock.activate
+    def test_18_a_page_costs_the_same_queries_whatever_its_size(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        set_tokengroup("listgroup")
+        set_tokengroups("LIST01", ["listgroup"])
+
+        def selects_of_a_page(page_size: int) -> list[str]:
+            with count_statements() as statements:
+                result = get_tokens_paginate(serial=self.serial_wildcard, psize=page_size, page=1)
+            self.assertEqual(page_size, len(result["tokens"]), result)
+            return [statement for statement in statements if statement.lstrip().upper().startswith("SELECT")]
+
+        try:
+            selects_of_a_small_page = selects_of_a_page(2)
+            self.assertEqual(len(selects_of_a_small_page), len(selects_of_a_page(NUM_TOKENS)))
+
+            # Reading the owners is rolled back once, which expires the tokens of the page: they are loaded again
+            # with the details of the page, not one by one
+            original_select_owners = token_query._select_owners
+            calls = []
+
+            def select_owners_failing_once(token_ids: list[int]) -> list[TokenOwner]:
+                calls.append(token_ids)
+                if len(calls) == 1:
+                    raise Exception("the owners can not be read")
+                return original_select_owners(token_ids)
+
+            with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=select_owners_failing_once):
+                self.assertEqual(len(selects_of_a_small_page), len(selects_of_a_page(NUM_TOKENS)))
+            self.assertEqual(2, len(calls), calls)
+        finally:
+            set_tokengroups("LIST01", [])
+            delete_tokengroup("listgroup")
+
 
 class RealmIdsTestCase(MyTestCase):
 
@@ -563,3 +625,14 @@ class RealmIdsTestCase(MyTestCase):
         self.assertTrue(token_query._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "m"))
         self.assertFalse(token_query._matches_wildcard("a" * 200, "*a" * 100 + "b"))
         self.assertTrue(token_query._matches_wildcard("a" * 200, "*a" * 100 + "*"))
+
+    def test_03_matches_wildcard_like_a_regular_expression(self):
+        # Every value and pattern of up to four characters matches exactly when the regular expression with ".*"
+        # for each "*" matches
+        values = ["".join(characters) for length in range(5) for characters in product("ab.", repeat=length)]
+        patterns = ["".join(characters) for length in range(5) for characters in product("ab.*", repeat=length)]
+        for pattern in patterns:
+            regular_expression = re.compile(".*".join(re.escape(piece) for piece in pattern.split("*")), re.DOTALL)
+            for value in values:
+                self.assertEqual(bool(regular_expression.fullmatch(value)),
+                                 token_query._matches_wildcard(value, pattern), (value, pattern))

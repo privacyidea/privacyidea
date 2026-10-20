@@ -31,7 +31,9 @@
 * **Tokens whose owner has no resolver** — A token whose user assignment names no resolver was left out of every token
   list, so it could neither be found nor deleted through the WebUI, the API or the token janitors. Such a token belongs
   to no node and is now listed on every node, so the token lists can show tokens that were not visible before. Its
-  user is shown as `**resolver error**`; unassign or delete the token.
+  user is shown as `**resolver error**`; unassign or delete the token. With node-specific resolvers, a token whose
+  owner's resolver is in no realm any more, e.g. because it was deleted, is now listed on every node as well. It was
+  only listed on the nodes that serve the realm of its owner.
 
 ## Update from 3.13 to 3.14
 

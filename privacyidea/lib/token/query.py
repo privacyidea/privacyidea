@@ -337,9 +337,11 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             sql_query = sql_query.where(Token.id.in_(subquery))
 
     # Node-specific resolver and realm configuration: the tokens of owners that another node serves are left out.
-    # A token belongs to no node if its owner names no resolver, if the resolver of its owner is in no realm at all,
-    # e.g. because the resolver was deleted, or if the realm of its owner has no resolver. Such a token is shown on
-    # every node, as it could otherwise neither be found nor deleted anywhere.
+    # A token belongs to no node if it has no owner, if its owner names no resolver or if the resolver of its owner
+    # is in no realm at all, e.g. because the resolver was deleted. Such a token is shown on every node, whatever the
+    # realm of its owner, as it could otherwise neither be found nor deleted anywhere. The token of any other owner is
+    # shown if the resolver of the owner serves this node and the realm of the owner is not served by other nodes
+    # only.
     if filter_by_node:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
         resolvers = []
@@ -356,17 +358,14 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
                 # Only other nodes serve this realm
                 realms_to_filter.append(realm_name)
 
-        # Build the resolver filter condition
-        resolver_filter = or_(
+        token_of_no_node = or_(
             TokenOwner.id.is_(None),
             # Compared on its own, as NULL is neither in nor not in a list of names
             TokenOwner.resolver.is_(None),
-            TokenOwner.resolver.in_(resolvers),
             TokenOwner.resolver.not_in(sorted(resolvers_of_any_node)),
         )
 
         # Re-join realm and explicitly include the join conditions in the filter to handle unassigned tokens
-        # The realm join is now correctly placed within the `if not all_nodes` block.
         sql_query = sql_query.outerjoin(Realm, TokenOwner.realm_id == Realm.id)
         realm_filter = or_(
             TokenOwner.realm_id.is_(None),
@@ -377,8 +376,7 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             )
         )
 
-        # Combine all filters with the existing query using and_()
-        sql_query = sql_query.where(and_(resolver_filter, realm_filter))
+        sql_query = sql_query.where(or_(token_of_no_node, and_(TokenOwner.resolver.in_(resolvers), realm_filter)))
 
     # print(f"----------------------------- CREATE TOKEN QUERY -----------------------------")
     # from sqlalchemy.dialects import postgresql
@@ -524,27 +522,31 @@ def _get_owners_by_token_id(token_ids: list[int],
     return owners_by_token_id
 
 
-def _load_page_details(tokens: list[Token], owners_by_token_id: dict[int, list[TokenOwner]],
+def _load_page_details(tokens: list[Token], token_ids: list[int], owners_by_token_id: dict[int, list[TokenOwner]],
                        unread_owner_token_ids: set[int]) -> None:
     """
     Load the token info and the token groups of a page of tokens with one query each, and hand
     the owners that were already read for the page over to the tokens. Building the dictionaries
     of the page then needs no query per token.
 
+    The tokens are read again with their realms, so that a token whose attributes expired since the page was
+    read, e.g. because reading the owners was rolled back, is loaded with the rest of the page and not on its
+    own.
+
     This only saves queries: if the details can not be read for the page, every token reads its
     own when it is turned into a dictionary.
 
     :param tokens: The database objects of the tokens of the page
+    :param token_ids: The database IDs of these tokens. Reading the ID of a token whose attributes expired
+                      would load that token on its own.
     :param owners_by_token_id: All owners of each token of the page, see ``_get_owners_by_token_id``
     :param unread_owner_token_ids: The IDs of the tokens whose owners could not be read
     """
     try:
-        for chunk in _chunked([token.id for token in tokens]):
-            # The tokens are already loaded with their realms, so the realms are not joined again
+        for chunk in _chunked(token_ids):
             db.session.scalars(
                 select(Token).where(Token.id.in_(chunk))
-                .options(lazyload(Token.realm_list), selectinload(Token.info_list),
-                         selectinload(Token.tokengroup_list))
+                .options(selectinload(Token.info_list), selectinload(Token.tokengroup_list))
             ).unique().all()
     except Exception as error:
         log.error(f"Could not read the token info and token groups of a page of tokens: {error!s}")
@@ -669,7 +671,8 @@ def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | 
     login_by_owner, editable_by_resolver, unresolvable_owners = _resolve_owner_logins(
         list(owner_by_token_id.values()))
     container_serial_by_token_id = _get_container_serial_by_token_id(token_ids)
-    _load_page_details([token.token for token in token_objects], owners_by_token_id, unread_owner_token_ids)
+    _load_page_details([token.token for token in token_objects], token_ids, owners_by_token_id,
+                       unread_owner_token_ids)
 
     token_dict_list = []
     for token in token_objects:

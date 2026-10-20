@@ -2714,7 +2714,18 @@ class InitTokenFailingSaveTestCase(MyTestCase):
 
         self.assertEqual([], get_tokens(serial="SAVEFAILS"))
 
-    def test_02_a_token_that_can_not_be_removed_after_a_failed_creation_is_logged(self):
+    def test_02_a_token_whose_creation_fails_after_the_save_is_removed(self):
+        # The token is saved and its creation fails afterwards: init_token raises the error of the creation and
+        # removes the token
+        with (mock.patch.object(TokenClass, "update", side_effect=ValueError("the creation fails")),
+              self.assertLogs("privacyidea.lib.token.lifecycle", level="ERROR") as logs):
+            with self.assertRaises(ValueError):
+                init_token({"type": "hotp", "genkey": 1, "serial": "UPDATEFAILS"})
+
+        self.assertEqual([], get_tokens(serial="UPDATEFAILS"))
+        self.assertFalse(any("Could not remove" in line for line in logs.output), logs.output)
+
+    def test_03_a_token_that_can_not_be_removed_after_a_failed_creation_is_logged(self):
         # The token is saved, its creation fails afterwards and it can not be removed either: init_token raises the
         # error of the creation and logs the one of the removal as an error
         with (mock.patch.object(TokenClass, "update", side_effect=ValueError("the creation fails")),
