@@ -985,16 +985,12 @@ type: ``bool``
 
 Allow the administrator to write, read or delete policies.
 
-If the admin policy is bound to user realms or resolvers, the administrator sees the
-policies that apply to one of these realms and resolvers, also those without a realm or
-resolver, which apply to every realm or resolver. The policy check is limited to these
-realms. An admin policy that names users but no realm or resolver does not restrict which
-policies the administrator sees, but it does not grant writing or deleting policies.
-
 .. note:: Writing and deleting policies require a policy that does not restrict
    its target, see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
-.. versionchanged:: 3.14 The realm of the admin policy restricts reading the policies.
+.. note:: Currently the policies do not take into account resolvers
+   or realms. Having the right to read policies will allow the
+   administrator to see all policies.
 
 .. versionadded:: 2.0 ``policywrite`` and ``policydelete``
 
@@ -1012,26 +1008,28 @@ type: ``bool``
 Allow the administrator to write, read or delete user resolvers and realms.
 
 If the admin policy is bound to user realms, the administrator only sees and changes
-the resolvers that are part of these realms. If the policy also names resolvers, only
-these resolvers of the realms are granted. A policy that names resolvers but no realm
-grants these resolvers, also if they are part of no realm yet. Otherwise a resolver
-that is part of no realm, and so a new resolver, needs a policy without a realm. A
-policy that names users grants no resolver. The default realm is only shown if it is
-one of these realms.
+the resolvers that are part of these realms and the resolvers that are part of no realm
+yet. If the policy also names resolvers, only these resolvers are granted. A policy that
+names resolvers but no realm grants these resolvers, also if they are part of no realm.
+A resolver that does not exist yet can be created with the action, and if the policy
+names resolvers, with one of these names. The users of the policy do not restrict the
+resolvers.
 
 Changing, testing or deleting a resolver needs the right for it in every realm it is
 part of, as the change affects the users of all these realms. Seeing it needs the right
 in one of them.
 
 Adding a resolver to a realm, removing it from a realm or changing its priority in
-a realm needs the right for the resolver as well. Setting, changing or removing the
-default realm needs the right for the whole current and the whole new default realm:
-a policy for the realm that also names resolvers or users does not grant it. Deleting a
-realm removes all of its resolvers and, for the default realm, the default realm, so it
-needs these rights as well. If only one realm is left after deleting the default realm,
-that realm becomes the default realm, which needs ``resolverwrite`` for the whole realm.
+a realm needs the right for the resolver as well, so a resolver of a realm the policy
+does not grant can not be added. Setting, changing or removing the default realm needs
+the right for the whole current and the whole new default realm: a policy for the realm
+that also names resolvers or users does not grant it. Deleting a realm removes all of
+its resolvers and, for the default realm, the default realm, so it needs these rights as
+well. The only realm is the default realm: a realm that is created or changed as the only
+realm, or that is the only realm left after another realm is deleted, becomes the default
+realm, which needs ``resolverwrite`` for the whole realm.
 
-.. versionchanged:: 3.14 Realm and resolver conditions are considered to restrict these admin rights.
+.. versionchanged:: 3.14.1 Realm and resolver conditions are considered to restrict these admin rights.
 
 The WebUI also needs ``resolverread`` to offer editing and creating users: the *Edit*
 button in the user details needs ``updateuser`` and ``resolverread``, and *Create User*
