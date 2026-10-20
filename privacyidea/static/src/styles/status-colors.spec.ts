@@ -106,6 +106,30 @@ describe("status colors", () => {
     }
   });
 
+  it.each([
+    ["aaa", 1.15],
+    ["aa", 1.3]
+  ])("level %s spaces the fills in lightness, so they stay apart without relying on hue", (level, trioMinimum) => {
+    const fills = all[level].fills;
+    const ratio = (a: string, b: string) => contrast(fills[a], fills[b]);
+    for (let i = 0; i < FILLS.length; i++) {
+      for (let j = i + 1; j < FILLS.length; j++) {
+        expect({ pair: [FILLS[i], FILLS[j]], ok: ratio(FILLS[i], FILLS[j]) >= 1.15 }).toEqual({
+          pair: [FILLS[i], FILLS[j]],
+          ok: true
+        });
+      }
+    }
+    // The pairs red-green colour blindness confuses.
+    for (const [a, b] of [
+      ["green", "yellow"],
+      ["green", "red"],
+      ["yellow", "red"]
+    ]) {
+      expect({ pair: [a, b], ok: ratio(a, b) >= trioMinimum }).toEqual({ pair: [a, b], ok: true });
+    }
+  });
+
   it.each(["aaa", "aa", "a"])("level %s has an edge that holds 3:1 against the page in both themes", (level) => {
     for (const fill of FILLS) {
       const light = edge(all[level].fills[fill], [0, 0, 0]);

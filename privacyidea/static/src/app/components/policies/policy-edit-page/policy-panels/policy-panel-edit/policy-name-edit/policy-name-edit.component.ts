@@ -18,8 +18,8 @@
  **/
 
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { Component, model } from "@angular/core";
-import { form, FormField, pattern, required } from "@angular/forms/signals";
+import { Component, effect, input, model } from "@angular/core";
+import { form, FormField, pattern, required, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -33,8 +33,22 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 })
 export class PolicyNameEditComponent {
   readonly policyName = model.required<string>();
+
+  /** Set by the parent while another policy already carries the entered name. */
+  readonly nameTaken = input<boolean>(false);
+
   readonly nameField = form(this.policyName, (f) => {
     required(f);
     pattern(f, /^[a-zA-Z0-9._-]*$/);
+    validate(f, () => (this.nameTaken() ? [{ kind: "nameTaken" }] : []));
   });
+
+  constructor() {
+    // Save is disabled for a taken name, so the reason shows at once, also for a name that a template filled in.
+    effect(() => {
+      if (this.nameTaken()) {
+        this.nameField().markAsTouched();
+      }
+    });
+  }
 }
