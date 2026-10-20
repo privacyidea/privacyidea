@@ -419,7 +419,7 @@ $corner-radii: (
 // Settings; AppearanceService stamps it on <html> as html.status-colors-<level>. The fills are the same in both
 // themes, so each level holds its contrast in light and dark:
 // - aaa: black ink, every fill at 7:1 or better.
-// - aa: white ink, every fill at 4.5:1 or better (the default).
+// - aa: white ink, every fill at 4.5:1 or better and the fills spaced in lightness (the default).
 // - a: white ink on the old WebUI green, orange, red and blue and a mid grey. Green, orange and red sit at 2.5:1, 2.0:1
 //   and 4.0:1 under white, blue and grey at 4.5:1, so this level has no contrast guarantee.
 $status-colors: (
@@ -435,13 +435,16 @@ $status-colors: (
   ),
   "aa": (
     "ink": white,
-    "green": hsl(120, 45%, 36%),
+    // Green, red and grey are darkened below the yellow, which sits at the 4.5:1 ceiling, so that the fills differ in
+    // lightness as well as hue: every pair holds at least 1.15:1 and green, yellow and red at least 1.3:1, which keeps
+    // them apart for red-green colour blindness.
+    "green": hsl(120, 50%, 18%),
     // The logo's blue (#16536F), which is also the theme's primary blue (8.4:1 under white).
     "blue": #16536f,
     // The brightest orange of this hue and saturation that holds 4.5:1 under white (4.51:1).
     "yellow": #b26217,
-    "red": hsl(2, 64%, 52%),
-    "grey": hsl(0, 0%, 44%)
+    "red": hsl(2, 64%, 45%),
+    "grey": hsl(0, 0%, 34%)
   ),
   "a": (
     "ink": white,
