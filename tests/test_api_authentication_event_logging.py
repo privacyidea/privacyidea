@@ -25,11 +25,13 @@ request, populates client_label and never leaks the internal classification key.
 test_api_authentication_log.py.
 """
 import datetime
+import itertools
 from typing import TYPE_CHECKING
 
 import mock
 
 from flask import Response
+from sqlalchemy.exc import OperationalError
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                           AuthEventReason, AuthLogUserRole)
@@ -37,6 +39,7 @@ from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
 from privacyidea.lib.error import ResolverError
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -1533,6 +1536,40 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
             entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
             assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
                                             user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_user_store_failure_is_not_accepted_by_pass_on_no_user(self):
+        # A single failed lookup leaves the login without its user. A passOnNoUser policy must not take that for a
+        # user who does not exist, even when the user store answers again for the rest of the request.
+        original_get_user_id = PasswdIdResolver.getUserId
+        with mock.patch.object(PasswdIdResolver, "getUserId", return_value=""):
+            unresolved_user = User(self.username, self.realm1)
+        # Not only a resolver error: an SQL user store that can not be reached fails while its table is loaded
+        lookup_errors = [ResolverError("The user store is not available"),
+                         OperationalError("SELECT", {}, Exception("server closed the connection unexpectedly"))]
+        set_policy("authlog_passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER)
+        try:
+            for login_mode, lookup_error in itertools.product([LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA],
+                                                              lookup_errors):
+                self._clear_log()
+                lookups = []
+
+                def get_user_id_failing_once(resolver: PasswdIdResolver, login_name: str) -> str:
+                    lookups.append(login_name)
+                    if len(lookups) == 1:
+                        raise lookup_error
+                    return original_get_user_id(resolver, login_name)
+
+                set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+                with mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_once):
+                    res = self._auth({"username": self.username, "realm": self.realm1, "password": "wrong"},
+                                     status=401)
+                self.assertNotIn("value", res.json["result"], f"{login_mode}, {lookup_error!r}: {res.json}")
+                entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+                assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unresolved_user,
+                                                endpoint=self.endpoint_path)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_passonnouser")
 
     def test_user_store_failure_with_login_mode_disable_logs_user_store_unavailable(self):
         # The disabled login is refused before the credential check, and is still logged as a failing user store

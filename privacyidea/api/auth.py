@@ -193,8 +193,7 @@ def before_request():
                 request.User = User(login_name, realm)
             except Exception as e:
                 request.User = None
-                if isinstance(e, ResolverError):
-                    g.resolved_user["failed_user_lookup"] = FailedUserLookup(login_name, realm.lower())
+                g.resolved_user["failed_user_lookup"] = FailedUserLookup(login_name, realm.lower())
                 log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
                 log.debug(f"{traceback.format_exc()!s}")
     elif credential_id:
@@ -722,6 +721,13 @@ def get_auth_token():
                     policy_names = sorted({name for names in login_mode_values.values() for name in names})
                     raise PolicyError(f"There are policies with conflicting actions: {policy_names!r}")
                 login_mode = next(iter(login_mode_values), LOGINMODE.USERSTORE)
+            failed_lookup = g.resolved_user.get("failed_user_lookup")
+            if failed_lookup:
+                # The credentials can not be checked without the user, and a passOnNoUser policy would take the empty
+                # user for one that does not exist and accept the login
+                log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=failed_lookup.login_name,
+                                   realm=failed_lookup.realm)
+                raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 # Never copy internal keys
