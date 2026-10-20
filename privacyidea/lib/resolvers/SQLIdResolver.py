@@ -565,12 +565,14 @@ class IdResolver (UserIdResolver):
     def getResolverType():
         return IdResolver.getResolverClassType()
 
-    def loadConfig(self, config):
+    def loadConfig(self, config: dict) -> "IdResolver":
         """
-        Load the config from conf.
+        Load the config from conf and the table of the users from the database.
 
         :param config: The configuration from the Config Table
-        :type config: dict
+        :return: The resolver itself
+        :raises ResolverError: with the message USER_LOOKUP_FAILED if the table can not be loaded, e.g. because the
+            database is not reachable
         """
         self.server = config.get('Server', "")
         self.driver = config.get('Driver', "")
@@ -625,7 +627,12 @@ class IdResolver (UserIdResolver):
         schema = table_parts[0] if len(table_parts) > 1 else None
         self.table = table_parts[-1]
         log.debug(f"Loading table {self.table!s} from schema {schema!s}")
-        self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
+        try:
+            self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
+        except Exception as error:
+            log.error(f"Could not load the table {self.table!r} of the user store "
+                      f"{censor_connect_string(self.connect_string)!r}: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         return self
 
     def _finalize_session(self) -> None:

@@ -40,6 +40,8 @@ from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
 from privacyidea.lib.error import ResolverError
+from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.resolver import delete_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
@@ -976,6 +978,26 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
         assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
                                         user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_unreachable_sql_user_store_logs_user_store_unavailable(self):
+        # The SQL resolver connects first when it loads its table, which fails with a database error
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        unknown_user = User("doesnotexist", "sqliterealm")
+        # The resolver loaded for the user above would be used again within the same app context
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": "sqliterealm", "pass": "x"})
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_realm("sqliterealm")
+            delete_resolver("sqlite_resolver")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unknown_user,
+                                        endpoint=self.endpoint_path)
 
     def test_user_store_failure_logs_the_transaction_of_the_request(self):
         # The answer to a challenge is logged with its transaction, also under the RADIUS name of the parameter

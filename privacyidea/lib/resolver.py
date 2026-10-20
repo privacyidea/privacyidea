@@ -59,6 +59,7 @@ from .config import (get_resolver_types, get_resolver_classes, get_config_object
 from .crypto import encryptPassword, CENSORED
 from .error import ConfigAdminError
 from .log import log_with
+from .resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.params import get_required
 from ..models import (Resolver,
                       ResolverConfig, save_config_timestamp, db)
@@ -401,15 +402,16 @@ def get_resolver_type(resolvername):
 
 @log_with(log)
 # @cache.memoize(10)
-def get_resolver_object(resolvername):
+def get_resolver_object(resolvername: str) -> UserIdResolver | None:
     """
     Return the cached resolver object for the given resolver name (stored in the request context).
     If no resolver object is cached, create it and add it to the cache.
 
     :param resolvername: the resolver string as from the token including
                          the config as last part
-    :return: instance of the resolver with the loaded config
-
+    :return: instance of the resolver with the loaded config, None if the resolver type is unknown
+    :raises ResolverError: if the resolver can not load its config, e.g. because its user store is not reachable. The
+        resolver is not cached then, so the next call of the request tries again.
     """
     r_type = get_resolver_type(resolvername)
     r_obj_class = get_resolver_class(r_type)
@@ -424,11 +426,12 @@ def get_resolver_object(resolvername):
         resolver_objects = store['resolver_objects']
         if resolvername not in resolver_objects:
             # create the resolver instance and load the config
-            r_obj = resolver_objects[resolvername] = r_obj_class()
+            r_obj = r_obj_class()
             if r_obj is not None:
                 resolver_config = get_resolver_config(resolvername)
                 r_obj.loadConfig(resolver_config)
                 r_obj.name = resolvername
+            resolver_objects[resolvername] = r_obj
         return resolver_objects[resolvername]
 
 

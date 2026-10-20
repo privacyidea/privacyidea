@@ -26,9 +26,11 @@ import responses
 from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from testfixtures import LogCapture
 
 from privacyidea.lib.crypto import decryptPassword, encryptPassword
+from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
@@ -838,6 +840,28 @@ class SQLResolverTestCase(MyTestCase):
         # The session can be used afterwards
         self.assertEqual("3", resolver.getUserId("cornelius"))
         self.assertEqual("", resolver.getUserId("unknown_user"))
+
+    def test_13e_load_config_raises_when_the_database_is_not_reachable(self):
+        # Loading the table is the first time the resolver connects to the database
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+            with self.assertRaises(ResolverError) as error:
+                SQLResolver().loadConfig(self.parameters)
+        self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+    def test_13f_a_resolver_that_fails_to_load_is_not_cached(self):
+        save_resolver({"resolver": "sql_failing_load", "type": "sqlresolver", **self.parameters})
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                # Every call of the request tries again, instead of handing out a resolver without its table
+                for _ in range(2):
+                    self.assertRaises(ResolverError, get_resolver_object, "sql_failing_load")
+            self.assertEqual("3", get_resolver_object("sql_failing_load").getUserId("cornelius"))
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_resolver("sql_failing_load")
 
     def test_13d_get_user_id_of_a_row_without_user_id(self):
         resolver = SQLResolver()
