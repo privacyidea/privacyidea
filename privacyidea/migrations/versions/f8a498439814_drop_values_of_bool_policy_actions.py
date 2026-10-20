@@ -1,17 +1,16 @@
 """v3.14.1: Remove the value of boolean policy actions that are stored with a value other than true, and duplicates
 
-The policy matching only checks whether an action is set and ignores its value, so a boolean action stored with a
-value like ``policywrite=False`` or ``triggerchallenge=hotp`` acted as enabled. The policy template "helpdesk" of the
-WebUI stored 21 admin rights like this. Saving a policy now stores ``false`` as the excluded action and rejects any
-other value, so this migration removes these values from the policies already stored. The actions stay enabled, the
-policies grant the same rights as before. The migration logs every policy it changes, so that the administrator can
-check whether an action was meant to be disabled.
+The policy matching only checks whether an action is set and ignores its value, so a stored boolean action with a value
+like ``policywrite=False`` or ``triggerchallenge=hotp`` is enabled. Saving a policy stores a boolean action with the
+value ``false`` or ``0`` as the excluded action, so this migration removes these values from the stored policies and
+saving them again keeps the actions enabled. The policies grant the same rights as before. The migration logs every
+policy it changes, so that the administrator can check whether an action is meant to be disabled.
 
 Values that enable the action (``true``, ``True``, ``TRUE`` and ``1``) are left as they are.
 
-Saving a policy also rejects an action given more than once, like ``policywrite=hotp, policywrite=false``. Parsing the
-action string keeps only the last occurrence, so the migration removes the earlier ones and the policy acts as before.
-An action and its exclusion, like ``policywrite`` and ``-policywrite``, are different actions and both stay.
+Parsing the action string keeps only the last occurrence of an action given more than once, like
+``policywrite=hotp, policywrite=false``, so the migration removes the earlier ones and the policy acts as before. An
+action and its exclusion, like ``policywrite`` and ``-policywrite``, are different actions and both stay.
 
 The boolean actions are a snapshot of the policy definitions of this version, so the migration does not depend on the
 models of a later version. Boolean actions of token types outside privacyIDEA are not included.

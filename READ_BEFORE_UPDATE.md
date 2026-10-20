@@ -17,16 +17,16 @@
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
   these values, without applying the `!` and `*` search operators.
 
-* **Boolean policy actions with a value are cleaned up.** A boolean action like `policywrite=False` acted as enabled,
-  because the policy matching only checks whether an action is set. Policies created from the WebUI template
-  "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The schema update
-  (`privacyidea-schema-upgrade`) removes the value of every boolean action whose value is not `true`, `True`, `TRUE`
-  or `1`, like `policywrite=False` or `triggerchallenge=hotp`. **The actions stay enabled**, the policies grant the
-  same rights as before. The schema update logs a warning for every policy it changes, so check these policies and
-  exclude the actions that were meant to be disabled, like `-policywrite`. From now on, saving a boolean action with
-  the value `false` (in any case) or `0` stores the excluded action, and saving it with any other value fails, also
-  through the API and `pi-manage`. Importing a policy (`pi-manage config import`) removes such values like the schema
-  update, so an exported policy stays enabled as before.
+* **Boolean policy actions with a false value are stored as excluded actions.** Saving a boolean action with the
+  value `false` (in any case) or `0`, like `policywrite=false`, stores the excluded action `-policywrite`. This applies
+  to the WebUI, the API, `pi-manage` and the policy import. Applying a policy template in the WebUI leaves out the
+  actions the template sets to `false`.
+  The schema update (`privacyidea-schema-upgrade`) removes the value of every stored boolean action whose value is not
+  `true`, `True`, `TRUE` or `1`, like `policywrite=False` or `triggerchallenge=hotp`, and the earlier occurrences of an
+  action given more than once. **The policies grant the same rights as before.** The schema update logs a warning for
+  every policy it changes, so check these policies and exclude the actions that are meant to be disabled, like
+  `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until the policy is
+  saved again.
 
 ## Update from 3.13 to 3.14
 
