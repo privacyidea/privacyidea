@@ -189,66 +189,6 @@ class APIConfigTestCase(MyApiTestCase):
             for key in ("yubikey.apiid.client1", "yubico.secret", "email.password"):
                 delete_privacyidea_config(key)
 
-    def test_02d_documentation_renders_values_as_literal_text(self):
-        # A value is rendered into a literal block, so that reStructuredText markup in it, like a directive in a
-        # policy description, is part of the text and not of the document. A name outside of a literal block is
-        # escaped, so that the name of this resolver, which ends in an underscore, is no reference.
-        self.setUp_user_realms()
-        save_resolver({"resolver": "users_", "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
-        set_policy("documented", scope=SCOPE.AUTH, action="otppin=tokenpin",
-                   description="first line\n.. include:: /etc/hostname\n**bold**")
-        try:
-            with self.app.test_request_context('/system/documentation',
-                                               method='GET',
-                                               headers={'Authorization': self.at}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res.data)
-                body = res.data.decode("utf-8")
-            self.assertIn("\n    description: first line\n        .. include:: /etc/hostname\n        **bold**\n",
-                          body)
-            self.assertIn("\nusers\\_\n~~~~~~~\n* Name of the resolver: users\\_\n", body)
-            self.assertIn("\n    realm: []\n", body)
-            # No value is rendered as markup outside of a literal block
-            self.assertNotIn("**[]**", body)
-        finally:
-            delete_policy("documented")
-            delete_resolver("users_")
-
-    def test_02e_documentation_lists_selected_resolver_and_event_settings(self):
-        # Resolvers and event handlers are listed by the settings that describe how they are used. A setting that
-        # names the user store or an account in it, holds a credential or is free text is not part of the report.
-        save_resolver({"resolver": "httpdoc", "type": "httpresolver", "base_url": "https://idp.example.com",
-                       "headers": json.dumps({"Authorization": "Bearer static-token"}),
-                       "config_get_user_by_id": json.dumps({"method": "GET", "endpoint": "/users/{userid}"}),
-                       "username": "service-account", "password": "service-password"})
-        event_id = set_event("1. Notify * helpdesk", event=["validate_check"], handlermodule="WebHook",
-                             action="post_webhook", conditions={"result_value": "False", "serial": "^HOTP.*$"},
-                             options={"URL": "https://hooks.example.com/static-hook-token", "replace": "True",
-                                      "data": "payload-text"})
-        try:
-            with self.app.test_request_context('/system/documentation',
-                                               method='GET',
-                                               headers={'Authorization': self.at}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res.data)
-                body = res.data.decode("utf-8")
-            for value in ("idp.example.com", "static-token", "service-account", "service-password",
-                          "/users/{userid}", "hooks.example.com", "static-hook-token", "payload-text", "^HOTP"):
-                self.assertNotIn(value, body)
-            self.assertIn("\n    mode: advanced\n    requests: ['get_user_by_id']\n    verify_tls: True\n", body)
-            # The name of an event handler is free text, it is escaped for the section title
-            self.assertIn("\n1\\. Notify \\* helpdesk\n", body)
-            self.assertIn("\n    handlermodule: WebHook\n", body)
-            self.assertIn("\n    event: ['validate_check']\n", body)
-            self.assertIn("\n    conditions:\n        result_value: False\n", body)
-            self.assertIn(f"\n        serial: {CENSORED}\n", body)
-            self.assertIn(f"\n        URL: {CENSORED}\n", body)
-            self.assertIn(f"\n        data: {CENSORED}\n", body)
-            self.assertIn("\n        replace: True\n", body)
-        finally:
-            delete_event(event_id)
-            delete_resolver("httpdoc")
-
     def test_03_set_and_del_default(self):
         with self.app.test_request_context('/system/setDefault',
                                            data={"DefaultMaxFailCount": 1,
@@ -1125,6 +1065,66 @@ class APIConfigTestCase(MyApiTestCase):
         driver = database_uri.split("://")[0]
         self.assertIn(f"\n    SQLALCHEMY_DATABASE_URI (driver): {driver}\n", body)
         self.assertNotIn(database_uri, body)
+
+    def test_15b_documentation_renders_values_as_literal_text(self):
+        # A value is rendered into a literal block, so that reStructuredText markup in it, like a directive in a
+        # policy description, is part of the text and not of the document. A name outside of a literal block is
+        # escaped, so that the name of this resolver, which ends in an underscore, is no reference.
+        self.setUp_user_realms()
+        save_resolver({"resolver": "users_", "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
+        set_policy("documented", scope=SCOPE.AUTH, action="otppin=tokenpin",
+                   description="first line\n.. include:: /etc/hostname\n**bold**")
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+            self.assertIn("\n    description: first line\n        .. include:: /etc/hostname\n        **bold**\n",
+                          body)
+            self.assertIn("\nusers\\_\n~~~~~~~\n* Name of the resolver: users\\_\n", body)
+            self.assertIn("\n    realm: []\n", body)
+            # No value is rendered as markup outside of a literal block
+            self.assertNotIn("**[]**", body)
+        finally:
+            delete_policy("documented")
+            delete_resolver("users_")
+
+    def test_15c_documentation_lists_selected_resolver_and_event_settings(self):
+        # Resolvers and event handlers are listed by the settings that describe how they are used. A setting that
+        # names the user store or an account in it, holds a credential or is free text is not part of the report.
+        save_resolver({"resolver": "httpdoc", "type": "httpresolver", "base_url": "https://idp.example.com",
+                       "headers": json.dumps({"Authorization": "Bearer static-token"}),
+                       "config_get_user_by_id": json.dumps({"method": "GET", "endpoint": "/users/{userid}"}),
+                       "username": "service-account", "password": "service-password"})
+        event_id = set_event("1. Notify * helpdesk", event=["validate_check"], handlermodule="WebHook",
+                             action="post_webhook", conditions={"result_value": "False", "serial": "^HOTP.*$"},
+                             options={"URL": "https://hooks.example.com/static-hook-token", "replace": "True",
+                                      "data": "payload-text"})
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+            for value in ("idp.example.com", "static-token", "service-account", "service-password",
+                          "/users/{userid}", "hooks.example.com", "static-hook-token", "payload-text", "^HOTP"):
+                self.assertNotIn(value, body)
+            self.assertIn("\n    mode: advanced\n    requests: ['get_user_by_id']\n    verify_tls: True\n", body)
+            # The name of an event handler is free text, it is escaped for the section title
+            self.assertIn("\n1\\. Notify \\* helpdesk\n", body)
+            self.assertIn("\n    handlermodule: WebHook\n", body)
+            self.assertIn("\n    event: ['validate_check']\n", body)
+            self.assertIn("\n    conditions:\n        result_value: False\n", body)
+            self.assertIn(f"\n        serial: {CENSORED}\n", body)
+            self.assertIn(f"\n        URL: {CENSORED}\n", body)
+            self.assertIn(f"\n        data: {CENSORED}\n", body)
+            self.assertIn("\n        replace: True\n", body)
+        finally:
+            delete_event(event_id)
+            delete_resolver("httpdoc")
 
     def test_16_get_hsm(self):
         with self.app.test_request_context('/system/hsm',

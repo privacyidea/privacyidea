@@ -33,7 +33,6 @@ address, subject and body this gateway will trigger the sending of the SMS.
 The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
-from privacyidea.lib.log import mask_phone_number
 from privacyidea.lib.smtpserver import send_email_identifier, send_email_data
 import logging
 log = logging.getLogger(__name__)
@@ -83,7 +82,7 @@ class SmtpSMSProvider(ISMSProvider):
             body = body.replace(PHONE_TAG, phone)
             body = body.replace(MSG_TAG, message)
 
-        log.debug(f"submitting a message to {mask_phone_number(phone)}")
+        log.debug("submitting a message")
         if identifier:
             r = send_email_identifier(identifier, recipient, subject, body)
         else:

@@ -318,18 +318,6 @@ def _all_items(value):
         return value.items()
 
 
-def mask_phone_number(phone: object) -> str:
-    """
-    Return a phone number reduced to its last three digits, for a log message about a message sent to it. This tells
-    the numbers of a log apart without writing them to the log.
-
-    :param phone: the phone number
-    :return: the masked phone number, like "***789"
-    """
-    digits = re.sub(r"\D", "", str(phone or ""))
-    return f"***{digits[-3:]}" if digits else "<no phone number>"
-
-
 def get_url_origin(url: str) -> str:
     """
     Return the scheme, the host and the port of a URL, for a log message about a request to it.

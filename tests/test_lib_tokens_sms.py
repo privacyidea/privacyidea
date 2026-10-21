@@ -395,7 +395,7 @@ class SMSTokenTestCase(MyTestCase):
         self.assertRegex(sent_otp, r"^[0-9]{6}$")
         self.assertNotIn(sent_otp, output)
         self.assertNotIn("123456789", output)
-        self.assertIn("submitMessage to phone ***789", output)
+        self.assertIn("submitMessage for the token SMSLOG01", output)
 
     @responses.activate
     def test_18a_challenge_request_dynamic(self):

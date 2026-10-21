@@ -473,9 +473,9 @@ class ScriptSMSTestCase(MyTestCase):
               mock.patch("logging.Logger.info") as log):
             r = sms.submit_message("+49 123/456-78", "Hello")
             self.assertTrue(r)
-            # The phone number is passed as the regular expression changes it, and logged by its last digits
+            # The phone number is passed as the regular expression changes it
             self.assertEqual("4912345678", popen.call_args.args[0][1])
-            log.assert_any_call("SMS delivered to ***678.")
+            log.assert_any_call("SMS delivered by the script 'success.sh'.")
         delete_smsgateway(identifier)
 
     def test_02_fail(self):

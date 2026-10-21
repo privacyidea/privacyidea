@@ -56,7 +56,7 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.log import log_with, mask_phone_number
+from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     Match, get_action_values_from_options)
@@ -486,7 +486,7 @@ class SmsTokenClass(HotpTokenClass):
                 log.debug(f"{traceback.format_exc()!s}")
                 raise Exception(f"Failed to load sms.providerConfig: {exc!r}")
 
-        log.debug(f"submitMessage to phone {mask_phone_number(phone)}")
+        log.debug(f"submitMessage for the token {self.token.serial}")
         ret = sms.submit_message(phone, message)
         return ret, message
 

@@ -26,8 +26,7 @@ from .base import MyApiTestCase
 from werkzeug.datastructures import (CombinedMultiDict, EnvironHeaders, Headers,
                                      ImmutableMultiDict, ImmutableTypeConversionDict, MultiDict)
 
-from privacyidea.lib.log import (HIDDEN, get_url_origin, is_sensitive_key, log_with, mask_phone_number, redact,
-                                 redacted_attributes)
+from privacyidea.lib.log import HIDDEN, get_url_origin, is_sensitive_key, log_with, redact, redacted_attributes
 
 # Values that must never reach the log. They are deliberately unusual strings so that a single
 # substring check over the captured log output is enough to detect a leak.
@@ -318,17 +317,6 @@ class TestHideArgsByName:
 
         assert "'send_message' has no parameter bdy to hide" in caplog.text
 
-
-class TestMaskPhoneNumber:
-
-    @pytest.mark.parametrize("phone, masked", [
-        ("+49 123 456789", "***789"),
-        ("0170111111", "***111"),
-        ("", "<no phone number>"),
-        (None, "<no phone number>"),
-    ])
-    def test_mask(self, phone, masked):
-        assert mask_phone_number(phone) == masked
 
 
 class TestNoOverHiding:
