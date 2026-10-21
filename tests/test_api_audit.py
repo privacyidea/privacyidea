@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import csv
+import io
 from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta, timezone
 
@@ -717,3 +719,35 @@ class APIAuditTestCase(MyApiTestCase):
             delete_policy("audit_operator")
             delete_realm(realm)
             delete_resolver(resolver)
+
+    def test_11_the_realms_of_an_administrator_come_from_their_audit_policies_only(self):
+        # A search key named like the internal list of allowed realms neither widens nor replaces the realms of the
+        # policies, in the search and in the download
+        self.setUp_user_realms()
+        Audit.query.delete()
+        Audit(action="enroll", success=1, realm=self.realm1a).save()
+        Audit(action="enroll", success=1, realm=self.realm2b).save()
+        Audit(action="enroll", success=1, realm=self.realm2b).save()
+        Audit(action="enroll", success=1, realm="").save()
+        set_policy("audit_realm1a", scope=SCOPE.ADMIN, realm=self.realm1a,
+                   action=f"{PolicyAction.AUDIT}, {PolicyAction.AUDIT_DOWNLOAD}")
+        try:
+            for requested_realms in ([self.realm2b], [self.realm1a, self.realm2b, ""]):
+                body = {"action": "enroll", "allowed_audit_realm": requested_realms}
+                with self.subTest(requested_realms=requested_realms):
+                    with self.app.test_request_context('/audit/', method='GET', json=body,
+                                                       headers={'Authorization': self.at}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertListEqual([self.realm1a],
+                                         [entry["realm"] for entry in res.json["result"]["value"]["auditdata"]])
+
+                    with self.app.test_request_context('/audit/audit.csv', method='GET', json=body,
+                                                       headers={'Authorization': self.at}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code)
+                    rows = [row for row in csv.reader(io.StringIO(res.get_data(as_text=True))) if "enroll" in row]
+                    self.assertEqual(1, len(rows), rows)
+                    self.assertIn(self.realm1a, rows[0])
+        finally:
+            delete_policy("audit_realm1a")

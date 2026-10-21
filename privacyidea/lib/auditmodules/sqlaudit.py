@@ -405,18 +405,11 @@ class Audit(AuditBase):
 
         for search_key in param.keys():
             search_value = param.get(search_key)
-            if search_key == "allowed_audit_realm":
-                # Add each realm in the allowed_audit_realm list to the search condition
-                realm_conditions = []
-                for realm in search_value:
-                    realm_conditions.append(LogEntry.realm == realm)
-                filter_realm = or_(*realm_conditions)
-                conditions.append(filter_realm)
-            # Any other filter value is compared as a string. Coerce non-string
+            # Any filter value is compared as a string. Coerce non-string
             # scalars so a meaningful filter is never silently dropped, which would
             # widen the audit result set. An empty value or a bare '*' wildcard means
             # "no filter" for this key.
-            elif search_value is not None:
+            if search_value is not None:
                 if not isinstance(search_value, str):
                     search_value = str(search_value)
                 if search_value.strip() == '' or search_value.strip('*') == '':
