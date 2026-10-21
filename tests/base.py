@@ -498,9 +498,10 @@ class MyTestCase(unittest.TestCase):
         """
         sorted_filter = filter_data.copy()
         sorted_filter["sortorder"] = "desc"
+        # The filters go into the query string, a GET request takes no parameters from its body
         with self.app.test_request_context('/audit/',
                                            method='GET',
-                                           data=sorted_filter,
+                                           query_string=sorted_filter,
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.data)
