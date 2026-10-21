@@ -38,6 +38,7 @@ search endpoint, not to the CSV download.
 """
 from flask import (Blueprint, request, current_app, stream_with_context)
 from .lib.utils import (send_result, send_file)
+from ..api.lib.policyhelper import hide_audit_columns_per_entry
 from ..api.lib.prepolicy import prepolicy, check_base_action, auditlog_age, hide_audit_columns
 from ..api.auth import admin_required
 from ..lib.policies.actions import PolicyAction
@@ -97,6 +98,7 @@ def search_audit():
             request.all_data.pop(key, None)
         exact_params = {"user": request.User.login, "realm": request.User.realm, "resolver": request.User.resolver}
     audit_dict = search(current_app.config, request.all_data, admin_params, exact_params=exact_params)
+    hide_audit_columns_per_entry(g, audit_dict["auditdata"])
     g.audit_object.log({'success': True})
 
     return send_result(audit_dict)

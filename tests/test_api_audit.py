@@ -857,3 +857,39 @@ class AuditDownloadRealmTestCase(MyApiTestCase):
 
     def test_06_no_admin_policy_at_all(self):
         self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 3, "MARK-NOREALM": 1}, self.download(self.at))
+
+
+class HideAuditColumnsPerEntryTestCase(MyApiTestCase):
+    """
+    hide_audit_columns restricted to a realm also applies in an audit list that is not filtered by a user or realm:
+    per entry by its user, realm and resolver.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        Audit.query.delete()
+        Audit(action="HIDECOLUMNS", success=1, realm=self.realm1, user="cornelius", resolver=self.resolvername1,
+              info="realm1 info").save()
+        Audit(action="HIDECOLUMNS", success=1, realm=self.realm3, user="root", resolver=self.resolvername3,
+              info="realm3 info").save()
+        set_policy("admin_audit", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT)
+        set_policy("admin_hide_columns", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=info")
+
+    def tearDown(self) -> None:
+        delete_policy("admin_audit")
+        delete_policy("admin_hide_columns")
+        super().tearDown()
+
+    def test_01_audit_list(self):
+        for query, expected in (({"action": "HIDECOLUMNS"}, {self.realm1: False, self.realm3: True}),
+                                ({"action": "HIDECOLUMNS", "realm": self.realm1}, {self.realm1: False})):
+            with self.subTest(query=query):
+                with self.app.test_request_context("/audit/", method="GET", query_string=query,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertDictEqual(expected, {entry["realm"]: "info" in entry
+                                                for entry in res.json["result"]["value"]["auditdata"]})
