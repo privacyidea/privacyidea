@@ -13,6 +13,7 @@ import pytest
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from sqlalchemy import create_engine, inspect as sa_inspect, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "")
@@ -261,12 +262,20 @@ class MigrationTestBase:
         After this call the database is in the state immediately before the
         migration under test.  The caller is responsible for disposing *engine*.
         """
+        self._load_seed_and_upgrade_to(engine, self.PARENT_REVISION)
+
+    def _load_seed_and_upgrade_to(self, engine: Engine, revision: str) -> None:
+        """
+        Load the v3.9 seed into *engine* then upgrade to *revision*, e.g. to the
+        state before an earlier migration whose data the migration under test
+        works on. The caller is responsible for disposing *engine*.
+        """
         statements = read_seed_statements()
         with engine.connect() as conn:
             for stmt in statements:
                 conn.execute(text(stmt))
             conn.commit()
-        command.upgrade(get_alembic_cfg(), self.PARENT_REVISION)
+        command.upgrade(get_alembic_cfg(), revision)
 
     def _fetch_scalar(self, engine, query: str, params: dict | None = None):
         """Execute *query* and return the first column of the first row."""
