@@ -18,9 +18,10 @@
 -->
 <mat-expansion-panel
   id="questionnaire"
-  [expanded]="expanded()">
+  [expanded]="expanded() || panel.revealed()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@tokenTypeConfig.questionnaire">Questionnaire</mat-panel-title>
+    <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.questionnaireLets">The questionnaire lets you define a set of questions.</p>
@@ -35,16 +36,15 @@
         class="input-width-m">
         <mat-label i18n="@@tokenTypeConfig.numberAnswers">Number of Answers</mat-label>
         <input
-          #numAnswersInput
-          [value]="formData()[QUESTION_NUMBER_OF_ANSWERS] ?? ''"
-          (input)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event.target.value)"
-          (keydown)="blockNonNumeric($event)"
+          [formField]="config().values[QUESTION_NUMBER_OF_ANSWERS]"
           matInput
-          required
           type="number" />
-        @if (numAnswersInput.validity.valueMissing) {
-          <mat-error i18n="@@tokenTypeConfig.numberAnswersRequired"
-            >Number of Answers is <strong>required</strong></mat-error
+        @if (hasError(config().values[QUESTION_NUMBER_OF_ANSWERS], ERR.parse)) {
+          <mat-error i18n="@@tokenTypeConfig.invalidNumber">Enter a valid number.</mat-error>
+        }
+        @if (hasError(config().values[QUESTION_NUMBER_OF_ANSWERS], ERR.pattern)) {
+          <mat-error i18n="@@tokenTypeConfig.numberAnswersWholeNumber"
+            >Number of Answers must be a whole number.</mat-error
           >
         }
         <mat-hint i18n="@@tokenTypeConfig.answersRequired">Answers required to enroll a token.</mat-hint>
@@ -74,12 +74,9 @@
             subscriptSizing="dynamic">
             <mat-label i18n="@@tokenTypeConfig.question">Question</mat-label>
             <input
-              #questionInput
-              [value]="formData()[key] ?? ''"
-              (input)="updateFormData(key, $event.target.value)"
-              matInput
-              required />
-            @if (questionInput.validity.valueMissing) {
+              [formField]="config().values[key]"
+              matInput />
+            @if (hasError(config().values[key], ERR.required)) {
               <mat-error i18n="@@tokenTypeConfig.questionMustNot">Question must not be empty.</mat-error>
             }
           </mat-form-field>

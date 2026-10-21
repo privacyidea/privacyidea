@@ -42,16 +42,14 @@
         appearance="fill"
         class="input-width-m">
         <mat-label i18n="@@tokenTypeConfig.defaultHashlib">Default Hashlib</mat-label>
-        <mat-select
-          [value]="formData()[HOTP_HASHLIB]"
-          (valueChange)="updateFormData(HOTP_HASHLIB, $event)">
+        <mat-select [formField]="config().values[HOTP_HASHLIB]">
           @for (hashlib of hashLibOptions(); track hashlib.value) {
             <mat-option [value]="hashlib.value">{{ hashlib.label }}</mat-option>
           }
         </mat-select>
         <app-clear-button
           matSuffix
-          (clearButtonClick)="clearField(HOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
+          (clearButtonClick)="clearValue(config().values[HOTP_HASHLIB]); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
     </div>
   </div>

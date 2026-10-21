@@ -34,16 +34,10 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.appid">AppID</mat-label>
         <input
-          #appIdInput
-          (input)="updateFormData(U2F_APP_ID, $any($event.target).value)"
-          [value]="appId()"
+          [formField]="config().values[U2F_APP_ID]"
           matInput
           placeholder="https://pi.server.com"
-          required
           type="url" />
-        @if (appIdInput.validity.valueMissing) {
-          <mat-error i18n="@@tokenTypeConfig.appidRequired">AppID is <strong>required</strong></mat-error>
-        }
       </mat-form-field>
     </div>
     <span

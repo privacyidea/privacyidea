@@ -16,35 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, input, output } from "@angular/core";
-
+import { Component, computed, input } from "@angular/core";
+import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import { TokenTypeConfigForm } from "@components/configuration/token-type-config/token-type-config.form";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
+import { clearField } from "@utils/form-state.utils";
 import { labeledOptions } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-daypassword-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent, FormField],
   templateUrl: "./daypassword-config.component.html"
 })
 export class DaypasswordConfigComponent {
-  formData = input.required<Record<string, string | number | boolean | undefined>>();
-  formDataChange = output<Record<string, string | number | boolean | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
   hashLibs = input.required<string[]>();
   readonly hashLibOptions = computed(() => labeledOptions(this.hashLibs(), { vocabulary: true }));
 
-  updateFormData(fieldName: string, value: string | number | boolean): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
-
-  clearField(fieldName: string): void {
-    this.updateFormData(fieldName, "");
+  clearValue(field: FieldTree<string>): void {
+    clearField(field, "");
   }
 
   protected readonly DAYPASSWORD_HASHLIB = DAYPASSWORD_HASHLIB;

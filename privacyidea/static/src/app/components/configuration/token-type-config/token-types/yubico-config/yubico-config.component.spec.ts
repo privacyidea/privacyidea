@@ -20,76 +20,150 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { YubicoConfigComponent } from "@components/configuration/token-type-config/token-types/yubico-config/yubico-config.component";
 import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { touchAll } from "@utils/form-state.utils";
 
 describe("YubicoConfigComponent", () => {
   let fixture: ComponentFixture<YubicoConfigComponent>;
   let component: YubicoConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const input = (placeholder: string) =>
+    fixture.nativeElement.querySelector(`input[placeholder="${placeholder}"]`) as HTMLInputElement;
+  const type = async (placeholder: string, value: string) => {
+    input(placeholder).value = value;
+    input(placeholder).dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const errors = () =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error") as NodeListOf<HTMLElement>).map((error) =>
+      error.textContent?.trim()
+    );
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(YubicoConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [YubicoConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(YubicoConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "12345";
-    component.updateFormData(YUBICO_ID, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [YUBICO_ID]: newValue });
-  });
-
-  it("should preserve existing formData when updating a field", () => {
-    const initialData = {
-      [YUBICO_ID]: "oldId",
-      [YUBICO_SECRET]: "oldSecret"
-    };
-    fixture.componentRef.setInput("formData", initialData);
-    fixture.detectChanges();
-
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "newId";
-    component.updateFormData(YUBICO_ID, newValue);
-
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({
-      ...initialData,
-      [YUBICO_ID]: newValue
-    });
-  });
-
-  it("should display current formData values", () => {
-    const testData = {
+  it("should display the values of the form", async () => {
+    await create({
       [YUBICO_ID]: "12345",
       [YUBICO_SECRET]: "apiKeySecret",
       [YUBICO_URL]: "https://api.yubico.com/wsapi/2.0/verify"
-    };
-    fixture.componentRef.setInput("formData", testData);
-    fixture.detectChanges();
+    });
 
-    expect(component.formData()[YUBICO_ID]).toEqual("12345");
-    expect(component.formData()[YUBICO_SECRET]).toEqual("apiKeySecret");
-    expect(component.formData()[YUBICO_URL]).toEqual("https://api.yubico.com/wsapi/2.0/verify");
+    expect(input("The client ID").value).toBe("12345");
+    expect(input("API Key").value).toBe("apiKeySecret");
+    expect(input("https://api.yubico.com/wsapi/2.0/verify").value).toBe("https://api.yubico.com/wsapi/2.0/verify");
   });
 
-  it("should handle empty field values", () => {
-    jest.spyOn(component.formDataChange, "emit");
+  it("writes the typed values to the form and keeps the other entries", async () => {
+    await create({ [YUBICO_SECRET]: "oldSecret" });
 
-    component.updateFormData(YUBICO_ID, "");
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [YUBICO_ID]: "" });
+    await type("The client ID", "newId");
+    await type("https://api.yubico.com/wsapi/2.0/verify", "https://yubico.example/verify");
 
-    component.updateFormData(YUBICO_SECRET, "");
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [YUBICO_SECRET]: "" });
+    expect(configForm.model().values[YUBICO_ID]).toBe("newId");
+    expect(configForm.model().values[YUBICO_URL]).toBe("https://yubico.example/verify");
+    expect(configForm.model().values[YUBICO_SECRET]).toBe("oldSecret");
+    expect(configForm.form.values[YUBICO_ID]().dirty()).toBe(true);
   });
 
-  it("should handle expanded input", () => {
+  describe("required entries", () => {
+    it("shows no error while the panel is empty", async () => {
+      await create();
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+
+    it("shows an error for each missing credential once one is filled and the form is touched", async () => {
+      await create({ [YUBICO_ID]: "12345" });
+      expect(errors()).toEqual([]);
+
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual(["API Key is required"]);
+      expect(configForm.form().valid()).toBe(false);
+    });
+
+    it("removes the error once the credentials are filled", async () => {
+      await create({ [YUBICO_ID]: "12345" });
+      await touchAll(configForm.form);
+      await flush();
+
+      await type("API Key", "secret");
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+
+    it("does not require the URL, the backend defaults it to YubiCloud", async () => {
+      await create({ [YUBICO_ID]: "12345", [YUBICO_SECRET]: "secret" });
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+      expect(fixture.nativeElement.querySelector(".panel-incomplete")).toBeNull();
+    });
+
+    it("does not require the credentials when only the URL is filled", async () => {
+      await create({ [YUBICO_URL]: "https://api.yubico.com/wsapi/2.0/verify" });
+
+      expect(configForm.form().valid()).toBe(true);
+    });
+  });
+
+  describe("incomplete indicator", () => {
+    const indicator = () => fixture.nativeElement.querySelector(".panel-incomplete") as HTMLElement | null;
+
+    it("appears in the header while a credential is missing and disappears once it is filled", async () => {
+      await create({ [YUBICO_ID]: "12345" });
+      expect(indicator()?.textContent).toContain("Incomplete");
+
+      await type("API Key", "secret");
+
+      expect(indicator()).toBeNull();
+    });
+
+    it("opens the panel that is incomplete and keeps it collapsible", async () => {
+      await create({ [YUBICO_ID]: "12345" });
+      const panel = fixture.nativeElement.querySelector("mat-expansion-panel") as HTMLElement;
+      expect(panel.classList).toContain("mat-expanded");
+
+      (fixture.nativeElement.querySelector("mat-expansion-panel-header") as HTMLElement).click();
+      await type("API Key", "secret");
+
+      expect(panel.classList).not.toContain("mat-expanded");
+    });
+  });
+
+  it("should handle expanded input", async () => {
+    await create();
     fixture.componentRef.setInput("expanded", true);
     fixture.detectChanges();
     expect(component.expanded()).toBe(true);

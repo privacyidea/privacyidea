@@ -7,6 +7,10 @@
     margin-bottom: 20px;
   }
 
+  .save-blocked-hint {
+    color: var(--mat-sys-error);
+  }
+
   .actions-container {
     margin-top: 20px;
     display: flex;

@@ -28,6 +28,14 @@
       >Token Type Configuration</h3
     >
     <div class="flex-row ali-center gap-8">
+      @if (!configForm().valid()) {
+        <span
+          class="save-blocked-hint"
+          role="status"
+          i18n="@@tokenTypeConfig.saveBlockedByIncomplete"
+          >Save is disabled: complete the panels marked Incomplete.</span
+        >
+      }
       <button
         (click)="toggleAllPanels()"
         [attr.aria-label]="allPanelsOpen() ? 'Close all' : 'Open all'"
@@ -38,7 +46,7 @@
       </button>
       <button
         (click)="save()"
-        [disabled]="!authService.actionAllowed('configwrite') || !hasChanges() || hasEmptyQuestions"
+        [disabled]="!authService.actionAllowed('configwrite') || !hasChanges() || !configForm().valid()"
         class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon>save</mat-icon>
@@ -48,61 +56,47 @@
   </div>
   <mat-accordion multi="true">
     <app-hotp-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [hashLibs]="hashLibs()"></app-hotp-config>
     <app-totp-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [hashLibs]="hashLibs()"
       [totpSteps]="totpSteps()"></app-totp-config>
-    <app-u2f-config [formData]="formData()"></app-u2f-config>
-    <app-webauthn-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"></app-webauthn-config>
+    <app-u2f-config [config]="configForm"></app-u2f-config>
+    <app-webauthn-config [config]="configForm"></app-webauthn-config>
     <app-radius-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [radiusServers]="systemService.radiusServers()"
       [radiusServersListable]="systemService.canListRadiusServers()"
       [expanded]="expandedPanel === 'radius'"></app-radius-config>
-    <app-remote-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"></app-remote-config>
+    <app-remote-config [config]="configForm"></app-remote-config>
     <app-sms-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [smsGateways]="smsGatewayNames()"
       [smsGatewaysListable]="smsGatewayService.canListSmsGateways()"
       [expanded]="expandedPanel === 'sms'"></app-sms-config>
-    <app-tiqr-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"></app-tiqr-config>
+    <app-tiqr-config [config]="configForm"></app-tiqr-config>
     <app-email-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [smtpServers]="smtpServerIdentifiers()"
       [smtpServersListable]="smtpService.canListSmtpServers()"
       [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
-      (formDataChange)="onFormDataChange($event)"
       (addQuestionRequest)="addQuestion()"
       (deleteRequest)="deleteQuestion($event)"
-      [formData]="formData()"
-      [questionKeys]="questionKeys"
+      [config]="configForm"
+      [questionKeys]="questionKeys()"
       [expanded]="expandedPanel === 'questionnaire'"></app-questionnaire-config>
     <app-yubico-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [expanded]="expandedPanel === 'yubico'"></app-yubico-config>
     <app-yubikey-config
       (deleteRequest)="deleteSystemEntry($event)"
       (yubikeyCreateNewKey)="yubikeyAddNewKey($event)"
-      [formData]="formData()"
-      [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>
+      [config]="configForm"
+      [yubikeyApiIds]="yubikeyApiIds()"></app-yubikey-config>
     <app-daypassword-config
-      (formDataChange)="onFormDataChange($event)"
-      [formData]="formData()"
+      [config]="configForm"
       [hashLibs]="hashLibs()"></app-daypassword-config>
   </mat-accordion>
 </div>

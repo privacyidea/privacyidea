@@ -54,7 +54,7 @@
               <mat-divider class="margin-top-4" />
             </td>
             <td>
-              {{ formData()[key] }}
+              {{ config().values[key]().value() }}
               <mat-divider class="margin-top-4" />
             </td>
             <td>
@@ -74,18 +74,14 @@
         class="input-width-m">
         <mat-label i18n="@@common.clientId">Client ID</mat-label>
         <input
-          #apiIdInput
-          (input)="newYubikeyApiId.set($any($event.target).value)"
-          [value]="newYubikeyApiId()"
+          [formField]="newKeyForm.apiId"
           matInput
-          pattern="^[a-zA-Z0-9._-]*$"
           i18n-placeholder="@@common.clientId"
-          placeholder="Client ID"
-          required />
-        @if (apiIdInput.validity.valueMissing) {
+          placeholder="Client ID" />
+        @if (hasError(newKeyForm.apiId, ERR.required)) {
           <mat-error i18n="@@tokenTypeConfig.clientIdRequired">Client ID is <strong>required</strong></mat-error>
         }
-        @if (apiIdInput.validity.patternMismatch) {
+        @if (hasError(newKeyForm.apiId, ERR.pattern)) {
           <mat-error i18n="@@tokenTypeConfig.invalidCharacters"
             >Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed.</mat-error
           >
@@ -97,17 +93,14 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.apiKey">API Key</mat-label>
         <input
-          (input)="newYubikeyApiKey.set($any($event.target).value)"
-          [value]="newYubikeyApiKey()"
-          [disabled]="newYubikeyGenKey()"
+          [formField]="newKeyForm.apiKey"
           matInput
           i18n-placeholder="@@tokenTypeConfig.apiKey"
           placeholder="API Key" />
       </mat-form-field>
 
       <mat-checkbox
-        (change)="newYubikeyGenKey.set($event.checked)"
-        [checked]="newYubikeyGenKey()"
+        [formField]="newKeyForm.generateKey"
         class="genkey-spacing"
         i18n="@@tokenTypeConfig.generateApiKey"
         >Generate API Key</mat-checkbox
@@ -116,6 +109,7 @@
 
     <button
       (click)="createNewKey()"
+      [disabled]="!newKeyForm().valid()"
       class="action-button-secondary button-width-m margin-top-16"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
