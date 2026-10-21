@@ -109,18 +109,9 @@ Each policy can contain the following attributes:
   ``*, -policywrite`` allows every admin action but writing policies. Another
   policy can still allow the excluded action.
 
-  Each action may appear only once in a policy; saving a policy that contains
-  an action twice, like ``policywrite=hotp, policywrite``, fails. An action and
-  its exclusion, like ``policywrite`` and ``-policywrite``, are different
-  actions.
-
-  A boolean action saved with a value is only enabled by an empty value or by
-  ``true``, ``True``, ``TRUE`` or ``1``.
-  The value ``false`` (in any case) or ``0``, like ``policywrite=false``,
-  disables it, so it is stored as the excluded action ``-policywrite``.
-  Any other value, like ``triggerchallenge=hotp``, is rejected.
-  Importing a policy removes every such value instead, so the boolean action
-  stays enabled, as it was in older versions that stored these values.
+  A boolean action saved with the value ``false`` (in any case) or ``0``, like
+  ``policywrite=false``, is disabled: it is stored as the excluded action
+  ``-policywrite``. This also applies to importing a policy.
 
 .. versionadded:: 2.0
 
