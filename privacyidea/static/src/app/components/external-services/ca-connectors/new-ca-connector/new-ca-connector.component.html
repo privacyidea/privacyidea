@@ -323,7 +323,7 @@
               matInput
               placeholder="1234"
               type="number" />
-            @if (hasError(caConnectorForm.port, ERR.required)) {
+            @if (hasError(caConnectorForm.port, ERR.required) && !hasError(caConnectorForm.port, ERR.parse)) {
               <mat-error i18n="@@caConnector.portRequired">Port is <strong>required</strong></mat-error>
             }
             @if (hasError(caConnectorForm.port, ERR.parse)) {

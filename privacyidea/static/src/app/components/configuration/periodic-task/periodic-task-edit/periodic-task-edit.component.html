@@ -215,7 +215,7 @@
         type="number"
         [formField]="editTaskForm.ordering" />
       <mat-hint i18n="@@periodicTask.tasksLowerOrdering">Tasks with lower ordering number are executed first.</mat-hint>
-      @if (hasError(editTaskForm.ordering, ERR.required)) {
+      @if (hasError(editTaskForm.ordering, ERR.required) && !hasError(editTaskForm.ordering, ERR.parse)) {
         <mat-error i18n="@@periodicTask.orderingRequired">Ordering is <strong>required</strong>.</mat-error>
       }
       @if (hasError(editTaskForm.ordering, ERR.parse)) {

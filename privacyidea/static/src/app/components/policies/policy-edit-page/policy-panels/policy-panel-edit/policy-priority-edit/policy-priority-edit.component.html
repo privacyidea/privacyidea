@@ -24,7 +24,7 @@
       matInput
       type="number"
       [formField]="priorityField" />
-    @if (hasError(priorityField, ERR.required)) {
+    @if (hasError(priorityField, ERR.required) && !hasError(priorityField, ERR.parse)) {
       <mat-error i18n="@@policy.priorityRequired">Priority is <strong>required</strong>.</mat-error>
     }
     @if (hasError(priorityField, ERR.parse)) {

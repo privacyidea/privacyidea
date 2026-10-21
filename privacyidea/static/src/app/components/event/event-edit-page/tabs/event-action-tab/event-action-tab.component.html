@@ -82,7 +82,7 @@
                 }
               }
             }
-            @if (hasError(optionsForm[optionName], ERR.required)) {
+            @if (hasError(optionsForm[optionName], ERR.required) && !hasError(optionsForm[optionName], ERR.parse)) {
               <mat-error i18n="@@event.isRequired">{{ optionName }} is <strong>required</strong>.</mat-error>
             }
             @if (hasError(optionsForm[optionName], ERR.parse)) {

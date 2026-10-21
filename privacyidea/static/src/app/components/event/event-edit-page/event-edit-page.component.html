@@ -129,7 +129,7 @@
           <mat-hint i18n="@@event.eventHandlersLower"
             >Event handlers with lower ordering number are executed first.</mat-hint
           >
-          @if (hasError(editForm.ordering, ERR.required)) {
+          @if (hasError(editForm.ordering, ERR.required) && !hasError(editForm.ordering, ERR.parse)) {
             <mat-error i18n="@@event.orderingRequired">Ordering is <strong>required</strong>.</mat-error>
           }
           @if (hasError(editForm.ordering, ERR.parse)) {
