@@ -63,7 +63,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { normalizeDateTimeString } from "@utils/date-format.utils";
 import { deepCopy } from "@utils/deep-copy.utils";
-import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { ERR, markRequired, requiredNonBlank, requiredNonEmptyArray } from "@utils/form-rules.utils";
 import { hasError, touchAll } from "@utils/form-state.utils";
 import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
@@ -178,11 +178,12 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
     // Tracked event types are required and have no default: a policy that counts nothing would never trip, so the
     // backend rejects an empty list too.
-    validate(p.counter_types_to_track, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
+    requiredNonEmptyArray(p.counter_types_to_track);
 
     // The count mode must be one the selected target supports, matching the backend's _COUNT_MODES_BY_TARGET check;
     // switching an existing policy's target can leave a stale, now-incompatible mode behind, surfaced as an error
     // rather than silently rewritten.
+    markRequired(p.count_mode);
     validate(p.count_mode, (ctx) => {
       if (!ctx.value()) {
         return [{ kind: ERR.required }];
@@ -368,7 +369,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       [ERR.maxLength]: $localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`,
       [ERR.nameTaken]: $localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`
     });
-    const timeWindowMessage = $localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`;
+    const timeWindowMessage = $localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be a whole number of at least 1 second.`;
     collect(f.time_window_value, {
       [ERR.required]: timeWindowMessage,
       [CA_ERR.notInteger]: timeWindowMessage,

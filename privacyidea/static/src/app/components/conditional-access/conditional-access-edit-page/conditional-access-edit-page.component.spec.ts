@@ -555,7 +555,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should name a time window below one second", () => {
     helpers.setTimeWindow("0");
-    expect(component.saveBlockers()).toEqual(["Time window must be at least 1 second."]);
+    expect(component.saveBlockers()).toEqual(["Time window must be a whole number of at least 1 second."]);
   });
 
   it("should name a priority already held by another policy", () => {
@@ -1226,7 +1226,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       setStages(component, [{ failure_threshold: 5, actions: [] }]);
       expect(component.saveBlockers()).toEqual([
         "Name is required.",
-        "Time window must be at least 1 second.",
+        "Time window must be a whole number of at least 1 second.",
         "Priority is required and must be a whole number of at least 1.",
         "Select at least one tracked event type."
       ]);
@@ -1239,7 +1239,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
         );
       helpers.setTimeWindow("0");
       fixture.detectChanges();
-      expect(listed()).toEqual(["Time window must be at least 1 second."]);
+      expect(listed()).toEqual(["Time window must be a whole number of at least 1 second."]);
 
       helpers.setTimeWindow("5");
       fixture.detectChanges();

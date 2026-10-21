@@ -411,6 +411,8 @@ $button-low-contrast-variant: linear-gradient(
 // }
 
 .scroll-to-top-fab {
+  // Above the active Material tab body (z-index 1) that a page with tabs holds, so the button is not covered by it.
+  z-index: 2;
   display: flex;
   justify-content: center;
   align-items: center;

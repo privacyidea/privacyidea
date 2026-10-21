@@ -390,9 +390,12 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
     min-width: 0;
   }
 
-  .mat-button-toggle-label-content {
+  // The label keeps the 4px side padding of the buttons these toggles replace (Material's 12px would clip a long
+  // option such as privacyidea.lib.utils.emailvalidation in the policy action column).
+  .mat-button-toggle .mat-button-toggle-label-content {
     display: block;
     overflow: hidden;
+    padding-inline: 4px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

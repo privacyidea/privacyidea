@@ -22,7 +22,9 @@ import {
   applyEach,
   applyWhenValue,
   FieldTree,
+  metadata,
   pattern,
+  REQUIRED,
   SchemaFn,
   SchemaPathTree,
   validate
@@ -216,6 +218,7 @@ export const tokenTypeConfigSchema: SchemaFn<TokenTypeConfigModel> = (path) => {
   requireWhenPanelFilled(path.values, TIQR_KEYS, [TIQR_REG_SERVER, TIQR_LOGO_URL]);
   pattern(path.values[QUESTION_NUMBER_OF_ANSWERS], WHOLE_NUMBER_PATTERN);
   applyEach(path.values, (value) => {
+    metadata(value, REQUIRED, (ctx) => isQuestionKey(ctx.key()));
     validate(value, (ctx) => (isQuestionKey(ctx.key()) && !isFilled(ctx.value()) ? [{ kind: ERR.required }] : []));
   });
 };

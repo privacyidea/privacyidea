@@ -77,7 +77,7 @@ import {
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
-import { ERR, mustEqual } from "@utils/form-rules.utils";
+import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
 import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { lastValueFrom, Observable } from "rxjs";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
@@ -227,6 +227,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   protected readonly ERR = ERR;
 
   descriptionForm = form(this.description, (f) => {
+    markRequired(f, () => this.descriptionRequired());
     validate(f, (ctx) => {
       const v = ctx.value();
       const errors: ValidationError[] = [];

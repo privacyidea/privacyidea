@@ -7,8 +7,11 @@
     margin-bottom: 20px;
   }
 
+  // The hint sits under the title row and adds nothing to the intrinsic width, so showing it does not widen the card.
   .save-blocked-hint {
     color: var(--mat-sys-error);
+    contain: inline-size;
+    margin: 0 8px;
   }
 
   .actions-container {

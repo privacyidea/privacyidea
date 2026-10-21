@@ -92,6 +92,11 @@
 
 .new-realm-footer-row {
   background-color: rgba(0, 0, 0, 0.02);
+
+  // The name field keeps its place when its error message adds a line below it.
+  td.mat-column-name {
+    vertical-align: top;
+  }
 }
 
 .node-resolvers-groups {

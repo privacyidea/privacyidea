@@ -336,7 +336,9 @@
         </div>
 
         <div class="flex-column">
-          <mat-form-field class="input-width-s">
+          <mat-form-field
+            class="input-width-s"
+            subscriptSizing="dynamic">
             <mat-label i18n="@@common.timeout">Timeout</mat-label>
             <input
               [formField]="httpForm.timeout"
@@ -350,7 +352,7 @@
             }
           </mat-form-field>
           <span
-            class="hint margin-top-neg-16"
+            class="hint margin-top-4"
             i18n="@@resolver.timeSecondsPrivacyidea"
             >Time in seconds privacyIDEA tries <br />
             to reach the user store server.</span

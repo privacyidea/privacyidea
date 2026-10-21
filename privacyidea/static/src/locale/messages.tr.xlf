@@ -20743,8 +20743,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindowMustLeast" datatype="html">
-        <source>Time window must be at least 1 second.</source>
-        <target state="new">Time window must be at least 1 second.</target>
+        <source>Time window must be a whole number of at least 1 second.</source>
+        <target state="new">Time window must be a whole number of at least 1 second.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
           <context context-type="linenumber">371</context>

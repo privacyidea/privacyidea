@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { SchemaPath, pattern, required, validate } from "@angular/forms/signals";
+import { REQUIRED, SchemaPath, metadata, pattern, required, validate } from "@angular/forms/signals";
 import { reservedNames } from "./reserved-names.utils";
 
 export { reservedNames } from "./reserved-names.utils";
@@ -96,7 +96,17 @@ export function requiredNonBlank(path: SchemaPath<string>): void {
  * cover multi-select values or lists that must contain at least one entry.
  */
 export function requiredNonEmptyArray<T>(path: SchemaPath<T[]>): void {
+  markRequired(path);
   validate(path, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
+}
+
+/**
+ * Marks a field as required for its form field (the asterisk on the label) without adding a validator. Use it next to
+ * a `validate` rule that reports the `required` error itself, which the built-in `required` cannot express, for
+ * example a rule that depends on other fields. `when` limits the mark to the cases in which the rule applies.
+ */
+export function markRequired<T>(path: SchemaPath<T>, when?: () => boolean): void {
+  metadata(path, REQUIRED, () => (when ? when() : true));
 }
 
 /**

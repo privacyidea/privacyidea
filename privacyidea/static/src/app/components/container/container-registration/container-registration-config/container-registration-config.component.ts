@@ -23,7 +23,7 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { ERR, mustEqual } from "@utils/form-rules.utils";
+import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 
 /** The passphrase settings of a container registration. */
@@ -70,6 +70,7 @@ export function registrationRules(
     path,
     () => active() && !value().store,
     (p) => {
+      markRequired(p.prompt, () => !!(value().response || value().repeat));
       validate(p.prompt, () =>
         (value().response || value().repeat) && !value().prompt ? [{ kind: ERR.required }] : []
       );

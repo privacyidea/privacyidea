@@ -31,7 +31,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
-import { ERR, mustEqual } from "@utils/form-rules.utils";
+import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
 import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 
 export interface SelectedUserAssignResult {
@@ -80,6 +80,7 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
   selectedUser = signal<UserData | null>(null);
   readonly form = form(this.model, (f) => {
     required(f.realm);
+    markRequired(f.userText);
     validate(f.userText, () => (this.selectedUser() ? [] : [{ kind: ERR.required }]));
     // The PIN fields only exist when setting a PIN is allowed, so only then can they mismatch.
     applyWhen(

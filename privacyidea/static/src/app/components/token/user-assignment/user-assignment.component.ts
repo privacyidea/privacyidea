@@ -26,7 +26,7 @@ import { MatSelect } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { ERR } from "@utils/form-rules.utils";
+import { ERR, markRequired } from "@utils/form-rules.utils";
 import { clearField, hasError } from "@utils/form-state.utils";
 
 @Component({
@@ -70,6 +70,7 @@ export class UserAssignmentComponent {
   });
   readonly userFilterForm = form(this.userFilter, (f) => {
     disabled(f, () => this.userInputDisabled());
+    markRequired(f, () => this.required());
     validate(f, () => (this.required() && !this.userService.selectedUser() ? [{ kind: ERR.required }] : []));
   });
   readonly onlyAddToRealmForm = form(this.onlyAddToRealm, (f) => {

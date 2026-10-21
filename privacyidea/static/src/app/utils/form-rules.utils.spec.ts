@@ -25,6 +25,7 @@ import {
   IDENTIFIER_PATTERN,
   RESOLVER_RESERVED_NAMES,
   identifierName,
+  markRequired,
   mustEqual,
   requiredNonBlank,
   requiredNonEmptyArray,
@@ -134,6 +135,32 @@ describe("form-rules.utils", () => {
 
     it("accepts a non-empty array", () => {
       expect(listForm(["a"])().valid()).toBe(true);
+    });
+
+    it("marks the field as required without a second error", () => {
+      const list = listForm([]);
+      expect(list.items().required()).toBe(true);
+      expect(kinds(list.items())).toEqual([ERR.required]);
+    });
+  });
+
+  describe("markRequired", () => {
+    function textForm(text: string, when?: () => boolean) {
+      return TestBed.runInInjectionContext(() => form(signal({ text }), (f) => markRequired(f.text, when)));
+    }
+
+    it("marks the field as required without adding an error", () => {
+      const field = textForm("");
+      expect(field.text().required()).toBe(true);
+      expect(field.text().errors()).toEqual([]);
+    });
+
+    it("follows the when condition", () => {
+      const applies = signal(false);
+      const field = textForm("", () => applies());
+      expect(field.text().required()).toBe(false);
+      applies.set(true);
+      expect(field.text().required()).toBe(true);
     });
   });
 
