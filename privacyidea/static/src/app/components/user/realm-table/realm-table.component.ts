@@ -34,6 +34,7 @@ import {
   viewChild,
   WritableSignal
 } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
@@ -92,6 +93,8 @@ import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 interface ResolverWithPriority {
   name: string;
@@ -99,6 +102,14 @@ interface ResolverWithPriority {
 }
 
 type NodeResolversMap = Record<string, ResolverWithPriority[]>;
+
+/** The create and update payload of one node group: a priority is sent only when it holds a number. */
+function toResolverPayload(resolvers: ResolverWithPriority[]): { name: string; priority?: number }[] {
+  return resolvers.map((r) => {
+    const num = Number(r.priority);
+    return r.priority === null || Number.isNaN(num) ? { name: r.name } : { name: r.name, priority: num };
+  });
+}
 
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
@@ -124,6 +135,7 @@ const columnKeysMap = [
     RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,
+    FormField,
     MatButtonModule,
     MatCell,
     MatCellDef,
@@ -197,9 +209,9 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   newRealmName = signal<string>("");
   newRealmNodeResolvers = signal<NodeResolversMap>({});
   isCreatingRealm = signal<boolean>(false);
-  newRealmNameHasPatternError = computed(
-    () => this.newRealmName().length > 0 && !/^[a-zA-Z0-9._-]*$/.test(this.newRealmName())
-  );
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  readonly newRealmForm = form(this.newRealmName, (name) => identifierName(name));
 
   // Edit Form State
   editingRealmName = signal<string | null>(null);
@@ -357,13 +369,12 @@ export class RealmTableComponent implements OnDestroy, OnInit {
 
   // --- Create Handlers ---
   canSubmitNewRealm(): boolean {
-    return (
-      this.newRealmName().trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.newRealmName()) && !this.isCreatingRealm()
-    );
+    return this.newRealmForm().valid() && !this.isCreatingRealm();
   }
 
   resetCreateForm(): void {
     this.newRealmName.set("");
+    this.newRealmForm().reset();
     this.newRealmNodeResolvers.set({});
   }
 
@@ -384,11 +395,6 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     });
     current[nodeId] = updated;
     this.newRealmNodeResolvers.set(current);
-  }
-
-  setNewRealmName($event: Event) {
-    const input = $event.target as HTMLInputElement;
-    this.newRealmName.set(input.value);
   }
 
   setNewRealmResolverPriority(args: { nodeId: string; resolverName: string; priority?: string }): void {
@@ -420,7 +426,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     if (!this.canSubmitNewRealm()) return false;
 
     this.isCreatingRealm.set(true);
-    const realmName = this.newRealmName().trim();
+    const realmName = this.newRealmName();
     const nodeResolvers = this.newRealmNodeResolvers();
 
     const hasGlobalGroup = Object.prototype.hasOwnProperty.call(nodeResolvers, NO_NODE_ID);
@@ -431,20 +437,14 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const requests = [];
 
     if (hasGlobalGroup) {
-      const payload = (nodeResolvers[NO_NODE_ID] ?? []).map((r) => {
-        const num = Number(r.priority);
-        return r.priority === null || Number.isNaN(num) ? { name: r.name } : { name: r.name, priority: num };
-      });
+      const payload = toResolverPayload(nodeResolvers[NO_NODE_ID] ?? []);
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
     } else if (nodeEntries.length === 0) {
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, []));
     }
 
     nodeEntries.forEach(([nodeId, resolvers]) => {
-      const payload = (resolvers ?? []).map((r) => {
-        const num = Number(r.priority);
-        return r.priority === null || Number.isNaN(num) ? { name: r.name } : { name: r.name, priority: num };
-      });
+      const payload = toResolverPayload(resolvers ?? []);
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
 
@@ -554,18 +554,12 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     const requests = [];
 
     if (hasGlobalGroup) {
-      const payload = (current[NO_NODE_ID] ?? []).map((res) => {
-        const num = Number(res.priority);
-        return res.priority === null || Number.isNaN(num) ? { name: res.name } : { name: res.name, priority: num };
-      });
+      const payload = toResolverPayload(current[NO_NODE_ID] ?? []);
       requests.push(this.realmService.createRealm(realmName, NO_NODE_ID, payload));
     }
 
     nodeEntries.forEach(([nodeId, list]) => {
-      const payload = (list ?? []).map((res) => {
-        const num = Number(res.priority);
-        return res.priority === null || Number.isNaN(num) ? { name: res.name } : { name: res.name, priority: num };
-      });
+      const payload = toResolverPayload(list ?? []);
       requests.push(this.realmService.createRealm(realmName, nodeId, payload));
     });
 

@@ -16,13 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentRef } from "@angular/core";
+import { ComponentRef, DebugElement } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockPiResponse } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { touchAll } from "@utils/form-state.utils";
 import { of } from "rxjs";
+import { HttpConfigComponent } from "./http-config/http-config.component";
 import { HttpResolverComponent } from "./http-resolver.component";
 
 describe("HttpResolverComponent", () => {
@@ -256,7 +259,10 @@ describe("HttpResolverComponent", () => {
     it("posts the user groups of the groups form", () => {
       componentRef.setInput("data", { base_url: "https://userstore.example" });
       fixture.detectChanges();
-      component.userGroupsModel.update((groups) => ({ ...groups, active: true, endpoint: "/users/{userid}/groups" }));
+      component.model.update((model) => ({
+        ...model,
+        config_get_user_groups: { ...model.config_get_user_groups, active: true, endpoint: "/users/{userid}/groups" }
+      }));
       fixture.detectChanges();
       expect(component.getValue()["config_get_user_groups"]).toEqual(
         expect.objectContaining({ active: true, endpoint: "/users/{userid}/groups" })
@@ -268,7 +274,7 @@ describe("HttpResolverComponent", () => {
       fixture.detectChanges();
       expect(component["basicSettings"]()).toBe(true);
 
-      specialErrorHandlingCheckbox().triggerEventHandler("change", { checked: true });
+      specialErrorHandlingCheckbox().query(By.css("input")).nativeElement.click();
       fixture.detectChanges();
 
       expect(component.model().hasSpecialErrorHandler).toBe(true);
@@ -295,6 +301,313 @@ describe("HttpResolverComponent", () => {
       component.model.update((model) => ({ ...model, responseMapping: '{"username": "{username}"}' }));
       fixture.detectChanges();
       expect(component.model().responseMapping).toBe('{"username": "{username}"}');
+    });
+  });
+  describe("rules", () => {
+    const kinds = (field: { errors(): { kind: string }[] }) => field.errors().map((e) => e.kind);
+
+    const fillBasicMode = () =>
+      component.model.update((m) => ({
+        ...m,
+        endpoint: "https://userstore.example/users/{userid}",
+        requestMapping: '{"id": "{userid}"}',
+        headers: '{"Content-Type": "application/json"}',
+        responseMapping: '{"username": "{username}"}'
+      }));
+
+    const useAdvancedMode = () => {
+      component["basicSettings"].set(false);
+      fixture.detectChanges();
+    };
+
+    const errorTexts = () =>
+      Array.from<Element>(fixture.nativeElement.querySelectorAll("mat-error")).map((e) => e.textContent);
+
+    describe("basic mode", () => {
+      it("requires endpoint, request mapping, headers and response mapping", () => {
+        expect(component.isValid()).toBe(false);
+        expect(kinds(component.httpForm.endpoint())).toEqual(["required"]);
+        expect(kinds(component.httpForm.requestMapping())).toEqual(["required"]);
+        expect(kinds(component.httpForm.headers())).toEqual(["required"]);
+        expect(kinds(component.httpForm.responseMapping())).toEqual(["required"]);
+        expect(component.httpForm.method().errors()).toEqual([]);
+
+        fillBasicMode();
+        expect(component.isValid()).toBe(true);
+      });
+
+      it("rejects a value made of whitespace", () => {
+        fillBasicMode();
+        component.model.update((m) => ({ ...m, endpoint: "   " }));
+        expect(kinds(component.httpForm.endpoint())).toEqual(["required"]);
+        expect(component.isValid()).toBe(false);
+      });
+
+      it("requires the error response only with Special Error Handling", () => {
+        fillBasicMode();
+        expect(component.httpForm.errorResponse().errors()).toEqual([]);
+
+        component.model.update((m) => ({ ...m, hasSpecialErrorHandler: true }));
+        expect(kinds(component.httpForm.errorResponse())).toEqual(["required"]);
+        expect(component.isValid()).toBe(false);
+
+        component.model.update((m) => ({ ...m, errorResponse: '{"success": false}' }));
+        expect(component.isValid()).toBe(true);
+      });
+
+      it("does not apply the advanced rules", () => {
+        fillBasicMode();
+        component.model.update((m) => ({ ...m, base_url: "", timeout: null }));
+        expect(component.httpForm.base_url().errors()).toEqual([]);
+        expect(component.httpForm.timeout().errors()).toEqual([]);
+        expect(component.isValid()).toBe(true);
+      });
+
+      it("renders the required messages of the touched fields", async () => {
+        expect(errorTexts()).toEqual([]);
+
+        await touchAll(component.httpForm);
+        fixture.detectChanges();
+
+        const texts = errorTexts().join(" | ");
+        expect(texts).toContain("Endpoint is required.");
+        expect(texts).toContain("Request mapping is required.");
+        expect(texts).toContain("Headers are required.");
+        expect(texts).toContain("Response mapping is required.");
+        expect(texts).not.toContain("Response contains");
+      });
+
+      it("renders the required message of the error response", async () => {
+        component.model.update((m) => ({ ...m, hasSpecialErrorHandler: true }));
+        fixture.detectChanges();
+
+        await touchAll(component.httpForm);
+        fixture.detectChanges();
+
+        expect(errorTexts().join(" | ")).toContain("Response contains is required.");
+      });
+    });
+
+    describe("advanced mode", () => {
+      beforeEach(() => useAdvancedMode());
+
+      it("requires the base URL and a timeout and ignores the basic fields", () => {
+        expect(kinds(component.httpForm.base_url())).toEqual(["required"]);
+        expect(component.httpForm.endpoint().errors()).toEqual([]);
+        expect(component.httpForm.requestMapping().errors()).toEqual([]);
+        expect(component.isValid()).toBe(false);
+
+        component.model.update((m) => ({ ...m, base_url: "https://userstore.example" }));
+        expect(component.isValid()).toBe(true);
+      });
+
+      it("renders the required message of the base URL", async () => {
+        await touchAll(component.httpForm);
+        fixture.detectChanges();
+        expect(errorTexts().join(" | ")).toContain("Base URL is required.");
+      });
+
+      it("requires a timeout", async () => {
+        component.model.update((m) => ({ ...m, base_url: "https://userstore.example", timeout: null }));
+        expect(kinds(component.httpForm.timeout())).toEqual(["required"]);
+        expect(component.isValid()).toBe(false);
+
+        await touchAll(component.httpForm);
+        fixture.detectChanges();
+        expect(errorTexts().join(" | ")).toContain("Timeout is required.");
+      });
+
+      it("reports text the browser cannot parse as a number in the timeout", async () => {
+        component.model.update((m) => ({ ...m, base_url: "https://userstore.example" }));
+        const timeout = fixture.debugElement.query(By.css("input[type=number]")).nativeElement as HTMLInputElement;
+        jest.spyOn(timeout, "validity", "get").mockReturnValue({ badInput: true } as ValidityState);
+        timeout.value = "";
+        timeout.dispatchEvent(new Event("input"));
+        await touchAll(component.httpForm);
+        fixture.detectChanges();
+
+        expect(kinds(component.httpForm.timeout())).toContain("parse");
+        expect(component.isValid()).toBe(false);
+        expect(errorTexts().join(" | ")).toContain("Timeout must be a number.");
+      });
+
+      it("keeps a numeric timeout valid", () => {
+        component.model.update((m) => ({ ...m, base_url: "https://userstore.example", timeout: 30 }));
+        expect(component.httpForm.timeout().errors()).toEqual([]);
+        expect(component.getValue()["timeout"]).toBe(30);
+      });
+
+      it("does not require the Entra ID fields of another type", () => {
+        component.model.update((m) => ({ ...m, base_url: "https://userstore.example" }));
+        expect(component.httpForm.tenant().errors()).toEqual([]);
+        expect(component.httpForm.client_id().errors()).toEqual([]);
+        expect(component.httpForm.client_secret().errors()).toEqual([]);
+      });
+
+      it("disables the CA certificate unless the TLS certificate is verified", () => {
+        expect(component.httpForm.tls_ca_path().disabled()).toBe(false);
+
+        component.model.update((m) => ({ ...m, verify_tls: false }));
+        fixture.detectChanges();
+
+        expect(component.httpForm.tls_ca_path().disabled()).toBe(true);
+        const caInput = fixture.debugElement.query(By.css("input[placeholder='/etc/privacyidea/ldap-ca.crt']"));
+        expect(caInput.nativeElement.disabled).toBe(true);
+      });
+    });
+
+    describe("Entra ID", () => {
+      beforeEach(() => {
+        componentRef.setInput("type", "entraidresolver");
+        useAdvancedMode();
+        component.model.update((m) => ({ ...m, base_url: "https://graph.microsoft.com/v1.0" }));
+      });
+
+      it("requires tenant, client ID and the client secret", () => {
+        expect(kinds(component.httpForm.tenant())).toEqual(["required"]);
+        expect(kinds(component.httpForm.client_id())).toEqual(["required"]);
+        expect(kinds(component.httpForm.client_secret())).toEqual(["required"]);
+        expect(component.isValid()).toBe(false);
+
+        component.model.update((m) => ({ ...m, tenant: "tenant", client_id: "client", client_secret: "secret" }));
+        expect(component.isValid()).toBe(true);
+      });
+
+      it("does not require the client secret for a certificate", () => {
+        component.model.update((m) => ({
+          ...m,
+          tenant: "tenant",
+          client_id: "client",
+          client_credential_type: "certificate"
+        }));
+        expect(component.httpForm.client_secret().errors()).toEqual([]);
+        expect(component.isValid()).toBe(true);
+      });
+
+      it("renders the required messages", async () => {
+        await touchAll(component.httpForm);
+        fixture.detectChanges();
+
+        const texts = errorTexts().join(" | ");
+        expect(texts).toContain("Tenant ID is required.");
+        expect(texts).toContain("Client ID is required.");
+        expect(texts).toContain("Client secret is required.");
+      });
+
+      it("writes the certificate fields typed into the form", () => {
+        component.model.update((m) => ({ ...m, client_credential_type: "certificate" }));
+        fixture.detectChanges();
+
+        const type = (placeholder: string, value: string) => {
+          const input = fixture.debugElement.query(By.css(`input[placeholder='${placeholder}']`)).nativeElement;
+          input.value = value;
+          input.dispatchEvent(new Event("input"));
+        };
+        type("/etc/privacyidea/entra.key", "/key.pem");
+        type("e.g. 1234567890ABCDEF1234567890ABCDEF12345678", "ABCDEF");
+
+        expect(component.model().client_certificate).toEqual(
+          expect.objectContaining({ private_key_file: "/key.pem", certificate_fingerprint: "ABCDEF" })
+        );
+        expect(component.isDirty()).toBe(true);
+      });
+    });
+  });
+
+  describe("dirty state", () => {
+    const inputByPlaceholder = (root: DebugElement, placeholder: string): HTMLInputElement =>
+      root.query(By.css(`[placeholder='${placeholder}']`)).nativeElement;
+
+    beforeEach(() => {
+      componentRef.setInput("data", {
+        base_url: "https://userstore.example",
+        config_get_user_list: { method: "GET", endpoint: "/users" },
+        config_get_user_groups: { active: false, pi_user_groups_key: "groups", method: "GET", endpoint: "" }
+      });
+      fixture.detectChanges();
+    });
+
+    it("is not dirty after the data is loaded", () => {
+      expect(component.isDirty()).toBe(false);
+    });
+
+    it("is dirty after typing into a field of a request configuration", () => {
+      const configs = fixture.debugElement.queryAll(By.directive(HttpConfigComponent));
+      const endpoint = inputByPlaceholder(configs[2], "/users");
+      endpoint.value = "/people";
+      endpoint.dispatchEvent(new Event("input"));
+
+      expect(component.model().config_get_user_list.endpoint).toBe("/people");
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("is dirty after clearing the endpoint of a request configuration", () => {
+      const configs = fixture.debugElement.queryAll(By.directive(HttpConfigComponent));
+      configs[2].query(By.css("app-clear-button button")).nativeElement.click();
+
+      expect(component.model().config_get_user_list.endpoint).toBe("");
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("is dirty after switching on the user groups", () => {
+      fixture.debugElement.query(By.css("app-http-groups-attribute mat-slide-toggle button")).nativeElement.click();
+
+      expect(component.model().config_get_user_groups.active).toBe(true);
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("is dirty after editing a user store attribute of the mapping", () => {
+      const attribute = fixture.debugElement.query(By.css("input[placeholder='e.g. givenname']")).nativeElement;
+      attribute.value = "firstName";
+      attribute.dispatchEvent(new Event("input"));
+
+      expect(component.model().attribute_mapping).toEqual(expect.objectContaining({ userid: "firstName" }));
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("is dirty after removing a mapping row", () => {
+      component.removeMappingRow(0);
+
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("is dirty after clearing the base URL", () => {
+      fixture.debugElement.query(By.css("app-clearable-input app-clear-button button")).nativeElement.click();
+      fixture.detectChanges();
+
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("is dirty after toggling only a checkbox", () => {
+      fixture.debugElement
+        .queryAll(By.directive(MatCheckbox))
+        .find((checkbox) => checkbox.nativeElement.textContent.includes("Verify TLS"))!
+        .query(By.css("input"))
+        .nativeElement.click();
+      fixture.detectChanges();
+
+      expect(component.model().verify_tls).toBe(false);
+      expect(component.isDirty()).toBe(true);
+    });
+  });
+
+  describe("loading request configurations", () => {
+    it("merges the stored configurations into the model", () => {
+      componentRef.setInput("data", {
+        base_url: "https://userstore.example",
+        config_get_user_list: { method: "post", endpoint: "/users", headers: { "X-Key": "1" } },
+        config_get_user_groups: { active: true, method: "get", endpoint: "/groups" },
+        config_user_auth: "not an object" as unknown as undefined
+      });
+      fixture.detectChanges();
+
+      expect(component.model().config_get_user_list).toEqual(
+        expect.objectContaining({ method: "POST", endpoint: "/users", headers: '{"X-Key":"1"}' })
+      );
+      expect(component.model().config_get_user_groups).toEqual(
+        expect.objectContaining({ active: true, method: "GET", endpoint: "/groups", pi_user_groups_key: "groups" })
+      );
+      expect(component.model().config_user_auth.endpoint).toBe("");
     });
   });
 });
