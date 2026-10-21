@@ -689,7 +689,11 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     neither, e.g. of a malformed request, is left as it is. The staged authentication-log event is reclassified
     as ``POST_AUTHENTICATION_FAIL`` with the error message in its other info, unless it already records a failure:
     such an event, e.g. a wrong credential or a ``NOT_AUTHORIZED`` an authorization policy recorded itself, already
-    says why the request failed. A rejection by conditional access is never amendable and stays as it is.
+    says why the request failed. It keeps its type, and gets the error message only if the view answered the failure
+    itself (the audit entry records ``REJECT``) and the error came afterwards. A view that raised - an unknown user, a
+    revoked token - answers its failure with that very error, as ``/auth`` answers every failed login, so the message
+    would repeat what the event type already says. A rejection by conditional access is never amendable and stays as
+    it is.
 
     :param request: the request object
     :param response: the response object
@@ -699,15 +703,18 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     result = response.json.get("result") or {}
     if result.get("status") is not False:
         return
-    if ("audit_object" in g
-            and g.audit_object.audit_data.get("authentication") in (AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.CHALLENGE)):
+    audit_authentication = g.audit_object.audit_data.get("authentication") if "audit_object" in g else None
+    if audit_authentication in (AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.CHALLENGE):
         g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.REJECT})
     context = peek_ca_context()
     event = context.amendable if context is not None else None
-    if event is not None and outcome_of(event.event_type) != AuthEventOutcome.FAILURE:
-        message = (result.get("error") or {}).get("message")
-        context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL,
-                           other_info={**(event.other_info or {}), "error": message})
+    if event is None:
+        return
+    other_info = {**(event.other_info or {}), "error": (result.get("error") or {}).get("message")}
+    if outcome_of(event.event_type) != AuthEventOutcome.FAILURE:
+        context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL, other_info=other_info)
+    elif audit_authentication == AUTH_RESPONSE.REJECT and _shaped_rule(request) != "/auth":
+        context.reclassify(event.event_type, other_info=other_info)
 
 
 def mask_authentication_error_response(request, response):

@@ -1321,7 +1321,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
         assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
                                         reason=AuthEventReason.AUTHORIZATION_DENIED, policies=["authlog_deny"],
-                                        reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path)
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
 
 
     # --- An error response after the authentication (POST_AUTHENTICATION_FAIL) ---
@@ -1340,7 +1341,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
 
     def test_post_policy_error_after_a_failure_keeps_the_failure(self):
-        # The failed authentication already says why the request failed; the error that followed it does not.
+        # The failed authentication already says why the request failed, so it keeps its type; the error that
+        # followed it is recorded beside it, since the client received that error rather than the plain failure.
         _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
         try:
             res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}000000"})
@@ -1350,7 +1352,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.MFA_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user, serials={self.serial},
                                         endpoint=self.endpoint_path, reason=AuthEventReason.WRONG_OTP,
-                                        reasons={self.serial: AuthEventReason.WRONG_OTP})
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP},
+                                        other_info={"error": res.json["result"]["error"]["message"]})
         self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
 
     def test_post_policy_error_after_a_triggered_challenge_logs_post_authentication_fail(self):
