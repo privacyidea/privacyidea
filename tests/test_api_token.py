@@ -1538,7 +1538,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
-            self.assertTrue(result["value"], 2)
+            self.assertDictEqual({"count_success": 2, "failed": [], "unauthorized": []}, result["value"])
 
         # Check that it worked
         tokens = get_tokens_from_serial_or_user(None, user)
@@ -4715,7 +4715,7 @@ class API00TokenPerformance(MyApiTestCase):
                                                                 "otp2": "123454"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code, 404)
+            self.assertEqual(404, res.status_code)
             result = res.json.get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
