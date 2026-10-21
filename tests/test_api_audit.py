@@ -621,6 +621,18 @@ class APIAuditTestCase(MyApiTestCase):
             value = res.json.get("result").get("value")
             self.assertEqual(1, value.get("count"), value)
 
+    def test_07a_search_by_the_entry_number(self):
+        Audit.query.delete()
+        for action in ("action1", "action2", "action3"):
+            Audit(action=action, success=1).save()
+        number = Audit.query.filter_by(action="action1").first().id
+        with self.app.test_request_context('/audit/', method='GET',
+                                           query_string={"number": str(number), "action": "action*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertListEqual(["action1"], [entry["action"] for entry in res.json["result"]["value"]["auditdata"]])
+
     def test_08_an_audit_policy_is_read_with_its_wildcard_and_exclusions(self):
         self.setUp_user_realms()
         Audit.query.delete()

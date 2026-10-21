@@ -420,10 +420,22 @@ class Audit(AuditBase):
                         search_value = search_value.strip("*")
                         conditions.append(getattr(LogEntry, search_key) ==
                                           int(is_true(search_value)))
+                    elif search_key == "number":
+                        # The entry number is the integer column id. It is compared exactly, a leading '!'
+                        # negates the condition, and a value that is not a number matches no entry.
+                        negate = search_value.startswith("!")
+                        number = search_value[1:] if negate else search_value
+                        if not number.strip().isdecimal():
+                            conditions.append(false())
+                        elif negate:
+                            conditions.append(LogEntry.id != int(number))
+                        else:
+                            conditions.append(LogEntry.id == int(number))
                     else:
                         # All other keys are compared as strings. Only '*' is a wildcard; literal '%' and '_' are
                         # matched literally. A leading '!' negates the condition.
-                        raw_column = getattr(LogEntry, search_key)
+                        # The entries name the column loglevel "log_level".
+                        raw_column = getattr(LogEntry, "loglevel" if search_key == "log_level" else search_key)
                         column = raw_column
                         if search_key in ["date", "startdate"]:
                             # but we cast a column with a DateTime type to an

@@ -33,8 +33,12 @@ Searching the audit log
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The audit log can be filtered in the WebUI and via the ``GET /audit/`` API by
-any audit column (``user``, ``realm``, ``serial``, ``action``, ...). The
-``GET /audit/`` API matches filter values as follows:
+the columns of the audit entries (``number``, ``user``, ``realm``, ``serial``,
+``action``, ``log_level``, ...). The entry ``number`` is compared exactly.
+``sig_check`` and ``missing_line`` are computed when the entries are read and
+can not be filtered. A filter with a key that is not an audit column is
+ignored, so it does not restrict the result. The ``GET /audit/`` API matches
+filter values as follows:
 
 * ``*`` is the wildcard and matches any sequence of characters. For example,
   ``action=*/token/init`` matches every action ending in ``/token/init`` and

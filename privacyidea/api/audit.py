@@ -83,7 +83,9 @@ def search_audit():
     :query page_size: entries per page.
     :query sortname: column to sort by.
     :query sortorder: ``asc`` or ``desc``.
-    :query: any audit column name as a filter key.
+    :query: any audit column of the entries as a filter key, except
+        ``sig_check`` and ``missing_line``; ``number`` is compared exactly.
+        Unknown keys are ignored.
     :status 200: paginated audit dictionary in ``result.value`` with
         ``count``, ``current``, ``next``, ``prev``, ``auditdata``.
     """
@@ -129,8 +131,8 @@ def download_csv(csvfile=None):
     :param csvfile: filename to use for the download.
     :query timelimit: only export entries newer than this. Capped by the
         :ref:`policy_auditlog_age` policy.
-    :query: any audit column name as a filter key (same as for the search
-        endpoint).
+    :query: any audit column of the entries as a filter key, as for the
+        search endpoint.
     :status 200: ``text/csv`` body containing the audit entries.
     """
     audit = getAudit(current_app.config)
