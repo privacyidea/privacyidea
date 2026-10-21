@@ -157,16 +157,15 @@
           <mat-label i18n="@@common.name">Name</mat-label>
           <input
             matInput
-            [formField]="policyForm.name"
-            (blur)="nameTouched.set(true)" />
-          <mat-hint align="end">{{ editPolicy().name.length }} / 255</mat-hint>
-          @if (showNameError() && nameTooLong()) {
+            [formField]="policyForm.name" />
+          <mat-hint align="end">{{ policyForm.name().value().length }} / 255</mat-hint>
+          @if (hasError(policyForm.name, ERR.maxLength)) {
             <mat-error i18n="@@conditionalAccess.nameMustNotExceed">Name must not exceed 255 characters.</mat-error>
-          } @else if (showNameError() && nameConflict()) {
+          } @else if (hasError(policyForm.name, ERR.nameTaken)) {
             <mat-error i18n="@@conditionalAccess.nameAlreadyUsed"
               >A policy named "{{ nameConflict()?.name }}" already exists.</mat-error
             >
-          } @else if (showNameError()) {
+          } @else if (hasError(policyForm.name, ERR.required)) {
             <mat-error i18n="@@conditionalAccess.nameRequired">Name is required.</mat-error>
           }
         </mat-form-field>
@@ -178,9 +177,7 @@
           class="input-width-l"
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.target">Target</mat-label>
-          <mat-select
-            [value]="editPolicy().target"
-            (selectionChange)="onTargetChange($event.value)">
+          <mat-select [formField]="policyForm.target">
             @for (target of targetOptions(); track target) {
               <mat-option [value]="target">{{ targetLabel(target) }}</mat-option>
             }
@@ -195,16 +192,14 @@
           class="input-width-l"
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.countMode">Count Mode</mat-label>
-          <mat-select
-            [value]="editPolicy().count_mode"
-            (selectionChange)="onCountModeChange($event.value)">
+          <mat-select [formField]="policyForm.count_mode">
             @for (countMode of countModeOptions(); track countMode) {
               <mat-option [value]="countMode">{{ countModeLabel(countMode) }}</mat-option>
             }
           </mat-select>
-          @if (!editPolicy().count_mode) {
+          @if (hasError(policyForm.count_mode, ERR.required)) {
             <mat-error i18n="@@conditionalAccess.countModeRequired">Count Mode is required.</mat-error>
-          } @else if (!countModeValid()) {
+          } @else if (hasError(policyForm.count_mode, CA_ERR.countModeNotAllowed)) {
             <mat-error i18n="@@conditionalAccess.countModeNotAllowed"
               >This count mode is not allowed for the selected target.</mat-error
             >
@@ -217,9 +212,7 @@
 
         <div class="ca-reset-on-success">
           <mat-checkbox
-            [checked]="editPolicy().reset_on_success"
-            [disabled]="!resetOnSuccessApplies()"
-            (change)="onResetOnSuccessChange($event.checked)"
+            [formField]="policyForm.reset_on_success"
             i18n="@@conditionalAccess.resetCountSuccessfulLogin">
             Reset the count on a successful login
           </mat-checkbox>
@@ -237,10 +230,10 @@
           <input
             matInput
             type="number"
-            min="1"
-            [value]="timeWindowValue()"
-            (input)="onTimeWindowInput($any($event.target).value)" />
-          @if (!timeWindowValid()) {
+            [formField]="policyForm.time_window_value" />
+          @if (hasAnyError(policyForm.time_window_value, [ERR.parse, CA_ERR.notInteger])) {
+            <mat-error i18n="@@conditionalAccess.timeWindowMustWholeNumber">Must be a whole number.</mat-error>
+          } @else if (hasAnyError(policyForm.time_window_value, [ERR.required, ERR.min])) {
             <mat-error i18n="@@conditionalAccess.mustLeast">Must be at least 1.</mat-error>
           }
         </mat-form-field>
@@ -249,9 +242,7 @@
           appearance="fill"
           class="input-width-s">
           <mat-label i18n="@@common.unit">Unit</mat-label>
-          <mat-select
-            [value]="timeWindowUnit()"
-            (selectionChange)="onTimeWindowUnitChange($event.value)">
+          <mat-select [formField]="policyForm.time_window_unit">
             <mat-option
               value="seconds"
               i18n="@@conditionalAccess.seconds2">
@@ -276,16 +267,13 @@
           subscriptSizing="dynamic">
           <mat-label i18n="@@conditionalAccess.trackedEventTypes2">Tracked event types</mat-label>
           <mat-select
-            required
             multiple
-            [appErrorState]="showCounterTypesError()"
-            [value]="editPolicy().counter_types_to_track"
-            (selectionChange)="onCounterTypesChange($event.value)">
+            [formField]="policyForm.counter_types_to_track">
             @for (eventType of policyService.eventTypes(); track eventType) {
               <mat-option [value]="eventType">{{ eventType }}</mat-option>
             }
           </mat-select>
-          @if (showCounterTypesError()) {
+          @if (hasError(policyForm.counter_types_to_track, ERR.required)) {
             <mat-error i18n="@@conditionalAccess.selectLeastOneEvent"
               >Select at least one event type. A policy that counts nothing never trips.</mat-error
             >
@@ -300,22 +288,19 @@
           <input
             matInput
             type="number"
-            min="1"
             step="1"
-            [appErrorState]="showPriorityError()"
-            [value]="priorityInput()"
-            (input)="onPriorityInput($any($event.target).value)" />
+            [formField]="policyForm.priority" />
           <app-info-hint
             matSuffix
             [text]="priorityHelp"
             [ariaLabel]="priorityHelpAriaLabel" />
-          @if (priorityError() === "required") {
+          @if (hasError(policyForm.priority, ERR.required) && !hasError(policyForm.priority, ERR.parse)) {
             <mat-error i18n="@@conditionalAccess.priorityRequired">A priority is required.</mat-error>
-          } @else if (priorityError() === "not-an-integer") {
+          } @else if (hasAnyError(policyForm.priority, WHOLE_NUMBER_ERROR_KINDS)) {
             <mat-error i18n="@@conditionalAccess.priorityMustWholeNumber"
               >Priority must be a whole number of at least 1.</mat-error
             >
-          } @else if (!priorityUnique()) {
+          } @else if (hasError(policyForm.priority, CA_ERR.priorityTaken)) {
             <mat-error i18n="@@conditionalAccess.priorityAlreadyUsed">
               Priority {{ editPolicy().priority }} is already used by "{{ priorityConflict()?.name }}".
             </mat-error>
@@ -405,9 +390,8 @@
         </p>
       }
       <app-conditional-access-stages-list
-        [stages]="editPolicy().stages"
-        [target]="editPolicy().target"
-        (stagesChange)="onStagesChange($event)" />
+        [stages]="policyForm.stages"
+        [target]="policyModel().target" />
     </div>
   </div>
 }

@@ -18,9 +18,9 @@
  **/
 
 import { DatePipe } from "@angular/common";
-import { Component, computed, effect, inject, OnDestroy, signal } from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { form, FormField, required, validate } from "@angular/forms/signals";
+import { apply, applyEach, disabled, FieldTree, form, FormField, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -32,14 +32,23 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-  actionValueError,
+  applyActionRules,
+  CA_ERR,
+  ConditionalAccessPolicyFormModel,
+  MAX_POLICY_NAME_LENGTH,
+  requiredPositiveWholeNumber,
+  stageSchema,
+  toPolicyFormModel,
+  toPolicySaveParams,
+  WHOLE_NUMBER_ERROR_KINDS
+} from "@services/conditional-access/conditional-access-policy-form";
+import {
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   CountMode,
@@ -47,7 +56,6 @@ import {
   ConditionalAccessPolicy,
   ConditionalAccessPolicyCondition,
   ConditionalAccessPolicySaveParams,
-  ConditionalAccessPolicyStage,
   ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -55,7 +63,8 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { normalizeDateTimeString } from "@utils/date-format.utils";
 import { deepCopy } from "@utils/deep-copy.utils";
-import { DURATION_UNIT_FACTORS, DurationUnit, largestWholeDurationUnit } from "@utils/duration-unit.utils";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
 import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
 import {
@@ -63,11 +72,6 @@ import {
   ConditionalAccessDryRunOffDialogData,
   ConditionalAccessDryRunOffDialogResult
 } from "../conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
-
-// The actions that state a standing verdict instead of reacting to a failure count. They are the only
-// ones a stage may carry at threshold 0, where they then apply to every request the policy covers -
-// mirroring DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access.
-const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
 
 // Key of the navigation state that hands the copy of a policy from its edit page to the create page.
 const COPY_DRAFT_STATE_KEY = "copyOf";
@@ -105,7 +109,6 @@ const COUNT_MODE_LABELS: Record<string, string> = {
     StickyHeaderDirective,
     InfoHintComponent,
     ClearButtonComponent,
-    ErrorStateDirective,
     ConditionalAccessConditionsComponent,
     ConditionalAccessStagesListComponent,
     MatProgressSpinner
@@ -123,12 +126,24 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private editPolicyId: string | null = null;
 
-  // Pristine copy of the last-loaded/-saved state, kept separate from the constantly-mutating
-  // editPolicy for hasChanges()/delete, mirroring EventEditPageComponent's event/editEvent split.
+  protected readonly ERR = ERR;
+  protected readonly CA_ERR = CA_ERR;
+  protected readonly WHOLE_NUMBER_ERROR_KINDS = WHOLE_NUMBER_ERROR_KINDS;
+  protected readonly hasError = hasError;
+  protected hasAnyError(field: FieldTree<unknown>, kinds: readonly string[]): boolean {
+    return kinds.some((kind) => hasError(field, kind));
+  }
+
+  // Pristine copy of the last-loaded/-saved state, as the payload the working copy maps to. It stays separate from
+  // the form model for hasChanges()/delete, mirroring EventEditPageComponent's event/editEvent split.
   policy = signal<ConditionalAccessPolicySaveParams>(deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY));
-  // Working copy that Signal Forms wraps directly (form() writes through to this signal), so both
-  // [formField] scalar edits and updateEditPolicy() array/boolean edits mutate the same model.
-  editPolicy = signal<ConditionalAccessPolicySaveParams>(deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY));
+  // The form model the fields bind to. Handler edits (conditions, the toggles) go through updateModel() and the
+  // stage editor writes through the stage fields it is given, so every kind of edit writes the same model.
+  protected readonly policyModel = signal<ConditionalAccessPolicyFormModel>(
+    toPolicyFormModel(EMPTY_CONDITIONAL_ACCESS_POLICY)
+  );
+  // Working copy in the shape of the stored policy, mapped from the form model.
+  readonly editPolicy = computed<ConditionalAccessPolicySaveParams>(() => toPolicySaveParams(this.policyModel()));
   isNewPolicy = signal(true);
   // True only while editing an existing policy whose data hasn't arrived yet: a new policy has
   // nothing to wait for, and once policiesResource resolves once, a later reload (e.g. after
@@ -146,14 +161,64 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       : $localize`:@@conditionalAccess.editConditionalAccessPolicy:Edit Conditional-Access Policy`
   );
 
-  // Only the name field goes through Signal Forms, as a plain required/length-bounded string;
-  // every other field (numeric values, booleans, the counter-type multi-select, and the stages
-  // array) is edited via plain signal updates in updateEditPolicy(), matching
-  // EventEditPageComponent's approach for an equivalently nested-array feature.
-  policyForm = form(this.editPolicy, (p) => {
-    required(p.name);
-    validate(p.name, (ctx) => (ctx.value().trim().length > 255 ? [{ kind: "maxlength" }] : []));
-    validate(p.name, () => (this.nameConflict() ? [{ kind: "nameTaken" }] : []));
+  // Every rule of the editor lives here, so canSave and the list of blockers read one source. Until /targets and the
+  // other served lists have loaded, the rules that compare against them cannot judge and let the value pass; the
+  // backend enforces them either way.
+  policyForm = form(this.policyModel, (p) => {
+    requiredNonBlank(p.name);
+    // The backend strips the name, so the length that counts is the trimmed one.
+    validate(p.name, (ctx) => (ctx.value().trim().length > MAX_POLICY_NAME_LENGTH ? [{ kind: ERR.maxLength }] : []));
+    validate(p.name, () => (this.nameConflict() ? [{ kind: ERR.nameTaken }] : []));
+
+    requiredPositiveWholeNumber(p.time_window_value);
+
+    // Priority is required with no default, so the field starts empty and the admin must deliberately pick a value.
+    requiredPositiveWholeNumber(p.priority);
+    validate(p.priority, () => (this.priorityConflict() ? [{ kind: CA_ERR.priorityTaken }] : []));
+
+    // Tracked event types are required and have no default: a policy that counts nothing would never trip, so the
+    // backend rejects an empty list too.
+    validate(p.counter_types_to_track, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
+
+    // The count mode must be one the selected target supports, matching the backend's _COUNT_MODES_BY_TARGET check;
+    // switching an existing policy's target can leave a stale, now-incompatible mode behind, surfaced as an error
+    // rather than silently rewritten.
+    validate(p.count_mode, (ctx) => {
+      if (!ctx.value()) {
+        return [{ kind: ERR.required }];
+      }
+      const allowed = this.policyService.countModesForTarget(ctx.valueOf(p.target));
+      return allowed.length === 0 || allowed.includes(ctx.value()) ? [] : [{ kind: CA_ERR.countModeNotAllowed }];
+    });
+
+    // Only a user policy resets on a successful login: a source-IP policy aggregates a signal across accounts, where
+    // one account's legitimate login must not clear it, and the backend rejects the flag on that target. The checkbox
+    // is therefore shown but disabled there rather than disappearing when the target changes.
+    disabled(p.reset_on_success, (ctx) => ctx.valueOf(p.target) !== "user");
+
+    // Stages need at least one entry. The rules of one stage (the failure threshold and the specific error message)
+    // are in stageSchema; the engine evaluates by descending failure_threshold, so a threshold of 0 is reserved for a
+    // stage carrying only a standing verdict (see stageThresholdAllowed).
+    validate(p.stages, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
+    // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave one permanently
+    // dead; the backend also rejects this (uq_ca_stage_policy_threshold).
+    validate(p.stages, (ctx) => {
+      const thresholds = ctx
+        .value()
+        .flatMap((stage) => (stage.failure_threshold === null ? [] : [stage.failure_threshold]));
+      return new Set(thresholds).size === thresholds.length ? [] : [{ kind: CA_ERR.stageThresholdDuplicate }];
+    });
+    applyEach(p.stages, (stage) => {
+      apply(stage, stageSchema);
+      applyActionRules(stage.actions, p.target, this.policyService);
+    });
+
+    // Every condition value must still be one the backend accepts (_validate_condition_value rejects values outside
+    // the type's current vocabulary); since the editor PATCHes the whole policy, a stale value like a deleted realm
+    // would 400 on any save.
+    validate(p.conditions, (ctx) =>
+      this.policyService.staleConditionValues(ctx.value()).length === 0 ? [] : [{ kind: CA_ERR.staleConditionValue }]
+    );
   });
 
   // Options for the target select, falling back to a fixed enum until /targets loads so the
@@ -169,8 +234,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // Count modes offered for the selected target, as decided by /targets; falls back to the current
   // mode until /targets loads so the required select is never empty.
   readonly countModeOptions = computed<CountMode[]>(() => {
-    const fromBackend = this.policyService.countModesForTarget(this.editPolicy().target);
-    return fromBackend.length ? fromBackend : [this.editPolicy().count_mode];
+    const fromBackend = this.policyService.countModesForTarget(this.policyModel().target);
+    return fromBackend.length ? fromBackend : [this.policyModel().count_mode];
   });
   countModeLabel(mode: string): string {
     return COUNT_MODE_LABELS[mode] ?? mode;
@@ -188,12 +253,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     () => this.policyService.templates().find((t) => t.key === this.selectedTemplateKey())?.description ?? ""
   );
 
-  // Cached here instead of `?? []` in the template: a fresh empty array on every change-detection
-  // pass marks each mat-select's view dirty, so change detection never settles and an open select
-  // overlay stays parked in the top-left corner for as long as it runs.
-  readonly editConditions = computed<ConditionalAccessPolicyCondition[]>(() => this.editPolicy().conditions ?? []);
+  // Bound to the conditions editor; the model holds an empty list for a policy without conditions.
+  readonly editConditions = computed<ConditionalAccessPolicyCondition[]>(() => this.policyModel().conditions);
 
-  timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
   // enforced_since floors the counts only until one full time window has passed since it; after
   // that the backend counts the configured window unchanged, so showing it would be noise. Shown
   // in dry run too, because the trial simulates against the same floor.
@@ -207,25 +269,6 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const elapsed = (Date.now() - new Date(normalizeDateTimeString(enforcedSince)).getTime()) / 1000;
     return elapsed < this.editPolicy().time_window_seconds;
   });
-  // Raw text of the priority field, kept separate from the parsed value so an invalid entry is
-  // reported instead of silently rewritten (see onPriorityInput).
-  priorityInput = signal<string>("");
-  // Priority is required with no default, so the field starts empty and the admin must
-  // deliberately pick a value; anything non-integer, empty, or below 1 is invalid.
-  priorityValid = computed(() => {
-    const priority = this.editPolicy().priority;
-    return priority != null && Number.isInteger(priority) && priority >= 1;
-  });
-  // Distinguishes "nothing entered yet" from "not a valid priority", so a rejected entry is
-  // explained rather than just refused.
-  priorityError = computed<"required" | "not-an-integer" | null>(() => {
-    if (this.priorityValid()) {
-      return null;
-    }
-    return this.priorityInput().trim() === "" ? "required" : "not-an-integer";
-  });
-
-  showPriorityError = computed(() => this.priorityError() !== null || !this.priorityUnique());
   // Priorities must be unique across policies, so the evaluation order is unambiguous and the
   // backend 400s otherwise; this surfaces the clashing policy for the inline error, excluding the
   // policy's own id so an unchanged priority is not a self-collision.
@@ -237,7 +280,6 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const currentId = this.editPolicy().id;
     return this.policyService.policies().find((policy) => policy.priority === priority && policy.id !== currentId);
   });
-  priorityUnique = computed(() => !this.priorityConflict());
   // The name of the policy while its save request runs. A new policy keeps no id once saved, and the reloaded list
   // already holds it, so the name being saved is not reported as a clash with the policy itself.
   protected readonly savingName = signal<string | null>(null);
@@ -260,182 +302,122 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       .policies()
       .find((policy) => policy.id !== currentId && policy.name.trim().toLowerCase() === folded);
   });
-  // Tracked event types are required and have no default: a policy that counts nothing would never
-  // trip, so the backend rejects an empty list too. Shown as an error straight away rather than on
-  // touch, matching Priority - the other required field the editor starts empty.
-  counterTypesValid = computed(() => this.editPolicy().counter_types_to_track.length > 0);
-  // mat-select carries no form control here (it is [value] + (selectionChange)), so Material never
-  // derives an error state for it and its mat-error would stay hidden; appErrorState supplies one.
-  showCounterTypesError = computed(() => !this.counterTypesValid());
-  stagesValid = computed(() => {
-    const stages = this.editPolicy().stages;
-    // A threshold counts failures, so it starts at 1. The exception the backend also makes
-    // (_validate_threshold_for_actions): a stage whose every action is a standing DENY verdict
-    // may use 0, which then means "always" - the lockdown idiom.
-    return (
-      stages.length > 0 &&
-      stages.every(
-        (stage) =>
-          stage.failure_threshold >= 1 ||
-          (stage.failure_threshold === 0 &&
-            stage.actions.length > 0 &&
-            stage.actions.every((action) => STANDING_DECISION_ACTIONS.includes(action.action_type)))
+  // The stage rules, as the flags the template needs for the notes under the stages heading. They sit outside any
+  // mat-form-field, so they show as soon as a rule fails rather than on touch. The rules of the stage list come from
+  // its own errors and the rules of the stages and their actions from the errors beneath each stage.
+  private readonly stageListErrorKinds = computed(
+    () =>
+      new Set(
+        this.policyForm
+          .stages()
+          .errors()
+          .map((error) => error.kind)
       )
-    );
-  });
-  // Every stage action must be allowed for the selected target, matching the backend's
-  // _ACTIONS_BY_TARGET check; the action select only offers compatible actions, but switching an
-  // existing policy's target can leave a stale, now-incompatible action behind.
-  targetActionsValid = computed(() => {
-    const allowed = this.policyService.actionsForTarget(this.editPolicy().target);
-    // Until the allowed-actions list has loaded, compatibility cannot be judged, so saving is not
-    // blocked on it; the backend still enforces the rule.
-    if (allowed.length === 0) {
-      return true;
-    }
-    const allowedSet = new Set(allowed);
-    return this.editPolicy().stages.every((stage) =>
-      stage.actions.every((action) => allowedSet.has(action.action_type))
-    );
-  });
-  // The count mode must be one the selected target supports, matching the backend's
-  // _COUNT_MODES_BY_TARGET check; switching an existing policy's target can leave a stale,
-  // now-incompatible mode behind, surfaced as a validation error rather than silently rewritten,
-  // mirroring targetActionsValid.
-  countModeValid = computed(() => {
-    const allowed = this.policyService.countModesForTarget(this.editPolicy().target);
-    // Until the supported-modes list has loaded, compatibility cannot be judged, so saving is not
-    // blocked on it; the backend still enforces the rule.
-    if (allowed.length === 0) {
-      return true;
-    }
-    return allowed.includes(this.editPolicy().count_mode);
-  });
-  // Every condition value must still be one the backend accepts (_validate_condition_value rejects
-  // values outside the type's current vocabulary); since the editor PATCHes the whole policy, a stale
-  // value like a deleted realm would 400 on any save, so this surfaces why, mirroring countModeValid
-  // and targetActionsValid.
-  readonly staleConditionValues = computed(() => this.policyService.staleConditionValues(this.editPolicy().conditions));
-  conditionValuesValid = computed(() => this.staleConditionValues().length === 0);
-  // Every stage action must carry an action_value its type can act on (the backend enforces the same via
-  // _ACTION_VALUE_VALIDATORS and 400s otherwise). Checked here so the missing duration or subject is reported
-  // next to the field instead of as a failed save; the action item shows the per-action message.
-  actionValuesValid = computed(() =>
-    this.editPolicy().stages.every((stage) => stage.actions.every((action) => actionValueError(action) === null))
   );
-  // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave
-  // one permanently dead; the backend also rejects this (uq_ca_stage_policy_threshold), so it
-  // is blocked here too.
-  stageThresholdsUnique = computed(() => {
-    const thresholds = this.editPolicy().stages.map((stage) => stage.failure_threshold);
-    return new Set(thresholds).size === thresholds.length;
+  private readonly stageRowErrorKinds = computed(() => {
+    const kinds = new Set<string>();
+    for (const stage of this.policyForm.stages) {
+      for (const error of stage().errorSummary()) {
+        kinds.add(error.kind);
+      }
+    }
+    return kinds;
   });
-
-  // Within one stage an action may appear only once (except the email actions), and the timed/permanent
-  // pairs may not be combined; the backend rejects them (_validate_stage_action_combination), so a
-  // policy carrying one cannot be saved at all until it is fixed - surfaced here rather than left to the 400.
-  stageActionsValid = computed(() =>
-    this.editPolicy().stages.every((stage) =>
-      stage.actions.every(
-        (_, index) => this.policyService.actionConflict(stage.actions, index, this.editPolicy().target) === null
-      )
+  private readonly stageThresholdInvalid = computed(() =>
+    [ERR.required, ERR.parse, ERR.min, CA_ERR.notInteger, CA_ERR.stageThreshold].some((kind) =>
+      this.stageRowErrorKinds().has(kind)
     )
   );
-  // Only a user policy resets on a successful login: a source-IP policy aggregates a signal across accounts,
-  // where one account's legitimate login must not clear it, and the backend rejects the flag on that target.
-  // The checkbox is therefore shown but disabled there rather than disappearing when the target changes.
-  resetOnSuccessApplies = computed(() => this.editPolicy().target === "user");
+  stagesValid = computed(() => !this.stageListErrorKinds().has(ERR.required) && !this.stageThresholdInvalid());
+  stageThresholdsUnique = computed(() => !this.stageListErrorKinds().has(CA_ERR.stageThresholdDuplicate));
+  targetActionsValid = computed(() => !this.stageRowErrorKinds().has(CA_ERR.stageActionNotAllowed));
+  stageActionsValid = computed(() => !this.stageRowErrorKinds().has(CA_ERR.stageActionConflict));
+  actionValuesValid = computed(() => !this.stageRowErrorKinds().has(CA_ERR.stageActionValue));
+  readonly staleConditionValues = computed(() =>
+    this.policyService.staleConditionValues(this.policyModel().conditions)
+  );
 
   hasChanges = computed(() => JSON.stringify(this.policy()) !== JSON.stringify(this.editPolicy()));
-  canSave = computed(
-    () =>
-      this.savingName() === null &&
-      this.policyForm().valid() &&
-      this.timeWindowValid() &&
-      this.priorityValid() &&
-      this.priorityUnique() &&
-      this.counterTypesValid() &&
-      this.stagesValid() &&
-      this.stageThresholdsUnique() &&
-      this.stageActionsValid() &&
-      this.targetActionsValid() &&
-      this.actionValuesValid() &&
-      this.countModeValid() &&
-      this.conditionValuesValid()
-  );
+  canSave = computed(() => this.savingName() === null && this.policyForm().valid());
 
-  // Everything canSave() checks, as the text the admin needs to act on. Save is disabled by a
-  // failing check somewhere down the form, sometimes off-screen, so listing the reasons beats
-  // leaving the button greyed out with no explanation. Kept in the same order as canSave() so a
-  // check added there is easy to mirror here.
+  // Everything that blocks saving, as the text the admin needs to act on. Save is disabled by a failing check
+  // somewhere down the form, sometimes off-screen, so listing the reasons beats leaving the button greyed out with no
+  // explanation. The list is read off the errors of the form: each field names its error kinds in the order they are
+  // reported, and the fields run in the order of the form.
   saveBlockers = computed<string[]>(() => {
-    const blockers: string[] = [];
-    if (!this.editPolicy().name.trim()) {
-      blockers.push($localize`:@@conditionalAccess.nameRequired:Name is required.`);
-    } else if (this.nameTooLong()) {
-      blockers.push($localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`);
-    } else if (this.nameConflict()) {
-      blockers.push($localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`);
-    }
-    if (!this.timeWindowValid()) {
-      blockers.push($localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`);
-    }
-    if (!this.priorityValid()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority is required and must be a whole number of at least 1.`
+    const blockers = new Set<string>();
+    const collectKinds = (kinds: ReadonlySet<string>, messageByKind: Record<string, string>) => {
+      for (const [kind, message] of Object.entries(messageByKind)) {
+        if (kinds.has(kind)) {
+          blockers.add(message);
+        }
+      }
+    };
+    const collect = (field: FieldTree<unknown>, messageByKind: Record<string, string>) =>
+      collectKinds(
+        new Set(
+          field()
+            .errors()
+            .map((error) => error.kind)
+        ),
+        messageByKind
       );
-    } else if (!this.priorityUnique()) {
-      blockers.push($localize`:@@conditionalAccess.priorityMustUniqueAcross:Priority must be unique across policies.`);
-    }
-    if (!this.counterTypesValid()) {
-      blockers.push($localize`:@@conditionalAccess.selectLeastOneTracked:Select at least one tracked event type.`);
-    }
-    if (!this.stagesValid()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.everyStageNeedsFailure:Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.`
-      );
-    }
-    if (!this.stageThresholdsUnique()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.eachStageMustHave2:Each stage must have a different failure threshold.`
-      );
-    }
-    if (!this.targetActionsValid()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.someActionsNotAllowed2:Some actions are not allowed for the selected target.`
-      );
-    }
-    if (!this.actionValuesValid()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.fixHighlightedActionValue:Fix the highlighted action value before saving.`
-      );
-    }
-    if (!this.countModeValid()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.selectedCountModeNot:The selected count mode is not allowed for the selected target.`
-      );
-    }
-    if (!this.conditionValuesValid()) {
-      blockers.push(
-        $localize`:@@conditionalAccess.conditionNamesValueNo:A condition names a value that no longer exists: ${this.staleConditionValues().join(", ")}.`
-      );
-    }
-    return blockers;
+    const f = this.policyForm;
+    collect(f.name, {
+      [ERR.required]: $localize`:@@conditionalAccess.nameRequired:Name is required.`,
+      [ERR.maxLength]: $localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`,
+      [ERR.nameTaken]: $localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`
+    });
+    const timeWindowMessage = $localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`;
+    collect(f.time_window_value, {
+      [ERR.required]: timeWindowMessage,
+      [CA_ERR.notInteger]: timeWindowMessage,
+      [ERR.parse]: timeWindowMessage,
+      [ERR.min]: timeWindowMessage
+    });
+    const priorityMessage = $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority is required and must be a whole number of at least 1.`;
+    collect(f.priority, {
+      [ERR.required]: priorityMessage,
+      [CA_ERR.notInteger]: priorityMessage,
+      [ERR.parse]: priorityMessage,
+      [ERR.min]: priorityMessage,
+      [CA_ERR.priorityTaken]: $localize`:@@conditionalAccess.priorityMustUniqueAcross:Priority must be unique across policies.`
+    });
+    collect(f.counter_types_to_track, {
+      [ERR.required]: $localize`:@@conditionalAccess.selectLeastOneTracked:Select at least one tracked event type.`
+    });
+    const stageListKinds = this.stageListErrorKinds();
+    const stageRowKinds = this.stageRowErrorKinds();
+    collectKinds(stageListKinds, {
+      [ERR.required]: $localize`:@@conditionalAccess.atLeastOneStageBlocker:At least one stage is required.`
+    });
+    const thresholdMessage = $localize`:@@conditionalAccess.everyStageNeedsFailure:Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.`;
+    collectKinds(stageRowKinds, {
+      [ERR.required]: thresholdMessage,
+      [ERR.parse]: thresholdMessage,
+      [ERR.min]: thresholdMessage,
+      [CA_ERR.notInteger]: thresholdMessage,
+      [CA_ERR.stageThreshold]: thresholdMessage
+    });
+    collectKinds(stageListKinds, {
+      [CA_ERR.stageThresholdDuplicate]: $localize`:@@conditionalAccess.eachStageMustHave2:Each stage must have a different failure threshold.`
+    });
+    collectKinds(stageRowKinds, {
+      [CA_ERR.stageActionConflict]: $localize`:@@conditionalAccess.stageActionsConflictBlocker:A stage carries the same action twice, or two actions that contradict each other.`,
+      [CA_ERR.stageActionNotAllowed]: $localize`:@@conditionalAccess.someActionsNotAllowed2:Some actions are not allowed for the selected target.`,
+      [CA_ERR.stageActionValue]: $localize`:@@conditionalAccess.fixHighlightedActionValue:Fix the highlighted action value before saving.`
+    });
+    collect(f.count_mode, {
+      [ERR.required]: $localize`:@@conditionalAccess.countModeRequired:Count Mode is required.`,
+      [CA_ERR.countModeNotAllowed]: $localize`:@@conditionalAccess.selectedCountModeNot:The selected count mode is not allowed for the selected target.`
+    });
+    collect(f.conditions, {
+      [CA_ERR.staleConditionValue]: $localize`:@@conditionalAccess.conditionNamesValueNo:A condition names a value that no longer exists: ${this.staleConditionValues()
+        .flatMap((stale) => stale.values)
+        .join(", ")}.`
+    });
+    return [...blockers];
   });
-
-  nameTouched = signal(false);
-  showNameError = computed(() => this.nameTouched() && !this.policyForm().valid());
-  nameTooLong = computed(() =>
-    this.policyForm
-      .name()
-      .errors()
-      .some((e) => e.kind === "maxlength")
-  );
-
-  // The time window is stored in seconds; the editor lets the admin pick a coarser unit and enter a
-  // plain number, converted to seconds on the way into editPolicy.
-  timeWindowUnit = signal<DurationUnit>("seconds");
-  timeWindowValue = signal<number>(EMPTY_CONDITIONAL_ACCESS_POLICY.time_window_seconds);
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -451,12 +433,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
         this.isNewPolicy.set(true);
         this.editPolicyId = null;
         this.loadPolicy(EMPTY_CONDITIONAL_ACCESS_POLICY);
-        // A brand-new policy starts with an empty (invalid) name; mark it touched immediately - both the
-        // signal-forms field itself (mat-error only renders once Material's own errorState sees it
-        // touched) and the local flag mirroring it - so the "Name is required" hint is visible from the
-        // start instead of only after the field is blurred.
-        this.policyForm.name().markAsTouched();
-        this.nameTouched.set(true);
+        // A brand-new policy starts with empty required fields (name, priority, tracked event types); touching the
+        // form shows each "required" hint from the start instead of only after the field has been left.
+        void touchAll(this.policyForm);
         this.applyCopyDraft(history.state?.[COPY_DRAFT_STATE_KEY]);
       }
     });
@@ -466,19 +445,39 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     effect(() => {
       if (this.nameConflict()) {
         this.policyForm.name().markAsTouched();
-        this.nameTouched.set(true);
       }
     });
 
-    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
+    // Changing the target is what makes a count mode unsupported, so the select shows the reason at once instead of
+    // waiting for a focus it never received.
+    effect(() => {
+      if (hasError(this.policyForm.count_mode, CA_ERR.countModeNotAllowed)) {
+        this.policyForm.count_mode().markAsTouched();
+      }
+    });
+
+    // A source-IP policy never resets, and the backend rejects a save that asks it to. The flag is cleared rather than
+    // surfaced as an error like the count mode, because there is nothing for the admin to choose; it stays cleared when
+    // switching back to a user target, where the control is enabled again and shows what it is set to.
+    effect(() => {
+      if (this.policyForm.target().value() !== "user" && this.policyForm.reset_on_success().value()) {
+        this.updateModel({ reset_on_success: false });
+      }
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet. Only the list
+    // triggers it: the edit state is read untracked, because typing a change and then the original value back would
+    // otherwise reload the policy, replace the form's rows and rebuild the stage and action items under the cursor.
     effect(() => {
       const policies = this.policyService.policies();
-      if (!this.isNewPolicy() && this.editPolicyId && !this.hasChanges()) {
-        const found = policies.find((p) => String(p.id) === this.editPolicyId);
-        if (found) {
-          this.loadPolicy(found);
+      untracked(() => {
+        if (!this.isNewPolicy() && this.editPolicyId && !this.hasChanges()) {
+          const found = policies.find((p) => String(p.id) === this.editPolicyId);
+          if (found) {
+            this.loadPolicy(found);
+          }
         }
-      }
+      });
     });
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
@@ -486,60 +485,26 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave());
   }
 
-  // Seeds both the pristine and working copies from one policy, each its own deep copy, so editing
-  // one cannot reach into the other.
+  // Seeds both the pristine and the working copy from one policy, each its own deep copy, so editing
+  // one cannot reach into the other. The pristine copy is the payload the loaded model maps to, so
+  // hasChanges()'s JSON diff compares like with like.
   private loadPolicy(policy: ConditionalAccessPolicySaveParams): void {
-    const loaded = deepCopy(policy);
-    // The read endpoint spells "no conditions" as an empty list, while this editor's model omits the
-    // key entirely; collapsing the two here keeps hasChanges()'s JSON diff from reporting a change
-    // over that spelling alone.
-    if (!loaded.conditions?.length) {
-      delete loaded.conditions;
-    }
-    this.policy.set(loaded);
-    this.editPolicy.set(deepCopy(loaded));
-    this.syncTimeWindowFromSeconds(loaded.time_window_seconds);
-    this.syncPriorityInput(loaded.priority);
+    const loaded = toPolicyFormModel(policy);
+    this.policy.set(deepCopy(toPolicySaveParams(loaded)));
+    this.policyModel.set(loaded);
+    this.policyForm().reset();
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  updateEditPolicy(partial: Partial<ConditionalAccessPolicySaveParams>): void {
-    this.editPolicy.set({ ...this.editPolicy(), ...partial });
+  private updateModel(partial: Partial<ConditionalAccessPolicyFormModel>): void {
+    this.policyModel.update((model) => ({ ...model, ...partial }));
   }
 
-  onStagesChange(stages: ConditionalAccessPolicyStage[]): void {
-    this.updateEditPolicy({ stages });
-  }
-
-  // No conditions means the absence of the key, not an empty list, so adding and removing a
-  // condition again does not register as a change.
   onConditionsChange(conditions: ConditionalAccessPolicyCondition[]): void {
-    this.updateEditPolicy({ conditions: conditions.length ? conditions : undefined });
-  }
-
-  onCounterTypesChange(counterTypes: string[]): void {
-    this.updateEditPolicy({
-      counter_types_to_track: counterTypes as ConditionalAccessPolicySaveParams["counter_types_to_track"]
-    });
-  }
-
-  onTargetChange(target: ConditionalAccessTarget): void {
-    // Only the target changes here; the count mode is left as-is. Switching to a target that does not support the
-    // current mode (e.g. DISTINCT_USERS under a user target) is surfaced as a validation error (countModeValid) that
-    // blocks saving, rather than silently rewriting the user's selection - mirroring how an incompatible stage action
-    // is handled (targetActionsValid).
-    //
-    // reset_on_success is cleared rather than surfaced as an error like the count mode, because there is nothing
-    // for the admin to choose: a source-IP policy never resets, and the backend rejects a save that asks it to.
-    // It stays cleared when switching back, where the control is enabled again and shows what it is set to.
-    this.updateEditPolicy({ target, reset_on_success: false });
-  }
-
-  onCountModeChange(count_mode: CountMode): void {
-    this.updateEditPolicy({ count_mode });
+    this.updateModel({ conditions });
   }
 
   // Prefills the whole editor from a shipped template on the create page with a ready-to-POST
@@ -551,10 +516,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     const prefill = template ? deepCopy(template.policy) : deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY);
     delete prefill.id;
     // Templates carry no priority: the admin must pick a unique one, so normalize the
-    // missing key to null and leave the field empty (see priorityValid). A template that
-    // states no reset-on-success choice falls back to the backend's default for a user
-    // policy, and to cleared for a source-IP one, which never resets - the same rule
-    // onTargetChange applies, so a prefilled policy cannot start out ticked and disabled.
+    // missing key to null and leave the field empty. A template that states no reset-on-success
+    // choice falls back to the backend's default for a user policy, and to cleared for a source-IP
+    // one, which never resets, so a prefilled policy cannot start out ticked and disabled.
     // Spelling the types out here makes the compiler enforce both normalizations.
     const policy: ConditionalAccessPolicySaveParams = {
       ...prefill,
@@ -562,9 +526,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       reset_on_success: prefill.target === "user" ? (prefill.reset_on_success ?? true) : false,
       stages: prefill.stages
     };
-    this.editPolicy.set(policy);
-    this.syncTimeWindowFromSeconds(policy.time_window_seconds);
-    this.syncPriorityInput(policy.priority);
+    this.policyModel.set(toPolicyFormModel(policy));
   }
 
   // The copy of a policy arrives from the edit page of that policy as navigation state; it prefills the whole editor
@@ -576,9 +538,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // The draft belongs to the navigation that carried it. Left in the history entry it would come back with
     // the browser's Back button, long after the copy was saved.
     history.replaceState({ ...history.state, [COPY_DRAFT_STATE_KEY]: undefined }, "");
-    this.editPolicy.set(deepCopy(draft));
-    this.syncTimeWindowFromSeconds(draft.time_window_seconds);
-    this.syncPriorityInput(draft.priority);
+    this.policyModel.set(toPolicyFormModel(draft));
   }
 
   // Opens the create page with the editor as it is now, unsaved edits included, and leaves the policy being edited as
@@ -603,44 +563,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     this.applyTemplate(null);
   }
 
-  onTimeWindowInput(value: string): void {
-    const parsed = parseInt(value, 10);
-    if (!isNaN(parsed) && parsed >= 1) {
-      this.timeWindowValue.set(parsed);
-      this.updateEditPolicy({ time_window_seconds: parsed * DURATION_UNIT_FACTORS[this.timeWindowUnit()] });
-    }
-  }
-
-  onTimeWindowUnitChange(unit: DurationUnit): void {
-    this.timeWindowUnit.set(unit);
-    this.updateEditPolicy({ time_window_seconds: this.timeWindowValue() * DURATION_UNIT_FACTORS[unit] });
-  }
-
-  // Shows a saved window in the coarsest unit that divides it evenly, e.g. "10 minutes" rather than "600 seconds".
-  private syncTimeWindowFromSeconds(seconds: number): void {
-    const unit = largestWholeDurationUnit(seconds);
-    this.timeWindowUnit.set(unit);
-    this.timeWindowValue.set(seconds / DURATION_UNIT_FACTORS[unit]);
-  }
-
-  onPriorityInput(value: string): void {
-    // Keeps the raw text and parsed value separate so a rejected entry like "1.5" stays visible
-    // with its error instead of being blanked; an entry that is not a whole number >= 1 leaves
-    // priority null, disabling Save and showing priorityError, and Number() (not parseInt) keeps
-    // "1.5" invalid instead of truncating it to 1.
-    this.priorityInput.set(value);
-    const trimmed = value.trim();
-    const parsed = trimmed === "" ? NaN : Number(trimmed);
-    this.updateEditPolicy({ priority: Number.isInteger(parsed) ? parsed : null });
-  }
-
-  // Show the stored priority in the field (edit mode, template prefill, reset).
-  private syncPriorityInput(priority: number | null): void {
-    this.priorityInput.set(priority == null ? "" : String(priority));
-  }
-
   toggleEnabled(checked: boolean): void {
-    this.updateEditPolicy({ enabled: checked });
+    this.updateModel({ enabled: checked });
     const id = this.editPolicy().id;
     if (id != null) {
       if (checked) {
@@ -656,7 +580,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // whether there is anything to ask about: a policy being created has no trial, and neither has
     // a stored enforcing policy that was switched to dry run and back without ever being saved.
     if (checked || !this.policy().dry_run) {
-      this.updateEditPolicy({ dry_run: checked, reset_counters_on_enforce: undefined });
+      this.updateModel({ dry_run: checked, reset_counters_on_enforce: null });
       return;
     }
     const result = await this.dialogService.openDialogAsync<
@@ -673,17 +597,13 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       this.resyncDryRunToggle(toggle);
       return;
     }
-    this.updateEditPolicy({ dry_run: false, reset_counters_on_enforce: result.resetCounters });
+    this.updateModel({ dry_run: false, reset_counters_on_enforce: result.resetCounters });
   }
 
   private resyncDryRunToggle(toggle: MatSlideToggle | undefined): void {
     if (toggle) {
       toggle.checked = this.editPolicy().dry_run;
     }
-  }
-
-  onResetOnSuccessChange(checked: boolean): void {
-    this.updateEditPolicy({ reset_on_success: checked });
   }
 
   cancelEdit(): void {
@@ -703,20 +623,19 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       );
       return Promise.resolve(false);
     }
+    // The keyboard and pending-changes paths reach here without the disabled Save button in between.
+    if (!this.policyForm().valid()) {
+      void touchAll(this.policyForm);
+      return Promise.resolve(false);
+    }
     this.savingName.set(this.editPolicy().name);
     // The engine evaluates stages by descending failure_threshold, so the thresholds the admin
     // entered are the order and nothing extra is derived here.
-    const policy = this.editPolicy();
-    const payload: ConditionalAccessPolicySaveParams = { ...policy };
-    if (!payload.conditions?.length) {
-      // The backend only replaces conditions when the key is present, so an empty list is sent to
-      // clear stored conditions, while a policy with none omits the key entirely — otherwise
-      // removing the last condition would silently not save.
-      if (this.policy().conditions?.length) {
-        payload.conditions = [];
-      } else {
-        delete payload.conditions;
-      }
+    const payload: ConditionalAccessPolicySaveParams = { ...this.editPolicy() };
+    // An empty list is sent to clear stored conditions, while a policy with none omits the key entirely -
+    // otherwise removing the last condition would silently not save.
+    if (!payload.conditions?.length && this.policy().conditions?.length) {
+      payload.conditions = [];
     }
     return new Promise((resolve) => {
       this.policyService.savePolicy(payload).then((id) => {
