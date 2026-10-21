@@ -49,6 +49,12 @@ Defines the rough interface for a UserId Resolver
 - for SQL the unique index ( what's the right name here (tm))
 
 """
+from privacyidea.lib import lazy_gettext
+
+# The message of the error a resolver raises when the user store failed to answer the lookup of a login name. It
+# reaches unauthenticated clients, so it is the same for every resolver and names neither the user store nor its error,
+# which the resolver logs instead. Raised as str: the audit log stores the message and drops an entry with a lazy one.
+USER_LOOKUP_FAILED = lazy_gettext("The user could not be looked up in the user store.")
 
 
 class UserIdResolver:
@@ -118,7 +124,7 @@ class UserIdResolver:
         """
         return UserIdResolver.getResolverClassDescriptor()
 
-    def getUserId(self, loginName):
+    def getUserId(self, loginName: str) -> str:
         """
         The loginname is resolved to a user_id.
         Depending on the resolver type the user_id can
@@ -126,12 +132,12 @@ class UserIdResolver:
         the DN in LDAP)
 
         It needs to return an empty string, if the user does
-        not exist.
+        not exist, and raise a ResolverError with the message
+        USER_LOOKUP_FAILED, if the user store failed to answer.
 
         :param loginName: The login name of the user
-        :type loginName: sting
-        :return: The ID of the user
-        :rtype: str
+        :return: The ID of the user, an empty string if the user does not exist
+        :raises ResolverError: if the user store failed to answer
         """
         return "dummy_user_id"
 

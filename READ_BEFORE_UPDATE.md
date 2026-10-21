@@ -13,6 +13,11 @@
   user with that name is now refused instead of opening a session for the wrong account. The authentication log
   records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
 
+* **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
+  returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
+  as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
+  with its next resolver. The authentication log records `USER_STORE_UNAVAILABLE`.
+
 * **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
   these values, without applying the `!` and `*` search operators.
