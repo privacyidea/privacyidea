@@ -1280,11 +1280,11 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
-    invalid_actions = list(set(raw_actions) - allowed_actions)
+    invalid_actions = sorted(set(raw_actions) - allowed_actions)
 
     if len(invalid_actions) > 0:
         log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
-        raise ParameterError(f"Invalid actions {invalid_actions}!")
+        raise ParameterError(f"Invalid actions for scope '{scope}': {invalid_actions}!")
 
     # Evaluate the action values
     for action_key, action_value in actions.items():
@@ -1348,11 +1348,11 @@ def validate_values(values: str | list | None, allowed_values: list, name: str) 
         if isinstance(values, str):
             values = values.replace(" ", "").split(",")
         elif not isinstance(values, list):
-            raise ParameterError(f"Invalid {name.capitalize()} type '{type(values)}'!")
+            raise ParameterError(f"Invalid {name} type '{type(values)}'!")
         values = remove_wildcards_and_negations(values)
-        undefined_values = list(set(values) - set(allowed_values))
+        undefined_values = sorted(set(values) - set(allowed_values))
         if undefined_values:
-            raise ParameterError(f"Undefined {name.capitalize()}: {undefined_values}!")
+            raise ParameterError(f"Undefined {name}: {undefined_values}!")
     return True
 
 
