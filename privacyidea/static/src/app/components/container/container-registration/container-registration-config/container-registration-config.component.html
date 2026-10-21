@@ -18,39 +18,37 @@
 -->
 <div class="flex-column expansion-well margin-bottom-16">
   <mat-checkbox
-    [checked]="userStorePassphrase()"
-    (change)="userStorePassphrase.set($event.checked); onUserStorePassphraseChange()"
-    [disabled]="!containerHasOwner()">
+    [formField]="registration().store"
+    (change)="onUserStorePassphraseChange()">
     <span i18n="@@container.validatePassphrase">Validate the passphrase against the user store.</span>
   </mat-checkbox>
   <mat-form-field class="input-width-xl">
     <mat-label i18n="@@container.passphrasePrompt">Passphrase Prompt</mat-label>
     <textarea
-      [value]="passphrasePrompt()"
-      (input)="passphrasePrompt.set($any($event.target).value)"
+      [formField]="registration().prompt"
       matInput
       rows="2"></textarea>
     <mat-hint
-      [class.red]="promptRequired() && !passphrasePrompt()"
       align="start"
       i18n="@@container.enterPassphrase"
       >Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user
       should enter.</mat-hint
     >
+    @if (hasError(registration().prompt, ERR.required)) {
+      <mat-error i18n="@@container.passphrasePromptRequired">A passphrase prompt is required.</mat-error>
+    }
   </mat-form-field>
   <mat-form-field class="input-width-xl margin-top-32 margin-bottom-32">
     <mat-label i18n="@@container.passphraseResponse">Passphrase Response</mat-label>
     <input
-      [value]="passphraseResponse()"
-      (input)="passphraseResponse.set($any($event.target).value)"
-      [disabled]="userStorePassphrase()"
+      [formField]="registration().response"
       [type]="showPassphrase ? 'text' : 'password'"
       matInput />
     <button
       (click)="toggleShowPassphrase()"
       aria-label="Toggle passphrase visibility"
       i18n-aria-label="@@container.togglePassphrase"
-      [disabled]="userStorePassphrase()"
+      [disabled]="registration().response().disabled()"
       mat-icon-button
       matSuffix
       type="button">
@@ -60,31 +58,28 @@
       >This is the correct answer to the passphrase prompt the user has to enter to successfully register the
       container.</mat-hint
     >
+    @if (hasError(registration().response, ERR.required)) {
+      <mat-error i18n="@@container.passphraseResponseRequired">A passphrase response is required.</mat-error>
+    }
   </mat-form-field>
   <mat-form-field class="input-width-xl">
     <mat-label i18n="@@container.repeatPassphrase">Repeat Passphrase Response</mat-label>
     <input
-      [value]="repeatPassphraseResponse()"
-      (input)="repeatPassphraseResponse.set($any($event.target).value)"
-      [disabled]="userStorePassphrase()"
+      [formField]="registration().repeat"
       [type]="showRepeatPassphrase ? 'text' : 'password'"
       matInput />
     <button
       (click)="showRepeatPassphrase = !showRepeatPassphrase"
       aria-label="Toggle passphrase visibility"
       i18n-aria-label="@@container.togglePassphrase"
-      [disabled]="userStorePassphrase()"
+      [disabled]="registration().repeat().disabled()"
       mat-icon-button
       matSuffix
       type="button">
       <mat-icon>{{ showRepeatPassphrase ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
-    @if (passphraseMismatch) {
-      <mat-hint
-        class="red"
-        i18n="@@container.passphrasesDo"
-        >Passphrases do not match.</mat-hint
-      >
+    @if (hasError(registration().repeat, PASSPHRASE_MISMATCH)) {
+      <mat-error i18n="@@container.passphrasesDo">Passphrases do not match.</mat-error>
     }
   </mat-form-field>
 </div>

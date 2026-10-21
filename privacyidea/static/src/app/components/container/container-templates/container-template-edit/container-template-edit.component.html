@@ -29,20 +29,25 @@
           i18n-placeholder="@@container.templateName"
           i18n-aria-label="@@container.templateName"
           aria-label="Template Name"
-          [value]="template().name"
-          [readonly]="!nameEditable()"
-          (input)="editTemplate({ name: $any($event.target).value })"
-          (keydown)="$event.stopPropagation()"
-          [errorStateMatcher]="nameErrorMatcher" />
-        @if (nameConflict()) {
+          [formField]="form.name"
+          (keydown)="$event.stopPropagation()" />
+        @if (hasError(form.name, ERR.required)) {
+          <mat-error i18n="@@container.templateNameRequired">Template name is <strong>required</strong></mat-error>
+        }
+        @if (hasError(form.name, ERR.pattern)) {
+          <mat-error i18n="@@container.templateNameContains"
+            >Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
+            underscores and hyphens are allowed.</mat-error
+          >
+        }
+        @if (hasError(form.name, ERR.nameTaken)) {
           <mat-error i18n="@@container.anotherTemplate">Another template with this name already exists.</mat-error>
         }
       </mat-form-field>
 
       <mat-card-content>
         <mat-checkbox
-          [checked]="template().default"
-          (change)="editTemplate({ default: $event.checked })"
+          [formField]="form.default"
           (click)="$event.stopPropagation()"
           matTooltip="Set as default template"
           i18n-matTooltip="@@container.setAsDefaultTemplate">
@@ -53,13 +58,13 @@
 
     <div>
       <h3 i18n="@@common.containerType">Container Type</h3>
-      <app-selector-buttons
-        [values]="containerTypes()"
-        [labels]="containerTypesTitleCase()"
-        [initialValue]="template().container_type"
-        [allowDeselect]="true"
-        (selected)="editTemplate({ container_type: $event })"
-        [disabled]="hasToken()" />
+      <app-toggle-group
+        [values]="containerTypeOptions()"
+        [labels]="containerTypeLabels()"
+        [formField]="form.container_type"
+        [hideSelectionIndicator]="true"
+        groupLabel="Container Type"
+        i18n-groupLabel="@@common.containerType" />
     </div>
   </div>
 

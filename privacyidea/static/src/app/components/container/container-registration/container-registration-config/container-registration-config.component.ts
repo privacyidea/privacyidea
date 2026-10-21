@@ -16,59 +16,106 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, input, model, output, Signal, signal } from "@angular/core";
+import { Component, input } from "@angular/core";
+import { applyWhen, disabled, FieldTree, FormField, required, SchemaPathTree, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { ERR, mustEqual } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
+
+/** The passphrase settings of a container registration. */
+export interface ContainerRegistrationModel {
+  prompt: string;
+  response: string;
+  repeat: string;
+  store: boolean;
+}
+
+/** Error kind of a repeated passphrase response that differs from the response. */
+export const PASSPHRASE_MISMATCH = "passphraseMismatch";
+
+export const DEFAULT_PASSPHRASE_PROMPT = "Please enter your user store passphrase.";
+
+export function emptyRegistration(): ContainerRegistrationModel {
+  return { prompt: "", response: "", repeat: "", store: false };
+}
+
+export interface ContainerRegistrationRulesOptions {
+  /** The current registration value, read inside the validators so they re-run when it changes. */
+  value: () => ContainerRegistrationModel;
+  /** The passphrase rules apply only while this returns true, for example while a QR code is generated. */
+  active?: () => boolean;
+  /** The user store passphrase can only be validated for a container that has an owner. */
+  hasOwner: () => boolean;
+}
+
+/**
+ * Rules of the registration passphrase settings.
+ * - Validating against the user store needs no passphrase response, so the response and its repetition are disabled.
+ * - Otherwise a prompt needs a response that the repetition equals, and a response or repetition needs a prompt.
+ */
+export function registrationRules(
+  path: SchemaPathTree<ContainerRegistrationModel>,
+  options: ContainerRegistrationRulesOptions
+) {
+  const { value, hasOwner } = options;
+  const active = options.active ?? (() => true);
+  disabled(path.store, () => !hasOwner());
+  disabled(path.response, () => value().store);
+  disabled(path.repeat, () => value().store);
+  applyWhen(
+    path,
+    () => active() && !value().store,
+    (p) => {
+      validate(p.prompt, () =>
+        (value().response || value().repeat) && !value().prompt ? [{ kind: ERR.required }] : []
+      );
+      required(p.response, { when: () => !!value().prompt });
+      mustEqual(p.repeat, () => value().response, PASSPHRASE_MISMATCH);
+    }
+  );
+}
 
 @Component({
   selector: "app-container-registration-config",
   templateUrl: "./container-registration-config.component.html",
-  imports: [MatFormField, MatInput, MatHint, MatLabel, MatCheckbox, MatIconModule, MatButtonModule, MatSuffix]
+  imports: [
+    FormField,
+    MatFormField,
+    MatInput,
+    MatHint,
+    MatError,
+    MatLabel,
+    MatCheckbox,
+    MatIconModule,
+    MatButtonModule,
+    MatSuffix
+  ]
 })
 export class ContainerRegistrationConfigComponent {
-  passphrasePrompt = model("");
-  passphraseResponse = model("");
-  userStorePassphrase = model(false);
-  containerHasOwner = input(false);
-  validInputChange = output<boolean>();
+  registration = input.required<FieldTree<ContainerRegistrationModel>>();
 
-  defaultPrompt = "Please enter your user store passphrase.";
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly PASSPHRASE_MISMATCH = PASSPHRASE_MISMATCH;
 
   showPassphrase = false;
   showRepeatPassphrase = false;
-  repeatPassphraseResponse = signal("");
-
-  promptRequired = computed(() => this.userStorePassphrase() || this.passphraseResponse());
-  validInput: Signal<boolean> = computed(() => {
-    if (this.userStorePassphrase()) {
-      return true;
-    } else if (this.passphrasePrompt()) {
-      return !!this.passphraseResponse() && this.passphraseResponse() === this.repeatPassphraseResponse();
-    } else {
-      return !this.passphraseResponse() && !this.repeatPassphraseResponse();
-    }
-  });
-  private validInputEffect = effect(() => {
-    this.validInputChange.emit(this.validInput());
-  });
-
-  get passphraseMismatch(): boolean {
-    return !this.userStorePassphrase() && this.passphraseResponse() !== this.repeatPassphraseResponse();
-  }
 
   toggleShowPassphrase() {
     this.showPassphrase = !this.showPassphrase;
   }
 
   onUserStorePassphraseChange() {
-    if (this.userStorePassphrase()) {
-      this.passphraseResponse.set("");
-      this.repeatPassphraseResponse.set("");
-      if (!this.passphrasePrompt()) {
-        this.passphrasePrompt.set(this.defaultPrompt);
+    const registration = this.registration();
+    if (registration.store().value()) {
+      registration.response().value.set("");
+      registration.repeat().value.set("");
+      if (!registration.prompt().value()) {
+        registration.prompt().value.set(DEFAULT_PASSPHRASE_PROMPT);
       }
     }
   }

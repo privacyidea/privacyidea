@@ -29,10 +29,8 @@ import {
   linkedSignal,
   signal
 } from "@angular/core";
-import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
-import { MatFormField } from "@angular/material/select";
 import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -41,6 +39,7 @@ import {
   ContainerDetailsInfoComponent,
   ContainerInfoDetail
 } from "@components/container/container-details/container-details-info/container-details-info.component";
+import { ContainerDetailsDescriptionComponent } from "@components/container/container-details/container-details-description/container-details-description.component";
 import { ContainerDetailsRealmsComponent } from "@components/container/container-details/container-details-realms/container-details-realms.component";
 import { ContainerDetailsStatesComponent } from "@components/container/container-details/container-details-states/container-details-states.component";
 import { ContainerDetailsTokenTableComponent } from "@components/container/container-details/container-details-token-table/container-details-token-table.component";
@@ -51,7 +50,7 @@ import { DetailsCardComponent } from "@components/shared/details-shared/details-
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
+import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { infoDetailsKeyMap } from "@components/token/token-details/token-details.constants";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -114,9 +113,6 @@ interface TokenOption {
   standalone: true,
   imports: [
     StickyHeaderDirective,
-    EditButtonsComponent,
-    MatFormField,
-    MatInput,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
     ContainerDetailsActionsComponent,
@@ -126,6 +122,7 @@ interface TokenOption {
     DetailFieldComponent,
     ContainerDetailsStatesComponent,
     ContainerDetailsRealmsComponent,
+    ContainerDetailsDescriptionComponent,
     ContainerDetailsUserComponent,
     ContainerAddTokenComponent,
     MatProgressSpinner
@@ -252,10 +249,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
         .filter((detail) => detail.value !== undefined);
     }
   });
-  descriptionRow = computed(
-    () =>
-      this.containerDetailData().find((row) => row.keyMap.key === "description") as EditableElement<string> | undefined
-  );
   infoData = linkedSignal({
     source: this.containerDetails,
     computation: (containerDetails) => {
@@ -328,23 +321,11 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     return (
       // Block editing until the container details have loaded for the first time.
       !this.containerDetailResource.hasValue() ||
-      this.containerDetailData().some((element) => element.isEditing()) ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
       this.editRegistry.anyEditing()
     );
   });
-  isEditableElement(key: string) {
-    if (key === "description" && this.authService.actionAllowed("container_description")) {
-      return true;
-    } else if (key === "realms" && this.authService.actionAllowed("container_realms")) {
-      return true;
-    } else if (key === "states" && this.authService.actionAllowed("container_state")) {
-      return true;
-    }
-    return false;
-  }
-
   cancelContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
       case "user_name":
@@ -356,9 +337,6 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
 
   saveContainerEdit(element: EditableElement) {
     switch (element.keyMap.key) {
-      case "description":
-        this.saveDescription();
-        break;
       case "user_name":
         this.saveUser();
         break;
@@ -415,30 +393,22 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
-  saveDescription() {
-    const description = this.containerDetailData().find((detail) => detail.keyMap.key === "description")?.value;
-    this.containerService
-      .setContainerDescription(this.containerSerial(), typeof description === "string" ? description : "")
-      .subscribe({
-        next: () => {
-          this.containerDetailResource.reload();
-        }
-      });
-  }
-
   @ViewChild(ContainerDetailsInfoComponent) infoChild?: ContainerDetailsInfoComponent;
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(() => this.isAnyEditing());
-    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerValidChanges(() => this.canSaveInlineEdits());
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
   }
 
+  /** False while an open inline edit holds a value that must not be saved. */
+  protected canSaveInlineEdits(): boolean {
+    return !this.editRegistry.anyInvalid() && (this.infoChild?.canSave() ?? true);
+  }
+
   async saveAllInlineEdits(): Promise<boolean> {
-    for (const row of this.containerDetailData()) {
-      if (row.isEditing()) {
-        this.saveContainerEdit(row);
-      }
+    if (!this.canSaveInlineEdits()) {
+      return false;
     }
     await this.editRegistry.saveAll();
     if (this.isEditingUser()) {

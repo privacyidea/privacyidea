@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, inject, input, linkedSignal, model, Signal, viewChild } from "@angular/core";
+import { disabled, form, FormField, readonly, required, validate } from "@angular/forms/signals";
 import { MatCardModule } from "@angular/material/card";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -26,13 +27,15 @@ import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { ToggleGroupComponent } from "@components/shared/toggle-group/toggle-group.component";
 
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body/container-template-edit-body.component";
 
 @Component({
@@ -46,7 +49,8 @@ import { ContainerTemplateEditBodyComponent } from "./container-template-edit-bo
     MatFormFieldModule,
     MatListModule,
     MatCheckboxModule,
-    SelectorButtonsComponent,
+    FormField,
+    ToggleGroupComponent,
     ContainerTemplateEditBodyComponent
   ],
   templateUrl: "./container-template-edit.component.html",
@@ -92,6 +96,9 @@ export class ContainerTemplateEditComponent {
   readonly containerTypesTitleCase = computed(() =>
     this.containerTemplateService.availableContainerTypes().map((type) => type.charAt(0).toUpperCase() + type.slice(1))
   );
+  // The empty string is the explicit "None" option, the container type of a template that has none yet.
+  readonly containerTypeOptions = computed(() => ["", ...this.containerTypes()]);
+  readonly containerTypeLabels = computed(() => [$localize`:@@common.none:None`, ...this.containerTypesTitleCase()]);
   readonly availableTokenTypes = computed(() =>
     this.containerTemplateService.getTokenTypesForContainerType(this.template().container_type)
   );
@@ -99,18 +106,26 @@ export class ContainerTemplateEditComponent {
   readonly tokens = computed(() => this.template().template_options.tokens);
   readonly hasToken = computed(() => this.tokens().length > 0);
 
-  readonly nameConflict = computed(() => {
-    if (this.template().name == this.initTemplate().name) {
-      return false;
-    }
-    return this.containerTemplateService.templates().some((t) => t.name === this.template().name);
+  readonly form = form(this.template, (f) => {
+    identifierName(f.name);
+    readonly(f.name, () => !this.nameEditable());
+    validate(f.name, (ctx) => (this.isNameTaken(ctx.value()) ? [{ kind: ERR.nameTaken }] : []));
+    required(f.container_type);
+    disabled(f.container_type, () => this.hasToken());
+    validate(f.template_options.tokens, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
   });
-  readonly canSaveTemplate = computed<boolean>(() => {
-    return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
-  });
-  readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
-  };
+
+  // The template is saved only when this is true. The container type is a disabled field while tokens exist and is
+  // then skipped by validation, so it is checked here as well.
+  readonly canSave = computed(() => this.form().valid() && this.template().container_type !== "");
+  readonly hasError = hasError;
+  readonly ERR = ERR;
+
+  // The name an existing template already has is not a conflict with itself.
+  private isNameTaken(name: string): boolean {
+    if (name === this.initTemplate().name) return false;
+    return this.containerTemplateService.templates().some((t) => t.name === name);
+  }
 
   editTemplate(templateUpdates: Partial<ContainerTemplate>) {
     this.template.set({ ...this.template(), ...templateUpdates });

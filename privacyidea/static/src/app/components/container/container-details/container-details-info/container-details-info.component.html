@@ -18,11 +18,11 @@
 -->
 @if (infoData()[0]; as element) {
   @let info = asMap(element.value);
-  @if (authService.actionAllowed("container_info")) {
+  @if (authService.actionAllowed("container_info") && editButtonsElement(); as buttonsElement) {
     <div class="info-actions-row">
       <app-edit-buttons
         [cancelEdit]="toggleInfoEdit.bind(this)"
-        [element]="$any(element)"
+        [element]="buttonsElement"
         [isEditingInfo]="isEditingInfo()"
         [isEditingUser]="isEditingUser()"
         [saveEdit]="saveInfo.bind(this)"
@@ -66,23 +66,30 @@
         class="input-width-s"
         subscriptSizing="dynamic">
         <input
-          [value]="newInfo().key"
-          (input)="newInfo.set({ key: $any($event.target).value, value: newInfo().value })"
+          [formField]="newInfoForm.key"
           i18n-placeholder="@@common.addNewKey"
           matInput
           placeholder="Add new key" />
+        @if (hasError(newInfoForm.key, ERR.required)) {
+          <mat-error i18n="@@common.infoKeyRequired">Enter a key for the value.</mat-error>
+        }
+        @if (hasError(newInfoForm.key, INFO_KEY_EXISTS)) {
+          <mat-error i18n="@@common.infoKeyExists">This key already exists.</mat-error>
+        }
       </mat-form-field>
       <span class="flex ali-center">:</span>
       <mat-form-field
         class="input-width-xl"
         subscriptSizing="dynamic">
         <textarea
-          [value]="newInfo().value"
-          (input)="newInfo.set({ key: newInfo().key, value: $any($event.target).value })"
+          [formField]="newInfoForm.value"
           i18n-placeholder="@@common.addNewInfo"
           matInput
           placeholder="Add new info"
           rows="1"></textarea>
+        @if (hasError(newInfoForm.value, ERR.required)) {
+          <mat-error i18n="@@common.infoValueRequired">Enter a value for the key.</mat-error>
+        }
       </mat-form-field>
     </div>
   }
