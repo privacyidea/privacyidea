@@ -21,7 +21,9 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideLocationMocks } from "@angular/common/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog } from "@angular/material/dialog";
+import { MatSelect } from "@angular/material/select";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { By } from "@angular/platform-browser";
 import { provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -77,31 +79,81 @@ describe("SystemConfigComponent", () => {
     fixture.detectChanges();
   });
 
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const el = (): HTMLElement => fixture.nativeElement;
+  const textInput = (placeholder: string) =>
+    el().querySelector(`input[placeholder="${placeholder}"]`) as HTMLInputElement;
+  const checkboxInput = (index: number) => el().querySelectorAll<HTMLInputElement>("mat-checkbox input")[index];
+  const type = async (input: HTMLInputElement, value: string) => {
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const blur = async (input: HTMLInputElement) => {
+    input.dispatchEvent(new Event("blur"));
+    await flush();
+  };
+  const loadConfig = async (config: Record<string, string>) => {
+    systemService.systemConfig.set(config);
+    await flush();
+  };
+  const lastSavedBody = (): Record<string, unknown> => {
+    const calls = systemService.saveSystemConfig.mock.calls;
+    return calls[calls.length - 1][0];
+  };
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should load system config on init", () => {
-    expect(component.params).toBeDefined();
-    expect(component.params().splitAtSign).toBe(true);
-    expect(component.params().IncFailCountOnFalsePin).toBe(false);
-    expect(component.params().no_auth_counter).toBe(true);
-    expect(component.params().PrependPin).toBe(false);
-    expect(component.params().AutoResync).toBe(true);
-    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
-    expect(component.params()["someOtherConfig"]).toBe("test_value");
+  it("should load the known settings into the form model", () => {
+    expect(component.model()).toEqual(
+      expect.objectContaining({
+        splitAtSign: true,
+        IncFailCountOnFalsePin: false,
+        no_auth_counter: true,
+        PrependPin: false,
+        AutoResync: true
+      })
+    );
+    expect(component.systemConfigForm.splitAtSign().value()).toBe(true);
+    expect(component.hasChanges()).toBe(false);
   });
 
-  it("should convert boolean config values correctly", () => {
-    // Test that boolean values are properly converted
-    expect(component.params().splitAtSign).toBe(true);
-    expect(component.params().IncFailCountOnFalsePin).toBe(false);
-    expect(component.params().no_auth_counter).toBe(true);
-    expect(component.params().PrependPin).toBe(false);
-    expect(component.params().AutoResync).toBe(true);
-    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
+  it("should render the loaded boolean settings in the checkboxes", () => {
+    expect([0, 1, 2, 3, 4].map((index) => checkboxInput(index).checked)).toEqual([true, false, true, false, true]);
+  });
+
+  it("should send settings without a control back unchanged", async () => {
+    component.saveSystemConfig();
+
+    expect(lastSavedBody()).toEqual(
+      expect.objectContaining({
+        someOtherConfig: "test_value",
+        ReturnSamlAttributes: "True",
+        ReturnSamlAttributesOnFail: "False",
+        UiLoginDisplayHelpButton: false,
+        UiLoginDisplayRealmBox: true
+      })
+    );
+  });
+
+  it("sends the checkbox settings of a pristine form as JSON booleans, as before the form migration", () => {
+    component.saveSystemConfig();
+
+    expect(lastSavedBody()).toEqual(
+      expect.objectContaining({
+        splitAtSign: true,
+        IncFailCountOnFalsePin: false,
+        no_auth_counter: true,
+        PrependPin: false,
+        AutoResync: true
+      })
+    );
   });
 
   it("should derive SMTP identifiers from the configured servers", () => {
@@ -113,20 +165,35 @@ describe("SystemConfigComponent", () => {
     expect(component.smtpIdentifiers()).toStrictEqual(["myServer", "otherServer"]);
   });
 
-  it("should offer to clear the SMTP identifier only while one is selected", () => {
-    const smtpField = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-form-field")).find((field) =>
+  it("should offer to clear the SMTP identifier only while one is selected", async () => {
+    const smtpField = Array.from<HTMLElement>(el().querySelectorAll("mat-form-field")).find((field) =>
       field.querySelector("mat-select")
     )!;
     expect(smtpField.querySelector("app-clear-button")).toBeNull();
 
-    component.updateParam("recovery.identifier", "myServer");
-    fixture.detectChanges();
+    await loadConfig({ "recovery.identifier": "myServer" });
     expect(smtpField.querySelector("app-clear-button")).not.toBeNull();
 
     smtpField.querySelector<HTMLButtonElement>("app-clear-button button")!.click();
-    fixture.detectChanges();
-    expect(component.params()["recovery.identifier"]).toBe("");
+    await flush();
+    expect(component.model()["recovery.identifier"]).toBe("");
+    expect(component.systemConfigForm["recovery.identifier"]().dirty()).toBe(true);
     expect(smtpField.querySelector("app-clear-button")).toBeNull();
+  });
+
+  it("should write the picked SMTP server to the model", async () => {
+    const smtpService = TestBed.inject(SmtpService) as unknown as MockSmtpService;
+    smtpService.smtpServers.set([{ identifier: "myServer" }, { identifier: "otherServer" }] as SmtpServer[]);
+    await flush();
+
+    const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+    select.open();
+    await flush();
+    (document.querySelectorAll("mat-option")[1] as HTMLElement).click();
+    await flush();
+
+    expect(component.model()["recovery.identifier"]).toBe("otherServer");
+    expect(component.hasChanges()).toBe(true);
   });
 
   it("should save system config successfully", () => {
@@ -211,13 +278,6 @@ describe("SystemConfigComponent", () => {
     );
   });
 
-  it("should mark the form dirty when a parameter is updated", () => {
-    component.updateParam("SomeKey", "SomeValue");
-
-    expect(component.isDirty()).toBe(true);
-    expect(component.params()["SomeKey"]).toBe("SomeValue");
-  });
-
   it("should check config write permission", () => {
     jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
     expect(component.hasConfigWritePermission()).toBe(true);
@@ -238,11 +298,17 @@ describe("SystemConfigComponent", () => {
     expect(pendingChangesService.registerSave).toHaveBeenCalled();
   });
 
-  it("should report hasChanges based on isDirty signal", () => {
+  it("should report hasChanges from the model compared to the loaded settings", async () => {
     const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
     expect(fn()).toBe(false);
-    component.isDirty.set(true);
+
+    checkboxInput(0).click();
+    await flush();
     expect(fn()).toBe(true);
+
+    checkboxInput(0).click();
+    await flush();
+    expect(fn()).toBe(false);
   });
 
   it("_saveAndReturn should call saveSystemConfig and resolve true on success", async () => {
@@ -272,11 +338,15 @@ describe("SystemConfigComponent", () => {
     expect(result).toBe(false);
   });
 
-  it("validChanges combines permission and form validity", () => {
+  it("validChanges combines permission and form validity", async () => {
     const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
     jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
     expect(fn()).toBe(true);
     jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+    expect(fn()).toBe(false);
+
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    await type(textInput("6"), "abc");
     expect(fn()).toBe(false);
   });
 
@@ -299,5 +369,224 @@ describe("SystemConfigComponent", () => {
 
     const otpLenInput: HTMLInputElement = fixture.nativeElement.querySelector('input[placeholder="6"]');
     expect(otpLenInput.value).toBe("8");
+  });
+
+  describe("settings the backend does not hold", () => {
+    beforeEach(async () => {
+      await loadConfig({ DefaultOtpLen: "8", someOtherConfig: "kept" });
+    });
+
+    it("leaves every other control empty or unchecked", () => {
+      expect(component.model()).toEqual({
+        splitAtSign: false,
+        IncFailCountOnFalsePin: false,
+        no_auth_counter: false,
+        PrependPin: false,
+        AutoResync: false,
+        AutoResyncTimeout: "",
+        OverrideAuthorizationClient: "",
+        UserCacheExpiration: "",
+        failcounter_clear_timeout: "",
+        DefaultChallengeValidityTime: "",
+        DefaultCountWindow: "",
+        DefaultMaxFailCount: "",
+        DefaultOtpLen: "8",
+        DefaultSyncWindow: "",
+        "recovery.identifier": ""
+      });
+    });
+
+    it("does not send an unset setting", () => {
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual({ DefaultOtpLen: "8", someOtherConfig: "kept" });
+    });
+
+    it("sends a setting the admin sets", async () => {
+      await type(textInput("10"), "12");
+      checkboxInput(1).click();
+      await flush();
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual({
+        DefaultOtpLen: "8",
+        someOtherConfig: "kept",
+        DefaultCountWindow: "12",
+        IncFailCountOnFalsePin: true
+      });
+    });
+
+    it("sends a cleared setting that the backend holds as an empty value", async () => {
+      await type(textInput("6"), "");
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual({ DefaultOtpLen: "", someOtherConfig: "kept" });
+    });
+
+    it("keeps sending a setting once it was saved, so clearing it removes it", async () => {
+      await type(textInput("10"), "12");
+      component.saveSystemConfig();
+      expect(component.hasChanges()).toBe(false);
+
+      await type(textInput("10"), "");
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual(expect.objectContaining({ DefaultCountWindow: "" }));
+    });
+
+    it("skips a setting the backend returns as undefined", async () => {
+      await loadConfig({ DefaultOtpLen: undefined as unknown as string, DefaultSyncWindow: "5" });
+
+      expect(component.model().DefaultOtpLen).toBe("");
+      component.saveSystemConfig();
+      expect(lastSavedBody()).toEqual({ DefaultSyncWindow: "5" });
+    });
+  });
+
+  describe("editing", () => {
+    it("writes a typed value to the model and marks the field dirty", async () => {
+      expect(component.systemConfigForm.DefaultSyncWindow().dirty()).toBe(false);
+
+      await type(textInput("1000"), "500");
+
+      expect(component.model().DefaultSyncWindow).toBe("500");
+      expect(component.systemConfigForm.DefaultSyncWindow().dirty()).toBe(true);
+      expect(component.hasChanges()).toBe(true);
+    });
+
+    it("clears the override authorization clients through the clear button", async () => {
+      await type(textInput("127.0.0.1, 10.0.0.8"), "10.0.0.1");
+      const clear = el().querySelector<HTMLButtonElement>("app-clearable-input app-clear-button button")!;
+
+      clear.click();
+      await flush();
+
+      expect(component.model().OverrideAuthorizationClient).toBe("");
+      expect(textInput("127.0.0.1, 10.0.0.8").value).toBe("");
+    });
+
+    it("disables the auto resync timeout while auto resync is off", async () => {
+      const timeout = textInput("300");
+      expect(timeout.disabled).toBe(false);
+
+      checkboxInput(4).click();
+      await flush();
+
+      expect(component.model().AutoResync).toBe(false);
+      expect(timeout.disabled).toBe(true);
+    });
+
+    it("keeps the auto resync timeout value while it is disabled", async () => {
+      await type(textInput("300"), "120");
+      checkboxInput(4).click();
+      await flush();
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual(expect.objectContaining({ AutoResync: false, AutoResyncTimeout: "120" }));
+    });
+
+    it("discards edits when the settings are reloaded", async () => {
+      await type(textInput("1000"), "500");
+      await type(textInput("1000"), "x");
+      await blur(textInput("1000"));
+      expect(component.systemConfigForm.DefaultSyncWindow().touched()).toBe(true);
+
+      await loadConfig({ DefaultSyncWindow: "7" });
+
+      expect(component.model().DefaultSyncWindow).toBe("7");
+      expect(component.hasChanges()).toBe(false);
+      expect(component.systemConfigForm.DefaultSyncWindow().touched()).toBe(false);
+    });
+  });
+
+  describe("numeric settings", () => {
+    const numericKeys = [
+      "failcounter_clear_timeout",
+      "AutoResyncTimeout",
+      "UserCacheExpiration",
+      "DefaultOtpLen",
+      "DefaultCountWindow",
+      "DefaultMaxFailCount",
+      "DefaultSyncWindow",
+      "DefaultChallengeValidityTime"
+    ] as const;
+    // The numeric inputs in template order; the override clients input sits between them.
+    const inputFor = (key: (typeof numericKeys)[number]): HTMLInputElement => {
+      const inputs = Array.from(el().querySelectorAll<HTMLInputElement>("mat-form-field input:not([role])"));
+      const withoutOverride = inputs.filter((input) => input.placeholder !== "127.0.0.1, 10.0.0.8");
+      return withoutOverride[numericKeys.indexOf(key)];
+    };
+
+    it.each(numericKeys)("accepts an empty and a whole-number %s", async (key) => {
+      await type(inputFor(key), "42");
+      expect(component.model()[key]).toBe("42");
+      expect(component.systemConfigForm[key]().valid()).toBe(true);
+      await type(inputFor(key), "");
+      expect(component.systemConfigForm[key]().valid()).toBe(true);
+    });
+
+    it.each(numericKeys)("rejects a non-numeric %s", async (key) => {
+      await type(inputFor(key), "abc");
+      expect(component.model()[key]).toBe("abc");
+      expect(component.systemConfigForm[key]().errors()).toEqual([expect.objectContaining({ kind: "pattern" })]);
+    });
+
+    it.each(["abc", "-1", "1.5", "1e3", " 5", "5 "])("rejects %p and shows the error once touched", async (bad) => {
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+      const input = textInput("1000");
+
+      await type(input, bad);
+      expect(component.systemConfigForm.DefaultSyncWindow().valid()).toBe(false);
+      expect(el().querySelector("mat-error")).toBeNull();
+
+      await blur(input);
+      expect(el().querySelector("mat-error")?.textContent).toContain("whole number");
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("shows the errors of a stored invalid setting and disables Save", async () => {
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+      await loadConfig({ DefaultSyncWindow: "5.0" });
+
+      expect(el().querySelector("mat-error")?.textContent).toContain("whole number");
+      expect(component.canSave()).toBe(false);
+      expect(el().querySelector<HTMLButtonElement>(".action-button-primary")!.disabled).toBe(true);
+      expect(systemService.saveSystemConfig).not.toHaveBeenCalled();
+    });
+
+    it("disables Save while a typed value is invalid and enables it again once it is fixed", async () => {
+      jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+      await flush();
+      const saveButton = el().querySelector<HTMLButtonElement>(".action-button-primary")!;
+      expect(saveButton.disabled).toBe(false);
+
+      await type(textInput("1000"), "e");
+      expect(saveButton.disabled).toBe(true);
+
+      await type(textInput("1000"), "7");
+      expect(saveButton.disabled).toBe(false);
+    });
+
+    it("does not save while a setting is invalid and shows every error", async () => {
+      await type(textInput("1000"), "x");
+      await type(textInput("6"), "y");
+
+      component.saveSystemConfig();
+      await flush();
+
+      expect(systemService.saveSystemConfig).not.toHaveBeenCalled();
+      expect(component.systemConfigForm.DefaultOtpLen().touched()).toBe(true);
+      expect(el().querySelectorAll("mat-error").length).toBe(2);
+    });
+
+    it("does not save through the pending-changes save while a setting is invalid", async () => {
+      await type(textInput("1000"), "x");
+      const saveFn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+
+      await expect(saveFn()).resolves.toBe(false);
+
+      expect(systemService.saveSystemConfig).not.toHaveBeenCalled();
+      expect(component.systemConfigForm.DefaultSyncWindow().touched()).toBe(true);
+    });
   });
 });

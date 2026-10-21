@@ -19,10 +19,13 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
+import { MatSelect } from "@angular/material/select";
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTask, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { SystemService } from "@services/system/system.service";
@@ -40,7 +43,7 @@ describe("PeriodicTaskEditComponent", () => {
   let pendingChangesService: MockPendingChangesService;
   let router: Router;
 
-  const createComponent = async (paramMap: Record<string, string>, tasks: PeriodicTask[] = []) => {
+  const createComponent = async (paramMap: Record<string, string>, tasks: PeriodicTask[] = [], canWrite = false) => {
     await TestBed.configureTestingModule({
       imports: [PeriodicTaskEditComponent],
       providers: [
@@ -55,6 +58,7 @@ describe("PeriodicTaskEditComponent", () => {
       ]
     }).compileComponents();
 
+    (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(canWrite);
     periodicTaskService = TestBed.inject(PeriodicTaskService) as unknown as MockPeriodicTaskService;
     if (tasks.length > 0) periodicTaskService.setPeriodicTasks(tasks);
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
@@ -178,15 +182,6 @@ describe("PeriodicTaskEditComponent", () => {
       expect(component.editTask().options["event_counter"]).toBe("logins");
     });
 
-    it("updateOptionValue sets the value for a single option without disturbing the rest", async () => {
-      const { component } = await createComponent({});
-      seedTask(component);
-      const before = { ...component.editTask().options };
-      component.updateOptionValue("hardware_tokens", "false");
-      expect(component.editTask().options["hardware_tokens"]).toBe("false");
-      expect(component.editTask().options["user_with_token"]).toBe(before["user_with_token"]);
-    });
-
     it("isOptionSet returns true only for keys present in editTask.options", async () => {
       const { component } = await createComponent({});
       seedTask(component);
@@ -194,11 +189,13 @@ describe("PeriodicTaskEditComponent", () => {
       expect(component.isOptionSet("not_in_options")).toBe(false);
     });
 
-    it("updates taskmodule on change", async () => {
+    it("replaces the options with the new module's required defaults on module change", async () => {
       const { component } = await createComponent({});
       seedTask(component);
       component.onTaskModuleChange("EventCounter");
-      expect(component.editTask().taskmodule).toBe("EventCounter");
+      expect(component.editTask().options).toEqual({ event_counter: "", stats_key: "" });
+      component.onTaskModuleChange("UnknownModule");
+      expect(component.editTask().options).toEqual({});
     });
 
     it("computes requiredOptions correctly", async () => {
@@ -293,13 +290,11 @@ describe("PeriodicTaskEditComponent", () => {
     it("resets options to required-only when the module changes in edit mode", async () => {
       const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
       component.onTaskModuleChange("SimpleStats");
-      expect(component.editTask().taskmodule).toBe("SimpleStats");
       // SimpleStats has no required options, so options should be cleared entirely
       expect(component.editTask().options).toEqual({});
 
       // Switching to EventCounter pre-fills its two required options with empty strings
       component.onTaskModuleChange("EventCounter");
-      expect(component.editTask().taskmodule).toBe("EventCounter");
       expect(component.editTask().options).toEqual({ event_counter: "", stats_key: "" });
     });
 
@@ -309,14 +304,6 @@ describe("PeriodicTaskEditComponent", () => {
       expect(component.editTask().interval).toBe(VALID_TASK.interval);
       expect(component.editTask().nodes).toEqual(VALID_TASK.nodes);
       expect(component.editTask().name).toBe(VALID_TASK.name);
-    });
-  });
-
-  describe("onNodeSelectionChange", () => {
-    it("replaces the nodes array on the edit task", async () => {
-      const { component } = await createComponent({});
-      component.onNodeSelectionChange(["nodeA", "nodeB"]);
-      expect(component.editTask().nodes).toEqual(["nodeA", "nodeB"]);
     });
   });
 
@@ -393,36 +380,314 @@ describe("PeriodicTaskEditComponent", () => {
     });
   });
 
-  describe("fieldHasError", () => {
-    const makeField = (errors: { kind: string }[], dirty: boolean, touched: boolean) => ({
-      errors: () => errors,
-      dirty: () => dirty,
-      touched: () => touched
+  describe("Form rules", () => {
+    const kinds = (field: { errors(): { kind: string }[] }) => field.errors().map((e) => e.kind);
+
+    it("requires a name made of identifier characters", async () => {
+      const { component } = await createComponent({});
+      const name = component.editTaskForm.name;
+      expect(kinds(name())).toEqual(["required"]);
+      component.editTask.update((t) => ({ ...t, name: "bad name!" }));
+      expect(kinds(name())).toEqual(["pattern"]);
+      component.editTask.update((t) => ({ ...t, name: "good.name-1_x" }));
+      expect(name().errors()).toEqual([]);
     });
 
-    it("returns false when the field has no errors", async () => {
+    it("requires a task module and an interval", async () => {
       const { component } = await createComponent({});
-      expect(component.fieldHasError(makeField([], true, false), "required")).toBe(false);
+      component.editTask.update((t) => ({ ...t, taskmodule: "" }));
+      expect(kinds(component.editTaskForm.taskmodule())).toEqual(["required"]);
+      expect(kinds(component.editTaskForm.interval())).toEqual(["required"]);
+      component.editTask.update((t) => ({ ...t, taskmodule: "SimpleStats", interval: "* * * * *" }));
+      expect(component.editTaskForm.taskmodule().errors()).toEqual([]);
+      expect(component.editTaskForm.interval().errors()).toEqual([]);
     });
 
-    it("returns false when the matching error exists but the field is neither dirty nor touched", async () => {
+    it("requires at least one node", async () => {
       const { component } = await createComponent({});
-      expect(component.fieldHasError(makeField([{ kind: "required" }], false, false), "required")).toBe(false);
+      expect(kinds(component.editTaskForm.nodes())).toEqual(["required"]);
+      component.editTask.update((t) => ({ ...t, nodes: ["node-a"] }));
+      expect(component.editTaskForm.nodes().errors()).toEqual([]);
     });
 
-    it("returns true when the matching error exists and the field is dirty", async () => {
+    it("accepts an ordering of 0 and rejects an empty ordering", async () => {
       const { component } = await createComponent({});
-      expect(component.fieldHasError(makeField([{ kind: "required" }], true, false), "required")).toBe(true);
+      expect(component.editTaskForm.ordering().errors()).toEqual([]);
+      component.editTask.update((t) => ({ ...t, ordering: null }));
+      expect(kinds(component.editTaskForm.ordering())).toEqual(["required"]);
+      component.editTask.update((t) => ({ ...t, ordering: 7 }));
+      expect(component.editTaskForm.ordering().errors()).toEqual([]);
     });
 
-    it("returns true when the matching error exists and the field is touched", async () => {
+    it("rejects an empty options map and accepts a module without required options", async () => {
       const { component } = await createComponent({});
-      expect(component.fieldHasError(makeField([{ kind: "required" }], false, true), "required")).toBe(true);
+      expect(kinds(component.editTaskForm.options())).toEqual(["required"]);
+      component.editTask.update((t) => ({ ...t, taskmodule: "SimpleStats", options: { hardware_tokens: "true" } }));
+      expect(component.editTaskForm.options().errors()).toEqual([]);
     });
 
-    it("returns false when a different error kind is present", async () => {
+    it("reports a missing required option on the options map", async () => {
       const { component } = await createComponent({});
-      expect(component.fieldHasError(makeField([{ kind: "pattern" }], true, true), "required")).toBe(false);
+      component.editTask.update((t) => ({ ...t, taskmodule: "EventCounter", options: { event_counter: "x" } }));
+      expect(kinds(component.editTaskForm.options())).toEqual(["required"]);
+    });
+
+    it("reports an empty required option on its own field, but not an empty optional one", async () => {
+      const { component } = await createComponent({});
+      component.onTaskModuleChange("EventCounter");
+      component.editTask.update((t) => ({
+        ...t,
+        taskmodule: "EventCounter",
+        options: { ...t.options, reset_event_counter: "" }
+      }));
+      expect(kinds(component.editTaskForm.options["event_counter"]())).toEqual(["required"]);
+      expect(kinds(component.editTaskForm.options["stats_key"]())).toEqual(["required"]);
+      expect(component.editTaskForm.options["reset_event_counter"]().errors()).toEqual([]);
+      component.editTask.update((t) => ({ ...t, options: { event_counter: "a", stats_key: "b" } }));
+      expect(component.editTaskForm.options["event_counter"]().errors()).toEqual([]);
+      expect(component.editTaskForm.options().errors()).toEqual([]);
+    });
+
+    it("disables the active toggle without the periodictask_write right", async () => {
+      const { component } = await createComponent({});
+      expect(component.editTaskForm.active().disabled()).toBe(true);
+    });
+
+    it("enables the active toggle with the periodictask_write right", async () => {
+      const { component } = await createComponent({}, [], true);
+      expect(component.editTaskForm.active().disabled()).toBe(false);
+    });
+
+    it("does not let the disabled active toggle block saving", async () => {
+      const { component } = await createComponent({});
+      component.editTask.set({ ...VALID_TASK, ordering: 1 });
+      expect(component.editTaskForm.active().disabled()).toBe(true);
+      expect(component.canSave()).toBe(true);
+    });
+  });
+
+  describe("Template bindings", () => {
+    const inputs = (fixture: ComponentFixture<PeriodicTaskEditComponent>) =>
+      Array.from(fixture.nativeElement.querySelectorAll("input[matInput]")) as HTMLInputElement[];
+
+    const type = async (
+      fixture: ComponentFixture<PeriodicTaskEditComponent>,
+      field: HTMLInputElement,
+      value: string
+    ) => {
+      field.value = value;
+      field.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    const flush = async (fixture: ComponentFixture<PeriodicTaskEditComponent>) => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    const errorTexts = (fixture: ComponentFixture<PeriodicTaskEditComponent>) =>
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((e) =>
+        (e as HTMLElement).textContent?.replace(/\s+/g, " ").trim()
+      );
+
+    it("writes typed name, interval and ordering into the model", async () => {
+      const { fixture, component } = await createComponent({});
+      await flush(fixture);
+      const [name, interval, ordering] = inputs(fixture);
+      await type(fixture, name, "my-task");
+      await type(fixture, interval, "5 0 * * *");
+      await type(fixture, ordering, "12");
+      expect(component.editTask().name).toBe("my-task");
+      expect(component.editTask().interval).toBe("5 0 * * *");
+      expect(component.editTask().ordering).toBe(12);
+      expect(component.editTaskForm.name().dirty()).toBe(true);
+    });
+
+    it("stores an emptied ordering as null and renders the required message once touched", async () => {
+      const { fixture, component } = await createComponent({});
+      await flush(fixture);
+      const ordering = inputs(fixture)[2];
+      await type(fixture, ordering, "");
+      expect(component.editTask().ordering).toBeNull();
+      ordering.dispatchEvent(new Event("blur"));
+      await flush(fixture);
+      expect(errorTexts(fixture)).toContain("Ordering is required.");
+    });
+
+    it("renders the parse message for text the number input cannot parse", async () => {
+      const { fixture, component } = await createComponent({});
+      await flush(fixture);
+      const ordering = inputs(fixture)[2];
+      jest.spyOn(ordering, "validity", "get").mockReturnValue({ badInput: true } as ValidityState);
+      await type(fixture, ordering, "");
+      expect(
+        component.editTaskForm
+          .ordering()
+          .errors()
+          .map((e) => e.kind)
+      ).toContain("parse");
+      ordering.dispatchEvent(new Event("blur"));
+      await flush(fixture);
+      expect(errorTexts(fixture)).toContain("Ordering has to be a number.");
+    });
+
+    it("clears the name and interval through the clear buttons", async () => {
+      const { fixture, component } = await createComponent({});
+      component.editTask.update((t) => ({ ...t, name: "abc", interval: "* * * * *" }));
+      await flush(fixture);
+      const clearables = fixture.debugElement.queryAll(By.directive(ClearableInputComponent));
+      clearables[0].componentInstance.clearButtonClick.emit();
+      clearables[1].componentInstance.clearButtonClick.emit();
+      await flush(fixture);
+      expect(component.editTask().name).toBe("");
+      expect(component.editTask().interval).toBe("");
+      expect(component.editTaskForm.name().dirty()).toBe(true);
+    });
+
+    it("renders the name errors after the name was edited", async () => {
+      const { fixture } = await createComponent({});
+      await flush(fixture);
+      const name = inputs(fixture)[0];
+      await type(fixture, name, "bad name");
+      name.dispatchEvent(new Event("blur"));
+      await flush(fixture);
+      expect(errorTexts(fixture).some((t) => t?.startsWith("Name contains invalid characters"))).toBe(true);
+      await type(fixture, name, "");
+      expect(errorTexts(fixture)).toContain("Name is required.");
+    });
+
+    it("touches every field when a save is refused so the errors render", async () => {
+      const { fixture, component } = await createComponent({});
+      await flush(fixture);
+      expect(errorTexts(fixture)).toEqual([]);
+      expect(await component.save()).toBe(false);
+      await flush(fixture);
+      expect(component.editTaskForm.interval().touched()).toBe(true);
+      const texts = errorTexts(fixture);
+      expect(texts).toContain("Name is required.");
+      expect(texts).toContain("Interval is required.");
+      expect(texts).toContain("At least one node is required.");
+    });
+
+    it("binds the retry checkbox and the active toggle", async () => {
+      const { fixture, component } = await createComponent({}, [], true);
+      await flush(fixture);
+      const retry = fixture.nativeElement.querySelector(".server-checkbox input[type=checkbox]") as HTMLInputElement;
+      retry.click();
+      await flush(fixture);
+      expect(component.editTask().retry_if_failed).toBe(!EMPTY_PERIODIC_TASK.retry_if_failed);
+      const toggle = fixture.nativeElement.querySelector("mat-slide-toggle button") as HTMLButtonElement;
+      expect(toggle.disabled).toBe(false);
+      toggle.click();
+      await flush(fixture);
+      expect(component.editTask().active).toBe(!EMPTY_PERIODIC_TASK.active);
+    });
+
+    it("disables the active toggle without the write right", async () => {
+      const { fixture } = await createComponent({});
+      await flush(fixture);
+      const toggle = fixture.nativeElement.querySelector("mat-slide-toggle button") as HTMLButtonElement;
+      expect(toggle.disabled).toBe(true);
+    });
+
+    it("writes the selected module and nodes into the model", async () => {
+      const { fixture, component } = await createComponent({});
+      periodicTaskService.periodicTaskModuleResource.value.set(
+        MockPiResponse.fromValue(["EventCounter", "SimpleStats"] as never)
+      );
+      await flush(fixture);
+      const selects = fixture.debugElement.queryAll(By.directive(MatSelect));
+      const [moduleSelect, nodesSelect] = selects.map((s) => s.componentInstance as MatSelect);
+      moduleSelect.open();
+      await flush(fixture);
+      (document.querySelectorAll("mat-option")[0] as HTMLElement).click();
+      await flush(fixture);
+      expect(component.editTask().taskmodule).toBe("EventCounter");
+      expect(component.editTask().options).toEqual({ event_counter: "", stats_key: "" });
+      nodesSelect.open();
+      await flush(fixture);
+      const optionByText = (text: string) =>
+        Array.from(document.querySelectorAll("mat-option")).find((o) => o.textContent?.trim() === text) as HTMLElement;
+      optionByText("Node 2").click();
+      await flush(fixture);
+      expect(component.editTask().nodes).toEqual(["Node 2"]);
+    });
+
+    it("writes an option value into the options map and flags an emptied required option", async () => {
+      const { fixture, component } = await createComponent({});
+      component.editTask.update((t) => ({ ...t, taskmodule: "EventCounter" }));
+      component.onTaskModuleChange("EventCounter");
+      await flush(fixture);
+      const valueInputs = inputs(fixture).slice(3);
+      expect(valueInputs).toHaveLength(2);
+      await type(fixture, valueInputs[0], "logins");
+      expect(component.editTask().options["event_counter"]).toBe("logins");
+      await type(fixture, valueInputs[0], "");
+      valueInputs[0].dispatchEvent(new Event("blur"));
+      await flush(fixture);
+      expect(errorTexts(fixture)).toContain("Value is required.");
+    });
+  });
+
+  describe("Optional option toggle", () => {
+    it("adds an optional text option through its checkbox and binds its value input", async () => {
+      const { fixture, component } = await createComponent({}, [], true);
+      periodicTaskService.moduleOptions.update((modules) => ({
+        ...modules,
+        EventCounter: {
+          ...modules["EventCounter"],
+          note: { name: "note", description: "Free text", type: "str" }
+        }
+      }));
+      component.editTask.update((t) => ({ ...t, taskmodule: "EventCounter" }));
+      component.onTaskModuleChange("EventCounter");
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const checkbox = fixture.nativeElement.querySelector('input[aria-label="note"]') as HTMLInputElement;
+      checkbox.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(component.isOptionSet("note")).toBe(true);
+      const valueInputs = Array.from(fixture.nativeElement.querySelectorAll("input[matInput]")) as HTMLInputElement[];
+      const last = valueInputs[valueInputs.length - 1];
+      last.value = "hello";
+      last.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+      expect(component.editTask().options["note"]).toBe("hello");
+      expect(component.editTaskForm.options["note"]().dirty()).toBe(true);
+    });
+  });
+
+  describe("Dirty tracking", () => {
+    it("starts clean after loading a task and keeps hasChanges in step with edits", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      expect(component.editTaskForm().dirty()).toBe(false);
+      expect(component.hasChanges()).toBe(false);
+      component.editTaskForm.interval().controlValue.set("*/9 * * * *");
+      expect(component.hasChanges()).toBe(true);
+      component.editTaskForm.interval().controlValue.set(VALID_TASK.interval);
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("loads a task that arrives after the page opened and clears dirty", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name });
+      expect(component.editTask().name).toBe("");
+      periodicTaskService.setPeriodicTasks([VALID_TASK]);
+      TestBed.tick();
+      expect(component.editTask().name).toBe(VALID_TASK.name);
+      expect(component.editTaskForm().dirty()).toBe(false);
+    });
+
+    it("does not overwrite edits when the task list reloads", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.editTaskForm.interval().controlValue.set("*/9 * * * *");
+      periodicTaskService.setPeriodicTasks([{ ...VALID_TASK }]);
+      TestBed.tick();
+      expect(component.editTask().interval).toBe("*/9 * * * *");
     });
   });
 
