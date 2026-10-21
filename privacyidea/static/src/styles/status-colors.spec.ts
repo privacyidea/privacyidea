@@ -23,7 +23,7 @@ import { resolve } from "node:path";
 // The status colour levels promise a contrast, and a one-step tweak of a hue or lightness can quietly lose it: AAA
 // holds 7:1 and AA 4.5:1 between the ink and every fill, and every fill's edge holds 3:1 against the page in both
 // themes. This spec reads the $status-colors map in styles.scss and checks those numbers. Level A is the old WebUI
-// palette and promises nothing, so only its edge is checked.
+// palette and promises nothing, so only the edges it shades itself are checked.
 type Rgb = [number, number, number];
 
 const SOURCE = readFileSync(resolve(__dirname, "styles.scss"), "utf8");
@@ -38,7 +38,18 @@ const DARK_SURFACES: Rgb[] = [
   [38, 38, 38]
 ];
 // The share of the edge tone mixed into a fill (--green-edge and the others in styles.scss).
-const EDGE_MIX = 0.55;
+const EDGE_MIX = 0.65;
+// The contrast the grey each level shades its edges toward (--status-edge-tone) holds against the page.
+const TONE_CONTRAST: Record<string, number> = { aaa: 7, aa: 4.5, a: 4.5 };
+
+interface Level {
+  ink: Rgb;
+  // The grey the edges are shaded toward: dark on a light page, light on a dark one.
+  tones: { light: Rgb; dark: Rgb };
+  fills: Record<string, Rgb>;
+  // The edges a level names itself; every other fill's edge is the fill shaded toward the tone.
+  edges: Partial<Record<string, Rgb>>;
+}
 
 function parseColor(text: string): Rgb {
   const hex = /^#([0-9a-f]{6})$/i.exec(text);
@@ -60,15 +71,25 @@ function parseColor(text: string): Rgb {
   throw new Error(`Unsupported colour in $status-colors: ${text}`);
 }
 
-function levels(): Record<string, { ink: Rgb; fills: Record<string, Rgb> }> {
+function parseTones(text: string): { light: Rgb; dark: Rgb } {
+  const pair = /^light-dark\(\s*(hsl\([^)]*\)),\s*(hsl\([^)]*\))\s*\)$/.exec(text);
+  if (!pair) throw new Error(`Unsupported edge tone in $status-colors: ${text}`);
+  return { light: parseColor(pair[1]), dark: parseColor(pair[2]) };
+}
+
+function levels(): Record<string, Level> {
   const map = SOURCE.slice(SOURCE.indexOf("$status-colors: ("), SOURCE.indexOf("@mixin status-colors"));
-  const result: Record<string, { ink: Rgb; fills: Record<string, Rgb> }> = {};
+  const result: Record<string, Level> = {};
   for (const level of ["aaa", "aa", "a"]) {
     const block = new RegExp(`"${level}": \\(([\\s\\S]*?)\\n  \\)`).exec(map)?.[1] ?? "";
     const value = (key: string) => new RegExp(`"${key}":\\s*(.+?),?\\s*$`, "m").exec(block)?.[1].trim() ?? "";
     result[level] = {
       ink: parseColor(value("ink")),
-      fills: Object.fromEntries(FILLS.map((fill) => [fill, parseColor(value(fill))]))
+      tones: parseTones(value("edge-tone")),
+      fills: Object.fromEntries(FILLS.map((fill) => [fill, parseColor(value(fill))])),
+      edges: Object.fromEntries(
+        FILLS.filter((fill) => value(`${fill}-edge`)).map((fill) => [fill, parseColor(value(`${fill}-edge`))])
+      )
     };
   }
   return result;
@@ -133,15 +154,38 @@ describe("status colors", () => {
   );
 
   it.each(["aaa", "aa", "a"])("level %s has an edge that holds 3:1 against the page in both themes", (level) => {
-    for (const fill of FILLS) {
-      const light = edge(all[level].fills[fill], [0, 0, 0]);
-      const dark = edge(all[level].fills[fill], [255, 255, 255]);
+    for (const fill of FILLS.filter((name) => !all[level].edges[name])) {
+      const light = edge(all[level].fills[fill], all[level].tones.light);
+      const dark = edge(all[level].fills[fill], all[level].tones.dark);
       for (const surface of LIGHT_SURFACES) {
         expect({ fill, theme: "light", ok: contrast(light, surface) >= 3 }).toEqual({ fill, theme: "light", ok: true });
       }
       for (const surface of DARK_SURFACES) {
         expect({ fill, theme: "dark", ok: contrast(dark, surface) >= 3 }).toEqual({ fill, theme: "dark", ok: true });
       }
+    }
+  });
+
+  it.each(["aaa", "aa", "a"])(
+    "level %s shades the edges toward a grey that holds its contrast against the page",
+    (level) => {
+      const minimum = TONE_CONTRAST[level];
+      for (const surface of LIGHT_SURFACES) {
+        expect({ surface, ok: contrast(all[level].tones.light, surface) >= minimum }).toEqual({ surface, ok: true });
+      }
+      for (const surface of DARK_SURFACES) {
+        expect({ surface, ok: contrast(all[level].tones.dark, surface) >= minimum }).toEqual({ surface, ok: true });
+      }
+    }
+  );
+
+  it("lets only level A name its own edges, and keeps them lighter than their fills", () => {
+    expect(Object.keys(all["aaa"].edges)).toEqual([]);
+    expect(Object.keys(all["aa"].edges)).toEqual([]);
+    expect(Object.keys(all["a"].edges)).toEqual(["green", "yellow", "red"]);
+    for (const [fill, color] of Object.entries(all["a"].edges)) {
+      expect({ fill, ok: contrast(color!, all["a"].fills[fill]) >= 1.5 }).toEqual({ fill, ok: true });
+      expect({ fill, lighter: luminance(color!) > luminance(all["a"].fills[fill]) }).toEqual({ fill, lighter: true });
     }
   });
 
