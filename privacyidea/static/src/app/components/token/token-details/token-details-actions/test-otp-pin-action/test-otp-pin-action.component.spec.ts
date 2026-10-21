@@ -72,6 +72,26 @@ describe("TestOtpPinActionComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("typing into the field updates the model", () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector("input[matInput]");
+    input.value = "654321";
+    input.dispatchEvent(new Event("input"));
+    expect(component.otpOrPinToTest()).toBe("654321");
+  });
+
+  it("the toggle button switches the input between masked and plain text", () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector("input[matInput]");
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector("button[matSuffix]");
+    expect(input.type).toBe("password");
+    toggle.click();
+    fixture.detectChanges();
+    expect(component.hide()).toBe(false);
+    expect(input.type).toBe("text");
+    toggle.click();
+    fixture.detectChanges();
+    expect(input.type).toBe("password");
+  });
+
   it("should test and verify token", () => {
     const testSpy = jest.spyOn(validateService, "testToken");
     component.otpOrPinToTest.set("1234");
@@ -84,9 +104,7 @@ describe("TestOtpPinActionComponent", () => {
   });
 
   it("should notify success when the token is accepted", () => {
-    jest
-      .spyOn(validateService, "testToken")
-      .mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
+    jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
     component.testToken();
 
@@ -94,9 +112,7 @@ describe("TestOtpPinActionComponent", () => {
   });
 
   it("should notify a warning when the token is rejected", () => {
-    jest
-      .spyOn(validateService, "testToken")
-      .mockReturnValue(of(mockValidateCheckResponse("REJECT")));
+    jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
 
     component.testToken();
 

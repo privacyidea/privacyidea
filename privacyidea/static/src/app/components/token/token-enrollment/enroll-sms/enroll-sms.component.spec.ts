@@ -33,6 +33,7 @@ import { MockContentService, MockSmsGatewayService, MockSystemService, MockToken
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { EnrollSmsComponent } from "./enroll-sms.component";
+import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
 
 type SystemConfigResourceValue = SystemConfigResponse | undefined;
 
@@ -222,6 +223,37 @@ describe("EnrollSmsComponent", () => {
       const spy = jest.spyOn(component, "goToSmsConfig").mockReturnValue();
       component.onSmsConfigKeydown(new KeyboardEvent("keydown", { key: "a" }));
       expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the checkbox to the model, marks it dirty and disables the phone number", async () => {
+      expect(component.phoneNumberForm().disabled()).toBe(false);
+
+      await clickCheckbox(fixture);
+
+      expect(component.readNumberDynamically()).toBe(true);
+      expect(component.readNumberDynamicallyForm().dirty()).toBe(true);
+      expect(component.phoneNumberForm().disabled()).toBe(true);
+    });
+
+    it("writes the picked SMS gateway to the model", async () => {
+      smsGatewayServiceMock.smsGateways.set([{ name: "gw-a" }, { name: "gw-b" }] as SmsGateway[]);
+      await flushFixture(fixture);
+
+      await pickOption(fixture, matSelectAt(fixture), 1);
+
+      expect(component.smsGateway()).toBe("gw-b");
+      expect(component.smsGatewayForm().dirty()).toBe(true);
+    });
+
+    it("renders the required error of the gateway select once the build was refused", async () => {
+      expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("SMS Gateway is required");
     });
   });
 });

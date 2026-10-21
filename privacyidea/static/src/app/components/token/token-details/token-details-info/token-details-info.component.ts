@@ -16,14 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, Input, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { Component, computed, inject, Input, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { MatFormField } from "@angular/material/form-field";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import {
+  INFO_KEY_EXISTS,
+  InfoEntry,
+  infoEntryRules
+} from "@components/shared/details-shared/field-editing/info-entry.rules";
 import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -31,6 +36,8 @@ import {
   TokenService,
   TokenServiceInterface
 } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 import { Observable, switchMap } from "rxjs";
 import { BLOB_INFO_KEYS, TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 
@@ -38,9 +45,9 @@ import { BLOB_INFO_KEYS, TIMESTAMP_INFO_KEYS } from "../token-details.constants"
   selector: "app-token-details-info",
   standalone: true,
   imports: [
-    MatFormField,
+    MatFormFieldModule,
     MatInput,
-    FormsModule,
+    FormField,
     MatIconButton,
     MatIcon,
     MatDivider,
@@ -52,6 +59,9 @@ import { BLOB_INFO_KEYS, TIMESTAMP_INFO_KEYS } from "../token-details.constants"
 })
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly INFO_KEY_EXISTS = INFO_KEY_EXISTS;
   protected readonly hiddenInfoKeys: readonly string[] = [...TIMESTAMP_INFO_KEYS, ...BLOB_INFO_KEYS];
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
@@ -66,20 +76,31 @@ export class TokenDetailsInfoComponent {
   @Input() undeletableInfoKeys: Signal<string[]> = signal<string[]>([]);
   /** Info entries that have their own endpoint, see TokenDetails.settable_info_keys */
   @Input() settableInfoKeys: Signal<string[]> = signal<string[]>([]);
-  newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
+  newInfo: WritableSignal<InfoEntry> = linkedSignal({
     source: () => this.isEditingInfo(),
     computation: () => {
       return { key: "", value: "" };
     }
   });
   /**
-   * The values as they were when the editing started, so that saving only sends the entries that were really
-   * changed. Sending all of them would overwrite what somebody else changed in the meantime.
-   *
-   * This is filled when the editing starts, not when it is read: the inputs are bound to the value map of the
-   * element itself, so by the time it is saved that map already holds the edited values.
+   * The entries as they are edited. It starts from the values of the token and is taken from them again when the
+   * editing starts and when they are reloaded, so the shown values stay untouched until a save has been reloaded.
    */
-  editedInfoBefore: WritableSignal<Record<string, string>> = signal<Record<string, string>>({});
+  protected readonly infoDraft: WritableSignal<Record<string, string>> = linkedSignal({
+    source: () => ({ editing: this.isEditingInfo(), info: this.asInfoMap(this.infoData()[0]?.value) }),
+    computation: ({ info }) => ({ ...info })
+  });
+  protected readonly infoForm = form(this.infoDraft);
+  protected readonly newInfoForm = form(this.newInfo, (path) => {
+    infoEntryRules(path, () => Object.keys(this.infoDraft()));
+  });
+  /** Whether the entries may be saved: the "add" row is empty or complete and names a new key. */
+  readonly canSave = computed(() => !this.isEditingInfo() || this.newInfoForm().valid());
+  /** The info element for the edit buttons, which disable Save while the "add" row is incomplete. */
+  protected readonly editButtonsElement = computed(() => {
+    const element = this.infoData()[0] as EditableElement<Record<string, string>> | undefined;
+    return element ? { ...element, valid: this.canSave } : undefined;
+  });
   protected authService: AuthServiceInterface = inject(AuthService);
 
   visibleInfoKeys(value: Record<string, string>): string[] {
@@ -88,10 +109,6 @@ export class TokenDetailsInfoComponent {
 
   asInfoMap(value: unknown): Record<string, string> {
     return (value ?? {}) as Record<string, string>;
-  }
-
-  asInfoElement(element: EditableElement): EditableElement<Record<string, string>> {
-    return element as EditableElement<Record<string, string>>;
   }
 
   /**
@@ -113,33 +130,33 @@ export class TokenDetailsInfoComponent {
   toggleInfoEdit(): void {
     if (this.isEditingInfo()) {
       this.tokenService.tokenDetailResource.reload();
-    } else {
-      this.editedInfoBefore.set({ ...this.asInfoMap(this.infoData()[0]?.value) });
     }
+    this.newInfoForm().reset({ key: "", value: "" });
     this.isEditingInfo.update((b) => !b);
   }
 
   saveInfo(element: EditableElement<Record<string, string>>): void {
-    if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
-      element.value[this.newInfo().key] = this.newInfo().value;
+    if (!this.canSave()) {
+      this.newInfoForm.key().markAsTouched();
+      this.newInfoForm.value().markAsTouched();
+      return;
+    }
+    const entries = { ...this.infoDraft() };
+    const { key, value } = this.newInfo();
+    if (key.trim() !== "" && value.trim() !== "") {
+      entries[key.trim()] = value;
     }
     // Only the entries that were really changed are sent, so that a concurrent change to another entry of the
-    // same token is not overwritten with the value this view happened to start with. Without a record of what
-    // the editing started from, everything is sent, which is what happened before it was recorded.
-    const before = this.editedInfoBefore();
-    let changed = element.value;
-    if (Object.keys(before).length) {
-      changed = Object.fromEntries(
-        Object.keys(element.value)
-          .filter((key) => element.value[key] !== before[key])
-          .map((key) => [key, element.value[key]])
-      );
-    }
+    // same token is not overwritten with the value this view happened to start with.
+    const saved = this.asInfoMap(element.value);
+    const changed = Object.fromEntries(
+      Object.entries(entries).filter(([entryKey, entryValue]) => entryValue !== saved[entryKey])
+    );
     this.tokenService
       .setTokenInfos(this.tokenSerial(), changed, this.readonlyInfoKeys(), this.settableInfoKeys())
       .subscribe({
         next: () => {
-          this.newInfo.set({ key: "", value: "" });
+          this.newInfoForm().reset({ key: "", value: "" });
           this.tokenService.tokenDetailResource.reload();
         }
       });

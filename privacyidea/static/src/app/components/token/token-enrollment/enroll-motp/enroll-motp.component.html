@@ -19,8 +19,7 @@
 <div class="flex-column">
   @if (!wizard()) {
     <mat-checkbox
-      [checked]="generateOnServer()"
-      (change)="generateOnServer.set($event.checked)"
+      [formField]="generateOnServerForm"
       class="server-checkbox"
       i18n="@@token.generateOtpKey"
       >Generate the OTP key on the server and show a QR code to scan.</mat-checkbox

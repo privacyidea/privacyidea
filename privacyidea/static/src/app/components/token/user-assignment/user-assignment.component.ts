@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, input, signal } from "@angular/core";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint } from "@angular/material/form-field";
@@ -24,7 +25,9 @@ import { MatInput, MatLabel } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-user-assignment",
@@ -33,6 +36,7 @@ import { UserData, UserService, UserServiceInterface } from "@services/user/user
   standalone: true,
   imports: [
     ClearableInputComponent,
+    FormField,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatFormField,
@@ -57,6 +61,22 @@ export class UserAssignmentComponent {
 
   readonly userInputDisabled = computed(() => !this.userService.selectedUserRealm() || this.onlyAddToRealm());
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  // The realm field writes through to the service signal, so route-driven resets of the realm show up here.
+  readonly realmForm = form(this.userService.selectedUserRealm, (f) => {
+    required(f, { when: () => this.required() });
+  });
+  readonly userFilterForm = form(this.userFilter, (f) => {
+    disabled(f, () => this.userInputDisabled());
+    validate(f, () => (this.required() && !this.userService.selectedUser() ? [{ kind: ERR.required }] : []));
+  });
+  readonly onlyAddToRealmForm = form(this.onlyAddToRealm, (f) => {
+    disabled(f, () => !!this.userFilter());
+  });
+  readonly valid = computed(() => this.realmForm().valid() && this.userFilterForm().valid());
+
   constructor() {
     effect(() => {
       const users = this.userService.selectionFilteredUsers();
@@ -67,12 +87,6 @@ export class UserAssignmentComponent {
     });
   }
 
-  readonly displayUser = (value: UserData | string | null): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    return value.username;
-  };
-
   onlyAddToRealmChange(checked: boolean) {
     this.onlyAddToRealm.set(checked);
     if (checked) {
@@ -80,27 +94,26 @@ export class UserAssignmentComponent {
     }
   }
 
-  onSelectedRealmChange(realm: string) {
-    this.userService.selectedUserRealm.set(realm);
+  onSelectedRealmChange() {
     this.clearUser();
   }
 
   onUserFilterInput(value: string): void {
-    this.userFilter.set(value);
     this.userService.selectionFilter.set(value);
     if (value) {
       this.onlyAddToRealm.set(false);
     }
   }
 
-  onUserSelected(user: UserData): void {
-    this.userFilter.set(user.username);
-    this.userService.selectionFilter.set(user);
+  onUserSelected(username: string): void {
+    const user = this.userService.selectionFilteredUsers().find((candidate) => candidate.username === username);
+    this.userFilter.set(username);
+    this.userService.selectionFilter.set(user ?? username);
     this.onlyAddToRealm.set(false);
   }
 
   clearUser(): void {
-    this.userFilter.set("");
+    clearField(this.userFilterForm, "");
     this.userService.selectionFilter.set("");
   }
 }

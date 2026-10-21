@@ -93,22 +93,22 @@
               subscriptSizing="dynamic">
               <mat-label i18n="@@token.enterContainer">Enter Container</mat-label>
               <app-clearable-input
-                (clearButtonClick)="containerService.selectedContainerSerial.set('')"
-                [showClearButton]="containerService.selectedContainerSerial() !== ''">
+                (clearButtonClick)="clearField(containerForm, '')"
+                [showClearButton]="containerInput() !== ''">
                 <input
-                  [value]="containerService.selectedContainerSerial()"
-                  (input)="containerService.selectedContainerSerial.set($any($event.target).value)"
+                  [formField]="containerForm"
                   [matAutocomplete]="containerAuto"
                   appAutofocus
                   matInput />
               </app-clearable-input>
-              <mat-autocomplete
-                #containerAuto="matAutocomplete"
-                (optionSelected)="containerService.selectedContainerSerial.set($event.option.value)">
+              <mat-autocomplete #containerAuto="matAutocomplete">
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
               </mat-autocomplete>
+              @if (hasError(containerForm, ERR.required)) {
+                <mat-error i18n="@@token.containerSerialRequired">Enter the serial of a container.</mat-error>
+              }
             </mat-form-field>
             @if (!selfService()) {
               <mat-checkbox

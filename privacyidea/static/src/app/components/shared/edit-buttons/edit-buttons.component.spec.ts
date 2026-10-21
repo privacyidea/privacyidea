@@ -48,4 +48,34 @@ describe("EditButtonsComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("save button", () => {
+    const saveButton = (): HTMLButtonElement | null => fixture.nativeElement.querySelector("button[aria-label='Save']");
+
+    const startEditing = (valid?: ReturnType<typeof signal<boolean>>) => {
+      fixture.componentRef.setInput("element", {
+        keyMap: { key: "value", label: "label" },
+        isEditing: signal(true),
+        value: "",
+        valid
+      });
+      fixture.componentRef.setInput("shouldHideEdit", true);
+      fixture.detectChanges();
+    };
+
+    it("is enabled when the element has no validity channel", () => {
+      startEditing();
+      expect(saveButton()?.disabled).toBe(false);
+    });
+
+    it("follows the validity channel of the element", () => {
+      const valid = signal(false);
+      startEditing(valid);
+      expect(saveButton()?.disabled).toBe(true);
+
+      valid.set(true);
+      fixture.detectChanges();
+      expect(saveButton()?.disabled).toBe(false);
+    });
+  });
 });

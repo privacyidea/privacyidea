@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, signal } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -25,17 +26,22 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR, mustEqual, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-attach-token-self-service",
   imports: [
+    FormField,
     MatError,
     MatFormField,
     MatLabel,
     MatInput,
     MatButton,
     MatIcon,
+    EnrollmentPinComponent,
     ScrollToTopDirective,
     StickyHeaderDirective
   ],
@@ -46,22 +52,37 @@ export class AssignTokenSelfServiceComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private router = inject(Router);
   tokenSerial = this.tokenService.tokenSerial;
-  selectedToken = signal("");
-  setPinValue = signal("");
-  repeatPinValue = signal("");
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  readonly serialModel = signal({ serial: "" });
+  readonly setPinValue = signal("");
+  readonly repeatPinValue = signal("");
+  readonly serialForm = form(this.serialModel, (f) => {
+    requiredNonBlank(f.serial);
+  });
+  readonly setPinForm = form(this.setPinValue);
+  readonly repeatPinForm = form(this.repeatPinValue, (f) => {
+    mustEqual(f, this.setPinValue);
+  });
+  readonly canAssign = computed(() => this.serialForm().valid() && this.repeatPinForm().valid());
 
-  assignUserToToken() {
+  async assignUserToToken() {
+    if (!this.canAssign()) {
+      await Promise.all([touchAll(this.serialForm), touchAll(this.repeatPinForm)]);
+      return;
+    }
+    const serial = this.serialModel().serial;
     this.tokenService
       .assignUser({
-        tokenSerial: this.selectedToken(),
+        tokenSerial: serial,
         username: "",
         realm: "",
         pin: this.setPinValue()
       })
       .subscribe({
         next: () => {
-          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + this.selectedToken());
-          this.tokenSerial.set(this.selectedToken());
+          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
+          this.tokenSerial.set(serial);
         }
       });
   }

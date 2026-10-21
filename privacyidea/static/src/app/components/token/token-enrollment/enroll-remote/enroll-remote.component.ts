@@ -58,6 +58,7 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
   remoteRealm = signal<string>("");
   remoteResolver = signal<string>("");
 
+  checkPinLocallyForm = form(this.checkPinLocally);
   remoteServerIdForm = form(this.remoteServerId, (f) => {
     required(f);
     disabled(f, () => this.disabled() || !this.privacyideaServerService.canListRemoteServers());

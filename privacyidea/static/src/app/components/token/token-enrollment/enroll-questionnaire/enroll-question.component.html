@@ -46,19 +46,17 @@
     >
   }
   <div class="margin-top-16 flex-column gap-16">
-    @for (question of configQuestions(); track question) {
+    @for (row of answersForm; track row) {
       <mat-form-field class="input-width-xl">
-        <mat-label>{{ question.question }}</mat-label>
+        <mat-label>{{ row().value().question }}</mat-label>
         <input
-          [value]="answers()[question.question]"
-          (input)="setAnswer(question.question, $event.target['value'])"
-          [disabled]="disabled()"
+          [formField]="row.answer"
           matInput
           type="text" />
       </mat-form-field>
     }
   </div>
-  @if (answeredCount() < configMinNumberOfAnswers() && formTouched()) {
+  @if (hasError(answersForm, ERR.required) && answersForm().touched()) {
     <mat-error i18n="@@token.leastAnswersRequired"
       >At least {{ configMinNumberOfAnswers() }} answers are <strong>required</strong>.</mat-error
     >

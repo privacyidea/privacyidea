@@ -96,7 +96,7 @@ describe("TokenDetailsInfoComponent", () => {
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("saveInfo adds new key/value if provided, calls setTokenInfos, resets newInfo, turns off edit, and reloads", () => {
+  it("saveInfo sends the new key/value, resets newInfo, turns off edit, and reloads", () => {
     const el = component.infoData()[0] as EditableElement<Record<string, string>>;
     expect(el.value).toEqual({ a: "1" });
 
@@ -106,14 +106,24 @@ describe("TokenDetailsInfoComponent", () => {
 
     component.saveInfo(el);
 
-    expect(el.value).toEqual({ a: "1", b: "2" });
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" }, [], []);
+    expect(el.value).toEqual({ a: "1" });
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { b: "2" }, [], []);
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
   });
 
-  it("saveInfo without new pair still calls setTokenInfos and reloads", () => {
+  it("saveInfo trims the new key", () => {
+    const el = component.infoData()[0] as EditableElement<Record<string, string>>;
+    component.isEditingInfo.set(true);
+    component.newInfo.set({ key: " b ", value: "2" });
+
+    component.saveInfo(el);
+
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith(expect.anything(), { b: "2" }, [], []);
+  });
+
+  it("saveInfo without new pair sends nothing but still reloads", () => {
     const el = component.infoData()[0] as EditableElement<Record<string, string>>;
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "", value: "" });
@@ -122,7 +132,7 @@ describe("TokenDetailsInfoComponent", () => {
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1" });
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, [], []);
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", {}, [], []);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
     expect(component.isEditingInfo()).toBe(false);
   });
@@ -145,40 +155,21 @@ describe("TokenDetailsInfoComponent", () => {
     expect(component.isInfoKeyDeletable("a note")).toBe(true);
   });
 
-  it("saveInfo does not send the entries the token maintains", () => {
+  it("saveInfo passes the keys the token maintains on to the service", () => {
     const el = component.infoData()[0] as EditableElement<Record<string, string>>;
     component.readonlyInfoKeys = signal(["tokenkind"]);
+    component.settableInfoKeys = signal(["hashlib"]);
     component.isEditingInfo.set(true);
-    component.newInfo.set({ key: "", value: "" });
     tokenService.tokenSerial.set("SER");
 
     component.saveInfo(el);
 
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, ["tokenkind"], []);
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", {}, ["tokenkind"], ["hashlib"]);
   });
 
-  it("saveInfo only sends the entries that were changed while editing", () => {
-    const el = component.infoData()[0] as EditableElement<Record<string, string>>;
-    el.value["b"] = "2";
-    tokenService.tokenSerial.set("SER");
-
-    // Entering the editing records the values it starts from
-    component.toggleInfoEdit();
-    expect(component.isEditingInfo()).toBe(true);
-
-    // Only one of them is edited, the way the input bound to the value map does it
-    el.value["a"] = "changed";
-    component.saveInfo(el);
-
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "changed" }, [], []);
-  });
-
-  it("template cast helpers pass values through and hide timestamp keys", () => {
+  it("template cast helper passes values through and hides timestamp keys", () => {
     expect(component.asInfoMap(undefined)).toEqual({});
     expect(component.asInfoMap({ a: "1" })).toEqual({ a: "1" });
-
-    const el = makeInfoEl({ a: "1" });
-    expect(component.asInfoElement(el as unknown as EditableElement)).toBe(el);
 
     expect(component.visibleInfoKeys({ a: "1", creation_date: "x", assignment_date: "y", last_auth: "z" })).toEqual([
       "a"
@@ -194,5 +185,138 @@ describe("TokenDetailsInfoComponent", () => {
     expect(tokenService.deleteInfo).toHaveBeenCalledWith("SER", "a");
     expect(component.isEditingInfo()).toBe(true);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  describe("editing the entries", () => {
+    const textareas = (): HTMLTextAreaElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".info-edit-field textarea"));
+    const addRow = () => fixture.nativeElement.querySelector(".info-add-row") as HTMLElement;
+    const type = (el: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+      el.value = value;
+      el.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+    };
+    const startEditing = () => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: ["settokeninfo"]
+      });
+      component.isAnyEditingOrRevoked = signal(true);
+      component.isEditingInfo.set(true);
+      fixture.detectChanges();
+    };
+    const saveButton = () => fixture.nativeElement.querySelector("button[aria-label='Save']") as HTMLButtonElement;
+
+    it("shows one input per entry, filled with the value of the token", () => {
+      startEditing();
+      expect(textareas().map((t) => t.value)).toEqual(["1"]);
+    });
+
+    it("writes typed values to the draft and leaves the value of the token untouched", () => {
+      startEditing();
+      type(textareas()[0], "changed");
+
+      expect(component["infoDraft"]()).toEqual({ a: "changed" });
+      expect((component.infoData()[0] as EditableElement<Record<string, string>>).value).toEqual({ a: "1" });
+    });
+
+    it("sends only the entries that were edited", () => {
+      const el = component.infoData()[0] as EditableElement<Record<string, string>>;
+      el.value = { a: "1", b: "2" };
+      component.infoData.set([el as unknown as EditableElement]);
+      tokenService.tokenSerial.set("SER");
+      startEditing();
+      expect(textareas().map((t) => t.value)).toEqual(["1", "2"]);
+
+      type(textareas()[1], "edited");
+      component.saveInfo(el);
+
+      expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { b: "edited" }, [], []);
+    });
+
+    it("takes the draft from the reloaded values and drops what was typed", () => {
+      startEditing();
+      type(textareas()[0], "changed");
+
+      component.infoData.set([makeInfoEl({ a: "reloaded" }) as unknown as EditableElement]);
+      fixture.detectChanges();
+
+      expect(component["infoDraft"]()).toEqual({ a: "reloaded" });
+      expect(textareas()[0].value).toBe("reloaded");
+    });
+
+    it("starts from the values of the token again after cancelling", () => {
+      startEditing();
+      type(textareas()[0], "changed");
+
+      component.toggleInfoEdit();
+      fixture.detectChanges();
+      startEditing();
+
+      expect(textareas()[0].value).toBe("1");
+    });
+
+    it("can be saved while the add row is empty", () => {
+      startEditing();
+      expect(component.canSave()).toBe(true);
+      expect(saveButton().disabled).toBe(false);
+    });
+
+    it("is always saveable when not editing", () => {
+      component.newInfo.set({ key: "", value: "x" });
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("blocks Save and shows an error while a value is given without a key", () => {
+      startEditing();
+      const [valueInput] = Array.from(addRow().querySelectorAll("textarea"));
+      type(valueInput, "x");
+      valueInput.dispatchEvent(new Event("blur"));
+      const keyInput = addRow().querySelector("input") as HTMLInputElement;
+      keyInput.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(component.canSave()).toBe(false);
+      expect(saveButton().disabled).toBe(true);
+      expect(addRow().textContent).toContain("Enter a key for the value.");
+    });
+
+    it("blocks Save and shows an error while a key is given without a value", () => {
+      startEditing();
+      const keyInput = addRow().querySelector("input") as HTMLInputElement;
+      type(keyInput, "c");
+      keyInput.dispatchEvent(new Event("blur"));
+      const valueInput = addRow().querySelector("textarea") as HTMLTextAreaElement;
+      valueInput.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(component.canSave()).toBe(false);
+      expect(addRow().textContent).toContain("Enter a value for the key.");
+    });
+
+    it("rejects a key that already exists", () => {
+      startEditing();
+      const keyInput = addRow().querySelector("input") as HTMLInputElement;
+      type(keyInput, "a");
+      type(addRow().querySelector("textarea") as HTMLTextAreaElement, "x");
+      keyInput.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(component.canSave()).toBe(false);
+      expect(addRow().textContent).toContain("This key already exists.");
+    });
+
+    it("saveInfo sends nothing and touches the add row while it is incomplete", () => {
+      startEditing();
+      component.newInfo.set({ key: "", value: "x" });
+      const el = component.infoData()[0] as EditableElement<Record<string, string>>;
+
+      component.saveInfo(el);
+
+      expect(tokenService.setTokenInfos).not.toHaveBeenCalled();
+      expect(component.isEditingInfo()).toBe(true);
+      expect(component["newInfoForm"].key().touched()).toBe(true);
+      expect(component["newInfoForm"].value().touched()).toBe(true);
+    });
   });
 });

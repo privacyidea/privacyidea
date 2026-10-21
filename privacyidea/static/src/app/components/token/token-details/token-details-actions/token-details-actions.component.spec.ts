@@ -69,8 +69,6 @@ describe("TokenDetailsActionsComponent", () => {
     component = fixture.componentInstance;
 
     component.tokenType = signal("hotp");
-    component.setPinValue = signal("");
-    component.repeatPinValue = signal("");
     component.passkeyTestResult = signal(null);
 
     fixture.detectChanges();
