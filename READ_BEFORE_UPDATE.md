@@ -53,10 +53,13 @@
   actions the template sets to `false`.
   The schema update (`privacyidea-schema-upgrade`) removes the value of every stored boolean action whose value is not
   `true`, `True`, `TRUE` or `1`, like `policywrite=False` or `triggerchallenge=hotp`, and the earlier occurrences of an
-  action given more than once. **The policies grant the same rights as before.** The schema update logs a warning for
-  every policy it changes, so check these policies and exclude the actions that are meant to be disabled, like
-  `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until the policy is
-  saved again.
+  action given more than once. **The policies grant the same rights as before.** A container policy with
+  `disable_client_token_deletion` set to `false` or `0` is stored as `-disable_client_token_deletion`, since the
+  authenticator app applies this action itself and treats it as disabled. For the other container client actions, the
+  authenticator app then offers the container rollover and unregistering as the server allows them. The schema update
+  logs a warning for every policy it changes, so check these policies and exclude the actions that are meant to be
+  disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
+  the policy is saved again.
 
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
