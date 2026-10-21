@@ -58,6 +58,15 @@
   `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until the policy is
   saved again.
 
+* **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
+  resolver now also apply to the requests that fetch the access token from the authority (by default
+  `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
+
+* **`PI_CHECK_RELOAD_CONFIG` limits the configuration check to once per interval** — With a value above 0, each
+  process reads the configuration timestamp from the database at most once per interval, also while the
+  configuration does not change. A configuration change can take up to that many seconds to apply in a process,
+  also on the node where it was saved.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

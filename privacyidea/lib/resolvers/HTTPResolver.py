@@ -441,6 +441,8 @@ class HTTPResolver(UserIdResolver):
         :param login_name: The username to resolve
         :return: The user ID for the given username or an empty string if the user does not exist.
         """
+        if not login_name:
+            return ""
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         if not is_request_configured(config_get_user_by_name):
             # No endpoint configured to get user by name
