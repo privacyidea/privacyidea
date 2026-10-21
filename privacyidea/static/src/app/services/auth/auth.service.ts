@@ -104,13 +104,15 @@ export interface JwtData {
 
 export type AuthRole = "admin" | "user" | "";
 
-export interface WebAuthnSignRequestData {
+export interface WebAuthnSignRequestCredential {
+  id: string;
+  type?: PublicKeyCredentialType;
+  transports?: AuthenticatorTransport[];
+}
+
+export interface WebAuthnSignRequest {
   challenge: string;
-  allowCredentials: {
-    id: string;
-    type?: PublicKeyCredentialType;
-    transports?: AuthenticatorTransport[];
-  }[];
+  allowCredentials: WebAuthnSignRequestCredential[];
   rpId: string;
   userVerification: UserVerificationRequirement;
   timeout?: number;
@@ -123,7 +125,7 @@ export interface MultiChallenge {
   transaction_id: string;
   type: string;
   attributes?: {
-    webAuthnSignRequest?: WebAuthnSignRequestData;
+    webAuthnSignRequest?: WebAuthnSignRequest;
   };
 }
 

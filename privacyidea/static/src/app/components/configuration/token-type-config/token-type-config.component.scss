@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 .token-type-config-container {
   @include styles.main-component-style;

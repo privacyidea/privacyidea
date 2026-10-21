@@ -24,11 +24,13 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-details-user-self-service",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatTableModule,
     MatColumnDef,
     MatCell,

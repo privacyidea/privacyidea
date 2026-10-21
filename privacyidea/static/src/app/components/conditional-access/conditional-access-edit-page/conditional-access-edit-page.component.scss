@@ -1,13 +1,29 @@
-@use "styles";
+@use "@angular/material" as mat;
+@use "styles-api" as styles;
 
 .edit-policy-layout {
   @include styles.main-component-style;
   max-width: 1008px;
+  // The hint and error lines under the form fields take a 16px line.
+  @include mat.form-field-overrides(
+    (
+      subscript-text-line-height: 16px
+    )
+  );
+}
+
+// The priority hint wraps to three lines in the narrow field. The hint box is fixed at two
+// lines, so the field keeps its height and the text overflows below it.
+.ca-priority-hint {
+  height: 32px;
 }
 
 // The pre-data state: the same box as the loaded page (via .edit-policy-layout, shared above) so
 // the panel does not resize once the policy arrives, just centering the spinner in it meanwhile.
+// The loaded page is as wide as its content, up to the maximum above; the spinner has no such content, so
+// the box takes the maximum itself, within the container as .edit-policy-layout is.
 .edit-policy-layout--loading {
+  width: min(1008px, 100cqw);
   display: flex;
   align-items: center;
   justify-content: center;

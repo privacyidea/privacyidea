@@ -1,6 +1,6 @@
 import copy
 import json
-from typing import Optional, Union
+from typing import Optional
 from urllib.parse import quote
 
 import mock
@@ -871,7 +871,15 @@ class HTTPResolverTestCase(MyTestCase):
                       body="""{"success": false}""")
         self.assertEqual("", resolver.getUserId('testuser'))
 
-    def test_07b_get_user_id_user_store_error(self):
+    @responses.activate
+    def test_07b_get_user_id_empty_login(self):
+        # An empty login name is no user, the user store is not asked
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        self.assertEqual("", resolver.getUserId(""))
+        self.assertEqual(0, len(responses.calls))
+
+    def test_07c_get_user_id_user_store_error(self):
         # Only a 404 means that the user does not exist, any other error is a user store that failed to answer
         resolver = HTTPResolver()
         resolver.loadConfig(self.advanced_config)
@@ -1575,10 +1583,13 @@ class HTTPResolverTestCase(MyTestCase):
 
 
 class ConfidentialClientApplicationMock:
-    def __init__(self, client_id: str, authority: str, client_credential: Union[str, dict[str, str]]):
+    def __init__(self, client_id: str, authority: str, client_credential: str | dict[str, str],
+                 timeout: float | None = None, verify: bool | str = True):
         self.client_id = client_id
         self.authority = authority
         self.client_credential = client_credential
+        self.timeout = timeout
+        self.verify = verify
         if isinstance(client_credential, dict):
             get_required(client_credential, "private_key")
             get_required(client_credential, "thumbprint")
@@ -1614,6 +1625,27 @@ class EntraIDResolverTestCase(MyTestCase):
                         new=ConfidentialClientApplicationMock):
             resolver.loadConfig(config)
         return resolver
+
+    def test_00_msal_application_uses_the_resolver_timeout(self):
+        # The MSAL application gets the timeout of the resolver for the discovery and the token requests
+        resolver = self.set_up_resolver()
+        self.assertEqual(60, resolver.ms_graph_app.timeout)
+
+        resolver = self.set_up_resolver({TIMEOUT: 10})
+        self.assertEqual(10, resolver.ms_graph_app.timeout)
+
+    def test_00b_msal_application_uses_the_resolver_tls_settings(self):
+        # The MSAL application gets the TLS settings of the resolver, like the requests to the Graph API: verification
+        # against the default CAs, no verification, or verification against the configured CA file
+        resolver = self.set_up_resolver()
+        self.assertIs(True, resolver.ms_graph_app.verify)
+
+        resolver = self.set_up_resolver({VERIFY_TLS: False})
+        self.assertIs(False, resolver.ms_graph_app.verify)
+
+        resolver = self.set_up_resolver({VERIFY_TLS: True, TLS_CA_PATH: "/path/to/ca.crt"})
+        self.assertEqual("/path/to/ca.crt", resolver.ms_graph_app.verify)
+        self.assertEqual(resolver.tls, resolver.ms_graph_app.verify)
 
     def test_01_load_config_success(self):
         resolver = EntraIDResolver()
@@ -3193,7 +3225,17 @@ class KeycloakResolverTestCase(MyTestCase):
         self.assertRaises(ResolverError, resolver.getUserId, user_name)
 
     @responses.activate
-    def test_13b_getUserId_user_store_error(self):
+    def test_13b_getUserId_empty_login(self):
+        # An empty username would match every user of the Keycloak realm. It is no user, Keycloak is not asked.
+        resolver = self.set_up_resolver()
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
+                      body="""[{"username": "elizabeth", "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
+                               {"username": "mae", "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
+        self.assertEqual("", resolver.getUserId(""))
+        self.assertEqual(0, len(responses.calls))
+
+    @responses.activate
+    def test_13c_getUserId_user_store_error(self):
         resolver = self.set_up_resolver()
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=503,
                       body="""{"error": "unavailable", "error_description": "Service Unavailable"}""")

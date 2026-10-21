@@ -41,7 +41,7 @@ from privacyidea.lib.counter import read as counter_read
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.token import get_token_owner, get_tokens
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_time_offset_from_now, is_true, check_ip_in_policy, AUTH_RESPONSE
@@ -96,6 +96,14 @@ class CONDITION:
     CONTAINER_LAST_AUTH = "container_last_authentication"
     CONTAINER_LAST_SYNC = "container_last_synchronization"
     USER_INFO = "user_info"
+
+
+# Conditions that describe a single token
+PER_TOKEN_CONDITIONS = frozenset({
+    CONDITION.TOKENREALM, CONDITION.TOKENRESOLVER, CONDITION.SERIAL, CONDITION.TOKEN_LOCKED, CONDITION.TOKENTYPE,
+    CONDITION.TOKEN_HAS_OWNER, CONDITION.TOKEN_IS_ORPHANED, CONDITION.TOKEN_VALIDITY_PERIOD, CONDITION.OTP_COUNTER,
+    CONDITION.LAST_AUTH, CONDITION.COUNT_AUTH, CONDITION.COUNT_AUTH_SUCCESS, CONDITION.COUNT_AUTH_FAIL,
+    CONDITION.FAILCOUNTER, CONDITION.TOKENINFO, CONDITION.ROLLOUT_STATE, CONDITION.TOKEN_IS_IN_CONTAINER})
 
 
 class GROUP:
@@ -753,6 +761,134 @@ class BaseEventHandler:
                 content = response.json
         return content
 
+    @staticmethod
+    def _token_conditions_fulfilled(conditions: dict, token: TokenClass) -> bool:
+        """
+        Check the conditions that describe a single token.
+
+        :param conditions: The conditions of the event handler definition
+        :param token: The token to check
+        :return: True if the token fulfils all token conditions of the definition
+        """
+        serial = token.get_serial()
+
+        if CONDITION.TOKEN_LOCKED in conditions:
+            locked = token.get_failcount() >= token.get_max_failcount()
+            if is_true(conditions.get(CONDITION.TOKEN_LOCKED)) != locked:
+                return False
+
+        tokenrealms = token.get_realms()
+        if CONDITION.TOKENREALM in conditions and tokenrealms:
+            if not set(tokenrealms).intersection(conditions.get(CONDITION.TOKENREALM).split(",")):
+                return False
+
+        if CONDITION.TOKENRESOLVER in conditions and tokenrealms:
+            all_realms = get_realms()
+            tokenresolvers = {resolver.get("name") for tokenrealm in tokenrealms
+                              for resolver in all_realms.get(tokenrealm, {}).get("resolver", {})}
+            if tokenresolvers and not tokenresolvers.intersection(conditions.get(CONDITION.TOKENRESOLVER).split(",")):
+                return False
+
+        if CONDITION.SERIAL in conditions:
+            if not re.match(conditions.get(CONDITION.SERIAL), serial):
+                return False
+
+        if CONDITION.TOKENTYPE in conditions:
+            if token.get_tokentype() not in conditions.get(CONDITION.TOKENTYPE).split(","):
+                return False
+
+        if CONDITION.TOKEN_HAS_OWNER in conditions:
+            uid = token.get_user_id()
+            check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
+            if (not uid and is_true(check)) or (uid and not is_true(check)):
+                log.debug(f"Condition token_has_owner for token {token!r} not fulfilled.")
+                return False
+
+        if CONDITION.TOKEN_IS_ORPHANED in conditions:
+            orphaned = token.is_orphaned()
+            check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
+            if (not orphaned and is_true(check)) or (orphaned and not is_true(check)):
+                log.debug(f"Condition token_is_orphaned for token {token!r} not fulfilled.")
+                return False
+
+        if CONDITION.TOKEN_VALIDITY_PERIOD in conditions:
+            valid = token.check_validity_period()
+            if is_true(conditions.get(CONDITION.TOKEN_VALIDITY_PERIOD)) != valid:
+                return False
+
+        if CONDITION.OTP_COUNTER in conditions:
+            condition = conditions.get(CONDITION.OTP_COUNTER)
+            if not compare_ints(condition, token.token.count):
+                return False
+
+        if CONDITION.LAST_AUTH in conditions:
+            if token.check_last_auth_newer(conditions.get(CONDITION.LAST_AUTH)):
+                return False
+
+        if CONDITION.COUNT_AUTH in conditions:
+            count = token.get_count_auth()
+            condition = conditions.get(CONDITION.COUNT_AUTH)
+            if not compare_ints(condition, count):
+                return False
+
+        if CONDITION.COUNT_AUTH_SUCCESS in conditions:
+            count = token.get_count_auth_success()
+            condition = conditions.get(CONDITION.COUNT_AUTH_SUCCESS)
+            if not compare_ints(condition, count):
+                return False
+
+        if CONDITION.COUNT_AUTH_FAIL in conditions:
+            count = token.get_count_auth()
+            c_success = token.get_count_auth_success()
+            c_fail = count - c_success
+            condition = conditions.get(CONDITION.COUNT_AUTH_FAIL)
+            if not compare_ints(condition, c_fail):
+                return False
+
+        if CONDITION.FAILCOUNTER in conditions:
+            failcount = token.get_failcount()
+            condition = conditions.get(CONDITION.FAILCOUNTER)
+            res = compare_ints(condition, failcount)
+            if not res:
+                return False
+
+        if CONDITION.TOKENINFO in conditions:
+            condition = conditions.get(CONDITION.TOKENINFO)
+            # replace {now} in condition
+            condition, time_delta = parse_time_offset_from_now(condition)
+            str_format_now = (datetime.datetime.now(tzlocal()) + time_delta).strftime(
+                DATE_FORMAT)
+            condition = condition.format(now=str_format_now)
+            if not compare_generic(condition,
+                                   token.get_tokeninfo,
+                                   "Misconfiguration in your tokeninfo "
+                                   "condition: {0!s}"):
+                return False
+
+        if CONDITION.ROLLOUT_STATE in conditions:
+            condition = conditions.get(CONDITION.ROLLOUT_STATE)
+            # Pre-3.14 fully enrolled tokens had rollout_state="". The 3.14
+            # migration rewrites those to "enrolled". Treat the legacy empty
+            # string in either side as equivalent so handlers configured
+            # before the migration keep working.
+            actual = token.token.rollout_state
+            if (condition, actual) in (("", RolloutState.ENROLLED), (RolloutState.ENROLLED, "")):
+                pass  # backwards-compatible match
+            elif condition != actual:
+                return False
+
+        if CONDITION.TOKEN_IS_IN_CONTAINER in conditions:
+            condition = conditions.get(CONDITION.TOKEN_IS_IN_CONTAINER)
+            container = find_container_for_token(serial)
+            token_is_in_container = container is not None
+            if (not token_is_in_container and is_true(condition)) or (
+                    token_is_in_container and not is_true(condition)):
+                log.debug(f"Condition {CONDITION.TOKEN_IS_IN_CONTAINER} for token {token} "
+                          "not fulfilled.")
+                return False
+
+        return True
+
     def check_condition(self, options):
         """
         Check if all conditions are met and if the action should be executed.
@@ -775,10 +911,8 @@ class BaseEventHandler:
 
         serial = self._get_token_serials(request, content, g)
         transaction_id = request.all_data.get("transaction_id")
-        tokenrealms = []
-        tokenresolvers = []
-        tokentype = None
         token_obj = None
+        per_token_checked = False
         if serial:
             # We have determined the serial number from the request.
             token_obj_list = get_tokens(serial=serial)
@@ -790,17 +924,17 @@ class BaseEventHandler:
             token_obj_list = []
 
         if len(token_obj_list) == 1:
-            # There is a token involved, so we determine its resolvers and realms
             token_obj = token_obj_list[0]
-            tokenrealms = token_obj.get_realms()
-            tokentype = token_obj.get_tokentype()
             serial = token_obj.get_serial()
-
-            all_realms = get_realms()
-            for tokenrealm in tokenrealms:
-                resolvers = all_realms.get(tokenrealm, {}).get("resolver", {})
-                tokenresolvers.extend([r.get("name") for r in resolvers])
-            tokenresolvers = list(set(tokenresolvers))
+        elif serial and len(token_obj_list) > 1 and PER_TOKEN_CONDITIONS.intersection(conditions):
+            # The request names several tokens: the token conditions are checked per token, and the action only
+            # gets the tokens that fulfil them
+            matching_tokens = [token for token in token_obj_list
+                               if self._token_conditions_fulfilled(conditions, token)]
+            if not matching_tokens:
+                return False
+            serial = ",".join(token.get_serial() for token in matching_tokens)
+            per_token_checked = True
 
         # Get container
         container_serial = self._get_container_serial(request, content)
@@ -870,40 +1004,22 @@ class BaseEventHandler:
             if condition_value != result_auth:
                 return False
 
-        # checking of max-failcounter state of the token
-        if CONDITION.TOKEN_LOCKED in conditions:
-            if token_obj:
-                locked = token_obj.get_failcount() >= token_obj.get_max_failcount()
-                if (conditions.get(CONDITION.TOKEN_LOCKED) in ["True", True]) != locked:
+        if not token_obj and not per_token_checked:
+            if CONDITION.TOKEN_LOCKED in conditions:
+                if serial:
+                    log.debug(f"Condition token_locked not fulfilled: no token {serial} exists.")
                     return False
-            else:
-                # check all tokens of the user, if any token is maxfail
-                token_objects = get_tokens(user=user, maxfail=True)
-                if not ','.join([tok.get_serial() for tok in token_objects]):
+                # The request names no token: the condition is about the tokens of the user
+                if user.is_empty() or not get_tokens(user=user, count=True):
+                    log.debug("Condition token_locked not fulfilled: the request names no token or user with tokens.")
+                    return False
+                locked = get_tokens(user=user, maxfail=True, count=True) > 0
+                if is_true(conditions.get(CONDITION.TOKEN_LOCKED)) != locked:
                     return False
 
-        if CONDITION.TOKENREALM in conditions and tokenrealms:
-            res = False
-            for trealm in tokenrealms:
-                if trealm in conditions.get(CONDITION.TOKENREALM).split(","):
-                    res = True
-                    break
-            if not res:
-                return False
-
-        if CONDITION.TOKENRESOLVER in conditions and tokenresolvers:
-            res = False
-            for tres in tokenresolvers:
-                if tres in conditions.get(CONDITION.TOKENRESOLVER).split(","):
-                    res = True
-                    break
-            if not res:
-                return False
-
-        if "serial" in conditions and serial:
-            serial_match = conditions.get("serial")
-            if not bool(re.match(serial_match, serial)):
-                return False
+            if CONDITION.SERIAL in conditions and serial:
+                if not re.match(conditions.get(CONDITION.SERIAL), serial):
+                    return False
 
         if CONDITION.USER_TOKEN_NUMBER in conditions and user:
             num_tokens = get_tokens(user=user, count=True)
@@ -940,102 +1056,8 @@ class BaseEventHandler:
                                    ):
                 return False
 
-        # Token specific conditions
-        if token_obj:
-            if CONDITION.TOKENTYPE in conditions:
-                if tokentype not in conditions.get(CONDITION.TOKENTYPE).split(
-                        ","):
-                    return False
-
-            if CONDITION.TOKEN_HAS_OWNER in conditions:
-                uid = token_obj.get_user_id()
-                check = conditions.get(CONDITION.TOKEN_HAS_OWNER)
-                if (not uid and is_true(check)) or (uid and not is_true(check)):
-                    log.debug(f"Condition token_has_owner for token {token_obj!r} not fulfilled.")
-                    return False
-
-            if CONDITION.TOKEN_IS_ORPHANED in conditions:
-                orphaned = token_obj.is_orphaned()
-                check = conditions.get(CONDITION.TOKEN_IS_ORPHANED)
-                if (not orphaned and is_true(check)) or (orphaned and not is_true(check)):
-                    log.debug(f"Condition token_is_orphaned for token {token_obj!r} not fulfilled.")
-                    return False
-
-            if CONDITION.TOKEN_VALIDITY_PERIOD in conditions:
-                valid = token_obj.check_validity_period()
-                if (conditions.get(CONDITION.TOKEN_VALIDITY_PERIOD) in ["True", True]) != valid:
-                    return False
-
-            if CONDITION.OTP_COUNTER in conditions:
-                condition = conditions.get(CONDITION.OTP_COUNTER)
-                if not compare_ints(condition, token_obj.token.count):
-                    return False
-
-            if CONDITION.LAST_AUTH in conditions:
-                if token_obj.check_last_auth_newer(conditions.get(CONDITION.LAST_AUTH)):
-                    return False
-
-            if CONDITION.COUNT_AUTH in conditions:
-                count = token_obj.get_count_auth()
-                condition = conditions.get(CONDITION.COUNT_AUTH)
-                if not compare_ints(condition, count):
-                    return False
-
-            if CONDITION.COUNT_AUTH_SUCCESS in conditions:
-                count = token_obj.get_count_auth_success()
-                condition = conditions.get(CONDITION.COUNT_AUTH_SUCCESS)
-                if not compare_ints(condition, count):
-                    return False
-
-            if CONDITION.COUNT_AUTH_FAIL in conditions:
-                count = token_obj.get_count_auth()
-                c_success = token_obj.get_count_auth_success()
-                c_fail = count - c_success
-                condition = conditions.get(CONDITION.COUNT_AUTH_FAIL)
-                if not compare_ints(condition, c_fail):
-                    return False
-
-            if CONDITION.FAILCOUNTER in conditions:
-                failcount = token_obj.get_failcount()
-                condition = conditions.get(CONDITION.FAILCOUNTER)
-                res = compare_ints(condition, failcount)
-                if not res:
-                    return False
-
-            if CONDITION.TOKENINFO in conditions:
-                condition = conditions.get(CONDITION.TOKENINFO)
-                # replace {now} in condition
-                condition, time_delta = parse_time_offset_from_now(condition)
-                str_format_now = (datetime.datetime.now(tzlocal()) + time_delta).strftime(
-                    DATE_FORMAT)
-                condition = condition.format(now=str_format_now)
-                if not compare_generic(condition,
-                                       token_obj.get_tokeninfo,
-                                       "Misconfiguration in your tokeninfo "
-                                       "condition: {0!s}"):
-                    return False
-
-            if CONDITION.ROLLOUT_STATE in conditions:
-                condition = conditions.get(CONDITION.ROLLOUT_STATE)
-                # Pre-3.14 fully enrolled tokens had rollout_state="". The 3.14
-                # migration rewrites those to "enrolled". Treat the legacy empty
-                # string in either side as equivalent so handlers configured
-                # before the migration keep working.
-                actual = token_obj.token.rollout_state
-                if (condition, actual) in (("", RolloutState.ENROLLED), (RolloutState.ENROLLED, "")):
-                    pass  # backwards-compatible match
-                elif condition != actual:
-                    return False
-
-            if CONDITION.TOKEN_IS_IN_CONTAINER in conditions:
-                condition = conditions.get(CONDITION.TOKEN_IS_IN_CONTAINER)
-                container = find_container_for_token(serial)
-                token_is_in_container = container is not None
-                if (not token_is_in_container and is_true(condition)) or (
-                        token_is_in_container and not is_true(condition)):
-                    log.debug(f"Condition {CONDITION.TOKEN_IS_IN_CONTAINER} for token {token_obj} "
-                              "not fulfilled.")
-                    return False
+        if token_obj and not self._token_conditions_fulfilled(conditions, token_obj):
+            return False
 
         # Evaluates the challenge either for a token or a container object
         challenge_conditions = CONDITION.CHALLENGE_SESSION in conditions or CONDITION.CHALLENGE_EXPIRED in conditions

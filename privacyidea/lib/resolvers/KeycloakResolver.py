@@ -139,6 +139,9 @@ class KeycloakResolver(HTTPResolver):
         :return: The user ID for the given username or an empty string if the user does not exist
         :raises ResolverError: if the user store could not answer the request, or several users have the username
         """
+        if not login_name:
+            # An empty username would not filter at all and match every user of the realm
+            return ""
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
         try:

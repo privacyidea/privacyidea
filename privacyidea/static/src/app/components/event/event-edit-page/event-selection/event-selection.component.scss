@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 .event-selection-container {
   display: flex;
   flex-direction: column;
@@ -6,8 +8,12 @@
 
 .selected-events-container,
 .add-events-container {
-  --mat-expansion-container-background-color: transparent;
-  --mat-expansion-container-elevation-shadow: none;
+  @include mat.expansion-overrides(
+    (
+      container-background-color: transparent,
+      container-elevation-shadow: none
+    )
+  );
   --expansion-panel-header-padding: 8px 12px;
 }
 

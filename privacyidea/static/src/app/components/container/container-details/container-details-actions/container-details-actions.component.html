@@ -17,13 +17,17 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (anyActionsAllowed()) {
-  <div class="actions-otp-container">
-    <h4
-      class="margin-8"
-      i18n="@@container.containerActions"
-      >Container Actions</h4
-    >
-    <div class="flex-column ali-center gap-8">
+  <div
+    class="actions-otp-container"
+    [class.actions-otp-container--row]="layout() === 'row'">
+    @if (layout() === "column") {
+      <h4
+        class="margin-8"
+        i18n="@@container.containerActions"
+        >Container Actions</h4
+      >
+    }
+    <div class="actions-list flex-column ali-center gap-8">
       @if (authService.actionAllowed("container_delete")) {
         <button
           (click)="deleteContainer()"
@@ -38,7 +42,7 @@
         class="action-button-primary button-width-l"
         mat-stroked-button>
         <span class="icon-badge">
-          <mat-icon class="padding-right-3">shield</mat-icon>
+          <mat-icon class="icon-badge-pad-3">shield</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n="@@common.enrollToken">Enroll Token</span>
@@ -54,6 +58,7 @@
       }
       @if (containerType() === "smartphone") {
         @if (
+          layout() === "column" &&
           authService.actionAllowed("container_delete") &&
           (registrationAllowed() || rolloverAllowed() || unregisterAllowed())
         ) {

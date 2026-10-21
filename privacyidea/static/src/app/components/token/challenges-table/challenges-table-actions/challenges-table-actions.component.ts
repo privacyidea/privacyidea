@@ -17,31 +17,53 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, ViewChild } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
+import { Component, computed, inject, viewChild } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenu, MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { ChallengesService, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-challenges-table-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatIconModule, MatMenuModule, TableActionsComponent],
   templateUrl: "./challenges-table-actions.component.html"
 })
-export class ChallengesTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class ChallengesTableActionsComponent extends TableActionsHost {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
   readonly advancedApiFilterKeys = this.challengesService.advancedApiFilterKeys;
+  private readonly advancedFilterMenu = viewChild.required<MatMenu>("advancedFilterMenu");
+
+  protected readonly actions = computed<TableAction[]>(() => [
+    {
+      id: "delete-expired",
+      label: $localize`:@@token.deleteExpired:Delete Expired`,
+      tone: "delete-primary",
+      width: "l",
+      icon: "delete_sweep",
+      pinned: true,
+      run: () => this.onDeleteExpiredChallenges()
+    },
+    {
+      id: "more-filter",
+      label: $localize`:@@common.moreFilter:More Filter`,
+      tooltip: $localize`:@@common.moreFilter:More Filter`,
+      tone: "primary",
+      width: "l",
+      fontIcon: "ms--filter-list",
+      pinned: true,
+      visible: this.advancedApiFilterKeys.length > 0,
+      submenu: this.advancedFilterMenu()
+    }
+  ]);
 
   onDeleteExpiredChallenges(): void {
     this.challengesService.deleteExpiredChallenges().subscribe({

@@ -135,8 +135,10 @@ def save_resolver(params):
         db.session.flush()
         resolver_id = resolver.id
     # create the config
+    zero_is_a_value = getattr(get_resolver_class(resolvertype), "zero_is_a_value", frozenset())
     for key, value in data.items():
-        if not value and not isinstance(value, bool):
+        keep_zero = key in zero_is_a_value and value == 0 and not isinstance(value, bool)
+        if not value and not isinstance(value, bool) and not keep_zero:
             # If the value is empty, we do not store it. But we check if an old entry already exists and delete it.
             old_config = delete(ResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
             db.session.execute(old_config)

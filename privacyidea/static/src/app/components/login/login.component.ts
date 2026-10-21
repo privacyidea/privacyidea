@@ -41,12 +41,22 @@ import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.compon
 import { resolveLandingPath$ } from "@app/guards/auth.guard";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
-import { AuthResponse, AuthService, AuthServiceInterface, PasswordLoginParams } from "@services/auth/auth.service";
+import {
+  AuthResponse,
+  AuthService,
+  AuthServiceInterface,
+  PasswordLoginParams,
+  WebAuthnSignRequest
+} from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
-import { ValidateService, ValidateServiceInterface, WebAuthnSignRequest } from "@services/validate/validate.service";
+import {
+  mergeWebAuthnSignRequests,
+  ValidateService,
+  ValidateServiceInterface
+} from "@services/validate/validate.service";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
@@ -335,10 +345,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       if (response.detail.multi_challenge?.length) {
         this.transactionId = response.detail.transaction_id || "";
         this.pushTriggered.set(response.detail.multi_challenge.some((c) => c.type === "push"));
-        const webAuthnChallenge = response.detail.multi_challenge.find((c) => c.type === "webauthn");
-        if (webAuthnChallenge?.attributes?.webAuthnSignRequest) {
-          this.webAuthnTriggered.set(webAuthnChallenge.attributes.webAuthnSignRequest); // This is now an object
-        }
+        this.webAuthnTriggered.set(mergeWebAuthnSignRequests(response.detail.multi_challenge));
         if (this.pushTriggered()) {
           this.startPushPolling();
         }

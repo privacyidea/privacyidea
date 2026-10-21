@@ -1378,7 +1378,46 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
+        # Neither a token nor a user: not fulfilled, although a token in the system is locked
+        options = self.setup_request(all_data={"type": "hotp"})
+        for value in ("True", "False"):
+            options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: value}}
+            self.assertFalse(uhandler.check_condition(options), value)
+
         token.delete_token()
+
+        # A user without tokens: not fulfilled
+        self.setUp_user_realms()
+        user = User("hans", self.realm1)
+        remove_token(user=user)
+        options = self.setup_request(all_data={"type": "hotp"}, user=user)
+        for value in ("True", "False"):
+            options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: value}}
+            self.assertFalse(uhandler.check_condition(options), value)
+
+        # A user with several tokens, none locked
+        first = init_token({"type": "hotp", "serial": "HOTP_LOCKED_1", "genkey": True}, user=user)
+        init_token({"type": "hotp", "serial": "HOTP_LOCKED_2", "genkey": True}, user=user)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        self.assertTrue(uhandler.check_condition(options))
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        self.assertFalse(uhandler.check_condition(options))
+
+        # One of the tokens of the user is locked
+        first.set_maxfail(1)
+        first.inc_failcount()
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        self.assertFalse(uhandler.check_condition(options))
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        self.assertTrue(uhandler.check_condition(options))
+
+        # A named token that does not exist: not fulfilled, whatever the tokens of the user are
+        options = self.setup_request(all_data={"serial": "UNKNOWN_SERIAL"}, user=user)
+        for value in ("True", "False"):
+            options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: value}}
+            self.assertFalse(uhandler.check_condition(options), value)
+
+        remove_token(user=user)
 
     def test_26_check_user_container_number(self):
         self.setUp_user_realms()
@@ -1591,6 +1630,72 @@ class BaseEventHandlerTestCase(MyTestCase):
             self.assertFalse(r)
 
         remove_token(serial)
+
+    def test_31_token_conditions_for_several_serials(self):
+        hotp = init_token({"type": "hotp", "serial": "HOTP_SEVERAL", "genkey": True})
+        init_token({"type": "totp", "serial": "TOTP_SEVERAL", "genkey": True})
+        uhandler = BaseEventHandler()
+        options = self.setup_request(all_data={"serial": "HOTP_SEVERAL,TOTP_SEVERAL"})
+
+        options["handler_def"] = {"conditions": {}}
+        self.assertTrue(uhandler.check_condition(options))
+        self.assertListEqual(["HOTP_SEVERAL", "TOTP_SEVERAL"], options["context"].token_serials)
+
+        options["handler_def"] = {"conditions": {CONDITION.TOKENTYPE: "totp"}}
+        self.assertTrue(uhandler.check_condition(options))
+        self.assertListEqual(["TOTP_SEVERAL"], options["context"].token_serials)
+
+        options["handler_def"] = {"conditions": {CONDITION.TOKENTYPE: "spass"}}
+        self.assertFalse(uhandler.check_condition(options))
+
+        options["handler_def"] = {"conditions": {CONDITION.SERIAL: "^TOTP"}}
+        self.assertTrue(uhandler.check_condition(options))
+        self.assertListEqual(["TOTP_SEVERAL"], options["context"].token_serials)
+
+        hotp.set_maxfail(1)
+        hotp.inc_failcount()
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True"}}
+        self.assertTrue(uhandler.check_condition(options))
+        self.assertListEqual(["HOTP_SEVERAL"], options["context"].token_serials)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "False"}}
+        self.assertTrue(uhandler.check_condition(options))
+        self.assertListEqual(["TOTP_SEVERAL"], options["context"].token_serials)
+
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_LOCKED: "True", CONDITION.TOKENTYPE: "totp"}}
+        self.assertFalse(uhandler.check_condition(options))
+
+        remove_token("HOTP_SEVERAL")
+        remove_token("TOTP_SEVERAL")
+
+    def test_32_token_is_in_container_keeps_container_of_request(self):
+        # The container conditions check the container of the request, also with token_is_in_container
+        token = init_token({"type": "hotp", "serial": "HOTP_IN_CONTAINER", "genkey": True})
+        token_container = init_container({"type": "generic"})["container_serial"]
+        request_container = init_container({"type": "smartphone"})["container_serial"]
+        uhandler = BaseEventHandler()
+        options = self.setup_request(all_data={"serial": token.get_serial(), "container_serial": request_container})
+
+        # Token in another container than the one of the request
+        add_token_to_container(token_container, token.get_serial())
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True",
+                                                 CONDITION.CONTAINER_TYPE: "smartphone"}}
+        self.assertTrue(uhandler.check_condition(options))
+        self.assertEqual(request_container, options["context"].container.serial)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "True",
+                                                 CONDITION.CONTAINER_TYPE: "generic"}}
+        self.assertFalse(uhandler.check_condition(options))
+
+        # Token in no container: the container conditions still check the container of the request
+        delete_container_by_serial(token_container)
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "False",
+                                                 CONDITION.CONTAINER_TYPE: "generic"}}
+        self.assertFalse(uhandler.check_condition(options))
+        options["handler_def"] = {"conditions": {CONDITION.TOKEN_IS_IN_CONTAINER: "False",
+                                                 CONDITION.CONTAINER_TYPE: "smartphone"}}
+        self.assertTrue(uhandler.check_condition(options))
+
+        delete_container_by_serial(request_container)
+        remove_token(token.get_serial())
 
 
 class CounterEventTestCase(MyTestCase):

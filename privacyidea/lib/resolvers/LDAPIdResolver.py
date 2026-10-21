@@ -317,6 +317,9 @@ class IdResolver(UserIdResolver):
     # If the resolver could be configured editable
     updateable = True
 
+    # A cache timeout of 0 switches the user cache off
+    zero_is_a_value = frozenset({"CACHE_TIMEOUT"})
+
     def __init__(self):
         self.i_am_bound = False
         self.uri = ""

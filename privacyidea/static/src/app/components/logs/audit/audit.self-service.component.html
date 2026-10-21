@@ -82,8 +82,7 @@
                   <div class="flex">
                     <button
                       (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                      aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.label | filterByLabel"
                       class="filter-button"
                       mat-icon-button>
                       <mat-icon class="keyword-button-icon margin-left-0">
@@ -140,58 +139,61 @@
                     }
                   }
                   @case ("serial-link") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        [appTruncationTooltip]="element.serial"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        routerLink="/token">
-                        {{ element[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        column="serial"
-                        [value]="element.serial"
-                        (filterValue)="addFilterValue('serial', $event)" />
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.tokenSelected(element.serial)"
+                          [appTruncationTooltip]="element.serial"
+                          class="cell-truncate"
+                          routerLink="/token">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          column="serial"
+                          [value]="element.serial"
+                          (filterValue)="addFilterValue('serial', $event)" />
+                      </app-copyable>
+                    }
                   }
                   @case ("container-link") {
-                    <app-copyable [copyText]="element.container_serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.container_serial)"
-                        [appTruncationTooltip]="element.container_serial"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        routerLink="/token">
-                        {{ element[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        column="container_serial"
-                        [value]="element.container_serial"
-                        (filterValue)="addFilterValue('container_serial', $event)" />
-                    </app-copyable>
+                    @if (element.container_serial) {
+                      <app-copyable [copyText]="element.container_serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.container_serial)"
+                          [appTruncationTooltip]="element.container_serial"
+                          class="cell-truncate"
+                          routerLink="/token">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          column="container_serial"
+                          [value]="element.container_serial"
+                          (filterValue)="addFilterValue('container_serial', $event)" />
+                      </app-copyable>
+                    }
                   }
                   @case ("user-link") {
-                    <app-copyable [copyText]="element[column.key]">
-                      <a
-                        (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                        (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.userSelected(element[column.key], element['user_realm'])
-                        "
-                        [appTruncationTooltip]="element[column.key]"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        column="user"
-                        [value]="element[column.key]"
-                        (filterValue)="addFilterValue('user', $event)" />
-                    </app-copyable>
+                    @if (element[column.key]) {
+                      <app-copyable [copyText]="element[column.key]">
+                        <a
+                          (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                          (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                          (keydown.space)="
+                            $event.preventDefault();
+                            contentService.userSelected(element[column.key], element['user_realm'])
+                          "
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          column="user"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue('user', $event)" />
+                      </app-copyable>
+                    }
                   }
                   @case ("copy-filter-text") {
                     <app-copyable [copyText]="element[column.key]">

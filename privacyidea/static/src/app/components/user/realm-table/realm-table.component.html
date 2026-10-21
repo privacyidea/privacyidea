@@ -29,25 +29,15 @@
                 placeholder="Filter across all columns." />
             </app-clearable-input>
           </mat-form-field>
-          <button
-            [matMenuTriggerFor]="tableActionsMenu"
-            aria-label="Actions"
-            class="table-actions-trigger margin-left-8"
-            i18n-aria-label="@@common.actions"
-            i18n-matTooltip="@@common.actions"
-            mat-icon-button
-            matTooltip="Actions">
-            <span class="icon-badge">
-              <mat-icon>menu</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-            </span>
-          </button>
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
         </div>
       </div>
 
       <div class="actions-row">
         <div class="actions-row-inner">
-          <div class="flex-row margin-bottom-16">
+          <app-table-actions
+            #pageActions
+            [actions]="toolbarActions()">
             <mat-form-field
               class="input-width-m"
               subscriptSizing="dynamic">
@@ -63,7 +53,7 @@
                 }
               </mat-select>
             </mat-form-field>
-          </div>
+          </app-table-actions>
         </div>
       </div>
 
@@ -89,6 +79,7 @@
                   <div class="flex">
                     @if (!["actions", "resolvers"].includes(column.key)) {
                       <button
+                        [attr.aria-label]="column.label | sortByLabel"
                         (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                         class="sort-button"
                         mat-icon-button
@@ -104,7 +95,7 @@
                 *matCellDef="let element"
                 [ngClass]="[
                   column.width ? 'col-width-' + column.width : '',
-                  column.key === 'resolvers' ? 'width-100' : '',
+                  column.key === 'resolvers' ? 'width-full' : '',
                   column.key === 'actions' ? 'actions-cell' : ''
                 ]"
                 mat-cell>
@@ -199,7 +190,6 @@
                                     <a
                                       (click)="onClickResolver(res.name); $event.preventDefault()"
                                       (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
-                                      [attr.aria-label]="linkLabel(column.label)"
                                       class="resolver-name"
                                       role="button"
                                       tabindex="0">
@@ -283,7 +273,7 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
-                      class="input-width-l margin-top-16"
+                      class="table-cell-field margin-top-16"
                       subscriptSizing="dynamic">
                       <mat-label i18n="@@realm.realmName">Realm Name</mat-label>
                       <input
@@ -409,17 +399,6 @@
     }
   </div>
 </div>
-
-<!-- The node filter as a menu, for the compact trigger shown next to the filter once the table is
-     scrolled and the row holding the node selector is hidden. -->
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    [matMenuTriggerFor]="nodeMenu"
-    mat-menu-item>
-    <mat-icon>dns</mat-icon>
-    <span i18n="@@realm.node">Node</span>
-  </button>
-</mat-menu>
 
 <mat-menu #nodeMenu="matMenu">
   @for (node of nodeOptions(); track node.value) {

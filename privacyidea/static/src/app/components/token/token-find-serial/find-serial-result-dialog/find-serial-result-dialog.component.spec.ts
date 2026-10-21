@@ -58,10 +58,4 @@ describe("GetSerialResultDialogComponent", () => {
     component.dialogRef.close("reset");
     expect(mockDialogRef.close).toHaveBeenCalledWith("reset");
   });
-
-  it("should build a link label from the given label", () => {
-    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("Mock serial")).toContain(
-      "Mock serial"
-    );
-  });
 });

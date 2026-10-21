@@ -37,6 +37,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -102,9 +103,28 @@ export class PolicyEditPageComponent implements OnDestroy {
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   readonly isDirty = this.isPolicyEdited;
+
+  /**
+   * The name being saved, from the save click until the save fails or the page is left. The service lists the
+   * saved policy under that name right away, which must not count as a collision.
+   */
+  protected readonly savingName = signal<string | null>(null);
+
+  /** Another policy already carries the entered name; the policy being edited does not collide with itself. */
+  readonly nameTaken = computed(() => {
+    const name = this.editedPolicy().name;
+    return (
+      name !== this.savingName() &&
+      this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
+    );
+  });
   readonly canSave = computed(
     () =>
-      this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name)
+      this.savingName() === null &&
+      this.isPolicyEdited() &&
+      !!this.editedPolicy().name?.trim() &&
+      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
+      !this.nameTaken()
   );
   readonly title = computed(() =>
     this.mode() === "edit"
@@ -186,17 +206,59 @@ export class PolicyEditPageComponent implements OnDestroy {
   }
 
   async onSave(): Promise<boolean> {
-    const success =
-      this.mode() === "create"
-        ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
-        : await this.policyService.savePolicyEdits(this.policy().name, {
-            ...this.policy(),
-            ...this.policyEdits()
-          });
+    // A second save while one is running is a no-op, not a collision with the policy that is being saved.
+    if (this.savingName() !== null) {
+      return false;
+    }
+    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
+    // the policy list revealed since then is caught here.
+    if (this.nameTaken()) {
+      this.notificationService.error($localize`:@@policy.nameAlreadyExists:A policy with this name already exists.`);
+      return false;
+    }
+    this.savingName.set(this.editedPolicy().name);
+    let success = false;
+    try {
+      success =
+        this.mode() === "create"
+          ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
+          : await this.policyService.savePolicyEdits(this.policy().name, {
+              ...this.policy(),
+              ...this.policyEdits()
+            });
+    } finally {
+      if (!success) {
+        this.savingName.set(null);
+      }
+    }
     if (success) {
       this._navigateBack();
     }
     return success;
+  }
+
+  /**
+   * Creates a new policy from the form as it currently is, edits not yet saved included, and leaves the policy being
+   * edited as it is stored.
+   */
+  async onCopy(): Promise<void> {
+    if (this.savingName() !== null) {
+      return;
+    }
+    const newName = await this.dialogService.openDialogAsync({
+      component: CopyPolicyDialogComponent,
+      data: this.policy().name
+    });
+    if (!newName || this.savingName() !== null) {
+      return;
+    }
+    this.savingName.set(newName);
+    const created = await this.policyService.saveNewPolicy({ ...this.editedPolicy(), name: newName });
+    if (created) {
+      this._navigateBack();
+    } else {
+      this.savingName.set(null);
+    }
   }
 
   onCancel(): void {
