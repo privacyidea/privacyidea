@@ -25,17 +25,24 @@ request, populates client_label and never leaks the internal classification key.
 test_api_authentication_log.py.
 """
 import datetime
+import itertools
 from typing import TYPE_CHECKING
 
 import mock
 
 from flask import Response
+from sqlalchemy.exc import OperationalError
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                           AuthEventReason, AuthLogUserRole)
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
+from privacyidea.lib.error import ResolverError
+from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.resolver import delete_resolver
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
@@ -954,6 +961,82 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
                                         endpoint=self.endpoint_path)
 
+    def test_user_store_failure_logs_user_store_unavailable(self):
+        # A user store that fails to answer is not a user that does not exist: the request fails with an error, also
+        # with a passOnNoUser policy, and the log tells the failure apart from an unknown user.
+        set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER, realm=self.realm1)
+        try:
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                # The realm in another case is logged like the realm of a user
+                res = self._post('/validate/check',
+                                 {"user": "doesnotexist", "realm": self.realm1.upper(), "pass": "whatever"})
+        finally:
+            delete_policy("passonnouser")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_unreachable_sql_user_store_logs_user_store_unavailable(self):
+        # The SQL resolver connects first when it loads its table, which fails with a database error
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        unknown_user = User("doesnotexist", "sqliterealm")
+        # The resolver loaded for the user above would be used again within the same app context
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": "sqliterealm", "pass": "x"})
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_realm("sqliterealm")
+            delete_resolver("sqlite_resolver")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unknown_user,
+                                        endpoint=self.endpoint_path)
+
+    def test_user_store_failure_on_a_rewritten_user_logs_user_store_unavailable(self):
+        # The user is found in its realm, then a set_realm policy moves the request to a realm whose user store fails
+        self.setUp_sqlite_resolver_realm("testuser.sqlite", "sqliterealm")
+        rewritten_user = User("doesnotexist", "sqliterealm")
+        set_policy("authlog_setrealm", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}=sqliterealm",
+                   realm=self.realm1)
+        # The resolver loaded for the user above would be used again within the same app context
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "x",
+                                                     "transaction_id": "8901234567"})
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_policy("authlog_setrealm")
+            delete_realm("sqliterealm")
+            delete_resolver("sqlite_resolver")
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=rewritten_user,
+                                        transaction_id="8901234567", endpoint=self.endpoint_path)
+
+    def test_user_store_failure_logs_the_transaction_of_the_request(self):
+        # The answer to a challenge is logged with its transaction, also under the RADIUS name of the parameter
+        for parameter in ["transaction_id", "state"]:
+            self._clear_log()
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                res = self._post('/validate/check', {"user": "doesnotexist", "realm": self.realm1, "pass": "123456",
+                                                     parameter: "8901234567"})
+            self.assertEqual(400, res.status_code, res.json)
+            entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE], transaction_id="8901234567")
+            assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=User("doesnotexist", self.realm1), transaction_id="8901234567",
+                                            endpoint=self.endpoint_path)
+
     def test_pass_on_no_user_logs_login_success(self):
         # An unknown user accepted by a PASSONNOUSER policy is a successful login.
         set_policy(name="passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,
@@ -1497,6 +1580,112 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
         assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
                                         endpoint=self.endpoint_path)
+
+    def test_user_store_failure_logs_user_store_unavailable(self):
+        # The login fails like the one of an unknown user, but the log tells the user store failure apart from it, in
+        # both login modes.
+        for login_mode in [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA]:
+            self._clear_log()
+            set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+            try:
+                with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                                side_effect=ResolverError("The user store is not available")):
+                    self._auth({"username": "doesnotexist", "realm": self.realm1.upper(), "password": "whatever"},
+                               status=401)
+            finally:
+                delete_policy("authlog_login_mode")
+            entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+            assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path)
+
+    def test_user_store_failure_is_not_accepted_by_pass_on_no_user(self):
+        # A single failed lookup leaves the login without its user. A passOnNoUser policy must not take that for a
+        # user who does not exist, even when the user store answers again for the rest of the request.
+        original_get_user_id = PasswdIdResolver.getUserId
+        flush_user_cache()
+        with mock.patch.object(PasswdIdResolver, "getUserId", return_value=""):
+            unresolved_user = User(self.username, self.realm1)
+        # Not only a resolver error: an SQL user store that can not be reached fails while its table is loaded
+        lookup_errors = [ResolverError("The user store is not available"),
+                         OperationalError("SELECT", {}, Exception("server closed the connection unexpectedly"))]
+        set_policy("authlog_passonnouser", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER)
+        try:
+            for login_mode, lookup_error in itertools.product([LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA],
+                                                              lookup_errors):
+                self._clear_log()
+                lookups = []
+
+                def get_user_id_failing_once(resolver: PasswdIdResolver, login_name: str) -> str:
+                    lookups.append(login_name)
+                    if len(lookups) == 1:
+                        raise lookup_error
+                    return original_get_user_id(resolver, login_name)
+
+                set_policy("authlog_login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+                # The user cache would answer for the user store
+                flush_user_cache()
+                with mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_once):
+                    res = self._auth({"username": self.username, "realm": self.realm1, "password": "wrong",
+                                      "transaction_id": "8901234567"}, status=401)
+                self.assertNotIn("value", res.json["result"], f"{login_mode}, {lookup_error!r}: {res.json}")
+                entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+                assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=unresolved_user,
+                                                transaction_id="8901234567", endpoint=self.endpoint_path)
+        finally:
+            delete_policy("authlog_login_mode")
+            delete_policy("authlog_passonnouser")
+
+    def test_user_store_failure_on_the_token_owner_logs_user_store_unavailable(self):
+        # The user is looked up, then the user store fails on the lookup of the owner of the user's token
+        self._enable_privacyidea_login()
+        flush_user_cache()
+        try:
+            with mock.patch.object(PasswdIdResolver, "getUsername",
+                                   side_effect=ResolverError("The user store is not available")):
+                self._auth({"username": self.username, "realm": self.realm1, "password": f"{self.pin}123456"},
+                           status=401)
+        finally:
+            delete_policy("authlog_login_mode")
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        endpoint=self.endpoint_path)
+
+    def test_user_store_failure_after_the_login_succeeded_is_no_success(self):
+        # The credentials are correct, then the user store fails on the lookup of the WebUI rights. No session is
+        # issued, so the login is no success.
+        original_get_user_id = PasswdIdResolver.getUserId
+        lookups = []
+
+        def get_user_id_failing_after_the_first(resolver: PasswdIdResolver, login_name: str) -> str:
+            lookups.append(login_name)
+            if len(lookups) > 1:
+                raise ResolverError("The user store is not available")
+            return original_get_user_id(resolver, login_name)
+
+        # A cached user would be served from the user cache without asking the user store a second time
+        with (mock.patch("privacyidea.lib.cache.user._cache_client", return_value=None),
+              mock.patch.object(PasswdIdResolver, "getUserId", get_user_id_failing_after_the_first)):
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=400)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        endpoint=self.endpoint_path)
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(0, audit_entry["success"], audit_entry)
+
+    def test_user_store_failure_with_login_mode_disable_logs_user_store_unavailable(self):
+        # The disabled login is refused before the credential check, and is still logged as a failing user store
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        try:
+            with mock.patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                            side_effect=ResolverError("The user store is not available")):
+                self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "test"}, status=403)
+        finally:
+            delete_policy("authlog_login_disabled")
+        entries = assert_authentication_log([AuthEventType.USER_STORE_UNAVAILABLE])
+        assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["authlog_login_disabled"])
 
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
