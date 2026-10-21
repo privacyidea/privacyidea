@@ -74,7 +74,7 @@ from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
-                                   enable_token)
+                                   get_one_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
@@ -341,7 +341,7 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
                             "user": "cornelius"}
             self.assertRaises(PolicyError, check_otp_pin, req)
 
-        # check that no pin is checked during rollover or verify
+        # check that no pin is checked during rollover or verify, as long as no PIN is given
         logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         req.all_data = {
             "user": "cornelius",
@@ -350,7 +350,8 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         }
         self.assertTrue(check_otp_pin(req))
         capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
-                               "Disable PIN checking due to rollover (True) or verify (None)"))
+                               "No PIN given for the rollover (True) or verification (None), skipping the PIN "
+                               "policies."))
         req.all_data = {
             "user": "cornelius",
             "realm": "home",
@@ -358,8 +359,13 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         }
         self.assertTrue(check_otp_pin(req))
         capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
-                               "Disable PIN checking due to rollover (None) or verify (123456)"))
+                               "No PIN given for the rollover (None) or verification (123456), skipping the PIN "
+                               "policies."))
         logging.getLogger('privacyidea').setLevel(logging.INFO)
+        # A PIN that is given with the rollover or the verification is checked
+        for flag in ({"rollover": True}, {"verify": 123456}):
+            req.all_data = {"user": "cornelius", "realm": "home", "pin": "1", **flag}
+            self.assertRaises(PolicyError, check_otp_pin, req)
 
         # finally delete policy
         delete_policy("pol1")
@@ -461,7 +467,7 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
                             "user": "cornelius"}
             self.assertRaises(PolicyError, check_otp_pin, req)
 
-        # check that no pin is checked during rollover or verify
+        # check that no pin is checked during rollover or verify, as long as no PIN is given
         logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         req.all_data = {
             "user": "cornelius",
@@ -470,7 +476,8 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         }
         self.assertTrue(check_otp_pin(req))
         capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
-                               "Disable PIN checking due to rollover (True) or verify (None)"))
+                               "No PIN given for the rollover (True) or verification (None), skipping the PIN "
+                               "policies."))
         req.all_data = {
             "user": "cornelius",
             "realm": "home",
@@ -478,8 +485,13 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         }
         self.assertTrue(check_otp_pin(req))
         capture.check_present(("privacyidea.api.lib.prepolicy", "DEBUG",
-                               "Disable PIN checking due to rollover (None) or verify (123456)"))
+                               "No PIN given for the rollover (None) or verification (123456), skipping the PIN "
+                               "policies."))
         logging.getLogger('privacyidea').setLevel(logging.INFO)
+        # A PIN that is given with the rollover or the verification is checked
+        for flag in ({"rollover": True}, {"verify": 123456}):
+            req.all_data = {"user": "cornelius", "realm": "home", "pin": "1", **flag}
+            self.assertRaises(PolicyError, check_otp_pin, req)
 
         # finally delete policy
         delete_policy("pol1")
@@ -639,3 +651,120 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # finally delete policy
         delete_policy("pol1")
         delete_realm("home")
+
+
+class PinPolicyEndpointTestCase(MyApiTestCase):
+    """The PIN policies apply to the PIN an endpoint stores, whatever else the request contains."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.addCleanup(self._remove_policies_and_tokens)
+
+    @staticmethod
+    def _remove_policies_and_tokens() -> None:
+        for policy in PolicyClass().list_policies():
+            delete_policy(policy["name"])
+        for token in get_tokens():
+            remove_token(token.token.serial)
+
+    def _post(self, url: str, data: dict | None = None, authorization: str | None = None,
+              json_body: dict | None = None) -> tuple[int, dict]:
+        self.reset_flask_g()
+        arguments = {"method": "POST", "headers": {"Authorization": authorization} if authorization else {}}
+        if json_body is not None:
+            arguments["json"] = json_body
+        else:
+            arguments["data"] = data or {}
+        with self.app.test_request_context(url, **arguments):
+            response = self.app.full_dispatch_request()
+            return response.status_code, response.json
+
+    def _user_authorization(self) -> str:
+        self.authenticate_selfservice_user()
+        return self.at_user
+
+    def test_01_a_pin_given_with_rollover_or_verify_is_checked(self):
+        set_policy("user", scope=SCOPE.USER, action="enrollHOTP, enrollpin, otp_pin_minlength=8", realm=self.realm1)
+        authorization = self._user_authorization()
+
+        status, result = self._post("/token/init", {"type": "hotp", "genkey": 1, "pin": "12", "serial": "ROLL1",
+                                                    "rollover": "1"}, authorization)
+        self.assertEqual(403, status, result)
+        status, result = self._post("/token/init", {"type": "hotp", "otpkey": self.otpkey, "pin": "12",
+                                                    "serial": "VERIFY1", "verify": "123456"}, authorization)
+        self.assertEqual(403, status, result)
+        # Without a PIN the rollover is not checked against the PIN policies
+        status, result = self._post("/token/init", {"type": "hotp", "genkey": 1, "serial": "ROLL2",
+                                                    "rollover": "1"}, authorization)
+        self.assertEqual(200, status, result)
+
+    def test_02_the_pin_the_endpoint_stores_is_checked(self):
+        set_policy("user", scope=SCOPE.USER, action="enrollHOTP, enrollpin, setpin, otp_pin_minlength=8",
+                   realm=self.realm1)
+        set_policy("admin", scope=SCOPE.ADMIN, action="enrollHOTP, assign, otp_pin_minlength=8")
+        authorization = self._user_authorization()
+
+        # /token/init and /token/assign store "pin"
+        status, result = self._post("/token/init", {"type": "hotp", "genkey": 1, "serial": "INIT1", "pin": "12",
+                                                    "otppin": "Compliant123"}, authorization)
+        self.assertEqual(403, status, result)
+        init_token({"type": "hotp", "serial": "ASSIGN1", "otpkey": self.otpkey})
+        status, result = self._post("/token/assign", {"serial": "ASSIGN1", "user": "cornelius", "realm": self.realm1,
+                                                      "pin": "1", "otppin": "Compliant123"}, self.at)
+        self.assertEqual(403, status, result)
+
+        # /token/setpin stores "otppin", an empty one included
+        init_token({"type": "hotp", "serial": "SETPIN1", "otpkey": self.otpkey, "pin": "oldpin123"},
+                   user=User("selfservice", self.realm1))
+        status, result = self._post("/token/setpin", {"serial": "SETPIN1", "otppin": "", "pin": "Whatever123"},
+                                    authorization)
+        self.assertEqual(403, status, result)
+        self.assertTrue(get_one_token(serial="SETPIN1").token.check_pin("oldpin123"))
+        status, result = self._post("/token/setpin", {"serial": "SETPIN1", "otppin": "Compliant123"},
+                                    authorization)
+        self.assertEqual(200, status, result)
+        self.assertTrue(get_one_token(serial="SETPIN1").token.check_pin("Compliant123"))
+
+    def test_03_the_type_specific_policy_applies_to_any_spelling_of_the_type(self):
+        set_policy("user", scope=SCOPE.USER, action="enrollSPASS, enrollpin, spass_otp_pin_minlength=12",
+                   realm=self.realm1)
+        authorization = self._user_authorization()
+
+        for token_type in ("spass", "SPASS", "Spass"):
+            status, result = self._post("/token/init", {"type": token_type, "pin": "abc", "serial": "SPASS1"},
+                                        authorization)
+            self.assertEqual(403, status, (token_type, result))
+        status, result = self._post("/token/init", {"type": "SPASS", "pin": "abcdefghijkl", "serial": "SPASS1"},
+                                    authorization)
+        self.assertEqual(200, status, result)
+
+    def test_04_otppin_none_keeps_checking_the_pin_of_a_spass_token(self):
+        init_token({"type": "spass", "serial": "SPASSNONE", "pin": "secret"}, user=User("cornelius", self.realm1))
+        set_policy("none", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=none", realm=self.realm1)
+
+        status, result = self._post("/validate/check", {"user": "cornelius", "realm": self.realm1, "pass": ""})
+        self.assertEqual(200, status, result)
+        self.assertFalse(result["result"]["value"], result)
+        status, result = self._post("/validate/check", {"user": "cornelius", "realm": self.realm1, "pass": "secret"})
+        self.assertTrue(result["result"]["value"], result)
+
+    def test_05_a_container_template_returns_the_pin_of_the_template_but_not_a_generated_one(self):
+        def init_container_from_template(template_token: dict) -> tuple[str, dict]:
+            body = {"type": "generic", "user": "cornelius", "realm": self.realm1,
+                    "template": {"name": "template1", "container_type": "generic",
+                                 "template_options": {"tokens": [template_token]}}}
+            status, result = self._post("/container/init", json_body=body, authorization=self.at)
+            self.assertEqual(200, status, result)
+            serial, token_result = next(iter(result["result"]["value"]["tokens"].items()))
+            return serial, token_result["init_params"]
+
+        set_policy("random_pin", scope=SCOPE.ENROLL, action=f"{PolicyAction.OTPPINRANDOM}=10")
+        serial, init_params = init_container_from_template({"type": "hotp", "genkey": True, "user": True})
+        self.assertNotIn("pin", init_params)
+        self.assertTrue(get_one_token(serial=serial).token.pin_hash)
+
+        delete_policy("random_pin")
+        _serial, init_params = init_container_from_template({"type": "hotp", "genkey": True, "user": True,
+                                                             "pin": "templatepin"})
+        self.assertEqual("templatepin", init_params["pin"])

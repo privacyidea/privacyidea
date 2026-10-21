@@ -220,7 +220,8 @@ def set_random_pin(request=None, action=None):
                               f"{role!s}.")
     elif len(pin_pols) == 1:
         # check pin contents policy per token type, otherwise fall back
-        tokentype = get_token_type(request.all_data.get("serial"))
+        # The names of the type-specific PIN policy actions are in lower case
+        tokentype = (get_token_type(request.all_data.get("serial")) or "").lower()
         pol_contents = Match.admin_or_user(g, action=f"{tokentype!s}_{PolicyAction.OTPPINCONTENTS!s}",
                                            user_obj=request.User).action_values(unique=True)
         if not pol_contents:
@@ -260,7 +261,8 @@ def init_random_pin(request=None, action=None):
         # (derived from the request params), so all of this enrollment's PIN
         # policies resolve the user consistently and pick up a realm injected
         # by a preceding decorator (e.g. realmadmin).
-        tokentype = request.all_data.get("type", "hotp")
+        # Token types are stored in lower case, and so are the names of the type-specific PIN policy actions
+        tokentype = (request.all_data.get("type") or "hotp").lower()
         pol_contents = Match.admin_or_user(g, action=f"{tokentype!s}_{PolicyAction.OTPPINCONTENTS!s}",
                                            user_obj=user_object).action_values(unique=True)
         if not pol_contents:
@@ -297,7 +299,7 @@ def init_random_pin(request=None, action=None):
             pin_handler.send(request.all_data["pin"],
                              request.all_data.get("serial", "N/A"),
                              user_object,
-                             tokentype=request.all_data.get("type", "hotp"),
+                             tokentype=tokentype,
                              logged_in_user=g.logged_in_user)
 
     return True
@@ -636,7 +638,10 @@ def check_otp_pin(request=None, action=None):
     ACTION.OTPPINCONTENTS and token-type-specific PIN policy actions in the
     SCOPE.USER or SCOPE.ADMIN. It is used to decorate the API functions.
 
-    The pin is investigated in the params as "otppin" or "pin"
+    The PIN that is checked is the parameter the endpoint stores: "otppin" for setting the PIN
+    (``action`` SETPIN), "pin" everywhere else. A PIN that is not given is checked as an empty one.
+    For a rollover or the verification of an enrollment, the PIN policies only apply when a PIN
+    is given.
 
     Token types that do not use a PIN at all (``using_pin = False``) are exempt, whether the
     request identifies the token by serial or, as at enrollment, only by its type. The
@@ -649,13 +654,15 @@ def check_otp_pin(request=None, action=None):
     raised.
     """
     params = request.all_data
-    pin = params.get("otppin", "") or params.get("pin", "")
+    pin_parameter = "otppin" if action == PolicyAction.SETPIN else "pin"
+    pin = params.get(pin_parameter) or ""
     serial = params.get("serial")
     tokentype = params.get("type")
     rollover = params.get("rollover")
     verify = params.get("verify")
-    if rollover or verify:
-        log.debug(f"Disable PIN checking due to rollover ({rollover}) or verify ({verify})")
+    if (rollover or verify) and params.get(pin_parameter) is None:
+        log.debug(f"No PIN given for the rollover ({rollover}) or verification ({verify}), skipping the PIN "
+                  f"policies.")
         return True
     if not serial and action == PolicyAction.SETPIN:
         path_elems = request.path.split("/")
@@ -678,8 +685,9 @@ def check_otp_pin(request=None, action=None):
             token_owner = tokensobject_list[0].user
             if token_owner and not request.User:
                 pin_user = token_owner
-    # the default tokentype is still HOTP
-    tokentype = tokentype or "hotp"
+    # the default tokentype is still HOTP. Token types are stored in lower case, and so are the names of the
+    # type-specific PIN policy actions.
+    tokentype = (tokentype or "hotp").lower()
     token_class = get_token_class(tokentype)
     if token_class and token_class.using_pin is False and not pin:
         log.debug(f"Token type {tokentype} does not use a PIN and none was given, skipping the PIN policies.")

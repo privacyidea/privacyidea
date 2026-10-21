@@ -826,7 +826,12 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
             continue
 
         init_result[token.get_serial()].update(response.json["detail"])
-        init_result[token.get_serial()]["init_params"] = init_params
+        # A PIN the server generated goes to the PIN handlers only and is not returned, like on /token/init. A PIN
+        # from the template stays, so that the parameters can be sent to /token/init again.
+        response_init_params = dict(init_params)
+        if response_init_params.get("pin") is not None and response_init_params.get("pin") != token_info.get("pin"):
+            del response_init_params["pin"]
+        init_result[token.get_serial()]["init_params"] = response_init_params
 
     request.all_data = request_all_data_original
     g.policies = policies

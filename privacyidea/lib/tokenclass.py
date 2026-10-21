@@ -155,6 +155,9 @@ class ClientMode:
 class TokenClass:
     # Class properties
     using_pin = True
+    # The PIN is the whole credential, there is no OTP value next to it. The otppin policy "none" does not
+    # apply to such a token: its PIN is always checked.
+    pin_is_whole_credential = False
     hKeyRequired = False
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
     client_mode = ClientMode.INTERACTIVE

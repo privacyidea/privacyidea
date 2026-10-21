@@ -58,6 +58,23 @@
   `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until the policy is
   saved again.
 
+* **The PIN change via `/validate/check`** (policy `change_pin_via_validate`): each of its two challenges can be
+  answered once and only while it is valid, and the token has to be usable like for any other authentication (not
+  disabled, below its fail counter, within its validity period). A confirmation that does not match the new PIN counts
+  as a failed authentication and ends the PIN change; it starts again with the next login.
+
+* **The PIN policies check the PIN that is stored.** `otp_pin_minlength`, `otp_pin_maxlength` and `otp_pin_contents`
+  check `pin` for `/token/init`, `/token/assign` and container templates, and `otppin` for `/token/setpin`, an empty
+  value included. A PIN sent together with `rollover` or `verify` is checked as well, and the token type-specific PIN
+  policies apply whatever the case of the `type` parameter. Requests whose PIN does not match the policies are refused.
+
+* **Simple pass tokens under `otppin=none`** — The authentication policy `otppin=none` drops the PIN in front of an OTP
+  value. A simple pass (SPASS) token has no OTP value, its PIN is the whole password, so its PIN is checked as usual.
+  SPASS tokens with `otppin=userstore` work as before.
+
+* **`POST /container/init` with a template returns the PIN of the template only.** A PIN the server generates (policy
+  `otp_pin_random`) is not part of the `init_params` of a token, as with `/token/init`.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

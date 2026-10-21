@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
 from passlib.hash import argon2
+from sqlalchemy import select
 from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
@@ -57,6 +58,7 @@ from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
+from privacyidea.models.utils import utc_now
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
@@ -700,3 +702,110 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("auth")
         sms.delete_token()
         totp.delete_token()
+
+
+class PinChangeViaValidateTestCase(MyApiTestCase):
+    """
+    The PIN change via /validate/check: after an authentication with a due PIN change, the new PIN is entered in
+    answer to a first challenge and confirmed in answer to a second one.
+    """
+    serial = "PINCHANGE1"
+    other_serial = "PINCHANGE2"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        token = init_token({"type": "hotp", "serial": self.serial, "otpkey": self.otpkey, "pin": "test"},
+                           user=User("cornelius", self.realm1))
+        token.set_next_pin_change(diff="-1d")
+        set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+
+    def tearDown(self) -> None:
+        delete_policy("via_validate")
+        for serial in (self.serial, self.other_serial):
+            if get_tokens(serial=serial):
+                remove_token(serial)
+        super().tearDown()
+
+    def _check(self, password: str, transaction_id: str | None = None, user: str = "cornelius") -> dict:
+        data = {"user": user, "realm": self.realm1, "pass": password}
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        with self.app.test_request_context("/validate/check", method="POST", data=data):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json
+
+    def _enter_new_pin(self, new_pin: str = "newpin1") -> tuple[str, str]:
+        """Authenticate and enter the new PIN. Returns the transaction IDs of both challenges."""
+        result = self._check("test" + self.valid_otp_values[0])
+        self.assertEqual("Please enter a new PIN", result["detail"]["message"], result)
+        first = result["detail"]["transaction_id"]
+        result = self._check(new_pin, first)
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+        return first, result["detail"]["transaction_id"]
+
+    def _pin_is(self, pin: str) -> bool:
+        return get_one_token(serial=self.serial).token.check_pin(pin)
+
+    def test_01_each_challenge_is_answered_once(self):
+        first, second = self._enter_new_pin()
+        result = self._check("newpin1", second)
+        self.assertTrue(result["result"]["value"], result)
+        self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+        self.assertTrue(self._pin_is("newpin1"))
+
+        # Neither challenge can be answered again
+        for transaction_id in (first, second):
+            result = self._check("otherpin", transaction_id)
+            self.assertFalse(result["result"]["value"], result)
+            result = self._check("newpin1", transaction_id)
+            self.assertFalse(result["result"]["value"], result)
+        self.assertTrue(self._pin_is("newpin1"))
+
+    def test_02_an_expired_challenge_is_refused(self):
+        _first, second = self._enter_new_pin()
+        for challenge in db.session.scalars(select(Challenge).where(Challenge.transaction_id == second)):
+            challenge.expiration = utc_now() - datetime.timedelta(hours=5)
+        db.session.commit()
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_03_a_disabled_token_is_refused(self):
+        _first, second = self._enter_new_pin()
+        enable_token(self.serial, enable=False)
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Token is disabled", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_04_a_wrong_confirmation_counts_as_a_failed_attempt_and_ends_the_change(self):
+        _first, second = self._enter_new_pin()
+
+        result = self._check("otherpin", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("PINs do not match", result["detail"]["message"], result)
+        self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+
+        # The confirmation can not be given again, the PIN change starts over with the next authentication
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_05_a_challenge_of_another_users_token_is_refused(self):
+        init_token({"type": "hotp", "serial": self.other_serial, "otpkey": self.otpkey, "pin": "other"},
+                   user=User("selfservice", self.realm1))
+        result = self._check("test" + self.valid_otp_values[0])
+        first = result["detail"]["transaction_id"]
+
+        result = self._check("whatever", first, user="selfservice")
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+
+        # The challenge stays open for the owner of the token
+        result = self._check("newpin1", first)
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
