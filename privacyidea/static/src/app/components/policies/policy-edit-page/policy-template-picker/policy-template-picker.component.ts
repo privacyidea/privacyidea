@@ -60,7 +60,7 @@ export class PolicyTemplatePickerComponent {
     };
     if (template.realm !== undefined) edits.realm = template.realm;
     // A boolean action is disabled by leaving it out, the backend only checks whether an action is set, not its value
-    if (template.action !== undefined)
+    if (template.action)
       edits.action = Object.fromEntries(Object.entries(template.action).filter(([, value]) => value !== false));
     if (template.resolver !== undefined) edits.resolver = template.resolver;
     if (template.adminrealm !== undefined) edits.adminrealm = template.adminrealm;

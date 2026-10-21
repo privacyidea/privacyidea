@@ -30,7 +30,7 @@ import requests
 from pydash import get
 from requests import Response, HTTPError
 
-from .UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
 from ..error import ParameterError, ResolverError
 from ..log import log_with
 from ..utils import is_true
@@ -440,7 +440,10 @@ class HTTPResolver(UserIdResolver):
 
         :param login_name: The username to resolve
         :return: The user ID for the given username or an empty string if the user does not exist.
+        :raises ResolverError: if the user store could not answer the request
         """
+        if not login_name:
+            return ""
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         if not is_request_configured(config_get_user_by_name):
             # No endpoint configured to get user by name
@@ -448,7 +451,12 @@ class HTTPResolver(UserIdResolver):
             return login_name
 
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name})
-        user_info = self._get_user(login_name, config, ["userid"])
+        try:
+            user_info = self._get_user(login_name, config, ["userid"], raise_on_lookup_failure=True)
+        except (ResolverError, ValueError) as error:
+            # ValueError: the response is not JSON, e.g. the page of a proxy in front of the user store
+            log.error(f"Could not look up the user {login_name!r}: {error}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         user_id = user_info.get("userid", "")
         return user_id
 
@@ -1120,14 +1128,19 @@ class HTTPResolver(UserIdResolver):
 
         return response
 
-    def _get_user(self, user_identifier: str, config: RequestConfig, attributes: list[str] = None) -> dict:
+    def _get_user(self, user_identifier: str, config: RequestConfig, attributes: list[str] | None = None,
+                  raise_on_lookup_failure: bool = False) -> dict:
         """
         Fetches a single user from the user store
 
         :param user_identifier: Either the UID or the username
         :param config: Configuration to fetch the user
         :param attributes: list of attributes to be returned for the user
+        :param raise_on_lookup_failure: Raise if the user store could not answer instead of returning an empty dict,
+            see :meth:`_is_lookup_failure`
         :return: Dictionary containing pi conform user attributes
+        :raises ResolverError: if the request to the user store failed, or with *raise_on_lookup_failure* if the user
+            store did not answer the lookup
         """
         # Request
         config.headers.update(self._get_auth_header())
@@ -1136,6 +1149,8 @@ class HTTPResolver(UserIdResolver):
 
         # Error handling
         success = self._get_user_error_handling(response, config, user_identifier)
+        if not success and raise_on_lookup_failure and self._is_lookup_failure(response):
+            raise ResolverError(f"The user store answered with status {response.status_code}.")
 
         # Map user store attributes to pi attributes
         user_info = {}
@@ -1292,6 +1307,20 @@ class HTTPResolver(UserIdResolver):
         if not success:
             raise ResolverError("Failed to get the user list!")
         return success
+
+    @staticmethod
+    def _is_lookup_failure(response: Response) -> bool:
+        """
+        Tells a user store that could not answer a user lookup apart from one that answered "no such user". Only a
+        404 or a successful (2xx) response matching the configured special error handling means the user does not
+        exist; the special error handling is for APIs that answer every request with 200 OK. A 404 is what
+        a REST API answers for a resource that does not exist, here the user. It is also the answer to an endpoint
+        that does not exist, e.g. a typo in the configured path, which can not be told apart from an unknown user.
+
+        :param response: The response of an unsuccessful user request
+        :return: True if the user store failed to answer
+        """
+        return not response.ok and response.status_code != 404
 
     def _get_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
