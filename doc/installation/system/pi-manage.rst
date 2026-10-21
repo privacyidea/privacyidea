@@ -216,10 +216,10 @@ upgrade runs them for you through ``privacyidea-schema-upgrade``, see
    pi-manage db heads       # the newest revision of the installed version
    pi-manage db upgrade     # migrate the database to the installed version
 
-The migration directory is found automatically. If it is not, e.g. in an
-editable installation, pass it with ``-d``::
+The migrations of the installed version are used. ``-d`` takes them from
+another directory::
 
-   pi-manage db upgrade -d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations
+   pi-manage db upgrade -d /path/to/privacyidea/migrations
 
 ``db stamp <revision>`` only records a revision in the database without
 running any migration; a wrong stamp makes later upgrades skip or repeat

@@ -110,10 +110,11 @@ class TestPipUpdate:
 
 PI_MANAGE_WRAPPER = '#!/bin/sh\nexec "{python}" "{pi_manage}" "$@"\n'
 
-# "db current" reports the revision in the file "revision", "db upgrade" gets as far as revision "b1" and fails.
+# "db current" reports the revisions in the file "revision", one per line. "db upgrade" gets as far as revision "b1"
+# and fails.
 FAILING_UPGRADE_PI_MANAGE = """#!/bin/sh
 case "$1 $2" in
-  "db current") echo "Rev: $(cat revision)" ;;
+  "db current") echo "Current revision(s) for sqlite:///stub.sqlite:"; sed 's/^/Rev: /' revision ;;
   "db upgrade") echo "b1" > revision; exit 3 ;;
 esac
 """
@@ -216,6 +217,7 @@ class TestSchemaUpgrade:
         result = self.run_schema_upgrade(["-d", str(migration_directory)],
                                          pi_manage_environment(pi_manage_directory, database), tmp_path)
         assert result.returncode == 0, result
+        assert f"++ Database: sqlite:///{database}" in result.stdout
         assert f"++ Schema revision before the upgrade: {head} (head)" in result.stdout
         assert f"++ Schema revision after the upgrade: {head} (head)" in result.stdout
 
@@ -226,6 +228,7 @@ class TestSchemaUpgrade:
         result = self.run_schema_upgrade(["--skipstamp"], pi_manage_environment(pi_manage_directory, database),
                                          REPOSITORY_DIRECTORY)
         assert result.returncode == 1, result
+        assert f"++ Database: sqlite:///{database}" in result.stdout
         assert "ERROR: The database has no schema revision stamp" in result.stdout
         assert "Upgrading DB schema" not in result.stdout
         assert run_sql(database, "SELECT version_num FROM alembic_version") == []
@@ -241,17 +244,70 @@ class TestSchemaUpgrade:
         assert "Upgrading DB schema" not in result.stdout
         assert run_sql(database, "SELECT version_num FROM alembic_version") == [("feedface0001",)]
 
-    def test_09_failed_upgrade_prints_the_revision_reached(self, tmp_path: Path):
-        """The script ends with the exit code of the failed upgrade."""
-        command_directory = tmp_path / "bin"
+    def run_with_failing_upgrade(self, directory: Path, revisions: list[str]) -> subprocess.CompletedProcess:
+        """Run the script in *directory* with a pi-manage whose database is stamped with *revisions*."""
+        command_directory = directory / "bin"
         command_directory.mkdir()
         write_executable(command_directory / "pi-manage", FAILING_UPGRADE_PI_MANAGE)
-        (tmp_path / "revision").write_text("a0\n")
+        (directory / "revision").write_text("".join(f"{revision}\n" for revision in revisions))
         environment = {**os.environ, "PATH": f"{command_directory}{os.pathsep}{os.environ['PATH']}"}
-        result = self.run_schema_upgrade([], environment, tmp_path)
+        return self.run_schema_upgrade([], environment, directory)
+
+    def test_09_failed_upgrade_prints_the_revision_reached(self, tmp_path: Path):
+        """The script ends with the exit code of the failed upgrade."""
+        result = self.run_with_failing_upgrade(tmp_path, ["a0"])
         assert result.returncode == 3, result
+        assert "++ Database: sqlite:///stub.sqlite" in result.stdout
         assert "++ Schema revision before the upgrade: a0" in result.stdout
         assert "++ Schema revision after the upgrade: b1" in result.stdout
+
+    def test_10_revisions_of_a_database_with_two_heads_are_printed_on_one_line(self, tmp_path: Path):
+        result = self.run_with_failing_upgrade(tmp_path, ["a0 (head)", "z0 (head)"])
+        assert "++ Schema revision before the upgrade: a0 (head) z0 (head)\n" in result.stdout
+
+
+@pytest.mark.skipif(shutil.which("sh") is None, reason="sh is not available")
+class TestPiManageDbUpgrade:
+    """
+    "pi-manage db upgrade" stops on a database without schema revision stamp. "pi-manage db stamp" stays available
+    for such a database.
+    """
+
+    @staticmethod
+    def run_pi_manage(arguments: list[str], pi_manage_directory: Path, database: Path) -> subprocess.CompletedProcess:
+        return subprocess.run([str(pi_manage_directory / "pi-manage")] + arguments,  # nosec B603
+                              cwd=REPOSITORY_DIRECTORY, env=pi_manage_environment(pi_manage_directory, database),
+                              capture_output=True, text=True, timeout=120, check=False)
+
+    def test_01_upgrade_of_a_stamped_database(self, pi_manage_directory: Path, database: Path):
+        result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 0, result
+
+    def test_02_upgrade_refuses_tables_without_stamp(self, pi_manage_directory: Path, database: Path):
+        run_sql(database, "DELETE FROM alembic_version")
+        tables = run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+        result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 1, result
+        assert f"The database sqlite:///{database} has no schema revision stamp" in result.stderr
+        assert "stamp the database with 'pi-manage db stamp head'" in result.stderr
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == []
+        assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") == tables
+
+    def test_03_upgrade_refuses_an_empty_database(self, tmp_path: Path, pi_manage_directory: Path):
+        database = tmp_path / "empty.sqlite"
+        result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 1, result
+        assert "create the tables with 'pi-manage setup create_tables'" in result.stderr
+        assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'token'") == []
+
+    def test_04_stamp_of_a_database_without_stamp(self, pi_manage_directory: Path, database: Path):
+        """The stamp is logged as a stamp, not as a migration."""
+        head = run_sql(database, "SELECT version_num FROM alembic_version")[0][0]
+        run_sql(database, "DELETE FROM alembic_version")
+        result = self.run_pi_manage(["db", "stamp", "head"], pi_manage_directory, database)
+        assert result.returncode == 0, result
+        assert f"Stamped revision {head}, no migration ran (was base)" in result.stdout
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == [(head,)]
 
 
 PI_CFG_WITH_SECRETS = """import logging

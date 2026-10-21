@@ -108,10 +108,10 @@ installed version are stamped with ``pi-manage db stamp head``.
 .. note::
     .. versionchanged:: 3.12 The migration directory is detected automatically.
 
-    If the migration directory is not found, e.g. in an editable installation,
-    pass it with ``-d``::
+    ``-d`` takes the migrations from another directory than the one of the
+    installed version::
 
-        privacyidea-schema-upgrade -d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations
+        privacyidea-schema-upgrade -d /path/to/privacyidea/migrations
 
     ``privacyidea-schema-upgrade`` does not accept the directory without ``-d``.
     ``-s`` is accepted for compatibility and has no effect.
