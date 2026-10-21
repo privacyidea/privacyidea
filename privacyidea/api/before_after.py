@@ -685,7 +685,8 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     a post-policy, or the view itself after the authentication - can still answer the request with an error. Neither
     is corrected there, so both would keep recording a success the client never received.
 
-    The audit entry is set to failed if it was marked successful. The staged authentication-log event is reclassified
+    The audit entry is set to rejected if it records an accepted authentication or a challenge; an entry that records
+    neither, e.g. of a malformed request, is left as it is. The staged authentication-log event is reclassified
     as ``POST_AUTHENTICATION_FAIL`` with the error message in its other info, unless it already records a failure:
     such an event, e.g. a wrong credential or a ``NOT_AUTHORIZED`` an authorization policy recorded itself, already
     says why the request failed. A rejection by conditional access is never amendable and stays as it is.
@@ -698,7 +699,8 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     result = response.json.get("result") or {}
     if result.get("status") is not False:
         return
-    if "audit_object" in g and g.audit_object.audit_data.get("success"):
+    if ("audit_object" in g
+            and g.audit_object.audit_data.get("authentication") in (AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.CHALLENGE)):
         g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.REJECT})
     context = peek_ca_context()
     event = context.amendable if context is not None else None

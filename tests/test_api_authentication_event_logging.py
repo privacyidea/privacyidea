@@ -1353,6 +1353,24 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         reasons={self.serial: AuthEventReason.WRONG_OTP})
         self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
 
+    def test_post_policy_error_after_a_triggered_challenge_logs_post_authentication_fail(self):
+        # A challenge step is audited with success=False and authentication=CHALLENGE, not as a success.
+        self._enable_challenge_response()
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": self.pin})
+        finally:
+            _delete_conflicting_policies()
+            delete_policy("authlog_cr")
+        self.assertEqual(403, res.status_code, res.json)
+        transaction_id = get_challenges(serial=self.serial)[0].transaction_id
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
     def test_is_authorized_deny_marks_the_audit_entry_failed(self):
         set_policy("authlog_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
         try:
