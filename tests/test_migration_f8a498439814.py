@@ -4,17 +4,20 @@ v3.14.1: Remove the value of boolean policy actions that are stored with a value
 
 upgrade()   — removes the earlier occurrences of an action given more than once, keeping the last one, and the
               value of a boolean action whose value is not true, like ``policywrite=False`` or
-              ``triggerchallenge=hotp``, so it stays enabled
+              ``triggerchallenge=hotp``, so it stays enabled. ``disable_client_token_deletion`` with a false value
+              becomes the excluded action, as only the authenticator app applies it and reads the value.
 downgrade() — keeps the cleaned actions, they mean the same in every version
 
 Boolean actions with a true value, the actions of other types and an action next to its exclusion are untouched.
 """
 
+import importlib
 import os
 
 import pytest
 from sqlalchemy import text
 
+from privacyidea.models.policy import parse_action_string
 from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
 pytestmark = [
@@ -58,6 +61,24 @@ POLICIES = {
     929: ("admin", "policywrite=1"),
     930: ("admin", "policywrite, policywrite"),
     931: ("admin", "policywrite= true"),
+    932: ("container", "disable_client_token_deletion=false, container_client_rollover=0, "
+                       "initially_add_tokens_to_container=FALSE, disable_client_container_unregister=False"),
+    933: ("container", "disable_client_token_deletion=true, container_client_rollover, "
+                       "initially_add_tokens_to_container=hotp, hide_specific_error_message=false"),
+    934: ("container", "disable_client_token_deletion=false, -disable_client_token_deletion"),
+    935: ("container", "disable_client_token_deletion=false, disable_client_token_deletion"),
+    936: ("container", "container_ssl_verify=False, disable_client_token_deletion= false "),
+    937: ("admin", "disable_client_token_deletion=false"),
+    938: ("user", "enrollHOTP=false, disable=hotp, enable"),
+    939: ("enrollment", "hotp_force_app_pin=False, tokenlabel=<s>"),
+    940: ("authorization", "no_detail_on_fail=false, tokentype=hotp totp"),
+    941: ("register", "hide_specific_error_message=0"),
+    942: ("token", "hide_specific_error_message_for_ttype=False"),
+    943: ("hardening", "hide_version=false, hide_auth_error_status=hotp"),
+    944: ("conditional_access", "show_default_ca_error_message=FALSE"),
+    945: ("webui", "search_on_enter=false, logout_time=120"),
+    946: ("authentication", "passkey_trigger_by_pin=false, otppin=userstore"),
+    947: ("container", "disable_client_token_deletion=hotp"),
 }
 
 EXPECTED = {
@@ -109,7 +130,54 @@ EXPECTED = {
     930: "policywrite",
     # The whitespace before a true value stays, the migration only removes false values
     931: "policywrite= true",
+    # Only the authenticator app applies disable_client_token_deletion and reads false and 0 as disabled, so it becomes
+    # the exclusion. The server applies the other container client actions, they stay enabled.
+    932: "-disable_client_token_deletion, container_client_rollover, initially_add_tokens_to_container, "
+         "disable_client_container_unregister",
+    # A true value stays, another value is removed like for the other boolean actions
+    933: "disable_client_token_deletion=true, container_client_rollover, initially_add_tokens_to_container, "
+         "hide_specific_error_message",
+    # The exclusion is given already, it stays once
+    934: "-disable_client_token_deletion",
+    # The last occurrence is the one the policy uses
+    935: "disable_client_token_deletion",
+    # An action of another type keeps "False", the whitespace around the false value is no part of it
+    936: "container_ssl_verify=False, -disable_client_token_deletion",
+    # The name is not an action of this scope
+    937: "disable_client_token_deletion=false",
+    # The boolean actions of the other scopes lose the value, the actions of other types keep it
+    938: "enrollHOTP, disable, enable",
+    939: "hotp_force_app_pin, tokenlabel=<s>",
+    940: "no_detail_on_fail, tokentype=hotp totp",
+    941: "hide_specific_error_message",
+    942: "hide_specific_error_message_for_ttype",
+    943: "hide_version, hide_auth_error_status",
+    944: "show_default_ca_error_message",
+    945: "search_on_enter, logout_time=120",
+    946: "passkey_trigger_by_pin, otppin=userstore",
+    # A value that is neither true nor false is removed, the action stays enabled
+    947: "disable_client_token_deletion",
 }
+
+
+def test_expected_actions_mean_what_the_stored_actions_meant():
+    """
+    Each expected action string parses to the actions of the stored one, with a boolean action that is not true
+    enabled and an action the authenticator app applies excluded when it is false.
+    """
+    migration = importlib.import_module(
+        "privacyidea.migrations.versions.f8a498439814_drop_values_of_bool_policy_actions")
+    for policy_id, (scope, action) in POLICIES.items():
+        bool_actions = migration.BOOL_ACTIONS.get(scope, frozenset())
+        expected = {}
+        for key, value in parse_action_string(action).items():
+            if key in bool_actions and value is not True and value.strip() not in migration.TRUE_VALUES:
+                if (scope == "container" and key in migration.APP_APPLIED_ACTIONS
+                        and value.strip().lower() in migration.FALSE_VALUES):
+                    key = f"-{key}"
+                value = True
+            expected[key] = value
+        assert parse_action_string(EXPECTED[policy_id]) == expected, policy_id
 
 
 class TestMigrationF8a498439814(MigrationTestBase):
@@ -162,6 +230,24 @@ class TestMigrationF8a498439814(MigrationTestBase):
             after = conn.execute(text(query)).fetchall()
         engine.dispose()
         assert after == before
+
+    def test_upgrade_leaves_empty_actions(self, flask_app):
+        """upgrade() leaves a policy without actions as it is, Oracle stores the empty string as NULL."""
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        self._insert_rows(engine, "policy", [
+            {"id": policy_id, "active": True, "name": f"empty_action_{policy_id}", "scope": "container",
+             "action": action, "realm": "", "priority": 1}
+            for policy_id, action in [(990, None), (991, "")]
+        ])
+        engine.dispose()
+
+        self._upgrade()
+
+        engine = self._engine()
+        assert self._fetch_action(engine, 990) is None
+        assert self._fetch_action(engine, 991) in ("", None)
+        engine.dispose()
 
     def test_downgrade_keeps_actions_without_value(self, flask_app):
         """downgrade() keeps the actions without value, and upgrading again changes nothing."""

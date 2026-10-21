@@ -13,20 +13,74 @@
   user with that name is now refused instead of opening a session for the wrong account. The authentication log
   records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
 
+* **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
+  returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
+  as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
+  with its next resolver. The authentication log records `USER_STORE_UNAVAILABLE`.
+
 * **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
   these values, without applying the `!` and `*` search operators.
 
-* **Boolean policy actions with a value are cleaned up.** A boolean action like `policywrite=False` acted as enabled,
-  because the policy matching only checks whether an action is set. Policies created from the WebUI template
-  "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The schema update
-  (`privacyidea-schema-upgrade`) removes the value of every boolean action whose value is not `true`, `True`, `TRUE`
-  or `1`, like `policywrite=False` or `triggerchallenge=hotp`. **The actions stay enabled**, the policies grant the
-  same rights as before. The schema update logs a warning for every policy it changes, so check these policies and
-  exclude the actions that were meant to be disabled, like `-policywrite`. From now on, saving a boolean action with
-  the value `false` (in any case) or `0` stores the excluded action, and saving it with any other value fails, also
-  through the API and `pi-manage`. Importing a policy (`pi-manage config import`) removes such values like the schema
-  update, so an exported policy stays enabled as before.
+* **Resolvers and realms are configured within the realms and resolvers of the admin policy** — An admin policy that
+  grants `resolverread`, `resolverwrite` or `resolverdelete` for named realms or resolvers now also decides which
+  resolvers and realms the administrator configures:
+
+    * `resolverread` lists the resolvers of these realms, the resolvers the policy names and the resolvers that are
+      part of no realm.
+    * Changing, testing or deleting a resolver requires the action for every realm the resolver is part of, so a
+      resolver that is shared with a realm outside the policy is refused.
+    * Changing a realm - its resolvers, their priorities or their nodes - or deleting it requires the action for every
+      resolver the realm contains, before and after the change. A resolver of a realm outside the policy can not be
+      added. Creating a resolver and adding it, or a resolver that is part of no realm, to a realm of the policy stays
+      possible.
+    * Setting the default realm (`resolverwrite`) or removing it (`resolverdelete`) requires the action for the whole
+      current and the whole new default realm, i.e. in a policy for these realms without `resolver` and `user`. A realm
+      also becomes the default realm on its own when it is the only realm: when it is created or changed as the only
+      realm, or when it is the only realm left after another realm is deleted. This requires `resolverwrite` for the
+      whole realm as well.
+
+  Apart from the default realm, the `user` field of a policy does not limit these actions. `realm` set to `*` names no
+  realm, `*, !realm_b` names every realm but `realm_b`. The rights the WebUI receives at login still contain the
+  actions, so the WebUI offers them and shows the error the server answers with. Nothing changes for installations
+  without admin policies or for policies that name no realm and no resolver. If an administrator manages resolvers or
+  realms that are shared with other realms, or the default realm, grant the actions for all of these realms or in a
+  policy without `realm` and `resolver`.
+
+* **HTTP API change** - `POST /defaultrealm/<realm>` and `DELETE /realm/<realm>` read the realm name the way
+  `POST /realm/<realm>` stores it: lowercase, with `-` for every space. `DELETE /realm/<realm>` deletes the realm in
+  any spelling of its name. `POST /defaultrealm/` with an empty realm name is refused with a 400; remove the default
+  realm with `DELETE /defaultrealm`.
+
+* **Boolean policy actions with a false value are stored as excluded actions.** Saving a boolean action with the
+  value `false` (in any case) or `0`, like `policywrite=false`, stores the excluded action `-policywrite`. This applies
+  to the WebUI, the API, `pi-manage` and the policy import. Applying a policy template in the WebUI leaves out the
+  actions the template sets to `false`.
+  The schema update (`privacyidea-schema-upgrade`) removes the value of every stored boolean action whose value is not
+  `true`, `True`, `TRUE` or `1`, like `policywrite=False` or `triggerchallenge=hotp`, and the earlier occurrences of an
+  action given more than once. **The policies grant the same rights as before.** A container policy with
+  `disable_client_token_deletion` set to `false` or `0` is stored as `-disable_client_token_deletion`, since the
+  authenticator app applies this action itself and treats it as disabled. For the other container client actions, the
+  authenticator app then offers the container rollover and unregistering as the server allows them. The schema update
+  logs a warning for every policy it changes, so check these policies and exclude the actions that are meant to be
+  disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
+  the policy is saved again.
+
+* **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
+  resolver now also apply to the requests that fetch the access token from the authority (by default
+  `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
+
+* **`PI_CHECK_RELOAD_CONFIG` limits the configuration check to once per interval** — With a value above 0, each
+  process reads the configuration timestamp from the database at most once per interval, also while the
+  configuration does not change. A configuration change can take up to that many seconds to apply in a process,
+  also on the node where it was saved.
+
+* **Tokens whose owner has no resolver** — A token whose user assignment names no resolver was left out of every token
+  list, so it could neither be found nor deleted through the WebUI, the API or the token janitors. Such a token belongs
+  to no node and is now listed on every node, so the token lists can show tokens that were not visible before. Its
+  user is shown as `**resolver error**`; unassign or delete the token. With node-specific resolvers, a token whose
+  owner's resolver is in no realm any more, e.g. because it was deleted, is now listed on every node as well. It was
+  only listed on the nodes that serve the realm of its owner.
 
 ## Update from 3.13 to 3.14
 
@@ -325,14 +379,6 @@
   `*, !ldap`, was ignored when policies were matched, so the policy still applied to that resolver. It is now left
   out, as an excluded realm or user always was. Check your policies with such resolver exclusions: they now apply to
   fewer users.
-
-* **Configuration that applies to all realms needs an admin policy without realm, resolver or user** — Policies,
-  conditional-access policies, event handlers and API clients belong to no realm. Creating, changing or deleting them
-  now requires an admin policy granting the action with `realm`, `resolver` and `user` each empty or `*`. A policy
-  that grants the action only for named realms, resolvers or users no longer does, whatever realm the request names:
-  the API refuses the request, and the rights the WebUI receives at login no longer contain the action. Reading this
-  configuration is not affected. If an administrator manages this configuration with a realm-restricted admin policy,
-  grant the actions in a policy without these fields.
 
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the

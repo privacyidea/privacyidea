@@ -358,6 +358,9 @@ class DockerConfig:
         PI_REDIS_URL = redis_url
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
+    # One database engine with a connection pool per process for the audit log and each SQL resolver, instead of
+    # a new engine and connection per request
+    PI_ENGINE_REGISTRY_CLASS = "shared"
 
 
 config = {

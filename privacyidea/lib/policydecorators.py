@@ -308,7 +308,9 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
         pass_no_user = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,
                                   user_object=user_object).policies(write_to_audit_log=False)
         if not user_object.exist():
-            if pass_no_user:
+            # Only a named user the user store did not find does not exist. A user object without a login name is
+            # what a failed lookup leaves behind, so passOnNoUser must not accept it.
+            if pass_no_user and user_object.login:
                 g.audit_object.add_policy({p.get("name") for p in pass_no_user})
                 # The credential was never verified: the success comes from the absence of the
                 # user and ends as soon as the policy is withdrawn.

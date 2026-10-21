@@ -128,7 +128,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError, EnrollmentError, ValidateError)
+                                   TokenAdminError, EnrollmentError, ValidateError, ResolverError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -219,7 +219,15 @@ def before_request():
     # Check if a policy defines the realm
     realm = get_realm_for_authentication(g, username, realm)
     resolver = request.all_data.get("resolver")
-    request.User = User(username, realm, resolver)
+    try:
+        request.User = User(username, realm, resolver)
+    except ResolverError:
+        if request.blueprint == validate_blueprint.name:
+            # Lowercase like the realm of a User object, which this request could not build
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
+                               realm=realm.lower() if realm else None,
+                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
     request.all_data["realm"] = realm
 
     # Replace the requested user with the user it was resolved to
@@ -405,7 +413,16 @@ def _conditional_access_identity():
             token = get_fido2_token_by_credential_id(credential_id)
     except Exception as ex:
         log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
-    return token.user if (token and token.user) else request.User
+    if not token:
+        return request.User
+    try:
+        owner = token.user
+    except Exception:
+        # The request is refused with the error, which has to be logged here as the view never runs
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=token.get_serial(),
+                           transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
+    return owner or request.User
 
 
 def _challenge_owner(challenge) -> User:
@@ -655,6 +672,10 @@ def check():
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
             # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
             _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
+        raise
+    except ResolverError:
+        # A user store that failed after the request was let in, e.g. on a later lookup of the token owner
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_STORE_UNAVAILABLE
         raise
     finally:
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
@@ -1140,9 +1161,9 @@ def _finalize_auth_response(context):
                 except Exception as e:
                     log.debug(f"Could not find container for token {serial}: {e}")
 
-            # Client Mode Per User Policy
+            # Client Mode Per User Policy: an opt-in, the last used token type is only stored when the policy is set
             if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                          user_object=user).allowed():
+                          user_object=user).enforced():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
