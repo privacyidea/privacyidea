@@ -43,7 +43,7 @@ from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
 from ..lib.user import get_user_from_param
 import logging
-from flask import request, g
+from flask import request, g, Request, Response
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
@@ -86,7 +86,8 @@ from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventOutcome, AuthEventType,
+                                                                           outcome_of)
 from privacyidea.api.lib.utils import log_authentication
 from privacyidea.lib.user import User
 import datetime
@@ -594,6 +595,10 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
+    # Ahead of the masking, which would replace the error message it records, and of the RADIUS shaping, which
+    # empties the body it reads.
+    record_post_authentication_failure(request, response)
+
     response = mask_authentication_error_response(request, response)
 
     # Re-apply the audit entry of a request the pre-check refused, which the endpoint's own view may since have
@@ -656,6 +661,10 @@ def record_suspended_api_client(response):
     return response
 
 
+# The routes that authenticate a request, whose response can still turn into an error after the authentication.
+POST_AUTHENTICATION_RULES = ("/validate/check", "/validate/radiuscheck", "/validate/triggerchallenge", "/auth")
+
+
 def _shaped_rule(request) -> str | None:
     """
     The route whose response is about to be shaped, or ``None`` when there is nothing to shape.
@@ -666,6 +675,37 @@ def _shaped_rule(request) -> str | None:
     if request.method == "OPTIONS":
         return None
     return getattr(getattr(request, "url_rule", None), "rule", None)
+
+
+def record_post_authentication_failure(request: Request, response: Response) -> None:
+    """
+    Record an error response that follows an authentication which did not fail, as the failure the client received.
+
+    The audit entry and the authentication-log event are written while the request is processed, but a later step -
+    a post-policy, or the view itself after the authentication - can still answer the request with an error. Neither
+    is corrected there, so both would keep recording a success the client never received.
+
+    The audit entry is set to failed if it was marked successful. The staged authentication-log event is reclassified
+    as ``POST_AUTHENTICATION_FAIL`` with the error message in its other info, unless it already records a failure:
+    such an event, e.g. a wrong credential or a ``NOT_AUTHORIZED`` an authorization policy recorded itself, already
+    says why the request failed. A rejection by conditional access is never amendable and stays as it is.
+
+    :param request: the request object
+    :param response: the response object
+    """
+    if _shaped_rule(request) not in POST_AUTHENTICATION_RULES or not response.is_json:
+        return
+    result = response.json.get("result") or {}
+    if result.get("status") is not False:
+        return
+    if "audit_object" in g and g.audit_object.audit_data.get("success"):
+        g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.REJECT})
+    context = peek_ca_context()
+    event = context.amendable if context is not None else None
+    if event is not None and outcome_of(event.event_type) != AuthEventOutcome.FAILURE:
+        message = (result.get("error") or {}).get("message")
+        context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL,
+                           other_info={**(event.other_info or {}), "error": message})
 
 
 def mask_authentication_error_response(request, response):

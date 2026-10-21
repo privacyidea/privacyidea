@@ -177,6 +177,10 @@ class AuthEventType(str, Enum):
     ENROLLMENT_FAIL = "ENROLLMENT_FAIL"
     # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
+    # The request was classified as a success or a pending challenge, but still ended in an error response, e.g.
+    # raised by a post-policy. An error after a failed authentication keeps the failure's own type. The error message
+    # is recorded in the other info. Only for the log, see LOG_ONLY_EVENT_TYPES.
+    POST_AUTHENTICATION_FAIL = "POST_AUTHENTICATION_FAIL"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
     # These three classify a request the conditional-access pre-check turned away, which is why none of them is ever
@@ -418,6 +422,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
+    AuthEventType.POST_AUTHENTICATION_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
@@ -474,12 +479,19 @@ CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
 #: have in common is that neither is an outcome the attempt reached.
 NON_REPRESENTATIVE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
-#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, and
-#: the signals about the request's client. Neither is an outcome an authentication attempt reached, which is also
-#: why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`, the same membership seen from the
-#: other side. The two sets are equal today and are kept apart because they answer different questions: one what a
-#: policy may count, the other what may stand for an attempt.
-UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+#: Event types that are an outcome an attempt reached, but are written for the log only and are not offered to the
+#: conditional-access policies. Unlike the two sets above they still represent their attempt, so an attempt that
+#: ends in one is classified by it - and, being untracked, counted by no policy.
+LOG_ONLY_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.POST_AUTHENTICATION_FAIL,
+})
+
+#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, the
+#: signals about the request's client and the log-only outcomes. The first two are no outcome an authentication
+#: attempt reached, which is also why neither may represent one (see :data:`NON_REPRESENTATIVE_EVENT_TYPES`); the
+#: log-only outcomes are one, which is why that set leaves them out.
+UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = (CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+                                                     | LOG_ONLY_EVENT_TYPES)
 
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
@@ -561,8 +573,8 @@ class RestrictionCause(str, Enum):
 
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
-# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
-# SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
+# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
+# DEVICE_TOKEN_REUSED, SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
 # reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The
 # CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
 # classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
@@ -603,6 +615,9 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON,
+    # Never reduced against anything either: it is assigned on the way out of the request, by reclassifying the event
+    # the request already staged (see record_post_authentication_failure in api/before_after.py).
+    AuthEventType.POST_AUTHENTICATION_FAIL,
     # Neither of these is produced by a token flow at all - they come from the remembered-device and API-client
     # layers respectively - so, like the three above, they are listed only to satisfy the invariant that every
     # trackable type has a rank, and reduce_request_events never sees one. SUSPENDED_API_KEY_USED is not even

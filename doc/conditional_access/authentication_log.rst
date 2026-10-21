@@ -153,6 +153,11 @@ Failure
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
+   ``POST_AUTHENTICATION_FAIL``
+     the authentication succeeded or triggered a challenge, but the request was still answered with an error, for
+     example raised by a policy that is evaluated after the authentication. If the authentication failed, the entry
+     keeps the type of that failure instead. The error message is recorded in the other info as ``error``. A
+     conditional access policy cannot count it.
    ``DEVICE_TOKEN_REUSED``
      a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
      device series, and every other remembered device of this user, is revoked.
@@ -172,8 +177,8 @@ policy's *deny* action refused this single request).
 
 These entries record that the refusal happened, and can be filtered and sorted
 like any other, so an administrator can see how often a lock or block took
-effect. They and ``SUSPENDED_API_KEY_USED`` are, however, the only types a
-conditional access policy cannot count.
+effect. They, ``SUSPENDED_API_KEY_USED`` and ``POST_AUTHENTICATION_FAIL`` are,
+however, the only types a conditional access policy cannot count.
 
 .. _authentication_log_reasons:
 
