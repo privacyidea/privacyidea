@@ -187,6 +187,12 @@ class SmsTokenClass(HotpTokenClass):
         return "PISM"
 
     @staticmethod
+    def get_setting_type(key: str) -> str:
+        # The provider configuration holds the credentials of the SMS gateway
+        settings = {"sms.providerConfig": "password"}
+        return settings.get(key, "")
+
+    @staticmethod
     def get_class_info(key=None, ret='all'):
         """
         returns all or a subtree of the token definition

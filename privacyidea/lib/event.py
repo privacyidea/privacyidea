@@ -31,6 +31,7 @@ from sqlalchemy import select, delete
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.conditional_access.request_context import recheck_conditional_access_gate
 from privacyidea.lib.config import get_config_object
+from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
@@ -473,6 +474,65 @@ class EventConfiguration:
             return eventlist
         else:
             return self.events
+
+
+def _get_documented_value(definition: dict | None, value: object) -> object:
+    """
+    Return the value of an option or a condition of an event handler as the system documentation lists it: a value
+    that is one of the choices the handler declares for it, a bool or a number. Free text, like the URL of a WebHook
+    or the body of a notification, and a value that is not one of the declared choices are censored.
+    """
+    if not isinstance(definition, dict):
+        return CENSORED
+    if definition.get("type") == "bool":
+        return is_true(value)
+    if definition.get("type") == "int":
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return CENSORED
+    choices = {str(choice.get("name") if isinstance(choice, dict) else choice)
+               for choice in definition.get("value") or ()}
+    if not choices:
+        return CENSORED
+    # A condition of type "multi" holds a comma-separated selection of the choices
+    values = str(value).split(",") if definition.get("type") == "multi" else [str(value)]
+    return value if all(part.strip() in choices for part in values) else CENSORED
+
+
+def get_events_for_documentation() -> list[dict]:
+    """
+    Return the event handlers as the system documentation lists them. The report is read by somebody other than the
+    administrators of privacyIDEA, to learn which handlers react to which events and what they do. An option or a
+    condition is listed with its value only if that value is one of the choices the handler declares for it, a bool
+    or a number, see _get_documented_value().
+
+    :return: a list with one dict per event handler
+    """
+    documented_events = []
+    for event_definition in EventConfiguration().events:
+        handler = get_handler_object(event_definition.get("handlermodule"))
+        action_definitions = {}
+        condition_definitions = {}
+        if handler:
+            actions = handler.actions
+            if isinstance(actions, dict):
+                action_definitions = actions.get(event_definition.get("action")) or {}
+            condition_definitions = handler.conditions
+        documented_events.append({
+            "name": event_definition.get("name"),
+            "handlermodule": event_definition.get("handlermodule"),
+            "active": event_definition.get("active"),
+            "position": event_definition.get("position"),
+            "ordering": event_definition.get("ordering"),
+            "event": event_definition.get("event"),
+            "action": event_definition.get("action"),
+            "abort_on_error": event_definition.get("abort_on_error"),
+            "conditions": {key: _get_documented_value(condition_definitions.get(key), value)
+                           for key, value in event_definition.get("conditions", {}).items()},
+            "options": {key: _get_documented_value(action_definitions.get(key), value)
+                        for key, value in event_definition.get("options", {}).items()}})
+    return documented_events
 
 
 @register_export('event')

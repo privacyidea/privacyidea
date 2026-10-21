@@ -26,10 +26,12 @@ from privacyidea.lib.container import (init_container, find_container_by_serial,
                                        delete_container_by_serial, add_token_to_container, create_endpoint_url)
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.counter import increase as counter_increase
+from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
-                                   enable_event, import_event, _stage_event)
+                                   enable_event, import_event, _stage_event,
+                                   get_events_for_documentation)
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
@@ -252,6 +254,42 @@ class EventHandlerLibTestCase(MyTestCase):
 
         delete_event(federation_id)
         delete_event(notification_id)
+
+    def test_04_events_for_documentation(self):
+        self.setUp_user_realms()
+        notification_id = set_event("notify", ["token_init", "token_assign"], "UserNotification", "sendmail",
+                                    conditions={"tokentype": "hotp,totp", "realm": self.realm1,
+                                                "serial": "^HOTP.*$", "tokeninfo": "email==someone@example.com",
+                                                "count_auth": "<100"},
+                                    options={"To": "tokenowner", "mimetype": "html", "subject": "Welcome",
+                                             "body": "The token of {user} is enrolled", "attach_qrcode": "1"})
+        webhook_id = set_event("hook", ["validate_check"], "WebHook", "post_webhook", position="pre",
+                               conditions={"result_value": "False", "tokentype": "hotp,unknown-type"},
+                               options={"URL": "https://hooks.example.com/static-hook-token",
+                                        "content_type": "not-a-content-type", "replace": "False"})
+        # An event handler whose module is not available is documented without the values of its settings
+        unknown_id = set_event("unknown", ["token_init"], "NotAvailable", "do", options={"setting": "value"})
+        try:
+            documented = {event["name"]: event for event in get_events_for_documentation()}
+
+            # A value that is one of the choices the handler declares, a bool or a number is documented
+            self.assertEqual({"name": "notify", "handlermodule": "UserNotification", "active": True,
+                              "position": "post", "ordering": 0, "event": ["token_init", "token_assign"],
+                              "action": "sendmail", "abort_on_error": False,
+                              "conditions": {"tokentype": "hotp,totp", "realm": self.realm1, "serial": CENSORED,
+                                             "tokeninfo": CENSORED, "count_auth": CENSORED},
+                              "options": {"To": "tokenowner", "mimetype": "html", "subject": CENSORED,
+                                          "body": CENSORED, "attach_qrcode": True}},
+                             documented["notify"])
+            # A value that is not one of the declared choices is censored, also in a selection of several
+            self.assertEqual({"result_value": "False", "tokentype": CENSORED}, documented["hook"]["conditions"])
+            self.assertEqual({"URL": CENSORED, "content_type": CENSORED, "replace": False},
+                             documented["hook"]["options"])
+            self.assertEqual("pre", documented["hook"]["position"])
+            self.assertEqual({"setting": CENSORED}, documented["unknown"]["options"])
+        finally:
+            for event_id in (notification_id, webhook_id, unknown_id):
+                delete_event(event_id)
 
 
 class EventHandlerImportTestCase(MyTestCase):

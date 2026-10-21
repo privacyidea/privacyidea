@@ -151,6 +151,11 @@ class EmailTokenClass(HotpTokenClass):
         return "PIEM"
 
     @staticmethod
+    def get_setting_type(key: str) -> str:
+        settings = {"email.password": "password"}
+        return settings.get(key, "")
+
+    @staticmethod
     def get_class_info(key=None, ret='all'):
         """
         returns all or a subtree of the token definition

@@ -50,6 +50,7 @@ Defines the rough interface for a UserId Resolver
 
 """
 from privacyidea.lib import lazy_gettext
+from privacyidea.lib.utils import is_true
 
 # The message of the error a resolver raises when the user store failed to answer the lookup of a login name. It
 # reaches unauthenticated clients, so it is the same for every resolver and names neither the user store nor its error,
@@ -111,6 +112,22 @@ class UserIdResolver:
         descriptor['clazz'] = "useridresolver.UserIdResolver"
         descriptor['config'] = {}
         return {typ: descriptor}
+
+    @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        Return the settings of a resolver of this class that the system documentation lists. The report is read by
+        somebody other than the administrators of the resolver, to learn which kinds of user stores are in use and
+        how privacyIDEA uses them.
+
+        Only the settings named here are part of the report. A resolver class adds the ones that describe how its
+        type is used, and none that names the user store or an account in it or holds a credential, like a host,
+        a base DN, a header or a password.
+
+        :param config: the configuration of the resolver
+        :return: the documented settings
+        """
+        return {"editable": is_true(config.get("Editable")) or is_true(config.get("EDITABLE"))}
 
     @staticmethod
     def getResolverDescriptor():

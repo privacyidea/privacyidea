@@ -427,3 +427,74 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("public", stored.Type)
         self.assertEqual("second", stored.Value)
         delete_privacyidea_config("PlainToUpdate")
+
+    def test_15_token_password_settings_are_stored_encrypted(self):
+        from privacyidea.lib.crypto import decryptPassword
+        # These token settings are written without a type, as the token configuration of the WebUI does. Their
+        # token class declares them a password, so they are stored encrypted and read back decrypted.
+        settings = {"yubikey.apiid.client1": "yubikey-api-key",
+                    "yubico.secret": "yubico-api-key",
+                    "radius.secret": "radius-shared-secret",
+                    "email.password": "smtp-password",
+                    "sms.providerConfig": '{"PASSWORD": "gateway-password"}'}
+        for key, value in settings.items():
+            with self.subTest(key=key):
+                set_privacyidea_config(key, value)
+                stored = db.session.query(Config).filter_by(Key=key).one()
+                self.assertEqual("password", stored.Type)
+                self.assertEqual(value, decryptPassword(stored.Value))
+                self.assertEqual(value, get_from_config(key))
+                delete_privacyidea_config(key)
+
+        # The other settings of these token types keep the type they are written with
+        set_privacyidea_config("yubico.id", "client-id")
+        self.assertEqual("", db.session.query(Config).filter_by(Key="yubico.id").one().Type)
+        delete_privacyidea_config("yubico.id")
+
+    def test_16_plain_token_password_setting_is_censored_in_export(self):
+        from privacyidea.lib.config import export_config, is_password_config_entry
+        from privacyidea.lib.crypto import CENSORED
+        # An entry stored in plain text and without a type, before its token class declared it a password
+        Config("yubikey.apiid.client1", "yubikey-api-key", "", "").save()
+        try:
+            self.assertTrue(is_password_config_entry("yubikey.apiid.client1", ""))
+            self.assertEqual("yubikey-api-key", get_from_config("yubikey.apiid.client1"))
+            censored = export_config(censor=True)
+            self.assertEqual(CENSORED, censored["yubikey.apiid.client1"]["Value"])
+            # An uncensored export carries the value as it is stored
+            exported = export_config(name="yubikey.apiid.client1")
+            self.assertEqual("yubikey-api-key", exported["yubikey.apiid.client1"]["Value"])
+        finally:
+            delete_privacyidea_config("yubikey.apiid.client1")
+        self.assertFalse(is_password_config_entry("yubico.id", ""))
+        self.assertFalse(is_password_config_entry("PrependPin", ""))
+        self.assertTrue(is_password_config_entry("PrependPin", "password"))
+
+    def test_17_app_config_for_documentation(self):
+        from privacyidea.lib.config import get_app_config_for_documentation
+        app_config = {
+            "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://pi:database-password@db.example.com/pi",
+            "PI_AUDIT_SQL_URI": "mysql+pymysql://pi:audit-password@audit.example.com/pi",
+            "PI_REDIS_URL": "redis://:redis-password@redis.example.com:6379/0",
+            "PI_TRUSTED_JWT": [{"public_key": "a-public-key"}, {"public_key": "another-public-key"}],
+            "PI_HSM_MODULE": "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule",
+            "PI_HSM_MODULE_PASSWORD": "hsm-password",
+            "PI_ENCFILE": "/etc/privacyidea/enckey",
+            "PI_MYPLUGIN_SETTING": "plugin-value",
+            "SUPERUSER_REALM": ["admins"],
+            "PI_NO_RESPONSE_SIGN": True,
+        }
+        documented = get_app_config_for_documentation(app_config)
+
+        self.assertEqual({"SUPERUSER_REALM": ["admins"],
+                          "PI_NO_RESPONSE_SIGN": True,
+                          "PI_HSM_MODULE": "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule",
+                          # A connect string is documented by its driver, a URL by whether it is set
+                          "SQLALCHEMY_DATABASE_URI (driver)": "postgresql+psycopg2",
+                          "PI_AUDIT_SQL_URI (driver)": "mysql+pymysql",
+                          "PI_REDIS_URL (set)": True,
+                          "PI_BASE_URL (set)": False,
+                          "PI_TRUSTED_JWT (entries)": 2}, documented)
+        # A connect string that can not be read is documented without its content
+        documented = get_app_config_for_documentation({"PI_AUDIT_SQL_URI": "no connect string"})
+        self.assertEqual("unknown", documented["PI_AUDIT_SQL_URI (driver)"])
