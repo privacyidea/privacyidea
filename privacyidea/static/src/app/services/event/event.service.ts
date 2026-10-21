@@ -48,6 +48,13 @@ export interface EventHandler {
  */
 export const MAX_ORDERING = 2147483647;
 
+/**
+ * Whether the value is an ordering a binding can be given: a whole number from 0 up to {@link MAX_ORDERING}.
+ */
+export function isValidOrdering(value: number | null): value is number {
+  return value !== null && Number.isInteger(value) && value >= 0 && value <= MAX_ORDERING;
+}
+
 export const EMPTY_EVENT: EventHandler = {
   id: null,
   name: "",
