@@ -73,35 +73,35 @@ describe("EventsSelectionComponent", () => {
 
   it("should return all available events if none selected and no search", () => {
     component.selectedEvents.set([]);
-    component.searchTerm.set("");
+    component.searchModel.set({ search: "" });
     const result = component.remainingEvents();
     expect(result).toEqual(["eventA", "eventAB", "eventB", "eventC"]);
   });
 
   it("remainingEvents should filter out selected events", () => {
     component.selectedEvents.set(["eventA"]);
-    component.searchTerm.set("");
+    component.searchModel.set({ search: "" });
     const result = component.remainingEvents();
     expect(result).toEqual(["eventAB", "eventB", "eventC"]);
   });
 
   it("remainingEvents should filter by search term (case-insensitive)", () => {
     component.selectedEvents.set([]);
-    component.searchTerm.set("eventb");
+    component.searchModel.set({ search: "eventb" });
     const result = component.remainingEvents();
     expect(result).toEqual(["eventB"]);
   });
 
   it("remainingEvents should filter by search term (case-insensitive) and filter out selected events", () => {
     component.selectedEvents.set(["eventA"]);
-    component.searchTerm.set("entA");
+    component.searchModel.set({ search: "entA" });
     const result = component.remainingEvents();
     expect(result).toEqual(["eventAB"]);
   });
 
   it("remainingEvents should return empty if all events are selected", () => {
     component.selectedEvents.set(["eventA", "eventAB", "eventB", "eventC"]);
-    component.searchTerm.set("");
+    component.searchModel.set({ search: "" });
     const result = component.remainingEvents();
     expect(result).toEqual([]);
   });
@@ -111,5 +111,59 @@ describe("EventsSelectionComponent", () => {
     component.removeEvent("eventA");
     expect(component.selectedEvents()).toEqual(["eventB"]);
     expect(component.newEvents.emit).toHaveBeenCalledWith(["eventB"]);
+  });
+
+  describe("search box", () => {
+    const searchInput = (): HTMLInputElement => fixture.nativeElement.querySelector("input.search-input");
+    const eventNames = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".event-item .event-name")).map((el) =>
+        (el as HTMLElement).textContent!.trim()
+      );
+    const type = (value: string) => {
+      searchInput().value = value;
+      searchInput().dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+    };
+
+    it("should write the typed text to the search model", () => {
+      type("eventb");
+      expect(component.searchModel()).toEqual({ search: "eventb" });
+      expect(component.searchTerm()).toBe("eventb");
+      expect(component.searchForm.search().dirty()).toBe(true);
+    });
+
+    it("should filter the offered events while typing", () => {
+      component.selectedEvents.set([]);
+      type("eventb");
+      expect(eventNames()).toEqual(["eventB"]);
+    });
+
+    it("should show the typed text in the input when the model changes", () => {
+      component.searchModel.set({ search: "entA" });
+      fixture.detectChanges();
+      expect(searchInput().value).toBe("entA");
+    });
+
+    it("should only show the clear button while the search is not empty", () => {
+      expect(fixture.nativeElement.querySelector("app-clear-button")).toBeNull();
+      type("a");
+      expect(fixture.nativeElement.querySelector("app-clear-button")).not.toBeNull();
+    });
+
+    it("should clear the search and the input", () => {
+      type("eventb");
+      component.clearSearch();
+      fixture.detectChanges();
+      expect(component.searchTerm()).toBe("");
+      expect(searchInput().value).toBe("");
+    });
+
+    it("should clear the search when the clear button is clicked", () => {
+      type("eventb");
+      fixture.nativeElement.querySelector("app-clear-button button").click();
+      fixture.detectChanges();
+      expect(component.searchTerm()).toBe("");
+      expect(searchInput().value).toBe("");
+    });
   });
 });

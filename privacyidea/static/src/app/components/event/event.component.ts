@@ -50,7 +50,7 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
+import { EMPTY_EVENT, EventHandler, EventService, isValidOrdering, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.utils";
@@ -263,7 +263,7 @@ export class EventComponent {
     const ordering = Number(input.value);
     // The upper bound is the largest value the ordering column holds, so an out-of-range value is rejected
     // here instead of failing in the database
-    if (!Number.isInteger(ordering) || ordering < 0 || ordering > MAX_ORDERING || input.value.trim() === "") {
+    if (input.value.trim() === "" || !isValidOrdering(ordering)) {
       input.value = String(eventHandler.ordering);
       this.notificationService.warning(
         $localize`:@@event.orderingHasToBeAWholeNumber:The ordering has to be a whole number between 0 and ${MAX_ORDERING}:MAXIMUM:.`

@@ -23,11 +23,12 @@ import {
   computed,
   effect,
   inject,
-  linkedSignal,
   OnDestroy,
-  signal
+  signal,
+  untracked
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { disabled, form, FormField, pattern, required, validate } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
 import { MatChipsModule } from "@angular/material/chips";
@@ -42,23 +43,48 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService } from "@services/auth/auth.service";
 import {
   EMPTY_EVENT,
   EventHandlerSaveParams,
+  EventHandler,
   EventService,
+  isValidOrdering,
+  MAX_ORDERING,
   toEventHandlerSaveParams
 } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { ERR, EVENT_NAME_PATTERN, requiredNonEmptyArray } from "@utils/form-rules.utils";
+import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { EventActionOptionValues, EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
 
 export type eventTab = "events" | "action" | "conditions";
+
+const ORDERING_RANGE = "orderingRange";
+const CONDITION_VALUE = "conditionValue";
+
+/**
+ * A comparable form of a handler. The order of options and conditions does not matter, and an option without a
+ * value equals an option that is not set, because the action tab fills every option of its action with an empty value.
+ */
+function comparableHandler(handler: EventHandler): string {
+  const sortedEntries = (record: Record<string, unknown> | null | undefined, keep: (value: unknown) => boolean) =>
+    Object.fromEntries(
+      Object.entries(record ?? {})
+        .filter(([, value]) => keep(value))
+        .sort(([a], [b]) => a.localeCompare(b))
+    );
+  return JSON.stringify({
+    ...handler,
+    options: sortedEntries(handler.options, (value) => value !== "" && value !== null && value !== undefined),
+    conditions: sortedEntries(handler.conditions, () => true)
+  });
+}
 
 @Component({
   selector: "app-event-edit-page",
@@ -85,8 +111,8 @@ export type eventTab = "events" | "action" | "conditions";
     MatButton,
     MatSlideToggle,
     MatTooltip,
-    ErrorStateDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    FormField
   ],
   standalone: true,
   templateUrl: "./event-edit-page.component.html",
@@ -112,48 +138,36 @@ export class EventEditPageComponent implements OnDestroy {
       ? $localize`:@@event.createNewEvent:Create New Event Handler`
       : $localize`:@@event.editEventHandler:Edit Event Handler`
   );
-  hasChanges = signal(false);
-  // Set once the user operates the "abort on error" toggle, so the default of the handler module stops applying
-  abortOnErrorTouched = signal(false);
-  // A handler whose result the request consumes is created with "abort on error" enabled, see
-  // GET /event/defaults/<handlermodule>. The default only fills in for a new binding that the user has not
-  // decided on yet: an existing binding keeps its stored value, and so does an explicit choice of the user.
-  abortOnError = computed(() => {
-    const editedValue = this.editEvent().abort_on_error;
-    if (!this.isNewEvent() || this.abortOnErrorTouched()) {
-      return editedValue;
-    }
-    return this.eventService.moduleDefaults()?.abort_on_error ?? editedValue;
-  });
   eventLoaded = computed(() => this.isNewEvent() || this.editEvent() !== EMPTY_EVENT);
-  selectedEvents = linkedSignal(() => this.event().event);
-  validConditionsDefinition = computed(() => {
-    if (!this.editEvent().conditions) return true;
-    for (const conditionValue of Object.values(this.editEvent().conditions)) {
-      if (conditionValue === null || conditionValue === undefined || conditionValue === "") return false;
-    }
-    return true;
+  editForm = form(this.editEvent, (f) => {
+    disabled(f.name, () => !this.eventLoaded());
+    required(f.name);
+    pattern(f.name, EVENT_NAME_PATTERN);
+    required(f.handlermodule);
+    disabled(f.handlermodule, () => !this.isNewEvent());
+    required(f.position);
+    required(f.ordering);
+    validate(f.ordering, (ctx) => {
+      const ordering = ctx.value();
+      return ordering === null || isValidOrdering(ordering) ? undefined : { kind: ORDERING_RANGE };
+    });
+    required(f.action);
+    requiredNonEmptyArray(f.event);
+    validate(f.conditions, (ctx) =>
+      Object.values(ctx.value() ?? {}).some((value) => value === null || value === undefined || value === "")
+        ? { kind: CONDITION_VALUE }
+        : undefined
+    );
+    disabled(f.active, () => !this.authService.actionAllowed("eventhandling_write"));
   });
+  hasChanges = computed(() => comparableHandler(this.editEvent()) !== comparableHandler(this.event()));
+  // Validity of the options of the action, reported by the action tab
   validOptions = signal(false);
-  sectionValidity = computed(() => {
-    const validity: Record<string, boolean> = {};
-    validity["events"] = this.editEvent().event.length > 0;
-    validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._\- ]*$/.test(this.editEvent().name);
-    validity["handlerModule"] =
-      this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
-    validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
-    validity["conditions"] = this.validConditionsDefinition();
-    return validity;
-  });
-  canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));
-  nameTouched = signal(false);
-  showNameError = computed(() => this.nameTouched() && !this.sectionValidity()["name"]);
-  showHandlerModuleError = computed(() => !this.sectionValidity()["handlerModule"]);
-  showPositionError = computed(() => !this.sectionValidity()["position"]);
-  showOrderingError = computed(
-    () => this.editEvent().ordering === null || (this.editEvent().ordering as unknown) === ""
-  );
+  canSave = computed(() => this.editForm().valid() && this.validOptions());
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly ORDERING_RANGE = ORDERING_RANGE;
+  protected readonly MAX_ORDERING = MAX_ORDERING;
 
   constructor() {
     // Determine new vs edit mode from route
@@ -166,17 +180,17 @@ export class EventEditPageComponent implements OnDestroy {
         if (handler) {
           this.event.set(deepCopy(handler));
           this.editEvent.set(deepCopy(handler));
-          this.eventService.selectedHandlerModule.set(handler.handlermodule);
         }
       } else {
         this.isNewEvent.set(true);
         this.editEventId = null;
-        this.event.set(deepCopy(EMPTY_EVENT));
-        this.editEvent.set(deepCopy(EMPTY_EVENT));
+        const emptyEvent = deepCopy(EMPTY_EVENT);
         const modules = this.eventService.eventHandlerModules();
         if (modules.length > 0) {
-          this.eventService.selectedHandlerModule.set(modules[0]);
+          emptyEvent.handlermodule = modules[0];
         }
+        this.event.set(deepCopy(emptyEvent));
+        this.editEvent.set(emptyEvent);
       }
     });
 
@@ -188,9 +202,27 @@ export class EventEditPageComponent implements OnDestroy {
         if (found) {
           this.event.set(deepCopy(found));
           this.editEvent.set(deepCopy(found));
-          this.eventService.selectedHandlerModule.set(found.handlermodule);
         }
       }
+    });
+
+    // The positions, actions and conditions of the service follow the handler module of the edited event handler
+    effect(() => {
+      this.eventService.selectedHandlerModule.set(this.editEvent().handlermodule || null);
+    });
+
+    // A handler whose result the request consumes is created with "abort on error" enabled, see
+    // GET /event/defaults/<handlermodule>. The default only fills in for a new binding that the user has not
+    // decided on yet: an existing binding keeps its stored value, and so does an explicit choice of the user.
+    effect(() => {
+      const defaults = this.eventService.moduleDefaults();
+      if (!defaults || !this.isNewEvent() || this.editForm.abort_on_error().dirty()) {
+        return;
+      }
+      untracked(() => {
+        this.event.update((current) => ({ ...current, abort_on_error: defaults.abort_on_error }));
+        this.editEvent.update((current) => ({ ...current, abort_on_error: defaults.abort_on_error }));
+      });
     });
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
@@ -206,41 +238,26 @@ export class EventEditPageComponent implements OnDestroy {
     this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
   }
 
-  setAbortOnError(abortOnError: boolean): void {
-    this.abortOnErrorTouched.set(true);
-    this.updateEventHandler("abort_on_error", abortOnError);
+  clearName(): void {
+    clearField(this.editForm.name, "");
   }
 
   setNewAction(action: string): void {
-    this.editEvent.set({ ...this.editEvent(), action });
-    this.hasChanges.set(true);
+    this.editEvent.update((current) => ({ ...current, action }));
   }
 
   setNewOptions(options: EventActionOptionValues): void {
     const current = this.editEvent().options || {};
     if (JSON.stringify(options) === JSON.stringify(current)) return;
-    this.editEvent.set({ ...this.editEvent(), options: options as unknown as Record<string, string> | null });
-    this.hasChanges.set(true);
+    this.editEvent.update((handler) => ({ ...handler, options: options as unknown as Record<string, string> | null }));
   }
 
   setNewConditions(conditions: Record<string, string>): void {
-    this.editEvent.set({ ...this.editEvent(), conditions });
-    this.hasChanges.set(true);
+    this.editEvent.update((current) => ({ ...current, conditions }));
   }
 
   setNewEvents(events: string[]): void {
-    this.editEvent.set({ ...this.editEvent(), event: events });
-    this.hasChanges.set(true);
-  }
-
-  setNewHandlerModule(module: string): void {
-    this.eventService.selectedHandlerModule.set(module);
-    this.hasChanges.set(true);
-  }
-
-  updateEventHandler(key: string, value: string | number | boolean): void {
-    this.editEvent.set({ ...this.editEvent(), [key]: value });
-    this.hasChanges.set(true);
+    this.editEvent.update((current) => ({ ...current, event: events }));
   }
 
   getSaveParameters(): EventHandlerSaveParams {
@@ -249,13 +266,14 @@ export class EventEditPageComponent implements OnDestroy {
     // options have to be replaced even when the action has none. Without this flag, a request
     // without any "option.*" parameter leaves the stored options untouched.
     eventParams.clear_options = true;
-    eventParams.handlermodule = this.eventService.selectedHandlerModule();
-    // The default of the handler module is not written into the edited binding, so it is resolved here
-    eventParams.abort_on_error = this.abortOnError();
     return eventParams;
   }
 
-  saveEvent(): Promise<boolean> {
+  async saveEvent(): Promise<boolean> {
+    if (!this.canSave()) {
+      await touchAll(this.editForm);
+      return false;
+    }
     return new Promise((resolve) => {
       const eventParams = this.getSaveParameters();
       if (this.isNewEvent()) {

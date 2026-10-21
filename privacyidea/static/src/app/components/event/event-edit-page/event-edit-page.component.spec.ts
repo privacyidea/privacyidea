@@ -18,13 +18,22 @@
  **/
 
 import { provideHttpClient } from "@angular/common/http";
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
+import { By } from "@angular/platform-browser";
+import { MatSelect } from "@angular/material/select";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { MockNotificationService, MockPendingChangesService, MockRouter } from "@testing/mock-services";
+import {
+  MockAuthService,
+  MockNotificationService,
+  MockPendingChangesService,
+  MockRouter
+} from "@testing/mock-services";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject, of, throwError } from "rxjs";
 import { EventEditPageComponent } from "./event-edit-page.component";
@@ -50,6 +59,8 @@ const mockEventHandler: EventHandler = {
   abort_on_error: false
 };
 
+const kinds = (field: { errors(): { kind: string }[] }) => field.errors().map((error) => error.kind);
+
 describe("EventEditPageComponent — edit mode", () => {
   let component: EventEditPageComponent;
   let fixture: ComponentFixture<EventEditPageComponent>;
@@ -66,6 +77,7 @@ describe("EventEditPageComponent — edit mode", () => {
       imports: [EventEditPageComponent],
       providers: [
         provideHttpClient(),
+        { provide: AuthService, useClass: MockAuthService },
         { provide: EventService, useClass: MockEventService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
@@ -136,134 +148,347 @@ describe("EventEditPageComponent — edit mode", () => {
     expect(component.editEvent().event).toEqual(newEvents);
   });
 
-  it("should update event handler property using updateEventHandler", () => {
-    component.updateEventHandler("name", "HandlerUpdated");
+  it("should update the edited event handler through the form", () => {
+    component.editForm.name().controlValue.set("HandlerUpdated");
     expect(component.editEvent().name).toBe("HandlerUpdated");
-    component.updateEventHandler("ordering", 99);
+    component.editForm.ordering().controlValue.set(99);
     expect(component.editEvent().ordering).toBe(99);
   });
 
-  it("validConditionsDefinition should be true if no condition is defined", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: {} });
-    expect(component.validConditionsDefinition()).toBe(true);
+  it("should not touch the shared empty event", () => {
+    component.editForm.name().controlValue.set("Changed");
+    expect(EMPTY_EVENT.name).toBe("");
+    expect(Object.getOwnPropertySymbols(EMPTY_EVENT)).toHaveLength(0);
   });
 
-  it("validConditionsDefinition should be true if all conditions have a value defined", () => {
-    component.editEvent.set({
-      ...component.editEvent(),
-      conditions: { cond1: "1", cond2: false } as unknown as Record<string, string>
+  describe("validity", () => {
+    it("canSave should be true if all rules hold", () => {
+      expect(component.editForm().valid()).toBe(true);
+      expect(component.validOptions()).toBe(true);
+      expect(component.canSave()).toBe(true);
     });
-    expect(component.validConditionsDefinition()).toBe(true);
-  });
 
-  it("validConditionsDefinition should be false if at least one condition has no value", () => {
-    component.editEvent.set({
-      ...component.editEvent(),
-      conditions: { cond1: "1", cond2: null } as unknown as Record<string, string>
+    it("canSave should be false if name is not set", () => {
+      component.editEvent.update((handler) => ({ ...handler, name: "" }));
+      expect(kinds(component.editForm.name())).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
     });
-    expect(component.validConditionsDefinition()).toBe(false);
-    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: "" } });
-    expect(component.validConditionsDefinition()).toBe(false);
-    component.editEvent.set({
-      ...component.editEvent(),
-      conditions: { cond1: "1", cond2: undefined } as unknown as Record<string, string>
+
+    it("should reject a name with characters other than alphanumerics, spaces, dots, underscores and hyphens", () => {
+      component.editEvent.update((handler) => ({ ...handler, name: "bad/name" }));
+      expect(kinds(component.editForm.name())).toEqual(["pattern"]);
+      expect(component.canSave()).toBe(false);
+      component.editEvent.update((handler) => ({ ...handler, name: "good name-1_a.b" }));
+      expect(kinds(component.editForm.name())).toEqual([]);
     });
-    expect(component.validConditionsDefinition()).toBe(false);
-  });
 
-  it("canSave should be true if all sections are valid", () => {
-    mockEventService.selectedHandlerModule.set("mockModule");
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(true);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(true);
-  });
-
-  it("canSave should be false if name is not set", () => {
-    component.editEvent.set({ ...component.editEvent(), name: "" });
-    mockEventService.selectedHandlerModule.set("mockModule");
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(true);
-    expect(component.sectionValidity()["name"]).toBe(false);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(false);
-  });
-
-  it("canSave should be false if position is not set", () => {
-    component.editEvent.set({ ...component.editEvent(), position: "" });
-    mockEventService.selectedHandlerModule.set("mockModule");
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(true);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(false);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(false);
-  });
-
-  it("canSave should be false if event is not set", () => {
-    component.editEvent.set({ ...component.editEvent(), event: [] });
-    mockEventService.selectedHandlerModule.set("mockModule");
-    expect(component.sectionValidity()["events"]).toBe(false);
-    expect(component.sectionValidity()["action"]).toBe(true);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(false);
-  });
-
-  it("canSave should be false if action definition is invalid", () => {
-    component.editEvent.set({ ...component.editEvent(), action: "" });
-    mockEventService.selectedHandlerModule.set("mockModule");
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(false);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(false);
-
-    component.editEvent.set({ ...component.editEvent(), action: "action" });
-    component.validOptions.set(false);
-    mockEventService.selectedHandlerModule.set("mockModule");
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(false);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(false);
-  });
-
-  it("canSave should be false if handler module is not set", () => {
-    mockEventService.selectedHandlerModule.set(null);
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(true);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(false);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(true);
-    expect(component.canSave()).toBe(false);
-  });
-
-  it("canSave should be false if the conditions are invalid", () => {
-    component.editEvent.set({
-      ...component.editEvent(),
-      conditions: { cond1: null } as unknown as Record<string, string>
+    it("canSave should be false if position is not set", () => {
+      component.editEvent.update((handler) => ({ ...handler, position: "" }));
+      expect(kinds(component.editForm.position())).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
     });
-    expect(component.sectionValidity()["events"]).toBe(true);
-    expect(component.sectionValidity()["action"]).toBe(true);
-    expect(component.sectionValidity()["name"]).toBe(true);
-    expect(component.sectionValidity()["handlerModule"]).toBe(true);
-    expect(component.sectionValidity()["position"]).toBe(true);
-    expect(component.sectionValidity()["conditions"]).toBe(false);
-    expect(component.canSave()).toBe(false);
+
+    it("canSave should be false if event is not set", () => {
+      component.editEvent.update((handler) => ({ ...handler, event: [] }));
+      expect(kinds(component.editForm.event())).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("canSave should be false if no action is set", () => {
+      component.editEvent.update((handler) => ({ ...handler, action: "" }));
+      expect(kinds(component.editForm.action())).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("canSave should be false while the options of the action are invalid", () => {
+      component.validOptions.set(false);
+      expect(component.editForm().valid()).toBe(true);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("should not check the handler module of an existing event handler, which cannot be changed", () => {
+      component.editEvent.update((handler) => ({ ...handler, handlermodule: "" }));
+      expect(component.editForm.handlermodule().disabled()).toBe(true);
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("canSave should be false if a condition has no value", () => {
+      for (const missing of [null, undefined, ""]) {
+        component.editEvent.update((handler) => ({
+          ...handler,
+          conditions: { cond1: "1", cond2: missing } as unknown as Record<string, string>
+        }));
+        expect(kinds(component.editForm.conditions())).toEqual(["conditionValue"]);
+        expect(component.canSave()).toBe(false);
+      }
+    });
+
+    it("should accept conditions without a condition, or whose values are all set", () => {
+      component.editEvent.update((handler) => ({ ...handler, conditions: {} }));
+      expect(kinds(component.editForm.conditions())).toEqual([]);
+      component.editEvent.update((handler) => ({
+        ...handler,
+        conditions: { cond1: "1", cond2: false } as unknown as Record<string, string>
+      }));
+      expect(kinds(component.editForm.conditions())).toEqual([]);
+      component.editEvent.update((handler) => ({
+        ...handler,
+        conditions: undefined as unknown as Record<string, string>
+      }));
+      expect(component.editForm().valid()).toBe(true);
+    });
+
+    it("should disable the name while the event handler is not loaded", () => {
+      expect(component.editForm.name().disabled()).toBe(false);
+      component.editEvent.set(EMPTY_EVENT);
+      expect(component.eventLoaded()).toBe(false);
+      expect(component.editForm.name().disabled()).toBe(true);
+    });
+  });
+
+  describe("ordering", () => {
+    const orderingInput = (): HTMLInputElement => fixture.nativeElement.querySelector('input[type="number"]');
+    const type = (value: string) => {
+      orderingInput().value = value;
+      orderingInput().dispatchEvent(new Event("input"));
+      orderingInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+    };
+    const errorTexts = (): string =>
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error"))
+        .map((el) => (el as HTMLElement).textContent)
+        .join("|");
+
+    it("should show the ordering of the handler", () => {
+      expect(orderingInput().value).toBe("0");
+    });
+
+    it("should write a typed number to the model as a number", () => {
+      type("7");
+      expect(component.editEvent().ordering).toBe(7);
+      expect(kinds(component.editForm.ordering())).toEqual([]);
+    });
+
+    it("should accept the bounds 0 and the largest ordering the column holds", () => {
+      type("0");
+      expect(kinds(component.editForm.ordering())).toEqual([]);
+      type(String(MAX_ORDERING));
+      expect(kinds(component.editForm.ordering())).toEqual([]);
+    });
+
+    it("should require an ordering and show the message after the field was left", () => {
+      type("");
+      expect(kinds(component.editForm.ordering())).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
+      expect(errorTexts()).toContain("Ordering is required.");
+    });
+
+    it.each([
+      ["a negative number", "-1"],
+      ["a fraction", "1.5"],
+      ["a number the column cannot hold", String(MAX_ORDERING + 1)]
+    ])("should reject %s", (_label, typed) => {
+      type(typed);
+      expect(kinds(component.editForm.ordering())).toEqual(["orderingRange"]);
+      expect(component.canSave()).toBe(false);
+      expect(errorTexts()).toContain(`Ordering has to be a whole number between 0 and ${MAX_ORDERING}.`);
+    });
+
+    it("should report a parse error for input that is no number", () => {
+      const validity = jest.spyOn(orderingInput(), "validity", "get");
+      validity.mockReturnValue({ badInput: true } as ValidityState);
+      type("");
+      expect(kinds(component.editForm.ordering())).toEqual(["parse"]);
+      expect(component.canSave()).toBe(false);
+      expect(errorTexts()).toContain("Ordering has to be a number.");
+      validity.mockReturnValue({ badInput: false } as ValidityState);
+    });
+  });
+
+  describe("form controls", () => {
+    const nameInput = (): HTMLInputElement => fixture.nativeElement.querySelector('input[type="text"]');
+    const type = (value: string) => {
+      nameInput().value = value;
+      nameInput().dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+    };
+    const selects = () =>
+      fixture.debugElement.queryAll(By.directive(MatSelect)).map((el) => el.componentInstance as MatSelect);
+    const errorTexts = (): string =>
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error"))
+        .map((el) => (el as HTMLElement).textContent)
+        .join("|");
+
+    afterEach(() => {
+      document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+    });
+
+    it("should show the name, and write typed text to the model and mark the field dirty", () => {
+      expect(nameInput().value).toBe("TestHandler");
+      expect(component.editForm.name().dirty()).toBe(false);
+      type("Typed name");
+      expect(component.editEvent().name).toBe("Typed name");
+      expect(component.editForm.name().dirty()).toBe(true);
+    });
+
+    it("should show the required error of the name after the field was left", () => {
+      type("");
+      expect(errorTexts()).not.toContain("Name is required.");
+      nameInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(errorTexts()).toContain("Name is required.");
+    });
+
+    it("should show the pattern error of the name", () => {
+      type("bad/name");
+      nameInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(errorTexts()).toContain("Name contains invalid characters.");
+      expect(errorTexts()).not.toContain("Name is required.");
+    });
+
+    it("should clear the name with the clear button", () => {
+      component.clearName();
+      fixture.detectChanges();
+      expect(component.editEvent().name).toBe("");
+      expect(nameInput().value).toBe("");
+      expect(component.editForm.name().dirty()).toBe(true);
+    });
+
+    it("should show the handler module as selected and keep it read-only in edit mode", () => {
+      const handlerModule = selects()[0];
+      expect(handlerModule.value).toBe("mockModule");
+      expect(handlerModule.disabled).toBe(true);
+      expect(handlerModule.triggerValue).toBe("mockModule");
+    });
+
+    it("should follow the handler module of the edited event handler in the service", () => {
+      expect(mockEventService.selectedHandlerModule()).toBe("mockModule");
+      component.editEvent.update((handler) => ({ ...handler, handlermodule: "anotherModule" }));
+      fixture.detectChanges();
+      expect(mockEventService.selectedHandlerModule()).toBe("anotherModule");
+    });
+
+    it("should show the position and write the picked position to the model", async () => {
+      const position = selects()[1];
+      expect(position.value).toBe("post");
+      position.open();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      (document.querySelectorAll("mat-option")[0] as HTMLElement).click();
+      fixture.detectChanges();
+      expect(component.editEvent().position).toBe("pre");
+      expect(component.editForm.position().dirty()).toBe(true);
+      expect(component.hasChanges()).toBe(true);
+    });
+
+    it("should show the required error of the position once it is touched", () => {
+      component.editEvent.update((handler) => ({ ...handler, position: "" }));
+      component.editForm.position().markAsTouched();
+      fixture.detectChanges();
+      expect(errorTexts()).toContain("Selecting a position is required.");
+    });
+
+    it("should disable the active toggle without the right to write event handlers", () => {
+      const toggle = () => fixture.nativeElement.querySelector("mat-slide-toggle button") as HTMLButtonElement;
+      expect(component.editForm.active().disabled()).toBe(true);
+      expect(toggle().disabled).toBe(true);
+    });
+
+    it("should write the active toggle to the model when the right to write event handlers is given", () => {
+      const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+      auth.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["eventhandling_write"] });
+      fixture.detectChanges();
+      const toggle = fixture.nativeElement.querySelector("mat-slide-toggle button") as HTMLButtonElement;
+      expect(toggle.disabled).toBe(false);
+      toggle.click();
+      fixture.detectChanges();
+      expect(component.editEvent().active).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-slide-toggle").textContent).toContain("Inactive");
+    });
+
+    it("should write the abort on error toggle to the model and send it", () => {
+      const toggles = fixture.nativeElement.querySelectorAll("mat-slide-toggle button");
+      toggles[1].click();
+      fixture.detectChanges();
+      expect(component.editEvent().abort_on_error).toBe(true);
+      expect(component.getSaveParameters().abort_on_error).toBe(true);
+    });
+
+    it("should enable the save button only if the event handler can be saved", () => {
+      const save = () => fixture.nativeElement.querySelector("button.action-button-primary") as HTMLButtonElement;
+      expect(save().disabled).toBe(false);
+      type("");
+      expect(save().disabled).toBe(true);
+    });
+  });
+
+  describe("hasChanges", () => {
+    it("should be false after opening, although the action tab reports its options", () => {
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should be false after opening an event handler whose options lack some options of its action", () => {
+      mockEventService.eventHandlers.set([
+        { ...mockEventHandler, id: 2, action: "actionA", options: { opt1: "true" } }
+      ]);
+      paramMap$.next(convertToParamMap({ id: "2" }));
+      fixture.detectChanges();
+      expect(component.editEvent().id).toBe(2);
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should be true after a change and false again when it is reverted", () => {
+      component.editForm.name().controlValue.set("Changed");
+      expect(component.hasChanges()).toBe(true);
+      component.editForm.name().controlValue.set("TestHandler");
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should be true after a change of the options, conditions, events or action", () => {
+      component.setNewOptions({ opt3: "other" });
+      expect(component.hasChanges()).toBe(true);
+      component.setNewOptions({ opt3: "true" });
+      expect(component.hasChanges()).toBe(false);
+      component.setNewConditions({ condA: "true", condB: "x" });
+      expect(component.hasChanges()).toBe(true);
+      component.setNewConditions({ condA: "true" });
+      expect(component.hasChanges()).toBe(false);
+      component.setNewEvents(["eventA"]);
+      expect(component.hasChanges()).toBe(true);
+      component.setNewEvents(["eventA", "eventB"]);
+      expect(component.hasChanges()).toBe(false);
+      component.setNewAction("actionA");
+      expect(component.hasChanges()).toBe(true);
+    });
+
+    it("should ignore the order of the conditions and options", () => {
+      component.setNewConditions({ condB: "x", condA: "true" });
+      component.setNewConditions({ condA: "true", condB: "x" });
+      component.editEvent.update((handler) => ({ ...handler, conditions: { condB: "x", condA: "true" } }));
+      component.event.update((handler) => ({ ...handler, conditions: { condA: "true", condB: "x" } }));
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should treat a missing options object like an empty one", () => {
+      component.event.update((handler) => ({ ...handler, options: null }));
+      component.editEvent.update((handler) => ({ ...handler, options: {} }));
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should not replace the edited event handler when the list reloads after the user changed it", () => {
+      component.editForm.name().controlValue.set("Changed");
+      mockEventService.eventHandlers.set([{ ...mockEventHandler, name: "Reloaded" }]);
+      fixture.detectChanges();
+      expect(component.editEvent().name).toBe("Changed");
+    });
+
+    it("should take over the reloaded event handler as long as the user did not change anything", () => {
+      mockEventService.eventHandlers.set([{ ...mockEventHandler, name: "Reloaded" }]);
+      fixture.detectChanges();
+      expect(component.editEvent().name).toBe("Reloaded");
+      expect(component.hasChanges()).toBe(false);
+    });
   });
 
   it("cancelEdit should navigate back to events list", () => {
@@ -277,10 +502,18 @@ describe("EventEditPageComponent — edit mode", () => {
     expect(mockPendingChangesService.registerValidChanges).toHaveBeenCalled();
   });
 
-  it("hasChanges should be false initially and true after a modification", () => {
-    expect(component.hasChanges()).toBe(false);
-    component.updateEventHandler("name", "Changed");
-    expect(component.hasChanges()).toBe(true);
+  it("should register a hasChanges that reflects the edited event handler", () => {
+    const hasChanges = mockPendingChangesService.registerHasChanges.mock.calls[0][0] as () => boolean;
+    expect(hasChanges()).toBe(false);
+    component.editForm.name().controlValue.set("Changed");
+    expect(hasChanges()).toBe(true);
+  });
+
+  it("should register the validity of the edited event handler", () => {
+    const validChanges = mockPendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;
+    expect(validChanges()).toBe(true);
+    component.editForm.name().controlValue.set("");
+    expect(validChanges()).toBe(false);
   });
 
   it("should save event, reload events and navigate back", () => {
@@ -336,10 +569,19 @@ describe("EventEditPageComponent — edit mode", () => {
     expect(mockEventService.disableEvent).toHaveBeenCalledWith(mockEventHandler.id);
   });
 
-  it("should update the selected handler module and mark the form as changed", () => {
-    component.setNewHandlerModule("otherModule");
-    expect(mockEventService.selectedHandlerModule()).toBe("otherModule");
-    expect(component.hasChanges()).toBe(true);
+  it("should not save an invalid event handler, but touch all fields to show their errors", async () => {
+    component.editForm.name().controlValue.set("");
+    component.editEvent.update((handler) => ({ ...handler, position: "" }));
+    fixture.detectChanges();
+    const resolved = await component.saveEvent();
+    fixture.detectChanges();
+    expect(resolved).toBe(false);
+    expect(mockEventService.saveEventHandler).not.toHaveBeenCalled();
+    expect(component.editForm.position().touched()).toBe(true);
+    const errors = Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map(
+      (el) => (el as HTMLElement).textContent
+    );
+    expect(errors.join("|")).toContain("Selecting a position is required.");
   });
 
   it("should resolve to false without navigating when the save response carries no value", async () => {
@@ -369,6 +611,7 @@ describe("EventEditPageComponent — create new mode", () => {
       imports: [EventEditPageComponent],
       providers: [
         provideHttpClient(),
+        { provide: AuthService, useClass: MockAuthService },
         { provide: EventService, useClass: MockEventService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
@@ -409,35 +652,99 @@ describe("EventEditPageComponent — create new mode", () => {
     expect(mockEventService.selectedHandlerModule()).toBe("mockModule");
   });
 
-  it("should preset abort on error from the default of the handler module", () => {
-    mockEventService.moduleDefaults.set({ abort_on_error: true });
-
-    expect(component.abortOnError()).toBe(true);
-    expect(component.getSaveParameters().abort_on_error).toBe(true);
+  it("should start with the first available module as the handler module of the new event handler", () => {
+    expect(component.editEvent().handlermodule).toBe("mockModule");
+    expect(component.event().handlermodule).toBe("mockModule");
+    expect(component.hasChanges()).toBe(false);
   });
 
-  it("should keep the choice of the user over the default of the handler module", () => {
-    component.setAbortOnError(false);
-    mockEventService.moduleDefaults.set({ abort_on_error: true });
-
-    expect(component.abortOnError()).toBe(false);
-    expect(component.getSaveParameters().abort_on_error).toBe(false);
+  it("should leave the handler module empty while the list of modules is empty", () => {
+    mockEventService.eventHandlerModules = signal<string[]>([]);
+    const emptyFixture = TestBed.createComponent(EventEditPageComponent);
+    emptyFixture.detectChanges();
+    expect(emptyFixture.componentInstance.editEvent().handlermodule).toBe("");
+    expect(mockEventService.selectedHandlerModule()).toBeNull();
+    expect(kinds(emptyFixture.componentInstance.editForm.handlermodule())).toEqual(["required"]);
+    expect(emptyFixture.componentInstance.canSave()).toBe(false);
   });
 
-  it("should not preset abort on error while the default of the handler module is unknown", () => {
-    mockEventService.moduleDefaults.set(null);
+  it("should offer the handler module for selection and write the picked module to the model and the service", async () => {
+    const select = fixture.debugElement.queryAll(By.directive(MatSelect))[0].componentInstance as MatSelect;
+    expect(select.disabled).toBe(false);
+    expect(select.value).toBe("mockModule");
+    select.open();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (document.querySelectorAll("mat-option")[1] as HTMLElement).click();
+    fixture.detectChanges();
+    expect(component.editEvent().handlermodule).toBe("anotherModule");
+    expect(component.editForm.handlermodule().dirty()).toBe(true);
+    expect(mockEventService.selectedHandlerModule()).toBe("anotherModule");
+    document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+  });
 
-    expect(component.abortOnError()).toBe(false);
+  it("should show the required error of the handler module once it is touched and block saving", () => {
+    component.editForm.handlermodule().controlValue.set("");
+    component.editForm.handlermodule().markAsTouched();
+    fixture.detectChanges();
+    expect(mockEventService.selectedHandlerModule()).toBeNull();
+    expect(kinds(component.editForm.handlermodule())).toEqual(["required"]);
+    expect(component.canSave()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain("Selecting a handler module is required.");
+  });
+
+  describe("abort on error", () => {
+    const abortToggle = () => fixture.nativeElement.querySelectorAll("mat-slide-toggle button")[1] as HTMLButtonElement;
+
+    it("should preset abort on error from the default of the handler module", () => {
+      mockEventService.moduleDefaults.set({ abort_on_error: true });
+      fixture.detectChanges();
+
+      expect(component.editEvent().abort_on_error).toBe(true);
+      expect(abortToggle().getAttribute("aria-checked")).toBe("true");
+      expect(component.getSaveParameters().abort_on_error).toBe(true);
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("should follow a changed default as long as the user did not decide", () => {
+      mockEventService.moduleDefaults.set({ abort_on_error: true });
+      fixture.detectChanges();
+      mockEventService.moduleDefaults.set({ abort_on_error: false });
+      fixture.detectChanges();
+
+      expect(component.editEvent().abort_on_error).toBe(false);
+    });
+
+    it("should keep the choice of the user over the default of the handler module", () => {
+      abortToggle().click();
+      fixture.detectChanges();
+      expect(component.editEvent().abort_on_error).toBe(true);
+      expect(component.hasChanges()).toBe(true);
+
+      abortToggle().click();
+      fixture.detectChanges();
+      mockEventService.moduleDefaults.set({ abort_on_error: true });
+      fixture.detectChanges();
+
+      expect(component.editEvent().abort_on_error).toBe(false);
+      expect(component.getSaveParameters().abort_on_error).toBe(false);
+    });
+
+    it("should not preset abort on error while the default of the handler module is unknown", () => {
+      mockEventService.moduleDefaults.set(null);
+      fixture.detectChanges();
+
+      expect(component.editEvent().abort_on_error).toBe(false);
+    });
   });
 
   it("should save new event without id and navigate back", () => {
-    mockEventService.selectedHandlerModule.set("mockModule");
     component.setNewAction("actionB");
     component.setNewOptions({ opt3: "true" });
     component.setNewEvents(["eventA", "eventB"]);
     component.setNewConditions({ condA: "true" });
-    component.updateEventHandler("name", "TestHandler");
-    component.updateEventHandler("position", "pre");
+    component.editForm.name().controlValue.set("TestHandler");
+    component.editForm.position().controlValue.set("pre");
 
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
     const snackBarSpy = jest.spyOn(mockNotificationService, "success");
