@@ -640,33 +640,41 @@ class RealmIdsTestCase(MyTestCase):
         self.assertEqual([1, 3], token_query._get_realm_ids(realms, ["realm1"], ["*_3"]))
         self.assertEqual([], token_query._get_realm_ids(realms, ["realm"], ["x*"]))
 
-    def test_02_matches_wildcard(self):
+    @staticmethod
+    def _matches_wildcard(realm_name: str, pattern: str) -> bool:
+        return token_query._get_realm_ids({realm_name: {"id": 1}}, [], [pattern]) == [1]
+
+    def test_02_get_realm_ids_by_wildcard(self):
         matching = [("realm1", "realm1"), ("realm1", "*"), ("realm1", "realm*"), ("realm1", "*1"),
                     ("realm1", "*alm*"), ("realm1", "r*a*1"), ("realm1", "r**1"), ("realm1", "***"),
-                    ("realm1", "realm1*"), ("realm1", "*realm1"), ("aa", "a*a"), ("aaa", "*a*a*"), ("", "*")]
-        for value, pattern in matching:
-            self.assertTrue(token_query._matches_wildcard(value, pattern), (value, pattern))
+                    ("realm1", "realm1*"), ("realm1", "*realm1"), ("aa", "a*a"), ("aaa", "*a*a*"), ("", "*"),
+                    ("realm?", "realm?"), ("realm[1]", "realm[1]"), ("realm[1]", "*[*]"), ("realm]", "*]")]
+        for realm_name, pattern in matching:
+            self.assertTrue(self._matches_wildcard(realm_name, pattern), (realm_name, pattern))
 
+        # Only "*" is a wildcard, "?" and "[...]" match only themselves
         not_matching = [("realm1", "realm"), ("realm1", "realm1x"), ("realm1", "x*"), ("realm1", "*x"),
                         ("realm1", "*1*1"), ("a", "a*a"), ("realm1", "realm*11*"), ("realm1", "r*z*1"),
-                        ("ab", "*b*a*"), ("", "x*")]
-        for value, pattern in not_matching:
-            self.assertFalse(token_query._matches_wildcard(value, pattern), (value, pattern))
+                        ("ab", "*b*a*"), ("", "x*"), ("realm1", "realm?"), ("realm1", "realm[0-9]"),
+                        ("realm1", "realm[!x]"), ("realm1", "realm[1]")]
+        for realm_name, pattern in not_matching:
+            self.assertFalse(self._matches_wildcard(realm_name, pattern), (realm_name, pattern))
 
-        # A pattern with many wildcards, in a row or in between other characters, is checked as fast as a short
-        # one
-        self.assertFalse(token_query._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "x"))
-        self.assertTrue(token_query._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "m"))
-        self.assertFalse(token_query._matches_wildcard("a" * 200, "*a" * 100 + "b"))
-        self.assertTrue(token_query._matches_wildcard("a" * 200, "*a" * 100 + "*"))
+        # A pattern with many wildcards, in a row or in between other characters, is checked about as fast as a
+        # short one
+        self.assertFalse(self._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "x"))
+        self.assertTrue(self._matches_wildcard("my-corporate-active-directory-realm", "*" * 1000 + "m"))
+        self.assertFalse(self._matches_wildcard("a" * 200, "*a" * 100 + "b"))
+        self.assertTrue(self._matches_wildcard("a" * 200, "*a" * 100 + "*"))
 
-    def test_03_matches_wildcard_like_a_regular_expression(self):
-        # Every value and pattern of up to four characters matches exactly when the regular expression with ".*"
-        # for each "*" matches
-        values = ["".join(characters) for length in range(5) for characters in product("ab.", repeat=length)]
-        patterns = ["".join(characters) for length in range(5) for characters in product("ab.*", repeat=length)]
+    def test_03_get_realm_ids_by_wildcard_like_a_regular_expression(self):
+        # Every name of up to three characters matches a pattern of up to four characters exactly when the regular
+        # expression with ".*" for each "*" and every other character escaped matches
+        realm_names = ["".join(characters) for length in range(4) for characters in product("ab?[]", repeat=length)]
+        realms = {realm_name: {"id": realm_id} for realm_id, realm_name in enumerate(realm_names)}
+        patterns = ["".join(characters) for length in range(5) for characters in product("ab?[]*", repeat=length)]
         for pattern in patterns:
             regular_expression = re.compile(".*".join(re.escape(piece) for piece in pattern.split("*")), re.DOTALL)
-            for value in values:
-                self.assertEqual(bool(regular_expression.fullmatch(value)),
-                                 token_query._matches_wildcard(value, pattern), (value, pattern))
+            self.assertEqual([realm_id for realm_id, realm_name in enumerate(realm_names)
+                              if regular_expression.fullmatch(realm_name)],
+                             token_query._get_realm_ids(realms, [], [pattern]), pattern)

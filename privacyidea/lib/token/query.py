@@ -5,6 +5,7 @@
 import logging
 import traceback
 from collections.abc import Callable, Iterator
+from fnmatch import fnmatchcase
 from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
@@ -66,41 +67,15 @@ def create_tokenclass_object(db_token: Token) -> TokenClass | None:
     return token_object
 
 
-def _matches_wildcard(value: str, pattern: str) -> bool:
-    """
-    Check whether the value matches the pattern, in which "*" matches any characters, including none, and every
-    other character only itself.
-
-    The pieces between the wildcards are searched from left to right, each one behind the one before. The leftmost
-    place of a piece leaves the most room for the pieces after it, so no other place has to be tried and the time
-    the check takes grows only linearly with the lengths of the value and the pattern.
-
-    :param value: The value to check
-    :param pattern: The pattern
-    :return: True if the value matches the pattern
-    """
-    pieces = pattern.split("*")
-    if len(pieces) == 1:
-        return value == pattern
-    first_piece, *middle_pieces, last_piece = pieces
-    if (len(value) < len(first_piece) + len(last_piece) or not value.startswith(first_piece)
-            or not value.endswith(last_piece)):
-        return False
-    position = len(first_piece)
-    end = len(value) - len(last_piece)
-    for piece in middle_pieces:
-        position = value.find(piece, position, end)
-        if position < 0:
-            return False
-        position += len(piece)
-    return True
-
-
 def _get_realm_ids(realms: dict, exact_names: list[str], wildcard_patterns: list[str] | None = None) -> list[int]:
     """
     Return the IDs of the configured realms whose name is one of the exact names or matches one of the
-    wildcard patterns, in which "*" matches any characters. Both compare case-insensitively, like the
-    database does with ``lower()``: realm names only consist of ASCII letters, digits, "_", "-" and ".".
+    wildcard patterns, in which "*" matches any characters, including none, and every other character only
+    itself. Both compare case-insensitively, like the database does with ``lower()``: realm names only consist
+    of ASCII letters, digits, "_", "-" and ".".
+
+    The patterns are matched with ``fnmatchcase``, which checks a pattern with many wildcards without trying
+    every way to split the realm name between them, as a regular expression with ".*" for each "*" would.
 
     :param realms: The configured realms, as returned by ``get_realms()``
     :param exact_names: Realm names
@@ -108,10 +83,11 @@ def _get_realm_ids(realms: dict, exact_names: list[str], wildcard_patterns: list
     :return: The IDs of the matching realms
     """
     exact = {name.lower() for name in exact_names}
-    patterns = [pattern.lower() for pattern in wildcard_patterns or []]
+    # fnmatch also treats "?" and "[...]" as wildcards. In brackets, "[" and "?" only match themselves.
+    patterns = [pattern.lower().replace("[", "[[]").replace("?", "[?]") for pattern in wildcard_patterns or []]
     return [realm_data["id"] for realm_name, realm_data in realms.items()
             if realm_name.lower() in exact
-            or any(_matches_wildcard(realm_name.lower(), pattern) for pattern in patterns)]
+            or any(fnmatchcase(realm_name.lower(), pattern) for pattern in patterns)]
 
 
 def _in_realms(realm_ids: list[int]) -> ColumnElement[bool]:
