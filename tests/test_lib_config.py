@@ -404,6 +404,27 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(CENSORED, exported["ExpSecret"]["Value"])
         delete_privacyidea_config("ExpSecret")
 
+    def test_12d_import_logs_names_only(self):
+        from privacyidea.lib.config import import_config
+        # The data of an import holds the decrypted secrets, so the log only names the imported entries
+        with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
+            import_config({"ImportedSecret": {"Value": "imported-secret-value", "Type": "password"}})
+        output = "\n".join(captured.output)
+        self.assertIn("Import server config: ['ImportedSecret']", output)
+        self.assertNotIn("imported-secret-value", output)
+        # Reading the entry does not log its value either
+        with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
+            self.assertEqual("imported-secret-value", get_from_config("ImportedSecret"))
+        self.assertNotIn("imported-secret-value", "\n".join(captured.output))
+        delete_privacyidea_config("ImportedSecret")
+
+    def test_12e_get_import_names(self):
+        from privacyidea.lib.utils.export import get_import_names
+        self.assertEqual(["resolver1", "resolver2"], get_import_names({"resolver1": {}, "resolver2": {}}))
+        self.assertEqual(["policy1", None], get_import_names([{"name": "policy1"}, {"action": "enroll"}]))
+        self.assertEqual(["connector1"], get_import_names([{"connectorname": "connector1"}], "connectorname"))
+        self.assertEqual([], get_import_names("not a list"))
+
     def test_13_update_password_entry_without_type(self):
         from privacyidea.lib.crypto import decryptPassword
         set_privacyidea_config("SecretToUpdate", "first", typ="password")

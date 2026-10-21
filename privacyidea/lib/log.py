@@ -31,7 +31,7 @@ import functools
 import inspect
 import re
 from collections.abc import Mapping
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, urlencode, urlparse
 
 log = logging.getLogger(__name__)
 
@@ -134,6 +134,9 @@ SENSITIVE_KEY_NAMES = frozenset({
     "answer", "answers", "authorization", "bindpw", "cakey", "cookie", "credential", "fbtoken",
     "key_enc", "key_iv", "otp", "otp1", "otp2", "otpkey", "otpvalue", "pass", "passphrase",
     "passw", "passwd", "password", "pin", "privatekey", "questions", "recoverycode", "secret",
+    # The pre-shared key of a PSKC token file decrypts the OTP keys in it: "psk" is the request parameter,
+    # "preshared_key" the parameter of the parser
+    "psk", "preshared_key",
     # "series_id" is the secret half of the remember-device cookie (series_id:counter); logging it
     # at DEBUG would write a replayable bearer token to the log.
     "series_id",
@@ -313,6 +316,25 @@ def _all_items(value):
         return value.items(multi=True)
     except TypeError:
         return value.items()
+
+
+def get_url_origin(url: str) -> str:
+    """
+    Return the scheme, the host and the port of a URL, for a log message about a request to it.
+
+    A URL that privacyIDEA calls can hold a credential in the user info, in the path or in the query, like the URL
+    of a WebHook, which is the credential of the receiving service, or the API key of an SMS gateway. None of these
+    is part of the result.
+
+    :param url: the URL a request is sent to
+    :return: the URL reduced to its scheme, host and port
+    """
+    try:
+        parsed_url = urlparse(str(url))
+        port = f":{parsed_url.port}" if parsed_url.port else ""
+    except ValueError:
+        return "<URL that can not be parsed>"
+    return f"{parsed_url.scheme}://{parsed_url.hostname}{port}"
 
 
 def redact_url(url: str) -> str:

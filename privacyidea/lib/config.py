@@ -50,7 +50,7 @@ from sqlalchemy.engine.url import make_url
 from privacyidea.config import DefaultConfigValues, ConfigKey
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
 from privacyidea.lib.utils import to_list
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from .caconnectors.baseca import BaseCAConnector
 from .crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from .crypto import encryptPassword
@@ -399,7 +399,8 @@ def get_config_object():
     return store['config_object']
 
 
-@log_with(log)
+# The result is not logged: it is the decrypted value of a password-type entry, or a whole configuration with them
+@log_with(log, log_exit=False)
 # @cache.cached(key_prefix="singleConfig")
 def get_from_config(key=None, default=None, role="admin", return_bool=False):
     """
@@ -1278,7 +1279,7 @@ def export_config(name=None, censor=False):
 @register_import()
 def import_config(data, name=None):
     """Import given server configuration"""
-    log.debug(f'Import server config: {data!s}')
+    log.debug(f'Import server config: {get_import_names(data)}')
     res = {}
     data.pop('__timestamp__', None)
     for key, values in data.items():

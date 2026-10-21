@@ -35,7 +35,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import SMTPServer as SMTPServerDB, db
 
 __doc__ = """
@@ -494,7 +494,7 @@ def export_smtpserver(name=None, censor=False):
 @register_import('smtpserver')
 def import_smtpserver(data, name=None):
     """Import SMTP server configuration"""
-    log.debug(f'Import SMTP server config: {data!s}')
+    log.debug(f'Import SMTP server config: {get_import_names(data)}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue

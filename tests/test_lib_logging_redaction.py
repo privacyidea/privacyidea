@@ -26,7 +26,7 @@ from .base import MyApiTestCase
 from werkzeug.datastructures import (CombinedMultiDict, EnvironHeaders, Headers,
                                      ImmutableMultiDict, ImmutableTypeConversionDict, MultiDict)
 
-from privacyidea.lib.log import HIDDEN, is_sensitive_key, log_with, redact, redacted_attributes
+from privacyidea.lib.log import HIDDEN, get_url_origin, is_sensitive_key, log_with, redact, redacted_attributes
 
 # Values that must never reach the log. They are deliberately unusual strings so that a single
 # substring check over the captured log output is enough to detect a leak.
@@ -89,6 +89,26 @@ class TestRedact:
     def test_insensitive_keys_are_preserved(self):
         data = {"serial": "OATH0001", "type": "hotp", "count": 3, "user": None}
         assert redact(data) == data
+
+    def test_pre_shared_key_of_a_token_file(self):
+        # The request parameter and the parameter of the PSKC parser that carry the key decrypting a token file
+        data = {"psk": TEST_SECRET, "aes_psk": TEST_SECRET, "preshared_key_hex": TEST_SECRET}
+        assert redact(data) == {"psk": "HIDDEN", "aes_psk": "HIDDEN", "preshared_key_hex": "HIDDEN"}
+
+
+class TestUrlOrigin:
+    """A URL privacyIDEA calls is logged by its scheme, host and port."""
+
+    @pytest.mark.parametrize("url, origin", [
+        ("https://hooks.example.com/services/T000/B000/webhook-token", "https://hooks.example.com"),
+        ("https://user:password@gateway.example.com:8443/send?apikey=key", "https://gateway.example.com:8443"),
+        ("http://api.example.com/bot123456:token/sendMessage", "http://api.example.com"),
+    ])
+    def test_origin(self, url, origin):
+        assert get_url_origin(url) == origin
+
+    def test_url_that_can_not_be_parsed(self):
+        assert get_url_origin("http://example.com:port/path") == "<URL that can not be parsed>"
 
     def test_original_is_not_modified(self):
         data = {"pin": TEST_PIN, "nested": {"password": TEST_PASSWORD}}

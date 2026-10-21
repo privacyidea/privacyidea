@@ -373,6 +373,24 @@ class SMSTokenTestCase(MyTestCase):
         self.assertTrue(r, r)
 
     @responses.activate
+    def test_18b_provider_config_is_not_logged(self):
+        # The provider configuration holds the credentials of the gateway. Sending a challenge logs the names of
+        # what is sent and the server it is sent to, not the values or the URL.
+        responses.add(responses.POST, self.SMSHttpUrl, body=self.success_body)
+        set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
+        token = init_token({"type": "sms", "serial": "SMSLOG01", "phone": self.phone1})
+        try:
+            with self.assertLogs("privacyidea", level="DEBUG") as captured:
+                self.assertTrue(token.create_challenge("123456098713")[0])
+        finally:
+            remove_token("SMSLOG01")
+        output = "\n".join(captured.output)
+        self.assertNotIn("yoursecret", output)
+        self.assertNotIn("sms_send_api.cgi", output)
+        self.assertIn("issuing a POST request to http://smsgateway.com with the parameters []", output)
+        self.assertIn("'password'", output)
+
+    @responses.activate
     def test_18a_challenge_request_dynamic(self):
         # Send a challenge request for an SMS token with a dynamic phone number
         responses.add(responses.POST,

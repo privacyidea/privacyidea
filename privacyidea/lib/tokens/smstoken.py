@@ -478,7 +478,8 @@ class SmsTokenClass(HotpTokenClass):
                 # now we need the config from the env
                 log.debug(f"loading SMS configuration for class {sms!s}")
                 config = self._get_sms_provider_config()
-                log.debug(f"config: {config!r}")
+                # The configuration holds the credentials of the gateway, so only its keys are logged
+                log.debug(f"config keys: {list(config) if isinstance(config, dict) else []}")
                 sms.load_config(config)
             except Exception as exc:
                 log.error(f"Failed to load sms.providerConfig: {exc!r}")
@@ -505,7 +506,8 @@ class SmsTokenClass(HotpTokenClass):
         return SMSProvider, SMSProviderClass
 
     @staticmethod
-    @log_with(log)
+    # The result holds the credentials of the gateway, also in values a name does not mark, like the URL
+    @log_with(log, log_exit=False)
     def _get_sms_provider_config():
         """
         load the defined sms provider config definition
