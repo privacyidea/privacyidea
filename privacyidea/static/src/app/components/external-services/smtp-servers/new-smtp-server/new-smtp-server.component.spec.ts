@@ -32,6 +32,33 @@ import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { of } from "rxjs";
 import { NewSmtpServerComponent } from "./new-smtp-server.component";
 
+const flush = async (fixture: ComponentFixture<unknown>) => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+};
+
+const checkboxInput = (fixture: ComponentFixture<unknown>, label: string): HTMLInputElement => {
+  const checkbox = Array.from(fixture.nativeElement.querySelectorAll("mat-checkbox") as NodeListOf<HTMLElement>).find(
+    (el) => el.textContent?.includes(label)
+  );
+  return checkbox!.querySelector("input") as HTMLInputElement;
+};
+
+const clickCheckbox = async (fixture: ComponentFixture<unknown>, label: string) => {
+  checkboxInput(fixture, label).click();
+  await flush(fixture);
+};
+
+const inputOf = (fixture: ComponentFixture<unknown>, placeholder: string): HTMLInputElement =>
+  fixture.nativeElement.querySelector(`input[placeholder="${placeholder}"]`) as HTMLInputElement;
+
+const typeInto = async (fixture: ComponentFixture<unknown>, input: HTMLInputElement, value: string) => {
+  input.value = value;
+  input.dispatchEvent(new Event("input"));
+  await flush(fixture);
+};
+
 describe("NewSmtpServerComponent", () => {
   let smtpServiceMock: MockSmtpService;
   let router: Router;
@@ -147,7 +174,12 @@ describe("NewSmtpServerComponent", () => {
 
     it.each(["send_test_email", ".", ".."])("rejects the reserved identifier %p", (identifier) => {
       component.smtpModel.update((m) => ({ ...m, identifier, server: "smtp.test.com", sender: "test@test.com" }));
-      expect(component.smtpForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+      expect(
+        component.smtpForm
+          .identifier()
+          .errors()
+          .some((e) => e.kind === "reservedName")
+      ).toBe(true);
       expect(component.smtpForm().valid()).toBe(false);
       expect(component.canSave).toBe(false);
     });
@@ -165,8 +197,8 @@ describe("NewSmtpServerComponent", () => {
       expect(smtpServiceMock.testSmtpServer).toHaveBeenCalled();
     });
 
-    it("should return true for hasChanges if form is dirty", () => {
-      component.smtpForm.server().markAsDirty();
+    it("should return true for hasChanges if form is dirty", async () => {
+      await clickCheckbox(fixture, "S/MIME signing");
       expect(component.hasChanges).toBe(true);
     });
 
@@ -194,17 +226,9 @@ describe("NewSmtpServerComponent", () => {
         expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       });
 
-      it("should open SaveAndExitDialog when there are changes", () => {
+      it("should open SaveAndExitDialog when there are changes", async () => {
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
-        component.smtpModel.update((m) => ({
-          ...m,
-          identifier: "test",
-          server: "smtp.test.com",
-          port: 25,
-          sender: "test@test.com",
-          timeout: 5
-        }));
-        component.smtpForm().markAsDirty();
+        await clickCheckbox(fixture, "Send mail from job queue");
 
         component.onCancel();
 
@@ -402,6 +426,173 @@ describe("NewSmtpServerComponent", () => {
       expect(editComponent.isEditMode()).toBe(true);
       expect(editComponent.smtpForm.identifier().disabled()).toBe(true);
       expect(editComponent.smtpModel().identifier).toBe("existing-id");
+    });
+  });
+});
+
+describe("NewSmtpServerComponent bound controls", () => {
+  let fixture: ComponentFixture<NewSmtpServerComponent>;
+  let component: NewSmtpServerComponent;
+  let smtpService: MockSmtpService;
+
+  const existing = {
+    identifier: "smtp-1",
+    server: "smtp.example.com",
+    port: 587,
+    timeout: 10,
+    sender: "sender@example.com",
+    tls: true,
+    enqueue_job: false,
+    smime: false,
+    dont_send_on_error: false
+  };
+
+  const setup = async (identifier?: string) => {
+    await TestBed.configureTestingModule({
+      imports: [NewSmtpServerComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap(identifier ? { identifier } : {})) } },
+        { provide: SmtpService, useClass: MockSmtpService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService }
+      ]
+    }).compileComponents();
+    smtpService = TestBed.inject(SmtpService) as unknown as MockSmtpService;
+    smtpService.smtpServers.set([existing]);
+    fixture = TestBed.createComponent(NewSmtpServerComponent);
+    component = fixture.componentInstance;
+    await flush(fixture);
+  };
+
+  describe("checkboxes", () => {
+    beforeEach(async () => setup());
+
+    it.each([
+      ["Use StartTLS", "tls", false],
+      ["Send mail from job queue", "enqueue_job", true],
+      ["S/MIME signing", "smime", true],
+      ["Don't send on signing error", "dont_send_on_error", true]
+    ] as const)("%s writes %s to the model and marks the form dirty", async (label, field, expected) => {
+      expect(component.hasChanges).toBe(false);
+      await clickCheckbox(fixture, label);
+      expect(component.smtpModel()[field]).toBe(expected);
+      expect(component.smtpForm[field]().dirty()).toBe(true);
+      expect(component.hasChanges).toBe(true);
+    });
+
+    it("shows a model change in the checkbox", async () => {
+      component.smtpModel.update((m) => ({ ...m, smime: true }));
+      await flush(fixture);
+      expect(checkboxInput(fixture, "S/MIME signing").checked).toBe(true);
+    });
+
+    it("hides the StartTLS checkbox for an smtps server", async () => {
+      component.smtpModel.update((m) => ({ ...m, server: "smtps://smtp.example.com" }));
+      await flush(fixture);
+      expect(fixture.nativeElement.textContent).not.toContain("Use StartTLS");
+    });
+  });
+
+  describe("edit mode", () => {
+    beforeEach(async () => setup("smtp-1"));
+
+    it("keeps a checkbox edit when the server list is reloaded", async () => {
+      await clickCheckbox(fixture, "S/MIME signing");
+      expect(component.smtpModel().smime).toBe(true);
+
+      smtpService.smtpServers.set([{ ...existing, smime: false, timeout: 99 }]);
+      await flush(fixture);
+
+      expect(component.smtpModel().smime).toBe(true);
+      expect(component.smtpModel().timeout).toBe(10);
+    });
+
+    it("re-initializes from a reloaded list while the form is pristine", async () => {
+      smtpService.smtpServers.set([{ ...existing, timeout: 99 }]);
+      await flush(fixture);
+      expect(component.smtpModel().timeout).toBe(99);
+      expect(component.hasChanges).toBe(false);
+    });
+
+    it("marks the form dirty when a clear button empties a field", async () => {
+      component.smtpModel.update((m) => ({ ...m, username: "user" }));
+      await flush(fixture);
+      expect(component.hasChanges).toBe(false);
+      const clear = fixture.nativeElement
+        .querySelector('input[placeholder="user@example.com"]')
+        .closest("app-clearable-input")
+        .querySelector("button") as HTMLButtonElement;
+      clear.click();
+      await flush(fixture);
+      expect(component.smtpModel().username).toBe("");
+      expect(component.smtpForm.username().dirty()).toBe(true);
+      expect(component.hasChanges).toBe(true);
+    });
+  });
+
+  describe("test recipient", () => {
+    beforeEach(async () => {
+      await setup();
+      component.smtpModel.update((m) => ({ ...m, identifier: "test", server: "smtp.test.com", sender: "a@b.de" }));
+      await flush(fixture);
+    });
+
+    it("leaves the server form pristine while the recipient is typed", async () => {
+      const recipient = fixture.nativeElement.querySelector(
+        "mat-form-field input:not([placeholder])"
+      ) as HTMLInputElement;
+      await typeInto(fixture, recipient, "rcpt@example.com");
+      expect(component.recipientModel().recipient).toBe("rcpt@example.com");
+      expect(component.smtpForm().dirty()).toBe(false);
+      expect(component.hasChanges).toBe(false);
+    });
+
+    it("sends the recipient with the server settings and keeps it out of the saved server", async () => {
+      component.recipientModel.set({ recipient: "rcpt@example.com" });
+      await component.test();
+      expect(smtpService.testSmtpServer).toHaveBeenCalledWith(
+        expect.objectContaining({ server: "smtp.test.com", recipient: "rcpt@example.com" })
+      );
+      jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+      await component.save();
+      expect(smtpService.postSmtpServer).toHaveBeenCalledWith(
+        expect.not.objectContaining({ recipient: expect.anything() })
+      );
+    });
+
+    it("disables the test button while the server form is invalid", async () => {
+      const button = () =>
+        fixture.nativeElement.querySelector("button[mat-icon-button][matSuffix]") as HTMLButtonElement;
+      expect(button().disabled).toBe(false);
+      component.smtpModel.update((m) => ({ ...m, server: "" }));
+      await flush(fixture);
+      expect(button().disabled).toBe(true);
+    });
+  });
+
+  describe("number inputs", () => {
+    beforeEach(async () => setup());
+
+    it.each([
+      ["25", "port"],
+      ["10", "timeout"]
+    ] as const)("renders the parse message of the %s field once it is touched", async (placeholder, field) => {
+      const input = inputOf(fixture, placeholder);
+      jest.spyOn(input, "validity", "get").mockReturnValue({ badInput: true } as ValidityState);
+      await typeInto(fixture, input, "");
+      expect(
+        component.smtpForm[field]()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["parse"]);
+      expect(component.smtpForm().valid()).toBe(false);
+
+      input.dispatchEvent(new Event("blur"));
+      await flush(fixture);
+      expect(fixture.nativeElement.textContent).toContain("Enter a valid number");
     });
   });
 });

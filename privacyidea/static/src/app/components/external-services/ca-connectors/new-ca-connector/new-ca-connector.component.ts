@@ -16,9 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -42,6 +42,8 @@ import {
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 interface CaConnectorFormModel {
   connectorname: string;
@@ -128,8 +130,7 @@ export class NewCaConnectorComponent implements OnDestroy {
   caConnectorModel = signal<CaConnectorFormModel>({ ...EMPTY_CA_CONNECTOR_FORM });
 
   caConnectorForm = form(this.caConnectorModel, (f) => {
-    required(f.connectorname);
-    pattern(f.connectorname, /^[a-zA-Z0-9._-]*$/);
+    identifierName(f.connectorname);
     required(f.type);
     // Local CA required fields (conditional)
     required(f.cacert, { when: () => this.caConnectorModel().type === "local" });
@@ -142,6 +143,18 @@ export class NewCaConnectorComponent implements OnDestroy {
     disabled(f.connectorname, () => this.isEditMode());
     disabled(f.type, () => this.isEditMode());
   });
+
+  /** True for a Microsoft connector whose hostname and port are valid, which is what the "Get Available CAs" request needs. */
+  readonly canLoadAvailableCas = computed(
+    () =>
+      this.caConnectorModel().type === "microsoft" &&
+      this.caConnectorForm.hostname().valid() &&
+      this.caConnectorForm.port().valid()
+  );
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -221,6 +234,9 @@ export class NewCaConnectorComponent implements OnDestroy {
   }
 
   loadAvailableCas(): void {
+    if (!this.canLoadAvailableCas()) {
+      return;
+    }
     const model = this.caConnectorModel();
     const params: CaSpecificOptionsParams = {
       hostname: model.hostname,
@@ -233,19 +249,17 @@ export class NewCaConnectorComponent implements OnDestroy {
       http_proxy: String(model.http_proxy)
     };
 
-    if (params.hostname && params.port) {
-      this.isLoadingCas.set(true);
-      this.caConnectorService
-        .getCaSpecificOptions("microsoft", params)
-        .then((res) => {
-          const cas = res?.["available_cas"];
-          this.availableCas.set(Array.isArray(cas) ? cas.filter((c): c is string => typeof c === "string") : []);
-          this.isLoadingCas.set(false);
-        })
-        .catch(() => {
-          this.isLoadingCas.set(false);
-        });
-    }
+    this.isLoadingCas.set(true);
+    this.caConnectorService
+      .getCaSpecificOptions("microsoft", params)
+      .then((res) => {
+        const cas = res?.["available_cas"];
+        this.availableCas.set(Array.isArray(cas) ? cas.filter((c): c is string => typeof c === "string") : []);
+        this.isLoadingCas.set(false);
+      })
+      .catch(() => {
+        this.isLoadingCas.set(false);
+      });
   }
 
   async save(): Promise<boolean> {
