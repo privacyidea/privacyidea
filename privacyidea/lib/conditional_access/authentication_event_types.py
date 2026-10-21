@@ -268,9 +268,15 @@ class AuthEventReason(str, Enum):
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
 
     # --- authorization, i.e. a policy or the server configuration refusing the request ---------------------------
-    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The next three are
-    # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The others below are
+    # authorization decisions too, each naming the specific policy or limit that refused it; this one is the plain deny.
     AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
+    # The type of the token used is not one the tokentype policy allows (PolicyAction.TOKENTYPE).
+    TOKENTYPE_NOT_ALLOWED = "TOKENTYPE_NOT_ALLOWED"
+    # The serial of the token used does not match the serial policy (PolicyAction.SERIAL).
+    SERIAL_NOT_ALLOWED = "SERIAL_NOT_ALLOWED"
+    # A tokeninfo field of the token used does not match the tokeninfo policy (PolicyAction.TOKENINFO).
+    TOKENINFO_MISMATCH = "TOKENINFO_MISMATCH"
     # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
     AUTH_MAX_FAIL = "AUTH_MAX_FAIL"
     # The user made too many *successful* authentications inside the policy's time limit (auth_max_success).

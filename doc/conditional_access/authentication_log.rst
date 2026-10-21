@@ -214,8 +214,14 @@ The state of a token
 A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
-     (``authorized=deny``); the next three are authorization decisions too,
-     each naming the specific limit that was hit.
+     (``authorized=deny``); the others below are authorization decisions too,
+     each naming the specific policy or limit that refused the request.
+   ``TOKENTYPE_NOT_ALLOWED``
+     the type of the token used is not one the :ref:`tokentype <tokentype_policy>` policy allows.
+   ``SERIAL_NOT_ALLOWED``
+     the serial of the token used does not match the :ref:`policy_serial` policy.
+   ``TOKENINFO_MISMATCH``
+     a tokeninfo field of the token used does not match the :ref:`policy_tokeninfo` policy.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see
      :ref:`policy_auth_max_fail`.

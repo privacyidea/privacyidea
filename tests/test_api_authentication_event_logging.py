@@ -137,6 +137,30 @@ class _AuthLogContractTests(_ContractHost):
         self._assert_succeeded(response)
         self.assertNotIn(AUTH_EVENT_TYPE_KEY, response.json.get("detail") or {})
 
+    # --- Authorization policies on the token used (NOT_AUTHORIZED) ---
+
+    def _assert_token_not_authorized(self, action: str, reason: AuthEventReason) -> None:
+        set_policy("authlog_token_authz", scope=SCOPE.AUTHZ, action=action)
+        try:
+            response = self._authenticate(f"{self.pin}755224")
+        finally:
+            delete_policy("authlog_token_authz")
+        self.assertEqual(403, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
+                                        reason=reason, policies=["authlog_token_authz"],
+                                        endpoint=self.endpoint_path)
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome(self.endpoint_path))
+
+    def test_tokentype_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.TOKENTYPE}=spass", AuthEventReason.TOKENTYPE_NOT_ALLOWED)
+
+    def test_serial_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.SERIAL}=^SPASS", AuthEventReason.SERIAL_NOT_ALLOWED)
+
+    def test_tokeninfo_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.TOKENINFO}=foo/bar/", AuthEventReason.TOKENINFO_MISMATCH)
+
     # --- No / unusable token ---
 
     def test_no_token_logs_no_token(self):

@@ -305,6 +305,40 @@ def hide_version(request, response):
     return response
 
 
+def _record_not_authorized(request: Request, reason: AuthEventReason, policies: list[str]) -> None:
+    """
+    Classify the request as ``NOT_AUTHORIZED`` for *reason*, by the authorization *policies* that refused it.
+
+    The staged event is corrected where there is one, else an event is logged. Nothing is classified when conditional
+    access already turned the request away before any token logic ran: its rejection row already records why, and a
+    NOT_AUTHORIZED row here would bury that reason and hand the conditional-access counters an attempt the lock itself
+    produced.
+
+    :param request: the request object
+    :param reason: why the policies refused the request
+    :param policies: the names of the policies that refused the request
+    """
+    context = get_ca_context()
+    if context.rejected_by_conditional_access:
+        return
+    # Name the policies: with several authorization policies in play, "which rule do I have to change" is the whole
+    # question the log has to answer.
+    reason_detail = build_reason_detail(policies=policies)
+    if context.amendable is not None:
+        # The detail is merged, so the per-serial reasons the token layer recorded survive alongside the policy that
+        # overrode them. The policy applies whatever the tokens looked like, so it *replaces* the token layer's
+        # reasons rather than joining them: it is the one thing to act on now.
+        context.reclassify(AuthEventType.NOT_AUTHORIZED, reasons=[reason], reason_detail=reason_detail)
+    else:
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User, reasons=[reason],
+                           reason_detail=reason_detail)
+
+
+def _policy_names(action_values: dict) -> list[str]:
+    """The names of the policies behind *action_values* (see ``Match.action_values``), each once, in order."""
+    return list(dict.fromkeys(name for names in action_values.values() for name in names))
+
+
 def check_tokentype(request, response):
     """
     This policy function is to be used in a decorator of an API function.
@@ -326,8 +360,8 @@ def check_tokentype(request, response):
                                      user_object=user).action_values(unique=False)
     if token_type and allowed_token_types and token_type not in allowed_token_types:
         # If we have tokentype policies, but the tokentype is not allowed, we raise an exception
-        g.audit_object.log({"success": False,
-                            "action_detail": f"Tokentype {token_type!r} not allowed for authentication"})
+        g.audit_object.log({"action_detail": f"Tokentype {token_type!r} not allowed for authentication"})
+        _record_not_authorized(request, AuthEventReason.TOKENTYPE_NOT_ALLOWED, _policy_names(allowed_token_types))
         raise PolicyError("Tokentype not allowed for authentication!")
     return response
 
@@ -357,8 +391,8 @@ def check_serial(request, response):
                 serial_matches = True
                 break
         if serial_matches is False:
-            g.audit_object.log({"action_detail": "Serial is not allowed for "
-                                                 "authentication!"})
+            g.audit_object.log({"action_detail": "Serial is not allowed for authentication!"})
+            _record_not_authorized(request, AuthEventReason.SERIAL_NOT_ALLOWED, _policy_names(allowed_serials))
             raise PolicyError("Serial is not allowed for authentication!")
     return response
 
@@ -394,6 +428,8 @@ def check_tokeninfo(request, response):
                         else:
                             log.info(f"Tokeninfo field {key!s} with contents {value!s} "
                                      f"does not match {regex!s}")
+                            _record_not_authorized(request, AuthEventReason.TOKENINFO_MISMATCH,
+                                                   tokeninfo_policy[tokeninfo_pol])
                             raise PolicyError(f"Tokeninfo field {key!s} with contents does not"
                                               " match regular expression.")
                     except ValueError:
@@ -1275,26 +1311,7 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
-            context = get_ca_context()
-            # Nothing to classify when conditional access already turned the request away before any token logic ran:
-            # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
-            # conditional-access counters an attempt the lock itself produced.
-            if not context.rejected_by_conditional_access:
-                # Name the policy that denied it: with several authorization policies in play, "which rule do I
-                # have to change" is the whole question the log has to answer.
-                reason_detail = build_reason_detail(policies=next(iter(authorized_pol.values()), None))
-                if context.amendable is not None:
-                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
-                    # recorded survive alongside the policy that overrode them.
-                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
-                    # reasons rather than joining them: it is the one thing to act on now.
-                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
-                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
-                                       reason_detail=reason_detail)
-                else:
-                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
-                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
-                                       reason_detail=reason_detail)
+            _record_not_authorized(request, AuthEventReason.AUTHORIZATION_DENIED, _policy_names(authorized_pol))
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response
