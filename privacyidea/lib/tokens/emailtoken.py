@@ -383,7 +383,6 @@ class EmailTokenClass(HotpTokenClass):
                                                    subject=subject,
                                                    mimetype=mimetype)
             log.debug(f"AutoEmail: send new SMS: {success!s}")
-            log.debug(f"AutoEmail: {message!r}")
         return ret
 
     @staticmethod
@@ -447,7 +446,8 @@ class EmailTokenClass(HotpTokenClass):
 
         return autosms
 
-    @log_with(log)
+    # The result is the message with the OTP
+    @log_with(log, log_exit=False)
     def _compose_email(self, message="<otp>", subject="Your OTP", mimetype="plain", options=None):
         """
         send email

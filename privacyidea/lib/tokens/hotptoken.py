@@ -658,7 +658,8 @@ class HotpTokenClass(TokenClass):
 
         return timeOut
 
-    @log_with(log)
+    # The result is the OTP
+    @log_with(log, log_exit=False)
     def get_otp(self, current_time=None):
         """
         return the next otp value

@@ -18,6 +18,7 @@ __doc__ = """This is the SMSClass to send SMS via a script.
 """
 
 from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
+from privacyidea.lib.log import mask_phone_number
 from privacyidea.lib import _
 from privacyidea.lib.framework import get_app_config_value
 import json
@@ -67,7 +68,7 @@ class ScriptSMSProvider(ISMSProvider):
 
         if not isinstance(message, dict):
             phone = self._mangle_phone(phone, self.smsgateway.option_dict)
-        log.debug(f"submitting message {message!s} to {phone!s}")
+        log.debug(f"submitting a message to {mask_phone_number(phone)}")
 
         script = self.smsgateway.option_dict.get("script")
         background = self.smsgateway.option_dict.get("background")
@@ -95,7 +96,7 @@ class ScriptSMSProvider(ISMSProvider):
             log.warning(f"Script {script_name!r} failed to execute with error code {rcode!r}")
             raise SMSError(-1, "Error during execution of the script.")
         else:
-            log.info(f"SMS delivered to {phone!s}.")
+            log.info(f"SMS delivered to {mask_phone_number(phone)}.")
 
         return True
 

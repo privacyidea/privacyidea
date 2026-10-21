@@ -26,7 +26,8 @@ from .base import MyApiTestCase
 from werkzeug.datastructures import (CombinedMultiDict, EnvironHeaders, Headers,
                                      ImmutableMultiDict, ImmutableTypeConversionDict, MultiDict)
 
-from privacyidea.lib.log import HIDDEN, get_url_origin, is_sensitive_key, log_with, redact, redacted_attributes
+from privacyidea.lib.log import (HIDDEN, get_url_origin, is_sensitive_key, log_with, mask_phone_number, redact,
+                                 redacted_attributes)
 
 # Values that must never reach the log. They are deliberately unusual strings so that a single
 # substring check over the captured log output is enough to detect a leak.
@@ -289,6 +290,45 @@ class TestRedactionFailsClosed:
         assert "will not be hidden" in caplog.text
         # The decorator still works, it just cannot hide by parameter name any more.
         assert check_user_pass("alice", "some-value") is True
+
+
+class TestHideArgsByName:
+    """A parameter named in ``hide_args`` is hidden whether it is passed by position or by keyword."""
+
+    def test_named_parameter_is_hidden_however_it_is_passed(self, caplog):
+        logger = logging.getLogger("privacyidea.redaction-test-hide-args")
+
+        @log_with(logger, hide_args=["body"])
+        def send_message(recipient: str, body: str = "", subject: str = "Hello") -> bool:
+            return True
+
+        with caplog.at_level(logging.DEBUG, logger="privacyidea.redaction-test-hide-args"):
+            assert send_message("alice", TEST_SECRET) is True
+            assert send_message("alice", body=TEST_SECRET) is True
+            assert send_message(recipient="alice", subject="Hello") is True
+        assert TEST_SECRET not in caplog.text
+        assert "alice" in caplog.text
+        assert "Could not hide" not in caplog.text
+
+    def test_unknown_parameter_name_is_reported(self, caplog):
+        with caplog.at_level(logging.WARNING, logger="privacyidea.lib.log"):
+            @log_with(logging.getLogger("privacyidea.redaction-test-hide-args"), hide_args=["bdy"])
+            def send_message(recipient: str, body: str) -> bool:
+                return True
+
+        assert "'send_message' has no parameter bdy to hide" in caplog.text
+
+
+class TestMaskPhoneNumber:
+
+    @pytest.mark.parametrize("phone, masked", [
+        ("+49 123 456789", "***789"),
+        ("0170111111", "***111"),
+        ("", "<no phone number>"),
+        (None, "<no phone number>"),
+    ])
+    def test_mask(self, phone, masked):
+        assert mask_phone_number(phone) == masked
 
 
 class TestNoOverHiding:

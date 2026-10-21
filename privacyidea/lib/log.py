@@ -318,6 +318,18 @@ def _all_items(value):
         return value.items()
 
 
+def mask_phone_number(phone: object) -> str:
+    """
+    Return a phone number reduced to its last three digits, for a log message about a message sent to it. This tells
+    the numbers of a log apart without writing them to the log.
+
+    :param phone: the phone number
+    :return: the masked phone number, like "***789"
+    """
+    digits = re.sub(r"\D", "", str(phone or ""))
+    return f"***{digits[-3:]}" if digits else "<no phone number>"
+
+
 def get_url_origin(url: str) -> str:
     """
     Return the scheme, the host and the port of a URL, for a log message about a request to it.
@@ -451,9 +463,10 @@ class log_with:
         :type log_entry: bool
         :param log_exit: Whether the result of the function should be logged
         :type log_exit: bool
-        :param hide_args: Indices of parameters to hide completely, for values that the name based
-            hiding cannot recognise, such as the key in ``aes_cbc_decrypt(key, iv, data)``.
-        :type hide_args: list of int
+        :param hide_args: Parameters to hide completely, for values that the name based hiding
+            cannot recognise, such as the key in ``aes_cbc_decrypt(key, iv, data)``. An index hides
+            the positional argument, a parameter name hides the argument however it is passed.
+        :type hide_args: list of int or str
         """
         self.logger = logger
         self.log_exit = log_exit
@@ -484,6 +497,12 @@ class log_with:
             parameter_names = []
         sensitive_positions = {index for index, name in enumerate(parameter_names)
                                if is_sensitive_key(name)}
+        hidden_names = {name for name in self.hide_args if isinstance(name, str)}
+        hidden_positions = [index for index in self.hide_args if isinstance(index, int)]
+        hidden_name_positions = {index for index, name in enumerate(parameter_names) if name in hidden_names}
+        if parameter_names and hidden_names - set(parameter_names):
+            log.warning(f"{getattr(func, '__name__', func)!r} has no parameter "
+                        f"{', '.join(sorted(hidden_names - set(parameter_names)))} to hide")
 
         # Resolved on the first DEBUG call and then remembered. The line a function is defined on
         # cannot change while the process runs, but reading it costs a source file read and parse,
@@ -532,8 +551,14 @@ class log_with:
                     if arg_index < len(log_args):
                         log_args[arg_index] = HIDDEN
                 # Whole parameters named by the decorator are hidden on top of the denylist.
-                for arg_index in self.hide_args:
+                for arg_index in hidden_positions:
                     log_args[arg_index] = HIDDEN
+                # A parameter named by its name may also be passed as keyword, or not at all
+                for arg_index in hidden_name_positions:
+                    if arg_index < len(log_args):
+                        log_args[arg_index] = HIDDEN
+                for name in hidden_names & set(log_kwds):
+                    log_kwds[name] = HIDDEN
             except Exception as exx:
                 # Hiding failed, so nothing about this call is trustworthy enough to log. Report
                 # the failure instead of dropping the arguments silently, because a decorator

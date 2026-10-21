@@ -217,7 +217,8 @@ def _record_email_send(identifier, start, success, error=False):
     inc("email_send_total", {**labels, "result": result})
 
 
-@log_with(log)
+# The subject and the body can hold an OTP, a registration code or the link to reset a password
+@log_with(log, hide_args=["subject", "body"])
 def send_email_identifier(identifier, recipient, subject, body, sender=None,
                           reply_to=None, mimetype="plain"):
     """
@@ -245,7 +246,7 @@ def send_email_identifier(identifier, recipient, subject, body, sender=None,
     return success
 
 
-@log_with(log)
+@log_with(log, hide_args=["subject", "message"])
 def send_email_data(mailserver, subject, message, mail_from,
                     recipient, username=None,
                     password=None, port=25, email_tls=False, timeout=TIMEOUT):

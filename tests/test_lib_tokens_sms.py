@@ -2,6 +2,7 @@
 This test file tests the lib.tokens.smstoken
 """
 import logging
+from urllib.parse import parse_qs
 
 import mock
 import responses
@@ -373,9 +374,10 @@ class SMSTokenTestCase(MyTestCase):
         self.assertTrue(r, r)
 
     @responses.activate
-    def test_18b_provider_config_is_not_logged(self):
+    def test_18b_provider_config_and_otp_are_not_logged(self):
         # The provider configuration holds the credentials of the gateway. Sending a challenge logs the names of
-        # what is sent and the server it is sent to, not the values or the URL.
+        # what is sent and the server it is sent to, not the values or the URL. The OTP is not logged, and the
+        # phone number only by its last digits.
         responses.add(responses.POST, self.SMSHttpUrl, body=self.success_body)
         set_privacyidea_config("sms.providerConfig", self.SMSProviderConfig)
         token = init_token({"type": "sms", "serial": "SMSLOG01", "phone": self.phone1})
@@ -389,6 +391,11 @@ class SMSTokenTestCase(MyTestCase):
         self.assertNotIn("sms_send_api.cgi", output)
         self.assertIn("issuing a POST request to http://smsgateway.com with the parameters []", output)
         self.assertIn("'password'", output)
+        sent_otp = parse_qs(responses.calls[-1].request.body)["text"][0]
+        self.assertRegex(sent_otp, r"^[0-9]{6}$")
+        self.assertNotIn(sent_otp, output)
+        self.assertNotIn("123456789", output)
+        self.assertIn("submitMessage to phone ***789", output)
 
     @responses.activate
     def test_18a_challenge_request_dynamic(self):

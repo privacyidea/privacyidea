@@ -56,7 +56,7 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.log import log_with
+from privacyidea.lib.log import log_with, mask_phone_number
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     Match, get_action_values_from_options)
@@ -413,10 +413,10 @@ class SmsTokenClass(HotpTokenClass):
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message, options=options)
             log.debug(f"AutoSMS: send new SMS: {success!s}")
-            log.debug(f"AutoSMS: {message!r}")
         return ret
 
-    @log_with(log)
+    # The result is the message with the OTP
+    @log_with(log, log_exit=False)
     def _send_sms(self, message="<otp>", options=None):
         """
         send sms
@@ -486,7 +486,7 @@ class SmsTokenClass(HotpTokenClass):
                 log.debug(f"{traceback.format_exc()!s}")
                 raise Exception(f"Failed to load sms.providerConfig: {exc!r}")
 
-        log.debug(f"submitMessage: {message!r}, to phone {phone!r}")
+        log.debug(f"submitMessage to phone {mask_phone_number(phone)}")
         ret = sms.submit_message(phone, message)
         return ret, message
 

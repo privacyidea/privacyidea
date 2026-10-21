@@ -25,6 +25,7 @@ It requires smpplib installation, this lib works with ascii only, but message su
 """
 
 from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.log import mask_phone_number
 from privacyidea.lib import _
 from privacyidea.lib.utils import parse_int
 import logging
@@ -51,7 +52,7 @@ class SmppSMSProvider(ISMSProvider):
             raise SMSError(-1, "Missing smsgateway definition!")
 
         phone = self._mangle_phone(phone, self.smsgateway.option_dict)
-        log.debug(f"submitting message {message!r} to {phone!s}")
+        log.debug(f"submitting a message to {mask_phone_number(phone)}")
 
         smsc_host = self.smsgateway.option_dict.get("SMSC_HOST")
         smsc_port = self.smsgateway.option_dict.get("SMSC_PORT")

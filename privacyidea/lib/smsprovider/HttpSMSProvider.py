@@ -45,7 +45,7 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.log import get_url_origin
+from privacyidea.lib.log import get_url_origin, mask_phone_number
 import requests
 import json
 from urllib.parse import urlparse
@@ -140,7 +140,7 @@ class HttpSMSProvider(ISMSProvider):
         if isinstance(message, dict) and (method != "POST" or not json_data):
             raise SMSError(-1, "Structured messages require HTTP_METHOD=POST and SEND_DATA_AS_JSON=yes.")
 
-        log.debug(f"submitting message {message!r} to {phone!s}")
+        log.debug(f"submitting a message to {mask_phone_number(phone)}")
 
         if url is None:
             log.warning("can not submit message. URL is missing.")
