@@ -33,7 +33,7 @@
       <app-policy-priority-edit
         class="input-width-s"
         [priority]="editedPolicy().priority"
-        (priorityChange)="addPolicyEdit({ priority: $event })" />
+        (priorityChange)="onPriorityChange($event)" />
     </div>
 
     <app-policy-description-edit
@@ -42,27 +42,33 @@
       (descriptionChange)="addPolicyEdit({ description: $event })" />
   </div>
 
-  <div class="tab-buttons">
-    <app-selector-buttons
-      class="width-full"
-      [initialValue]="activeTab()"
-      [values]="tabValues"
-      [labels]="tabLabels"
-      (selected)="onTabSelected($event)" />
-  </div>
-
-  @if (activeTab() === "actions") {
-    <app-edit-action-tab
-      [policy]="editedPolicy()"
-      [(actionFilter)]="actionFilter"
-      [searchInHeader]="searchInHeader()"
-      (actionsUpdate)="updateActions($event)"
-      (policyScopeChange)="onPolicyScopeChange($event)" />
-  }
-
-  @if (activeTab() === "conditions") {
-    <app-edit-conditions-tab
-      [policy]="editedPolicy()"
-      (policyEdit)="addPolicyEdit($event)" />
-  }
+  <mat-tab-group
+    class="policy-tabs"
+    animationDuration="0ms"
+    aria-label="Policy sections"
+    i18n-aria-label="@@policy.sectionTabsLabel"
+    [selectedIndex]="tabIndex()"
+    (selectedIndexChange)="onTabIndexChange($event)">
+    <mat-tab label="Actions" i18n-label="@@common.actions">
+      <ng-template matTabContent>
+        <div class="tab-container">
+          <app-edit-action-tab
+            [policy]="editedPolicy()"
+            [(actionFilter)]="actionFilter"
+            [searchInHeader]="searchInHeader()"
+            (actionsUpdate)="updateActions($event)"
+            (policyScopeChange)="onPolicyScopeChange($event)" />
+        </div>
+      </ng-template>
+    </mat-tab>
+    <mat-tab label="Conditions" i18n-label="@@common.conditions">
+      <ng-template matTabContent>
+        <div class="tab-container">
+          <app-edit-conditions-tab
+            [policy]="editedPolicy()"
+            (policyEdit)="addPolicyEdit($event)" />
+        </div>
+      </ng-template>
+    </mat-tab>
+  </mat-tab-group>
 </div>

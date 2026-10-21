@@ -13,14 +13,8 @@
     padding: 8px 12px;
   }
 
-  .tab-buttons {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 8px;
-    justify-content: center;
-    padding: 8px 32px;
+  .tab-container {
+    margin: 16px 0;
   }
 
   .name-scope-priority-row {
