@@ -1224,6 +1224,8 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+        # The response is a challenge now, logged as a challenge step is: the login completes with its answer.
+        g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.CHALLENGE})
 
         # Reclassifies the staged authentication-log event, or creates one if none exists yet
         enrolled_serial = content.get("detail", {}).get("serial")
