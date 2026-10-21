@@ -242,6 +242,24 @@ describe("PolicyService", () => {
       expect(service.actionValueIsValid(strAction, "Hello")).toBeTruthy();
       expect(service.actionValueIsValid(strAction, "  ")).toBeFalsy();
     });
+
+    it("should validate action values of every type and kind", () => {
+      const boolAction: PolicyActionDetail = { type: "bool", desc: "test" };
+      const intAction: PolicyActionDetail = { type: "int", desc: "test" };
+      const textAction: PolicyActionDetail = { type: "text", desc: "test" };
+      expect(service.actionValueIsValid(boolAction, true)).toBe(true);
+      expect(service.actionValueIsValid(intAction, 5)).toBe(true);
+      expect(service.actionValueIsValid(intAction, 1.5)).toBe(false);
+      expect(service.actionValueIsValid(intAction, "")).toBe(false);
+      expect(service.actionValueIsValid(boolAction, 1)).toBe(false);
+      expect(service.actionValueIsValid(textAction, "line one\nline two")).toBe(true);
+      expect(service.actionValueIsValid(textAction, " ")).toBe(false);
+      expect(service.actionValueIsValid({ type: "unknown", desc: "test" } as unknown as PolicyActionDetail, "x")).toBe(
+        false
+      );
+      expect(service.actionValueIsValid({ desc: "test" } as unknown as PolicyActionDetail, "x")).toBe(false);
+      expect(service.actionValueIsValid(null as unknown as PolicyActionDetail, "x")).toBe(false);
+    });
   });
   describe("saveNewPolicy", () => {
     let newPolicy: PolicyDetail;

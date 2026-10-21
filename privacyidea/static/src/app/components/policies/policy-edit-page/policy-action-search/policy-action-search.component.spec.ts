@@ -65,4 +65,36 @@ describe("PolicyActionSearchComponent", () => {
 
     expect(document.activeElement).toBe(clearButton());
   });
+
+  it("shows the filter in the input", () => {
+    expect(input.value).toBe("token");
+  });
+
+  it("shows a filter that the parent changes", async () => {
+    fixture.componentRef.setInput("actionFilter", "pin");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(input.value).toBe("pin");
+  });
+
+  it("writes typed text to the filter", () => {
+    const emitted: string[] = [];
+    component.actionFilter.subscribe((value) => emitted.push(value));
+
+    input.value = "otp";
+    input.dispatchEvent(new Event("input"));
+
+    expect(component.actionFilter()).toBe("otp");
+    expect(emitted).toEqual(["otp"]);
+  });
+
+  it("empties the filter and the input with the clear button", () => {
+    clearButton().click();
+    fixture.detectChanges();
+
+    expect(component.actionFilter()).toBe("");
+    expect(input.value).toBe("");
+    expect(fixture.debugElement.query(By.css("app-clear-button"))).toBeNull();
+  });
 });

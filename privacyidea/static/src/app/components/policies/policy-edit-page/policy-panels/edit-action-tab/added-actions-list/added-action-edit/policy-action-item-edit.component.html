@@ -16,7 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="policy-action-item">
+<div
+  class="policy-action-item"
+  [class.invalid]="!valid()">
   <div class="detail-text">
     <span
       class="detail-label"
@@ -25,6 +27,13 @@
       <span
         class="detail-description"
         [innerHTML]="description | highlight: highlight() : true"></span>
+    }
+    @if (errorHint(); as hint) {
+      <span
+        class="detail-error"
+        role="alert"
+        [id]="errorId()"
+        [textContent]="hint"></span>
     }
   </div>
 
@@ -42,17 +51,19 @@
               [items]="actionValues"
               [itemLabel]="valueLabelOf"
               [selectedItems]="selectedItems()"
-              (selectionChange)="handleUpdateAction($event)">
+              (selectionChange)="updateValue($event)">
             </app-multi-select-only>
           } @else if (actionValues.length === 0) {
             <p i18n="@@policy.noValuesAvailable">No values available.</p>
           } @else if (actionValues.length < 3) {
-            <app-selector-buttons
+            <app-toggle-group
               class="flex-1"
               [values]="actionValues"
               [labels]="valueLabels()"
-              [initialValue]="action().value"
-              (selected)="handleUpdateAction($event)" />
+              [groupLabel]="valueLabel()"
+              [hideSelectionIndicator]="true"
+              [value]="selectedValue()"
+              (valueChange)="updateValue($event)" />
           } @else {
             <mat-form-field
               appearance="fill"
@@ -60,8 +71,8 @@
               subscriptSizing="dynamic">
               <mat-select
                 [aria-label]="valueLabel()"
-                [value]="isNumber(action().value) ? +action().value : action().value"
-                (selectionChange)="handleUpdateAction($event.value)">
+                [value]="selectedValue()"
+                (selectionChange)="updateValue($event.value)">
                 @for (option of valueOptions(); track option.value) {
                   <mat-option [value]="option.value">{{ option.label }}</mat-option>
                 }
@@ -71,27 +82,49 @@
         } @else {
           @switch (actionDetail()?.type) {
             @case ("str") {
-              <input
-                [attr.aria-label]="valueLabel()"
-                type="text"
-                class="action-value-input flex-2"
-                [value]="action().value"
-                (input)="handleUpdateAction($any($any($event.target).value))" />
+              <mat-form-field
+                appearance="fill"
+                class="flex-1"
+                subscriptSizing="dynamic">
+                <input
+                  matInput
+                  [attr.aria-label]="valueLabel()"
+                  [attr.aria-invalid]="!valid()"
+                  [attr.aria-describedby]="valid() ? null : errorId()"
+                  type="text"
+                  [formField]="textField" />
+              </mat-form-field>
             }
             @case ("int") {
-              <input
-                [attr.aria-label]="valueLabel()"
-                type="number"
-                class="action-value-input flex-2"
-                [value]="action().value"
-                (input)="handleUpdateAction($any(+$any($event.target).value))" />
+              <mat-form-field
+                appearance="fill"
+                class="flex-1"
+                subscriptSizing="dynamic">
+                <input
+                  matInput
+                  [attr.aria-label]="valueLabel()"
+                  [attr.aria-invalid]="!valid()"
+                  [attr.aria-describedby]="valid() ? null : errorId()"
+                  type="number"
+                  [formField]="textField" />
+              </mat-form-field>
             }
             @case ("text") {
-              <textarea
-                [attr.aria-label]="valueLabel()"
-                class="action-value-textarea flex-2"
-                [value]="action().value"
-                (input)="handleUpdateAction($any($any($event.target).value))"></textarea>
+              <mat-form-field
+                appearance="fill"
+                class="flex-1"
+                subscriptSizing="dynamic">
+                <!-- The autosize measures 15px per line while the field renders 24px lines, so 8 measured rows are 5 rendered rows. -->
+                <textarea
+                  matInput
+                  cdkTextareaAutosize
+                  [cdkAutosizeMinRows]="1"
+                  [cdkAutosizeMaxRows]="8"
+                  [attr.aria-label]="valueLabel()"
+                  [attr.aria-invalid]="!valid()"
+                  [attr.aria-describedby]="valid() ? null : errorId()"
+                  [formField]="textField"></textarea>
+              </mat-form-field>
             }
           }
         }

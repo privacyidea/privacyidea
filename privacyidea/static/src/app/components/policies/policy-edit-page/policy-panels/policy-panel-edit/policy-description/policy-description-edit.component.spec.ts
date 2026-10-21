@@ -18,24 +18,22 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DocumentationService } from "@services/documentation/documentation.service";
-import { MockDocumentationService } from "@testing/mock-services/mock-documentation-service";
+import { By } from "@angular/platform-browser";
 import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
 
 describe("PolicyDescriptionEditComponent", () => {
   let component: PolicyDescriptionEditComponent;
   let fixture: ComponentFixture<PolicyDescriptionEditComponent>;
-  let docService: MockDocumentationService;
+
+  const textarea = (): HTMLTextAreaElement => fixture.debugElement.query(By.css("textarea")).nativeElement;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyDescriptionEditComponent],
-      providers: [{ provide: DocumentationService, useClass: MockDocumentationService }]
+      imports: [PolicyDescriptionEditComponent]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyDescriptionEditComponent);
     component = fixture.componentInstance;
-    docService = TestBed.inject(DocumentationService) as unknown as MockDocumentationService;
     fixture.componentRef.setInput("description", "Initial description");
     fixture.detectChanges();
   });
@@ -44,15 +42,35 @@ describe("PolicyDescriptionEditComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit descriptionChange when updatePolicyDescription is called", () => {
-    const spy = jest.spyOn(component.descriptionChange, "emit");
-    component.updatePolicyDescription("Updated description");
-    expect(spy).toHaveBeenCalledWith("Updated description");
+  it("should show the description in the textarea", () => {
+    expect(textarea().value).toBe("Initial description");
   });
 
-  it("should call documentationService when openDocumentation is called", () => {
-    const spy = jest.spyOn(docService, "openDocumentation");
-    component.openDocumentation("test-page");
-    expect(spy).toHaveBeenCalledWith("test-page");
+  it("should show a description that the parent changes", async () => {
+    fixture.componentRef.setInput("description", "Changed by the parent");
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(textarea().value).toBe("Changed by the parent");
+  });
+
+  it("should emit descriptionChange and mark the field dirty when the user types", () => {
+    const emitted: string[] = [];
+    component.description.subscribe((value) => emitted.push(value));
+    expect(component.descriptionField().dirty()).toBe(false);
+
+    textarea().value = "Updated description";
+    textarea().dispatchEvent(new Event("input"));
+
+    expect(emitted).toEqual(["Updated description"]);
+    expect(component.description()).toBe("Updated description");
+    expect(component.descriptionField().dirty()).toBe(true);
+  });
+
+  it("should emit an empty description when the user clears the textarea", () => {
+    textarea().value = "";
+    textarea().dispatchEvent(new Event("input"));
+
+    expect(component.description()).toBe("");
   });
 });

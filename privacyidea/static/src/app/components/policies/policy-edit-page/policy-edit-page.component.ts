@@ -118,14 +118,11 @@ export class PolicyEditPageComponent implements OnDestroy {
       this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
     );
   });
-  readonly canSave = computed(
-    () =>
-      this.savingName() === null &&
-      this.isPolicyEdited() &&
-      !!this.editedPolicy().name?.trim() &&
-      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
-      !this.nameTaken()
-  );
+  /**
+   * The panel reports whether name, priority, scope and the added actions satisfy their rules, the name collision
+   * included.
+   */
+  readonly canSave = computed(() => this.savingName() === null && this.isPolicyEdited() && !!this.panel()?.valid());
   readonly title = computed(() =>
     this.mode() === "edit"
       ? $localize`:@@policy.editPolicy:Edit Policy`

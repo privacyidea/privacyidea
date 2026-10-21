@@ -18,6 +18,7 @@
  **/
 import { DatePipe } from "@angular/common";
 import { Component, computed, inject, input, linkedSignal, resource, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -44,6 +45,7 @@ const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, n
   selector: "app-api-client-remembered-devices",
   standalone: true,
   imports: [
+    FormField,
     TooltipAriaLabelDirective,
     MatTableModule,
     MatButtonModule,
@@ -66,13 +68,17 @@ export class ApiClientRememberedDevicesComponent {
 
   clientId = input.required<string>();
 
-  // Reset to the first page / no realm filter whenever the viewed client changes,
-  // so a stale page number or realm from a previous client (e.g. the router reusing
-  // this instance across a same-route client-to-client navigation) can't carry over.
-  pageIndex = linkedSignal({ source: () => this.clientId(), computation: () => 0 });
+  // The realm filter resets to "All realms" whenever the viewed client changes, so a stale realm from a
+  // previous client (e.g. the router reusing this instance across a same-route client-to-client navigation)
+  // can't carry over. The page index resets to the first page on that change and on every realm filter change.
+  realmFilter = linkedSignal({ source: () => this.clientId(), computation: () => "" });
+  realmFilterForm = form(this.realmFilter);
+  pageIndex = linkedSignal({
+    source: () => ({ clientId: this.clientId(), realm: this.realmFilter() }),
+    computation: () => 0
+  });
   pageSize = signal<number>(50);
   pageSizeOptions = [10, 25, 50, 100];
-  realmFilter = linkedSignal({ source: () => this.clientId(), computation: () => "" });
 
   displayedColumns = ["user", "ip_address", "user_agent", "created_at", "last_used_at", "expires_at", "actions"];
 
@@ -130,11 +136,6 @@ export class ApiClientRememberedDevicesComponent {
   onPage(event: PageEvent): void {
     this.pageSize.set(event.pageSize);
     this.pageIndex.set(event.pageIndex);
-  }
-
-  onRealmFilterChange(realm: string): void {
-    this.realmFilter.set(realm);
-    this.pageIndex.set(0);
   }
 
   private reloadAfterRevoke(removedFromPage: number): void {

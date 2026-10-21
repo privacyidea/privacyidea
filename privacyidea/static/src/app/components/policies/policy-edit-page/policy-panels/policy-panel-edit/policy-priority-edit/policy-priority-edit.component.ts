@@ -18,17 +18,34 @@
  **/
 
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { Component, model } from "@angular/core";
+import { Component, computed, model } from "@angular/core";
+import { form, FormField, min, required } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
+
+/** The lowest priority the backend accepts (`set_policy` rejects priorities below 1). */
+export const MIN_POLICY_PRIORITY = 1;
 
 @Component({
   selector: "app-policy-priority-edit",
   templateUrl: "./policy-priority-edit.component.html",
   styleUrl: "./policy-priority-edit.component.scss",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, TextFieldModule]
+  imports: [MatFormFieldModule, MatInputModule, FormField, TextFieldModule]
 })
 export class PolicyPriorityEditComponent {
-  readonly priority = model.required<number>();
+  /** `null` while the field is empty. */
+  readonly priority = model.required<number | null>();
+  readonly priorityField = form(this.priority, (f) => {
+    required(f);
+    min(f, MIN_POLICY_PRIORITY);
+  });
+
+  /** True while the priority is a number of at least 1. */
+  readonly valid = computed(() => this.priorityField().valid());
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
 }

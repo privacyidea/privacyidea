@@ -23,7 +23,15 @@
     <input
       matInput
       type="number"
-      [value]="priority()"
-      (input)="priority.set(+$any($event.target).value)" />
+      [formField]="priorityField" />
+    @if (hasError(priorityField, ERR.required)) {
+      <mat-error i18n="@@policy.priorityRequired">Priority is <strong>required</strong>.</mat-error>
+    }
+    @if (hasError(priorityField, ERR.parse)) {
+      <mat-error i18n="@@policy.priorityNotNumber">Priority must be a <strong>number</strong>.</mat-error>
+    }
+    @if (hasError(priorityField, ERR.min)) {
+      <mat-error i18n="@@policy.priorityMin">Priority must be <strong>at least 1</strong>.</mat-error>
+    }
   </mat-form-field>
 </div>

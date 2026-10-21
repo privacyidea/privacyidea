@@ -72,6 +72,30 @@ export function policyNameCollides(policies: PolicyDetail[], name: string, ownNa
   return policies.some((p) => p.name !== ownName && p.name.toLowerCase() === folded);
 }
 
+/**
+ * Whether `value` is acceptable for `action`, judged by the action's type: a bool is `true` or `false`, an int is
+ * an integer, a str or text is not blank.
+ */
+export function policyActionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
+  if (!action) return false;
+  const actionType = action.type;
+  if (!actionType) return false;
+  if (actionType === "bool" && typeof value === "boolean") return true;
+  if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
+  if (typeof value !== "string") return false;
+
+  if (actionType === "bool") {
+    return value.toLowerCase() === "true" || value.toLowerCase() === "false";
+  } else if (actionType === "int") {
+    return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
+  } else if (actionType === "str") {
+    return value.trim().length > 0;
+  } else if (actionType === "text") {
+    return value.trim().length > 0;
+  }
+  return false;
+}
+
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
   active: boolean;
@@ -602,23 +626,7 @@ export class PolicyService implements PolicyServiceInterface {
   }
 
   actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
-    if (!action) return false;
-    const actionType = action.type;
-    if (!actionType) return false;
-    if (actionType === "bool" && typeof value === "boolean") return true;
-    if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
-    if (typeof value !== "string") return false;
-
-    if (actionType === "bool") {
-      return value.toLowerCase() === "true" || value.toLowerCase() === "false";
-    } else if (actionType === "int") {
-      return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
-    } else if (actionType === "str") {
-      return value.trim().length > 0;
-    } else if (actionType === "text") {
-      return value.trim().length > 0;
-    }
-    return false;
+    return policyActionValueIsValid(action, value);
   }
 
   async saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean> {
