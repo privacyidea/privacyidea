@@ -751,3 +751,97 @@ class APIAuditTestCase(MyApiTestCase):
                     self.assertIn(self.realm1a, rows[0])
         finally:
             delete_policy("audit_realm1a")
+
+
+class AuditDownloadRealmTestCase(MyApiTestCase):
+    """
+    The audit download contains the entries of the realms that both the auditlog_download and the auditlog policies
+    of the administrator grant, and the administrator's own entries.
+    """
+    realm1 = "dlrealm1"
+    realm2 = "dlrealm2"
+    policy_names = ["dl_download", "dl_view"]
+    marks = ["MARK-R1", "MARK-R2", "MARK-NOREALM"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": PWFILE})
+        set_realm(self.realm1, [{"name": self.resolvername1}])
+        set_realm(self.realm2, [{"name": self.resolvername1}])
+        # "adminrealm" is a superuser realm of the test configuration: selfservice@adminrealm is a helpdesk admin
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        Audit.query.delete()
+        for _ in range(2):
+            Audit(action="MARK-R1", success=1, realm=self.realm1).save()
+        for _ in range(3):
+            Audit(action="MARK-R2", success=1, realm=self.realm2).save()
+        Audit(action="MARK-NOREALM", success=1, realm="").save()
+
+    def tearDown(self) -> None:
+        for name in self.policy_names:
+            with suppress(ResourceNotFoundError):
+                delete_policy(name)
+        for realm in [self.realm1, self.realm2, "adminrealm"]:
+            delete_realm(realm)
+        super().tearDown()
+
+    def helpdesk_authorization(self) -> str:
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": "selfservice@adminrealm", "password": "test"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]["token"]
+
+    def download(self, authorization: str, query: dict | None = None) -> dict[str, int]:
+        with self.app.test_request_context("/audit/audit.csv", method="GET", query_string=query or {},
+                                           headers={"Authorization": authorization}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code)
+        body = res.get_data(as_text=True)
+        return {mark: body.count(mark) for mark in self.marks}
+
+    def test_01_download_right_without_view_right(self):
+        # Without a matching auditlog policy only the administrator's own entries are downloaded
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        authorization = self.helpdesk_authorization()
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(authorization))
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(authorization, {"action": "MARK-R2"}))
+
+    def test_02_download_and_view_rights_for_different_realms(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        set_policy("dl_view", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm2,
+                   action=PolicyAction.AUDIT)
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(self.helpdesk_authorization()))
+
+    def test_03_local_admin_with_download_right_only(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, realm=self.realm1, action=PolicyAction.AUDIT_DOWNLOAD)
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(self.at))
+
+    def test_04_view_right_for_every_realm_and_download_right_for_one(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        set_policy("dl_view", scope=SCOPE.ADMIN, adminrealm="adminrealm", action=PolicyAction.AUDIT)
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(self.helpdesk_authorization()))
+
+    def test_05_download_and_view_rights_for_the_same_realm(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        set_policy("dl_view", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT)
+        authorization = self.helpdesk_authorization()
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(authorization))
+        # A download right without a realm: the realms of the view right
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm="",
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(authorization))
+        # A realm parameter only filters inside the granted realms
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(authorization, {"realm": self.realm2}))
+
+    def test_06_no_admin_policy_at_all(self):
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 3, "MARK-NOREALM": 1}, self.download(self.at))

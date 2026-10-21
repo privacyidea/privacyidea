@@ -1127,7 +1127,12 @@ auditlog_download
 
 type: ``bool``
 
-The administrator is allowed to download the audit log.
+The administrator is allowed to download the audit log. The download contains
+the entries of the realms that both the ``auditlog_download`` and the
+:ref:`policy_auditlog` policies of the administrator grant, plus the entries
+the administrator caused. Without a matching ``auditlog`` policy the download
+contains only the administrator's own entries. Grant ``auditlog_download``
+together with an ``auditlog`` policy for the same realms.
 
 .. note:: The :ref:`policy_auditlog_age` policy **is** applied to the
    download - older entries are excluded just as in the search view.

@@ -111,10 +111,12 @@ def download_csv(csvfile=None):
     the query parameters, which use the same syntax as the search endpoint.
 
     Requires admin authentication and the policy action
-    :ref:`policy_auditlog_download`. The :ref:`policy_auditlog_age` policy
-    caps how far back the export may go. Hidden-column policies do **not**
-    apply to the download — disallow downloading if you need that
-    restriction.
+    :ref:`policy_auditlog_download`. The entries are restricted to the realms
+    that both the :ref:`policy_auditlog_download` and the
+    :ref:`policy_auditlog` policies of the administrator grant. The
+    :ref:`policy_auditlog_age` policy caps how far back the export may go.
+    Hidden-column policies do **not** apply to the download — disallow
+    downloading if you need that restriction.
 
     **Example request**:
 
@@ -134,7 +136,7 @@ def download_csv(csvfile=None):
     audit = getAudit(current_app.config)
     g.audit_object.log({'success': True})
     param = request.all_data
-    admin_params = get_admin_audit_params()
+    admin_params = get_admin_audit_params((PolicyAction.AUDIT, PolicyAction.AUDIT_DOWNLOAD))
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]
