@@ -13,7 +13,8 @@ config = context.config
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# Loggers that already exist, like the one Flask-Migrate reports command errors with, stay enabled.
+fileConfig(config.config_file_name, disable_existing_loggers=False)
 log = logging.getLogger('alembic.env')
 
 

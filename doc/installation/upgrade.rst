@@ -60,14 +60,15 @@ backup) and run the command::
 
 The script refuses to run outside of an activated virtual environment. It
 upgrades the ``privacyidea`` package and its pinned dependencies and then runs
-``privacyidea-schema-upgrade``.
+``privacyidea-schema-upgrade``. If one of these steps fails, the script stops
+there and ends with the exit code of that step.
 
 The following parameters are allowed:
 
 ``-f`` or ``--force`` skips the confirmation question. The schema update still
 runs, unless you also pass ``-n``.
 
-``-s`` or ``--skipstamp`` skips the version stamping during schema update.
+``-s`` or ``--skipstamp`` is accepted for compatibility and has no effect.
 
 ``-n`` or ``--noschema`` completely skips the schema update and only updates the code.
 
@@ -96,6 +97,14 @@ Usually you will need to upgrade/migrate the database:
 
    privacyidea-schema-upgrade
 
+The script prints the schema revision of the database before and after the
+upgrade. If the upgrade fails, the second revision shows how far it got.
+
+The script does not change a database that has no revision stamp, because it
+cannot tell which migrations such a database needs. It stops with an error
+instead. Tables created with ``pi-manage setup create_tables --no-stamp`` by the
+installed version are stamped with ``pi-manage db stamp head``.
+
 .. note::
     .. versionchanged:: 3.12 The migration directory is detected automatically.
 
@@ -105,7 +114,7 @@ Usually you will need to upgrade/migrate the database:
         privacyidea-schema-upgrade -d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations
 
     ``privacyidea-schema-upgrade`` does not accept the directory without ``-d``.
-    ``-s`` skips stamping a database that has no version stamp yet.
+    ``-s`` is accepted for compatibility and has no effect.
 
 Now you need to restart your webserver for the new code to take effect.
 
