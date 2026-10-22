@@ -18,6 +18,7 @@
  **/
 import { Clipboard } from "@angular/cdk/clipboard";
 import { CdkTextareaAutosize } from "@angular/cdk/text-field";
+import { formatDate } from "@angular/common";
 import { AfterViewInit, Component, ElementRef, inject, ViewChild } from "@angular/core";
 
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -26,8 +27,22 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { downloadBlob } from "@utils/download.utils";
 
 export type SystemDocumentationAction = "copy" | "download" | "mail";
+
+/**
+ * Copying a long text to the clipboard can fail on the first attempt, so it is tried a few times.
+ */
+export const COPY_ATTEMPTS = 3;
+
+/**
+ * Names the file after the server and the day, so that the documentation of several installations can be told apart.
+ * Characters a browser does not keep in a file name, like the brackets and colons of an IPv6 address, are replaced.
+ */
+export function systemDocumentationFileName(server: string, date: string): string {
+  return `privacyidea-system-documentation-${server.replace(/[^A-Za-z0-9.-]/g, "_")}-${date}.rst`;
+}
 
 @Component({
   selector: "app-system-documentation-dialog",
@@ -45,10 +60,9 @@ export class SystemDocumentationDialogComponent
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
   documentation = this.data.documentation || "";
 
-  // The server and the day name the file, so that the documentation of several installations can be told apart
   private readonly server = window.location.hostname;
-  private readonly date = new Date().toISOString().slice(0, 10);
-  readonly fileName = `privacyidea-system-documentation-${this.server}-${this.date}.rst`;
+  private readonly date = formatDate(new Date(), "yyyy-MM-dd", "en-US");
+  readonly fileName = systemDocumentationFileName(this.server, this.date);
 
   readonly actions: DialogAction<SystemDocumentationAction>[] = [
     {
@@ -60,16 +74,16 @@ export class SystemDocumentationDialogComponent
     },
     {
       type: "auxiliary",
-      label: $localize`:@@systemConfig.downloadDocumentation:Download`,
-      value: "download",
-      icon: "download",
+      label: $localize`:@@systemConfig.sendDocumentationByEmail:Send by email`,
+      value: "mail",
+      icon: "mail",
       className: "button-width-m"
     },
     {
       type: "confirm",
-      label: $localize`:@@systemConfig.sendDocumentationByEmail:Send by email`,
-      value: "mail",
-      icon: "mail",
+      label: $localize`:@@systemConfig.downloadDocumentation:Download`,
+      value: "download",
+      icon: "download",
       primary: true,
       className: "button-width-m"
     }
@@ -104,29 +118,38 @@ export class SystemDocumentationDialogComponent
   }
 
   copyDocumentation(): void {
-    if (this.clipboard.copy(this.documentation)) {
-      this.notificationService.success(
-        $localize`:@@systemConfig.documentationCopied:The system documentation was copied to the clipboard.`
-      );
-    } else {
-      this.notificationService.error(
-        $localize`:@@systemConfig.documentationNotCopied:The system documentation could not be copied to the clipboard.`
-      );
-    }
+    const pendingCopy = this.clipboard.beginCopy(this.documentation);
+    let remainingAttempts = COPY_ATTEMPTS;
+    const attempt = (): void => {
+      remainingAttempts--;
+      const copied = pendingCopy.copy();
+      if (!copied && remainingAttempts > 0) {
+        setTimeout(attempt);
+        return;
+      }
+      pendingCopy.destroy();
+      if (copied) {
+        this.notificationService.success(
+          $localize`:@@systemConfig.documentationCopied:The system documentation was copied to the clipboard.`
+        );
+      } else {
+        this.notificationService.error(
+          $localize`:@@systemConfig.documentationNotCopied:The system documentation could not be copied to the clipboard.`
+        );
+      }
+    };
+    attempt();
   }
 
   downloadDocumentation(): void {
-    const url = window.URL.createObjectURL(new Blob([this.documentation], { type: "text/plain" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = this.fileName;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
+    downloadBlob(new Blob([this.documentation], { type: "text/plain" }), this.fileName);
   }
 
   /**
    * An email link can not carry an attachment, and the text of the documentation is too long for the body of one:
    * the documentation is downloaded, and the email program is opened with a message that asks to attach it.
+   * The email link opens in a new window. Opened in the window of the WebUI, it would ask whether to leave a page
+   * with unsaved changes, a web mail service would replace the WebUI, and the download could be cut off.
    */
   sendDocumentationByEmail(): void {
     this.downloadDocumentation();
@@ -134,6 +157,8 @@ export class SystemDocumentationDialogComponent
     const body = $localize`:@@systemConfig.documentationEmailBody:The system documentation of privacyIDEA is attached as ${this.fileName}:fileName:.`;
     const anchor = document.createElement("a");
     anchor.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    anchor.target = "_blank";
+    anchor.rel = "noopener";
     anchor.click();
     this.notificationService.info(
       $localize`:@@systemConfig.documentationEmailAttach:The system documentation was downloaded as ${this.fileName}:fileName:. Attach it to the email.`
