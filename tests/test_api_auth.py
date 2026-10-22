@@ -14,6 +14,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import ResourceNotFoundError, Error, ResolverError
+from privacyidea.lib.resolvers.UserIdResolver import USER_LOOKUP_FAILED
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.base import CONDITION
 from privacyidea.lib.policies.actions import PolicyAction
@@ -632,15 +633,18 @@ class AuthApiTestCase(MyApiTestCase):
         set_default_realm("ldap1")
 
         # Try to log in as user with a failing LDAP resolver
-        with mock.patch("logging.Logger.warning") as mock_log:
+        with (mock.patch("logging.Logger.warning") as mock_log,
+              mock.patch("logging.Logger.error") as mock_error_log):
             with self.app.test_request_context('/auth',
                                                method='POST',
                                                data={"username": "hans",
                                                      "password": "test"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(401, res.status_code, res)
-                mock_log.assert_called_once_with("Problem resolving user hans in realm ldap1: ERR907: Error performing "
-                                                 "bind operation: LDAP request failed.")
+                mock_log.assert_called_once_with(f"Problem resolving user hans in realm ldap1: ERR907: "
+                                                 f"{USER_LOOKUP_FAILED}.")
+                # The resolver logs what went wrong with the user store
+                mock_error_log.assert_any_call("Error performing bind operation: LDAP request failed!")
 
         delete_realm("ldap1")
         delete_resolver("ldap1")

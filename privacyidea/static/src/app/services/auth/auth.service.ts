@@ -52,6 +52,18 @@ export interface ContainerWizardConfig {
   template: string | null;
 }
 
+/** Values of AuthData.subscription_status, as decided by the server at login. */
+export const SUBSCRIPTION_STATUS = {
+  /** Token count within the free tier, or a product that is never enforced. */
+  WITHIN_FREE_TIER: 0,
+  /** Token count over the free tier and no subscription at all. */
+  FREE_TIER_EXCEEDED: 1,
+  /** Expired subscription, or more tokens in use than the subscription allows. */
+  INVALID: 2,
+  /** Valid subscription. */
+  VALID: 3
+} as const;
+
 export interface AuthData {
   log_level: number;
   menus: string[];
@@ -258,6 +270,8 @@ export interface AuthServiceInterface {
 
   acceptAuthentication(): void;
 
+  updateSubscriptionStatus(status: number): void;
+
   logout(): void;
 
   actionAllowed(action: PolicyAction): boolean;
@@ -409,6 +423,20 @@ export class AuthService implements AuthServiceInterface {
 
   acceptAuthentication(): void {
     this.authenticationAccepted.set(true);
+  }
+
+  /**
+   * The subscription status is decided at login, so it goes stale when the subscription changes during the
+   * session. This replaces it, in the storage that restores the session on a reload as well.
+   */
+  updateSubscriptionStatus(status: number): void {
+    const current = this.authData();
+    if (!current) {
+      return;
+    }
+    const updated: AuthData = { ...current, subscription_status: status };
+    this.authData.set(updated);
+    this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(updated)));
   }
 
   logout(): void {
