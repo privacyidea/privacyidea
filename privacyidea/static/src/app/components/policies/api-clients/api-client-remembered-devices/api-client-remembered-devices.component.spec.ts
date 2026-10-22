@@ -197,7 +197,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
   });
 
   it("should revoke all remembered devices for the client when no realm is selected", async () => {
-    expect(component.revokeAllLabel()).toBe("Revoke all");
+    expect(component.revokeAllLabel()).toBe("Revoke All");
     component.revokeAll();
     confirmClosed.next(true);
     confirmClosed.complete();
@@ -221,7 +221,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
     // Regression: this used to call the client-independent endpoint, so revoking "all in
     // this realm" from one client's page wiped that realm's devices on every other client.
     component.realmFilter.set("realm1");
-    expect(component.revokeAllLabel()).toBe("Revoke all in this realm");
+    expect(component.revokeAllLabel()).toBe("Revoke All in This Realm");
     component.revokeAll();
     confirmClosed.next(true);
     confirmClosed.complete();

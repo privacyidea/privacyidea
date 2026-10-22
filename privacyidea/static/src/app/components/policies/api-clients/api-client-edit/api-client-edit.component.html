@@ -56,7 +56,7 @@
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>refresh</mat-icon>
-            <span i18n="@@apiClient.rotateKey">Rotate key</span>
+            <span i18n="@@apiClient.rotateKey">Rotate Key</span>
           </button>
         }
         @if (
@@ -82,7 +82,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-l">
-          <mat-label i18n="@@apiClient.displayName">Display name</mat-label>
+          <mat-label i18n="@@apiClient.displayName">Display Name</mat-label>
           <app-clearable-input
             (clearButtonClick)="apiClientModel.update(m => ({...m, display_name: ''}))"
             [showClearButton]="!!apiClientModel().display_name">
@@ -107,7 +107,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
+            <mat-label i18n="@@apiClient.clientType">Client Type</mat-label>
             <input
               [value]="integrationsService.labelFor(apiClientModel().client_type)"
               disabled
@@ -117,7 +117,7 @@
           <mat-form-field
             appearance="fill"
             class="input-width-l">
-            <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
+            <mat-label i18n="@@apiClient.clientType">Client Type</mat-label>
             <mat-select [formField]="apiClientForm.client_type">
               @for (option of clientTypeOptions(); track option.id) {
                 <mat-option [value]="option.id">{{ option.label }}</mat-option>

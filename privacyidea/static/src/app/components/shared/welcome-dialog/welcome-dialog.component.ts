@@ -37,9 +37,9 @@ export class WelcomeDialogComponent extends AbstractDialogComponent<void, void> 
   readonly dialogTitle = computed(() => {
     switch (this.step()) {
       case 1:
-        return $localize`:@@welcome.valueOpenSource:The value of open source`;
+        return $localize`:@@welcome.valueOpenSource:The Value of Open Source`;
       case 2:
-        return $localize`:@@welcome.addedValuePrivacyidea:The added value of privacyIDEA Enterprise Edition`;
+        return $localize`:@@welcome.addedValuePrivacyidea:The Added Value of privacyIDEA Enterprise Edition`;
       case 3:
         return $localize`:@@welcome.thankYouImproving:Thank you for improving your security!`;
       default:
@@ -52,7 +52,7 @@ export class WelcomeDialogComponent extends AbstractDialogComponent<void, void> 
       return [
         {
           type: "auxiliary",
-          label: $localize`:@@welcome.readAgain:Read again`,
+          label: $localize`:@@welcome.readAgain:Read Again`,
           value: "restart",
           icon: "replay"
         },

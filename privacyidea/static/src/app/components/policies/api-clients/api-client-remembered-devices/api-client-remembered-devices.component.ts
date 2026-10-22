@@ -194,11 +194,11 @@ export class ApiClientRememberedDevicesComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`:@@apiClient.revokeAllDevicesForUser:Revoke All Devices For User`,
+          title: $localize`:@@apiClient.revokeAllDevicesForUser:Revoke All Devices for User`,
           items: [`${user}@${device.realm}`],
           itemType: "remembered-device",
           confirmAction: {
-            label: $localize`:@@apiClient.revokeAllForThisClient:Revoke all for this client`,
+            label: $localize`:@@apiClient.revokeAllForThisClient:Revoke All for This Client`,
             value: true,
             type: "destruct"
           }
@@ -216,8 +216,8 @@ export class ApiClientRememberedDevicesComponent {
 
   revokeAllLabel(): string {
     return this.realmFilter()
-      ? $localize`:@@apiClient.revokeAllInThisRealm:Revoke all in this realm`
-      : $localize`:@@apiClient.revokeAll:Revoke all`;
+      ? $localize`:@@apiClient.revokeAllInThisRealm:Revoke All in This Realm`
+      : $localize`:@@apiClient.revokeAll:Revoke All`;
   }
 
   revokeAll(): void {
@@ -228,7 +228,7 @@ export class ApiClientRememberedDevicesComponent {
         component: SimpleConfirmationDialogComponent,
         data: {
           title: realm
-            ? $localize`:@@apiClient.revokeAllInRealm:Revoke All In Realm`
+            ? $localize`:@@apiClient.revokeAllInRealm:Revoke All in Realm`
             : $localize`:@@apiClient.revokeAllRememberedDevices:Revoke All Remembered Devices`,
           items: [
             realm

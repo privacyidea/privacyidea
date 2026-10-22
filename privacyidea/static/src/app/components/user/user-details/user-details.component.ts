@@ -129,7 +129,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   readonly labels: Record<string, string> = {
     username: $localize`:@@common.username:Username`,
-    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    givenname: $localize`:@@user.givenNameLabel:Given Name`,
     surname: $localize`:@@user.surname:Surname`,
     email: $localize`:@@common.email:Email`,
     phone: $localize`:@@user.phone:Phone`,
@@ -443,7 +443,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
           title: $localize`:@@common.resetUserLock:Reset User Lock`,
           items: [`${lockStatus.username}@${lockStatus.realm}`],
           itemType: "user",
-          confirmAction: { label: $localize`:@@user.resetLock:Reset lock`, value: true, type: "confirm" }
+          confirmAction: { label: $localize`:@@user.resetLock:Reset Lock`, value: true, type: "confirm" }
         }
       })
       .afterClosed()

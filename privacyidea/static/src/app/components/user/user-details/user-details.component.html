@@ -171,10 +171,10 @@
                   type="button">
                   @if (isExpanded(item.key)) {
                     <mat-icon>expand_less</mat-icon>
-                    <span i18n="@@user.showLess">Show less</span>
+                    <span i18n="@@user.showLess">Show Less</span>
                   } @else {
                     <mat-icon>expand_more</mat-icon>
-                    <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} more</span>
+                    <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} More</span>
                   }
                 </button>
               </ng-container>
@@ -327,7 +327,7 @@
                         mat-stroked-button>
                         <mat-icon>lock</mat-icon>
                         @if (isUserLocked()) {
-                          <span i18n="@@user.changeLock">Change lock</span>
+                          <span i18n="@@user.changeLock">Change Lock</span>
                         } @else {
                           <span i18n="@@user.lock">Lock</span>
                         }

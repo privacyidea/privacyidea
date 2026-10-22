@@ -18,7 +18,7 @@
 -->
 @if (authService.actionAllowed("remembered_device_list")) {
   <div class="remembered-devices-container">
-    <h3 i18n="@@apiClient.rememberedDevices">Remembered devices</h3>
+    <h3 i18n="@@apiClient.rememberedDevices">Remembered Devices</h3>
     @if (tableState.showTable()) {
       <p i18n="@@apiClient.rememberedDevicesIntro">
         These are the active "remember this device" entries for this client. Revoking one invalidates that device's
@@ -148,7 +148,7 @@
             class="col-width-m"
             i18n="@@apiClient.lastUsed"
             mat-header-cell>
-            Last used
+            Last Used
           </th>
           <td
             *matCellDef="let device"

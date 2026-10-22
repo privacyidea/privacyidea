@@ -53,7 +53,7 @@
   </div>
 
   <mat-form-field class="input-width-xl margin-bottom-16">
-    <mat-label i18n="@@resolver.headersJson">Headers (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.headersJson">Headers (JSON Format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, headers: $any($event.target).value }))"
       [value]="model().headers"
@@ -62,7 +62,7 @@
   </mat-form-field>
 
   <mat-form-field class="input-width-xl margin-bottom-16">
-    <mat-label i18n="@@resolver.requestMappingJsonFormat">Request Mapping (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.requestMappingJsonFormat">Request Mapping (JSON Format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, requestMapping: $any($event.target).value }))"
       [value]="model().requestMapping"
@@ -74,7 +74,7 @@
   </mat-form-field>
 
   <mat-form-field class="input-width-xl">
-    <mat-label i18n="@@resolver.responseMappingJsonFormat">Response Mapping (JSON format)</mat-label>
+    <mat-label i18n="@@resolver.responseMappingJsonFormat">Response Mapping (JSON Format)</mat-label>
     <textarea
       (input)="model.update(m => ({ ...m, responseMapping: $any($event.target).value }))"
       [value]="model().responseMapping"
@@ -92,7 +92,7 @@
 
   @if (model().hasSpecialErrorHandler) {
     <mat-form-field class="input-width-xl">
-      <mat-label i18n="@@resolver.responseContainsJson">Response Contains (JSON format)</mat-label>
+      <mat-label i18n="@@resolver.responseContainsJson">Response Contains (JSON Format)</mat-label>
       <textarea
         (input)="model.update(m => ({ ...m, errorResponse: $any($event.target).value }))"
         [value]="model().errorResponse"
