@@ -133,11 +133,11 @@
             <mat-error i18n="@@event.orderingRequired">Ordering is <strong>required</strong>.</mat-error>
           }
           @if (hasError(editForm.ordering, ERR.parse)) {
-            <mat-error i18n="@@event.orderingNotANumber">Ordering has to be a <strong>number</strong>.</mat-error>
+            <mat-error i18n="@@event.orderingNotANumber">Enter a <strong>valid number</strong>.</mat-error>
           }
           @if (hasError(editForm.ordering, ORDERING_RANGE)) {
             <mat-error i18n="@@event.orderingOutOfRange"
-              >Ordering has to be a <strong>whole number</strong> between 0 and {{ MAX_ORDERING }}.</mat-error
+              >Ordering must be a <strong>whole number</strong> between 0 and {{ MAX_ORDERING }}.</mat-error
             >
           }
         </mat-form-field>

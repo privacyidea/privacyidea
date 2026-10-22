@@ -484,11 +484,14 @@ describe("ContainerDetailsComponent", () => {
       (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [infoEl];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { canSave: signal(true), saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
+      component.infoChild = {
+        canSave: signal(true),
+        saveInfo: infoSaveSpy
+      } as unknown as ContainerDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 
-      expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
+      expect(infoSaveSpy).toHaveBeenCalledWith();
     });
 
     it("validChanges reports true while every open edit may be saved", () => {
@@ -530,7 +533,10 @@ describe("ContainerDetailsComponent", () => {
 
     it("saveAllInlineEdits saves nothing while the info 'add' row is incomplete", async () => {
       const infoSaveSpy = jest.fn();
-      component.infoChild = { canSave: signal(false), saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
+      component.infoChild = {
+        canSave: signal(false),
+        saveInfo: infoSaveSpy
+      } as unknown as ContainerDetailsInfoComponent;
       component.isEditingInfo.set(true);
 
       const result = await component.saveAllInlineEdits();
@@ -557,7 +563,10 @@ describe("ContainerDetailsComponent", () => {
       (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { canSave: signal(true), saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
+      component.infoChild = {
+        canSave: signal(true),
+        saveInfo: infoSaveSpy
+      } as unknown as ContainerDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 
@@ -593,4 +602,3 @@ describe("formatContainerTimestamp", () => {
     expect(result).toContain("2024");
   });
 });
-

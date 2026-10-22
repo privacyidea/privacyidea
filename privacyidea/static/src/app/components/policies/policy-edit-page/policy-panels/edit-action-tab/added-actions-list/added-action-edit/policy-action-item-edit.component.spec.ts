@@ -398,7 +398,7 @@ describe("PolicyActionItemEditComponent", () => {
 
   describe("invalid indication", () => {
     const row = (): HTMLElement => fixture.nativeElement.querySelector(".policy-action-item");
-    const hint = (): HTMLElement | null => fixture.nativeElement.querySelector(".detail-error");
+    const hint = (): HTMLElement | null => fixture.nativeElement.querySelector("mat-error");
     const input = (): HTMLInputElement => fixture.nativeElement.querySelector(".detail-value input");
     const typeValue = async (value: string) => {
       input().value = value;
@@ -422,22 +422,29 @@ describe("PolicyActionItemEditComponent", () => {
       expect(component.errorHint()).toBeNull();
     });
 
-    it("asks for a whole number when an emptied number input is invalid", async () => {
+    it("asks for a value when an emptied number input is invalid", async () => {
       await typeValue("");
 
       expect(row().classList).toContain("invalid");
-      expect(hint()?.textContent).toBe("Enter a whole number.");
+      expect(hint()?.textContent?.trim()).toBe("Value is required.");
       expect(hint()?.getAttribute("role")).toBe("alert");
       expect(input().getAttribute("aria-invalid")).toBe("true");
       expect(input().getAttribute("aria-describedby")).toBe(hint()?.id);
     });
 
-    it("asks for a whole number when the number input holds text the browser cannot parse", async () => {
+    it("asks for a valid number when the number input holds text the browser cannot parse", async () => {
       Object.defineProperty(input(), "validity", { value: { badInput: true }, configurable: true });
 
       await typeValue("");
 
-      expect(hint()?.textContent).toBe("Enter a whole number.");
+      expect(hint()?.textContent?.trim()).toBe("Enter a valid number.");
+      expect(component.valid()).toBe(false);
+    });
+
+    it("asks for a whole number when the number input holds a parsed non-integer", async () => {
+      await typeValue("1.5");
+
+      expect(hint()?.textContent?.trim()).toBe("Enter a whole number.");
       expect(component.valid()).toBe(false);
     });
 
@@ -448,7 +455,7 @@ describe("PolicyActionItemEditComponent", () => {
 
       await typeValue(" ");
 
-      expect(hint()?.textContent).toBe("Enter a value.");
+      expect(hint()?.textContent?.trim()).toBe("Value is required.");
       expect(input().getAttribute("aria-invalid")).toBe("true");
     });
 

@@ -33,7 +33,7 @@
       }
     </mat-select>
     @if (hasError(realmForm, ERR.required)) {
-      <mat-error i18n="@@token.userRealmRequired">User Realm is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.userRealmRequired">User Realm is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
   <mat-form-field class="input-width-l">
@@ -65,7 +65,7 @@
       <mat-hint i18n="@@token.selectRealmFirst">Select a realm first to enable user selection.</mat-hint>
     }
     @if (hasError(userFilterForm, ERR.required)) {
-      <mat-error i18n="@@token.userRequired">User is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.userRequired">User is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
   @if (showOnlyAddToRealm()) {

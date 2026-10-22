@@ -225,11 +225,11 @@ describe("ContainerRegistrationConfigComponent", () => {
       await set({ response: "", repeat: "" });
       await touchAll(host.registrationForm);
       await flush();
-      expect(errorTexts()).toEqual(["A passphrase response is required."]);
+      expect(errorTexts()).toEqual(["Passphrase response is required."]);
       await set({ prompt: "", response: "foo", repeat: "foo" });
       await touchAll(host.registrationForm);
       await flush();
-      expect(errorTexts()).toEqual(["A passphrase prompt is required."]);
+      expect(errorTexts()).toEqual(["Passphrase prompt is required."]);
     });
   });
 });

@@ -20,7 +20,7 @@
 <div class="flex-column">
   <div class="flex-fix-size">
     <mat-card class="default-template-card-row">
-      <mat-form-field subscriptSizing="dynamic">
+      <mat-form-field>
         <mat-label i18n="@@container.templateName">Template Name</mat-label>
         <input
           matInput
@@ -32,7 +32,7 @@
           [formField]="form.name"
           (keydown)="$event.stopPropagation()" />
         @if (hasError(form.name, ERR.required)) {
-          <mat-error i18n="@@container.templateNameRequired">Template name is <strong>required</strong></mat-error>
+          <mat-error i18n="@@container.templateNameRequired">Template name is <strong>required</strong>.</mat-error>
         }
         @if (hasError(form.name, ERR.pattern)) {
           <mat-error i18n="@@container.templateNameContains"
@@ -59,8 +59,8 @@
     <div>
       <h3 i18n="@@common.containerType">Container Type</h3>
       <app-toggle-group
-        [values]="containerTypeOptions()"
-        [labels]="containerTypeLabels()"
+        [values]="containerTypes()"
+        [labels]="containerTypesTitleCase()"
         [formField]="form.container_type"
         [hideSelectionIndicator]="true"
         groupLabel="Container Type"

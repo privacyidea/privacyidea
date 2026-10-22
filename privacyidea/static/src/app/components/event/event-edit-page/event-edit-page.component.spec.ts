@@ -291,7 +291,7 @@ describe("EventEditPageComponent — edit mode", () => {
       type(typed);
       expect(kinds(component.editForm.ordering())).toEqual(["orderingRange"]);
       expect(component.canSave()).toBe(false);
-      expect(errorTexts()).toContain(`Ordering has to be a whole number between 0 and ${MAX_ORDERING}.`);
+      expect(errorTexts()).toContain(`Ordering must be a whole number between 0 and ${MAX_ORDERING}.`);
     });
 
     it("should report a parse error for input that is no number", () => {
@@ -300,7 +300,7 @@ describe("EventEditPageComponent — edit mode", () => {
       type("");
       expect(kinds(component.editForm.ordering())).toEqual(["parse"]);
       expect(component.canSave()).toBe(false);
-      expect(errorTexts()).toContain("Ordering has to be a number.");
+      expect(errorTexts()).toContain("Enter a valid number.");
       validity.mockReturnValue({ badInput: false } as ValidityState);
     });
   });

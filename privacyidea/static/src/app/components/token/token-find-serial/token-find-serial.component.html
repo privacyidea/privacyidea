@@ -43,7 +43,7 @@
         matInput
         placeholder="Enter some OTP value" />
       @if (hasError(searchForm.otpValue, ERR.required)) {
-        <mat-error i18n="@@token.otpValueRequired">OTP value is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.otpValueRequired">OTP value is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
     <button
@@ -119,9 +119,9 @@
             type="number" />
           <mat-hint i18n="@@token.setNumberLookahead">Set number of lookahead OTP values.</mat-hint>
           @if (hasError(searchForm.countWindow, ERR.parse)) {
-            <mat-error i18n="@@token.countWindowNotNumber">Count window must be a <strong>number</strong>.</mat-error>
+            <mat-error i18n="@@token.countWindowNotNumber">Enter a <strong>valid number</strong>.</mat-error>
           } @else if (hasError(searchForm.countWindow, ERR.required)) {
-            <mat-error i18n="@@token.countWindowRequired">Count window is <strong>required</strong></mat-error>
+            <mat-error i18n="@@token.countWindowRequired">Count window is <strong>required</strong>.</mat-error>
           } @else if (hasError(searchForm.countWindow, ERR.min)) {
             <mat-error i18n="@@token.countWindowMin">Count window must be at least <strong>1</strong>.</mat-error>
           }

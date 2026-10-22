@@ -31,7 +31,7 @@
     >
 
     <mat-form-field
-      class="input-width-l"
+      class="reserve-two-message-lines"
       subscriptSizing="dynamic">
       <mat-label i18n="@@container.newTemplateName">New Template Name</mat-label>
       <input
@@ -43,11 +43,11 @@
         i18n-aria-label="@@container.newTemplateName" />
 
       @if (hasError(form.name, ERR.required)) {
-        <mat-error i18n="@@container.templateNameRequired">Template name is <strong>required</strong></mat-error>
+        <mat-error i18n="@@container.templateNameRequired">Template name is <strong>required</strong>.</mat-error>
       }
       @if (hasError(form.name, "notChanged")) {
         <mat-error i18n="@@container.templateNameMustDiffer"
-          >Template name must be <strong>different</strong> from the original</mat-error
+          >Template name must be <strong>different</strong> from the original.</mat-error
         >
       }
       @if (hasError(form.name, ERR.pattern)) {

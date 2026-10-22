@@ -231,10 +231,14 @@
             matInput
             type="number"
             [formField]="policyForm.time_window_value" />
-          @if (hasAnyError(policyForm.time_window_value, [ERR.parse, CA_ERR.notInteger])) {
-            <mat-error i18n="@@conditionalAccess.timeWindowMustWholeNumber">Must be a whole number.</mat-error>
-          } @else if (hasAnyError(policyForm.time_window_value, [ERR.required, ERR.min])) {
-            <mat-error i18n="@@conditionalAccess.mustLeast">Must be at least 1.</mat-error>
+          @if (hasError(policyForm.time_window_value, ERR.parse)) {
+            <mat-error i18n="@@conditionalAccess.timeWindowNotNumber">Enter a valid number.</mat-error>
+          } @else if (hasError(policyForm.time_window_value, CA_ERR.notInteger)) {
+            <mat-error i18n="@@conditionalAccess.timeWindowMustWholeNumber">Enter a whole number.</mat-error>
+          } @else if (hasError(policyForm.time_window_value, ERR.required)) {
+            <mat-error i18n="@@conditionalAccess.timeWindowRequired">Time window is required.</mat-error>
+          } @else if (hasError(policyForm.time_window_value, ERR.min)) {
+            <mat-error i18n="@@conditionalAccess.mustLeast">Time window must be at least 1.</mat-error>
           }
         </mat-form-field>
 
@@ -275,7 +279,7 @@
           </mat-select>
           @if (hasError(policyForm.counter_types_to_track, ERR.required)) {
             <mat-error i18n="@@conditionalAccess.selectLeastOneEvent"
-              >Select at least one event type. A policy that counts nothing never trips.</mat-error
+              >At least one event type is required. A policy that counts nothing never trips.</mat-error
             >
           }
         </mat-form-field>
@@ -294,12 +298,14 @@
             matSuffix
             [text]="priorityHelp"
             [ariaLabel]="priorityHelpAriaLabel" />
-          @if (hasError(policyForm.priority, ERR.required) && !hasError(policyForm.priority, ERR.parse)) {
-            <mat-error i18n="@@conditionalAccess.priorityRequired">A priority is required.</mat-error>
-          } @else if (hasAnyError(policyForm.priority, WHOLE_NUMBER_ERROR_KINDS)) {
-            <mat-error i18n="@@conditionalAccess.priorityMustWholeNumber"
-              >Priority must be a whole number of at least 1.</mat-error
-            >
+          @if (hasError(policyForm.priority, ERR.parse)) {
+            <mat-error i18n="@@conditionalAccess.priorityNotNumber">Enter a valid number.</mat-error>
+          } @else if (hasError(policyForm.priority, ERR.required)) {
+            <mat-error i18n="@@conditionalAccess.priorityRequired">Priority is required.</mat-error>
+          } @else if (hasError(policyForm.priority, CA_ERR.notInteger)) {
+            <mat-error i18n="@@conditionalAccess.priorityMustWholeNumber">Enter a whole number.</mat-error>
+          } @else if (hasError(policyForm.priority, ERR.min)) {
+            <mat-error i18n="@@conditionalAccess.priorityMin">Priority must be at least 1.</mat-error>
           } @else if (hasError(policyForm.priority, CA_ERR.priorityTaken)) {
             <mat-error i18n="@@conditionalAccess.priorityAlreadyUsed">
               Priority {{ editPolicy().priority }} is already used by "{{ priorityConflict()?.name }}".

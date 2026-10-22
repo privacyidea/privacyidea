@@ -531,7 +531,7 @@ describe("PeriodicTaskEditComponent", () => {
       ).toContain("parse");
       ordering.dispatchEvent(new Event("blur"));
       await flush(fixture);
-      expect(errorTexts(fixture)).toContain("Ordering has to be a number.");
+      expect(errorTexts(fixture)).toContain("Enter a valid number.");
     });
 
     it("clears the name and interval through the clear buttons", async () => {

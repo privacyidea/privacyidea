@@ -44,7 +44,7 @@
         }
         @if (hasError(config().values[QUESTION_NUMBER_OF_ANSWERS], ERR.pattern)) {
           <mat-error i18n="@@tokenTypeConfig.numberAnswersWholeNumber"
-            >Number of Answers must be a whole number.</mat-error
+            >Enter a whole number.</mat-error
           >
         }
         <mat-hint i18n="@@tokenTypeConfig.answersRequired">Answers required to enroll a token.</mat-hint>
@@ -77,7 +77,7 @@
               [formField]="config().values[key]"
               matInput />
             @if (hasError(config().values[key], ERR.required)) {
-              <mat-error i18n="@@tokenTypeConfig.questionMustNot">Question must not be empty.</mat-error>
+              <mat-error i18n="@@tokenTypeConfig.questionMustNot">Question is required.</mat-error>
             }
           </mat-form-field>
           <button

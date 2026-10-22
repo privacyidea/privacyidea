@@ -120,7 +120,9 @@ describe("PolicyEditPageComponent – added action validity", () => {
     expect(component.canSave()).toBe(false);
     expect(saveButton().disabled).toBe(true);
     expect(fixture.nativeElement.querySelector(".policy-action-item.invalid")).not.toBeNull();
-    expect(fixture.nativeElement.querySelector(".detail-error")?.textContent).toBe("Enter a whole number.");
+    expect(fixture.nativeElement.querySelector(".policy-action-item mat-error")?.textContent?.trim()).toBe(
+      "Value is required."
+    );
   });
 
   it("blocks the save when a changed number is emptied", async () => {
@@ -138,7 +140,7 @@ describe("PolicyEditPageComponent – added action validity", () => {
 
     expect(component.canSave()).toBe(true);
     expect(saveButton().disabled).toBe(false);
-    expect(fixture.nativeElement.querySelector(".detail-error")).toBeNull();
+    expect(fixture.nativeElement.querySelector(".policy-action-item mat-error")).toBeNull();
   });
 
   it("never puts an emptied number into the saved payload, neither as an empty text nor as 0", async () => {

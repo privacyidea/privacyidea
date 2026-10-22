@@ -92,7 +92,7 @@ export class LdapResolverComponent {
       loginName: "uid",
       searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
       userInfo:
-        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "entryUUID"
     },
     {
@@ -100,7 +100,7 @@ export class LdapResolverComponent {
       loginName: "sAMAccountName",
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
       userInfo:
-        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "objectGUID"
     }
   ];
@@ -152,10 +152,7 @@ export class LdapResolverComponent {
     required(f.LDAPSEARCHFILTER);
     required(f.USERINFO);
     required(f.TIMEOUT);
-    required(f.CACHE_TIMEOUT);
     required(f.SIZELIMIT);
-    required(f.SERVERPOOL_ROUNDS);
-    required(f.SERVERPOOL_SKIP);
     disabled(f.START_TLS, () => this.startTlsDisabled());
     disabled(f.TLS_VERSION, () => this.tlsVersionDisabled());
     disabled(f.TLS_VERIFY, () => this.tlsVerifyDisabled());

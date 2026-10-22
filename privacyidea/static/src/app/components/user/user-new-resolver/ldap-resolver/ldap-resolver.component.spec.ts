@@ -337,10 +337,7 @@ describe("LdapResolverComponent", () => {
 
     it.each([
       [0, "TIMEOUT"],
-      [1, "CACHE_TIMEOUT"],
-      [2, "SIZELIMIT"],
-      [3, "SERVERPOOL_ROUNDS"],
-      [4, "SERVERPOOL_SKIP"]
+      [2, "SIZELIMIT"]
     ] as const)("number input %s (%s) is required and shows the message once emptied", async (index, field) => {
       await type(numberInput(index), "");
 
@@ -353,6 +350,19 @@ describe("LdapResolverComponent", () => {
       expect(component.isValid()).toBe(false);
       const field_ = numberInput(index).closest("mat-form-field")!;
       expect(field_.querySelector("mat-error")?.textContent).toContain("required");
+    });
+
+    it.each([
+      [1, "CACHE_TIMEOUT"],
+      [3, "SERVERPOOL_ROUNDS"],
+      [4, "SERVERPOOL_SKIP"]
+    ] as const)("number input %s (%s) stays valid and sends null once emptied", async (index, field) => {
+      await type(numberInput(index), "");
+
+      expect(component.model()[field]).toBeNull();
+      expect(component.ldapForm[field]().errors()).toEqual([]);
+      expect(component.isValid()).toBe(true);
+      expect(numberInput(index).closest("mat-form-field")!.querySelector("mat-error")).toBeNull();
     });
 
     it("stores a typed number as a number", async () => {

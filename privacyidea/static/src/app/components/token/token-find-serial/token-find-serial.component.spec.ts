@@ -269,7 +269,7 @@ describe("TokenGetSerialComponent", () => {
         .errors()
         .map((e) => e.kind)
     ).toContain("parse");
-    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("must be a number");
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Enter a valid number.");
   });
 
   it("disables the OTP value once a search has left the init step", () => {

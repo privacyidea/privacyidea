@@ -81,7 +81,7 @@
           </app-clearable-input>
           @if (hasError(caConnectorForm.connectorname, ERR.required)) {
             <mat-error i18n="@@caConnector.connectorNameRequired"
-              >Connector Name is <strong>required</strong></mat-error
+              >Connector Name is <strong>required</strong>.</mat-error
             >
           }
           @if (hasError(caConnectorForm.connectorname, ERR.pattern)) {
@@ -109,7 +109,7 @@
             >
           </mat-select>
           @if (hasError(caConnectorForm.type, ERR.required)) {
-            <mat-error i18n="@@caConnector.typeRequired">Type is <strong>required</strong></mat-error>
+            <mat-error i18n="@@caConnector.typeRequired">Type is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
       </div>
@@ -132,7 +132,7 @@
             </app-clearable-input>
             @if (hasError(caConnectorForm.cacert, ERR.required)) {
               <mat-error i18n="@@caConnector.caCertificateRequired"
-                >CA Certificate is <strong>required</strong></mat-error
+                >CA Certificate is <strong>required</strong>.</mat-error
               >
             }
           </mat-form-field>
@@ -150,7 +150,7 @@
                 placeholder="/etc/cakey.pem" />
             </app-clearable-input>
             @if (hasError(caConnectorForm.cakey, ERR.required)) {
-              <mat-error i18n="@@caConnector.caKeyRequired">CA Key is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.caKeyRequired">CA Key is <strong>required</strong>.</mat-error>
             }
           </mat-form-field>
         </div>
@@ -169,7 +169,7 @@
             </app-clearable-input>
             @if (hasError(caConnectorForm['openssl.cnf'], ERR.required)) {
               <mat-error i18n="@@caConnector.opensslConfigFile"
-                >OpenSSL Config File is <strong>required</strong></mat-error
+                >OpenSSL Config File is <strong>required</strong>.</mat-error
               >
             }
           </mat-form-field>
@@ -273,7 +273,7 @@
               >Number of days the generated CRL should be valid.</mat-hint
             >
             @if (hasError(caConnectorForm.CRL_Validity_Period, ERR.parse)) {
-              <mat-error i18n="@@caConnector.numberInvalid">Enter a <strong>valid number</strong></mat-error>
+              <mat-error i18n="@@caConnector.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
             }
           </mat-form-field>
 
@@ -290,7 +290,7 @@
               >Number of days a new CRL should be generated before the current CRL expires.</mat-hint
             >
             @if (hasError(caConnectorForm.CRL_Overlap_Period, ERR.parse)) {
-              <mat-error i18n="@@caConnector.numberInvalid">Enter a <strong>valid number</strong></mat-error>
+              <mat-error i18n="@@caConnector.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
             }
           </mat-form-field>
         </div>
@@ -310,7 +310,7 @@
                 placeholder="example.net" />
             </app-clearable-input>
             @if (hasError(caConnectorForm.hostname, ERR.required)) {
-              <mat-error i18n="@@caConnector.hostnameRequired">Hostname is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.hostnameRequired">Hostname is <strong>required</strong>.</mat-error>
             }
           </mat-form-field>
 
@@ -324,10 +324,10 @@
               placeholder="1234"
               type="number" />
             @if (hasError(caConnectorForm.port, ERR.required) && !hasError(caConnectorForm.port, ERR.parse)) {
-              <mat-error i18n="@@caConnector.portRequired">Port is <strong>required</strong></mat-error>
+              <mat-error i18n="@@caConnector.portRequired">Port is <strong>required</strong>.</mat-error>
             }
             @if (hasError(caConnectorForm.port, ERR.parse)) {
-              <mat-error i18n="@@caConnector.numberInvalid">Enter a <strong>valid number</strong></mat-error>
+              <mat-error i18n="@@caConnector.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
             }
           </mat-form-field>
         </div>
@@ -421,7 +421,7 @@
                 }
               </mat-select>
               @if (hasError(caConnectorForm.ca, ERR.required)) {
-                <mat-error i18n="@@caConnector.domainCaRequired">Domain CA is <strong>required</strong></mat-error>
+                <mat-error i18n="@@caConnector.domainCaRequired">Domain CA is <strong>required</strong>.</mat-error>
               }
             </mat-form-field>
           }

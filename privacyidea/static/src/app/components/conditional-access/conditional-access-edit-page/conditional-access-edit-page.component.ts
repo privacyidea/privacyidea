@@ -45,8 +45,7 @@ import {
   requiredPositiveWholeNumber,
   stageSchema,
   toPolicyFormModel,
-  toPolicySaveParams,
-  WHOLE_NUMBER_ERROR_KINDS
+  toPolicySaveParams
 } from "@services/conditional-access/conditional-access-policy-form";
 import {
   ConditionalAccessPolicyService,
@@ -128,11 +127,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   protected readonly ERR = ERR;
   protected readonly CA_ERR = CA_ERR;
-  protected readonly WHOLE_NUMBER_ERROR_KINDS = WHOLE_NUMBER_ERROR_KINDS;
   protected readonly hasError = hasError;
-  protected hasAnyError(field: FieldTree<unknown>, kinds: readonly string[]): boolean {
-    return kinds.some((kind) => hasError(field, kind));
-  }
 
   // Pristine copy of the last-loaded/-saved state, as the payload the working copy maps to. It stays separate from
   // the form model for hasChanges()/delete, mirroring EventEditPageComponent's event/editEvent split.
@@ -348,8 +343,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   saveBlockers = computed<string[]>(() => {
     const blockers = new Set<string>();
     const collectKinds = (kinds: ReadonlySet<string>, messageByKind: Record<string, string>) => {
+      // A number input holding text the browser cannot parse reads as empty; the parse error is the reason to show.
+      const unparsable = kinds.has(ERR.parse);
       for (const [kind, message] of Object.entries(messageByKind)) {
-        if (kinds.has(kind)) {
+        if (kinds.has(kind) && !(unparsable && kind === ERR.required)) {
           blockers.add(message);
         }
       }
@@ -371,21 +368,21 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     });
     const timeWindowMessage = $localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be a whole number of at least 1 second.`;
     collect(f.time_window_value, {
-      [ERR.required]: timeWindowMessage,
+      [ERR.required]: $localize`:@@conditionalAccess.timeWindowRequired:Time window is required.`,
       [CA_ERR.notInteger]: timeWindowMessage,
       [ERR.parse]: timeWindowMessage,
       [ERR.min]: timeWindowMessage
     });
-    const priorityMessage = $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority is required and must be a whole number of at least 1.`;
+    const priorityMessage = $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority must be a whole number of at least 1.`;
     collect(f.priority, {
-      [ERR.required]: priorityMessage,
+      [ERR.required]: $localize`:@@conditionalAccess.priorityRequired:Priority is required.`,
       [CA_ERR.notInteger]: priorityMessage,
       [ERR.parse]: priorityMessage,
       [ERR.min]: priorityMessage,
       [CA_ERR.priorityTaken]: $localize`:@@conditionalAccess.priorityMustUniqueAcross:Priority must be unique across policies.`
     });
     collect(f.counter_types_to_track, {
-      [ERR.required]: $localize`:@@conditionalAccess.selectLeastOneTracked:Select at least one tracked event type.`
+      [ERR.required]: $localize`:@@conditionalAccess.selectLeastOneTracked:At least one tracked event type is required.`
     });
     const stageListKinds = this.stageListErrorKinds();
     const stageRowKinds = this.stageRowErrorKinds();
@@ -394,7 +391,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     });
     const thresholdMessage = $localize`:@@conditionalAccess.everyStageNeedsFailure:Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.`;
     collectKinds(stageRowKinds, {
-      [ERR.required]: thresholdMessage,
+      [ERR.required]: $localize`:@@conditionalAccess.failureThresholdRequired:Failure threshold is required.`,
       [ERR.parse]: thresholdMessage,
       [ERR.min]: thresholdMessage,
       [CA_ERR.notInteger]: thresholdMessage,

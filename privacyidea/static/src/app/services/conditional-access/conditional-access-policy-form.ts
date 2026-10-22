@@ -58,10 +58,6 @@ export const CA_ERR = {
   staleConditionValue: "staleConditionValue"
 } as const;
 
-// The kinds a whole-number text field reports for text that is not a whole number of at least 1: the browser's own
-// rejection of the input (parse), a number with a fraction, and a number below 1.
-export const WHOLE_NUMBER_ERROR_KINDS: readonly string[] = [ERR.parse, CA_ERR.notInteger, ERR.min];
-
 // Mirrors the Unicode(255) of the name column in privacyidea/models/conditional_access_policy.py.
 export const MAX_POLICY_NAME_LENGTH = 255;
 

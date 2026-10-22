@@ -360,7 +360,7 @@ describe("TokenDetailsAssignmentsComponent", () => {
       input()!.dispatchEvent(new Event("blur"));
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelector("mat-error").textContent).toContain("Enter the serial of a container");
+      expect(fixture.nativeElement.querySelector("mat-error").textContent).toContain("Container serial is required.");
     });
 
     it("containerField.commit() adds the token to the trimmed container and reloads the token details", async () => {

@@ -79,7 +79,7 @@
           i18n-placeholder="@@common.clientId"
           placeholder="Client ID" />
         @if (hasError(newKeyForm.apiId, ERR.required)) {
-          <mat-error i18n="@@tokenTypeConfig.clientIdRequired">Client ID is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.clientIdRequired">Client ID is <strong>required</strong>.</mat-error>
         }
         @if (hasError(newKeyForm.apiId, ERR.pattern)) {
           <mat-error i18n="@@tokenTypeConfig.invalidCharacters"

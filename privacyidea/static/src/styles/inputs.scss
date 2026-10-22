@@ -131,6 +131,23 @@ $input-focus-outline: theme.$focus-outline;
   max-width: var(--input-width-xl);
 }
 
+// A form field with dynamic subscript sizing that holds the space of one message line from the start, so an error of one
+// line appears without moving anything below the field.
+.reserve-one-message-line .mat-mdc-form-field-subscript-wrapper {
+  min-height: 20px;
+}
+
+// A form field with dynamic subscript sizing that holds the space of two message lines from the start, so a hint or error
+// of up to two lines appears without moving anything below the field. The field does not add its message width to the
+// width of its container, so a long message wraps instead of widening a dialog.
+.reserve-two-message-lines {
+  contain: inline-size;
+
+  .mat-mdc-form-field-subscript-wrapper {
+    min-height: 36px;
+  }
+}
+
 .input-width-xxl {
   width: 100%;
   max-width: var(--input-width-xxl);

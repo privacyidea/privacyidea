@@ -379,6 +379,13 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
   // The host sizes to its container, not to the sum of its nowrap labels, so a long label is clipped instead of
   // widening the column or panel that holds the group.
   contain: inline-size;
+  // The toggle height plus the group's 1px top and bottom border is 33px, the height of the selector-button rows
+  // (policy actions, event conditions, container templates, certificate enrollment) next to the form fields.
+  @include mat.button-toggle-overrides(
+    (
+      height: 31px
+    )
+  );
 
   .mat-button-toggle-group {
     display: flex;
@@ -388,6 +395,12 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
   .mat-button-toggle {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  // The button is a block, so the clipped label box does not sit on the baseline of an inline line box, which would
+  // add a strut below it and make the toggle taller than the height token.
+  .mat-button-toggle-button {
+    display: block;
   }
 
   // The label keeps the 4px side padding of the buttons these toggles replace (Material's 12px would clip a long

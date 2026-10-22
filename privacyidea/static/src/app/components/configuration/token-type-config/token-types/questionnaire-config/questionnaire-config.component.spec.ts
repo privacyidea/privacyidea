@@ -172,7 +172,7 @@ describe("QuestionnaireConfigComponent", () => {
       configForm.form.values[QUESTION_NUMBER_OF_ANSWERS]().markAsTouched();
       await flush();
 
-      expect(errors()).toEqual(["Number of Answers must be a whole number."]);
+      expect(errors()).toEqual(["Enter a whole number."]);
       expect(configForm.form().valid()).toBe(false);
     });
   });
@@ -185,7 +185,7 @@ describe("QuestionnaireConfigComponent", () => {
       await touchAll(configForm.form);
       await flush();
 
-      expect(errors()).toEqual(["Question must not be empty."]);
+      expect(errors()).toEqual(["Question is required."]);
     });
 
     it("removes the error once the question is filled", async () => {

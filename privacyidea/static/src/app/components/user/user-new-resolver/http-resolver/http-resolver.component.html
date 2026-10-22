@@ -346,7 +346,7 @@
               placeholder="60"
               type="number" />
             @if (hasError(httpForm.timeout, ERR.parse)) {
-              <mat-error i18n="@@resolver.timeoutNotNumber">Timeout must be a <strong>number</strong>.</mat-error>
+              <mat-error i18n="@@resolver.timeoutNotNumber">Enter a <strong>valid number</strong>.</mat-error>
             } @else if (hasError(httpForm.timeout, ERR.required)) {
               <mat-error i18n="@@resolver.timeoutRequired">Timeout is <strong>required</strong>.</mat-error>
             }

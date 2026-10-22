@@ -44,15 +44,7 @@ export interface ContainerInfoDetail<T = unknown> {
 @Component({
   selector: "app-container-details-info",
   standalone: true,
-  imports: [
-    MatFormFieldModule,
-    MatInput,
-    FormField,
-    MatIconButton,
-    MatIcon,
-    MatDivider,
-    EditButtonsComponent
-  ],
+  imports: [MatFormFieldModule, MatInput, FormField, MatIconButton, MatIcon, MatDivider, EditButtonsComponent],
   templateUrl: "./container-details-info.component.html",
   styleUrl: "./container-details-info.component.scss"
 })
@@ -80,6 +72,11 @@ export class ContainerDetailsInfoComponent {
   protected readonly newInfoForm = form(this.newInfo, (path) => {
     infoEntryRules(path, () => Object.keys(this.asMap(this.infoData()[0]?.value)));
   });
+  /** The values shown in edit mode. A copy of the stored info, so cancelling discards the typed text. */
+  readonly draftInfo: WritableSignal<Record<string, string>> = linkedSignal({
+    source: () => ({ editing: this.isEditingInfo(), element: this.infoData()[0] }),
+    computation: ({ element }) => ({ ...this.asMap(element?.value) })
+  });
   /** Whether the entries may be saved: the "add" row is empty or complete and names a new key. */
   readonly canSave = computed(() => !this.isEditingInfo() || this.newInfoForm().valid());
   /** The info element for the edit buttons, which disable Save while the "add" row is incomplete. */
@@ -92,6 +89,10 @@ export class ContainerDetailsInfoComponent {
     return (value ?? {}) as Record<string, string>;
   }
 
+  setInfoValue(key: string, value: string): void {
+    this.draftInfo.update((draft) => ({ ...draft, [key]: value }));
+  }
+
   displayInfoKeys(value: Record<string, unknown>): string[] {
     return Object.keys(value).filter((key) => !this.hiddenInfoKeys.includes(key));
   }
@@ -101,17 +102,21 @@ export class ContainerDetailsInfoComponent {
     this.newInfoForm().reset({ key: "", value: "" });
   }
 
-  saveInfo(element: ContainerInfoDetail<Record<string, string>>): void {
+  saveInfo(): void {
     if (!this.canSave()) {
       this.newInfoForm.key().markAsTouched();
       this.newInfoForm.value().markAsTouched();
       return;
     }
     const { key, value } = this.newInfo();
+    const entries = { ...this.draftInfo() };
     if (key.trim() !== "" && value.trim() !== "") {
-      element.value[key.trim()] = value;
+      entries[key.trim()] = value;
     }
-    const requests = this.containerService.setContainerInfos(this.containerSerial(), element.value);
+    // The card shows the saved values at once; the reload after the requests replaces them with the stored ones.
+    const stored = this.infoData()[0];
+    if (stored) Object.assign(this.asMap(stored.value), entries);
+    const requests = this.containerService.setContainerInfos(this.containerSerial(), entries);
     forkJoin(requests).subscribe({
       next: () => {
         this.newInfoForm().reset({ key: "", value: "" });

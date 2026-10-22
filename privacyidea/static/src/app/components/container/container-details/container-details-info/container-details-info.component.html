@@ -40,8 +40,8 @@
               class="info-edit-field input-width-l"
               subscriptSizing="dynamic">
               <textarea
-                [value]="info[key]"
-                (input)="info[key] = $any($event.target).value"
+                [value]="draftInfo()[key]"
+                (input)="setInfoValue(key, $any($event.target).value)"
                 matInput
                 rows="1"></textarea>
             </mat-form-field>
@@ -71,7 +71,7 @@
           matInput
           placeholder="Add new key" />
         @if (hasError(newInfoForm.key, ERR.required)) {
-          <mat-error i18n="@@common.infoKeyRequired">Enter a key for the value.</mat-error>
+          <mat-error i18n="@@common.infoKeyRequired">Key is required.</mat-error>
         }
         @if (hasError(newInfoForm.key, INFO_KEY_EXISTS)) {
           <mat-error i18n="@@common.infoKeyExists">This key already exists.</mat-error>
@@ -88,7 +88,7 @@
           placeholder="Add new info"
           rows="1"></textarea>
         @if (hasError(newInfoForm.value, ERR.required)) {
-          <mat-error i18n="@@common.infoValueRequired">Enter a value for the key.</mat-error>
+          <mat-error i18n="@@common.infoValueRequired">Value is required.</mat-error>
         }
       </mat-form-field>
     </div>

@@ -176,19 +176,19 @@ describe("HttpResolverComponent", () => {
     component["basicSettings"].set(false);
     fixture.detectChanges();
 
-    expect(component.model().responseMapping).toBe("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
+    expect(component.model().responseMapping).toBe('{"username":"{username}", "userid":"{userid}"}');
   });
 
   it("should NOT overwrite responseMapping when switching to Advanced mode if it is already set", () => {
     // Initially in Basic mode
     expect(component["basicSettings"]()).toBe(true);
-    component.model.update((m) => ({ ...m, responseMapping: "{\"custom\":\"mapping\"}" }));
+    component.model.update((m) => ({ ...m, responseMapping: '{"custom":"mapping"}' }));
 
     // Switch to Advanced mode
     component["basicSettings"].set(false);
     fixture.detectChanges();
 
-    expect(component.model().responseMapping).toBe("{\"custom\":\"mapping\"}");
+    expect(component.model().responseMapping).toBe('{"custom":"mapping"}');
   });
 
   describe("value posted to the server", () => {
@@ -428,7 +428,7 @@ describe("HttpResolverComponent", () => {
 
         expect(kinds(component.httpForm.timeout())).toContain("parse");
         expect(component.isValid()).toBe(false);
-        expect(errorTexts().join(" | ")).toContain("Timeout must be a number.");
+        expect(errorTexts().join(" | ")).toContain("Enter a valid number.");
       });
 
       it("keeps a numeric timeout valid", () => {

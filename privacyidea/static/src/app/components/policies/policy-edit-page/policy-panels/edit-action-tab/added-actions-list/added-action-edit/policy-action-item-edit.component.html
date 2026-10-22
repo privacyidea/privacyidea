@@ -28,13 +28,6 @@
         class="detail-description"
         [innerHTML]="description | highlight: highlight() : true"></span>
     }
-    @if (errorHint(); as hint) {
-      <span
-        class="detail-error"
-        role="alert"
-        [id]="errorId()"
-        [textContent]="hint"></span>
-    }
   </div>
 
   <div class="detail-input">
@@ -84,35 +77,47 @@
             @case ("str") {
               <mat-form-field
                 appearance="fill"
-                class="flex-1"
+                class="flex-1 reserve-one-message-line"
                 subscriptSizing="dynamic">
                 <input
                   matInput
                   [attr.aria-label]="valueLabel()"
                   [attr.aria-invalid]="!valid()"
-                  [attr.aria-describedby]="valid() ? null : errorId()"
                   type="text"
                   [formField]="textField" />
+                @if (errorHint(); as hint) {
+                  <mat-error
+                    role="alert"
+                    [id]="errorId()"
+                    >{{ hint }}</mat-error
+                  >
+                }
               </mat-form-field>
             }
             @case ("int") {
               <mat-form-field
                 appearance="fill"
-                class="flex-1"
+                class="flex-1 reserve-one-message-line"
                 subscriptSizing="dynamic">
                 <input
                   matInput
                   [attr.aria-label]="valueLabel()"
                   [attr.aria-invalid]="!valid()"
-                  [attr.aria-describedby]="valid() ? null : errorId()"
                   type="number"
                   [formField]="textField" />
+                @if (errorHint(); as hint) {
+                  <mat-error
+                    role="alert"
+                    [id]="errorId()"
+                    >{{ hint }}</mat-error
+                  >
+                }
               </mat-form-field>
             }
             @case ("text") {
               <mat-form-field
                 appearance="fill"
-                class="flex-1"
+                class="flex-1 reserve-one-message-line"
                 subscriptSizing="dynamic">
                 <!-- The autosize measures 15px per line while the field renders 24px lines, so 8 measured rows are 5 rendered rows. -->
                 <textarea
@@ -122,8 +127,14 @@
                   [cdkAutosizeMaxRows]="8"
                   [attr.aria-label]="valueLabel()"
                   [attr.aria-invalid]="!valid()"
-                  [attr.aria-describedby]="valid() ? null : errorId()"
                   [formField]="textField"></textarea>
+                @if (errorHint(); as hint) {
+                  <mat-error
+                    role="alert"
+                    [id]="errorId()"
+                    >{{ hint }}</mat-error
+                  >
+                }
               </mat-form-field>
             }
           }

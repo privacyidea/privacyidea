@@ -94,6 +94,10 @@
         <mat-error i18n="@@conditionalAccess.thresholdMeansAlwaysNeeds">
           A threshold of 0 means "always" and needs a stage carrying only DENY.
         </mat-error>
+      } @else if (
+        hasError(stage().failure_threshold, ERR.required) && !hasError(stage().failure_threshold, ERR.parse)
+      ) {
+        <mat-error i18n="@@conditionalAccess.failureThresholdRequired">Failure threshold is required.</mat-error>
       } @else if (hasAnyError(stage().failure_threshold, thresholdNumberErrorKinds)) {
         <mat-error i18n="@@conditionalAccess.failureThresholdWholeNumber">
           Enter a whole number of at least 1, or 0 on a stage carrying only DENY.

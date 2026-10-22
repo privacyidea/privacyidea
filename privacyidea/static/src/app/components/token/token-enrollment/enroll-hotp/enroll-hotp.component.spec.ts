@@ -341,7 +341,7 @@ describe("EnrollHotpComponent", () => {
 
       const text = fixture.nativeElement.textContent;
       expect(text).toContain("OTP key is required");
-      expect(text).toContain("OTP key must be at least 16 characters");
+      expect(text).toContain("OTP key must be at least 16 characters long.");
     });
   });
 });

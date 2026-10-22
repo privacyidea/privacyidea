@@ -110,7 +110,7 @@ describe("BlocklistBlockDialogComponent", () => {
     el.querySelector("input")?.dispatchEvent(new Event("blur"));
     await flush();
 
-    expect(errorTexts()).toEqual(["IP address is required"]);
+    expect(errorTexts()).toEqual(["IP address is required."]);
   });
 
   it("disables the confirm action while the address is missing", async () => {
@@ -211,10 +211,10 @@ describe("BlocklistBlockDialogComponent", () => {
 
     durationInput().dispatchEvent(new Event("blur"));
     await flush();
-    expect(errorTexts()).toEqual(["Duration is required"]);
+    expect(errorTexts()).toEqual(["Duration is required."]);
 
     await typeDuration("0");
-    expect(errorTexts()).toEqual(["Duration must be a whole number greater than zero"]);
+    expect(errorTexts()).toEqual(["Duration must be a whole number greater than zero."]);
 
     await typeDuration("3");
     expect(errorTexts()).toEqual([]);
@@ -231,7 +231,7 @@ describe("BlocklistBlockDialogComponent", () => {
 
     durationInput().dispatchEvent(new Event("blur"));
     await flush();
-    expect(errorTexts()).toEqual(["Duration must be a number"]);
+    expect(errorTexts()).toEqual(["Enter a valid number."]);
   });
 
   it("does not close while a timed block has no valid duration", async () => {

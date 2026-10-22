@@ -96,9 +96,6 @@ export class ContainerTemplateEditComponent {
   readonly containerTypesTitleCase = computed(() =>
     this.containerTemplateService.availableContainerTypes().map((type) => type.charAt(0).toUpperCase() + type.slice(1))
   );
-  // The empty string is the explicit "None" option, the container type of a template that has none yet.
-  readonly containerTypeOptions = computed(() => ["", ...this.containerTypes()]);
-  readonly containerTypeLabels = computed(() => [$localize`:@@common.none:None`, ...this.containerTypesTitleCase()]);
   readonly availableTokenTypes = computed(() =>
     this.containerTemplateService.getTokenTypesForContainerType(this.template().container_type)
   );

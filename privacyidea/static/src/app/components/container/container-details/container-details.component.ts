@@ -35,10 +35,7 @@ import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerDetailsActionsComponent } from "@components/container/container-details/container-details-actions/container-details-actions.component";
-import {
-  ContainerDetailsInfoComponent,
-  ContainerInfoDetail
-} from "@components/container/container-details/container-details-info/container-details-info.component";
+import { ContainerDetailsInfoComponent } from "@components/container/container-details/container-details-info/container-details-info.component";
 import { ContainerDetailsDescriptionComponent } from "@components/container/container-details/container-details-description/container-details-description.component";
 import { ContainerDetailsRealmsComponent } from "@components/container/container-details/container-details-realms/container-details-realms.component";
 import { ContainerDetailsStatesComponent } from "@components/container/container-details/container-details-states/container-details-states.component";
@@ -415,9 +412,8 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
       this.saveUser();
     }
     if (this.isEditingInfo()) {
-      const infoElement = this.infoData().find((d) => d.keyMap.key === "info");
-      if (infoElement) {
-        this.infoChild?.saveInfo(infoElement as unknown as ContainerInfoDetail<Record<string, string>>);
+      if (this.infoData().some((d) => d.keyMap.key === "info")) {
+        this.infoChild?.saveInfo();
       } else {
         this.isEditingInfo.set(false);
       }

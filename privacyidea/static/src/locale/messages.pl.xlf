@@ -3147,8 +3147,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.questionMustNot" datatype="html">
-        <source>Question must not be empty.</source>
-        <target state="new">Question must not be empty.</target>
+        <source>Question is required.</source>
+        <target state="new">Question is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component.html</context>
           <context context-type="linenumber">80</context>
@@ -3223,8 +3223,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.templateNameRequired" datatype="html">
-        <source>Template name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Template name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Template name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Template name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-template-edit/container-template-edit.component.html</context>
           <context context-type="linenumber">35</context>
@@ -3311,7 +3311,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqrRegistrationServer" datatype="html">
-        <source>TiQR Registration Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>TiQR Registration Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Serwer rejestracji TiQR jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component.html</context>
@@ -3383,7 +3383,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqrLogoUrlRequired" datatype="html">
-        <source>TiQR Logo URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>TiQR Logo URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Adres URL logo TiQR jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component.html</context>
@@ -3711,7 +3711,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.apiKeyRequired" datatype="html">
-        <source>API Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>API Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Klucz API jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
@@ -3735,7 +3735,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.apiClientIdRequired" datatype="html">
-        <source>API Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>API Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Identyfikator klienta API jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
@@ -3807,7 +3807,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.clientIdRequired" datatype="html">
-        <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Identyfikator klienta jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component.html</context>
@@ -7499,7 +7499,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.connectorNameRequired" datatype="html">
-        <source>Connector Name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Connector Name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Nazwa łącznika jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7531,7 +7531,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.typeRequired" datatype="html">
-        <source>Type is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Type is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Typ jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7567,7 +7567,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.caCertificateRequired" datatype="html">
-        <source>CA Certificate is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>CA Certificate is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Certyfikat CA jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7583,7 +7583,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.caKeyRequired" datatype="html">
-        <source>CA Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>CA Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Klucz CA jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7599,7 +7599,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.opensslConfigFile" datatype="html">
-        <source>OpenSSL Config File is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OpenSSL Config File is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Plik konfiguracyjny OpenSSL jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7711,7 +7711,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.hostnameRequired" datatype="html">
-        <source>Hostname is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Hostname is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Nazwa hosta jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7727,7 +7727,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.portRequired" datatype="html">
-        <source>Port is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Port is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Port jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7807,7 +7807,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.domainCaRequired" datatype="html">
-        <source>Domain CA is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Domain CA is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Wybór CA domeny jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
@@ -7839,7 +7839,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.identifierRequired" datatype="html">
-        <source>Identifier is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Identifier is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Identyfikator jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
@@ -7895,7 +7895,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.urlPrivacyideaServer" datatype="html">
-        <source>URL of the privacyIDEA Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>URL of the privacyIDEA Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Adres URL serwera privacyIDEA jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
@@ -8091,7 +8091,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.serverRequired" datatype="html">
-        <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Adres serwera jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
@@ -8159,7 +8159,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.secretRequired" datatype="html">
-        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Sekret jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
@@ -8467,7 +8467,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.nameRequired" datatype="html">
-        <source>Name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Nazwa jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
@@ -8487,7 +8487,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.providerModuleRequired" datatype="html">
-        <source>Provider Module is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Provider Module is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Moduł dostawcy jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
@@ -8503,7 +8503,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.isRequired" datatype="html">
-        <source><x id="INTERPOLATION" equiv-text="{{ param.key }}"/> is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source><x id="INTERPOLATION" equiv-text="{{ param.key }}"/> is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Pole <x id="INTERPOLATION" equiv-text="{{ param.key }}"/> jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagane<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
@@ -8639,7 +8639,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.senderEmailRequired" datatype="html">
-        <source>Sender email is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Sender email is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Adres e-mail nadawcy jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
@@ -8647,7 +8647,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.invalidEmailFormat" datatype="html">
-        <source>Invalid email format</source>
+        <source>Invalid email format.</source>
         <target>Nieprawidłowy format adresu e-mail</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
@@ -10165,7 +10165,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyNameRequired" datatype="html">
-        <source>Policy name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Policy name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Nazwa polityki jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
@@ -10173,7 +10173,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyNameMust" datatype="html">
-        <source>Policy name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original</source>
+        <source>Policy name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original.</source>
         <target>Nazwa polityki musi być <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>inna<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> niż oryginalna</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
@@ -10561,16 +10561,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.pleaseEnterValidTime" datatype="html">
-        <source>Please enter a valid time format</source>
-        <target>Wprowadź prawidłowy format czasu</target>
+        <source>Enter a valid time format.</source>
+        <target state="new">Enter a valid time format.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">47</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.pleaseEnterValid" datatype="html">
-        <source>Please enter a valid client format</source>
-        <target>Wprowadź prawidłowy adres IP lub sieć klienta</target>
+        <source>Enter a valid client format.</source>
+        <target state="new">Enter a valid client format.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">93</context>
@@ -11337,7 +11337,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.serialRequired" datatype="html">
-        <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Numer seryjny jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
@@ -12405,7 +12405,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.serviceIdRequired" datatype="html">
-        <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Identyfikator usługi jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
@@ -12445,7 +12445,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.caConnectorRequired" datatype="html">
-        <source>CA Connector is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>CA Connector is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Łącznik CA jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
@@ -12485,7 +12485,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.certificateSigningRequest" datatype="html">
-        <source>Certificate Signing Request is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Certificate Signing Request is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Żądanie podpisania certyfikatu jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagane<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
@@ -12513,7 +12513,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.certificateRequired" datatype="html">
-        <source>Certificate is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Certificate is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Certyfikat jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
@@ -12593,7 +12593,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKeyRequired" datatype="html">
-        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Klucz OTP jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -12613,7 +12613,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKeyMustLeast16" datatype="html">
-        <source>OTP key must be at least 16 characters long</source>
+        <source>OTP key must be at least 16 characters long.</source>
         <target>Klucz OTP musi mieć co najmniej 16 znaków</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -12641,7 +12641,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpLengthRequired" datatype="html">
-        <source>OTP length is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OTP length is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Długość kodu OTP jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -12693,7 +12693,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.hashAlgorithmRequired" datatype="html">
-        <source>Hash algorithm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Hash algorithm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Algorytm skrótu jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -12745,7 +12745,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.timestepRequired" datatype="html">
-        <source>Timestep is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Timestep is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Krok czasowy jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -12805,7 +12805,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.emailAddressRequired" datatype="html">
-        <source>Email Address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Email Address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Adres e-mail jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
@@ -12821,7 +12821,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.separatorRequired" datatype="html">
-        <source>Separator is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Separator is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Separator jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
@@ -12853,7 +12853,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.leastOneRealm" datatype="html">
-        <source>At least one realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>At least one realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Co najmniej jedna domena jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
@@ -12873,7 +12873,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKeyMustLeast" datatype="html">
-        <source>OTP key must be at least 16 characters</source>
+        <source>OTP key must be at least 16 characters long.</source>
         <target>Klucz OTP musi mieć co najmniej 16 znaków</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
@@ -12893,7 +12893,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.secretRequired" datatype="html">
-        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min 16 chars)</source>
+        <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min 16 chars).</source>
         <target>Sekret jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min. 16 znaków)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
@@ -12937,15 +12937,15 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.passwordRequired" datatype="html">
-        <source>Password is required</source>
-        <target state="new">Password is required</target>
+        <source>Password is required.</source>
+        <target state="new">Password is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.ts</context>
           <context context-type="linenumber">87</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.passwordMustLeast" datatype="html">
-        <source>Password must be at least 4 characters long</source>
+        <source>Password must be at least 4 characters long.</source>
         <target>Hasło musi mieć co najmniej 4 znaki</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.ts</context>
@@ -13097,7 +13097,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.radiusServerRequired" datatype="html">
-        <source>RADIUS Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>RADIUS Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Serwer RADIUS jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
@@ -13113,7 +13113,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.radiusUserRequired" datatype="html">
-        <source>RADIUS User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>RADIUS User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Użytkownik RADIUS jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
@@ -13129,7 +13129,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteServerRequired" datatype="html">
-        <source>Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Serwer zdalny jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
@@ -13145,7 +13145,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteSerialRequired" datatype="html">
-        <source>Remote Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Zdalny numer seryjny jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
@@ -13161,7 +13161,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteUserRequired" datatype="html">
-        <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Zdalny użytkownik jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
@@ -13185,7 +13185,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteResolverRequired" datatype="html">
-        <source>Remote Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Remote Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Zdalne źródło użytkowników jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagane<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
@@ -13233,7 +13233,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.smsGatewayRequired" datatype="html">
-        <source>SMS Gateway is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>SMS Gateway is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Brama SMS jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
@@ -13249,7 +13249,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.phoneNumberRequired" datatype="html">
-        <source>Phone number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Phone number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Numer telefonu jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
@@ -13273,7 +13273,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.sshPublicKeyRequired" datatype="html">
-        <source>SSH public key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>SSH public key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Klucz publiczny SSH jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
@@ -13305,7 +13305,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.expectedVasco" datatype="html">
-        <source>Expected VASCO Token blob as <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496-character hex string<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Expected VASCO Token blob as <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496-character hex string<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Dane tokena VASCO muszą być <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496-znakowym ciągiem szesnastkowym<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
@@ -13453,7 +13453,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.yubikeyIdentifier12" datatype="html">
-        <source>Yubikey identifier with 12 digits is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Yubikey identifier with 12 digits is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>12-cyfrowy identyfikator YubiKey jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
@@ -13477,7 +13477,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpKeyRequiredMust" datatype="html">
-        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> and must be 32 characters long</source>
+        <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> and must be 32 characters long.</source>
         <target>Klucz OTP jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> i musi mieć 32 znaki</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component.html</context>
@@ -13893,7 +13893,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.descriptionCannot" datatype="html">
-        <source>Description cannot exceed <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <source>Description must not exceed <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Opis może mieć maksymalnie <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 znaków<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
@@ -14013,7 +14013,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpValueRequired" datatype="html">
-        <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Kod OTP jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
@@ -14393,7 +14393,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.userRealmRequired" datatype="html">
-        <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Domena użytkownika jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
@@ -14405,7 +14405,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.userRequired" datatype="html">
-        <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Użytkownik jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagany<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
@@ -14453,7 +14453,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.pinsDoNotMatch" datatype="html">
-        <source>PINs do not match</source>
+        <source>PINs do not match.</source>
         <target>Kody PIN nie są zgodne</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.ts</context>
@@ -15117,7 +15117,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.resolverRequired" datatype="html">
-        <source>Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Źródło użytkowników jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagane<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-create/user-create.component.html</context>
@@ -15125,7 +15125,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.usernameRequired" datatype="html">
-        <source>Username is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
+        <source>Username is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>Nazwa użytkownika jest <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>wymagana<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-create/user-create.component.html</context>
@@ -20499,8 +20499,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.mustLeast" datatype="html">
-        <source>Must be at least 1.</source>
-        <target state="new">Must be at least 1.</target>
+        <source>Time window must be at least 1.</source>
+        <target state="new">Time window must be at least 1.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">237</context>
@@ -20559,24 +20559,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.selectLeastOneEvent" datatype="html">
-        <source>Select at least one event type. A policy that counts nothing never trips.</source>
-        <target state="new">Select at least one event type. A policy that counts nothing never trips.</target>
+        <source>At least one event type is required. A policy that counts nothing never trips.</source>
+        <target state="new">At least one event type is required. A policy that counts nothing never trips.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">278</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityRequired" datatype="html">
-        <source>A priority is required.</source>
-        <target state="new">A priority is required.</target>
+        <source>Priority is required.</source>
+        <target state="new">Priority is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">298</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityMustWholeNumber" datatype="html">
-        <source>Priority must be a whole number of at least 1.</source>
-        <target state="new">Priority must be a whole number of at least 1.</target>
+        <source>Enter a whole number.</source>
+        <target state="new">Enter a whole number.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">301</context>
@@ -20751,8 +20751,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityRequiredMustWhole" datatype="html">
-        <source>Priority is required and must be a whole number of at least 1.</source>
-        <target state="new">Priority is required and must be a whole number of at least 1.</target>
+        <source>Priority must be a whole number of at least 1.</source>
+        <target state="new">Priority must be a whole number of at least 1.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
           <context context-type="linenumber">378</context>
@@ -20767,8 +20767,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.selectLeastOneTracked" datatype="html">
-        <source>Select at least one tracked event type.</source>
-        <target state="new">Select at least one tracked event type.</target>
+        <source>At least one tracked event type is required.</source>
+        <target state="new">At least one tracked event type is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
           <context context-type="linenumber">387</context>
@@ -25143,8 +25143,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindowMustWholeNumber" datatype="html">
-        <source>Must be a whole number.</source>
-        <target state="new">Must be a whole number.</target>
+        <source>Enter a whole number.</source>
+        <target state="new">Enter a whole number.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">235</context>
@@ -25183,16 +25183,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.orderingNotANumber" datatype="html">
-        <source>Ordering has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Ordering has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">222</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.wholeNumber" datatype="html">
-        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
           <context context-type="linenumber">80</context>
@@ -25251,16 +25251,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.numberAnswersWholeNumber" datatype="html">
-        <source>Number of Answers must be a whole number.</source>
-        <target state="new">Number of Answers must be a whole number.</target>
+        <source>Enter a whole number.</source>
+        <target state="new">Enter a whole number.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component.html</context>
           <context context-type="linenumber">47</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.infoKeyRequired" datatype="html">
-        <source>Enter a key for the value.</source>
-        <target state="new">Enter a key for the value.</target>
+        <source>Key is required.</source>
+        <target state="new">Key is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-info/container-details-info.component.html</context>
           <context context-type="linenumber">74</context>
@@ -25283,8 +25283,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.infoValueRequired" datatype="html">
-        <source>Enter a value for the key.</source>
-        <target state="new">Enter a value for the key.</target>
+        <source>Value is required.</source>
+        <target state="new">Value is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-info/container-details-info.component.html</context>
           <context context-type="linenumber">91</context>
@@ -25295,56 +25295,48 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.passphrasePromptRequired" datatype="html">
-        <source>A passphrase prompt is required.</source>
-        <target state="new">A passphrase prompt is required.</target>
+        <source>Passphrase prompt is required.</source>
+        <target state="new">Passphrase prompt is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.passphraseResponseRequired" datatype="html">
-        <source>A passphrase response is required.</source>
-        <target state="new">A passphrase response is required.</target>
+        <source>Passphrase response is required.</source>
+        <target state="new">Passphrase response is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.none" datatype="html">
-        <source>None</source>
-        <target state="new">None</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/container/container-templates/container-template-edit/container-template-edit.component.ts</context>
-          <context context-type="linenumber">101</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="container.templateNameMustDiffer" datatype="html">
-        <source>Template name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original</source>
-        <target state="new">Template name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original</target>
+        <source>Template name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original.</source>
+        <target state="new">Template name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component.html</context>
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.orderingNotANumber" datatype="html">
-        <source>Ordering has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Ordering has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.html</context>
           <context context-type="linenumber">136</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.orderingOutOfRange" datatype="html">
-        <source>Ordering has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> between 0 and <x id="INTERPOLATION" equiv-text="{{ MAX_ORDERING }}"/>.</source>
-        <target state="new">Ordering has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> between 0 and <x id="INTERPOLATION" equiv-text="{{ MAX_ORDERING }}"/>.</target>
+        <source>Ordering must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> between 0 and <x id="INTERPOLATION" equiv-text="{{ MAX_ORDERING }}"/>.</source>
+        <target state="new">Ordering must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> between 0 and <x id="INTERPOLATION" equiv-text="{{ MAX_ORDERING }}"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.html</context>
           <context context-type="linenumber">140</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.optionNotANumber" datatype="html">
-        <source><x id="INTERPOLATION" equiv-text="{{ optionName }}"/> has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new"><x id="INTERPOLATION" equiv-text="{{ optionName }}"/> has to be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/tabs/event-action-tab/event-action-tab.component.html</context>
           <context context-type="linenumber">89</context>
@@ -25359,8 +25351,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.numberInvalid" datatype="html">
-        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">276</context>
@@ -25375,8 +25367,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.numberInvalid" datatype="html">
-        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
           <context context-type="linenumber">126</context>
@@ -25391,24 +25383,24 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.optionNameRequired" datatype="html">
-        <source>Option name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Option name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Option name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Option name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
           <context context-type="linenumber">289</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.headerNameRequired" datatype="html">
-        <source>Header name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Header name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Header name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Header name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
           <context context-type="linenumber">461</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.numberInvalid" datatype="html">
-        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
           <context context-type="linenumber">126</context>
@@ -25419,16 +25411,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.ipAddressRequired" datatype="html">
-        <source>IP address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">IP address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>IP address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">IP address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist-block-dialog/blocklist-block-dialog.component.html</context>
           <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.durationNotNumber" datatype="html">
-        <source>Duration must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Duration must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist-block-dialog/blocklist-block-dialog.component.html</context>
           <context context-type="linenumber">71</context>
@@ -25439,8 +25431,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.durationRequired" datatype="html">
-        <source>Duration is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Duration is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Duration is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Duration is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist-block-dialog/blocklist-block-dialog.component.html</context>
           <context context-type="linenumber">73</context>
@@ -25451,8 +25443,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.durationPositiveInteger" datatype="html">
-        <source>Duration must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> greater than zero</source>
-        <target state="new">Duration must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> greater than zero</target>
+        <source>Duration must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> greater than zero.</source>
+        <target state="new">Duration must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>whole number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> greater than zero.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist-block-dialog/blocklist-block-dialog.component.html</context>
           <context context-type="linenumber">76</context>
@@ -25495,16 +25487,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.timeoutNotNumber" datatype="html">
-        <source>Timeout must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Timeout must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component.html</context>
           <context context-type="linenumber">99</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.sizeLimitNotNumber" datatype="html">
-        <source>Size limit must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Size limit must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component.html</context>
           <context context-type="linenumber">110</context>
@@ -25583,16 +25575,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.priorityNotNumber" datatype="html">
-        <source>Priority must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Priority must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-priority-edit/policy-priority-edit.component.html</context>
           <context context-type="linenumber">31</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.priorityMin" datatype="html">
-        <source>Priority must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>at least 1<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Priority must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>at least 1<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Priority must be at least <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>1<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Priority must be at least <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>1<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-priority-edit/policy-priority-edit.component.html</context>
           <context context-type="linenumber">34</context>
@@ -25615,8 +25607,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.containerSerialRequired" datatype="html">
-        <source>Enter the serial of a container.</source>
-        <target state="new">Enter the serial of a container.</target>
+        <source>Container serial is required.</source>
+        <target state="new">Container serial is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-assignments/token-details-assignments.component.html</context>
           <context context-type="linenumber">110</context>
@@ -25631,16 +25623,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.countWindowNotNumber" datatype="html">
-        <source>Count window must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Count window must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">122</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.countWindowRequired" datatype="html">
-        <source>Count window is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="new">Count window is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <source>Count window is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Count window is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">124</context>
@@ -25663,8 +25655,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.timeoutNotNumber" datatype="html">
-        <source>Timeout must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Timeout must be a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <source>Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
+        <target state="new">Enter a <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>valid number<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">347</context>
@@ -25722,36 +25714,12 @@
           <context context-type="linenumber">280</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="resolver.cacheTimeoutRequired" datatype="html">
-        <source>Cache timeout is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Cache timeout is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
-          <context context-type="linenumber">219</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="resolver.sizeLimitRequired" datatype="html">
         <source>Size limit is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target state="new">Size limit is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
           <context context-type="linenumber">233</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="resolver.serverPoolRoundsRequired" datatype="html">
-        <source>Server pool retry rounds is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Server pool retry rounds is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
-          <context context-type="linenumber">248</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="resolver.serverPoolSkipRequired" datatype="html">
-        <source>Server pool skip timeout is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target state="new">Server pool skip timeout is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
-          <context context-type="linenumber">261</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.saveBlockedByIncomplete" datatype="html">
@@ -25779,11 +25747,59 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.actionValueRequired" datatype="html">
-        <source>Enter a value.</source>
-        <target state="new">Enter a value.</target>
+        <source>Value is required.</source>
+        <target state="new">Value is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.ts</context>
           <context context-type="linenumber">104</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="conditionalAccess.failureThresholdRequired" datatype="html">
+        <source>Failure threshold is required.</source>
+        <target state="new">Failure threshold is required.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/conditional-access-stage-item.component.html</context>
+          <context context-type="linenumber">98</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="conditionalAccess.priorityMin" datatype="html">
+        <source>Priority must be at least 1.</source>
+        <target state="new">Priority must be at least 1.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
+          <context context-type="linenumber">311</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="conditionalAccess.priorityNotNumber" datatype="html">
+        <source>Enter a valid number.</source>
+        <target state="new">Enter a valid number.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
+          <context context-type="linenumber">305</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="conditionalAccess.timeWindowNotNumber" datatype="html">
+        <source>Enter a valid number.</source>
+        <target state="new">Enter a valid number.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
+          <context context-type="linenumber">235</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="conditionalAccess.timeWindowRequired" datatype="html">
+        <source>Time window is required.</source>
+        <target state="new">Time window is required.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
+          <context context-type="linenumber">237</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="policy.actionValueNotNumber" datatype="html">
+        <source>Enter a valid number.</source>
+        <target state="new">Enter a valid number.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.ts</context>
+          <context context-type="linenumber">107</context>
         </context-group>
       </trans-unit>
     </body>

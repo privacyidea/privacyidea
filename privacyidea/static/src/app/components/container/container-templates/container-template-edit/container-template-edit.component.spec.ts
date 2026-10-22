@@ -231,7 +231,7 @@ describe("ContainerTemplateEditComponent", () => {
       nameInput().dispatchEvent(new Event("blur"));
       fixture.detectChanges();
 
-      expect(errors()).toEqual(["Template name is required"]);
+      expect(errors()).toEqual(["Template name is required."]);
     });
 
     it("shows the invalid-characters error", () => {
@@ -337,67 +337,40 @@ describe("ContainerTemplateEditComponent", () => {
       fixture.detectChanges();
     };
 
-    it("containerTypeOptions puts the empty string for None before the container types", () => {
-      serviceMock.availableContainerTypes.set(["generic", "smartphone"]);
-
-      expect(component.containerTypeOptions()).toEqual(["", "generic", "smartphone"]);
-    });
-
-    it("containerTypeLabels names None first and title-cases the container types", () => {
-      serviceMock.availableContainerTypes.set(["generic", "smartphone"]);
-
-      expect(component.containerTypeLabels()).toEqual(["None", "Generic", "Smartphone"]);
-    });
-
-    it("renders None first, followed by the container types, and names the group", () => {
+    it("renders the container types title-cased and names the group", () => {
       render();
 
-      expect(labels()).toEqual(["None", "Generic", "Smartphone"]);
+      expect(labels()).toEqual(["Generic", "Smartphone"]);
       expect(fixture.nativeElement.querySelector("app-toggle-group [role=radiogroup]").getAttribute("aria-label")).toBe(
         "Container Type"
       );
     });
 
-    it("marks None as selected for a template without a container type", () => {
+    it("marks no type as selected for a template without a container type", () => {
       render();
 
-      expect(radios()[0].getAttribute("aria-checked")).toBe("true");
+      expect(radios().every((radio) => radio.getAttribute("aria-checked") === "false")).toBe(true);
     });
 
     it("sets the container type of the template when a type is selected", () => {
       render();
 
-      radios()[2].click();
+      radios()[1].click();
       fixture.detectChanges();
 
       expect(component.template().container_type).toBe("smartphone");
-      expect(radios()[2].getAttribute("aria-checked")).toBe("true");
+      expect(radios()[1].getAttribute("aria-checked")).toBe("true");
+      expect(radios()[0].getAttribute("aria-checked")).toBe("false");
     });
 
-    it("sets an empty container type, never undefined, when None is selected", () => {
+    it("offers the token types of the selected container type", () => {
       render();
-      radios()[1].click();
-      fixture.detectChanges();
-      expect(component.template().container_type).toBe("generic");
-
+      serviceMock.getTokenTypesForContainerType.mockReturnValue(["hotp"]);
       radios()[0].click();
       fixture.detectChanges();
 
-      expect(component.template().container_type).toBe("");
-      expect(component.template().container_type).not.toBeUndefined();
-    });
-
-    it("offers no token types for None and leaves the token list untouched", () => {
-      render();
-      serviceMock.getTokenTypesForContainerType.mockReturnValue([]);
-      radios()[1].click();
-      fixture.detectChanges();
-      radios()[0].click();
-      fixture.detectChanges();
-
-      expect(serviceMock.getTokenTypesForContainerType).toHaveBeenLastCalledWith("");
-      expect(component.availableTokenTypes()).toEqual([]);
-      expect(component.template().template_options.tokens).toEqual([]);
+      expect(serviceMock.getTokenTypesForContainerType).toHaveBeenLastCalledWith("generic");
+      expect(component.availableTokenTypes()).toEqual(["hotp"]);
     });
 
     it("keeps the group enabled while the template has no token", () => {
@@ -415,9 +388,9 @@ describe("ContainerTemplateEditComponent", () => {
       fixture.detectChanges();
 
       expect(radios().every((radio) => radio.disabled)).toBe(true);
-      expect(radios()[2].getAttribute("aria-checked")).toBe("true");
+      expect(radios()[1].getAttribute("aria-checked")).toBe("true");
 
-      radios()[1].click();
+      radios()[0].click();
       fixture.detectChanges();
       expect(component.template().container_type).toBe("smartphone");
     });

@@ -278,7 +278,7 @@ describe("TokenDetailsInfoComponent", () => {
 
       expect(component.canSave()).toBe(false);
       expect(saveButton().disabled).toBe(true);
-      expect(addRow().textContent).toContain("Enter a key for the value.");
+      expect(addRow().textContent).toContain("Key is required.");
     });
 
     it("blocks Save and shows an error while a key is given without a value", () => {
@@ -291,7 +291,7 @@ describe("TokenDetailsInfoComponent", () => {
       fixture.detectChanges();
 
       expect(component.canSave()).toBe(false);
-      expect(addRow().textContent).toContain("Enter a value for the key.");
+      expect(addRow().textContent).toContain("Value is required.");
     });
 
     it("rejects a key that already exists", () => {

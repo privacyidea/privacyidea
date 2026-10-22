@@ -96,7 +96,7 @@
       placeholder="5"
       [formField]="ldapForm.TIMEOUT" />
     @if (hasError(ldapForm.TIMEOUT, ERR.parse)) {
-      <mat-error i18n="@@machine.timeoutNotNumber">Timeout must be a <strong>number</strong>.</mat-error>
+      <mat-error i18n="@@machine.timeoutNotNumber">Enter a <strong>valid number</strong>.</mat-error>
     }
   </mat-form-field>
   <mat-form-field subscriptSizing="dynamic">
@@ -107,7 +107,7 @@
       placeholder="500"
       [formField]="ldapForm.SIZELIMIT" />
     @if (hasError(ldapForm.SIZELIMIT, ERR.parse)) {
-      <mat-error i18n="@@machine.sizeLimitNotNumber">Size limit must be a <strong>number</strong>.</mat-error>
+      <mat-error i18n="@@machine.sizeLimitNotNumber">Enter a <strong>valid number</strong>.</mat-error>
     }
   </mat-form-field>
 

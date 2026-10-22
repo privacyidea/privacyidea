@@ -53,7 +53,7 @@
           }
         </mat-select>
         @if (hasError(radiusServerConfigurationForm, ERR.required)) {
-          <mat-error i18n="@@token.radiusServerRequired">RADIUS Server is <strong>required</strong></mat-error>
+          <mat-error i18n="@@token.radiusServerRequired">RADIUS Server is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     }
@@ -62,7 +62,7 @@
       <input
         [formField]="radiusUserForm"
         matInput />
-      <mat-error i18n="@@token.radiusUserRequired">RADIUS User is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.radiusUserRequired">RADIUS User is <strong>required</strong>.</mat-error>
     </mat-form-field>
   </div>
 </div>

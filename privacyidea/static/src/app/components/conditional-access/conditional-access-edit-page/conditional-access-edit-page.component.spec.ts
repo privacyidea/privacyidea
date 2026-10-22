@@ -258,20 +258,24 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should flag the tracked event types as an error while none are selected", () => {
     helpers.setCounterTypes([]);
-    expect(component.saveBlockers()).toContain("Select at least one tracked event type.");
+    expect(component.saveBlockers()).toContain("At least one tracked event type is required.");
 
     helpers.setCounterTypes(["PIN_FAIL"]);
-    expect(component.saveBlockers()).not.toContain("Select at least one tracked event type.");
+    expect(component.saveBlockers()).not.toContain("At least one tracked event type is required.");
   });
 
   it("should render the tracked event types error once the select is touched", () => {
     helpers.setCounterTypes([]);
     fixture.detectChanges();
-    expect(renderedErrors()).not.toContain("Select at least one event type. A policy that counts nothing never trips.");
+    expect(renderedErrors()).not.toContain(
+      "At least one event type is required. A policy that counts nothing never trips."
+    );
 
     component.policyForm.counter_types_to_track().markAsTouched();
     fixture.detectChanges();
-    expect(renderedErrors()).toContain("Select at least one event type. A policy that counts nothing never trips.");
+    expect(renderedErrors()).toContain(
+      "At least one event type is required. A policy that counts nothing never trips."
+    );
   });
 
   it("should list nothing to fix while the policy is valid", () => {
@@ -609,8 +613,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(component.canSave()).toBe(false);
     expect(component.saveBlockers()).toEqual([
       "Name is required.",
-      "Priority is required and must be a whole number of at least 1.",
-      "Select at least one tracked event type.",
+      "Priority is required.",
+      "At least one tracked event type is required.",
       "Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY."
     ]);
   });
@@ -696,11 +700,11 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should render the time window messages once the field is touched", () => {
     typeInto(fixture, "Time window", "0");
-    expect(renderedErrors()).toContain("Must be at least 1.");
+    expect(renderedErrors()).toContain("Time window must be at least 1.");
     typeInto(fixture, "Time window", "1.5");
-    expect(renderedErrors()).toContain("Must be a whole number.");
+    expect(renderedErrors()).toContain("Enter a whole number.");
     typeInto(fixture, "Time window", "");
-    expect(renderedErrors()).toContain("Must be at least 1.");
+    expect(renderedErrors()).toContain("Time window is required.");
     typeInto(fixture, "Time window", "2");
     expect(renderedErrors()).toEqual([]);
   });
@@ -710,7 +714,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     typeInto(fixture, "Time window", "");
     expect(hasError(component.policyForm.time_window_value, ERR.parse)).toBe(true);
     expect(component.canSave()).toBe(false);
-    expect(renderedErrors()).toContain("Must be a whole number.");
+    expect(renderedErrors()).toContain("Enter a valid number.");
   });
 
   it("should map priority text to a number, and to null for empty, non-numeric or decimal text", () => {
@@ -761,12 +765,12 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   it("should render the priority error message in the DOM, not just compute it", () => {
     typeInto(fixture, "Priority", "1.5");
     expect(errorKinds(component.policyForm.priority)).toEqual([CA_ERR.notInteger]);
-    expect(renderedErrors()).toContain("Priority must be a whole number of at least 1.");
+    expect(renderedErrors()).toContain("Enter a whole number.");
   });
 
   it("should render the priority range message for a priority below 1", () => {
     typeInto(fixture, "Priority", "0");
-    expect(renderedErrors()).toContain("Priority must be a whole number of at least 1.");
+    expect(renderedErrors()).toContain("Priority must be at least 1.");
   });
 
   it("should render the priority message for text the browser cannot parse as a number", () => {
@@ -774,13 +778,13 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     typeInto(fixture, "Priority", "");
     expect(errorKinds(component.policyForm.priority)).toEqual([ERR.parse]);
     expect(component.canSave()).toBe(false);
-    expect(renderedErrors()).toContain("Priority must be a whole number of at least 1.");
-    expect(renderedErrors()).not.toContain("A priority is required.");
+    expect(renderedErrors()).toContain("Enter a valid number.");
+    expect(renderedErrors()).not.toContain("Priority is required.");
   });
 
   it("should render the required-priority message when the field is cleared", () => {
     typeInto(fixture, "Priority", "");
-    expect(renderedErrors()).toContain("A priority is required.");
+    expect(renderedErrors()).toContain("Priority is required.");
   });
 
   it("should render the collision message naming the conflicting policy", () => {
@@ -953,9 +957,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       typeInStage(thresholdOf(stageItems()[0]), "");
       expect(component.canSave()).toBe(false);
       expect(component.stagesValid()).toBe(false);
-      expect(component.saveBlockers()).toEqual([
-        "Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY."
-      ]);
+      expect(component.saveBlockers()).toEqual(["Failure threshold is required."]);
       expect(stageNotes()).toContain(
         "At least one stage is required, and every stage needs a non-negative failure threshold."
       );
@@ -1201,7 +1203,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
       expect(component.policyForm.name().touched()).toBe(true);
       expect(component.policyForm.priority().touched()).toBe(true);
-      expect(renderedErrors()).toEqual(expect.arrayContaining(["Name is required.", "A priority is required."]));
+      expect(renderedErrors()).toEqual(expect.arrayContaining(["Name is required.", "Priority is required."]));
     });
   });
 
@@ -1227,8 +1229,8 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.saveBlockers()).toEqual([
         "Name is required.",
         "Time window must be a whole number of at least 1 second.",
-        "Priority is required and must be a whole number of at least 1.",
-        "Select at least one tracked event type."
+        "Priority is required.",
+        "At least one tracked event type is required."
       ]);
     });
 
@@ -1515,8 +1517,8 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
     ).toEqual(
       expect.arrayContaining([
         "Name is required.",
-        "A priority is required.",
-        "Select at least one event type. A policy that counts nothing never trips."
+        "Priority is required.",
+        "At least one event type is required. A policy that counts nothing never trips."
       ])
     );
   });
@@ -1707,7 +1709,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
       expect(errorKinds(component.policyForm.priority)).toEqual(expect.arrayContaining([ERR.parse, ERR.required]));
       expect(
         Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-error")).map((el) => el.textContent!.trim())
-      ).toContain("Priority must be a whole number of at least 1.");
+      ).toContain("Enter a valid number.");
     });
   });
 

@@ -151,7 +151,7 @@ describe("PolicyPriorityEditComponent", () => {
       input().dispatchEvent(new Event("blur"));
       fixture.detectChanges();
 
-      expect(errorTexts()).toContain("Priority must be a number.");
+      expect(errorTexts()).toContain("Enter a valid number.");
     });
   });
 });

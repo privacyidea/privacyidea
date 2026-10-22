@@ -38,6 +38,7 @@ import {
   valueDisplayLabels,
   ValueLabelOptions
 } from "@utils/value-label.utils";
+import { ERR } from "@utils/form-rules.utils";
 import { actionValueRule } from "../../action-value.rule";
 
 @Component({
@@ -96,12 +97,17 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
   /** Id of the hint, which the invalid control points to. */
   readonly errorId = computed(() => `${this.action().name}-error`);
 
-  /** The hint shown under an invalid row; null while the value is valid. */
+  /** The error shown below an invalid value input; null while the value is valid. */
   readonly errorHint = computed<string | null>(() => {
     if (this.valid()) return null;
-    return this.actionDetail()?.type === "int"
+    const unparsable = this.valueForm()
+      .errors()
+      .some((error) => error.kind === ERR.parse);
+    const isInt = this.actionDetail()?.type === "int";
+    if (isInt && unparsable) return $localize`:@@policy.actionValueNotNumber:Enter a valid number.`;
+    return isInt && String(this.valueModel()).trim() !== ""
       ? $localize`:@@policy.actionValueNotInteger:Enter a whole number.`
-      : $localize`:@@policy.actionValueRequired:Enter a value.`;
+      : $localize`:@@policy.actionValueRequired:Value is required.`;
   });
 
   private readonly labelOptions = computed<ValueLabelOptions>(() => ({
@@ -129,6 +135,14 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
           this.updateAction.emit(value as T);
         }
       });
+    });
+
+    // A mat-error renders once its field is touched; an invalid value is touched at once so the error shows while the
+    // value is being corrected, not only after the input loses focus.
+    effect(() => {
+      if (!this.valid()) {
+        this.valueForm().markAsTouched();
+      }
     });
   }
 

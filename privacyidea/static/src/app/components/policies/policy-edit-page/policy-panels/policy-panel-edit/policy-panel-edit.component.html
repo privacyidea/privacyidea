@@ -21,7 +21,6 @@
   <div class="policy-metadata-group">
     <div class="name-scope-priority-row">
       <app-policy-name-edit
-        class="input-width-l"
         [policyName]="editedPolicy().name"
         [nameTaken]="nameTaken()"
         (policyNameChange)="addPolicyEdit({ name: $event })" />
@@ -31,7 +30,7 @@
         [disabled]="policyHasActions()"
         (scopeChange)="onPolicyScopeChange($event)" />
       <app-policy-priority-edit
-        class="input-width-s"
+        class="input-width-m"
         [priority]="editedPolicy().priority"
         (priorityChange)="onPriorityChange($event)" />
     </div>

@@ -113,12 +113,12 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(stageFields[0].failure_threshold().errors()).toEqual([]);
     });
 
-    it("should hold an emptied threshold as missing and say what is expected once left", () => {
+    it("should hold an emptied threshold as missing and say it is required once left", () => {
       type(thresholdInput(), "");
       thresholdInput().dispatchEvent(new Event("blur"));
       fixture.detectChanges();
       expect(stored().failure_threshold).toBeNull();
-      expect(messages()).toEqual(["Enter a whole number of at least 1, or 0 on a stage carrying only DENY."]);
+      expect(messages()).toEqual(["Failure threshold is required."]);
     });
 
     it("should say what is expected for text the browser cannot read as a number", () => {

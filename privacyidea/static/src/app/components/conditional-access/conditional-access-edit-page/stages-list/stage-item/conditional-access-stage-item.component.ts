@@ -85,6 +85,7 @@ export class ConditionalAccessStageItemComponent {
   readonly editingName = signal(false);
 
   protected readonly CA_ERR = CA_ERR;
+  protected readonly ERR = ERR;
   protected readonly hasError = hasError;
   protected hasAnyError(field: FieldTree<unknown>, kinds: readonly string[]): boolean {
     return kinds.some((kind) => hasError(field, kind));

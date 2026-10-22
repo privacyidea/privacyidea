@@ -183,7 +183,7 @@ describe("MachineResolverLdapTabComponent", () => {
       expect(component.isValid()).toBe(false);
       component.ldapForm.TIMEOUT().markAsTouched();
       await flush();
-      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Timeout must be a number");
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Enter a valid number.");
     });
 
     it("renders the parse message of the size limit", async () => {
@@ -194,7 +194,7 @@ describe("MachineResolverLdapTabComponent", () => {
       expect(kinds(component.ldapForm.SIZELIMIT())).toEqual(["parse"]);
       component.ldapForm.SIZELIMIT().markAsTouched();
       await flush();
-      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Size limit must be a number");
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Enter a valid number.");
     });
   });
 

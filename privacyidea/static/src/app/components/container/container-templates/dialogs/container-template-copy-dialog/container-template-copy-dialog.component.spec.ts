@@ -160,7 +160,7 @@ describe("ContainerTemplateCopyDialogComponent", () => {
     expect(component.canSave()).toBeFalsy();
     expect(hasError(component.form.name, "notChanged")).toBe(true);
     expect(hasError(component.form.name, ERR.nameTaken)).toBe(false);
-    expect(errors()).toEqual(["Template name must be different from the original"]);
+    expect(errors()).toEqual(["Template name must be different from the original."]);
   });
 
   it("requires a name and shows the error once it is emptied", () => {
@@ -168,7 +168,7 @@ describe("ContainerTemplateCopyDialogComponent", () => {
 
     expect(component.canSave()).toBe(false);
     expect(hasError(component.form.name, ERR.required)).toBe(true);
-    expect(errors()).toEqual(["Template name is required"]);
+    expect(errors()).toEqual(["Template name is required."]);
   });
 
   it.each(["has space", "bad!"])("rejects the name %p for its characters", (name) => {

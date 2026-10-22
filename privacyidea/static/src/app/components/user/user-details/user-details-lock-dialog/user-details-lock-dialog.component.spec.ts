@@ -159,10 +159,10 @@ describe("UserDetailsLockDialogComponent", () => {
 
     durationInput().dispatchEvent(new Event("blur"));
     await flush();
-    expect(errorTexts()).toEqual(["Duration is required"]);
+    expect(errorTexts()).toEqual(["Duration is required."]);
 
     await typeDuration("0");
-    expect(errorTexts()).toEqual(["Duration must be a whole number greater than zero"]);
+    expect(errorTexts()).toEqual(["Duration must be a whole number greater than zero."]);
 
     await typeDuration("3");
     expect(errorTexts()).toEqual([]);
@@ -178,7 +178,7 @@ describe("UserDetailsLockDialogComponent", () => {
 
     durationInput().dispatchEvent(new Event("blur"));
     await flush();
-    expect(errorTexts()).toEqual(["Duration must be a number"]);
+    expect(errorTexts()).toEqual(["Enter a valid number."]);
   });
 
   it("does not close while a timed lock has no valid duration", async () => {

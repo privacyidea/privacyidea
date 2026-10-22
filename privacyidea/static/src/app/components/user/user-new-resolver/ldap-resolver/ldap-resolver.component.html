@@ -215,8 +215,6 @@
             type="number" />
           @if (hasError(ldapForm.CACHE_TIMEOUT, ERR.parse)) {
             <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
-          } @else if (hasError(ldapForm.CACHE_TIMEOUT, ERR.required)) {
-            <mat-error i18n="@@resolver.cacheTimeoutRequired">Cache timeout is <strong>required</strong>.</mat-error>
           }
           <mat-hint i18n="@@resolver.inSeconds">In seconds.</mat-hint>
         </mat-form-field>
@@ -244,8 +242,6 @@
             type="number" />
           @if (hasError(ldapForm.SERVERPOOL_ROUNDS, ERR.parse)) {
             <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
-          } @else if (hasError(ldapForm.SERVERPOOL_ROUNDS, ERR.required)) {
-            <mat-error i18n="@@resolver.serverPoolRoundsRequired">Server pool retry rounds is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
 
@@ -257,8 +253,6 @@
             type="number" />
           @if (hasError(ldapForm.SERVERPOOL_SKIP, ERR.parse)) {
             <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
-          } @else if (hasError(ldapForm.SERVERPOOL_SKIP, ERR.required)) {
-            <mat-error i18n="@@resolver.serverPoolSkipRequired">Server pool skip timeout is <strong>required</strong>.</mat-error>
           }
           <mat-hint i18n="@@resolver.inSeconds">In seconds.</mat-hint>
         </mat-form-field>

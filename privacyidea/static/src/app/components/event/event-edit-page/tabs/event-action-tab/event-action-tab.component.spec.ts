@@ -317,7 +317,7 @@ describe("EventActionTabComponent", () => {
       component.optionsForm["amount"]().markAsTouched();
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector("mat-form-field mat-error")?.textContent).toContain(
-        "has to be a number"
+        "Enter a valid number."
       );
       validity.mockReturnValue({ badInput: false } as ValidityState);
     });
