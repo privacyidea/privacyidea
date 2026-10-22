@@ -54,23 +54,16 @@ non-admin callers only see configuration entries flagged as ``public``.
 """
 
 from flask_babel import _
-import datetime
 import logging
-import re
-import socket
-import string
 
 from flask import (Blueprint,
                    request)
-from flask import (g, current_app, render_template)
+from flask import (g, current_app)
 
-from privacyidea.lib.auth import get_all_db_admins
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
-from privacyidea.lib.event import get_events_for_documentation
+from privacyidea.lib.system_documentation import render_system_documentation
 from privacyidea.lib.importotp import GPGImport
-from privacyidea.lib.policy import PolicyClass
-from privacyidea.lib.realm import get_realms
-from privacyidea.lib.resolver import get_resolver_list, get_resolver_class, CENSORED
+from privacyidea.lib.resolver import CENSORED
 from privacyidea.lib.health import get_certificate_status
 from privacyidea.lib.metrics import get_metrics
 from privacyidea.lib.cache.user import flush_user_cache
@@ -82,13 +75,11 @@ from .lib.utils import (getLowerParams,
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action, check_admin_base_action
 from ..lib.caconnector import get_caconnector_list
-from ..lib.config import (get_app_config_for_documentation,
-                          get_stored_config_type,
+from ..lib.config import (get_stored_config_type,
                           get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config,
-                          get_config_object,
                           get_privacyidea_nodes,
                           is_password_config_entry)
 from ..lib.error import ParameterError
@@ -106,65 +97,26 @@ system_blueprint = Blueprint('system_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.CONFIGDOCUMENTATION)
 def get_config_documentation():
     """
-    Render the current server configuration (system config, app config,
-    resolvers, realms, policies, event handlers, admin accounts) into a single
-    reStructuredText document. The response is ``text/plain``; consumers
-    typically pipe it through Sphinx to produce a rendered status report.
+    Render the current server configuration into a single reStructuredText
+    document: the version, the nodes, the system config, the app config, the
+    local admins, the resolvers, realms, policies and event handlers, the SMTP
+    servers, SMS gateways, RADIUS servers and CA connectors, the machine
+    resolvers and the number of tokens and containers per type. The response
+    is ``text/plain``; consumers typically pipe it through Sphinx to produce a
+    rendered status report.
 
-    The app config, the resolvers and the event handlers are documented by
-    selected settings only, which leave out paths, URLs, credentials and free
-    text.
+    The app config, the resolvers, the event handlers and the external
+    services are documented by selected settings only, which leave out hosts,
+    URLs, paths, credentials and free text.
 
     Requires admin authentication and the policy action
     :ref:`policy_system_documentation`.
 
     :status 200: ``text/plain`` body containing the rendered document.
     """
-    P = PolicyClass()
-
-    config = get_from_config()
-    # Do not expose decrypted password-typed values in the exported report
-    config_object = get_config_object()
-    for config_key, config_entry in config_object.config.items():
-        if is_password_config_entry(config_key, config_entry.get("Type")) and config_key in config:
-            config[config_key] = CENSORED
-    resolvers = get_resolver_list(censor=True)
-    for resolver in resolvers.values():
-        resolver_class = get_resolver_class(resolver["type"])
-        resolver["data"] = resolver_class.get_config_for_documentation(resolver["data"])
-    realms = get_realms()
-    node_names = {node["uuid"]: node["name"] for node in get_privacyidea_nodes()}
-    policies = P.list_policies()
-    admins = get_all_db_admins()
-    context = {"system": socket.getfqdn(socket.gethostname()),
-               "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-               "systemconfig": config,
-               # Selected here rather than in the template, so the report cannot carry a
-               # credential out of pi.cfg no matter which template renders it.
-               "appconfig": get_app_config_for_documentation(current_app.config),
-               "resolverconfig": resolvers,
-               "realmconfig": realms,
-               "nodenames": node_names,
-               "policyconfig": policies,
-               "eventconfig": get_events_for_documentation(),
-               "admins": admins}
-
+    documentation = render_system_documentation()
     g.audit_object.log({"success": True})
-    # Three or more line breaks will be changed to two.
-    return send_file(re.sub("\n{3,}", "\n\n", render_template("documentation.rst",
-                                                              context=context,
-                                                              rst_text=_rst_text)),
-                     'documentation.rst', content_type='text/plain')
-
-
-def _rst_text(text: object) -> str:
-    """
-    Escape a name, like the name of an event handler, for the running text and the section titles of the
-    documentation. The values are rendered into literal blocks, in which reStructuredText has no markup, but outside
-    of them a name like "1. Mail", "* Mail" or "users_" is read as a list or a reference. Every punctuation character
-    is escaped, and line breaks are replaced, so that a name is always text on one line.
-    """
-    return re.sub(f"([{re.escape(string.punctuation)}])", r"\\\1", " ".join(str(text).split()))
+    return send_file(documentation, 'documentation.rst', content_type='text/plain')
 
 
 @system_blueprint.route('/gpgkeys', methods=['GET'])

@@ -18,6 +18,8 @@ from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
 from privacyidea.lib.radiusserver import add_radius, delete_radius
+from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway, set_smsgateway
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.models import UserCache
@@ -1125,6 +1127,41 @@ class APIConfigTestCase(MyApiTestCase):
         finally:
             delete_event(event_id)
             delete_resolver("httpdoc")
+
+    def test_15d_documentation_lists_the_setup_and_the_external_services(self):
+        # The report names the version and the schema of the installation and lists the external services by the
+        # settings that describe how they are used, not by their hosts or credentials
+        add_smtpserver("docmail", "mail.example.com", port=587, username="mail-account", password="mail-password",
+                       tls=True)
+        add_radius("docradius", "radius.example.com", "radius-secret")
+        set_smsgateway("docsms", "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://sms.example.com/send?key=sms-key", "HTTP_METHOD": "POST"},
+                       headers={"Authorization": "Bearer sms-token"})
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+        finally:
+            delete_smtpserver("docmail")
+            delete_radius("docradius")
+            delete_smsgateway("docsms")
+        self.assertIn("\n* privacyIDEA version: ", body)
+        self.assertIn("\n* Database schema revision: ", body)
+        self.assertIn("\n* Nodes: ", body)
+        self.assertIn("\ndocmail\n~~~~~~~\n\n::\n\n    port: 587\n    tls: True\n    authentication: True\n", body)
+        self.assertIn("\ndocradius\n~~~~~~~~~\n", body)
+        self.assertIn("\n        HTTP_METHOD: POST\n", body)
+        self.assertIn(f"\n        Authorization: {CENSORED}\n", body)
+        for value in ("mail.example.com", "mail-account", "mail-password", "radius.example.com", "radius-secret",
+                      "sms.example.com", "sms-key", "sms-token"):
+            self.assertNotIn(value, body)
+        for section in ("SMS Gateway Configuration", "CA Configuration", "Machine Configuration",
+                        "Token Configuration"):
+            self.assertIn(f"\n{section}\n", body)
+        self.assertNotIn("TODO", body)
 
     def test_16_get_hsm(self):
         with self.app.test_request_context('/system/hsm',

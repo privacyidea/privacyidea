@@ -1435,15 +1435,19 @@ system_documentation
 type: ``bool``
 
 The administrator is allowed to export a documentation of the system
-configuration: selected settings of the ``pi.cfg``, the local administrators,
-the system configuration, the resolvers, realms, policies and event handlers.
-The documentation is created as restructured text.
+configuration: the privacyIDEA version, the revision of the database schema
+and the nodes, selected settings of the ``pi.cfg``, the local administrators,
+the system configuration, the resolvers, realms, policies and event handlers,
+the SMTP servers, SMS gateways, RADIUS servers and CA connectors, the machine
+resolvers and the number of tokens attached to machines, and the number of
+tokens and containers per type. The documentation is created as restructured
+text.
 
-The ``pi.cfg``, the resolvers and the event handlers are documented by
-selected settings, which leave out paths, URLs, credentials and free text.
-A connect string is documented by its driver, and a resolver by the settings
-that describe how privacyIDEA uses the user store, like the kind of TLS of an
-LDAP resolver or the requests of an HTTP resolver.
+The ``pi.cfg``, the resolvers, the event handlers and the external services
+are documented by selected settings, which leave out hosts, URLs, paths,
+credentials and free text. A connect string is documented by its driver, and
+a resolver by the settings that describe how privacyIDEA uses the user store,
+like the kind of TLS of an LDAP resolver or the requests of an HTTP resolver.
 
 .. versionadded:: 2.5
 
