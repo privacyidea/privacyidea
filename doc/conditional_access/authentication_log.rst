@@ -96,6 +96,11 @@ Failure
      another user of the realm has the same login name and the realm's resolver order finds them first. Recorded for
      a WebUI login with a passkey and without a username, which is the login that identifies its user by the
      credential rather than by name.
+   ``USER_STORE_UNAVAILABLE``
+     the user store failed to answer the lookup of the login name, for example because the LDAP server was busy, the
+     SQL query failed or the HTTP user store answered with a server error. The login failed without anything being
+     decided about the user, so the entry carries the login name and realm but no resolver or user ID. Recorded for
+     ``/validate/`` endpoints and ``/auth``. A conditional access policy cannot count it.
    ``NO_TOKEN``
      the user exists but has no token. It is also recorded for a passkey answer whose serial or credential ID matches
      no token, or a token of another user than the one named in the request, and at ``/validate/triggerchallenge``
@@ -172,8 +177,8 @@ policy's *deny* action refused this single request).
 
 These entries record that the refusal happened, and can be filtered and sorted
 like any other, so an administrator can see how often a lock or block took
-effect. They and ``SUSPENDED_API_KEY_USED`` are, however, the only types a
-conditional access policy cannot count.
+effect. They, ``SUSPENDED_API_KEY_USED`` and ``USER_STORE_UNAVAILABLE`` are,
+however, the only types a conditional access policy cannot count.
 
 .. _authentication_log_reasons:
 

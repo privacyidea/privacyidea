@@ -13,6 +13,11 @@
   user with that name is now refused instead of opening a session for the wrong account. The authentication log
   records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
 
+* **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
+  returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
+  as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
+  with its next resolver. The authentication log records `USER_STORE_UNAVAILABLE`.
+
 * **Own audit modules** (`PI_AUDIT_MODULE`): `search`, `search_query`, `get_total` and `get_count` now get the keyword
   argument `exact_params`, a dict of audit columns and values. Accept it and return only the entries whose columns equal
   these values, without applying the `!` and `*` search operators.
@@ -53,10 +58,29 @@
   actions the template sets to `false`.
   The schema update (`privacyidea-schema-upgrade`) removes the value of every stored boolean action whose value is not
   `true`, `True`, `TRUE` or `1`, like `policywrite=False` or `triggerchallenge=hotp`, and the earlier occurrences of an
-  action given more than once. **The policies grant the same rights as before.** The schema update logs a warning for
-  every policy it changes, so check these policies and exclude the actions that are meant to be disabled, like
-  `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until the policy is
-  saved again.
+  action given more than once. **The policies grant the same rights as before.** A container policy with
+  `disable_client_token_deletion` set to `false` or `0` is stored as `-disable_client_token_deletion`, since the
+  authenticator app applies this action itself and treats it as disabled. For the other container client actions, the
+  authenticator app then offers the container rollover and unregistering as the server allows them. The schema update
+  logs a warning for every policy it changes, so check these policies and exclude the actions that are meant to be
+  disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
+  the policy is saved again.
+
+* **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
+  resolver now also apply to the requests that fetch the access token from the authority (by default
+  `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
+
+* **`PI_CHECK_RELOAD_CONFIG` limits the configuration check to once per interval** — With a value above 0, each
+  process reads the configuration timestamp from the database at most once per interval, also while the
+  configuration does not change. A configuration change can take up to that many seconds to apply in a process,
+  also on the node where it was saved.
+
+* **Tokens whose owner has no resolver** — A token whose user assignment names no resolver was left out of every token
+  list, so it could neither be found nor deleted through the WebUI, the API or the token janitors. Such a token belongs
+  to no node and is now listed on every node, so the token lists can show tokens that were not visible before. Its
+  user is shown as `**resolver error**`; unassign or delete the token. With node-specific resolvers, a token whose
+  owner's resolver is in no realm any more, e.g. because it was deleted, is now listed on every node as well. It was
+  only listed on the nodes that serve the realm of its owner.
 
 ## Update from 3.13 to 3.14
 
