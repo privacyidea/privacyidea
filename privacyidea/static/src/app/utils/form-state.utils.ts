@@ -18,6 +18,7 @@
  **/
 
 import { FieldState, FieldTree, submit } from "@angular/forms/signals";
+import { ErrorStateMatcher } from "@angular/material/core";
 
 /**
  * True when `field` currently has an error of the given kind. Works for every field type
@@ -51,4 +52,13 @@ export function clearField<T>(field: FieldTree<T>, empty: T): void {
  */
 export function touchAll(form: FieldTree<unknown>): Promise<boolean> {
   return submit(form, { action: async () => undefined });
+}
+
+/**
+ * An error state matcher for a field the user fills by typing and picking from an autocomplete list. The field shows
+ * its error once it is invalid, touched and no longer focused, so the error stays out of the way while the user types
+ * and the list is open.
+ */
+export function blurErrorStateMatcher(focused: () => boolean): ErrorStateMatcher {
+  return { isErrorState: (control) => !!control && control.invalid && control.touched && !focused() };
 }

@@ -27,7 +27,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { ERR, markRequired } from "@utils/form-rules.utils";
-import { clearField, hasError } from "@utils/form-state.utils";
+import { blurErrorStateMatcher, clearField, hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-user-assignment",
@@ -68,6 +68,8 @@ export class UserAssignmentComponent {
   readonly realmForm = form(this.userService.selectedUserRealm, (f) => {
     required(f, { when: () => this.required() });
   });
+  readonly userFocused = signal(false);
+  readonly userErrorMatcher = blurErrorStateMatcher(this.userFocused);
   readonly userFilterForm = form(this.userFilter, (f) => {
     disabled(f, () => this.userInputDisabled());
     markRequired(f, () => this.required());

@@ -32,7 +32,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
-import { clearField, hasError, touchAll } from "@utils/form-state.utils";
+import { blurErrorStateMatcher, clearField, hasError, touchAll } from "@utils/form-state.utils";
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -78,6 +78,8 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
     pinRepeat: ""
   });
   selectedUser = signal<UserData | null>(null);
+  readonly userFocused = signal(false);
+  readonly userErrorMatcher = blurErrorStateMatcher(this.userFocused);
   readonly form = form(this.model, (f) => {
     required(f.realm);
     markRequired(f.userText);

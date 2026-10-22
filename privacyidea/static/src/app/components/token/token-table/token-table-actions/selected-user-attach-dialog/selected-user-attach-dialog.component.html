@@ -49,7 +49,10 @@
         (clearButtonClick)="clearUser()"
         [showClearButton]="model().userText !== ''">
         <input
+          (blur)="userFocused.set(false)"
+          (focus)="userFocused.set(true)"
           (input)="onUserFilterInput($any($event.target).value)"
+          [errorStateMatcher]="userErrorMatcher"
           [formField]="form.userText"
           [matAutocomplete]="userAuto"
           matInput />

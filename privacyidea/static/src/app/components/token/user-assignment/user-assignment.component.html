@@ -43,7 +43,10 @@
       [showClearButton]="userFilter() !== ''">
       <input
         [formField]="userFilterForm"
+        (blur)="userFocused.set(false)"
+        (focus)="userFocused.set(true)"
         (input)="onUserFilterInput($any($event.target).value)"
+        [errorStateMatcher]="userErrorMatcher"
         [matAutocomplete]="userAuto"
         matInput />
     </app-clearable-input>

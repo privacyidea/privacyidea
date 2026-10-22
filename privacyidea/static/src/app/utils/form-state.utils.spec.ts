@@ -19,7 +19,7 @@
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { FieldTree, form, required } from "@angular/forms/signals";
-import { clearField, hasError, touchAll } from "./form-state.utils";
+import { blurErrorStateMatcher, clearField, hasError, touchAll } from "./form-state.utils";
 
 describe("form-state.utils", () => {
   interface Model {
@@ -151,6 +151,30 @@ describe("form-state.utils", () => {
       await touchAll(tree.nested);
       expect(tree.nested.inner().touched()).toBe(true);
       expect(tree.text().touched()).toBe(false);
+    });
+  });
+
+  describe("blurErrorStateMatcher", () => {
+    const control = (invalid: boolean, touched: boolean) => ({ invalid, touched }) as never;
+
+    it("shows the error of a touched, invalid control once the field is not focused", () => {
+      const matcher = blurErrorStateMatcher(() => false);
+      expect(matcher.isErrorState(control(true, true), null)).toBe(true);
+    });
+
+    it("hides the error while the field has the focus", () => {
+      const focused = signal(true);
+      const matcher = blurErrorStateMatcher(focused);
+      expect(matcher.isErrorState(control(true, true), null)).toBe(false);
+      focused.set(false);
+      expect(matcher.isErrorState(control(true, true), null)).toBe(true);
+    });
+
+    it("hides the error of a valid or untouched control", () => {
+      const matcher = blurErrorStateMatcher(() => false);
+      expect(matcher.isErrorState(control(false, true), null)).toBe(false);
+      expect(matcher.isErrorState(control(true, false), null)).toBe(false);
+      expect(matcher.isErrorState(null, null)).toBe(false);
     });
   });
 });
