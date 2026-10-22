@@ -161,8 +161,8 @@ Failure
    ``POST_AUTHENTICATION_FAIL``
      the authentication succeeded or triggered a challenge, but the request was still answered with an error, for
      example raised by a policy that is evaluated after the authentication. If the authentication failed, the entry
-     keeps the type of that failure instead, and records the error message as well. The error message is recorded in
-     the other info as ``error``. A conditional access policy cannot count it.
+     keeps the type of that failure instead, and records the error message as well if the error was not the failure's
+     own response. The error message is recorded in the other info as ``error``. A conditional access policy cannot count it.
    ``DEVICE_TOKEN_REUSED``
      a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
      device series, and every other remembered device of this user, is revoked.

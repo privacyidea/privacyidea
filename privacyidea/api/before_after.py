@@ -710,12 +710,13 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     event = context.amendable if context is not None else None
     if event is None:
         return
-    other_info = {**(event.other_info or {}), "error": (result.get("error") or {}).get("message")}
+    message = (result.get("error") or {}).get("message")
+    fields = {"other_info": {**(event.other_info or {}), "error": message}} if message else {}
     if outcome_of(event.event_type) != AuthEventOutcome.FAILURE:
-        context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL, other_info=other_info)
-    elif (audit_authentication == AUTH_RESPONSE.REJECT and _shaped_rule(request) != "/auth"
+        context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL, **fields)
+    elif (fields and audit_authentication == AUTH_RESPONSE.REJECT and _shaped_rule(request) != "/auth"
           and not context.rejected_by_post_policy):
-        context.reclassify(event.event_type, other_info=other_info)
+        context.reclassify(event.event_type, **fields)
 
 
 def mask_authentication_error_response(request, response):
