@@ -3405,7 +3405,7 @@ class LDAPResolverTestCase(MyTestCase):
     def test_99_config_for_documentation(self):
         # The LDAP resolver is documented by how it connects and identifies the users, not by the servers, the base
         # DN, the bind account or the filters
-        config = {"LDAPURI": "ldaps://dc1.example.com, ldap://dc2.example.com", "START_TLS": "1",
+        config = {"LDAPURI": "ldap://dc1.example.com, ldaps://dc2.example.com", "START_TLS": "1",
                   "LDAPBASE": "dc=example,dc=com", "BINDDN": "cn=service,dc=example,dc=com",
                   "BINDPW": "service-password", "LDAPSEARCHFILTER": "(objectClass=person)", "AUTHTYPE": "NTLM",
                   "TLS_VERIFY": "1", "UIDTYPE": "objectGUID", "SERVERPOOL_STRATEGY": "FIRST", "CACHE_TIMEOUT": "300",
@@ -3416,6 +3416,10 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual({"editable": False, "auth_type": "NTLM", "tls": ["ldaps", "start_tls"], "tls_verify": True,
                           "uid_type": "objectGUID", "servers": 2, "serverpool_strategy": "FIRST",
                           "cache_timeout": 300, "group_search": True}, documented)
+
+        # If the first server is an ldaps server, START_TLS is not used, also not for the other servers
+        config["LDAPURI"] = "ldaps://dc1.example.com, ldap://dc2.example.com"
+        self.assertEqual(["ldaps", "none"], LDAPResolver.get_config_for_documentation(config)["tls"])
 
         # The defaults of the resolver are documented for the settings that are not configured, and a value that
         # is none of the known ones is documented as unknown

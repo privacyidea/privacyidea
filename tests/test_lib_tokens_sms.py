@@ -1,6 +1,7 @@
 """
 This test file tests the lib.tokens.smstoken
 """
+import json
 import logging
 from urllib.parse import parse_qs
 
@@ -396,6 +397,26 @@ class SMSTokenTestCase(MyTestCase):
         self.assertNotIn(sent_otp, output)
         self.assertNotIn("123456789", output)
         self.assertIn("submitMessage for the token SMSLOG01", output)
+
+    @responses.activate
+    def test_18c_failed_sms_is_logged_by_the_type_of_the_error(self):
+        # A gateway that is called with GET carries the parameters in the URL, which the error of the request names.
+        # The failure is logged by the type of the error.
+        set_privacyidea_config("sms.providerConfig",
+                               json.dumps({"URL": self.SMSHttpUrl, "HTTP_Method": "GET",
+                                           "PARAMETER": {"apikey": "gateway-api-key"},
+                                           "SMS_TEXT_KEY": "text", "SMS_PHONENUMBER_KEY": "destination"}))
+        token = init_token({"type": "sms", "serial": "SMSLOG02", "phone": self.phone1})
+        try:
+            # No response is registered, so the request fails with a ConnectionError that names the URL
+            with self.assertLogs("privacyidea", level="DEBUG") as captured:
+                self.assertFalse(token.create_challenge("123456098715")[0])
+        finally:
+            remove_token("SMSLOG02")
+        output = "\n".join(captured.output)
+        self.assertIn("The PIN was correct, but the SMS could not be sent! (ConnectionError)", output)
+        self.assertNotIn("gateway-api-key", output)
+        self.assertNotIn("123456789", output)
 
     @responses.activate
     def test_18a_challenge_request_dynamic(self):

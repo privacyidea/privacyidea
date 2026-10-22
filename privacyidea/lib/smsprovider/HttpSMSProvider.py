@@ -45,18 +45,13 @@ The code is tested in tests/test_lib_smsprovider
 from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.log import get_url_origin
+from privacyidea.lib.log import get_key_names, get_url_origin
 import requests
 import json
 from urllib.parse import urlparse
 import logging
 
 log = logging.getLogger(__name__)
-
-
-def _get_names(values: object) -> list:
-    """The keys of a dict of request parameters or headers, to log what a request sends without the values."""
-    return list(values) if isinstance(values, dict) else []
 
 
 class HttpSMSProvider(ISMSProvider):
@@ -183,9 +178,10 @@ class HttpSMSProvider(ISMSProvider):
                 data = parameter
 
         # The parameters and the headers can hold the credentials of the gateway, so only their names are logged
-        log.debug(f"issuing a {method} request to {get_url_origin(url)} with the parameters {_get_names(params)}, "
-                  f"the data {_get_names(data)}, the JSON data {_get_names(json_param)} and the headers "
-                  f"{_get_names(headers)}, basic authentication: {bool(basic_auth)}")
+        log.debug(f"issuing a {method} request to {get_url_origin(url)} with the parameters "
+                  f"{get_key_names(params)}, the data {get_key_names(data)}, the JSON data "
+                  f"{get_key_names(json_param)} and the headers {get_key_names(headers)}, "
+                  f"basic authentication: {bool(basic_auth)}")
         # Todo: drop basic auth if Authorization-Header is given?
         r = requestor(url, params=params, headers=headers,
                       data=data, json=json_param,
@@ -214,7 +210,7 @@ class HttpSMSProvider(ISMSProvider):
         urldata[messageKey] = message
         params = self.config.get('PARAMETER', {})
         urldata.update(params)
-        log.debug(f"[getParameters] urldata: {_get_names(urldata)}")
+        log.debug(f"[getParameters] urldata: {get_key_names(urldata)}")
         return urldata
 
     def _check_success(self, response):

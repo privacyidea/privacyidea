@@ -23,6 +23,7 @@ configuration and the policies completely, the pi.cfg, the resolvers, the event 
 by the settings that describe the setup. A host, a URL, a credential and free text are not part of it.
 """
 import datetime
+import logging
 import re
 import socket
 import string
@@ -47,6 +48,8 @@ from privacyidea.lib.smsprovider.SMSProvider import SMS_PROVIDERS, get_sms_provi
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.utils import get_version_number, is_true
 from privacyidea.models import CAConnector, MachineToken, Token, TokenContainer, TokenOwner, db
+
+log = logging.getLogger(__name__)
 
 # The pi.cfg settings that the system documentation lists. The report is read by somebody other than the person who
 # wrote pi.cfg, so only the settings named here are part of it: a path, a URL, a credential and a setting that an
@@ -145,11 +148,19 @@ def get_events_for_documentation() -> list[dict]:
         handler = get_handler_object(event_definition.get("handlermodule"))
         action_definitions = {}
         condition_definitions = {}
-        if handler:
-            actions = handler.actions
-            if isinstance(actions, dict):
-                action_definitions = actions.get(event_definition.get("action")) or {}
-            condition_definitions = handler.conditions
+        try:
+            if handler:
+                actions = handler.actions
+                if isinstance(actions, dict):
+                    action_definitions = actions.get(event_definition.get("action")) or {}
+                condition_definitions = handler.conditions
+        except Exception as error:
+            # A handler that can not describe its settings, like the script handler without its script directory,
+            # is documented with all values censored
+            log.warning(f"The settings of the event handler {event_definition.get('name')!r} can not be "
+                        f"documented: {type(error).__name__}")
+            action_definitions = {}
+            condition_definitions = {}
         documented_events.append({
             "name": event_definition.get("name"),
             "handlermodule": event_definition.get("handlermodule"),
@@ -236,12 +247,16 @@ def get_machines_for_documentation() -> dict:
     "ssh" or "offline".
     """
     machine_resolvers = [{"name": resolver["resolvername"], "type": resolver["type"]}
-                         for resolver in get_machine_resolver_list().values()]
+                         for resolver in get_machine_resolver_list(censor=True).values()]
     attachments = db.session.execute(select(MachineToken.application, func.count(MachineToken.id))
                                      .group_by(MachineToken.application)
                                      .order_by(MachineToken.application)).all()
-    return {"resolvers": machine_resolvers,
-            "attachments": {application or "unknown": count for application, count in attachments}}
+    # An attachment without an application is counted as "unknown", whether its application is NULL or empty
+    attachments_per_application = {}
+    for application, count in attachments:
+        key = application or "unknown"
+        attachments_per_application[key] = attachments_per_application.get(key, 0) + count
+    return {"resolvers": machine_resolvers, "attachments": attachments_per_application}
 
 
 def get_token_statistics() -> dict:
@@ -261,8 +276,14 @@ def get_token_statistics() -> dict:
     container_rows = db.session.execute(select(TokenContainer.type, func.count(TokenContainer.id))
                                         .group_by(TokenContainer.type)
                                         .order_by(TokenContainer.type)).all()
-    return {"tokens": {token_type or "unknown": {"total": total, "active": active, "assigned": assigned}
-                       for token_type, total, active, assigned in token_rows},
+    # A token without a type is counted as "unknown", whether its type is NULL or empty
+    tokens = {}
+    for token_type, total, active, assigned in token_rows:
+        counts = tokens.setdefault(token_type or "unknown", {"total": 0, "active": 0, "assigned": 0})
+        counts["total"] += total
+        counts["active"] += active
+        counts["assigned"] += assigned
+    return {"tokens": tokens,
             "containers": {container_type: count for container_type, count in container_rows}}
 
 

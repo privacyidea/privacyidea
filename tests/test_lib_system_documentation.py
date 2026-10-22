@@ -1,7 +1,7 @@
 """
 The data the system documentation is rendered from: selected settings of the configuration and statistics.
 """
-from sqlalchemy import text
+from sqlalchemy import text, update
 
 from privacyidea.lib.caconnector import delete_caconnector
 from privacyidea.lib.crypto import CENSORED
@@ -21,7 +21,7 @@ from privacyidea.lib.system_documentation import (_get_sms_provider_parameters, 
 from privacyidea.lib.container import delete_container_by_serial, init_container
 from privacyidea.lib.token import enable_token, init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import CAConnector, db
+from privacyidea.models import CAConnector, Token, db
 from .base import MyTestCase
 
 
@@ -69,8 +69,14 @@ class SystemDocumentationTestCase(MyTestCase):
                                         "content_type": "not-a-content-type", "replace": "False"})
         # An event handler whose module is not available is documented without the values of its settings
         unknown_id = set_event("unknown", ["token_init"], "NotAvailable", "do", options={"setting": "value"})
+        script_id = set_event("script", ["token_init"], "Script", "success.sh", options={"background": "wait"})
+        script_directory = self.app.config.get("PI_SCRIPT_HANDLER_DIRECTORY")
+        # A handler that can not describe its settings, like the script handler without its script directory, is
+        # documented with its values censored
+        self.app.config["PI_SCRIPT_HANDLER_DIRECTORY"] = "tests/testdata/does-not-exist"
         try:
             documented = {event["name"]: event for event in get_events_for_documentation()}
+            self.assertEqual({"background": CENSORED}, documented["script"]["options"])
 
             # A value that is one of the choices the handler declares, a bool or a number is documented
             self.assertEqual({"name": "notify", "handlermodule": "UserNotification", "active": True,
@@ -88,7 +94,8 @@ class SystemDocumentationTestCase(MyTestCase):
             self.assertEqual("pre", documented["hook"]["position"])
             self.assertEqual({"setting": CENSORED}, documented["unknown"]["options"])
         finally:
-            for event_id in (notification_id, webhook_id, unknown_id):
+            self.app.config["PI_SCRIPT_HANDLER_DIRECTORY"] = script_directory
+            for event_id in (notification_id, webhook_id, unknown_id, script_id):
                 delete_event(event_id)
 
     def test_03_smtpservers(self):
@@ -157,15 +164,26 @@ class SystemDocumentationTestCase(MyTestCase):
         init_token({"type": "hotp", "genkey": 1, "serial": "DOCHOTP02"})
         enable_token("DOCHOTP02", enable=False)
         init_token({"type": "totp", "genkey": 1, "serial": "DOCTOTP01"})
+        # Tokens without a type, with an empty type and with none, are counted together. The column has a default
+        # for a new row, so the missing type is written by an update.
+        untyped_tokens = [Token("DOCNOTYPE01", tokentype=""), Token("DOCNOTYPE02")]
+        for untyped_token in untyped_tokens:
+            untyped_token.save()
+        db.session.execute(update(Token).where(Token.serial == "DOCNOTYPE02").values(tokentype=None))
+        db.session.commit()
         container_serial = init_container({"type": "smartphone"})["container_serial"]
         try:
             self.assertEqual({"tokens": {"hotp": {"total": 2, "active": 1, "assigned": 1},
-                                         "totp": {"total": 1, "active": 1, "assigned": 0}},
+                                         "totp": {"total": 1, "active": 1, "assigned": 0},
+                                         "unknown": {"total": 2, "active": 2, "assigned": 0}},
                               "containers": {"smartphone": 1}},
                              get_token_statistics())
         finally:
             for serial in ("DOCHOTP01", "DOCHOTP02", "DOCTOTP01"):
                 remove_token(serial)
+            for untyped_token in untyped_tokens:
+                db.session.delete(untyped_token)
+            db.session.commit()
             delete_container_by_serial(container_serial)
 
     def test_09_schema_revision(self):

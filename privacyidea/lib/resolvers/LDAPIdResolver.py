@@ -1393,7 +1393,9 @@ class IdResolver(UserIdResolver):
         auth_type = config.get("AUTHTYPE") or AUTHTYPE.SIMPLE
         documented["auth_type"] = auth_type if auth_type in auth_types else "unknown"
         uris = [uri.strip() for uri in (config.get("LDAPURI") or "").split(",") if uri.strip()]
-        start_tls = is_true(config.get("START_TLS"))
+        # As in loadConfig(), START_TLS is used for the servers that are no ldaps server, unless the first one is
+        start_tls = (is_true(config.get("START_TLS"))
+                     and not (config.get("LDAPURI") or "").lower().startswith("ldaps"))
         documented["tls"] = sorted({"ldaps" if uri.lower().startswith("ldaps") else "start_tls" if start_tls else "none"
                                     for uri in uris})
         documented["tls_verify"] = is_true(config.get("TLS_VERIFY"))

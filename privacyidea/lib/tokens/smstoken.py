@@ -56,7 +56,7 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.log import log_with
+from privacyidea.lib.log import get_key_names, log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     Match, get_action_values_from_options)
@@ -374,8 +374,10 @@ class SmsTokenClass(HotpTokenClass):
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = _("The PIN was correct, but the SMS could not be sent!")
-                log.warning(info + f" ({e!r})")
-                log.debug(f"{traceback.format_exc()!s}")
+                # The type of the error only: the message of an error of the request to the gateway holds the
+                # URL with the phone number, the text and the credentials of the gateway
+                log.warning(f"{info} ({type(e).__name__})")
+                log.debug("".join(traceback.format_tb(e.__traceback__)))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
@@ -479,7 +481,7 @@ class SmsTokenClass(HotpTokenClass):
                 log.debug(f"loading SMS configuration for class {sms!s}")
                 config = self._get_sms_provider_config()
                 # The configuration holds the credentials of the gateway, so only its keys are logged
-                log.debug(f"config keys: {list(config) if isinstance(config, dict) else []}")
+                log.debug(f"config keys: {get_key_names(config)}")
                 sms.load_config(config)
             except Exception as exc:
                 log.error(f"Failed to load sms.providerConfig: {exc!r}")

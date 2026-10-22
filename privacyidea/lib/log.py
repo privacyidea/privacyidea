@@ -318,6 +318,17 @@ def _all_items(value):
         return value.items()
 
 
+def get_key_names(values: object) -> list:
+    """
+    Return the keys of a dict, for a log message that names what the dict holds without its values, like the
+    parameters of a request or the settings of a configuration. Anything that is no dict gives an empty list.
+
+    :param values: the dict
+    :return: the keys of the dict
+    """
+    return list(values) if isinstance(values, dict) else []
+
+
 def get_url_origin(url: str) -> str:
     """
     Return the scheme, the host and the port of a URL, for a log message about a request to it.

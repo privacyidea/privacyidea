@@ -23,6 +23,8 @@ for separate parts of the privacyIDEA server configuration.
 """
 import sys
 
+from privacyidea.lib.log import get_key_names
+
 EXPORT_FUNCTIONS = {}
 IMPORT_FUNCTIONS = {}
 
@@ -113,7 +115,7 @@ def get_import_names(data: dict | list, name_key: str = "name") -> list:
     :return: the names of the objects
     """
     if isinstance(data, dict):
-        return list(data)
+        return get_key_names(data)
     if isinstance(data, list):
         return [entry.get(name_key) for entry in data if isinstance(entry, dict)]
     return []

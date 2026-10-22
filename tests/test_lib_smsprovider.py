@@ -299,6 +299,17 @@ class SmtpSMSTestCase(MyTestCase):
         self.assertRaises(SMSError, self.missing_provider.submit_message,
                           "1234356", "Hello")
 
+    def test_01a_incomplete_config_is_logged_by_its_keys(self):
+        # The configuration holds the credentials of the mail server, an incomplete one is logged by its keys
+        provider = SmtpSMSProvider()
+        provider.load_config({"MAILSERVER": "localhost:25", "MAILUSER": "mail-user",
+                              "MAILPASSWORD": "mail-password"})
+        with self.assertLogs("privacyidea.lib.smsprovider.SmtpSMSProvider", level="ERROR") as captured:
+            self.assertRaises(SMSError, provider.submit_message, "1234356", "Hello")
+        output = "\n".join(captured.output)
+        self.assertIn("incomplete config: ['MAILSERVER', 'MAILUSER', 'MAILPASSWORD']", output)
+        self.assertNotIn("mail-password", output)
+
     @smtpmock.activate
     def test_02_simple_config_success(self):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")})

@@ -103,7 +103,7 @@ def getTagName(elem):
 
 
 # The content of a token file holds the OTP keys of the tokens, so it is not logged
-@log_with(log, hide_args=[0])
+@log_with(log, hide_args=["csv"])
 def parseOATHcsv(csv):
     """
     (#653)
@@ -192,7 +192,7 @@ def parseOATHcsv(csv):
     return parsed_tokens
 
 
-@log_with(log, hide_args=[0])
+@log_with(log, hide_args=["csv"])
 def parseYubicoCSV(csv):
     """
     This function reads the CSV data as created by the Yubico personalization
@@ -334,7 +334,7 @@ def parseYubicoCSV(csv):
     return parsed_tokens
 
 
-@log_with(log, hide_args=[0])
+@log_with(log, hide_args=["xml"])
 def parseSafeNetXML(xml):
     """
     This function parses XML data of a Aladdin/SafeNet XML
@@ -444,7 +444,7 @@ def derive_key(xml, password):
     return binascii.hexlify(r)
 
 
-@log_with(log, hide_args=[0])
+@log_with(log, hide_args=["xml_data"])
 def parsePSKCdata(xml_data,
                   preshared_key_hex=None,
                   password=None,

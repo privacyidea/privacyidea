@@ -32,6 +32,7 @@ address, subject and body this gateway will trigger the sending of the SMS.
 
 The code is tested in tests/test_lib_smsprovider
 """
+from privacyidea.lib.log import get_key_names
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
 from privacyidea.lib.smtpserver import send_email_identifier, send_email_data
 import logging
@@ -72,7 +73,7 @@ class SmtpSMSProvider(ISMSProvider):
 
             if not (server and recipient and sender) and not (identifier and \
                     recipient):
-                log.error(f"incomplete config: {self.config}. MAILTO and (IDENTIFIER or "
+                log.error(f"incomplete config: {get_key_names(self.config)}. MAILTO and (IDENTIFIER or "
                           "MAILSERVER and MAILSENDER) needed")
                 raise SMSError(-1, "Incomplete SMS config.")
 
