@@ -164,6 +164,32 @@ describe("EventActionTabComponent", () => {
       expect(component.optionsAreValid()).toBe(true);
     });
 
+    it("does not store an empty read-only option", () => {
+      // URL and content_type cannot be set here, so saving them blank would only add rows to the
+      // handler definition that mean "not configured".
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.componentRef.setInput("options", { webhook: "siem", data: "{}" });
+      fixture.detectChanges();
+
+      const emit = component.newOptions.emit as unknown as jest.Mock;
+      const last = emit.mock.calls[emit.mock.calls.length - 1][0] as EventActionOptionValues;
+      expect(Object.keys(last).sort()).toEqual(["data", "replace", "webhook"]);
+    });
+
+    it("drops a stored read-only option too, rather than carrying it along", () => {
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.componentRef.setInput("options", {
+        webhook: "siem",
+        URL: "https://stored.example.com/hook",
+        data: "{}"
+      });
+      fixture.detectChanges();
+
+      const emit = component.newOptions.emit as unknown as jest.Mock;
+      const last = emit.mock.calls[emit.mock.calls.length - 1][0] as EventActionOptionValues;
+      expect(Object.keys(last).sort()).toEqual(["data", "replace", "webhook"]);
+    });
+
     it("leaves a module that states no order alone", () => {
       fixture.componentRef.setInput("action", "add_token_info");
       fixture.detectChanges();

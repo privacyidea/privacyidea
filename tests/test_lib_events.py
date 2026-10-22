@@ -4972,6 +4972,43 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertEqual(responses.calls[0].request.url, self.WEBHOOK_URL)
 
     @responses.activate
+    def test_02b_an_inline_content_type_can_not_override_the_webhook(self):
+        """
+        The webhook owns the content type as it owns the URL. A stored inline value - left over
+        from before the handler was converted, or written straight to the API - must not reach
+        the request, or a handler option would silently re-describe what the webhook sends.
+        """
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.URLENCODED)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem",
+                                   "URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": "a=1"})
+        self.assertTrue(self._do_webhook(opts))
+
+        request = responses.calls[0].request
+        self.assertEqual(self.WEBHOOK_URL, request.url)
+        self.assertEqual(ContentType.URLENCODED, request.headers["Content-Type"])
+
+    @responses.activate
+    def test_02c_empty_inline_options_alongside_a_webhook_change_nothing(self):
+        # The shape a definition saved by the WebUI used to have: URL and content_type stored as
+        # empty rows. They must be as inert as their absence.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type=ContentType.JSON)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "URL": "", "content_type": "",
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        request = responses.calls[0].request
+        self.assertEqual(self.WEBHOOK_URL, request.url)
+        self.assertEqual(ContentType.JSON, request.headers["Content-Type"])
+
+    @responses.activate
     def test_03_unknown_webhook_sends_nothing(self):
         """A dangling reference is a configuration error, not a request."""
         responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)

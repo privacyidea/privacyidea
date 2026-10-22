@@ -250,6 +250,62 @@ class APIEventsTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get("value"), [])
 
+    def test_02c_converting_a_webhook_handler_drops_its_inline_options(self):
+        """
+        The WebUI no longer sends ``option.URL`` or ``option.content_type`` for a WebHook handler:
+        both are shown, not set, and taken from the selected webhook. Because an update that
+        carries any ``option.*`` replaces the whole option set, the stored inline rows have to
+        disappear with it - otherwise a converted handler keeps dead configuration that only the
+        3.16 migration would ever clean up.
+        """
+        from privacyidea.lib.webhook import set_webhook
+        set_webhook("siem", url="https://siem.example.com/hook")
+
+        param = {
+            "name": "Coffee maker",
+            "event": "validate_check",
+            "action": "post_webhook",
+            "handlermodule": "WebHook",
+            "option.URL": "https://old.example.com/hook",
+            "option.content_type": "application/json",
+            "option.data": '{"a": 1}'
+        }
+        with self.app.test_request_context('/event', data=param, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            ev_id = res.json.get("result").get("value")
+
+        # The update the editor sends once a webhook has been selected.
+        converted = {
+            "id": ev_id,
+            "name": "Coffee maker",
+            "event": "validate_check",
+            "action": "post_webhook",
+            "handlermodule": "WebHook",
+            "option.webhook": "siem",
+            "option.data": '{"a": 1}',
+            "option.replace": "True"
+        }
+        with self.app.test_request_context('/event', data=converted, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+
+        with self.app.test_request_context(f'/event/{ev_id!s}', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            options = res.json.get("result").get("value")[0].get("options")
+
+        self.assertEqual(sorted(options), ["data", "replace", "webhook"])
+        self.assertEqual("siem", options.get("webhook"))
+
+        # The tests in this class share a database, and the later ones count the bindings.
+        with self.app.test_request_context(f'/event/{ev_id!s}', method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
     def test_02b_reorder_keeps_options(self):
         # Regression test for the "change order in the overview deletes actions"
         # bug: reordering an event handler sends the binding without any

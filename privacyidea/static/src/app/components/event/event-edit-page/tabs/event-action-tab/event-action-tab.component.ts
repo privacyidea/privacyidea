@@ -227,10 +227,14 @@ export class EventActionTabComponent {
   }
 
   private optionsToDict(values: EventActionOptionValues): EventActionOptionValues {
+    const definitions = this.actionOptions();
     const result: EventActionOptionValues = {};
     for (const key of Object.keys(values)) {
       const value = values[key];
       if (value === null || value === undefined) continue;
+      // A read-only option is never written back. Nobody can set it here, so storing one only
+      // adds a row to the handler definition that nothing put there on purpose.
+      if (definitions[key]?.readonly) continue;
       result[key] = value;
     }
     return result;
