@@ -17,6 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
+  (actionTriggered)="onAction($event)"
+  [actions]="actions"
   width="l"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
@@ -41,8 +43,5 @@
         rows="10">
       </textarea>
     </mat-form-field>
-    <app-copyable [copyText]="documentation">
-      <span i18n="@@systemConfig.copySystemDocumentation">Copy System Documentation:</span>
-    </app-copyable>
   </div>
 </app-dialog-wrapper>
