@@ -118,34 +118,40 @@ class WebHookHandler(BaseEventHandler):
 
         :return: dict with actions
         """
-        # The event handler has just one action. Maybe we can  hide action select for the clarity of the UI
         actions = {ActionType.POST_WEBHOOK: {
             "webhook": {
+                "order": 1,
                 "type": "str",
-                "required": False,
-                "description": _("Post to this configured webhook. The webhook definition owns the URL, the HTTP "
-                                 "method, the authentication, the headers and the TLS, proxy and timeout settings. "
-                                 "When a webhook is selected, the URL and content type below are ignored."),
+                "required": True,
+                "description": _("Select a webhook to post to. This will automatically set the URL and content type."),
                 "value": get_webhook_identifiers()
             },
+            # Shown so that an administrator can see where a handler posts, but not editable.
             "URL": {
+                "order": 2,
                 "type": "str",
                 "required": False,
-                "description": _("DEPRECATED, removed in privacyIDEA 3.16: the URL the WebHook is posted to. Only "
-                                 "used when no webhook is selected above, and it can carry no authentication. "
-                                 "Configure a webhook instead and select it above.")
+                "readonly": True,
+                "fromWebhook": "url",
+                "description": _("Shows the URL form the webhook configured.")
             },
             "content_type": {
+                "order": 3,
                 "type": "str",
                 "required": False,
-                "description": _("DEPRECATED, removed in privacyIDEA 3.16: the MIME type (Content-Type) used for "
-                                 "the WebHook payload, for example application/json or "
-                                 "application/x-www-form-urlencoded. Only used when no webhook is selected above."),
-                "value": [
-                    ContentType.JSON,
-                    ContentType.URLENCODED]
+                "readonly": True,
+                "fromWebhook": "content_type",
+                "description": _("Shows the content type from the webhook configured.")
+            },
+            "data": {
+                "order": 4,
+                "type": "text",
+                "required": False,
+                "description": _("The body posted to the WebHook. Leave it empty to send the "
+                                 "selected webhook's own default payload.")
             },
             "replace": {
+                "order": 5,
                 "type": "bool",
                 "required": False,
                 "description": _("You can use the following placeholders: "
@@ -156,12 +162,6 @@ class WebHookHandler(BaseEventHandler):
                                  "{logged_in_user}, {token_serial} (= {serial}), "
                                  "{token_owner} (= {givenname}), {user_realm} (= {userrealm}). "
                                  "Tag availability depends on the endpoint."),
-            },
-            "data": {
-                "type": "str",
-                "required": False,
-                "description": _("The body posted to the WebHook. Leave it empty to send the "
-                                 "selected webhook's own default payload.")
             }
         }}
         return actions

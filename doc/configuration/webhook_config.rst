@@ -44,10 +44,7 @@ Headers
    its place. Sending that placeholder back keeps the stored value, an empty
    value clears it.
 
-   Renaming a header keeps its value, including a secret one. The placeholder
-   means "keep what is stored under *this* name", so the editor tells the server
-   which header the renamed one used to be (``rename.header.*``, see
-   :ref:`rest_webhook`) - it is the only party that knows a rename happened.
+   .. note:: Renaming a header keeps its value, including a secret one.
 
 TLS
    Certificate verification is **on** by default and should stay on. A **CA

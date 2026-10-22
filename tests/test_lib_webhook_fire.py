@@ -16,7 +16,7 @@ import responses
 
 from privacyidea.lib.webhook import (
     AuthType, ContentType, MAX_RESPONSE_LENGTH,
-    fire_webhook, set_webhook,
+    _mtls_ssl_context, fire_webhook, get_webhook, set_webhook,
     test_webhook as run_webhook_test,
 )
 from privacyidea.models.webhook import Webhook
@@ -280,6 +280,43 @@ class FireWebhookTestCase(MyTestCase):
         self.assertIsNone(session.request.call_args.kwargs["cert"])
         # The session is closed again.
         session.close.assert_called_once()
+
+    def test_a_ca_bundle_stays_the_only_trust_anchor_with_an_encrypted_key(self):
+        """
+        The context this path builds has to trust what the ordinary path trusts, no more.
+
+        requests starts from urllib3's create_urllib3_context(), which loads no certificates, so
+        a bundle passed to verify= is the only anchor. ssl.create_default_context() loads the
+        system store first, and urllib3 then *adds* the bundle to it - measured here as 122
+        anchors instead of 1. An administrator pinning an internal CA would have gone on trusting
+        every public CA, just because the client key carries a password.
+        """
+        bundle = "tests/testdata/ca/cacert.pem"
+        set_webhook("hook", url=URL, auth_type=AuthType.MTLS,
+                    client_certificate="/etc/ssl/client.pem",
+                    client_key="/etc/ssl/client.key",
+                    client_key_password="keypw",
+                    tls_ca_bundle=bundle)
+
+        # Only the chain loading is mocked away (it would need real key files); the context
+        # itself is the real one, so its trust anchors can be counted.
+        with patch("ssl.SSLContext.load_cert_chain"):
+            context = _mtls_ssl_context(get_webhook("hook"), bundle, "keypw")
+
+        self.assertEqual(1, len(context.get_ca_certs()))
+        self.assertTrue(context.check_hostname)
+
+    def test_without_a_bundle_the_system_store_still_applies(self):
+        # The other half: no bundle configured means the default trust, exactly as before.
+        set_webhook("hook", url=URL, auth_type=AuthType.MTLS,
+                    client_certificate="/etc/ssl/client.pem",
+                    client_key="/etc/ssl/client.key",
+                    client_key_password="keypw")
+
+        with patch("ssl.SSLContext.load_cert_chain"):
+            context = _mtls_ssl_context(get_webhook("hook"), True, "keypw")
+
+        self.assertGreater(len(context.get_ca_certs()), 1)
 
     def test_mtls_with_encrypted_key_and_verification_off(self):
         """Disabling verification must also relax the custom SSLContext."""

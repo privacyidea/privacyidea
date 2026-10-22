@@ -107,8 +107,12 @@ export class WebhookService implements WebhookServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly webhookResource = httpResource<PiResponse<Webhook[]>>(() => {
     // Conditional access appears in this list because its WEBHOOK stage action picks the webhook that
-    // is fired from these identifiers, the way the email actions pick an SMTP server.
-    const onPageUsingTheList = this.contentService.onExternalWebhook() || this.contentService.onConditionalAccess();
+    // is fired from these identifiers, the way the email actions pick an SMTP server; the event page
+    // because the WebHook handler picks one the same way, and shows its URL and content type.
+    const onPageUsingTheList =
+      this.contentService.onExternalWebhook() ||
+      this.contentService.onConditionalAccess() ||
+      this.contentService.onEvents();
     // /webhook/ itself requires webhook_read, so this guard skips the request rather than letting it 403; only
     // the Webhooks menu entry is gated on that right, so pages that merely consume the list need this check too.
     if (!onPageUsingTheList || !this.authService.actionAllowed("webhook_read")) {

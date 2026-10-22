@@ -30,7 +30,7 @@ from sqlalchemy import select, delete
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.conditional_access.request_context import recheck_conditional_access_gate
 from privacyidea.lib.config import get_config_object
-from privacyidea.lib.error import HandlerAbortError
+from privacyidea.lib.error import ConfigAdminError, HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.lib.webhook import get_webhook, get_webhook_identifiers, set_webhook
@@ -561,29 +561,50 @@ def _convert_inline_webhook_handler(handler_id, handler_name, options):
 
 
 @register_import('event')
-def import_event(data, name=None):
-    """Import policy configuration"""
+def import_event(data, name=None, skip_invalid=False):
+    """
+    Import event handler configuration.
+
+    Each definition is imported independently. A WebHook definition still in the pre-3.15 inline
+    shape is converted to a webhook object on the way in - the migration that does this at upgrade
+    time has already run on this installation and will not run again, so an export taken from an
+    older release would otherwise bring the shape back past the release that removes it.
+
+    :param data: the exported event handler definitions
+    :param name: import only the definition of this name (default: import all)
+    :param skip_invalid: If True, a WebHook definition that cannot be converted because it sends
+        nothing as it stands - no ``URL``, or a ``content_type`` that is neither JSON nor
+        urlencoded - is skipped instead of failing the import. Without it such a definition is
+        reported at the end, the way an unimportable policy is, so that a configuration that
+        cannot be restored faithfully does not look like one that was.
+    """
     log.debug(f'Import event config: {data!s}')
-    for res_data in data:
-        if name and name != res_data.get('name'):
+    skipped = []
+    failed = {}
+    for entry in data:
+        if name and name != entry.get('name'):
             continue
-        # A WebHook handler in the pre-3.15 inline shape is converted now, not at the next
-        # upgrade: the migration that did this has already run on this installation and will not
-        # run again.
+        # Worked on as a copy: the caller's data has to survive the import. "condition" is
+        # dropped because it is not used any more, but deleting it from the caller's dict made
+        # a second import of the same data fail with a KeyError - and ``pop`` rather than ``del``
+        # so a hand-edited export without the key imports too.
+        res_data = {key: value for key, value in entry.items() if key != "condition"}
         options = res_data.get("options") or {}
         inline_webhook = (res_data.get("handlermodule") == "WebHook"
                           and not options.get("webhook"))
         if inline_webhook:
             defect = _inline_webhook_defect(options)
             if defect:
-                log.warning(f'Skipping the import of WebHook event handler '
-                            f'"{res_data.get("name")}": {defect}, so it sends nothing and cannot '
-                            f'be given a webhook. Correct it in the exported configuration and '
-                            f'import again.')
+                handler_name = res_data.get("name")
+                if not skip_invalid:
+                    failed[handler_name] = defect
+                    continue
+                log.warning(f'Skipping the import of WebHook event handler "{handler_name}": '
+                            f'{defect}, so it sends nothing and cannot be given a webhook. '
+                            f'Correct it in the exported configuration and import again.')
+                skipped.append(handler_name)
                 continue
 
-        # condition is apparently not used anymore
-        del res_data["condition"]
         rid = set_event(**res_data)
 
         if inline_webhook:
@@ -592,9 +613,28 @@ def import_event(data, name=None):
             # keeps them: the webhook option wins in WebHookHandler.do(), and they stay readable
             # until the release that removes the inline shape drops them.
             identifier = _convert_inline_webhook_handler(rid, res_data.get("name"), options)
-            set_event(id=rid, options={**options, "webhook": identifier})
+            # The one option row is written directly rather than through a second set_event().
+            # That call takes the whole definition, and the fields it is not given fall back to
+            # the signature defaults rather than being left alone: action would become "" (the
+            # handler then never fires, do() refuses an action it does not know), position would
+            # become "post", ordering 0, and a definition exported as inactive would come back
+            # enabled.
+            db.session.add(EventHandlerOption(
+                eventhandler_id=rid, Key="webhook", Value=identifier,
+                Description="Added by the configuration import: links this WebHook handler to "
+                            "the webhook created from its inline options (#5751)"))
+            save_config_timestamp()
+            db.session.commit()
             log.info(f"Imported WebHook handler {rid} was converted to the webhook "
                      f"{identifier!r}.")
 
         log.info('Import of event "{!s}" finished,'
                  ' id: {!s}'.format(res_data['name'], rid))
+
+    if skipped:
+        log.warning(f"Skipped WebHook event handlers that send nothing as they stand: {skipped}")
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({reason})' for n, reason in failed.items())
+        raise ConfigAdminError(f"Could not import the following WebHook event handlers: "
+                               f"{failure_summary}.")

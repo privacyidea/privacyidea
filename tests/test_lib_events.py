@@ -5167,22 +5167,24 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertFalse(options["URL"]["required"])
         self.assertFalse(options["content_type"]["required"])
 
-    def test_10b_no_option_of_this_action_is_mandatory(self):
+    def test_10b_only_the_webhook_is_mandatory(self):
         """
-        Every option here has a meaningful empty state, so requiring any of them only blocks a
-        valid configuration:
+        `webhook` is the one option a handler cannot do without: the endpoint lives on the webhook,
+        and `URL` is no longer editable, so a handler saved without one has nowhere to post.
+
+        The others each have a meaningful empty state, and requiring them would only block a valid
+        configuration:
 
         * `data` empty is what makes the selected webhook's own default_payload apply - the reason
           the payload lives on the webhook object at all
         * `replace` off is a plain choice, and the editor counts an untouched checkbox as empty, so
           a required one cannot be saved until it has been switched on once
-        * `URL` / `content_type` belong to the inline shape, which a selected webhook supersedes
-        * `webhook` is empty for a definition that stays on the inline shape
+        * `URL` / `content_type` are shown, not set; they mirror the selected webhook
         """
         options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
 
         required = sorted(name for name, option in options.items() if option.get("required"))
-        self.assertListEqual([], required)
+        self.assertListEqual(["webhook"], required)
 
     @responses.activate
     def test_10c_an_empty_payload_sends_the_webhooks_own_default(self):
@@ -5543,6 +5545,26 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         self.assertEqual(10, webhook["timeout"])
         self.assertTrue(webhook["description"].startswith(IMPORT_MARKER), webhook["description"])
 
+    def test_the_rest_of_the_definition_survives_the_conversion(self):
+        """
+        The conversion must touch nothing but the options. Writing the link through a second
+        set_event() did: the fields that call is not given fall back to the signature defaults,
+        so action became "" - and a handler whose action do() does not recognise never fires
+        again - while position, ordering and active were reset too.
+        """
+        exported = self._exported()
+        exported[0].update(action="post_webhook", active=False, ordering=3, position="pre")
+
+        import_event(exported)
+
+        handler = EventConfiguration().events[0]
+        self.assertEqual("post_webhook", handler["action"])
+        self.assertFalse(handler["active"])
+        self.assertEqual(3, handler["ordering"])
+        self.assertEqual("pre", handler["position"])
+        # ...and the conversion still happened.
+        self.assertIn("webhook", handler["options"])
+
     def test_the_inline_options_are_kept(self):
         # Exactly as the migration keeps them: the webhook option wins in do(), and they stay
         # readable until the release that removes the inline shape drops them.
@@ -5574,32 +5596,53 @@ class ImportInlineWebhookHandlerTestCase(MyTestCase):
         # No second webhook was created for it.
         self.assertEqual(["siem"], [w.identifier for w in Webhook.query.all()])
 
-    def test_a_definition_without_a_url_is_skipped(self):
-        # It sends nothing as it stands and cannot be given a webhook, so storing it would put a
-        # handler into the database that the release removing the inline shape cannot repair.
-        import_event(self._exported(options={"data": '{"a": 1}'}))
+    def test_a_definition_without_a_url_is_reported(self):
+        # It sends nothing as it stands and cannot be given a webhook. Storing it would put a
+        # handler into the database that the release removing the inline shape cannot repair, so
+        # it is not imported - but the import says so rather than passing over it quietly.
+        with self.assertRaises(ConfigAdminError) as caught:
+            import_event(self._exported(options={"data": '{"a": 1}'}))
 
+        self.assertIn("Coffee maker", str(caught.exception))
+        self.assertIn("no URL", str(caught.exception))
         self.assertEqual([], EventConfiguration().events)
         self.assertEqual(0, Webhook.query.count())
 
-    def test_a_definition_with_an_unusable_content_type_is_skipped(self):
+    def test_a_definition_with_an_unusable_content_type_is_reported(self):
         # The inline handler refuses the value, so this one sends nothing either. Reading it as
         # JSON would be a guess about what was meant.
-        import_event(self._exported(options={"URL": self.URL, "content_type": "nonsense"}))
+        with self.assertRaises(ConfigAdminError) as caught:
+            import_event(self._exported(options={"URL": self.URL, "content_type": "nonsense"}))
+
+        self.assertIn("content_type", str(caught.exception))
+        self.assertEqual([], EventConfiguration().events)
+        self.assertEqual(0, Webhook.query.count())
+
+    def test_skip_invalid_turns_the_failure_into_a_skip(self):
+        # What 'pi-manage config import --skip-invalid' is for: import what can be imported and
+        # pass over what cannot, instead of failing the whole configuration type.
+        import_event(self._exported(options={"URL": self.URL, "content_type": "nonsense"}),
+                     skip_invalid=True)
 
         self.assertEqual([], EventConfiguration().events)
         self.assertEqual(0, Webhook.query.count())
 
-    def test_skipping_one_definition_does_not_stop_the_import(self):
+    def test_the_other_definitions_are_imported_either_way(self):
+        # A defective definition must not cost the intact ones, with or without the flag - the
+        # failure is reported after everything that could be imported has been.
         broken = self._exported(name="Broken", options={"URL": self.URL,
                                                         "content_type": "nonsense"},
                                 handler_id=1)
         intact = self._exported(name="Intact", handler_id=2)
 
-        import_event(broken + intact)
+        with self.assertRaises(ConfigAdminError):
+            import_event(broken + intact)
+        self.assertEqual(["Intact"], [h["name"] for h in EventConfiguration().events])
+        self.assertEqual(1, Webhook.query.count())
 
-        names = [handler["name"] for handler in EventConfiguration().events]
-        self.assertEqual(["Intact"], names)
+        self._cleanup()
+        import_event(broken + intact, skip_invalid=True)
+        self.assertEqual(["Intact"], [h["name"] for h in EventConfiguration().events])
         self.assertEqual(1, Webhook.query.count())
 
     def test_a_webhook_definition_without_a_url_is_imported(self):

@@ -713,6 +713,40 @@ def media_type(content_type):
     return parse_options_header(content_type or "")[0].strip().lower()
 
 
+def _mtls_ssl_context(config, verify, key_password):
+    """
+    Build the SSL context for a webhook whose client key carries a password.
+
+    ``requests``' ``cert=`` cannot pass a key password, so this path loads the chain into a
+    context of its own. That context has to be built the way ``requests`` builds its own, and the
+    CA bundle is where the two differ: ``requests`` starts from
+    ``urllib3.util.ssl_.create_urllib3_context()``, which loads no certificates at all, so a
+    bundle handed to ``verify=`` becomes the only trust anchor. ``ssl.create_default_context()``
+    loads the system store first, and urllib3 then calls ``load_verify_locations()`` on it - which
+    *adds* the bundle to the public CAs rather than replacing them.
+
+    An administrator who pins an internal CA and happens to protect the client key with a
+    password would silently also trust every public CA again. Passing the bundle as ``cafile``
+    keeps it the only anchor, because ``create_default_context()`` skips the system store exactly
+    when it is given one.
+
+    :param config: the webhook configuration
+    :param verify: the ``verify`` argument as :func:`_build_verify` produced it - False, True, or
+        the path of a CA bundle
+    :param key_password: the decrypted password of the client key
+    :return: the context to mount for this request
+    """
+    # cafile=None is what create_default_context() does by itself, so the system store still
+    # applies when no bundle is configured.
+    context = ssl.create_default_context(cafile=verify if isinstance(verify, str) else None)
+    if verify is False:
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    context.load_cert_chain(config["client_certificate"], config["client_key"] or None,
+                            password=key_password)
+    return context
+
+
 def _resolve_body(config, payload):
     """
     Determine the request body.
@@ -1130,14 +1164,7 @@ def fire_webhook(identifier, payload=None):
             # the password, so the chain is loaded into an SSLContext instead and
             # cert= is left unset.
             cert = None
-            certificate = config["client_certificate"]
-            key = config["client_key"]
-            context = ssl.create_default_context()
-            if verify is False:
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-            context.load_cert_chain(certificate, key or None,
-                                    password=key_password)
+            context = _mtls_ssl_context(config, verify, key_password)
             session = requests.Session()
             session.mount("https://", _SSLContextAdapter(context))
             requester = session.request

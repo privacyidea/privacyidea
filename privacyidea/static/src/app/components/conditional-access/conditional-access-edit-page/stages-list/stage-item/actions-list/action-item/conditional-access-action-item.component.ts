@@ -205,6 +205,8 @@ export class ConditionalAccessActionItemComponent {
   readonly removeAction = output<void>();
 
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
+  // Whether the configured webhooks can be listed: /webhook/ requires webhook_read, so without it
+  // the list is never fetched (see WebhookService) and the identifier falls back to a free-text input
   // carrying WEBHOOK_TEXT_HINT - the same treatment the SMTP identifier gets.
   readonly webhooksListable = computed<boolean>(() => this.authService.actionAllowed("webhook_read"));
 
@@ -318,6 +320,7 @@ export class ConditionalAccessActionItemComponent {
     const current = this.emailFieldValue("smtp_identifier");
     return identifiers.length > 0 && !identifiers.includes(current) ? current : "";
   });
+  // Options of the webhook select: the configured identifiers plus the one the action already carries
   // when not among them, so mat-select does not render a blank trigger for a value the admin needs to see.
   readonly webhookOptions = computed<string[]>(() => {
     const identifiers = this.webhookIdentifiers();
@@ -325,8 +328,8 @@ export class ConditionalAccessActionItemComponent {
     return current && !identifiers.includes(current) ? [...identifiers, current] : identifiers;
   });
 
-  // Whether the configured webhooks can be listed: /webhook/ requires webhook_read, so without it the
-  // list is never fetched (see WebhookService) and the identifier falls back to a free-text input
+  // Stored identifier naming a webhook that is no longer configured, in which case fire_webhook() finds
+  // nothing and the action is skipped with a log line; judged only against a non-empty list, since until
   // /webhook/ has answered, calling the stored one gone would be a guess.
   readonly staleWebhookIdentifier = computed<string>(() => {
     const identifiers = this.webhookIdentifiers();
@@ -336,11 +339,8 @@ export class ConditionalAccessActionItemComponent {
   readonly webhookTextHint = WEBHOOK_TEXT_HINT;
   private readonly webhookService: WebhookServiceInterface = inject(WebhookService);
 
-  // Options of the webhook select: the configured identifiers plus the one the action already carries
   readonly webhookIdentifiers = computed<string[]>(() => this.webhookService.webhookIdentifiers());
 
-  // Stored identifier naming a webhook that is no longer configured, in which case fire_webhook() finds
-  // nothing and the action is skipped with a log line; judged only against a non-empty list, since until
   // Nothing can be said about the webhooks while the request is in flight.
   readonly webhooksLoading = computed<boolean>(() => this.webhookService.webhookResource.isLoading());
 
