@@ -35,10 +35,10 @@ class APISubscriptionsTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 1)
-            self.assertEqual(value[0].get("application"), "demo_application")
+            self.assertEqual(value[0].get("application"), "privacyIDEA")
 
         # Get one subscription
-        with self.app.test_request_context('/subscriptions/demo_application',
+        with self.app.test_request_context('/subscriptions/privacyIDEA',
                                            method="GET",
                                            headers={
                                                'Authorization': self.at}):
@@ -47,8 +47,7 @@ class APISubscriptionsTestCase(MyApiTestCase):
             result = res.json.get("result")
             value = result.get("value")
             self.assertEqual(len(value), 1)
-            self.assertEqual(value[0].get("application"),
-                             "demo_application")
+            self.assertEqual("privacyIDEA", value[0].get("application"))
 
         # Filtering by an unknown application returns an empty list.
         with self.app.test_request_context('/subscriptions/no_such_app',
@@ -59,7 +58,7 @@ class APISubscriptionsTestCase(MyApiTestCase):
             self.assertEqual([], res.json.get("result").get("value"))
 
         # delete subscriptions
-        with self.app.test_request_context('/subscriptions/demo_application',
+        with self.app.test_request_context('/subscriptions/privacyIDEA',
                                            method="DELETE",
                                            headers={
                                                'Authorization': self.at}):
@@ -70,7 +69,7 @@ class APISubscriptionsTestCase(MyApiTestCase):
             self.assertEqual(value, 1)
 
         # Get one subscription
-        with self.app.test_request_context('/subscriptions/demo_application',
+        with self.app.test_request_context('/subscriptions/privacyIDEA',
                                            method="GET",
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
