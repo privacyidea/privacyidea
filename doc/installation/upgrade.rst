@@ -3,11 +3,9 @@
 Upgrading
 ---------
 
-In any case before upgrading a major version read the document
-`READ_BEFORE_UPDATE`_
-which is continuously updated in the Github repository.
-Note, that when you are upgrading over several major versions, read all the comments
-for all versions.
+Before every update, read :read-before-update:`READ_BEFORE_UPDATE.md` of the version
+you update to. It lists what changes and what you have to do before and after the
+update. When you skip versions, read the sections of all versions in between.
 
 If you installed privacyIDEA via DEB or RPM repository you can use the normal
 system ways of *apt* and *dnf* to upgrade privacyIDEA to the
@@ -24,9 +22,21 @@ Upgrading a pip installation
 ............................
 
 If you install privacyIDEA into a python virtualenv like */opt/privacyidea*,
-you can follow this basic upgrade process.
+the upgrade consists of these steps, described below:
 
-First you might want to backup your program directory:
+#. Read :read-before-update:`READ_BEFORE_UPDATE.md`.
+#. Stop the web server that runs privacyIDEA, and pause the cron jobs or timers
+   that run privacyIDEA commands. The schema upgrade changes and moves data; a
+   process that still runs the old code would keep reading and writing it the old
+   way.
+#. Back up the program directory, the database and the configuration.
+#. Upgrade the code.
+#. Run the schema upgrade once.
+#. Check that ``pi-manage db current`` shows the newest revision, marked
+   ``(head)``.
+#. Start the web server and the cron jobs again.
+
+Back up your program directory:
 
 .. code-block:: bash
 
@@ -107,7 +117,8 @@ Usually you will need to upgrade/migrate the database:
     ``privacyidea-schema-upgrade`` does not accept the directory without ``-d``.
     ``-s`` skips stamping a database that has no version stamp yet.
 
-Now you need to restart your webserver for the new code to take effect.
+Check that ``pi-manage db current`` shows the newest revision, marked ``(head)``.
+Then start the web server and the cron jobs again.
 
 .. note::
 
@@ -124,9 +135,9 @@ Upgrading a packaged installation
 .................................
 
 In general, the upgrade of a packaged version of privacyIDEA should be done using the
-default tools (e.g. apt and dnf). In any case, read the
-`READ_BEFORE_UPDATE`_
-file. It is also a good idea to backup your system before upgrading.
+default tools (e.g. apt and dnf). In any case, read
+:read-before-update:`READ_BEFORE_UPDATE.md` first. It is also a good idea to backup your
+system before upgrading.
 
 Ubuntu upgrade
 ^^^^^^^^^^^^^^
@@ -135,7 +146,36 @@ If you use the Ubuntu packages in a default setup, the upgrade should be done
 using::
 
    apt update
-   apt dist-upgrade
+   apt upgrade
+
+The ``privacyidea`` package is only upgraded together with the server package
+(``privacyidea-apache2`` or ``privacyidea-nginx``), which runs the schema upgrade.
+``apt upgrade`` keeps the ``privacyidea`` package back if its server package is
+missing, while ``apt dist-upgrade`` would remove the server package instead.
+
+The server package runs the schema upgrade while the web server keeps serving
+requests, and restarts the web server afterwards. Plan the upgrade for a time with
+little traffic.
+
+If the upgrade stops with an error, the new program files are installed but the
+database is not migrated completely, and the web server keeps running the old code
+until it is restarted or reloaded next. Fix the cause the output names, then finish
+the upgrade with::
+
+   dpkg --configure -a
+
+The output of the upgrade, including that of the schema upgrade, is kept in
+``/var/log/apt/term.log``.
+
+When apt asks whether to install the package maintainer's version of
+``/etc/privacyidea/pi.cfg``, keep your version (answer ``N``). The file of the
+package contains no database connection, pepper and secret key, and installing it
+replaces them with new ones: the administrators can no longer log in, and the upgrade
+either fails or points the server at a new, empty database.
+
+If you changed ``/etc/cron.d/privacyidea``, apt asks about it as well. Keeping your
+version keeps your jobs, but not the jobs that a new version adds. Compare it with
+``/etc/cron.d/privacyidea.dpkg-dist`` and add them.
 
 
 RHEL upgrade
@@ -146,5 +186,3 @@ If you installed privacyIDEA from the :ref:`RPM repository <rpm_installation>`, 
  dnf upgrade
 
 to upgrade.
-
-.. _READ_BEFORE_UPDATE: https://github.com/privacyidea/privacyidea/blob/master/READ_BEFORE_UPDATE.md
