@@ -109,6 +109,15 @@ describe("NewWebhookComponent", () => {
       expect(component.canSave).toBe(true);
     });
 
+    it.each([".", ".."])("rejects the reserved identifier %p", (identifier) => {
+      // A browser removes these dot segments while resolving the save URL, so the POST would
+      // never reach /webhook/<identifier> and the webhook would silently not be created.
+      component.webhookModel.update((m) => ({ ...m, identifier, url: "https://example.com/hook" }));
+      expect(component.webhookForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+      expect(component.webhookForm().valid()).toBe(false);
+      expect(component.canSave).toBe(false);
+    });
+
     it("rejects a timeout that is not positive", () => {
       component.webhookModel.update((m) => ({
         ...m,
@@ -166,6 +175,29 @@ describe("NewWebhookComponent", () => {
   describe("edit mode", () => {
     beforeEach(async () => {
       await setUp("siem");
+    });
+
+    it("treats a TLS-only edit as an unsaved change", () => {
+      // The checkbox used to write straight into webhookModel, which changes the value without
+      // marking the field dirty. hasChanges then stayed false - navigating away discarded the
+      // edit without prompting - and canTest stayed true, so Test fired the *stored* TLS setting
+      // while the form showed the new one.
+      const tls = (Array.from(fixture.nativeElement.querySelectorAll("mat-checkbox")) as HTMLElement[]).find(
+        (box) => (box.textContent || "").includes("Verify the server certificate")
+      );
+      expect(tls).toBeTruthy();
+      expect(component.webhookModel().verify_tls).toBe(true);
+      expect(component.hasChanges).toBe(false);
+      expect(component.canTest()).toBe(true);
+
+      (tls!.querySelector("input[type=checkbox]") as HTMLInputElement).click();
+      fixture.detectChanges();
+
+      expect(component.webhookModel().verify_tls).toBe(false);
+      expect(component.hasChanges).toBe(true);
+      // The test endpoint fires the stored definition, so it must be out of reach while the form
+      // differs from it.
+      expect(component.canTest()).toBe(false);
     });
 
     it("loads the stored definition, headers included", () => {

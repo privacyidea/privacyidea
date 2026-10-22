@@ -5310,6 +5310,76 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertEqual(1, len(responses.calls))
 
     @responses.activate
+    def test_17b_an_unfollowed_redirect_is_a_failure(self):
+        """
+        Only enforce withholds a redirect, and then nothing is delivered - so reporting the run as
+        successful would put a notification in the audit log that never arrived. An endpoint
+        answering 301/302 is ordinary (an http->https rewrite, a load balancer), which is why
+        fire_webhook() draws the same line for a webhook object.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, status=302,
+                          headers={"Location": "https://elsewhere.example/x"})
+            responses.add(responses.GET, "https://elsewhere.example/x", json={}, status=200)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM,
+                                           socket.IPPROTO_TCP, "", ("203.0.113.5", 443))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertFalse(result)
+            self.assertIn("302", handler.run_details)
+            self.assertIn("nothing was delivered", handler.run_details)
+            # The redirect was not followed, so exactly one request went out.
+            self.assertEqual(1, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_17c_a_redirect_is_still_followed_while_the_guard_is_off(self):
+        # The upgrade-safety case: an installation that has not opted in keeps delivering through
+        # the redirect and keeps reporting success.
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        responses.add(responses.POST, self.INLINE_URL, status=302,
+                      headers={"Location": "https://elsewhere.example/x"})
+        responses.add(responses.GET, "https://elsewhere.example/x", json={}, status=200)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"URL": self.INLINE_URL,
+                             "content_type": ContentType.JSON,
+                             "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(f"{self.INLINE_URL}: HTTP 200", handler.run_details)
+        self.assertEqual(2, len(responses.calls))
+
+    @responses.activate
+    def test_17d_an_http_error_status_still_counts_as_a_run_under_enforce(self):
+        # The change is deliberately narrow. Ignoring an error status is how this shape has always
+        # behaved and what the documentation promises; only the redirect is new, because only the
+        # redirect is a consequence of switching the guard to enforce.
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"no": True}, status=500)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM,
+                                           socket.IPPROTO_TCP, "", ("203.0.113.5", 443))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertTrue(result)
+            self.assertEqual(f"{self.INLINE_URL}: HTTP 500", handler.run_details)
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
     def test_18_the_inline_path_guards_the_proxy_from_the_environment(self):
         """
         requests runs with trust_env=True, so http(s)_proxy in the server's environment is used
@@ -5364,7 +5434,7 @@ class WebhookObjectHandlerTestCase(MyTestCase):
                         if "deprecated" in call.args[0]]
         self.assertEqual(1, len(deprecations), deprecations)
         self.assertIn("Coffee maker", deprecations[0])
-        self.assertIn("3.17", deprecations[0])
+        self.assertIn("3.16", deprecations[0])
         # Both runs still delivered - a deprecation notice must not change what the handler does.
         self.assertEqual(2, len(responses.calls))
 

@@ -26,7 +26,7 @@ contributes only the payload. The inline ``URL`` / ``content_type`` below are th
 keep working, but they can not carry authentication.
 
 .. deprecated:: 3.15
-    The inline ``URL`` and ``content_type`` options are deprecated and will be removed in privacyIDEA 3.17.
+    The inline ``URL`` and ``content_type`` options are deprecated and will be removed in privacyIDEA 3.16.
     A handler that still carries them then sends nothing until it is repaired, so convert it before
     upgrading to that release: configure a :ref:`webhook_config` object and select it in the **webhook**
     option below.
@@ -54,7 +54,7 @@ Delivery is synchronous and there are no retries, so a slow endpoint delays the 
 event; see :ref:`webhook_synchronous`. A webhook that fails never fails the event - the failure is logged and
 audited, and the remaining handlers still run.
 
-**URL** (deprecated, removed in 3.17)
+**URL** (deprecated, removed in 3.16)
 
 The URL the webhook is posted to, used only when no webhook object is selected above.
 
@@ -64,9 +64,14 @@ privacyIDEA waits up to 10 seconds for the webhook, also in the pre position. A 
 an HTTP error status of the webhook is ignored; neither fails the request. With
 ``application/x-www-form-urlencoded``, replaced tag values are not URL-encoded.
 
-The :ref:`webhook_outbound_guard` applies to this inline shape just as it does to a webhook object.
+The :ref:`webhook_outbound_guard` applies to this inline shape just as it does to a webhook object. In
+``enforce`` mode a redirect is not followed, because the redirect target was never checked against the
+guard. The handler run is then reported as failed: nothing was delivered, and an endpoint answering
+301/302 is ordinary enough -- an ``http``-to-``https`` rewrite, a load balancer -- that recording it as
+sent would be misleading. Configure the handler with the final URL. In ``off`` and ``warn`` a redirect is
+followed as before.
 
-**content_type** (deprecated, removed in 3.17)
+**content_type** (deprecated, removed in 3.16)
 
 The MIME type (Content-Type) used for the webhook payload, either ``application/json`` or
 ``application/x-www-form-urlencoded``. Used only when no webhook object is selected above.

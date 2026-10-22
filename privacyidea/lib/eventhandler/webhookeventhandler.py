@@ -60,7 +60,7 @@ def _warn_inline_shape_is_deprecated(handler_def):
     log.warning(
         f"WebHook handler {handler_def.get('name')!r} posts to an inline URL. The URL and "
         f"content_type options are deprecated since privacyIDEA 3.15 and will be removed in "
-        f"3.17; the handler then sends nothing until it is repaired. Configure a webhook under "
+        f"3.16; the handler then sends nothing until it is repaired. Configure a webhook under "
         f"Config -> Webhooks and select it in the handler's 'webhook' option. Unlike the inline "
         f"URL, a webhook can carry authentication, headers, TLS, proxy and timeout settings, and "
         f"keeps its URL out of the audit log."
@@ -131,14 +131,14 @@ class WebHookHandler(BaseEventHandler):
             "URL": {
                 "type": "str",
                 "required": False,
-                "description": _("DEPRECATED, removed in privacyIDEA 3.17: the URL the WebHook is posted to. Only "
+                "description": _("DEPRECATED, removed in privacyIDEA 3.16: the URL the WebHook is posted to. Only "
                                  "used when no webhook is selected above, and it can carry no authentication. "
                                  "Configure a webhook instead and select it above.")
             },
             "content_type": {
                 "type": "str",
                 "required": False,
-                "description": _("DEPRECATED, removed in privacyIDEA 3.17: the MIME type (Content-Type) used for "
+                "description": _("DEPRECATED, removed in privacyIDEA 3.16: the MIME type (Content-Type) used for "
                                  "the WebHook payload, for example application/json or "
                                  "application/x-www-form-urlencoded. Only used when no webhook is selected above."),
                 "value": [
@@ -393,16 +393,16 @@ class WebHookHandler(BaseEventHandler):
                 self.run_details = f"blocked by the outbound request guard ({mode})"
                 return False
 
+        # Only ENFORCE withholds a redirect, matching fire_webhook(): a redirect target was never
+        # checked, so following one would defeat the guard. OFF and WARN keep the previous
+        # default, so an installation that has not opted in sees no change and a trial run does
+        # not alter delivery.
+        follow_redirects = mode != GuardMode.ENFORCE
         try:
             log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
             response = requests.post(webhook_url, data=webhook_text,
                                      headers={'Content-Type': content_type}, timeout=TIMEOUT,
-                                     # Only ENFORCE withholds a redirect, matching fire_webhook():
-                                     # a redirect target was never checked, so following one would
-                                     # defeat the guard. OFF and WARN keep the previous default, so
-                                     # an installation that has not opted in sees no change and a
-                                     # trial run does not alter delivery.
-                                     allow_redirects=mode != GuardMode.ENFORCE)
+                                     allow_redirects=follow_redirects)
             log.info(response.status_code)
             log.debug(response)
         except (HTTPError, ConnectionError, RequestException, Timeout) as err:
@@ -412,6 +412,24 @@ class WebHookHandler(BaseEventHandler):
             # object's URL is different - it is not in the definition - which is why the branch
             # above reports the identifier instead.
             self.run_details = f"{webhook_url} failed: {err.__class__.__name__}"
+            return False
+
+        # An unfollowed redirect means nothing was delivered, so reporting it as sent would put a
+        # notification in the audit log that never arrived. An endpoint answering 301/302 is
+        # ordinary - an http->https rewrite, a load balancer - so this is the common case, not a
+        # corner one. fire_webhook() draws the same line.
+        #
+        # Deliberately narrower than that: an HTTP *error* status still counts as a run here, the
+        # way this shape has always behaved and the way the documentation describes it. Only the
+        # redirect changes, because only the redirect is a consequence of switching the guard to
+        # enforce - a mode the installation opted into.
+        if not follow_redirects and 300 <= response.status_code < 400:
+            log.warning(f"The webhook at '{webhook_url}' answered with HTTP "
+                        f"{response.status_code} and the outbound request guard ({mode}) does not "
+                        f"follow redirects, so nothing was delivered. Configure the handler with "
+                        f"the final URL.")
+            self.run_details = (f"{webhook_url}: HTTP {response.status_code} not followed by the "
+                                f"outbound request guard ({mode}), nothing was delivered")
             return False
 
         self.run_details = f"{webhook_url}: HTTP {response.status_code}"

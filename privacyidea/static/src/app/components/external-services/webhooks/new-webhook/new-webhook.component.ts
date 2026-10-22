@@ -35,6 +35,7 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { reservedNames } from "@utils/reserved-names.utils";
 import {
   Webhook,
   WEBHOOK_AUTH_TYPES,
@@ -139,6 +140,13 @@ export class NewWebhookComponent implements OnDestroy {
   webhookForm = form(this.webhookModel, (f) => {
     required(f.identifier);
     pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    // The pattern lets "." and ".." through, and encodeURIComponent() leaves them as they are.
+    // A browser removes those dot segments while resolving the save URL, so a POST to
+    // /webhook/. goes to /webhook/ and /webhook/.. to /, and the webhook is never created -
+    // with Save looking perfectly enabled. Same rule as the SMTP, RADIUS and privacyIDEA server
+    // editors. The routes need no reserved word of their own: the test endpoint is
+    // /webhook/<identifier>/test, so an identifier cannot collide with it.
+    reservedNames(f.identifier, [".", ".."]);
     required(f.url);
     // The same rule set_webhook() enforces; catching it here saves a round-trip to a 400.
     pattern(f.url, /^https?:\/\/.+/i);

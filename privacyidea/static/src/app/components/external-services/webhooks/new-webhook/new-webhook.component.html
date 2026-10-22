@@ -90,6 +90,13 @@
                                                    alphanumeric characters, dots, underscores and hyphens are allowed.
               </mat-error>
             }
+            @if (webhookForm
+              .identifier()
+              .errors()
+              .some((e) => e.kind === "reservedName")) {
+              <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ webhookForm.identifier().value() }}".
+              </mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field
@@ -390,9 +397,7 @@
         </h4>
 
         <div class="checkbox-group">
-          <mat-checkbox
-            (change)="webhookModel.update((m) => ({ ...m, verify_tls: $event.checked }))"
-            [checked]="webhookModel().verify_tls">
+          <mat-checkbox [formField]="webhookForm.verify_tls">
             <span i18n="@@webhook.verifyTls">Verify the server certificate</span>
           </mat-checkbox>
         </div>
