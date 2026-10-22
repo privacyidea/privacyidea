@@ -17,6 +17,15 @@ This directory contains the migration test suite for privacyIDEA.
 > `"""v3.13: Add column foo to table bar"""`. That first line is the message
 > Alembic shows in `alembic history`. It is enforced by
 > `test_migration_conventions.py`.
+>
+> **Lint:** `test_migration_conventions.py` also checks every migration since
+> 3.14 against `LINT_RULES`: an insert into a sequence-backed table takes its
+> id from the sequence, existence is checked by reflection rather than by the
+> error text, database errors are not printed and ignored, and nothing is
+> imported from `privacyidea.lib` or the models (except the helper modules
+> `privacyidea.models.db` and `privacyidea.models.utils`). Known exceptions are
+> listed in `MIGRATION_LINT_EXCEPTIONS`; the test fails for an entry that no
+> longer applies, so remove it together with the fix.
 
 ---
 
@@ -69,6 +78,7 @@ the above.  Examples:
    | `_downgrade(target=None)` | Runs `alembic downgrade` to `PARENT_REVISION` (or `target`) |
    | `_upgrade_failing_after(pattern)` | Runs the upgrade to `REVISION` but stops it right after the first statement matching the regular expression, leaving what it did so far committed |
    | `_set_stamp_back_to_parent()` | Sets the stamp back to `PARENT_REVISION` without undoing the migration |
+   | `_assert_every_table_accepts_a_row_at_head()` | Upgrades to head and inserts a row into every table the way the models do, ids from their sequences included |
    | `_engine()` | Returns a fresh `create_engine(DB_URL)` — caller must `.dispose()` |
 
 4. **Mark** the module with `pytest.mark.migration` so the CI workflow picks it up.
@@ -81,6 +91,13 @@ the above.  Examples:
      `_set_stamp_back_to_parent()`, a second `_upgrade()` succeeds and converts nothing twice
    - Downgrade: `downgrade()` correctly reverts the change
    - Round-trip: upgrade → downgrade leaves unrelated rows unchanged
+   - Writing afterwards: a migration that inserts rows ends one test with
+     `_assert_every_table_accepts_a_row_at_head()`. A row that got its id from
+     another source than the model uses makes the next row privacyIDEA writes
+     collide with it.
+
+   A test may read through the models or the lib after the upgrade; the
+   cleanup ends the session's transaction before it drops the tables.
 
 ### Skeleton
 

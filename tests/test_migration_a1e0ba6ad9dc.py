@@ -219,8 +219,8 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
     @pytest.mark.parametrize("id_default", ["seed", "none"])
     def test_upgrade_leaves_room_for_new_token_info(self, flask_app, id_default):
         """
-        The marker rows take their ids the way the model does, so token info added through the model after the upgrade
-        gets an unused id. "none" is a tokeninfo table without a default on its id column, as created by
+        The marker rows take their ids the way the model does, so a row added through the models after the upgrade gets
+        an unused id. "none" is a tokeninfo table without a default on its id column, as created by
         "pi-manage setup create_tables"; "seed" keeps the default of the seed.
         """
         engine = self._engine()
@@ -238,15 +238,7 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
         self.assertEqual_(self._fetch_tokeninfo_value(engine, 1002, "deprecated_in"), "3.14")
         engine.dispose()
 
-        from privacyidea.models import TokenInfo, db
-        for token_id in (1001, 1002):
-            for key in ("note", "label", "location"):
-                db.session.add(TokenInfo(token_id=token_id, Key=key, Value="added after the upgrade"))
-                db.session.commit()
-
-        engine = self._engine()
-        self.assertEqual_(self._count_markers(engine, 1002, "location"), 1)
-        engine.dispose()
+        self._assert_every_table_accepts_a_row_at_head()
 
     def test_upgrade_runs_again_after_failing_midway(self, flask_app):
         """

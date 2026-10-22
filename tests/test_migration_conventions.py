@@ -7,6 +7,7 @@ deliberately live outside tests/test_migrations.py — that module is marked
 run, so a check kept there would not run on every pull request. Keeping this
 here means the convention is enforced whenever a new migration is added.
 """
+import ast
 import pathlib
 import re
 
@@ -161,3 +162,226 @@ def test_migration_versions_are_non_decreasing_along_chain():
         + "\n\nRe-point the down_revisions so all migrations of one release "
         "precede those of the next."
     )
+
+
+# The revision graph of 3.13.4 ends at this revision. The lint below applies to every revision that is not part of it,
+# that is to the migrations of 3.14 and later.
+LINTED_AFTER_REVISION = "d3a4b5c6e7f8"
+
+# Revisions since 3.14 that break a lint rule, with the rules they break. An entry is a known defect or a deliberate
+# exception, never a default: the lint fails for an entry whose rule the revision no longer breaks, so remove the entry
+# together with the fix.
+MIGRATION_LINT_EXCEPTIONS = {
+    # The data step inserts the moved rows without an id (4b810261d282 restarts the sequence after them). The downgrade
+    # prints a failed copy-back and drops the table anyway.
+    "7d4e9b2c1a3f": {"insert-without-sequence-id", "swallowed-error"},
+    # Ignores every OperationalError and ProgrammingError of CREATE SEQUENCE and DROP SEQUENCE, not only the ones of a
+    # database without sequences.
+    "c2d3e4f5a6b7": {"swallowed-error"},
+    # Encrypts the SMS gateway secrets with the encryption functions of privacyIDEA.
+    "a1b2c3d4e5f6": {"app-import"},
+    # Computes the SSH key checksums with the encryption functions and the key format of the SSH key token.
+    "b8c9d0e1f2a3": {"app-import"},
+}
+
+LINT_RULES = {
+    "insert-without-sequence-id": "an insert into a table whose model takes the id from a sequence must take it from "
+                                  "that sequence too: use an sa.Table whose id column declares the Sequence, or set "
+                                  "the id. Otherwise the database fills it from the column default, if it has one, "
+                                  "and a later insert of privacyIDEA collides with the row.",
+    "error-text-guard": "check the schema by reflection (sa.inspect(...).has_table(), get_columns(), get_indexes()) "
+                        "instead of reading the error text, which every database words differently.",
+    "swallowed-error": "re-raise a database error. A migration that prints an error and carries on is stamped as done, "
+                       "and its change is missing for good.",
+    "app-import": "do not import privacyidea.lib or the models in a migration: a later change there changes or breaks "
+                  "the migration. privacyidea.models.db and privacyidea.models.utils are meant for migrations.",
+}
+
+# Error texts that a guard compares the error message with, as databases word them for an object that already exists
+ERROR_TEXTS = ("already exists", "duplicate column", "duplicate key", "already used")
+
+# Exceptions that a migration must not catch without re-raising them
+DATABASE_ERRORS = {"Exception", "BaseException", "SQLAlchemyError", "DBAPIError", "DatabaseError", "OperationalError",
+                   "ProgrammingError", "IntegrityError"}
+
+MIGRATION_HELPER_MODULES = {"privacyidea.models.db", "privacyidea.models.utils"}
+
+RAW_INSERT = re.compile(r"INSERT\s+INTO\s+[`\"]?(\w+)[`\"]?\s*\(([^)]*)\)", re.IGNORECASE)
+
+
+def _sequence_tables() -> set[str]:
+    """The tables whose model takes the id from a sequence."""
+    from sqlalchemy import Sequence
+
+    from privacyidea.models import db
+    return {table.name for table in db.metadata.sorted_tables
+            if "id" in table.c and isinstance(table.c.id.default, Sequence)}
+
+
+def _call_name(call: ast.Call) -> str | None:
+    if isinstance(call.func, ast.Name):
+        return call.func.id
+    if isinstance(call.func, ast.Attribute):
+        return call.func.attr
+    return None
+
+
+def _table_construct(node: ast.AST) -> tuple[str, bool] | None:
+    """
+    For a table() or Table() call, the table name and whether the construct declares a Sequence, which only a Table can.
+    """
+    if not (isinstance(node, ast.Call) and _call_name(node) in ("table", "Table") and node.args
+            and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
+        return None
+    declares_sequence = _call_name(node) == "Table" and any(
+        isinstance(inner, ast.Call) and _call_name(inner) == "Sequence" for inner in ast.walk(node))
+    return node.args[0].value, declares_sequence
+
+
+def _inserts_without_sequence_id(tree: ast.Module, sequence_tables: set[str]) -> list[str]:
+    """The sequence-backed tables that the migration inserts into without taking the id from the sequence."""
+    constructs = {}
+    functions = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            construct = _table_construct(node.value)
+            if construct:
+                constructs[node.targets[0].id] = construct
+        if isinstance(node, ast.FunctionDef):
+            for returned in ast.walk(node):
+                if isinstance(returned, ast.Return) and _table_construct(returned.value):
+                    functions[node.name] = _table_construct(returned.value)
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
+                and isinstance(node.value, ast.Call) and _call_name(node.value) in functions):
+            constructs[node.targets[0].id] = functions[_call_name(node.value)]
+
+    tables = set()
+    compound_statements = (ast.FunctionDef, ast.ClassDef, ast.If, ast.For, ast.While, ast.Try, ast.With)
+    for statement in ast.walk(tree):
+        if not isinstance(statement, ast.stmt) or isinstance(statement, compound_statements):
+            continue
+        sets_id = any((isinstance(node, ast.keyword) and node.arg == "id")
+                      or (isinstance(node, ast.Constant) and node.value == "id") for node in ast.walk(statement))
+        for call in ast.walk(statement):
+            if not isinstance(call, ast.Call):
+                continue
+            target = None
+            if _call_name(call) in ("insert", "bulk_insert") and call.args and isinstance(call.args[0], ast.Name):
+                target = call.args[0].id
+            elif (isinstance(call.func, ast.Attribute) and call.func.attr == "insert"
+                  and isinstance(call.func.value, ast.Name)):
+                target = call.func.value.id
+            if target in constructs:
+                table_name, declares_sequence = constructs[target]
+                if table_name in sequence_tables and not declares_sequence and not sets_id:
+                    tables.add(table_name)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            for match in RAW_INSERT.finditer(node.value):
+                columns = [column.strip(' `"').lower() for column in match.group(2).split(",")]
+                if match.group(1).lower() in sequence_tables and "id" not in columns:
+                    tables.add(match.group(1).lower())
+    return sorted(tables)
+
+
+def _catches_database_errors(handler: ast.ExceptHandler) -> bool:
+    if handler.type is None:
+        return True
+    caught = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
+    return any((isinstance(name, ast.Name) and name.id in DATABASE_ERRORS)
+               or (isinstance(name, ast.Attribute) and name.attr in DATABASE_ERRORS) for name in caught)
+
+
+def _migration_lint_findings(source: str, sequence_tables: set[str]) -> dict[str, list[str]]:
+    """The lint rules (keys of LINT_RULES) that the migration source breaks, with where it breaks them."""
+    tree = ast.parse(source)
+    findings: dict[str, list[str]] = {}
+    for node in ast.walk(tree):
+        imported = []
+        if isinstance(node, ast.ImportFrom) and node.module:
+            imported = [node.module]
+        elif isinstance(node, ast.Import):
+            imported = [alias.name for alias in node.names]
+        for module in imported:
+            if module.startswith("privacyidea") and module not in MIGRATION_HELPER_MODULES:
+                findings.setdefault("app-import", []).append(module)
+        if isinstance(node, ast.ExceptHandler):
+            texts = [inner.value.lower() for inner in ast.walk(node)
+                     if isinstance(inner, ast.Constant) and isinstance(inner.value, str)]
+            if any(error_text in text for text in texts for error_text in ERROR_TEXTS):
+                findings.setdefault("error-text-guard", []).append(f"line {node.lineno}")
+            elif _catches_database_errors(node) and not any(isinstance(inner, ast.Raise) for inner in ast.walk(node)):
+                findings.setdefault("swallowed-error", []).append(f"line {node.lineno}")
+    tables = _inserts_without_sequence_id(tree, sequence_tables)
+    if tables:
+        findings["insert-without-sequence-id"] = tables
+    return findings
+
+
+def test_migrations_since_3_14_follow_the_lint_rules():
+    """
+    Every migration since 3.14 follows the rules of LINT_RULES, apart from the entries of MIGRATION_LINT_EXCEPTIONS.
+    """
+    sequence_tables = _sequence_tables()
+    script = _script_directory()
+    released = {revision.revision for revision in script.iterate_revisions(LINTED_AFTER_REVISION, "base")}
+    problems = []
+    for revision in script.walk_revisions():
+        if revision.revision in released:
+            continue
+        findings = _migration_lint_findings(pathlib.Path(revision.path).read_text(), sequence_tables)
+        expected = MIGRATION_LINT_EXCEPTIONS.get(revision.revision, set())
+        for rule, places in sorted(findings.items()):
+            if rule not in expected:
+                problems.append(f"{revision.revision} ({', '.join(places)}): {LINT_RULES[rule]}")
+        for rule in sorted(expected - findings.keys()):
+            problems.append(f"{revision.revision} no longer breaks '{rule}': remove it from MIGRATION_LINT_EXCEPTIONS.")
+    assert not problems, "\n".join(problems)
+
+
+def test_lint_flags_an_insert_without_the_sequence():
+    """An insert through a lightweight table() construct leaves the id to the column default."""
+    source = (
+        "from sqlalchemy.sql import column, insert, table\n"
+        "tokeninfo = table('tokeninfo', column('id'), column('token_id'))\n"
+        "def upgrade():\n"
+        "    op.get_bind().execute(insert(tokeninfo).values(token_id=1))\n"
+        "    op.execute(\"INSERT INTO tokeninfo (token_id, Key) VALUES (1, 'a')\")\n"
+    )
+    assert _migration_lint_findings(source, {"tokeninfo"}) == {"insert-without-sequence-id": ["tokeninfo"]}
+
+
+def test_lint_accepts_an_insert_with_the_sequence_or_an_id():
+    """An insert through a Table that declares the Sequence, or with an explicit id, takes no id from the default."""
+    source = (
+        "import sqlalchemy as sa\n"
+        "tokeninfo = sa.Table('tokeninfo', sa.MetaData(),\n"
+        "                     sa.Column('id', sa.Integer, sa.Sequence('tokeninfo_seq'), primary_key=True))\n"
+        "lightweight = sa.table('tokeninfo', sa.column('id'))\n"
+        "def upgrade():\n"
+        "    op.get_bind().execute(sa.insert(tokeninfo).values(token_id=1))\n"
+        "    op.get_bind().execute(lightweight.insert().values(id=5, token_id=1))\n"
+        "    op.execute('INSERT INTO tokeninfo (id, token_id) VALUES (5, 1)')\n"
+    )
+    assert _migration_lint_findings(source, {"tokeninfo"}) == {}
+
+
+def test_lint_flags_error_text_guards_and_swallowed_errors():
+    source = (
+        "def upgrade():\n"
+        "    try:\n"
+        "        op.add_column('token', sa.Column('a', sa.Integer()))\n"
+        "    except OperationalError as error:\n"
+        "        if 'already exists' not in str(error):\n"
+        "            raise\n"
+        "    try:\n"
+        "        op.drop_column('token', 'b')\n"
+        "    except Exception as error:\n"
+        "        print(error)\n"
+        "    try:\n"
+        "        int('x')\n"
+        "    except ValueError:\n"
+        "        pass\n"
+    )
+    assert _migration_lint_findings(source, set()) == {"error-text-guard": ["line 4"], "swallowed-error": ["line 9"]}
