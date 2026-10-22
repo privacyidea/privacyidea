@@ -28,6 +28,14 @@
         i18n="@@tokenTypeConfig.tokenTypeConfiguration"
         >Token Type Configuration</h3
       >
+      @if (!configForm().valid()) {
+        <p
+          class="save-blocked-hint"
+          role="status"
+          i18n="@@tokenTypeConfig.saveBlockedByIncomplete"
+          >Save is disabled: complete the panels marked Incomplete.</p
+        >
+      }
       <div class="flex-row ali-center gap-8">
         <button
           (click)="toggleAllPanels()"
@@ -47,14 +55,6 @@
         </button>
       </div>
     </div>
-    @if (!configForm().valid()) {
-      <p
-        class="save-blocked-hint"
-        role="status"
-        i18n="@@tokenTypeConfig.saveBlockedByIncomplete"
-        >Save is disabled: complete the panels marked Incomplete.</p
-      >
-    }
   </div>
   <mat-accordion multi="true">
     <app-hotp-config

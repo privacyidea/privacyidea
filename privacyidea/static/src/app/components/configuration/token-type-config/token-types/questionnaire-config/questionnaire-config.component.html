@@ -67,7 +67,7 @@
 
     <div class="questionnaire-grid">
       @for (key of questionKeys(); track key) {
-        <div class="flex-row flex-nowrap gap-16 ali-center">
+        <div class="flex-row flex-nowrap gap-16 ali-start">
           <mat-form-field
             appearance="fill"
             class="input-width-l"
@@ -82,6 +82,7 @@
           </mat-form-field>
           <button
             (click)="deleteEntry(key)"
+            class="margin-top-8"
             color="warn"
             mat-icon-button>
             <mat-icon>delete</mat-icon>
