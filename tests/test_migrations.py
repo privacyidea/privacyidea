@@ -1100,11 +1100,6 @@ NOT_RERUNNABLE_REVISIONS = {
     "04c078e29924": {"oracle"},
     "41ad6c9ada8b": {"mysql", "oracle"},
     "1c48d4ffb8c3": {"oracle"},
-    "7d4e9b2c1a3f": {"oracle"},
-    "d4f5a6b7c8e9": {"oracle"},
-    "b7c8d9e0f1a2": {"oracle"},
-    "c8d9e0f1a2b3": {"oracle"},
-    "d9e0f1a2b3c4": {"oracle"},
 }
 
 

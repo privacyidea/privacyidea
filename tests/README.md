@@ -24,7 +24,11 @@ This directory contains the migration test suite for privacyIDEA.
 
 **Only when the migration's `upgrade()` or `downgrade()` transforms existing
 row data** — i.e. it contains SQL DML (`UPDATE`, `INSERT`, `DELETE`) or ORM
-session writes against pre-existing rows.
+session writes against pre-existing rows — **or when it creates several schema
+objects one after the other**, e.g. a table and then its indexes. The generic
+running-again test only repeats a migration on its complete result; a stop
+between two of these statements needs `_upgrade_failing_after` in a test of its
+own (see `test_migration_c8d9e0f1a2b3.py`).
 
 ### What `test_migrations.py` already covers (no extra test needed)
 
