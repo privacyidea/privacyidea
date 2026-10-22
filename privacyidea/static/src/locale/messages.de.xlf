@@ -25252,7 +25252,7 @@
       </trans-unit>
       <trans-unit id="systemConfig.documentationEmailAttach" datatype="html">
         <source>The system documentation was downloaded as <x id="fileName" equiv-text="this.fileName"/>. Attach it to the email.</source>
-        <target>Die Systemdokumentation wurde als <x id="fileName" equiv-text="this.fileName"/> heruntergeladen. Hängen Sie sie an die E-Mail an.</target>
+        <target>Die Systemdokumentation wurde als <x id="fileName" equiv-text="this.fileName"/> heruntergeladen. Hängen Sie diese an die E-Mail an.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
           <context context-type="linenumber">164</context>
