@@ -89,6 +89,7 @@ import copy
 import json
 import logging
 import threading
+from datetime import timedelta
 
 from flask import (Blueprint, request, g, Response)
 from flask_babel import _
@@ -121,7 +122,7 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft)
+                                               handle_device_theft, parse_device_duration)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -1284,25 +1285,31 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
             max_devices = int(list(max_pols)[0])
         except (ValueError, TypeError):
             max_devices = 0
+        # A device past the idle timeout is no longer recognised, so it does not take up a place
+        idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
         if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
-                                                  identity.realm_id) >= max_devices:
+                                                  identity.realm_id, idle_timeout) >= max_devices:
             return None
     # The cookie lifetime is a policy value so it can differ per realm/user/client
     # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
-    validity_days = None
-    validity_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_VALIDITY,
-                               user_object=user).action_values(unique=True)
-    if validity_pols:
-        try:
-            validity_days = int(list(validity_pols)[0])
-        except (ValueError, TypeError):
-            validity_days = None
+    validity = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_VALIDITY)
     device, cookie_value = create_remembered_device(identity,
                                                     client_id=g.client_id,
                                                     ip_address=g.client_ip,
                                                     user_agent=g.get("user_agent"),
-                                                    validity_days=validity_days)
+                                                    validity=validity)
     return CookieAction("set", cookie_value, device.expires_at)
+
+
+def _remember_device_duration(user: User, action: str) -> timedelta | None:
+    """
+    Return the duration a remember-device policy action (``remember_device_validity`` or
+    ``remember_device_idle_timeout``) sets for *user*, or ``None`` if no policy sets a valid one.
+    """
+    values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
+    if not values:
+        return None
+    return parse_device_duration(list(values)[0])
 
 
 @validate_blueprint.route('/capabilities', methods=['GET'])
@@ -1378,7 +1385,8 @@ def check_remember_device():
     invalidated and the cookie cleared. Recognition is only offered when the
     ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
     reports); otherwise the answer is always ``false`` and a presented cookie is
-    left untouched.
+    left untouched. A device that was not recognised for the
+    ``remember_device_idle_timeout`` is removed and its cookie cleared.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1437,7 +1445,8 @@ def check_remember_device():
     if presented and identity and Match.user(g, scope=SCOPE.AUTH,
                                              action=PolicyAction.REMEMBER_DEVICE,
                                              user_object=user).any():
-        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"))
+        idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
+        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout)
         if result.status == RememberStatus.RECOGNIZED:
             recognised = True
             cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
@@ -1467,7 +1476,7 @@ def check_remember_device():
                                other_info={"client_id": g.get("client_id")})
             handle_device_theft(identity)
             cookie_action = CookieAction("clear")
-        else:  # miss: the cookie is dead (unknown or expired) - clear it
+        else:  # miss: the cookie is dead (unknown, expired or idle) - clear it
             cookie_action = CookieAction("clear")
 
     # A recognition is its own audit action ("POST /validate/remember_device") and

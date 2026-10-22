@@ -2799,10 +2799,19 @@ def get_static_policy_definitions(scope=None):
                           "by an identified API client (the X-API-Key header): without one, no "
                           "cookie is issued and the recognition endpoint returns 401.")},
             PolicyAction.REMEMBER_DEVICE_VALIDITY: {
-                'type': 'int',
-                'desc': _("How many days a 'remember this device' cookie stays valid "
-                          "(default 30 if unset). Scope it with a realm/user condition to give "
-                          "different lifetimes, e.g. a shorter one for admins than for users.")},
+                'type': 'str',
+                'desc': _("How long a 'remember this device' cookie stays valid after it is issued, "
+                          "like 30d, 8h or 90m. A number without a unit counts as days. The default "
+                          "is 30d. Recognizing the device does not extend it. Scope it with a "
+                          "realm/user condition to give different lifetimes, e.g. a shorter one for "
+                          "admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT: {
+                'type': 'str',
+                'desc': _("A remembered device that is not recognized for this long, like 7d or 4h, "
+                          "is no longer recognized and needs a new login with the second factor. "
+                          "Each recognition starts it again, but the device never stays longer than "
+                          "its remember_device_validity. A number without a unit counts as days. If "
+                          "unset, a device stays recognized until its remember_device_validity ends.")},
             PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
                 'type': 'int',
                 'desc': _("Maximum number of remembered devices a single user may have per API "

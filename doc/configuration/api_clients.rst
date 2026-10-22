@@ -71,7 +71,9 @@ Set the :ref:`policy_remember_device` policy (scope *authentication*). It is
 fail-closed — without the policy, no cookie is ever issued. Because it is a
 normal policy, you can scope it by realm, user or other conditions. The cookie
 lifetime defaults to 30 days and can be set per scope with
-:ref:`policy_remember_device_validity`.
+:ref:`policy_remember_device_validity`, for example to a few hours. A device
+that is not used for a while can be forgotten before that with
+:ref:`policy_remember_device_idle_timeout`.
 
 Each opt-in creates a new remembered device, so a client that opts in on every
 login (rather than once per device) accumulates them until they expire. If that

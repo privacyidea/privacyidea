@@ -1502,15 +1502,64 @@ grant access.
 remember_device_validity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``integer``
+type: ``string``
 
-How many days a "remember this device" cookie stays valid. If unset, the default
-is 30 days. Because it is a policy value, it can be scoped per realm or user with
-the usual conditions - for example a shorter lifetime for administrators than for
-regular users. The lifetime is fixed when the cookie is issued; recognition
-rotates the token but does not extend the expiry.
+How long a "remember this device" cookie stays valid after it is issued, like
+``30d``, ``8h`` or ``90m`` (``s``, ``m``, ``h``, ``d`` and ``y`` are allowed). A
+number without a unit counts as days. If unset, the default is 30 days. Because
+it is a policy value, it can be scoped per realm or user with the usual
+conditions - for example a shorter lifetime for administrators than for regular
+users. The lifetime is fixed when the cookie is issued; recognition rotates the
+token but does not extend the expiry, so after this time the user logs in with
+the second factor again. Changing the policy applies to the devices issued
+afterwards. To also forget a device that is not recognized for a while, set
+:ref:`policy_remember_device_idle_timeout`.
 
 .. versionadded:: 3.14
+
+.. versionchanged:: 3.14.1 The value takes a unit.
+
+.. _policy_remember_device_idle_timeout:
+
+remember_device_idle_timeout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+A remembered device that is not recognized for this long, like ``7d`` or
+``4h``, is no longer recognized. The user logs in with the second factor again
+and can have the device remembered anew. The units are those of
+:ref:`policy_remember_device_validity`, and a number without a unit counts as
+days. If unset, a device stays recognized until its validity ends.
+
+The idle timeout counts from the last recognition at
+:http:post:`/validate/remember_device`, or from the issuance for a device that
+was never recognized. A login with the second factor at
+:http:post:`/validate/check` does not reset it; if the client opts in again
+there, it gets a new device with its own validity.
+
+Together with :ref:`policy_remember_device_validity`, a remembered device ends at
+whichever limit it reaches first. The validity is fixed at issuance and no
+recognition moves it, while the idle timeout starts again with every
+recognition. For example, with a validity of ``30d`` and an idle timeout of
+``7d``, a device that is recognized every day stays remembered for 30 days after
+its issuance, and a device that is not recognized for 7 days is forgotten after
+these 7 days. An idle timeout that is not shorter than the validity has no
+effect.
+
+The two policies are read at different times. The validity is read when a
+device is issued, so a change applies to the devices issued afterwards. The
+idle timeout is read at each recognition, so a change applies to the devices
+already remembered as well.
+
+The cookie keeps the expiry of the validity, so a client still presents the
+cookie of an idle device. privacyIDEA then answers that the device is not
+recognized, removes the device and clears the cookie. An idle device whose
+cookie is not presented again stays in the list of the client's remembered
+devices until its validity ends, but it does not count towards
+:ref:`policy_remember_device_max_devices`.
+
+.. versionadded:: 3.14.1
 
 .. _policy_remember_device_max_devices:
 

@@ -1,9 +1,12 @@
+import re
+
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
-from privacyidea.lib.remembered_device import PERSISTENT_COOKIE_NAME, create_remembered_device, user_identity
+from privacyidea.lib.remembered_device import (PERSISTENT_COOKIE_NAME, create_remembered_device, user_identity,
+                                               parse_cookie, hash_series_id)
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
@@ -11,6 +14,8 @@ from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import RememberedDevice
 from privacyidea.models.utils import utc_now
+
+from datetime import timedelta
 
 
 class CapabilitiesEndpointTestCase(MyApiTestCase):
@@ -104,7 +109,10 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             self.assertEqual(identity.resolver, device.resolver)
             self.assertEqual(identity.user_id, device.user_id)
             self.assertEqual(identity.realm_id, device.realm_id)
-            self.assertIn(f"{PERSISTENT_COOKIE_NAME}={device.series_id}:1", cookie)
+            # The cookie carries the series id, the device stores its digest
+            series_id, counter = parse_cookie(cookie.split(";", 1)[0].split("=", 1)[1])
+            self.assertEqual(1, counter)
+            self.assertEqual(hash_series_id(series_id), device.series_id)
         finally:
             delete_policy("remember")
 
@@ -169,6 +177,20 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             self._check(other_key)
             device2 = RememberedDevice.query.filter_by(client_id=other.id).first()
             self.assertAlmostEqual((device2.expires_at - utc_now()).days, 7, delta=1)
+
+            # The validity also takes a unit, like 8h
+            set_policy("remember_validity", scope=SCOPE.AUTH,
+                       action=f"{PolicyAction.REMEMBER_DEVICE_VALIDITY}=8h")
+            third, third_key = create_client("validity client 3", "privacyidea-cp")
+            res = self._check(third_key)
+            device3 = RememberedDevice.query.filter_by(client_id=third.id).first()
+            remaining = device3.expires_at - utc_now()
+            self.assertGreater(remaining, timedelta(hours=7, minutes=59))
+            self.assertLessEqual(remaining, timedelta(hours=8))
+            # The cookie expires with the device
+            max_age = int(re.search(r"Max-Age=(\d+)", self._cookies(res)[0]).group(1))
+            self.assertGreater(max_age, 8 * 3600 - 60)
+            self.assertLessEqual(max_age, 8 * 3600)
         finally:
             delete_policy("remember")
             try:
@@ -190,6 +212,27 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             # Second opt-in for the same user+client is at the cap: no cookie, no new row.
             self.assertEqual([], self._cookies(self._check(api_key)))
             self.assertEqual(1, RememberedDevice.query.filter_by(client_id=client.id).count())
+        finally:
+            delete_policy("remember")
+            delete_policy("remember_max")
+
+    def test_09_idle_devices_do_not_count_towards_max_devices(self):
+        # A device not recognized within remember_device_idle_timeout is no longer recognized, so it does not take
+        # up a place: once the only device of the user is idle, an opt-in issues a new one.
+        client, api_key = create_client("idle cap client", "privacyidea-cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        set_policy("remember_max", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.REMEMBER_DEVICE_MAX_DEVICES}=1, "
+                          f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=1h")
+        try:
+            self.assertEqual(1, len(self._cookies(self._check(api_key))))
+            self.assertEqual([], self._cookies(self._check(api_key)))
+
+            device = RememberedDevice.query.filter_by(client_id=client.id).first()
+            device.created_at = utc_now() - timedelta(hours=2)
+            device.save()
+            self.assertEqual(1, len(self._cookies(self._check(api_key))))
+            self.assertEqual(2, RememberedDevice.query.filter_by(client_id=client.id).count())
         finally:
             delete_policy("remember")
             delete_policy("remember_max")
@@ -257,7 +300,7 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         # Cookie rotated to counter 2.
         headers = self._cookie_headers(res)
         self.assertEqual(1, len(headers), headers)
-        self.assertIn(f"{PERSISTENT_COOKIE_NAME}={series}:2", headers[0])
+        self.assertIn(f"{PERSISTENT_COOKIE_NAME}={parse_cookie(cookie)[0]}:2", headers[0])
         # Counter incremented in the DB.
         self.assertEqual(2, RememberedDevice.query.filter_by(series_id=series).first().counter)
 
@@ -412,3 +455,25 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         # and cornelius's real device is never even reached, so it is untouched.
         self._recognise(api_key=api_key, cookie=cookie, user="ghost", expect_value=False)
         self.assertEqual(1, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)
+
+    def test_11_idle_device_is_not_recognized(self):
+        # A device not recognized within remember_device_idle_timeout is removed and its cookie cleared. A device
+        # used within the timeout is recognized.
+        set_policy("remember_idle", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=1h")
+        try:
+            client, api_key = create_client("idle client", "privacyidea-cp")
+            device, cookie = create_remembered_device(self.identity, client.id)
+            device.created_at = utc_now() - timedelta(minutes=50)
+            device.save()
+            self._recognise(api_key=api_key, cookie=cookie)
+
+            idle, idle_cookie = create_remembered_device(self.identity, client.id)
+            idle_series = idle.series_id
+            idle.created_at = utc_now() - timedelta(hours=2)
+            idle.save()
+            res = self._recognise(api_key=api_key, cookie=idle_cookie, expect_value=False)
+            self.assertTrue(any(h.startswith(f"{PERSISTENT_COOKIE_NAME}=;")
+                                for h in self._cookie_headers(res)), self._cookie_headers(res))
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=idle_series).first())
+        finally:
+            delete_policy("remember_idle")

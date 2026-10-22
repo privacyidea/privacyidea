@@ -7,7 +7,8 @@ from privacyidea.lib.clients import create_client
 from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          create_remembered_device, consume_remember_device_cookie,
                                          get_valid_device, user_identity, UserIdentity, rotate_device,
-                                         cleanup_expired_remembered_devices,
+                                         cleanup_expired_remembered_devices, count_user_devices,
+                                         hash_series_id, parse_device_duration,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -16,6 +17,7 @@ from privacyidea.models.utils import utc_now
 
 from sqlalchemy import update
 
+import hashlib
 from datetime import timedelta
 
 
@@ -78,7 +80,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # An absurd validity must not overflow timedelta (which would 500 the
         # auth); it is capped at MAX_DEVICE_VALIDITY_DAYS.
         client_id = self._client_id()
-        device, _cookie = create_remembered_device(self._identity("cap"), client_id, validity_days=10 ** 12)
+        device, _cookie = create_remembered_device(self._identity("cap"), client_id, validity=timedelta.max)
         days = (device.expires_at - utc_now()).days
         self.assertLessEqual(days, MAX_DEVICE_VALIDITY_DAYS)
         self.assertGreater(days, MAX_DEVICE_VALIDITY_DAYS - 2)
@@ -88,7 +90,9 @@ class RememberedDeviceLibTestCase(MyTestCase):
         device, cookie = create_remembered_device(self._identity("alice"), client_id,
                                               ip_address="10.0.0.1", user_agent="curl")
         self.assertEqual(1, device.counter)
-        self.assertEqual(cookie, build_cookie_value(device.series_id, 1))
+        series_id, counter = parse_cookie(cookie)
+        self.assertEqual(1, counter)
+        self.assertEqual(hash_series_id(series_id), device.series_id)
         # The device is bound to the full resolver-stable identity.
         self.assertEqual(self.resolvername1, device.resolver)
         self.assertEqual("alice", device.user_id)
@@ -103,8 +107,9 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # or the log would contain a replayable bearer token.
         client_id = self._client_id()
         with self.assertLogs("privacyidea.models.remembered_device", level="DEBUG") as captured:
-            device, _cookie = create_remembered_device(self._identity("kim"), client_id)
+            device, cookie = create_remembered_device(self._identity("kim"), client_id)
         output = "\n".join(captured.output)
+        self.assertNotIn(parse_cookie(cookie)[0], output)
         self.assertNotIn(device.series_id, output)
         self.assertIn("HIDDEN", output)
 
@@ -120,6 +125,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
             consume_remember_device_cookie(cookie, client_id, nemo)   # -> counter 2
             with self.assertLogs("privacyidea.lib.remembered_device", level="DEBUG") as captured:
                 consume_remember_device_cookie(cookie, client_id, nemo)   # replay -> theft
+            self.assertNotIn(parse_cookie(cookie)[0], "\n".join(captured.output))
             self.assertNotIn(device.series_id, "\n".join(captured.output))
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
@@ -128,14 +134,15 @@ class RememberedDeviceLibTestCase(MyTestCase):
         client_id = self._client_id()
         bob = self._identity("bob")
         device, cookie = create_remembered_device(bob, client_id)
-        series_id = device.series_id
+        series_id, _counter = parse_cookie(cookie)
+        stored_series_id = device.series_id
 
         result = consume_remember_device_cookie(cookie, client_id, bob)
         self.assertEqual("recognized", result.status)
         self.assertEqual(result.cookie_value, build_cookie_value(series_id, 2))
         self.assertEqual(result.expires_at, device.expires_at)
 
-        stored = RememberedDevice.query.filter_by(series_id=series_id).first()
+        stored = RememberedDevice.query.filter_by(series_id=stored_series_id).first()
         self.assertEqual(2, stored.counter)
         self.assertIsNotNone(stored.last_used_at)
 
@@ -191,11 +198,12 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # valid rotation, it is treated as theft and destroys the series.
         client_id = self._client_id()
         mallory = self._identity("mallory")
-        device, _cookie = create_remembered_device(mallory, client_id)
-        series_id = device.series_id
-        forged = build_cookie_value(series_id, device.counter + 1)
+        device, cookie = create_remembered_device(mallory, client_id)
+        stored_series_id = device.series_id
+        series_id, counter = parse_cookie(cookie)
+        forged = build_cookie_value(series_id, counter + 1)
         self.assertEqual("theft", consume_remember_device_cookie(forged, client_id, mallory).status)
-        self.assertIsNone(RememberedDevice.query.filter_by(series_id=series_id).first())
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=stored_series_id).first())
 
     def test_grace_allows_previous_counter_without_rotating(self):
         client_id = self._client_id()
@@ -310,7 +318,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
                            .values(counter=loaded.counter + 1, last_used_at=utc_now()))
         db.session.commit()
 
-        self.assertIsNone(rotate_device(loaded, "10.0.0.1"))
+        self.assertIsNone(rotate_device(loaded, parse_cookie(cookie)[0], "10.0.0.1"))
 
     def test_a_cookie_rotated_by_another_request_is_graced_or_reused(self):
         # The same situation through consume_remember_device_cookie: the presented cookie now carries the
@@ -341,8 +349,8 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # the cookie one counter behind - a duplicate of the request that won, from the same address.
         real_rotate = remembered_device_module.rotate_device
 
-        def rotated_by_someone_else(device, client_ip=None):
-            real_rotate(device, client_ip)
+        def rotated_by_someone_else(device, series_id, client_ip=None):
+            real_rotate(device, series_id, client_ip)
             return None
 
         with patch.object(remembered_device_module, "rotate_device", side_effect=rotated_by_someone_else):
@@ -381,3 +389,94 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.assertGreaterEqual(deleted, 1)
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=expired_series).first())
         self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=live_series).first())
+
+    def test_parse_device_duration(self):
+        self.assertEqual(timedelta(days=30), parse_device_duration("30d"))
+        self.assertEqual(timedelta(hours=8), parse_device_duration("8h"))
+        self.assertEqual(timedelta(minutes=90), parse_device_duration("90m"))
+        self.assertEqual(timedelta(seconds=45), parse_device_duration("45s"))
+        self.assertEqual(timedelta(days=365), parse_device_duration("1y"))
+        self.assertEqual(timedelta(hours=12), parse_device_duration(" 12h "))
+        # A number without a unit counts as days
+        self.assertEqual(timedelta(days=7), parse_device_duration("7"))
+        # Empty, malformed, zero and negative values set no duration
+        for value in (None, "", "   ", "abc", "5x", "h", "1.5h", "0", "0h", "-5d", "+-5d"):
+            self.assertIsNone(parse_device_duration(value), value)
+        # A duration is at most MAX_DEVICE_VALIDITY_DAYS, also one too large for a timedelta
+        max_duration = timedelta(days=MAX_DEVICE_VALIDITY_DAYS)
+        self.assertEqual(max_duration, parse_device_duration(f"{MAX_DEVICE_VALIDITY_DAYS + 1}d"))
+        self.assertEqual(max_duration, parse_device_duration("99999999999y"))
+        self.assertEqual(max_duration, parse_device_duration("99999999999"))
+
+    def test_validity_sets_the_expiry(self):
+        client_id = self._client_id()
+        device, _cookie = create_remembered_device(self._identity("olga"), client_id, validity=timedelta(hours=8))
+        remaining = device.expires_at - utc_now()
+        self.assertGreater(remaining, timedelta(hours=7, minutes=59))
+        self.assertLessEqual(remaining, timedelta(hours=8))
+
+    def test_stores_the_digest_of_the_series_id(self):
+        # The cookie carries the series id, the table only its SHA-256 hex digest
+        client_id = self._client_id()
+        device, cookie = create_remembered_device(self._identity("paul"), client_id)
+        series_id, _counter = parse_cookie(cookie)
+        self.assertEqual(hashlib.sha256(series_id.encode("utf-8")).hexdigest(), device.series_id)
+        self.assertEqual(64, len(device.series_id))
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=series_id).first())
+        # A cookie carrying the stored value instead of the series id is not recognised
+        self.assertEqual("miss", consume_remember_device_cookie(build_cookie_value(device.series_id, 1), client_id,
+                                                                self._identity("paul")).status)
+
+    def test_idle_device_is_removed(self):
+        client_id = self._client_id()
+        quinn = self._identity("quinn")
+        device, cookie = create_remembered_device(quinn, client_id)
+        stored_series_id = device.series_id
+        rotated = consume_remember_device_cookie(cookie, client_id, quinn)
+        stored = RememberedDevice.query.filter_by(series_id=stored_series_id).first()
+        stored.last_used_at = utc_now() - timedelta(hours=2)
+        stored.save()
+
+        result = consume_remember_device_cookie(rotated.cookie_value, client_id, quinn,
+                                                idle_timeout=timedelta(hours=1))
+        self.assertEqual("miss", result.status)
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=stored_series_id).first())
+
+    def test_idle_timeout_counts_from_the_creation_of_an_unused_device(self):
+        client_id = self._client_id()
+        ruth = self._identity("ruth")
+        device, cookie = create_remembered_device(ruth, client_id)
+        stored_series_id = device.series_id
+        device.created_at = utc_now() - timedelta(hours=2)
+        device.save()
+
+        self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, ruth,
+                                                                idle_timeout=timedelta(hours=1)).status)
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=stored_series_id).first())
+
+    def test_device_used_within_the_idle_timeout_is_recognized(self):
+        # Each recognition starts the idle timeout again, while the expiry stays where it was
+        client_id = self._client_id()
+        sam = self._identity("sam")
+        device, cookie = create_remembered_device(sam, client_id)
+        expires_at = device.expires_at
+        device.created_at = utc_now() - timedelta(minutes=50)
+        device.save()
+
+        result = consume_remember_device_cookie(cookie, client_id, sam, idle_timeout=timedelta(hours=1))
+        self.assertEqual("recognized", result.status)
+        self.assertEqual(expires_at, result.expires_at)
+        result = consume_remember_device_cookie(result.cookie_value, client_id, sam, idle_timeout=timedelta(hours=1))
+        self.assertEqual("recognized", result.status)
+
+    def test_idle_devices_are_not_counted(self):
+        client_id = self._client_id()
+        tara = self._identity("tara")
+        idle, _cookie = create_remembered_device(tara, client_id)
+        idle.created_at = utc_now() - timedelta(hours=2)
+        idle.save()
+        create_remembered_device(tara, client_id)
+
+        self.assertEqual(2, count_user_devices(client_id, tara.resolver, tara.user_id, tara.realm_id))
+        self.assertEqual(1, count_user_devices(client_id, tara.resolver, tara.user_id, tara.realm_id,
+                                               idle_timeout=timedelta(hours=1)))
