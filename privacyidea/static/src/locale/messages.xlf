@@ -2246,32 +2246,25 @@
         <source>System Documentation</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">24</context>
+          <context context-type="linenumber">26</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">32</context>
+          <context context-type="linenumber">34</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationContains" datatype="html">
         <source>This documentation contains the current configuration of your system in restructured text. You can use this to document your installed system.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">27</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="systemConfig.copySystemDocumentation" datatype="html">
-        <source>Copy System Documentation:</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">45</context>
+          <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.close" datatype="html">
         <source>Close</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">22</context>
+          <context context-type="linenumber">24</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
@@ -4436,6 +4429,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">76</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">70</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-table-actions/container-templates-table-actions.component.ts</context>
@@ -7281,7 +7278,7 @@
         <source>Remote user not available. Remote Login not possible.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.ts</context>
-          <context context-type="linenumber">199</context>
+          <context context-type="linenumber">209</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.resolverFilename" datatype="html">
@@ -10261,11 +10258,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/validate/validate.service.ts</context>
-          <context context-type="linenumber">145</context>
+          <context context-type="linenumber">166</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/validate/validate.service.ts</context>
-          <context context-type="linenumber">206</context>
+          <context context-type="linenumber">227</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedInitiateWebauthn" datatype="html">
@@ -13689,7 +13686,7 @@
         <source>Failed to download audit log.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/audit/audit.service.ts</context>
-          <context context-type="linenumber">234</context>
+          <context context-type="linenumber">229</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.successfullySaved" datatype="html">
@@ -15587,14 +15584,14 @@
         <source>Hide password</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.ts</context>
-          <context context-type="linenumber">79</context>
+          <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
       <trans-unit id="login.showPassword" datatype="html">
         <source>Show password</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.ts</context>
-          <context context-type="linenumber">78</context>
+          <context context-type="linenumber">88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machineResolver.failedToDeleteMachineresolver" datatype="html">
@@ -15777,14 +15774,14 @@
         <source>Failed to delete subscription. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/subscription/subscription.service.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">153</context>
         </context-group>
       </trans-unit>
       <trans-unit id="subscription.failedToUploadSubscriptionFile" datatype="html">
         <source>Failed to upload subscription file. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/subscription/subscription.service.ts</context>
-          <context context-type="linenumber">147</context>
+          <context context-type="linenumber">171</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.activeToInactive" datatype="html">
@@ -16175,7 +16172,7 @@
         <source>Failed to test token. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/validate/validate.service.ts</context>
-          <context context-type="linenumber">135</context>
+          <context context-type="linenumber">156</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.singleSignOn" datatype="html">
@@ -16570,7 +16567,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/layout.component.html</context>
-          <context context-type="linenumber">62</context>
+          <context context-type="linenumber">63</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
@@ -21583,35 +21580,35 @@
         <source>The PKCS#12 container of this token is damaged and cannot be downloaded.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">142</context>
+          <context context-type="linenumber">143</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.hidePassphrase" datatype="html">
         <source>Hide passphrase</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">116</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingCertificateDownload" datatype="html">
         <source>Download the certificate.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">95</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingPassphrase" datatype="html">
         <source>Show or copy the passphrase.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">100</context>
+          <context context-type="linenumber">101</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingPkcs12Download" datatype="html">
         <source>Download the PKCS#12 file.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">97</context>
+          <context context-type="linenumber">98</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pkcs12Contains" datatype="html">
@@ -21646,7 +21643,7 @@
         <source>Show passphrase</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.landingPage" datatype="html">
@@ -22640,6 +22637,69 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditions/conditional-access-conditions.component.html</context>
           <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="subscription.notValidAnymore" datatype="html">
+        <source>Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please check, if you need to renew your <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;subscriptionPath&quot;&gt;"/>subscription<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="subscription.notValidAnymoreNoRight" datatype="html">
+        <source>Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please contact an administrator who can manage the subscription.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
+          <context context-type="linenumber">31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationCopied" datatype="html">
+        <source>The system documentation was copied to the clipboard.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">133</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailAttach" datatype="html">
+        <source>The system documentation was downloaded as <x id="fileName" equiv-text="this.fileName"/>. Attach it to the email.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">164</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailBody" datatype="html">
+        <source>The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="this.fileName"/>.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">157</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailSubject" datatype="html">
+        <source>privacyIDEA system documentation of <x id="server" equiv-text="this.server"/> from <x id="date" equiv-text="this.date"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">156</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationNotCopied" datatype="html">
+        <source>The system documentation could not be copied to the clipboard.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">137</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.downloadDocumentation" datatype="html">
+        <source>Download</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">84</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.sendDocumentationByEmail" datatype="html">
+        <source>Send by email</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">77</context>
         </context-group>
       </trans-unit>
     </body>
