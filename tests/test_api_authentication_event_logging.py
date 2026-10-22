@@ -1404,8 +1404,7 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
         assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
                                         reason=AuthEventReason.AUTHORIZATION_DENIED, policies=["authlog_deny"],
-                                        reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path,
-                                        other_info={"error": res.json["result"]["error"]["message"]})
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path)
 
 
     # --- An error response after the authentication (POST_AUTHENTICATION_FAIL) ---

@@ -690,10 +690,10 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     as ``POST_AUTHENTICATION_FAIL`` with the error message in its other info, unless it already records a failure:
     such an event, e.g. a wrong credential or a ``NOT_AUTHORIZED`` an authorization policy recorded itself, already
     says why the request failed. It keeps its type, and gets the error message only if the view answered the failure
-    itself (the audit entry records ``REJECT``) and the error came afterwards. A view that raised - an unknown user, a
-    revoked token - answers its failure with that very error, as ``/auth`` answers every failed login, so the message
-    would repeat what the event type already says. A rejection by conditional access is never amendable and stays as
-    it is.
+    itself (the audit entry records ``REJECT``) and the error came afterwards from something else. A view that raised -
+    an unknown user, a revoked token - answers its failure with that very error, as ``/auth`` answers every failed
+    login, and so does a post-policy that classified the event itself, so the message would repeat what the event
+    already says. A rejection by conditional access is never amendable and stays as it is.
 
     :param request: the request object
     :param response: the response object
@@ -713,7 +713,8 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     other_info = {**(event.other_info or {}), "error": (result.get("error") or {}).get("message")}
     if outcome_of(event.event_type) != AuthEventOutcome.FAILURE:
         context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL, other_info=other_info)
-    elif audit_authentication == AUTH_RESPONSE.REJECT and _shaped_rule(request) != "/auth":
+    elif (audit_authentication == AUTH_RESPONSE.REJECT and _shaped_rule(request) != "/auth"
+          and not context.rejected_by_post_policy):
         context.reclassify(event.event_type, other_info=other_info)
 
 
