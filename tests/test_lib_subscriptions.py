@@ -40,21 +40,24 @@ from privacyidea.models import ClientApplication, Subscription, db
 from .base import MyTestCase
 
 # 100 users
-SUBSCRIPTION1 = {'by_address': 'provider-address', 'for_email': 'customer@example.com', 'num_tokens': 100,
-                 'num_users': 100, 'level': 'Gold', 'for_comment': 'comment', 'date_from': '2016-10-24',
-                 'for_address': 'customer-address',
-                 'signature': '24287419543134291932335914280232067571967865893672677932354574121521748844689122490399903572722627692437421759860332653860825381771420923865100775095168810778157750122430333094307912014590689769228979527735405954705615614505247995506136338010930079794077541100403759754392432809967862978004604278914337052409517895998984832947211907032852653171723886377329563223486623362230032551555536271158219094006763746441282022250783412321241299993657761512776112262708235357995055119379697774465205945934356687189514600830870353192115780195534680601265109038104466390286558785622582056183085321696667197925775161589029048460315',  # noqa: E501
-                 'for_phone': '12345', 'by_email': 'provider@example.com', 'date_till': '2026-10-22',
-                 'by_name': 'NetKnights GmbH', 'application': 'demo_application', 'by_url': 'http://provider',
-                 'for_name': 'customer', 'by_phone': '12345', 'for_url': 'http://customer', 'num_clients': 100}
+SUBSCRIPTION1 = {'by_address': 'Ludwig-Erhard-Str. 12 / Kassel / Germany', 'for_email': 'info@netknights.it',
+                 'for_address': ' / Kassel / DE', 'level': 'privacyIDEA Small Business SLA',
+                 'for_url': 'http://www.netknights.it', 'date_from': '2026-10-22',
+                 'by_url': 'https://support.netknights.it', 'for_phone': 'N/A',
+                 'by_email': 'support@netknights.it', 'date_till': '2036-10-22', 'num_users': 100,
+                 'application': 'privacyIDEA', 'num_tokens': 100, 'num_clients': 100,
+                 'signature': '17941919867303932473076578692591320079191278600840328030609490140912890567352866586574099288334373876078015088947172703645433569126285716638755912171557916764779693512704791308228840892846219470297828198685890145453826588590039520429254723841015944401545021512255965528170081174094262301069011479397754147196147954233139895730486539807542148785452626834760093112183027619887337519667566729507778070026018471420381397016520449392019404081500337138254143685673819349833808720501902957519069636726831580915586862012619330027529658275576879903357992223930621716314003698362410254059102899535512731575596834038158666058466',
+                 'for_name': 'Dummy Customer', 'by_phone': 'N/A', 'for_comment': 'Unittest',
+                 'by_name': 'NetKnights GmbH'}
 # 200 users
-SUBSCRIPTION2 = {'by_address': 'provider-address', 'for_email': 'customer@example.com', 'num_tokens': 200,
-                 'num_users': 200, 'level': 'Gold', 'for_comment': 'comment', 'date_from': '2016-10-24',
-                 'for_address': 'customer-address',
-                 'signature': '7739944619832023057171856564536947684804659085734377461526188619495466460016232596334451477617490220407470317539208839916568031369962545460103329851753025522408316860382940269510239571246104606108789088924884250012996984392465587650164254167417175389148405024799708943598415578782692797235505314103527081364258159023532497905690799262748743833089614921591551752367521751795589729561233624021475231087255449694499023282740029627217820083163313686822693958227330536761267872521140459441397562124467380780097899392909105517928665281442694767953463924730492991936057685649584698964546493536802892903025256708438493092045',  # noqa: E501
-                 'for_phone': '12345', 'by_email': 'provider@example.com', 'date_till': '2026-10-22',
-                 'by_name': 'NetKnights GmbH', 'application': 'demo_application', 'by_url': 'http://provider',
-                 'for_name': 'customer', 'by_phone': '12345', 'for_url': 'http://customer', 'num_clients': 200}
+SUBSCRIPTION2 = {'by_address': 'Ludwig-Erhard-Str. 12 / Kassel / Germany', 'for_email': 'info@netknights.it',
+                 'for_address': ' / Kassel / DE', 'level': 'privacyIDEA Enterprise SLA',
+                 'for_url': 'http://www.netknights.it', 'date_from': '2026-10-22',
+                 'by_url': 'https://support.netknights.it', 'for_phone': 'N/A', 'by_email': 'support@netknights.it',
+                 'date_till': '2036-10-22', 'num_users': 200, 'application': 'privacyIDEA', 'num_tokens': 200,
+                 'num_clients': 200, 'signature': '22375418200541525807209673839667698318126357301896492039309902382963344248297077135092198834370501925689262450980454561118656684868660568861363185332565341554730744219489786638033806806576825042404082739826450593645634853514773200439957663144989075851522058208475627424209422685218277476979108881289516188691942693039221710538565485294282898253133757282393996541642530095181393216301340342018163700733009074878123686308729260759892610731267268275242548112086632485924244912331374075300502286205321027376835924454640822679945630204411283271106090441558625405310407883962530803842035375522607490583851817448907015096874',
+                 'for_name': 'Dummy Customer', 'by_phone': '+49 561 9979 15 47', 'for_comment': 'Unittest',
+                 'by_name': 'NetKnights GmbH'}
 # expired
 SUBSCRIPTION3 = {'by_address': 'provider-address', 'for_email': 'customer@example.com', 'num_tokens': 100,
                  'num_users': 100, 'level': 'Gold', 'for_comment': 'comment', 'date_from': '2015-10-22',
@@ -63,14 +66,15 @@ SUBSCRIPTION3 = {'by_address': 'provider-address', 'for_email': 'customer@exampl
                  'for_phone': '12345', 'by_email': 'provider@example.com', 'date_till': '2015-10-23',
                  'by_name': 'NetKnights GmbH', 'application': 'demo_application', 'by_url': 'http://provider',
                  'for_name': 'customer', 'by_phone': '12345', 'for_url': 'http://customer', 'num_clients': 100}
-# to few users
-SUBSCRIPTION4 = {'by_address': 'provider-address', 'for_email': 'customer@example.com', 'num_tokens': 2, 'num_users': 2,
-                 'level': 'Gold', 'for_comment': 'comment', 'date_from': '2016-10-24',
-                 'for_address': 'customer-address',
-                 'signature': '20346592907086113613613144053127696600954855632118912659244592297546722685102644737004917800740902823683165561890505394413161615565196942324183366911523586532480364480142395813451085772145850694880288743987097090178518740759591735258675622535771288955342647886999915053682075495569659500964255745041348331199607343835943327886852909447097828956308657662313333750485629170942329826174895259789802226712715316039123607236972656403854074148715274916089558594469178028739283660084424358222054505984834431900856390282544303735166577232959529266873257477468374577830190351093665000981590012656078589178079067689917735770682',  # noqa: E501
-                 'for_phone': '12345', 'by_email': 'provider@example.com', 'date_till': '2026-10-22',
-                 'by_name': 'NetKnights GmbH', 'application': 'demo_application', 'by_url': 'http://provider',
-                 'for_name': 'customer', 'by_phone': '12345', 'for_url': 'http://customer', 'num_clients': 2}
+# to 10 users
+SUBSCRIPTION4 = {'by_address': 'Ludwig-Erhard-Str. 12 / Kassel / Germany', 'for_email': 'info@netknights.it',
+                 'for_address': ' / Kassel / DE', 'level': 'privacyIDEA Small Business SLA',
+                 'for_url': 'http://www.netknights.it', 'date_from': '2026-10-22',
+                 'by_url': 'https://support.netknights.it', 'for_phone': 'N/A',
+                 'by_email': 'support@netknights.it', 'date_till': '2036-10-22', 'num_users': 10,
+                 'application': 'privacyIDEA', 'num_tokens': 10, 'num_clients': 10,
+                 'signature': '372419503710461285591842418538761559282413229240720090557923804849100327490030827850375196139230113552116202922029981331597920712394735102466193468010812554108965786364991883624093221808379787006099302170716894108468573305266838502513202877298055991493230671361578214252391379062951849546705621046771082383334140647522704329871918780977581375630796944085344217320782641958679429060755746450827151909666930051757502732076512867428969118682344284654992115575621563152961247080771694528053850258206185895605450540216483689014860648650207500221090509505419925316612375990016110921654488851062485457242696296180966814588',
+                 'for_name': 'Dummy Customer', 'by_phone': 'N/A', 'for_comment': 'Unittest', 'by_name': 'NetKnights GmbH'}
 
 
 class SubscriptionApplicationTestCase(MyTestCase):
@@ -89,7 +93,7 @@ class SubscriptionApplicationTestCase(MyTestCase):
     def test_01_subscriptions(self):
         r = save_subscription(SUBSCRIPTION1)
         self.assertTrue(r)
-        subscription = get_subscription("demo_application")[0]
+        subscription = get_subscription("privacyIDEA")[0]
         # Compare all keys in SUBSCRIPTION1 with the subscription object
         for key, value in SUBSCRIPTION1.items():
             self.assertEqual(subscription.get(key), value)
@@ -101,20 +105,20 @@ class SubscriptionApplicationTestCase(MyTestCase):
         # Get
         subs = get_subscription()
         self.assertEqual(1, len(subs))
-        subs = get_subscription("demo_application")
+        subs = get_subscription("privacyIDEA")
         self.assertEqual(1, len(subs))
         otrs_sub = subs[0]
-        self.assertEqual("demo_application", otrs_sub.get("application"))
-        self.assertEqual("customer", otrs_sub.get("for_name"))
-        self.assertEqual("customer@example.com", otrs_sub.get("for_email"))
+        self.assertEqual("privacyIDEA", otrs_sub.get("application"))
+        self.assertEqual("Dummy Customer", otrs_sub.get("for_name"))
+        self.assertEqual("info@netknights.it", otrs_sub.get("for_email"))
         self.assertEqual(200, otrs_sub.get("num_tokens"))
 
         # delete
-        s = delete_subscription("demo_application")
+        s = delete_subscription("privacyIDEA")
         self.assertTrue(s)
 
         # get
-        subs = get_subscription("demo_application")
+        subs = get_subscription("privacyIDEA")
         self.assertEqual(len(subs), 0)
 
     def test_02_exception_propability(self):
@@ -146,15 +150,14 @@ class SubscriptionApplicationTestCase(MyTestCase):
         # A valid subscription
         r = save_subscription(SUBSCRIPTION1)
         self.assertTrue(r)
-        s = check_subscription("demo_application")
+        s = check_subscription("privacyIDEA")
         self.assertTrue(s)
 
         # A subscription, that has expired
         r = save_subscription(SUBSCRIPTION3)
         self.assertTrue(r)
         # The subscription, which has expired 100 days ago raises an exception
-        self.assertRaises(SubscriptionError, check_subscription,
-                          "demo_application")
+        self.assertRaises(SubscriptionError, check_subscription, "demo_application")
 
         self.setUp_user_realms()
         init_token({"type": "spass"}, user=User("cornelius", self.realm1))
@@ -163,24 +166,25 @@ class SubscriptionApplicationTestCase(MyTestCase):
 
         save_subscription(SUBSCRIPTION4)
 
-        # We have only one user with tokens, so having a subscription of 3 is fine!
-        s = check_subscription("demo_application")
+        # We have only one user with tokens, so having a subscription of 10 is fine!
+        s = check_subscription("privacyIDEA")
         self.assertTrue(s)
 
-        init_token({"type": "spass"}, user=User("shadow", self.realm1))
-        init_token({"type": "spass"}, user=User("nopw", self.realm1))
-        # Now we have three users with tokens, but only two are allowed. We fail with a probabiliy of 1/3
+        for username in ["shadow", "nopw", "autoassignuser", "selfservice", "timelimituser",
+                         "passthru", "disableduser", "lockeduser", "usernotoken", "multichal"]:
+            init_token({"type": "spass"}, user=User(username, self.realm1))
+        # Now we have eleven users with tokens, but only ten are allowed. We fail with a probabiliy of 1/12
         # Fail subscription check
         with mock.patch("random.randrange") as mock_random:
-            mock_random.return_value = 3
-            self.assertRaises(SubscriptionError, check_subscription, "demo_application")
+            mock_random.return_value = 11
+            self.assertRaises(SubscriptionError, check_subscription, "privacyIDEA")
         # succeed subscription check
         with mock.patch("random.randrange") as mock_random:
-            mock_random.return_value = 2
-            self.assertTrue(check_subscription("demo_application"))
+            mock_random.return_value = 10
+            self.assertTrue(check_subscription("privacyIDEA"))
         with mock.patch("random.randrange") as mock_random:
             mock_random.return_value = 1
-            self.assertTrue(check_subscription("demo_application"))
+            self.assertTrue(check_subscription("privacyIDEA"))
 
         # try to save some broken subscriptions
         sub1 = SUBSCRIPTION1.copy()
