@@ -26,6 +26,8 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import {
   ApiClientService,
   ApiClientServiceInterface,
@@ -52,7 +54,8 @@ const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, n
     MatFormFieldModule,
     MatSelectModule,
     MatPaginatorModule,
-    DatePipe
+    DatePipe,
+    TableStateComponent
   ],
   templateUrl: "./api-client-remembered-devices.component.html",
   styleUrl: "./api-client-remembered-devices.component.scss"
@@ -116,7 +119,14 @@ export class ApiClientRememberedDevicesComponent {
   readonly devices = computed<RememberedDevice[]>(() => this.loadedPage().devices);
   readonly count = computed<number>(() => this.loadedPage().count);
   readonly loadFailed = computed<boolean>(() => this.devicesResource.error() !== undefined);
-  readonly isLoading = computed<boolean>(() => this.devicesResource.isLoading());
+
+  readonly tableState = new TableState({
+    resource: this.devicesResource,
+    count: () => this.count(),
+    filterActive: () => !!this.realmFilter(),
+    allowed: () => this.authService.actionAllowed("remembered_device_list"),
+    resetFilter: () => this.onRealmFilterChange("")
+  });
 
   userDevicesTooltip(): string {
     return $localize`:@@apiClient.revokeAllUserDevices:Revoke all of this user's remembered devices on this client`;

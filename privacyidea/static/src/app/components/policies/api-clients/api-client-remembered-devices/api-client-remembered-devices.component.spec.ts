@@ -258,6 +258,36 @@ describe("ApiClientRememberedDevicesComponent", () => {
     expect(text).not.toContain("has no remembered devices");
   });
 
+  it("should show the empty state in place of the table when the client has no remembered devices", async () => {
+    apiClientServiceMock.getRememberedDevices = jest
+      .fn()
+      .mockResolvedValue({ devices: [], count: 0, prev: null, next: null });
+    apiClientServiceMock.reloadRememberedDevices();
+    await settle();
+
+    expect(component.tableState.status()).toBe("empty");
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain("No remembered devices yet");
+    expect(element.querySelector("table")).toBeNull();
+    expect(element.querySelector("mat-paginator")).toBeNull();
+  });
+
+  it("should keep the table and offer to reset the filter when the selected realm has no devices", async () => {
+    apiClientServiceMock.getRememberedDevices = jest
+      .fn()
+      .mockResolvedValue({ devices: [], count: 0, prev: null, next: null });
+    component.onRealmFilterChange("realm1");
+    await settle();
+
+    expect(component.tableState.status()).toBe("filtered");
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector("table")).not.toBeNull();
+    expect(element.textContent).toContain("No entries match the filter");
+
+    component.tableState.resetFilter();
+    expect(component.realmFilter()).toBe("");
+  });
+
   it("should re-fetch through the page reset alone when revoking all off page 0", async () => {
     // Resetting the page is itself a re-fetch trigger. Pulling the reload hook on top of
     // it is the redundant second request the fix removed, so the hook must stay untouched.
