@@ -1581,6 +1581,41 @@ class HTTPResolverTestCase(MyTestCase):
         keys = resolver.get_available_info_keys()
         self.assertSetEqual({"username", "userid", "givenname", "surname", custom_groups_key}, set(keys))
 
+    def test_27_config_for_documentation(self):
+        # A basic resolver configures its request by the endpoint and the method on the top level
+        documented = HTTPResolver.get_config_for_documentation(
+            {ENDPOINT: "https://example.com/users/{userid}", METHOD: "GET",
+             HEADERS: json.dumps({"Authorization": "Bearer static-token"})})
+        self.assertEqual({"editable": False, "mode": "basic", "requests": [], "verify_tls": True}, documented)
+
+        # An advanced resolver is documented by the requests that name an endpoint, the request for the groups of a
+        # user by its "active" flag
+        config = {BASE_URL: "https://example.com", EDITABLE: "True", VERIFY_TLS: "False", USERNAME: "service",
+                  PASSWORD: "service-password",
+                  CONFIG_GET_USER_BY_ID: {METHOD: "GET", ENDPOINT: "/users/{userid}",
+                                          HEADERS: {"X-API-Key": "static-api-key"}},
+                  CONFIG_GET_USER_LIST: {METHOD: "GET", ENDPOINT: "/users"},
+                  CONFIG_CREATE_USER: {METHOD: "POST", ENDPOINT: ""},
+                  CONFIG_AUTHORIZATION: {METHOD: "POST", ENDPOINT: "/token"},
+                  CONFIG_GET_USER_GROUPS: {ACTIVE: True, ENDPOINT: "/users/{userid}/groups"}}
+        documented = HTTPResolver.get_config_for_documentation(config)
+        self.assertEqual({"editable": True, "mode": "advanced",
+                          "requests": ["get_user_by_id", "get_user_list", "authorization", "get_user_groups"],
+                          "verify_tls": False}, documented)
+
+        # The resolvers based on the HTTP resolver bring their own requests, which are documented as well
+        documented = EntraIDResolver.get_config_for_documentation({CLIENT_ID: "client-id", TENANT: "tenant-id",
+                                                                   CLIENT_CREDENTIAL_TYPE: "certificate"})
+        self.assertEqual("advanced", documented["mode"])
+        self.assertIn("get_user_by_name", documented["requests"])
+        self.assertIn("get_user_groups", documented["requests"])
+        self.assertEqual("certificate", documented["client_credential_type"])
+        self.assertNotIn("client-id", str(documented))
+        self.assertNotIn("tenant-id", str(documented))
+        documented = KeycloakResolver.get_config_for_documentation({REALM: "keycloak-realm"})
+        self.assertIn("get_user_by_name", documented["requests"])
+        self.assertNotIn("keycloak-realm", str(documented))
+
 
 class ConfidentialClientApplicationMock:
     def __init__(self, client_id: str, authority: str, client_credential: str | dict[str, str],

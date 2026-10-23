@@ -44,7 +44,7 @@ from privacyidea.lib.utils import check_module_allowed
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import SMSGateway, SMSGatewayOption, db
 
 log = logging.getLogger(__name__)
@@ -506,7 +506,7 @@ def export_smsgateway(name=None, censor=False):
 @register_import('smsgateway')
 def import_smsgateway(data, name=None):
     """Import sms gateway configuration"""
-    log.debug(f'Import smsgateway config: {data!s}')
+    log.debug(f'Import smsgateway config: {get_import_names(data)}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue

@@ -880,6 +880,13 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(result[0] == -1, result)
         self.assertEqual("Failed to retrieve users.", result[1], result)
 
+    def test_100_config_for_documentation(self):
+        # The SQL resolver is documented by its driver, not by the database, the account or the table
+        documented = SQLResolver.get_config_for_documentation(
+            {"Driver": "postgresql+psycopg2", "Server": "db.example.com", "Database": "users", "User": "service",
+             "Password": "service-password", "Table": "users", "Editable": "1", "conParams": "sslpassword=secret"})
+        self.assertEqual({"editable": True, "driver": "postgresql+psycopg2"}, documented)
+
 
 class SCIMResolverTestCase(MyTestCase):
     """
@@ -3394,6 +3401,34 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertDictEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
         self.assertEqual(resolver.getUsername("2"), login_map["2"], login_map)
+
+    def test_99_config_for_documentation(self):
+        # The LDAP resolver is documented by how it connects and identifies the users, not by the servers, the base
+        # DN, the bind account or the filters
+        config = {"LDAPURI": "ldap://dc1.example.com, ldaps://dc2.example.com", "START_TLS": "1",
+                  "LDAPBASE": "dc=example,dc=com", "BINDDN": "cn=service,dc=example,dc=com",
+                  "BINDPW": "service-password", "LDAPSEARCHFILTER": "(objectClass=person)", "AUTHTYPE": "NTLM",
+                  "TLS_VERIFY": "1", "UIDTYPE": "objectGUID", "SERVERPOOL_STRATEGY": "FIRST", "CACHE_TIMEOUT": "300",
+                  "EDITABLE": "0", "recursive_group_search": "1", "group_name_attribute": "cn",
+                  "group_search_filter": "(member:1.2.840.113556.1.4.1941:={dn})",
+                  "group_attribute_mapping_key": "groups"}
+        documented = LDAPResolver.get_config_for_documentation(config)
+        self.assertEqual({"editable": False, "auth_type": "NTLM", "tls": ["ldaps", "start_tls"], "tls_verify": True,
+                          "uid_type": "objectGUID", "servers": 2, "serverpool_strategy": "FIRST",
+                          "cache_timeout": 300, "group_search": True}, documented)
+
+        # If the first server is an ldaps server, START_TLS is not used, also not for the other servers
+        config["LDAPURI"] = "ldaps://dc1.example.com, ldap://dc2.example.com"
+        self.assertEqual(["ldaps", "none"], LDAPResolver.get_config_for_documentation(config)["tls"])
+
+        # The defaults of the resolver are documented for the settings that are not configured, and a value that
+        # is none of the known ones is documented as unknown
+        documented = LDAPResolver.get_config_for_documentation({"LDAPURI": "ldap://dc1.example.com",
+                                                                "AUTHTYPE": "custom-auth-type",
+                                                                "recursive_group_search": "1"})
+        self.assertEqual({"editable": False, "auth_type": "unknown", "tls": ["none"], "tls_verify": False,
+                          "uid_type": "DN", "servers": 1, "serverpool_strategy": "ROUND_ROBIN",
+                          "cache_timeout": 120, "group_search": False}, documented)
 
 
 class BaseResolverTestCase(MyTestCase):

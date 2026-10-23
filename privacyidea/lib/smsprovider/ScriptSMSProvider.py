@@ -67,7 +67,7 @@ class ScriptSMSProvider(ISMSProvider):
 
         if not isinstance(message, dict):
             phone = self._mangle_phone(phone, self.smsgateway.option_dict)
-        log.debug(f"submitting message {message!s} to {phone!s}")
+        log.debug("submitting a message")
 
         script = self.smsgateway.option_dict.get("script")
         background = self.smsgateway.option_dict.get("background")
@@ -95,7 +95,7 @@ class ScriptSMSProvider(ISMSProvider):
             log.warning(f"Script {script_name!r} failed to execute with error code {rcode!r}")
             raise SMSError(-1, "Error during execution of the script.")
         else:
-            log.info(f"SMS delivered to {phone!s}.")
+            log.info(f"SMS delivered by the script {script!r}.")
 
         return True
 

@@ -12,14 +12,18 @@ import gnupg
 from privacyidea.lib import health
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
+from privacyidea.lib.config import delete_privacyidea_config
+from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
 from privacyidea.lib.radiusserver import add_radius, delete_radius
+from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway, set_smsgateway
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.realm import delete_realm, get_realms
 from privacyidea.lib.resolver import save_resolver, delete_resolver, CENSORED
 from privacyidea.models import UserCache
-from privacyidea.models import db, NodeName, Policy
+from privacyidea.models import db, Config, NodeName, Policy
 from privacyidea.models.metric_aggregate import MetricAggregate
 from .base import MyApiTestCase
 from .conftest import prepare_ca_directory
@@ -116,23 +120,21 @@ class APIConfigTestCase(MyApiTestCase):
         entry = self.find_most_recent_audit_entry(action="*setConfig*")
         self.assertIn("plainValue", entry.get("info") or "", entry)
 
-    def test_02b_documentation_censors_secret_appconfig_values(self):
-        # The report is read by somebody other than whoever wrote pi.cfg, so a value that holds
-        # a credential must not be in it. The decision is made on the name of the key, so a
-        # key an installation or a plugin defines itself is covered too.
-        secrets = {"PI_HSM_MODULE_PASSWORD": "hsm-secret-value",
-                   "PI_HSM_MODULE_KEY": "hsm-key-value",
-                   "PI_DB_PASSWORD": "db-secret-value",
-                   # A plugin defines its keys with the PI_ prefix, which is what the report renders
-                   "PI_MYPLUGIN_API_SECRET": "plugin-secret-value"}
-        # A flag and a path whose names contain "KEY" are not secrets and stay readable,
-        # otherwise the report loses what it is read for.
-        readable = {"PI_AUDIT_NO_PRIVATE_KEY_CHECK": True,
-                    "PI_ALLOWED_SSH_KEY_TYPES": "ssh-ed25519"}
-        original = {key: self.app.config.get(key, self.NO_VALUE)
-                    for key in list(secrets) + list(readable)}
-        self.app.config.update(secrets)
-        self.app.config.update(readable)
+    def test_02b_documentation_lists_selected_appconfig_values(self):
+        # The report is read by somebody other than whoever wrote pi.cfg. It lists the settings that describe the
+        # setup and no other: a credential, a path and a setting a plugin defines itself are not part of it.
+        unlisted = {"PI_HSM_MODULE_PASSWORD": "hsm-secret-value",
+                    "PI_HSM_MODULE_KEY": "hsm-key-value",
+                    "PI_DB_PASSWORD": "db-secret-value",
+                    "PI_MYPLUGIN_API_TOKEN": "plugin-token-value",
+                    "PI_LOGCONFIG": "/etc/privacyidea/logging.cfg"}
+        # A connect string is listed by its driver and a URL by whether it is set
+        derived = {"PI_MONITORING_SQL_URI": "mysql+pymysql://pi:monitoring-password@db.example.com/pi",
+                   "PI_REDIS_URL": "redis://:redis-password@redis.example.com:6379/0"}
+        listed = {"PI_ALLOWED_SSH_KEY_TYPES": "ssh-ed25519",
+                  "PI_NO_RESPONSE_SIGN": True}
+        original = {key: self.app.config.get(key, self.NO_VALUE) for key in [*unlisted, *derived, *listed]}
+        self.app.config.update({**unlisted, **derived, **listed})
         try:
             with self.app.test_request_context('/system/documentation',
                                                method='GET',
@@ -141,11 +143,15 @@ class APIConfigTestCase(MyApiTestCase):
                 self.assertEqual(200, res.status_code, res.data)
                 body = res.data.decode("utf-8")
 
-            for key, value in secrets.items():
-                self.assertIn(key, body, f"{key} is missing from the report")
-                self.assertNotIn(value, body, f"{key} was rendered in clear in the report")
-            self.assertIn("PI_ALLOWED_SSH_KEY_TYPES: **ssh-ed25519**", body)
-            self.assertIn("PI_AUDIT_NO_PRIVATE_KEY_CHECK: **True**", body)
+            for key, value in unlisted.items():
+                self.assertNotIn(key, body)
+                self.assertNotIn(value, body)
+            for part in ("monitoring-password", "db.example.com", "redis-password", "redis.example.com"):
+                self.assertNotIn(part, body)
+            self.assertIn("\n    PI_MONITORING_SQL_URI (driver): mysql+pymysql\n", body)
+            self.assertIn("\n    PI_REDIS_URL (set): True\n", body)
+            self.assertIn("\n    PI_ALLOWED_SSH_KEY_TYPES: ssh-ed25519\n", body)
+            self.assertIn("\n    PI_NO_RESPONSE_SIGN: True\n", body)
         finally:
             # Restore, do not pop: some of these keys are part of the test configuration, and
             # removing them would break every test that runs after this one.
@@ -154,6 +160,36 @@ class APIConfigTestCase(MyApiTestCase):
                     self.app.config.pop(key, None)
                 else:
                     self.app.config[key] = value
+
+    def test_02c_documentation_censors_token_settings(self):
+        # Written without a type, as the token configuration of the WebUI does. The token classes declare these
+        # settings a password, so the audit entry of the request and the report hold the censored value.
+        with self.app.test_request_context('/system/setConfig',
+                                           json={"yubikey.apiid.client1": "yubikey-api-key",
+                                                 "yubico.secret": "yubico-api-key"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        entry = self.find_most_recent_audit_entry(action="*setConfig*")
+        self.assertNotIn("yubikey-api-key", entry.get("info") or "", entry)
+        self.assertNotIn("yubico-api-key", entry.get("info") or "", entry)
+        # An entry that is stored in plain text, before its token class declared it a password
+        Config("email.password", "smtp-password", "", "").save()
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+            for secret in ("yubikey-api-key", "yubico-api-key", "smtp-password"):
+                self.assertNotIn(secret, body)
+            self.assertIn(f"\n    yubikey.apiid.client1: {CENSORED}\n", body)
+            self.assertIn(f"\n    email.password: {CENSORED}\n", body)
+        finally:
+            for key in ("yubikey.apiid.client1", "yubico.secret", "email.password"):
+                delete_privacyidea_config(key)
 
     def test_03_set_and_del_default(self):
         with self.app.test_request_context('/system/setDefault',
@@ -1019,24 +1055,113 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(b"privacyIDEA configuration documentation" in
                             res.data)
 
-    def test_15a_documentation_hides_secret_app_config_values(self):
-        # The report renders every PI_* key of pi.cfg, and a deployment may keep a secret in one of
-        # them. A key whose name marks it as a secret is reported with its value replaced; a key
-        # holding a path keeps its value, which is what the report is read for.
-        self.app.config["PI_TESTHSM_MODULE_PASSWORD"] = "a-very-secret-value"
-        self.app.config["PI_TESTHSM_MODULE_PATH"] = "/opt/hsm/module.so"
+    def test_15a_documentation_lists_database_driver(self):
+        # The database is listed by the driver of its connect string, which leaves out the host and the credentials
+        with self.app.test_request_context('/system/documentation',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            body = res.data.decode("utf-8")
+        database_uri = self.app.config["SQLALCHEMY_DATABASE_URI"]
+        driver = database_uri.split("://")[0]
+        self.assertIn(f"\n    SQLALCHEMY_DATABASE_URI (driver): {driver}\n", body)
+        self.assertNotIn(database_uri, body)
+
+    def test_15b_documentation_renders_values_as_literal_text(self):
+        # A value is rendered into a literal block, so that reStructuredText markup in it, like a directive in a
+        # policy description, is part of the text and not of the document. A name outside of a literal block is
+        # escaped, so that the name of this resolver, which ends in an underscore, is no reference.
+        self.setUp_user_realms()
+        save_resolver({"resolver": "users_", "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
+        set_policy("documented", scope=SCOPE.AUTH, action="otppin=tokenpin",
+                   description="first line\n.. include:: /etc/hostname\n**bold**")
         try:
             with self.app.test_request_context('/system/documentation',
                                                method='GET',
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(res.status_code, 200, res)
-                self.assertNotIn(b"a-very-secret-value", res.data)
-                self.assertIn(b"PI_TESTHSM_MODULE_PASSWORD", res.data)
-                self.assertIn(b"/opt/hsm/module.so", res.data)
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+            self.assertIn("\n    description: first line\n        .. include:: /etc/hostname\n        **bold**\n",
+                          body)
+            self.assertIn("\nusers\\_\n~~~~~~~\n* Name of the resolver: users\\_\n", body)
+            self.assertIn("\n    realm: []\n", body)
+            # No value is rendered as markup outside of a literal block
+            self.assertNotIn("**[]**", body)
         finally:
-            del self.app.config["PI_TESTHSM_MODULE_PASSWORD"]
-            del self.app.config["PI_TESTHSM_MODULE_PATH"]
+            delete_policy("documented")
+            delete_resolver("users_")
+
+    def test_15c_documentation_lists_selected_resolver_and_event_settings(self):
+        # Resolvers and event handlers are listed by the settings that describe how they are used. A setting that
+        # names the user store or an account in it, holds a credential or is free text is not part of the report.
+        save_resolver({"resolver": "httpdoc", "type": "httpresolver", "base_url": "https://idp.example.com",
+                       "headers": json.dumps({"Authorization": "Bearer static-token"}),
+                       "config_get_user_by_id": json.dumps({"method": "GET", "endpoint": "/users/{userid}"}),
+                       "username": "service-account", "password": "service-password"})
+        event_id = set_event("1. Notify * helpdesk", event=["validate_check"], handlermodule="WebHook",
+                             action="post_webhook", conditions={"result_value": "False", "serial": "^HOTP.*$"},
+                             options={"URL": "https://hooks.example.com/static-hook-token", "replace": "True",
+                                      "data": "payload-text"})
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+            for value in ("idp.example.com", "static-token", "service-account", "service-password",
+                          "/users/{userid}", "hooks.example.com", "static-hook-token", "payload-text", "^HOTP"):
+                self.assertNotIn(value, body)
+            self.assertIn("\n    mode: advanced\n    requests: ['get_user_by_id']\n    verify_tls: True\n", body)
+            # The name of an event handler is free text, it is escaped for the section title
+            self.assertIn("\n1\\. Notify \\* helpdesk\n", body)
+            self.assertIn("\n    handlermodule: WebHook\n", body)
+            self.assertIn("\n    event: ['validate_check']\n", body)
+            self.assertIn("\n    conditions:\n        result_value: False\n", body)
+            self.assertIn(f"\n        serial: {CENSORED}\n", body)
+            self.assertIn(f"\n        URL: {CENSORED}\n", body)
+            self.assertIn(f"\n        data: {CENSORED}\n", body)
+            self.assertIn("\n        replace: True\n", body)
+        finally:
+            delete_event(event_id)
+            delete_resolver("httpdoc")
+
+    def test_15d_documentation_lists_the_setup_and_the_external_services(self):
+        # The report names the version and the schema of the installation and lists the external services by the
+        # settings that describe how they are used, not by their hosts or credentials
+        add_smtpserver("docmail", "mail.example.com", port=587, username="mail-account", password="mail-password",
+                       tls=True)
+        add_radius("docradius", "radius.example.com", "radius-secret")
+        set_smsgateway("docsms", "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://sms.example.com/send?key=sms-key", "HTTP_METHOD": "POST"},
+                       headers={"Authorization": "Bearer sms-token"})
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+        finally:
+            delete_smtpserver("docmail")
+            delete_radius("docradius")
+            delete_smsgateway("docsms")
+        self.assertIn("\n* privacyIDEA version: ", body)
+        self.assertIn("\n* Database schema revision: ", body)
+        self.assertIn("\n* Nodes: ", body)
+        self.assertIn("\ndocmail\n~~~~~~~\n\n::\n\n    port: 587\n    tls: True\n    authentication: True\n", body)
+        self.assertIn("\ndocradius\n~~~~~~~~~\n", body)
+        self.assertIn("\n        HTTP_METHOD: POST\n", body)
+        self.assertIn(f"\n        Authorization: {CENSORED}\n", body)
+        for value in ("mail.example.com", "mail-account", "mail-password", "radius.example.com", "radius-secret",
+                      "sms.example.com", "sms-key", "sms-token"):
+            self.assertNotIn(value, body)
+        for section in ("SMS Gateway Configuration", "CA Configuration", "Machine Configuration",
+                        "Token Configuration"):
+            self.assertIn(f"\n{section}\n", body)
+        self.assertNotIn("TODO", body)
 
     def test_16_get_hsm(self):
         with self.app.test_request_context('/system/hsm',

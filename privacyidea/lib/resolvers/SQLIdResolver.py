@@ -660,6 +660,15 @@ class IdResolver (UserIdResolver):
         return engine
 
     @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        The SQL resolver is documented by the driver of the database it reads the users from.
+        """
+        documented = super().get_config_for_documentation(config)
+        documented["driver"] = config.get("Driver")
+        return documented
+
+    @classmethod
     def getResolverClassDescriptor(cls):
         descriptor = {}
         typ = cls.getResolverType()

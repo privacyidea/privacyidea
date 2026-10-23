@@ -32,7 +32,7 @@ from privacyidea.lib.task.eventcounter import EventCounterTask
 from privacyidea.lib.task.simplestats import SimpleStatsTask
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.utils import fetch_one_resource
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import PeriodicTask, db, PeriodicTaskOption, PeriodicTaskLastRun
 from privacyidea.models.utils import utc_now
 
@@ -372,7 +372,7 @@ def export_periodictask(name=None):
 @register_import('periodictask')
 def import_periodictask(data, name=None):
     """Import periodictask configuration"""
-    log.debug(f'Import periodictask config: {data!s}')
+    log.debug(f'Import periodictask config: {get_import_names(data)}')
     for res_data in data:
         if name and name != res_data.get('name'):
             continue
