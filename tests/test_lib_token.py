@@ -834,10 +834,10 @@ class TokenTestCase(MyTestCase):
         # now set the pin
         self.assertTrue(set_pin(serial, "1234") == 1)
         self.assertTrue(tokenobject.token.check_pin("1234"))
-        self.assertTrue(tokenobject.token.user_pin == "")
+        self.assert_empty_string(tokenobject.token.user_pin)
         self.assertTrue(set_pin_user(serial, "1234") == 1)
         self.assertTrue(tokenobject.token.user_pin != "")
-        self.assertTrue(tokenobject.token.so_pin == "")
+        self.assert_empty_string(tokenobject.token.so_pin)
         self.assertTrue(set_pin_so(serial, "1234") == 1)
         self.assertTrue(tokenobject.token.so_pin != "")
         remove_token(serial)
@@ -1720,8 +1720,8 @@ class TokenTestCase(MyTestCase):
 
         self.assertTrue(tokens[0].get("serial") == "A8",
                         tokens[0])
-        # SQLite does not sort like other DBs
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        # SQLite and Oracle compare strings binary, putting upper case first
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[-1].get("serial"), tokens[-1])
         else:
             self.assertEqual('X', tokens[-1].get("serial"), tokens[-1])
@@ -1731,7 +1731,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
 
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[0].get("serial"), tokens[0])
         else:
             self.assertEqual('X', tokens[0].get("serial"), tokens[0])
@@ -1742,7 +1742,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="asc")
         tokens = tokendata.get("tokens")
 
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[-1].get("serial"), tokens[-1])
         else:
             self.assertEqual('X', tokens[-1].get("serial"), tokens[-1])
@@ -1752,7 +1752,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
 
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[0].get("serial"), tokens[0])
         else:
             self.assertEqual('X', tokens[0].get("serial"), tokens[0])

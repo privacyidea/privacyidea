@@ -4338,7 +4338,7 @@ class APITokenTestCase(MyApiTestCase):
                     self.assertEqual(404, res.status_code, res.json)
                     self.assertEqual(601, res.json["result"]["error"]["code"], res.json)
 
-            self.assertEqual("", other_token.token.description)
+            self.assert_empty_string(other_token.token.description)
             self.assertTrue(other_token.token.active)
             self.assertTrue(token_exist(other_token.get_serial()))
 
@@ -5706,7 +5706,7 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("radius.user"))
         # The audit names the entries that were written, so an entry dropped for this token is not in it
         audit_entry = self.find_most_recent_audit_entry(action='POST /token/set')
-        self.assertNotIn("radius.user", audit_entry.get('action_detail', ''), audit_entry)
+        self.assertNotIn("radius.user", audit_entry.get('action_detail') or '', audit_entry)
 
         # A key no token type declares settable is not a token info parameter at all: the endpoint
         # can not tell it apart from an unrelated parameter, so it is ignored rather than refused
@@ -6114,7 +6114,7 @@ class APITokenListNodeTestCase(MyApiTestCase):
             entries = res.json["result"]["value"]["auditdata"]
             self.assertEqual(1, len(entries), entries)
             entry = entries[0]
-            self.assertEqual("", entry["user"], entry)
+            self.assert_empty_string(entry["user"], entry)
             info = entry["info"]
             self.assertIn(f"The owner of the token {serial} can not be looked up", info, info)
             self.assertIn("Error performing bind operation: unreachable", info, info)
@@ -6227,7 +6227,7 @@ class APIEmptyParameterValuesTestCase(MyApiTestCase):
         token = get_one_token(serial="EMPTY01")
         self.assertEqual([], get_realms_of_token("EMPTY01"))
         self.assertEqual([], token.token.tokengroup_list)
-        self.assertEqual("", token.get_tokeninfo("note"))
+        self.assert_empty_string(token.get_tokeninfo("note"))
 
         remove_token("EMPTY01")
         delete_tokengroup("emptygroup")

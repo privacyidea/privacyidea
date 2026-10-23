@@ -310,8 +310,9 @@ class WebAuthn(MyApiTestCase):
         tcih = TokenCredentialIdHash.query.filter_by(credential_id_hash=credential_id_hash).one()
         self.assertTrue(tcih)
         tcih.delete()
+        # LIKE, because Oracle cannot compare the CLOB value with "="
         token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                            .filter(TokenInfo.Value == credential_id_hash).first())
+                            .filter(TokenInfo.Value.like(credential_id_hash)).first())
         self.assertTrue(token_info_entry)
         token_info_entry.delete()
 

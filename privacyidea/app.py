@@ -604,7 +604,8 @@ def create_app(config_name="development",
         engine = db.session.get_bind()
         if engine.name == "oracle":
             engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
-            engine.dialect._json_deserializer = lambda obj: json.loads(obj)
+            # python-oracledb already decodes a column with an "IS JSON" check constraint (radiusserver.options)
+            engine.dialect._json_deserializer = lambda obj: json.loads(obj) if isinstance(obj, str) else obj
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)

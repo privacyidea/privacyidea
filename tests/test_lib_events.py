@@ -76,7 +76,7 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertEqual(0, event_1.ordering)
         self.assertTrue(event_1.active)
         self.assertEqual("post", event_1.position)
-        self.assertEqual("", event_1.condition)
+        self.assert_empty_string(event_1.condition)
         self.assertFalse(event_1.abort_on_error)
         # Relationships
         self.assertEqual("emailconfig", event_1.options[0].Key)
@@ -3745,7 +3745,7 @@ class TokenEventTestCase(MyTestCase):
         t = get_tokens(tokentype="email")[0]
         self.assertTrue(t)
         self.assertEqual(t.user, user_obj_no_email)
-        self.assertEqual(t.get_tokeninfo("email"), "")
+        self.assert_empty_string(t.get_tokeninfo("email"))
         remove_token(t.token.serial)
 
         # Enroll a totp token with genkey
@@ -4761,7 +4761,7 @@ class TokenEventTestCase(MyTestCase):
                 self.assertTrue(t_handler.do(ACTION_TYPE.INIT, options=options), t_handler.run_details)
             tokens = get_tokens(user=user, tokentype=tokentype)
             self.assertEqual(1, len(tokens), tokentype)
-            self.assertEqual("", tokens[0].get_tokeninfo(info_key))
+            self.assert_empty_string(tokens[0].get_tokeninfo(info_key))
             remove_token(tokens[0].get_serial())
 
 
