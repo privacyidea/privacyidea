@@ -7,6 +7,7 @@
 **/.dockerignore
 **/Dockerfile*
 **/node_modules
+privacyidea/static/playwright-e2e
 venv*
 .github*
 .circleci*
