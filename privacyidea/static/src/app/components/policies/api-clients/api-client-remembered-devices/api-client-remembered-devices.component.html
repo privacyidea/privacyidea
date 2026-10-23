@@ -49,7 +49,7 @@
         @if (authService.actionAllowed("remembered_device_revoke")) {
           <button
             (click)="revokeAll()"
-            [disabled]="count() === 0 || loadFailed()"
+            [disabled]="count() === 0"
             class="action-button-delete-secondary button-width-l"
             mat-stroked-button>
             <mat-icon>delete_sweep</mat-icon>

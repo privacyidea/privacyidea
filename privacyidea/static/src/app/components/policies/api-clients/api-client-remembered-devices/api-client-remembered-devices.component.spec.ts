@@ -249,7 +249,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(component.loadFailed()).toBe(true);
+    expect(component.tableState.status()).toBe("error");
     expect(component.devices()).toEqual([]);
     expect(component.count()).toBe(0);
 

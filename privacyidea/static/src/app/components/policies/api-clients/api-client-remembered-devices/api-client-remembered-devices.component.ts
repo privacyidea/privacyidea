@@ -118,7 +118,6 @@ export class ApiClientRememberedDevicesComponent {
 
   readonly devices = computed<RememberedDevice[]>(() => this.loadedPage().devices);
   readonly count = computed<number>(() => this.loadedPage().count);
-  readonly loadFailed = computed<boolean>(() => this.devicesResource.error() !== undefined);
 
   readonly tableState = new TableState({
     resource: this.devicesResource,
