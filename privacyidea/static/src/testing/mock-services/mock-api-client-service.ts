@@ -48,9 +48,13 @@ export class MockApiClientService implements ApiClientServiceInterface {
   rotateClient = jest.fn(async (): Promise<void> => Promise.resolve());
   deleteClient = jest.fn(async (): Promise<void> => Promise.resolve());
 
-  getRememberedDevices = jest.fn(
-    async (): Promise<RememberedDevicesPage> => Promise.resolve({ devices: [], count: 0, prev: null, next: null })
+  getRememberedDevices = jest.fn(async (): Promise<RememberedDevicesPage> =>
+    Promise.resolve({ devices: [], count: 0, prev: null, next: null })
+  );
+  getUserRememberedDevices = jest.fn(async (): Promise<RememberedDevicesPage> =>
+    Promise.resolve({ devices: [], count: 0, prev: null, next: null })
   );
   revokeDevice = jest.fn(async (): Promise<void> => Promise.resolve());
   revokeAllForClient = jest.fn(async (): Promise<number> => Promise.resolve(0));
+  revokeAllForUser = jest.fn(async (): Promise<number> => Promise.resolve(0));
 }
