@@ -27,6 +27,7 @@ import {
 import { MatIcon } from "@angular/material/icon";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { downloadBlob } from "@utils/download.utils";
 
 @Component({
   selector: "app-certificate-data",
@@ -129,7 +130,7 @@ export class CertificateDataComponent {
   }
 
   downloadCertificate(): void {
-    this.download(new Blob([this.certificate()], { type: "application/x-pem-file" }), `${this.baseName()}.pem`);
+    downloadBlob(new Blob([this.certificate()], { type: "application/x-pem-file" }), `${this.baseName()}.pem`);
     this.certificateDownloaded.set(true);
   }
 
@@ -144,7 +145,7 @@ export class CertificateDataComponent {
       this.pkcs12Unusable.set(true);
       return;
     }
-    this.download(new Blob([binary], { type: "application/x-pkcs12" }), `${this.baseName()}.p12`);
+    downloadBlob(new Blob([binary], { type: "application/x-pkcs12" }), `${this.baseName()}.p12`);
     this.pkcs12Downloaded.set(true);
   }
 
@@ -160,14 +161,5 @@ export class CertificateDataComponent {
       bytes[i] = characters.charCodeAt(i);
     }
     return buffer;
-  }
-
-  private download(blob: Blob, fileName: string): void {
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = fileName;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
   }
 }
