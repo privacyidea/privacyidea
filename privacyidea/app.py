@@ -35,13 +35,15 @@ import secrets
 import sys
 import time
 import uuid
-from importlib import metadata
-from importlib.metadata import PackageNotFoundError
 from pathlib import Path, PurePath
+from typing import Any
 
+import click
 import sqlalchemy as sa
 import yaml
+from alembic.runtime.migration import MigrationContext
 from flask import Flask, current_app, jsonify, request, redirect
+from flask.cli import with_appcontext
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
@@ -470,6 +472,46 @@ def _setup_node_configuration(app: Flask):
         log.debug("Finished setting up node names.")
 
 
+def _check_revision_stamp() -> None:
+    """
+    Raise a ClickException if the database has no schema revision stamp. The migrations cannot tell which of them
+    such a database needs: run from the first revision, they would rename and recreate the tables of a current schema.
+    """
+    with db.engine.connect() as connection:
+        if MigrationContext.configure(connection).get_current_heads():
+            return
+        has_tables = sa.inspect(connection).has_table("token")
+    database = db.engine.url.render_as_string(hide_password=True)
+    if has_tables:
+        hint = ("If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
+                "stamp the database with 'pi-manage db stamp head'.")
+    else:
+        hint = "If the database is empty, create the tables with 'pi-manage setup create_tables'."
+    raise click.ClickException(f"The database {database} has no schema revision stamp, so the migrations to apply "
+                               f"are unknown. Check that this is the database you expect. {hint}")
+
+
+def _refuse_db_upgrade_without_revision_stamp(db_command: click.Group) -> None:
+    """
+    Make "db upgrade" stop on a database without a schema revision stamp, unless it only prints the SQL.
+    "db stamp" and "db current" stay available for such a database.
+    """
+    upgrade_command = db_command.commands.get("upgrade")
+    # The command group of Flask-Migrate is shared by all apps, so it is wrapped only once
+    if upgrade_command is None or getattr(upgrade_command.callback, "checks_revision_stamp", False):
+        return
+    run_upgrade = upgrade_command.callback
+
+    @with_appcontext
+    def upgrade_if_stamped(**parameters: Any) -> Any:
+        if not parameters.get("sql"):
+            _check_revision_stamp()
+        return run_upgrade(**parameters)
+
+    upgrade_if_stamped.checks_revision_stamp = True
+    upgrade_command.callback = upgrade_if_stamped
+
+
 def create_app(config_name="development",
                config_file=DefaultConfigValues.CFG_PATH,
                silent=False, initialize_hsm=False) -> Flask:
@@ -561,16 +603,9 @@ def create_app(config_name="development",
     db.init_app(app)
     init_ca_session(app)
 
-    # TODO: This is not necessary except for the pi-manage command line util
-    # Try to get the path of the migration directory from the installed package
-    # TODO: This still does not work with an editable installation if it is not called from the source folder
-    # By default, we assume we are in the source folder
-    migration_dir = "privacyidea/migrations"
-    try:
-        migration_path = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
-        migration_dir = str(migration_path.locate().parent.resolve())
-    except (PackageNotFoundError, IndexError):
-        pass
+    # The migrations are part of the package, next to this module, in a source tree as in an installed or editable
+    # package. The pi-manage db commands use them.
+    migration_dir = str(Path(__file__).resolve().parent / "migrations")
     migrate.init_app(app, db, directory=migration_dir)
     db_command = app.cli.commands.get('db')
     if db_command is not None:
@@ -586,6 +621,7 @@ def create_app(config_name="development",
                 "interpreted as an option. Use '--' to separate them from options:\n"
                 "  pi-manage db downgrade -- -3"
             )
+        _refuse_db_upgrade_without_revision_stamp(db_command)
 
     app.jinja_env.filters["versioned"] = versioned_asset
 

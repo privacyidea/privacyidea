@@ -16,9 +16,13 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Tests for the scripts in the tools directory."""
 import json
+import os
 import re
 import shutil
+import sqlite3
 import subprocess  # nosec B404 # only the scripts of the tools directory are run
+import sys
+from contextlib import closing
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
 from pathlib import Path
@@ -27,7 +31,8 @@ from unittest import mock
 
 import pytest
 
-TOOLS_DIRECTORY = Path(__file__).resolve().parents[2] / "tools"
+REPOSITORY_DIRECTORY = Path(__file__).resolve().parents[2]
+TOOLS_DIRECTORY = REPOSITORY_DIRECTORY / "tools"
 VIRTUAL_ENVIRONMENT = "/opt/privacyidea"
 
 
@@ -38,51 +43,142 @@ def load_pip_update() -> ModuleType:
     return module
 
 
-def run_pip_update(arguments: list[str], answer: str = "") -> tuple[mock.Mock, mock.Mock]:
-    """Run privacyidea-pip-update without touching the environment and return the mocked update steps."""
+def run_pip_update(arguments: list[str], answer: str = "", update_result: int = 0,
+                   schema_result: int = 0) -> tuple[mock.Mock, mock.Mock, int | None]:
+    """
+    Run privacyidea-pip-update without touching the environment and return the mocked update steps and the exit
+    code. The mocked steps return the given results.
+    """
     pip_update = load_pip_update()
-    with (mock.patch.object(pip_update, "update") as update,
-          mock.patch.object(pip_update, "update_db_schema") as update_db_schema,
+    with (mock.patch.object(pip_update, "update", return_value=update_result) as update,
+          mock.patch.object(pip_update, "update_db_schema", return_value=schema_result) as update_db_schema,
           mock.patch.dict("os.environ", {"VIRTUAL_ENV": VIRTUAL_ENVIRONMENT}),
           mock.patch("sys.argv", ["privacyidea-pip-update"] + arguments),
           mock.patch("builtins.input", return_value=answer)):
-        pip_update.main()
-    return update, update_db_schema
+        exit_code = pip_update.main()
+    return update, update_db_schema, exit_code
 
 
 class TestPipUpdate:
     def test_01_force_updates_code_and_schema(self):
-        update, update_db_schema = run_pip_update(["-f"])
+        update, update_db_schema, exit_code = run_pip_update(["-f"])
         update.assert_called_once_with(VIRTUAL_ENVIRONMENT)
         update_db_schema.assert_called_once_with(VIRTUAL_ENVIRONMENT, False)
+        assert exit_code == 0
 
     def test_02_force_passes_skipstamp(self):
-        update, update_db_schema = run_pip_update(["--force", "--skipstamp"])
+        update, update_db_schema, exit_code = run_pip_update(["--force", "--skipstamp"])
         update.assert_called_once_with(VIRTUAL_ENVIRONMENT)
         update_db_schema.assert_called_once_with(VIRTUAL_ENVIRONMENT, True)
+        assert exit_code == 0
 
     def test_03_force_with_noschema_skips_schema(self):
-        update, update_db_schema = run_pip_update(["-f", "-n"])
+        update, update_db_schema, exit_code = run_pip_update(["-f", "-n"])
         update.assert_called_once_with(VIRTUAL_ENVIRONMENT)
         update_db_schema.assert_not_called()
+        assert exit_code == 0
 
     def test_04_confirmed_update(self):
-        update, update_db_schema = run_pip_update([], answer="y")
+        update, update_db_schema, exit_code = run_pip_update([], answer="y")
         update.assert_called_once_with(VIRTUAL_ENVIRONMENT)
         update_db_schema.assert_called_once_with(VIRTUAL_ENVIRONMENT, False)
+        assert exit_code == 0
 
     def test_05_canceled_update(self):
-        update, update_db_schema = run_pip_update([], answer="n")
+        update, update_db_schema, exit_code = run_pip_update([], answer="n")
         update.assert_not_called()
         update_db_schema.assert_not_called()
+        assert not exit_code
+
+    def test_06_failed_code_update_skips_schema(self):
+        update, update_db_schema, exit_code = run_pip_update(["-f"], update_result=1)
+        update.assert_called_once_with(VIRTUAL_ENVIRONMENT)
+        update_db_schema.assert_not_called()
+        assert exit_code == 1
+
+    def test_07_failed_schema_update_is_the_exit_code(self):
+        _update, update_db_schema, exit_code = run_pip_update(["-f"], schema_result=3)
+        update_db_schema.assert_called_once_with(VIRTUAL_ENVIRONMENT, False)
+        assert exit_code == 3
+
+    def test_08_failed_package_upgrade_skips_requirements(self):
+        pip_update = load_pip_update()
+        with mock.patch.object(pip_update, "call", return_value=2) as call:
+            assert pip_update.update(VIRTUAL_ENVIRONMENT) == 2
+        call.assert_called_once()
+
+
+PI_MANAGE_WRAPPER = '#!/bin/sh\nexec "{python}" "{pi_manage}" "$@"\n'
+
+# "db current" reports the revisions in the file "revision", one per line. "db upgrade" gets as far as revision "b1"
+# and fails.
+FAILING_UPGRADE_PI_MANAGE = """#!/bin/sh
+case "$1 $2" in
+  "db current") echo "Current revision(s) for sqlite:///stub.sqlite:"; sed 's/^/Rev: /' revision ;;
+  "db upgrade") echo "b1" > revision; exit 3 ;;
+esac
+"""
+
+
+def write_executable(path: Path, content: str) -> None:
+    path.write_text(content)
+    path.chmod(0o755)
+
+
+def run_sql(database: Path, statement: str) -> list[tuple]:
+    with closing(sqlite3.connect(database)) as connection:
+        rows = connection.execute(statement).fetchall()
+        connection.commit()
+    return rows
+
+
+def pi_manage_environment(pi_manage_directory: Path, database: Path) -> dict[str, str]:
+    """Return the environment in which pi-manage runs this repository's code against the given SQLite database."""
+    config_file = database.with_suffix(".cfg")
+    config_file.write_text(f"SQLALCHEMY_DATABASE_URI = 'sqlite:///{database}'\n"
+                           "SECRET_KEY = 'secret'\n"
+                           "PI_PEPPER = 'pepper'\n"
+                           f"PI_LOGFILE = '{database.with_suffix('.log')}'\n")
+    return {**os.environ, "PATH": f"{pi_manage_directory}{os.pathsep}{os.environ['PATH']}",
+            "PRIVACYIDEA_CONFIGFILE": str(config_file)}
+
+
+@pytest.fixture(scope="module")
+def pi_manage_directory(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """A directory with a pi-manage command that runs the pi-manage of this repository."""
+    directory = tmp_path_factory.mktemp("bin")
+    write_executable(directory / "pi-manage",
+                     PI_MANAGE_WRAPPER.format(python=sys.executable, pi_manage=REPOSITORY_DIRECTORY / "pi-manage"))
+    return directory
+
+
+@pytest.fixture(scope="module")
+def stamped_database(tmp_path_factory: pytest.TempPathFactory, pi_manage_directory: Path) -> Path:
+    """An SQLite database with the tables of this version, stamped with the newest revision."""
+    database = tmp_path_factory.mktemp("stamped") / "privacyidea.sqlite"
+    result = subprocess.run([str(pi_manage_directory / "pi-manage"), "setup", "create_tables"],  # nosec B603
+                            cwd=REPOSITORY_DIRECTORY, env=pi_manage_environment(pi_manage_directory, database),
+                            capture_output=True, text=True, timeout=120, check=False)
+    assert result.returncode == 0, result
+    return database
+
+
+@pytest.fixture
+def database(tmp_path: Path, stamped_database: Path) -> Path:
+    """A copy of the stamped database for one test."""
+    database = tmp_path / "privacyidea.sqlite"
+    shutil.copyfile(stamped_database, database)
+    return database
 
 
 @pytest.mark.skipif(shutil.which("sh") is None, reason="sh is not available")
 class TestSchemaUpgrade:
     @staticmethod
-    def run_schema_upgrade(arguments: list[str]) -> subprocess.CompletedProcess:
+    def run_schema_upgrade(arguments: list[str], environment: dict[str, str] | None = None,
+                           directory: Path | None = None) -> subprocess.CompletedProcess:
         return subprocess.run(["sh", str(TOOLS_DIRECTORY / "privacyidea-schema-upgrade")] + arguments,  # nosec B603
-                              capture_output=True, text=True, timeout=30, check=False)
+                              capture_output=True, text=True, timeout=120, check=False, env=environment,
+                              cwd=directory)
 
     def test_01_positional_argument_is_rejected(self):
         result = self.run_schema_upgrade(["/opt/privacyidea/lib/privacyidea/migrations"])
@@ -99,6 +195,119 @@ class TestSchemaUpgrade:
         result = self.run_schema_upgrade(["--help"])
         assert result.returncode == 0, result
         assert "--migration_dir" in result.stdout
+
+    def test_04_missing_migration_directory_is_rejected(self, tmp_path: Path):
+        missing_directory = tmp_path / "missing"
+        result = self.run_schema_upgrade(["-d", str(missing_directory)])
+        assert result.returncode == 1, result
+        assert f"The migration directory '{missing_directory}' does not exist." in result.stdout
+
+    def test_05_migration_directory_option_needs_a_value(self):
+        result = self.run_schema_upgrade(["-d"])
+        assert result.returncode == 1, result
+        assert "Option -d requires a directory" in result.stdout
+        assert "Usage:" in result.stdout
+
+    def test_06_upgrade_prints_the_revision_before_and_after(self, tmp_path: Path, pi_manage_directory: Path,
+                                                              database: Path):
+        """The migration directory is passed on as one argument, even with a space in its path."""
+        migration_directory = tmp_path / "migration scripts"
+        shutil.copytree(REPOSITORY_DIRECTORY / "privacyidea" / "migrations", migration_directory)
+        head = run_sql(database, "SELECT version_num FROM alembic_version")[0][0]
+        result = self.run_schema_upgrade(["-d", str(migration_directory)],
+                                         pi_manage_environment(pi_manage_directory, database), tmp_path)
+        assert result.returncode == 0, result
+        assert f"++ Database: sqlite:///{database}" in result.stdout
+        assert f"++ Schema revision before the upgrade: {head} (head)" in result.stdout
+        assert f"++ Schema revision after the upgrade: {head} (head)" in result.stdout
+
+    def test_07_database_without_stamp_is_left_unchanged(self, pi_manage_directory: Path, database: Path):
+        """The script stops before stamping or migrating. The option --skipstamp is accepted and changes nothing."""
+        run_sql(database, "DELETE FROM alembic_version")
+        tables = run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+        result = self.run_schema_upgrade(["--skipstamp"], pi_manage_environment(pi_manage_directory, database),
+                                         REPOSITORY_DIRECTORY)
+        assert result.returncode == 1, result
+        assert f"++ Database: sqlite:///{database}" in result.stdout
+        assert "ERROR: The database has no schema revision stamp" in result.stdout
+        assert "Upgrading DB schema" not in result.stdout
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == []
+        assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") == tables
+
+    def test_08_unreadable_revision_shows_the_error_of_pi_manage(self, pi_manage_directory: Path, database: Path):
+        run_sql(database, "UPDATE alembic_version SET version_num = 'feedface0001'")
+        result = self.run_schema_upgrade([], pi_manage_environment(pi_manage_directory, database),
+                                         REPOSITORY_DIRECTORY)
+        assert result.returncode == 1, result
+        assert "Can't locate revision identified by 'feedface0001'" in result.stdout
+        assert "ERROR: The schema revision of the database could not be read." in result.stdout
+        assert "Upgrading DB schema" not in result.stdout
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == [("feedface0001",)]
+
+    def run_with_failing_upgrade(self, directory: Path, revisions: list[str]) -> subprocess.CompletedProcess:
+        """Run the script in *directory* with a pi-manage whose database is stamped with *revisions*."""
+        command_directory = directory / "bin"
+        command_directory.mkdir()
+        write_executable(command_directory / "pi-manage", FAILING_UPGRADE_PI_MANAGE)
+        (directory / "revision").write_text("".join(f"{revision}\n" for revision in revisions))
+        environment = {**os.environ, "PATH": f"{command_directory}{os.pathsep}{os.environ['PATH']}"}
+        return self.run_schema_upgrade([], environment, directory)
+
+    def test_09_failed_upgrade_prints_the_revision_reached(self, tmp_path: Path):
+        """The script ends with the exit code of the failed upgrade."""
+        result = self.run_with_failing_upgrade(tmp_path, ["a0"])
+        assert result.returncode == 3, result
+        assert "++ Database: sqlite:///stub.sqlite" in result.stdout
+        assert "++ Schema revision before the upgrade: a0" in result.stdout
+        assert "++ Schema revision after the upgrade: b1" in result.stdout
+
+    def test_10_revisions_of_a_database_with_two_heads_are_printed_on_one_line(self, tmp_path: Path):
+        result = self.run_with_failing_upgrade(tmp_path, ["a0 (head)", "z0 (head)"])
+        assert "++ Schema revision before the upgrade: a0 (head) z0 (head)\n" in result.stdout
+
+
+@pytest.mark.skipif(shutil.which("sh") is None, reason="sh is not available")
+class TestPiManageDbUpgrade:
+    """
+    "pi-manage db upgrade" stops on a database without schema revision stamp. "pi-manage db stamp" stays available
+    for such a database.
+    """
+
+    @staticmethod
+    def run_pi_manage(arguments: list[str], pi_manage_directory: Path, database: Path) -> subprocess.CompletedProcess:
+        return subprocess.run([str(pi_manage_directory / "pi-manage")] + arguments,  # nosec B603
+                              cwd=REPOSITORY_DIRECTORY, env=pi_manage_environment(pi_manage_directory, database),
+                              capture_output=True, text=True, timeout=120, check=False)
+
+    def test_01_upgrade_of_a_stamped_database(self, pi_manage_directory: Path, database: Path):
+        result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 0, result
+
+    def test_02_upgrade_refuses_tables_without_stamp(self, pi_manage_directory: Path, database: Path):
+        run_sql(database, "DELETE FROM alembic_version")
+        tables = run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
+        result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 1, result
+        assert f"The database sqlite:///{database} has no schema revision stamp" in result.stderr
+        assert "stamp the database with 'pi-manage db stamp head'" in result.stderr
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == []
+        assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") == tables
+
+    def test_03_upgrade_refuses_an_empty_database(self, tmp_path: Path, pi_manage_directory: Path):
+        database = tmp_path / "empty.sqlite"
+        result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 1, result
+        assert "create the tables with 'pi-manage setup create_tables'" in result.stderr
+        assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'token'") == []
+
+    def test_04_stamp_of_a_database_without_stamp(self, pi_manage_directory: Path, database: Path):
+        """The stamp is logged as a stamp, not as a migration."""
+        head = run_sql(database, "SELECT version_num FROM alembic_version")[0][0]
+        run_sql(database, "DELETE FROM alembic_version")
+        result = self.run_pi_manage(["db", "stamp", "head"], pi_manage_directory, database)
+        assert result.returncode == 0, result
+        assert f"Stamped revision {head}, no migration ran (was base)" in result.stdout
+        assert run_sql(database, "SELECT version_num FROM alembic_version") == [(head,)]
 
 
 PI_CFG_WITH_SECRETS = """import logging

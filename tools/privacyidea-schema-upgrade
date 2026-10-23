@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# SPDX-FileCopyrightText: (C) 2028 NetKnights GmbH <https://netknights.it>
+# SPDX-FileCopyrightText: (C) 2025 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+set -e
+
 MIGRATION_DIR=""
-FIRST_VERSION="4f32a4e1bf33"
-SKIP_STAMP=NO
 
 usage()
 {
@@ -14,19 +14,22 @@ usage()
   echo "OPTIONS:"
   echo "    -h, --help           Show this help text"
   echo "    -d, --migration_dir  The path to the directory with the scripts for the database migration"
-  echo "    -s, --skipstamp      Skip stamping of the database if no stamp was detected"
+  echo "    -s, --skipstamp      Ignored, the database is never stamped by this script"
   exit "$1"
 }
 
 while [ "$#" -gt 0 ]; do
   case $1 in
     -d|--migration_dir)
+      if [ "$#" -lt 2 ]; then
+        echo "Option $1 requires a directory"
+        usage 1
+      fi
       MIGRATION_DIR="$2"
       shift # past argument
       shift # past value
       ;;
     -s|--skipstamp)
-      SKIP_STAMP=YES
       shift # past argument
       ;;
     -h|--help)
@@ -43,26 +46,50 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "${MIGRATION_DIR}" ] && [ -d "${MIGRATION_DIR}" ]; then
-	echo "Using path '${MIGRATION_DIR}' for the migration."
-	migration_param="-d ${MIGRATION_DIR}"
-else
-  migration_param=""
+# The arguments for pi-manage are kept in the positional parameters, so that a path with spaces stays one argument.
+if [ "${MIGRATION_DIR}" ]; then
+  if [ ! -d "${MIGRATION_DIR}" ]; then
+    echo "ERROR: The migration directory '${MIGRATION_DIR}' does not exist."
+    exit 1
+  fi
+  echo "Using path '${MIGRATION_DIR}' for the migration."
+  set -- -d "${MIGRATION_DIR}"
 fi
 
-# check if we do not have DB versioning, yet.
-if [ -z "$(pi-manage db current -v ${migration_param} | grep "^Rev:")" ]; then
-    echo "WARNING: The Database is not stamped!"
-    echo "  All migrations since version v2.0 will be applied to the Database."
-    echo "  Please check that the migration was applied successfully"
-    if [ "$SKIP_STAMP" = "NO" ]; then
-        # Set the version to the first PI 2.0 version
-        echo "++ Stamping DB to $FIRST_VERSION"
-        pi-manage db stamp $FIRST_VERSION ${migration_param}
-    else
-        echo "++ Not stamping Database as requested."
-    fi
+# "pi-manage db current -v" prints "Current revision(s) for <database URL without password>:" and one line
+# "Rev: <revision> (head)" per revision the database is stamped with. The revisions are printed on one line.
+revisions()
+{
+  printf '%s\n' "$1" | sed -n 's/^Rev: //p' | paste -s -d ' ' -
+}
+
+if ! current_output=$(pi-manage db current -v "$@"); then
+  printf '%s\n' "${current_output}"
+  echo "ERROR: The schema revision of the database could not be read."
+  exit 1
 fi
-# Upgrade the database
+database=$(printf '%s\n' "${current_output}" | sed -n 's/^Current revision(s) for \(.*\):$/\1/p')
+echo "++ Database: ${database}"
+start_revision=$(revisions "${current_output}")
+if [ -z "${start_revision}" ]; then
+  echo "ERROR: The database has no schema revision stamp, so the migrations to apply are unknown."
+  echo "  Check that this is the database you expect."
+  echo "  If the database is empty, create the tables with 'pi-manage setup create_tables'."
+  echo "  If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed"
+  echo "  version, stamp the database with 'pi-manage db stamp head'."
+  echo "  Then run this script again."
+  exit 1
+fi
+echo "++ Schema revision before the upgrade: ${start_revision}"
+
 echo "++ Upgrading DB schema."
-pi-manage db upgrade ${migration_param}
+upgrade_status=0
+pi-manage db upgrade "$@" || upgrade_status=$?
+
+if current_output=$(pi-manage db current -v "$@"); then
+  echo "++ Schema revision after the upgrade: $(revisions "${current_output}")"
+else
+  printf '%s\n' "${current_output}"
+  echo "ERROR: The schema revision of the database could not be read after the upgrade."
+fi
+exit "${upgrade_status}"
