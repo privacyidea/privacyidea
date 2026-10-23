@@ -62,7 +62,7 @@
   `disable_client_token_deletion` set to `false` or `0` is stored as `-disable_client_token_deletion`, since the
   authenticator app applies this action itself and treats it as disabled. For the other container client actions, the
   authenticator app then offers the container rollover and unregistering as the server allows them. The schema update
-  logs a warning for every policy it changes, so check these policies and exclude the actions that are meant to be
+  prints a warning for every policy it changes, so check these policies and exclude the actions that are meant to be
   disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
   the policy is saved again.
 
