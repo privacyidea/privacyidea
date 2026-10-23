@@ -910,7 +910,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             webauthntoken_request(request, None)
             webauthntoken_authz(request, None)
 
-        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token, user)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(

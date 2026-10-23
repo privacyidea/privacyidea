@@ -3703,6 +3703,49 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
         self.assertIsNone(get_one_token(serial="OTPONLYREG", silent_fail=True))
 
 
+class LastAuthTokenOwnerTestCase(MyApiTestCase):
+    """
+    /validate/check with a serial matches the last_auth policies for the owner of the token.
+    """
+    # RFC 4226 test key, counter 0..1
+    otp_key = "3132333435363738393031323334353637383930"
+    otps = ["755224", "287082"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_default_realm(self.realm1)
+        self.token = init_token({"serial": "LASTAUTH1", "otpkey": self.otp_key, "pin": "pin"},
+                                user=User("cornelius", self.realm1))
+        self.addCleanup(remove_token, "LASTAUTH1")
+        set_policy("last_auth_realm1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=2d", realm=self.realm1)
+        self.addCleanup(delete_policy, "last_auth_realm1")
+        set_policy("last_auth_realm2", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=10d", realm=self.realm2)
+        self.addCleanup(delete_policy, "last_auth_realm2")
+
+    def _set_last_auth(self, days: int) -> None:
+        last_auth = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+        self.token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.isoformat(timespec="seconds"))
+
+    def _check_serial(self, otp: str):
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": "LASTAUTH1", "pass": f"pin{otp}"}):
+            return self.app.full_dispatch_request()
+
+    def test_01_policy_of_the_owner_realm_applies(self):
+        self._set_last_auth(days=3)
+        response = self._check_serial(self.otps[0])
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        self.assertIn("It is too long ago", response.json["detail"]["message"], response.json)
+
+        self._set_last_auth(days=1)
+        response = self._check_serial(self.otps[1])
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+
 
 class AuthMaxOperatorLoginTestCase(MyApiTestCase):
     realm = "operatorrealm"

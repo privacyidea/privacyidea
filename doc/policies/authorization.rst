@@ -328,6 +328,10 @@ The date of the last successful authentication is stored in the ``tokeninfo``
 field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
 passkey authentications).
 
+The policy is matched for the user who authenticates. A request that names only
+the serial of the token, or a FIDO2 credential, is matched for the owner of the
+token.
+
 .. versionadded:: 2.8
 
 .. _policy_add_user_in_response:

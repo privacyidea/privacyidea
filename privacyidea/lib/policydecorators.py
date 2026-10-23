@@ -44,6 +44,7 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import datetime
 import functools
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import pyrad
@@ -456,7 +457,8 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
     return result, reply_dict
 
 
-def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
+def auth_lastauth(wrapped_function: Callable, user_or_serial: User | str, passw: str,
+                  options: dict | None = None) -> tuple[bool, dict]:
     """
     This decorator checks the policy settings of ACTION.LASTAUTH
     If the last authentication stored in tokeninfo last_auth_success of a
@@ -464,12 +466,13 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
 
     The wrapped function is usually token.check_user_pass, which takes the
     arguments (user, passw, options={}) OR
-    token.check_serial_pass with the arguments (user, passw, options={})
+    token.check_serial_pass with the arguments (serial, passw, options={})
 
     :param wrapped_function: either check_user_pass or check_serial_pass
-    :param user_or_serial: either the User user_or_serial or a serial
-    :param passw:
-    :param options: Dict containing values for "g" and "clientip"
+    :param user_or_serial: either the User object or a serial
+    :param passw: The password passed to the wrapped function
+    :param options: Dict containing values for "g" and "clientip". With a serial, the policies are matched for its
+        "user", usually the token owner.
     :return: Tuple of True/False and reply-dictionary
     """
     # First we call the wrapped function
@@ -482,7 +485,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
             user_object = user_or_serial
             serial = reply_dict.get("serial")
         else:
-            user_object = None
+            user_object = options.get("user") or None
             serial = user_or_serial
 
         # In case of a passthru policy we have no serial in the response

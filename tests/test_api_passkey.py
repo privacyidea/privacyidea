@@ -1384,6 +1384,53 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
+    def test_18a_last_auth_policy_of_the_owner_realm(self):
+        self.setUp_user_realm2()
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        token = get_tokens(serial=serial)[0]
+        self.set_policy_with_cleanup("last_auth_realm1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=2d",
+                                     realm=self.realm1)
+        self.set_policy_with_cleanup("last_auth_realm2", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=10d",
+                                     realm=self.realm2)
+        data = dict(self.authentication_response_no_uv)
+        data_uv = dict(self.authentication_response_uv)
+
+        # The token owner is in realm1, so its policy decides
+        token.write_tokeninfo(PolicyAction.LASTAUTH,
+                              (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(timespec="seconds"))
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+            self.assertIn("Last authentication policy check failed", res.json["detail"]["message"], res.json)
+        token.write_tokeninfo("sign_count", 0)
+        data_uv["transaction_id"] = self._trigger_passkey_challenge(
+            self.authentication_challenge_uv)["transaction_id"]
+        with self.app.test_request_context('/auth', method='POST', data=data_uv,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual(4306, res.json["result"]["error"]["code"], res.json)
+
+        token.write_tokeninfo(PolicyAction.LASTAUTH,
+                              (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(timespec="seconds"))
+        token.write_tokeninfo("sign_count", 0)
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+        token.write_tokeninfo("sign_count", 0)
+        data_uv["transaction_id"] = self._trigger_passkey_challenge(
+            self.authentication_challenge_uv)["transaction_id"]
+        with self.app.test_request_context('/auth', method='POST', data=data_uv,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
     def test_19_disabled_passkey(self):
         """
         Disabled passkeys should not be usable for authentication

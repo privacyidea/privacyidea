@@ -449,10 +449,14 @@ def user_is_owner(logged_in_user: User, owner: User, allow_no_owner: bool = Fals
     return is_owner
 
 
-def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
+def check_last_auth_policy(g, token: TokenClass, user: User | None) -> tuple[bool, list[str]]:
     """
     Check if the last_auth policy is enabled and if the token's last_auth is within the allowed time frame.
 
+    :param g: The global flask object g
+    :param token: The token to check
+    :param user: The user the policies are matched for, usually the token owner. None matches the policies
+        without regard to their realm, resolver and user.
     :return: a ``(result, policies)`` tuple; *policies* names the deciding LASTAUTH policies, and is only
         non-empty when *result* is ``False`` - the caller logs it as the reason detail alongside
         :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason.LAST_AUTH_TOO_OLD`,
@@ -461,7 +465,7 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
     if not token:  # pragma: no cover
         log.error("No token provided to check last_auth policy.")
         return False, []
-    last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=None)
+    last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=user)
                         .action_values(unique=True, write_to_audit_log=False))
     if len(last_auth_policy) == 1:
         timeframe = list(last_auth_policy)[0]

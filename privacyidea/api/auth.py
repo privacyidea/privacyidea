@@ -520,7 +520,7 @@ def get_auth_token():
                                 "token_type": token.get_type()})
             _refuse_disabled_login(login_disabled_policies, login_user, serial=token.get_serial(),
                                    transaction_id=transaction_id)
-        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token, login_user)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
