@@ -1950,6 +1950,101 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self._assert_result_value_true(res.json)
 
+    def _passkey_answer(self, signature: str | None = None) -> tuple[Response, str]:
+        """
+        A usernameless login with the passkey of self.passkey_serial. Returns the response and the transaction id.
+        """
+        token = get_one_token(serial=self.passkey_serial)
+        token.write_tokeninfo("sign_count", 0)
+        data = dict(self.authentication_response_no_uv)
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        if signature:
+            data["signature"] = signature
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            return self.app.full_dispatch_request(), data["transaction_id"]
+
+    def test_27b_auth_max_fail_on_usernameless_login(self):
+        """
+        auth_max_fail applies to the usernameless login, and its failed answers count.
+        """
+        self.passkey_serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, self.passkey_serial)
+        self.set_policy_with_cleanup("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        self.app_context.g.audit_object.clear()
+
+        res, _ = self._passkey_answer(signature="wrong_signature")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"], res.json)
+
+        res, transaction_id = self._passkey_answer()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", res.json["detail"]["message"],
+                         res.json)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        transaction_id=transaction_id, endpoint='/validate/check',
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
+    def test_27c_auth_max_success_on_usernameless_login(self):
+        self.passkey_serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, self.passkey_serial)
+        self.set_policy_with_cleanup("max_success", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=1/1m")
+        self.app_context.g.audit_object.clear()
+
+        self._assert_result_value_true(self._passkey_answer()[0].json)
+
+        res, _ = self._passkey_answer()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+        self.assertEqual("Only 1 successful authentications per 0:01:00 allowed.", res.json["detail"]["message"],
+                         res.json)
+
+    def test_27d_auth_max_fail_on_enroll_via_multichallenge(self):
+        """
+        auth_max_fail applies to the registration that completes an enroll_via_multichallenge login.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.addCleanup(remove_token, spass_token.get_serial())
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action="enroll_via_multichallenge=PASSKEY")
+        self.set_policy_with_cleanup("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        self.app_context.g.audit_object.clear()
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": "1"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual("CHALLENGE", res.json["result"]["authentication"], res.json)
+                passkey_serial = res.json["detail"]["serial"]
+                transaction_id = res.json["detail"]["multi_challenge"][0]["transaction_id"]
+        self.addCleanup(remove_token, passkey_serial)
+        # A failed authentication after the enrollment started
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.user.login, "pass": "2"}):
+            self.assertFalse(self.app.full_dispatch_request().json["result"]["value"])
+
+        data = {
+            "attestationObject": self.registration_attestation,
+            "clientDataJSON": self.registration_client_data,
+            "credential_id": self.credential_id,
+            "rawId": self.credential_id,
+            "authenticatorAttachment": self.authenticator_attachment,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            "transaction_id": transaction_id,
+            "type": "passkey",
+            "user": self.user.login,
+            "realm": self.user.realm,
+            "serial": passkey_serial
+        }
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+            self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", res.json["detail"]["message"],
+                             res.json)
+
     def test_28_locked_owner_rejected_before_token_work(self):
         """A locked passkey owner is rejected at /validate/check by the
         conditional-access pre-check. The request is username-less, so the owner is

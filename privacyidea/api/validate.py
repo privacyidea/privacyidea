@@ -135,6 +135,7 @@ from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.helper import check_auth_time_limit
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -805,6 +806,15 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
+
+    # auth_max_fail and auth_max_success, which check_user_pass applies to every other authentication and to the
+    # answers of enrollment challenges
+    time_limit = check_auth_time_limit(user)
+    if not time_limit.allowed:
+        context["details"].update(time_limit.reply_dict)
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+        _record_context_reason(context, time_limit.reason)
+        return  # Result remains False
 
     # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
     if attestation_object:

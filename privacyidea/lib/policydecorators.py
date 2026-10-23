@@ -58,7 +58,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            NO_FIRST_FACTOR_KEY)
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
+from privacyidea.lib.policies.helper import check_auth_time_limit
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import SCOPE, ACTIONVALUE
 from privacyidea.lib.radiusserver import get_radius
@@ -412,7 +412,8 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
     return wrapped_function(user_object, passw, options)
 
 
-def auth_user_timelimit(wrapped_function, user, password, options=None):
+def auth_user_timelimit(wrapped_function: Callable, user: User, password: str,
+                        options: dict | None = None) -> tuple[bool, dict]:
     """
     This decorator checks the policy settings of
     ACTION.AUTHMAXSUCCESS,
@@ -425,36 +426,24 @@ def auth_user_timelimit(wrapped_function, user, password, options=None):
     The wrapped function is usually token.check_user_pass, which takes the
     arguments (user, passw, options={})
 
-    :param wrapped_function:
-    :param user:
-    :param password:
+    :param wrapped_function: The function to call if the user may authenticate
+    :param user: The user who authenticates
+    :param password: The password passed to the wrapped function
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
     options = options or {}
-    reply_dict = {}
-    g = options.get("g")
-    result = True
-    # Which limit was hit is classified here rather than by the checks, which the caller can do since it knows which
-    # of the two said no. That keeps the two most-reused policy helpers free of the internal keys; this decorator
-    # still sets them on its own reply_dict below, on the lib-to-api channel every classification uses (see
-    # AUTH_EVENT_TYPE_KEY), which the view pops to read and the response boundary strips whatever is left.
-    reason = AuthEventReason.AUTH_MAX_FAIL
-    if g:
-        user_search_dict = {"user": user.login, "realm": user.realm}
-        result, reply_dict = check_max_auth_fail(user, user_search_dict)
-        if result:
-            reason = AuthEventReason.AUTH_MAX_SUCCESS
-            result, reply_dict = check_max_auth_success(user, user_search_dict)
+    if options.get("g"):
+        time_limit = check_auth_time_limit(user)
+        if not time_limit.allowed:
+            # Set on the lib-to-api channel every classification uses (see AUTH_EVENT_TYPE_KEY), which the view pops
+            # to read and the response boundary strips whatever is left.
+            reply_dict = dict(time_limit.reply_dict)
+            reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+            reply_dict[AUTH_EVENT_REASON_KEY] = time_limit.reason
+            return False, reply_dict
 
-    # Only execute wrapped function if auth is not temporarily locked for the user
-    if result:
-        result, reply_dict = wrapped_function(user, password, options)
-    else:
-        reply_dict[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
-        reply_dict[AUTH_EVENT_REASON_KEY] = reason
-
-    return result, reply_dict
+    return wrapped_function(user, password, options)
 
 
 def auth_lastauth(wrapped_function: Callable, user_or_serial: User | str, passw: str,
