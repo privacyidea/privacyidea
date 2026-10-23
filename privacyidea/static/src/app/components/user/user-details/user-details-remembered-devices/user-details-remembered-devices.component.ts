@@ -27,6 +27,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { TableState } from "@core/models/table_state/table-state";
 import {
   ApiClientService,
@@ -51,7 +52,8 @@ const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, n
     MatTooltipModule,
     MatPaginatorModule,
     DatePipe,
-    TableStateComponent
+    TableStateComponent,
+    TooltipAriaLabelDirective
   ],
   templateUrl: "./user-details-remembered-devices.component.html",
   styleUrl: "./user-details-remembered-devices.component.scss"

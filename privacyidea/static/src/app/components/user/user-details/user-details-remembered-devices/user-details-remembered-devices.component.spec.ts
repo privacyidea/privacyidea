@@ -138,7 +138,7 @@ describe("UserDetailsRememberedDevicesComponent", () => {
     component.revokeDevice(device);
     confirmClosed.next(true);
     confirmClosed.complete();
-    await fixture.whenStable();
+    await settle();
 
     expect(apiClientServiceMock.revokeDevice).toHaveBeenCalledWith("client1", "dev1");
     expect(apiClientServiceMock.reloadRememberedDevices).toHaveBeenCalled();
@@ -154,7 +154,7 @@ describe("UserDetailsRememberedDevicesComponent", () => {
     component.revokeAll();
     confirmClosed.next(true);
     confirmClosed.complete();
-    await fixture.whenStable();
+    await settle();
 
     expect(apiClientServiceMock.revokeAllForUser).toHaveBeenCalledWith("alice", "realm1");
   });
