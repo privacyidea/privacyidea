@@ -840,15 +840,15 @@ CREATE SEQUENCE "public"."usercache_seq"
     NO MAXVALUE
     CACHE 1;
 
-INSERT INTO "public"."admin" ("username", "password", "email") VALUES ('admin', '$argon2id$v=19$m=65536,t=9,p=4$jFEqBWAsBaB0jtH6P0eoFQ$R7svmP0gDr9dJGhEtmqkVe0BJm4a8hCPI3THkgpPA4M', 'admin@example.com');
+INSERT INTO "public"."admin" ("username", "password", "email") VALUES ('admin', '$argon2id$v=19$m=65536,t=9,p=4$xTiHUMp5L8W4V6r1/j/HWA$V8kshFL7kvC81GsDvZfOrmtrMorry1raAdxtmWWoyXw', 'admin@example.com');
 
-INSERT INTO "public"."admin" ("username", "password", "email") VALUES ('helpdesk', '$argon2id$v=19$m=65536,t=9,p=4$Niak1Lr3PkcoJUSoNSbEOA$hF6sq8eoeOOs1Wdaeft88PA78epbUmqlUtAH7Nlqlow', 'helpdesk@example.com');
+INSERT INTO "public"."admin" ("username", "password", "email") VALUES ('helpdesk', '$argon2id$v=19$m=65536,t=9,p=4$a+3duzfmvFfqHcNY650zhg$UiFtWZyH8FrmW1c0Nop9F8Mu0lUnjBmS/vAMfErr+SE', 'helpdesk@example.com');
 
 INSERT INTO "public"."alembic_version" ("version_num") VALUES ('d3a4b5c6e7f8');
 
-INSERT INTO "public"."challenge" ("id", "transaction_id", "data", "challenge", "session", "serial", "timestamp", "expiration", "received_count", "otp_valid") VALUES (1, '01234567890123456789', '', 'please enter otp', '', 'HOTP0001', '2026-10-22 13:46:36.909865', '2026-10-22 13:56:36.909865', 0, false);
+INSERT INTO "public"."challenge" ("id", "transaction_id", "data", "challenge", "session", "serial", "timestamp", "expiration", "received_count", "otp_valid") VALUES (1, '01234567890123456789', '', 'please enter otp', '', 'HOTP0001', '2026-10-23 13:26:50.718862', '2026-10-23 13:36:50.718862', 0, false);
 
-INSERT INTO "public"."challenge" ("id", "transaction_id", "data", "challenge", "session", "serial", "timestamp", "expiration", "received_count", "otp_valid") VALUES (2, '98765432109876543210', 'sslverify', 'nonce', '', 'PUSH0001', '2026-10-22 13:46:36.915169', '2026-10-22 13:56:36.915169', 0, false);
+INSERT INTO "public"."challenge" ("id", "transaction_id", "data", "challenge", "session", "serial", "timestamp", "expiration", "received_count", "otp_valid") VALUES (2, '98765432109876543210', 'sslverify', 'nonce', '', 'PUSH0001', '2026-10-23 13:26:50.723943', '2026-10-23 13:36:50.723943', 0, false);
 
 INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('splitAtSign', '1', '', '');
 
@@ -856,9 +856,9 @@ INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('P
 
 INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('IncFailCountOnFalsePin', 'True', '', '');
 
-INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('seed.secret.option', '4a9a4d3d32222ff935e09c74f4ade2e5:31970e3a2e7ec0800144400bb4005413', 'password', '');
+INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('seed.secret.option', 'ab1f9ab1f5cc5dd64f5537a943e7df29:4a739f804ef11dc1da31eb01c64531ef', 'password', '');
 
-INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('__timestamp__', '1792676798.048273', '', 'config timestamp. last changed.');
+INSERT INTO "public"."config" ("Key", "Value", "Type", "Description") VALUES ('__timestamp__', '1792762011.80865', '', 'config timestamp. last changed.');
 
 INSERT INTO "public"."customuserattribute" ("id", "user_id", "resolver", "realm_id", "Key", "Value", "Type") VALUES (1, '1000', 'passwd1', 1, 'fido2_user_id', 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8', '');
 
@@ -870,17 +870,17 @@ INSERT INTO "public"."customuserattribute" ("id", "user_id", "resolver", "realm_
 
 INSERT INTO "public"."customuserattribute" ("id", "user_id", "resolver", "realm_id", "Key", "Value", "Type") VALUES (5, '1118', 'passwd1', 1, 'department', 'sales', '');
 
-INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (1, 1, 'policy', '2026-10-22 15:46:35.243119', NULL);
+INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (1, 1, 'policy', '2026-10-23 15:26:45.720842', NULL);
 
-INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (2, 2, 'policy', '2026-10-22 15:46:35.279237', 'PIN from the user store');
+INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (2, 2, 'policy', '2026-10-23 15:26:45.742161', 'PIN from the user store');
 
-INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (3, 3, 'policy', '2026-10-22 15:46:35.31297', NULL);
+INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (3, 3, 'policy', '2026-10-23 15:26:45.767582', NULL);
 
-INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (4, 4, 'policy', '2026-10-22 15:46:35.349705', NULL);
+INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (4, 4, 'policy', '2026-10-23 15:26:45.79352', NULL);
 
-INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (5, 5, 'policy', '2026-10-22 15:46:35.375601', NULL);
+INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (5, 5, 'policy', '2026-10-23 15:26:45.819702', NULL);
 
-INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (6, 6, 'policy', '2026-10-22 15:46:35.401095', NULL);
+INSERT INTO "public"."description" ("id", "object_id", "object_type", "last_update", "description") VALUES (6, 6, 'policy', '2026-10-23 15:26:45.847738', NULL);
 
 INSERT INTO "public"."eventcounter" ("id", "counter_name", "counter_value", "node") VALUES (1, 'fails', 3, 'seednode');
 
@@ -916,31 +916,31 @@ INSERT INTO "public"."machineresolver" ("id", "name", "rtype") VALUES (1, 'hosts
 
 INSERT INTO "public"."machineresolverconfig" ("id", "resolver_id", "Key", "Value", "Type", "Description") VALUES (1, 1, 'filename', '/etc/hosts', 'string', '');
 
-INSERT INTO "public"."nodename" ("id", "name", "lastseen") VALUES ('8e4e2a5c-0b5f-4f7e-9d43-6a1c2f3b4d5e', 'seednode', '2026-10-22 13:46:34.347899');
+INSERT INTO "public"."nodename" ("id", "name", "lastseen") VALUES ('8e4e2a5c-0b5f-4f7e-9d43-6a1c2f3b4d5e', 'seednode', '2026-10-23 13:26:44.920896');
 
-INSERT INTO "public"."periodictask" ("id", "name", "active", "retry_if_failed", "interval", "nodes", "taskmodule", "ordering", "last_update") VALUES (1, 'statistics', true, true, '*/5 * * * *', 'seednode', 'SimpleStats', 0, '2026-10-22 13:46:38.183814');
+INSERT INTO "public"."periodictask" ("id", "name", "active", "retry_if_failed", "interval", "nodes", "taskmodule", "ordering", "last_update") VALUES (1, 'statistics', true, true, '*/5 * * * *', 'seednode', 'SimpleStats', 0, '2026-10-23 13:26:51.922631');
 
 INSERT INTO "public"."periodictaskoption" ("id", "periodictask_id", "key", "value") VALUES (1, 1, 'total_tokens', 'True');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (1, '2026-10-22 15:46:36.984005', '2026-10-22 15:46:36.951221', '00:00:00.032784', 'rsa_sha256_pss:92d421248e0094ff3d66c27a783a4b2f23274f4122ab8c518291ec8c7b691a3fd358bb14d768a9c1fb7fde50ce84ac6805e2a7c67787baaa291f3d6904ed281063cc69b9d1ab4394e4da948a068a84bd3949f77b4127440611bd399d075d5f27420cd149cc1abf410ea39553167920b9200978c43005c8b158d7c2902a7848ec0ccba5914adb6252f9f42f90171ffd28802d01d81ba1bdb9c611b46698652d01b600758d8492c96136b7b7500aec95cc77ad600660ddd421cad97c4f386158dc9399f4ebe775f91f6571668e1cff755fb5489bf5bdbe93dd129138ef2b5aab495374f0861fbb3230be1ff20cb2c997a2930711f4e34633689d612e65a6981c91', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 0', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (1, '2026-10-23 15:26:50.917928', '2026-10-23 15:26:50.82363', '00:00:00.094298', 'rsa_sha256_pss:131b163c959d270c8fbf3ad4b16c096bd5ba8b09e3c12583726d398d98e3911d6d706ace0a183e62ea3aa418f3fbcd09dd0ad319f1324825c6b44cc5c5f2fdf4e8fdf6c3d8745979f3c979f9ac965e188b288faad3205a9f73b4648f20b861b4e92c9dcc53e28d192432065fbbba95870f45fbff0eca108f1d2c7df8abba4c42f4f0e26330976c9b4d7479a605c1e5bc572500bbd482b61007ba12a3a0cb1397ea49531aab7d3c9350dfa0c0a2ce2619260185550f87d329e948704438aa8f9b8fd28bc08019fe59c4d1c119dcebc2bba4a79f4819447f488ce5ecc5ce1ac284329539430443a3f1ad86204b1d9b763899829377c0c1b5a21c38485f84b4ac48', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 0', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (2, '2026-10-22 15:46:37.046445', '2026-10-22 15:46:37.010288', '00:00:00.036157', 'rsa_sha256_pss:854a2ef967995489f8a9e33b556e09f2530eb4fa47bfe93607459dc7efb143c9c578320360051202cc1bf997c7c74001440ab3e2ef3049f03d50229af6b5c1e3635d8bb229ea931b78f570d004b59dbe46dfd0d385c68ce525e260b812b76bf42339f25fd9a7028a2b3cb984d170e63d0ca28d5b6d6aeedfe25980958c9f546844e630d454914e45d289f115a04c9f2a482613f2bb4545b30903450dd8732bbe28eb4ccd1a9525fbe69d39062c4e97641264162716cfe2090ea7f3e5a4fe5c15cd360d2e36c482419ccb450c05d40e0e8b10ab4c38237e1785adcdc4a5b139923024399ecbada446f4238119a4a8c4446189961ee88e21860304375cb7d3366e', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 1', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (2, '2026-10-23 15:26:51.035978', '2026-10-23 15:26:50.941508', '00:00:00.09447', 'rsa_sha256_pss:b4b4fa9ec27899795fddb890a923a26785aa95049d41d0022eea4628a1241b88a1c6dcbcb32e5766127be7c19e1b5434f34d5ba7b495c6013bff67ee5a5b345ac9ff001d7bd37c5200b238b04dc44f00f5d63383c3d25ada82deead515855bfe066e61845ad64960074490feeaf2bd3b5b39414de4ddfe2ee1bb3556c0ca4727e0730718947884492ef453ba3c2aff208207a93db61f1c06d24b8bf35ff095288b98381c6255d67727e58ebd667718a15dba066ea6417d53f00f1164e44c40ffc58ecce559a5ca9a52720208bce3a34a62c117fdabef40fac24793d2e340aee13a6a0397a5e667b2e255cf3165c18a56a717daf04112abc1e0c77ab6cfa2d1fd', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 1', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (3, '2026-10-22 15:46:37.167834', '2026-10-22 15:46:37.070184', '00:00:00.09765', 'rsa_sha256_pss:9aa976f7c670328ef17b56f6940fb0f02f970bec37c1495b9e726824213f265f210a157066919314d709bdda14fc2ee29ef62faef7f9623d79f8f0e23477ce6adf44b9fd3c52a4344d67405f848eb57513a9c1ae4c2aa64fe4a6f5e9dd1ebf952047a3dcaeed16518df2bb83b3607bf37b99d1d3d02f73d1668d79cf80dd54ea8224831704e8ba38313e176ee05dbff66357020d26e360ea69e818765f9d4c5cab28ce815668fa7fd39aa142d2d9aa89d55b76cda2f851b10875a28d0255503b80757d34294c5d76833433e4db90dc18b969baa092c6afab2057e8c8e68442cc2301d1c4cf95a55046f1c821e2ed6a742d6fc610f436a6e60d335cf8a86b75d4', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 2', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (3, '2026-10-23 15:26:51.0917', '2026-10-23 15:26:51.055149', '00:00:00.036551', 'rsa_sha256_pss:4ea2a4da872d7ee1d1a6eab5c8b7a624c8deae82e634a87077bc3b73cb5e9e3e4015f482a147329456a7f878a6679a61538178ec17c7dfd721fa90312207232e99ce210bea9686cbd325738e0909e6257945f913eebf9c23cd6e703f8e3be1388a31aab2f12cc5d5c6f970f5f40f0c3ad0326ae29136a462963f32499fd56533f1dc81017fe8e271b90c8cf1d4bacb88be3cfa742d995b05817e53f0af03779b77f282c1bcdc92e6b771e935450ba39e9bb04720b046f700834fa2c9c3d32fe1bdb2c4aa79ff7b5ad2a1257e65ff427cabbe8f1b31d689ba8c177e3c4530cd72f2924eff10b7fa28b4614fc927cf42dfbf02db0c711f219f48c782d9b8acf549', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 2', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (4, '2026-10-22 15:46:37.246418', '2026-10-22 15:46:37.192449', '00:00:00.053969', 'rsa_sha256_pss:5f50152a74ac1e7c5c600504c5a906b7b62f65cb5c3983ebb72ed25fea04824381429acd3b6c5f559c382e3b9e926abc720a1ac9bdd3c8322679659699c8b09d75b306e8c8e4af2296a916b2949883de91b8083c7ca6b1119a2a32fb3b498b8b919de8b6c4ce9b8a2fa30151774498596fa1066f6331b2dfeef2d9b2ae825dce5fcd361b82522b736d119bebd91204487ea431dbf3d48ebe50a645e0b563505265a589a0a8aa525fc0454cc62297a2e8f168625129a3a81a0ef486efe006d04e8e15be0ead0198b802bfcd18ad140dd1917dc2eb4f80849bc85ef6220e7ffc4f0a6c719d43f94fd111761fe22532c72147b940dd63f18813e819ae28fccd3fa1', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 3', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (4, '2026-10-23 15:26:51.195755', '2026-10-23 15:26:51.110122', '00:00:00.085633', 'rsa_sha256_pss:a8f6263d043684adae04964f76b5e930b737d4b03c53f0b1bc51ad799fd1a7d617880746b16ad575a45cf544728d8295ba1e18ca486d0a1aab155667ddfe297b882dd16d7c79abea9052cdf1f63ad86dafc108b0c902473d5f1d982b8a00b0a3f3286a1cc768dd3cbf16ee4d122cb86a300394ce73521407e9bdfaaf836ff3384e626498cd9d636318cdd85c4caad21925f569ab31aaf63c82acce28f6ad5802cc9eba5e4ace5aee27f5420a3c92feabfe96bcb6e1dcb17593f4b0b0bc5dc91a68c179f52339965f2c9fc5c7e80bb760a09e5fe2d475a49bafb2e2ca04b13bf425bf8d07c7734cbd9c0e4da514ff3343e7556e7fc7f1af6f74a811adc1f4c337', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 3', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (5, '2026-10-22 15:46:37.338374', '2026-10-22 15:46:37.268185', '00:00:00.070189', 'rsa_sha256_pss:15aea33a5db6e15c62b0b4520c640846f6005a36fd57e1a65aaf229b03d56be60864d29df0df93f0f0cc67047bba11b25f98d8efe99b8aa008c59d861d527e517e0e837db6e0412d3fed31d46e608e29850182afe29d140c91c31f9cf10f775ad9f91c4076933b6a0501ed091624c26b475f10dc30d7f8329575a053f88c3dbfee1e93f19326a069275448d55d25f0ec5edb312eddc9bad7ea3a73734d9cfdfc6a710044768befb51fc132abfb4f1cb2b95fcd5ce10bde5ffc8af3d7d56b51baaad5f87d6e1e3cdac9b538800d874f54fbd11d921085464d7dde11e85cd2b9b6b1343e3d1c80481cf9522cbbffd78f1387cded2b58cb652eb162ac6847e5768d', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 4', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (5, '2026-10-23 15:26:51.31047', '2026-10-23 15:26:51.215924', '00:00:00.094546', 'rsa_sha256_pss:827ad3adc193783de17231d1e3164a14c7569cf9334aef1af0ea76f53cab16c2e37375207d4632e33966e06515d9317a93945632a8d12d5846e4bf744d4e5a8595593b943ea445046f0fd3d5456e2195325e541374f9ca7cc9ae43f3edbcce2edc46ddba4aabb2fff9a8e4329bb17c90aac2b3abd7ed62f00d9aefdfb689160b2f4342d67cd0a1bac5428a850da1f95e48127903dd81df0754bd174b68a580fbb3eff6e372190a1d30d0803e3355373f0a1ae9213cbd43b1156d1f46899e570a0b7ae23e6e9633c1895ab98504dc2371476fb5161f2df11888ee8b6e403d43d459e6a2c990686d70ca47d23d651fbb4b4672ec3eb0be2e15e37ab4e48e0dcd41', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 4', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (6, '2026-10-22 15:46:37.401098', '2026-10-22 15:46:37.362358', '00:00:00.03874', 'rsa_sha256_pss:904c823dcd66aa1b93de1ef890654e40b622746002b357f41f26009bd30e56eea75d42040de4d57b9513f8bbf4681f16012978f22bbb7355915a5299bb2b9cec8dd699fbecfad01d788aabdd48f1e20f45fdde17f6577db9ca0e3f1cd6f1bbd542e1b5afcdcc540c7b2c310681cbe9e385c5d2e2eddc834552156747af6d0a7da4a5b24ed6de6fff9a0a529cade34abe42414f1ca0109bd833176127d405f72068ded88049da3576bd3adaa158d55c962c411c71f2f6806958fe446d8498f791527b619f3aa33d3cc94195e46d7f9189c2f09877914523b558f2241b690690eca99fed11cbe2aed559cb8537e1496ccce4fe82c1a9b4b18bdc13194a67ee02e3', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 5', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (6, '2026-10-23 15:26:51.361866', '2026-10-23 15:26:51.330394', '00:00:00.031472', 'rsa_sha256_pss:4d9e40cec2b549f8389dd25cd92da5bc925e4a246685630f2a3abaafb273ae5cd38df35785238a82616923367faf9cda1a628bf4d49d2949af13e8401e4876d9f4f3d01b8d0c9f4acba437fabe93c32cfcb2c492a929c7bc5cb4dae594fb2adf978b271c51b875d2d7a19f21965cb5571301e5edd6c3d58d1cd5ff8629541439811061aaff009d627a2437f6fff8d29b638c63db68978b42beb6f9000af9121943732a92996fece05b9c75079cae80cf84a10d1d7b339b3934c14087fda7decae563a0f9c718d3d33c50f3e377d86c013dbe45b41cfa68c5bf03fea8ddf56b0d7e9d2cbd8c15a263805168fa8b507a809babcf33da4e97bd41fb4d1178a70830', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 5', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (7, '2026-10-22 15:46:37.487096', '2026-10-22 15:46:37.427509', '00:00:00.059587', 'rsa_sha256_pss:8c11856c562707cd5d7e3662af3092ac8c0575886874f87616168bbba27ebb643cdba6cb3e60841b0331289dc454df4f4d0b80ccf459b1d0ddb5fe58f93e2e54ddabc4912c36b19a023123fd1cea324193a7ba61a2040242fca908d41918b56bef283a65f5c6c484685f63ab001af891238e742ae697f7f18d751dafa67eabd70034b3969e887e1e27cd9bc3f0d3a1d8dbf4c3fdb88eb9f0042a44979242b8b56d2de98cbe1fd3f937c10ddb81eb2edb541fb7a53ec1c439bc8c3de1d0af21426538196e9727b79e74ba8d3a895e432fe67db6119570e534e6fc86f51a6a728d71b070b16606c39d0d257f79da3cf7e163917351081bbdd65e882ab717d9ec0d', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 6', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (7, '2026-10-23 15:26:51.425708', '2026-10-23 15:26:51.380763', '00:00:00.044945', 'rsa_sha256_pss:5a8761ff9b5675c545a0c1b6e8686fa354a015f781ac439c36ffc7f70994b21ffeec94597e0e62dd25d31a9e86e6571f7234fa138bdb58488ed0ce750d5e7d2d5ba8e2ffb39236859e0ebc53f71d0cb51d19f65da9846f734f1b5ca5f7dd32b5dbc496f6b3f92c00a05705b9039e39efd161013cf6163f856e8820ff9cad789864fd479a8a81ed20aa62b958bc8aba8d7280d9100f472c7f053488b57b93fb36df627d8f14c769c8be2b64a69a8750014c603c216f2ce00f6199763381f0b4935c54c0336098204d9b6e61c8098f8163c362dd7ff146bb2d8a7f4fb7aaa97817eba018625735322c7ce37bf6b99dbe60c9125e14168b948629d6b20a281d511a', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 6', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (8, '2026-10-22 15:46:37.631376', '2026-10-22 15:46:37.510075', '00:00:00.121301', 'rsa_sha256_pss:a7a9d22adaccb7a2c75be69c055597f29063586f90b9928ec595fd3f120701e49f46081e5795eb680bb8c068b5b661ef6d8a3fa9c4a40ba80a81333ec30200f27de417f340357616a554d8d1cdf5b022dacb96fe4e63eaae67e9f38522e1cb63d74fd0cd1d34fc3c9bfd6d7703aee30166b7420e83091fcb0fecef0fac294bf76f7ff650bc8e0f4d5a635c1b3eb642255992ed27c5a3536f75ef9077fb9a4d4d58823edfabb019625633a95d16e142e340f0917f733e7d87bd5bf97319624f4f46bdae8650e482fc819376d95e925670192e7f7da5878156a834aca348361f774d1be03b0007c2e0afba6b2ccff7a0ff1b19ebd222cb58fc83286e64b05c49ed', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 7', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (8, '2026-10-23 15:26:51.47667', '2026-10-23 15:26:51.445664', '00:00:00.031006', 'rsa_sha256_pss:6c31a53666296558e12803be29c8c743a2960f90c64fc8b945e6478468f4bdd7444200bdea802b26f50ad876bb7fa4c482f054ae7f09f5ca4cfc78c6a1a107db3d9e141c3e5281339d10d185c3a8e4a6f2f581af42ff789f760598622432ceb7499202601feb641bd902c8d6d240dcd573e0ed416f67ed3158600210b1d2dbdcfd35129beddc4ddbd40f75785ea09b3ba23b4485f45e28e27250e60ab7004c04091f5ed2c1c826a8a2ab3b2ae6a3bf982805c014cfd518dd88e61ac5ab88785ba03c37600dc45126a43f916d50a6054b97aa72d9f54a197547b6bc96b31e5d3bfb797a24d3fcd80cc3ce52e783287ca4ecff4b1a7b822e1adeda07879fb93e87', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 7', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (9, '2026-10-22 15:46:37.758954', '2026-10-22 15:46:37.653047', '00:00:00.105907', 'rsa_sha256_pss:53d42090bf78009f6741bb2163820b91e4e44898430fb2e37a57c1d53e1fb859b8b4325dfde2a27579c452284337499434a5556997e2540c2900996b4a63f70cfaadcd48af85e08ddafa99190cdd5c407edd8a13784d1c6edb8c652aa7431dd3b392c35ca7e5dfe78d8a1d9a6c447426335201085fe6b5934d9fff2c70df9410cd685c055611e648ff68668672a0df0c57e349682d937bf5a71d809382d4610502c9df986515db17597e44bcfaa46f98b3ef157a732f4ca86c45a1f02981fe6405328eb0a7782d3452d972bed1500919c1040179dd1e12f1f84f9ea0c291f011041346ea1d573a1174ac175b8da66a045a68a9bfbb25376df9bbeabf8525cb0c', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 8', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (9, '2026-10-23 15:26:51.52819', '2026-10-23 15:26:51.496738', '00:00:00.031452', 'rsa_sha256_pss:a82c5c8fd095484f3f47158e562847b1381b8d06c3844a4199c67aaa447de0ba4c70392a24732de13eb34b6629bc3994ae48c55fa775da851912e494bfa60a349f5f55d6d02dfea397d61bf347696c7b47fff94e475d6b7a17e3ea94c18e48d6ce1c85232a25619665298a2424e168b4386cb28a4ac10a0887de963e779ba9178a00ff7625c35a1ef94521650819e24c6a4be197628b577b73a85fdf77852560dd736dafd1785531a932308175f1709d93731c5c65a6dca5afcbd75f5c154a99fa2fa027c24063fcc857702afeb16aa5a7d4fa718b564b85bcad61e923cae31e0156c75cd61a365c57f4509ff0c8c03559f575772ba56c1a3121ea9c4c922461', 'POST /validate/check', 0, 'REJECT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 8', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
-INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (10, '2026-10-22 15:46:37.896598', '2026-10-22 15:46:37.783277', '00:00:00.113321', 'rsa_sha256_pss:4cd1ffb8f153c3159280d295caf3fa7a48d806bc8dcf33594b81de3f68cd5e1b78cd3feede8d7a6dbc0e88523e90ce7f51798725169587a8ca498bf423048e248dbe383df402cc97b330b2499181ca70ca33497cf04879515d7ccb53da461116dea1ac4c8164338640c01471b82e86c0ae76aecb3be8350dfc5c3db05bc92dc0c1a95cced14077c8a04db4850fa95f8f39d9e3fbcaff9e661e9a5316524703e62b2905477e6bae4314fa94c7502a3c75b90a62d1b3f80beb7fcc1090de8ebe92c344a384b77b027d143335a28a010f5c90e71b4b17650447fefe9f766d3c893ec43efe2a178a2fc98934ec30ce86e233bc0916a50028c7c8a03ab01850972d1e', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 9', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
+INSERT INTO "public"."pidea_audit" ("id", "date", "startdate", "duration", "signature", "action", "success", "authentication", "serial", "token_type", "container_serial", "container_type", "user", "realm", "resolver", "administrator", "action_detail", "info", "privacyidea_server", "client", "user_agent", "user_agent_version", "loglevel", "clearance_level", "thread_id", "policies") VALUES (10, '2026-10-23 15:26:51.610498', '2026-10-23 15:26:51.546068', '00:00:00.06443', 'rsa_sha256_pss:1b3b3fbbc8ebad68430319777499e47f50943144e895b4fc9a7fe1f74e5e607df863ef8acf3f39a88e35e12b3181a0b36f3eaf610757f671b6124c88d2af8a8020b8bf38495cae95051a7d4bb319a8701788f244a77764a0c2460120fe448ea3c6901602ba4bd92a395210a37fa34d2b2f3e88dda897f2a7e261733989550dffa171a8b239f4918ff2a38bcd38705453c161bb7edea8795aa6386a9cb0d222f3174f30a5194219c7147ec4aea3970ec5635b40b409eed98adad6f86231906f647e0a435651ad748d22efe20f8ce164ceffb787792ea9c6c29c2b1141ab4dbeaa1adb7b00d9437a3747625ba37914c255efd8bdba412ab86e4bfaf1db9ce17ee3', 'POST /validate/check', 1, 'ACCEPT', 'HOTP0001', 'hotp', '', '', 'cornelius', 'realm1', 'passwd1', '', '', 'entry 9', '', '10.0.0.1', '', '', 'default', 'default', '0', '');
 
 INSERT INTO "public"."policy" ("id", "active", "check_all_resolvers", "name", "user_case_insensitive", "scope", "action", "realm", "adminrealm", "adminuser", "resolver", "pinode", "user", "client", "time", "user_agents", "priority") VALUES (1, true, false, 'admin_tokens', false, 'admin', 'tokenlist, enable, disable, enrollHOTP, enrollTOTP', '', '', '', '', '', '', '', '', '', 1);
 
@@ -956,7 +956,7 @@ INSERT INTO "public"."policy" ("id", "active", "check_all_resolvers", "name", "u
 
 INSERT INTO "public"."privacyideaserver" ("id", "identifier", "url", "tls", "description") VALUES (1, 'remote1', 'https://remote.example.com', true, '');
 
-INSERT INTO "public"."radiusserver" ("id", "identifier", "server", "port", "secret", "dictionary", "description", "timeout", "retries", "options") VALUES (1, 'radius1', 'radius.example.com', 1812, '5fbbf377be4206aa529fd10a0d5846a9:3804348fab708b265a3421409d6a1d02', '/etc/privacyidea/dictionary', '', 5, 3, 'null');
+INSERT INTO "public"."radiusserver" ("id", "identifier", "server", "port", "secret", "dictionary", "description", "timeout", "retries", "options") VALUES (1, 'radius1', 'radius.example.com', 1812, '38243ee0aca7ff7c5a94480e8f66c92a:4a1b81e65843825a6f00746e6d9c0403', '/etc/privacyidea/dictionary', '', 5, 3, 'null');
 
 INSERT INTO "public"."realm" ("id", "name", "default") VALUES (2, 'realm2', false);
 
@@ -974,7 +974,7 @@ INSERT INTO "public"."resolverconfig" ("id", "resolver_id", "Key", "Value", "Typ
 
 INSERT INTO "public"."resolverconfig" ("id", "resolver_id", "Key", "Value", "Type", "Description") VALUES (4, 2, 'BINDDN', 'cn=admin,dc=example,dc=org', 'string', '');
 
-INSERT INTO "public"."resolverconfig" ("id", "resolver_id", "Key", "Value", "Type", "Description") VALUES (5, 2, 'BINDPW', '48378e8488af2c759f778d3e8af47475:39ad931baf80c9bc955284117755f365', 'password', '');
+INSERT INTO "public"."resolverconfig" ("id", "resolver_id", "Key", "Value", "Type", "Description") VALUES (5, 2, 'BINDPW', 'e292d95896d70ae4dc0f16906a499eab:d7f0588f56053c2ee2bf500e1dd62cc0', 'password', '');
 
 INSERT INTO "public"."resolverconfig" ("id", "resolver_id", "Key", "Value", "Type", "Description") VALUES (6, 2, 'LOGINNAMEATTRIBUTE', 'uid', 'string', '');
 
@@ -1028,47 +1028,49 @@ INSERT INTO "public"."smsgatewayoption" ("id", "Key", "Value", "Type", "gateway_
 
 INSERT INTO "public"."smsgatewayoption" ("id", "Key", "Value", "Type", "gateway_id") VALUES (10, 'MAILTO', '{phone}@sms.example.com', 'option', 2);
 
-INSERT INTO "public"."smtpserver" ("id", "identifier", "server", "port", "username", "password", "sender", "tls", "description", "timeout", "enqueue_job", "smime", "dont_send_on_error", "private_key", "private_key_password", "certificate") VALUES (1, 'smtp1', 'mail.example.com', 587, 'mailer', 'fbcc311c2e1017a7f24d73d94d1d08db:50c232a9620aba5a36b97e0b51250519', 'privacyidea@example.com', true, '', 10, false, false, false, '', '', '');
+INSERT INTO "public"."smtpserver" ("id", "identifier", "server", "port", "username", "password", "sender", "tls", "description", "timeout", "enqueue_job", "smime", "dont_send_on_error", "private_key", "private_key_password", "certificate") VALUES (1, 'smtp1', 'mail.example.com', 587, 'mailer', '661bc6b2bb3de4cade4dee7a4760c8b5:965dcb87cb8511d727e84a75d76c2920', 'privacyidea@example.com', true, '', 10, false, false, false, '', '', '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (1, '', 'HOTP0001', 'hotp', '', '', '', '', '', 6, '$argon2id$v=19$m=65536,t=9,p=4$gnDOWet9rxVibO09B4DQWg$IsMqeowgQz1Knlnglj/M6NH3tANxRZUjRSfOwdACMuw', '54f517e89ba0d47fbe4f62770543586ea7fcfe12a6bf93730b82155fe2338e62bfdc0a2d125547689947aa578401c093', '4456d8990fd290b6f3695b048a17e1cf', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (1, '', 'HOTP0001', 'hotp', '', '', '', '', '', 6, '$argon2id$v=19$m=65536,t=9,p=4$817LuZeSUopxjjGG0Lp3Tg$TZhduVEubYvs6cjWYR5ol00AwYnpLSw24Bl4sRgO9rY', '95a10989b95bfbd83357dfd7effc18c169eb19fff52502b2d607ec65b1c4f4cf37dc845b66c261540a476c596c5a2487', 'f480e2e4e4bd8be922cfdccceef96890', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (2, '', 'TOTP0001', 'totp', '', '', '', '', '', 6, '$argon2id$v=19$m=65536,t=9,p=4$nJPSmhNiDKHUWguBMKYUYg$/BN7c/qMARpLd/7OfY+gDr32llJn2LiRJ6KH1nU7ahc', '30bb53aad8c41f22c0cd8434f0913ffe01d783bedbacce47c26398a00d7797b7d16d4a0652e96b198cde699817d0d726', '7e26c597f1991bc5b4df909fec342da3', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (2, '', 'TOTP0001', 'totp', '', '', '', '', '', 6, '$argon2id$v=19$m=65536,t=9,p=4$U2pNyTlHyPk/B0DovZeSkg$UQnk+Ul+0ln1I5e65RitaoVjJQpAgLVI/eTqm3kVyGg', '56158f0c5c53816b714021ec390238159196b97c7e20fa8953a0d4f3ffa6e4ada661c31512c10e84528e68d5287015e8', '6611aec7828762207cd0e462cc81b0a0', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (3, '', 'SPASS001', 'spass', '', '', '', '', '', 6, '$argon2id$v=19$m=65536,t=9,p=4$TWnNWct5j5FSivF+jxGC8A$nrQxj1aKjDCpU4cTM2lsofjlAMCNCK1kxaKu0xbtUM8', 'ff176a9de1d2490ef042115abe4d29389d36344d3c52f2836acb6ee184870587ff7a994b577fef43d33cb6b9d917298a', '6a44944218a94574d430800fbce7dc7b', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (3, '', 'SPASS001', 'spass', '', '', '', '', '', 6, '$argon2id$v=19$m=65536,t=9,p=4$Q2htLUXoPaeUsnYOYSzFuA$nMEjLzY34lI1jklCrHTJaY8dz1Jzhqw8CutkWIePu/E', 'd306ebdfb7b03730ba7b473c6304c123565a3e729f8b37bed347bc9c584e6fe946598b6865c357603654ccedf6270ac4', '56a21b29f77c70ab888d3c747b1de338', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (4, '', 'PW000001', 'pw', '', '', '', '', '', 15, '', 'd1c5acbdf7220dd8e5c5191bea00fae9', '2839cc91966aeee49644a769255119f0', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (4, '', 'PW000001', 'pw', '', '', '', '', '', 15, '', '65e07444fc0a4685fa1f61b4614fccc8', 'ab95d03a39c6e5a7b3c516d7cdd38ebf', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (5, '', 'SSHK0001', 'sshkey', '', '', '', '', '', 6, '', '2aa1ff5d371f9d7ec3682f01022ec7b9', '89ff5627ca3f60e28a637a9f5f784272', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (5, '', 'SSHK0001', 'sshkey', '', '', '', '', '', 6, '', 'e408f76693a29fb264b2e2e1d651850c', 'd55f205068565b4af89714493c669c5a', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (6, '', 'REG00001', 'registration', '', '', '', '', '', 24, '', 'a9fe702693a87a5bb07f514d5eba83421c249004472d81ce763b31207aaa20f0', 'df0451c262eac4bf19de69615a60bd4d', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (6, '', 'REG00001', 'registration', '', '', '', '', '', 24, '', '3cd96fc12faf9f579a643d0b085b4cd82bf3a993d02a72c5955cb688ce8e21b5', '1caf8a26d2fe7c86c015c995121a050c', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (7, '', 'EMAIL001', 'email', '', '', '', '', '', 6, '', 'fa5e7f2d94d6fa57d4876af5f89abbd47831c5e354df6b49ea52893fffbe1eee3763b3206d908f0044b18a07c974e06e', '734758a376c04f46178d1265f738cb64', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (7, '', 'EMAIL001', 'email', '', '', '', '', '', 6, '', '1fe106f8b4f1197e5d56cae07cb2456c1b2a2d6bc5a6182c203c93f7c2499090b1b80efdcb8f77cd27c6618add9e0d54', 'b478f6a81e484e7659c2e6d686a47705', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (8, '', 'SMS00001', 'sms', '', '', '', '', '', 6, '', '5095b48285dcd048c967d07e710fa50b5b2f6f430ed35f1bb8eed40ff4ab6fe98cac8b24a279d6dd680aecca84c5ffcc', 'ee12f70ecf242efc790ad501bb530253', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (8, '', 'SMS00001', 'sms', '', '', '', '', '', 6, '', '441122bc91a30d347b0a2b1b9150db05ca606c679b3e43ba08dab7aa13db5cbaf8ad991b8fe22312134e81174d19804a', '572990e9537f4ed64813f89b7b6a2139', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (9, '', 'IDXS0001', 'indexedsecret', '', '', '', '', '', 6, '', '577a19d527f8c79f9a4ac613b1218a4b0590d81bbcb5700e323e143a84792b95', '66b65d8d73c3441c3a3f7954071434db', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (9, '', 'IDXS0001', 'indexedsecret', '', '', '', '', '', 6, '', '091558a6300ff40b34c3d0f0751164d99a4653e40e4f5830e53faaf30e4be5af', 'd587f2dfc7a7bf5d9a2032f5cc658037', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (10, '', 'HOTP0002', 'hotp', '', '', '', '', '', 6, '', '762508d81f081c2259953d310ffc1f9cd995534676692b50a810ebb17d29fe30da47a6934d311088ddc43ccf1311ae58', '1c2ab29a2020c74aac8ef8dcb7998cc7', 10, false, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (10, '', 'HOTP0002', 'hotp', '', '', '', '', '', 6, '', 'b5ad9484f4194109ae0c6a7e6069cb820bba7cbdca852a5caeb84d7e0fedb1a88fbf5ce487c24db44b6e6376ae780e5d', 'b61417de810a1d914ff782be2335c8bf', 10, false, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (11, '', 'WAN00001', 'webauthn', '', '', '', '', '', 6, '', 'f20d1727bb2e10bfdb62962ff22c293f', 'efc8926e9c1313eb4b0724fc414416a7', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (11, '', 'WAN00001', 'webauthn', '', '', '', '', '', 6, '', '24f9e987213851bf52730053d16a89b6', 'd50f3b2ed2fd25652be5c0d2dccc8836', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (12, '', 'PUSH0001', 'push', '', '', '', '', '', 6, '', 'f76228ff0c25f6f41768c2008fd056b4', 'ecc208dce7b047d399a30d0b253ce531', 10, true, false, false, 0, 0, 10, 1000, 'clientwait');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (12, '', 'PUSH0001', 'push', '', '', '', '', '', 6, '', '673c7d0683aa12fd6b5bf830410f841e', 'de25de1fa57e3c16e9ed3269fa44bc54', 10, true, false, false, 0, 0, 10, 1000, 'clientwait');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (13, '', 'TIQR0001', 'tiqr', '', '', '', '', '', 6, '', 'ba7331ea663030270c6df033411bdeb0', '11275bbcfc89f1514432c9e74f0133c0', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (13, '', 'TIQR0001', 'tiqr', '', '', '', '', '', 6, '', 'b8c15ee5a718b6b13dea409c58234145', '297fef5815eaebed3ac7320edae867af', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (14, '', 'U2F00001', 'u2f', '', '', '', '', '', 6, '', '56b04fdf63d6a80801a5021a5821ddd5', 'fe89c8ab690eb9ada82efd22c25daeae', 10, true, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (14, '', 'U2F00001', 'u2f', '', '', '', '', '', 6, '', 'fb2f54e665f755a3d9c77a65d7df3376', 'fa5a910d8da9d61acb68c20457a35c2b', 10, true, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (15, '', 'U2F00002', 'u2f', '', '', '', '', '', 6, '', '88a347f64458be2b785601d7741c27e9', 'fcdcdeff52b5e3f8b812e8eeb1d7e068', 10, false, false, false, 0, 0, 10, 1000, '');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (15, '', 'U2F00002', 'u2f', '', '', '', '', '', 6, '', '6cd509f68bf79d261a68c719323fbdfe', '26a80da011b0a665dc47e9faf3e2d48c', 10, false, false, false, 0, 0, 10, 1000, '');
 
-INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (16, '', 'U2F00003', 'u2f', '', '', '', '', '', 6, '', '43a665e8e0baf68b2e8bd92e97395a56', '7b0a362c902a233e630ec0749b3bac99', 10, true, false, false, 0, 0, 10, 1000, 'clientwait');
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (16, '', 'U2F00003', 'u2f', '', '', '', '', '', 6, '', '4ed984b08d5c130c48c1f21283c97b3b', '0d788510318fd262b3bd9c3aaad87ad2', 10, true, false, false, 0, 0, 10, 1000, 'clientwait');
+
+INSERT INTO "public"."token" ("id", "description", "serial", "tokentype", "user_pin", "user_pin_iv", "so_pin", "so_pin_iv", "pin_seed", "otplen", "pin_hash", "key_enc", "key_iv", "maxfail", "active", "revoked", "locked", "failcount", "count", "count_window", "sync_window", "rollout_state") VALUES (17, '', 'CERT0001', 'certificate', '', '', '', '', '', 6, '', '55bdd74c4eab7a428f0869bbcd1dd418', 'ae8875a045af00d3712b67ed767e7a19', 10, true, false, false, 0, 0, 10, 1000, '');
 
 INSERT INTO "public"."tokencontainer" ("id", "type", "description", "serial", "last_seen", "last_updated", "template_id") VALUES (1, 'generic', 'first container', 'CONT0001', NULL, NULL, NULL);
 
 INSERT INTO "public"."tokencontainer" ("id", "type", "description", "serial", "last_seen", "last_updated", "template_id") VALUES (2, 'smartphone', 'phone', 'SMPH0001', NULL, NULL, NULL);
 
-INSERT INTO "public"."tokencontainerinfo" ("id", "key", "value", "type", "description", "container_id") VALUES (1, 'creation_date', '2026-10-22T13:46:37+00:00', 'pi_internal', '', 1);
+INSERT INTO "public"."tokencontainerinfo" ("id", "key", "value", "type", "description", "container_id") VALUES (1, 'creation_date', '2026-10-23T13:26:51+00:00', 'pi_internal', '', 1);
 
-INSERT INTO "public"."tokencontainerinfo" ("id", "key", "value", "type", "description", "container_id") VALUES (2, 'creation_date', '2026-10-22T13:46:38+00:00', 'pi_internal', '', 2);
+INSERT INTO "public"."tokencontainerinfo" ("id", "key", "value", "type", "description", "container_id") VALUES (2, 'creation_date', '2026-10-23T13:26:51+00:00', 'pi_internal', '', 2);
 
 INSERT INTO "public"."tokencontainerowner" ("id", "container_id", "resolver", "user_id", "realm_id") VALUES (1, 1, 'passwd1', '1000', 1);
 
@@ -1084,17 +1086,17 @@ INSERT INTO "public"."tokencontainertoken" ("token_id", "container_id") VALUES (
 
 INSERT INTO "public"."tokengroup" ("id", "name", "Description") VALUES (1, 'group1', 'first group');
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (1, 'assignment_date', '2026-10-22T13:46:35+00:00', '', '', 1);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (1, 'assignment_date', '2026-10-23T13:26:46+00:00', '', '', 1);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (2, 'tokenkind', 'software', '', '', 1);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (3, 'hashlib', 'sha1', '', '', 1);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (4, 'creation_date', '2026-10-22T13:46:35+00:00', '', '', 1);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (4, 'creation_date', '2026-10-23T13:26:46+00:00', '', '', 1);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (5, 'comment', 'value with ümlaut', '', '', 1);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (6, 'assignment_date', '2026-10-22T13:46:35+00:00', '', '', 2);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (6, 'assignment_date', '2026-10-23T13:26:46+00:00', '', '', 2);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (7, 'tokenkind', 'software', '', '', 2);
 
@@ -1106,21 +1108,21 @@ INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (8, 'hashlib', 'sha1', NULL, '', 2);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (12, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 2);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (12, 'creation_date', '2026-10-23T13:26:46+00:00', '', '', 2);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (13, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 3);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (13, 'assignment_date', '2026-10-23T13:26:46+00:00', '', '', 3);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (14, 'tokenkind', 'software', '', '', 3);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (15, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 3);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (15, 'creation_date', '2026-10-23T13:26:46+00:00', '', '', 3);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (16, 'tokenkind', 'software', '', '', 4);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (17, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 4);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (17, 'creation_date', '2026-10-23T13:26:46+00:00', '', '', 4);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (18, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 5);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (18, 'assignment_date', '2026-10-23T13:26:46+00:00', '', '', 5);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (19, 'ssh_key', 'e230d7ee758c38c9efc090bea6d008b0:af1848c3e4db86b8cb17b4d77653a61e3056b5a56fdf49b249f84bccf9f4f24e9e5d5969f96334d6fea1a24b12707e2707f5257ed46bfd5c03510462bf462f470a7a2070b1b2d3acec6b69ff0f13bc80', 'password', '', 5);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (19, 'ssh_key', '4245ea24d8024c17179bcae0ac36bc6b:40106591062c95774c1e867ea31c944bee4d215ce1e755bd830825a7ee8c9c7320a03033df19c1a99971ca42282b21e69470465fde6e4968ecdb7216ab996549e5993900558e9c60f590bbc4fd1bfa7d', 'password', '', 5);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (20, 'ssh_type', 'ssh-ed25519', '', '', 5);
 
@@ -1128,15 +1130,15 @@ INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (22, 'tokenkind', 'software', '', '', 5);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (23, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 5);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (23, 'creation_date', '2026-10-23T13:26:46+00:00', '', '', 5);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (24, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 6);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (24, 'assignment_date', '2026-10-23T13:26:47+00:00', '', '', 6);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (25, 'tokenkind', 'software', '', '', 6);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (26, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 6);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (26, 'creation_date', '2026-10-23T13:26:47+00:00', '', '', 6);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (27, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 7);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (27, 'assignment_date', '2026-10-23T13:26:47+00:00', '', '', 7);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (28, 'email', 'cornelius@example.com', '', '', 7);
 
@@ -1144,9 +1146,9 @@ INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (30, 'hashlib', 'sha1', '', '', 7);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (31, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 7);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (31, 'creation_date', '2026-10-23T13:26:47+00:00', '', '', 7);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (32, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 8);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (32, 'assignment_date', '2026-10-23T13:26:47+00:00', '', '', 8);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (33, 'phone', '+49123456', '', '', 8);
 
@@ -1154,21 +1156,21 @@ INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (35, 'hashlib', 'sha1', '', '', 8);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (36, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 8);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (36, 'creation_date', '2026-10-23T13:26:47+00:00', '', '', 8);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (37, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 9);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (37, 'assignment_date', '2026-10-23T13:26:47+00:00', '', '', 9);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (38, 'tokenkind', 'software', '', '', 9);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (39, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 9);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (39, 'creation_date', '2026-10-23T13:26:47+00:00', '', '', 9);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (40, 'assignment_date', '2026-10-22T13:46:36+00:00', '', '', 10);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (40, 'assignment_date', '2026-10-23T13:26:47+00:00', '', '', 10);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (41, 'tokenkind', 'software', '', '', 10);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (42, 'hashlib', 'sha1', '', '', 10);
 
-INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (43, 'creation_date', '2026-10-22T13:46:36+00:00', '', '', 10);
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (43, 'creation_date', '2026-10-23T13:26:47+00:00', '', '', 10);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (44, 'tokenkind', 'hardware', '', '', 11);
 
@@ -1197,6 +1199,87 @@ INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (56, 'pubKey', 'BEj5tT3w5Q0w0q2', '', '', 16);
 
 INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (57, 'appId', 'https://privacyidea.example.com', '', '', 16);
+
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (58, 'assignment_date', '2026-10-23T13:26:50+00:00', '', '', 17);
+
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (59, 'tokenkind', 'software', '', '', 17);
+
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (60, 'certificate', '-----BEGIN CERTIFICATE-----
+MIIE3TCCAsWgAwIBAgIUaveWdgOK1jV5jzRFCzCErj7xY+4wDQYJKoZIhvcNAQEL
+BQAwKzEpMCcGA1UEAwwgcHJpdmFjeUlERUEgc2VlZCBpbnRlcm1lZGlhdGUgQ0Ew
+HhcNMjYwMTAxMDAwMDAwWhcNMzYwMTAxMDAwMDAwWjAUMRIwEAYDVQQDDAljb3Ju
+ZWxpdXMwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQCdMCoZ6ZWSlwbR
+z/4NFTY3uRXIYrOC79grFFGiDOOgJJCs2hj2N7onTjY3zYoI7/L8UDbpkUp+Y2cD
+lZKHO4Nvno7x06+MMxZyUp1V7blYDY7QQKvl0IGbnJxR6OqfXLqh1SMeNiaC4X3N
+E/2q+vpAnQVBhOp/tB1PahFbaEQUJFckXCr1ah8ZjIJDC9SftLc5V7BwgilaAB6h
+d5yzrC98c5LaZGqvrJhqjD3T6frYSCCizo/UoNOu+ODvLyrrhT/EY6uavH04WubD
+SvAK0eV7UV1wbjWlWdupzREa//BsSsrtJgjnI+kS+07vKz51JX6MVKL3eQ+tQ+B4
+FIUzbFbAqFDTmJHMFFpeM+rjS9kAnj5ECFD9cY2vcPMekdU7k0tsoZ2785AOhbyO
+Ww+MgOiWhIGmjpxomZQPF6JgDRIb8ILjA7BwRItjfZ/KozFbAj5zYBM6Xp/dhD7I
+v63l2yJSDjRMW4CGR5Ka8HFqAEY2YmI1nWwoHVuFdDexSFHXF2tYf2VGrHpbiW2X
+zE3qHadxsDobRku+xHhxKLMBdQ0iTl5ZQu2P59PWJrKv6AxclJ0mJFxq1vRXTq80
+bgsQxD/+mRi12Vc2G3bVzuL9XUIqo5/AaR5g/lCDSm7yLTLRPcvLK54kLk5j4CAf
+hJlDOoIsbdmgAKfhq1p03qLzsVsGTwIDAQABoxAwDjAMBgNVHRMBAf8EAjAAMA0G
+CSqGSIb3DQEBCwUAA4ICAQBAhwCO8+zcUpDEducD9o3eLp5MC071OnqoDX2o+9cO
+Fa/5g9ozb3tjebWIGzqA+qJ0qeuGquMA4wVH2rz72SCpZatI2L3uaBFb9MEwDGsD
+NHm+5pp00KTCkfTxdztmv7pz2DO3zjO2NpjQ3L0aFLPVm7biv2r7Pk1nUV40jxRh
+k1mV7H3gs+um5VkiK4x/81Gq3OASPcdUOpAi/rHHZjsHN3M9Hdx3XXa0jZkBGxmk
+/Ke8nbHHcUoJj/C6RjHUVJJ+5T/bO6VMvgN7VfLT5SMmQTMFIOyKMlrgGtzawviQ
+aSm70gVQsXFfKpPgIYlmD4hDwNBNOD9X+hLIj2WxPM4nTjXBV35wD130nVrM3SPc
+CIKfhDUksVNR5GsNKIxVsgXA7UtobN1hcaAfS45cmWb3tvOb+G2YVxMeMOwIsrAP
+/MNO9edoL7HIXyZJ1L/kGY8Bp0825zFDYVCgLm0gp0Bth2l2aqRW/S3MbGRuj8eg
+6fUkXaKT3dkCM0r3sAYKLa+njiTLiY2qCi6YjJQl5Sk4tTqhmnskNBPTHNz2fgnR
+2r3n3ycZiUEJnGv0msDJcDkGC881oBbwK7tcf8mEAW1ZBXpuAojnElxlToXZdOzt
+gqKoK1IkL4HJSZhJaL3qr7bWNQw0mrNuE6SATDBN7tTj39FNBpw9dPdOeUnd5log
+Sg==
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIEEDCCAvigAwIBAgIUOi50mYdV5WiOt50YC2yNmiMRFSkwDQYJKoZIhvcNAQEL
+BQAwRDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIGA1UECgwLcHJp
+dmFjeWlkZWExDjAMBgNVBAMMBUNBMDAxMB4XDTI2MDEwMTAwMDAwMFoXDTM2MDEw
+MTAwMDAwMFowKzEpMCcGA1UEAwwgcHJpdmFjeUlERUEgc2VlZCBpbnRlcm1lZGlh
+dGUgQ0EwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDPzZFbOd4gP0r0
+NRIffhuPTZo0LNUVDnpWUbCUUPVY8KFZRWbdK9Viwhoy23uDRoDpcvTyseCPlpVK
+NLZ+pWOxuQ3czkx9qVMjXxCTxkxZwl8kFq3qY0Ixl14AxwcJljI9qd/oO0VqJhfD
+iUj54jAMYXiUz6LCZ1TBXkQ8br08a6GjKJ4nrWkQD4xd8IK7NVCFcHgcB4ixUFdE
+Lz+5iprUpKc7BORxbpTvH/mxX6qQ1ksVMhsxnEkflscWZt+cn70ctGQXhKGnmzbt
+jTXHqbAc0GRfmUvfZcWQM3Lla09mMeJBPo1Hfxt/CtbUAD9c3NTy8H8ejD5eg/0A
+LozuSjg2gGRRU/0yquB4TaQtLKFETt0QOKQnUEC84rbZs2JjLp2SdAkY8y6E03si
+rlnxxAZECIzyOYu1AB6kBFW7N0Zjx4wFFevmSjhKOAeFww/g9+a/9v31+XCZvmmU
+2pbVfCwSDfuaRXZ7V+1t15SQ4Kpobo+xuXNXbPmrDNQU3bKGL22gtjQRU2PPL3S5
+59M2Hl0Jo3A6IuXYZ7G/W03kDVmIWSxzbmCgQMyFaZV/xtmRJFKsJlp/EWLFlnpl
+ryoMfyzZnVMqyazGM8b5C0Vd60ubvjipiBremuKGs+5gW3nD5OqnZbkxWaEMWlDx
+RNke+iT53Z2Ki0hQwZObtuu5UstfHQIDAQABoxMwETAPBgNVHRMBAf8EBTADAQH/
+MA0GCSqGSIb3DQEBCwUAA4IBAQBvztKOoH/G6jZ747vGKdq08jjrKlmWbo0wFCN2
+LFqVHXqUtzADvRrptPXa8SGNhRGLCwmrZhDk0CM+HKpS27Hke5T9IrV8/MUW9TTL
+dMUVM8jDB7qwZrH2vk2O8fyIe3xEWcOIeBH8/deXvaFLP2wRTpZt7elNLVguusXz
+5dlTkss5XVKilPhGkxkAAfSznlLK+Xa/di9fBunrJL2plFVjrD+6A8j0C6QIBSA8
+P6cfwmdIP20IvTsf9KvS4vEd4BucX8cS8oAeqOo2EnF4E8+ILlYFBeoKG1pwL9y7
+2GYm4/qrXNGujdJVKv55VVZtmSTNmHo1h5aVcbtaLSo8OB0v
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIDWzCCAkOgAwIBAgIJAPvI66yDzRIHMA0GCSqGSIb3DQEBCwUAMEQxCzAJBgNV
+BAYTAkRFMQ8wDQYDVQQIDAZIZXNzZW4xFDASBgNVBAoMC3ByaXZhY3lpZGVhMQ4w
+DAYDVQQDDAVDQTAwMTAeFw0xNTA0MjIxMzU2MDhaFw0yMDEwMTIxMzU2MDhaMEQx
+CzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZIZXNzZW4xFDASBgNVBAoMC3ByaXZhY3lp
+ZGVhMQ4wDAYDVQQDDAVDQTAwMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC
+ggEBAMCcdwPNvk8BseikUZ9w7PN3y3ZvcNeOQs9ld804tPj2hpJ9LdMw0Z6ZkbBB
+/TPMNOXFklkCTDy2MtvbngXU0Grvy6IZRRDfTkpA3eI/VXPW6Cn3a2WHeYnhEMBo
+I+XC+XLAeLmG8629C820NmBCg5Rg3xsu9uzGEgwK0y3iVmcH7Zi/XgrpI4D1WCjw
+da6E5BAEnuhg8+PrVTK7fxEHv1OtpLyyzVLssBc7DeQPzqnlN6YzW5KrGGunR84s
+yC3WJ4xZ+6pLCrMZOl4gPaoWt4sltKSRcCro440DDdVoDVpVniLey94LVgfUHHX6
+Cjkfs5nM8QU2UYiZ42DT53kqnLUCAwEAAaNQME4wHQYDVR0OBBYEFPSnwMyRRq9k
+85HyJ/jIsm+KhzJzMB8GA1UdIwQYMBaAFPSnwMyRRq9k85HyJ/jIsm+KhzJzMAwG
+A1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAJKQRaWnSrzMCVrkrD9zGGnq
+XvK7+fcXap6zwUAwu5FTLPl9X67KtH4YcZpvXUQqRJxlFbzIHh+j6/2vk38eb208
+fq5g57PjAQrDR7CCg5r4/d1WmUtFYEf/bdavz67fW9iAAffBbHZKNCyuFA9TrGit
+IBLSh5HQZBPIKK1yV62GUcbWI8hpN+r27ziZ7SjqYVbVoRhq7hq/xNY0b3PJlQOT
+SCw8/pGzWX7r5w4js+KIgEd5x0Vtbg1FU0cc89GJxAw0TuLXs2RPtXzgmwgB4DZy
+eV7BGZkSb5hHpM1oyW7K42JHqxh1jeWRxP/7HyCKTMkLiTbYyk2nQSjsGcJ0m7Q=
+-----END CERTIFICATE-----
+', '', '', 17);
+
+INSERT INTO "public"."tokeninfo" ("id", "Key", "Value", "Type", "Description", "token_id") VALUES (61, 'creation_date', '2026-10-23T13:26:50+00:00', '', '', 17);
 
 INSERT INTO "public"."tokenowner" ("id", "token_id", "resolver", "user_id", "realm_id") VALUES (1, 1, 'passwd1', '1000', 1);
 
@@ -1227,6 +1310,8 @@ INSERT INTO "public"."tokenowner" ("id", "token_id", "resolver", "user_id", "rea
 INSERT INTO "public"."tokenowner" ("id", "token_id", "resolver", "user_id", "realm_id") VALUES (14, 15, 'passwd1', '1000', 1);
 
 INSERT INTO "public"."tokenowner" ("id", "token_id", "resolver", "user_id", "realm_id") VALUES (15, 16, 'passwd1', '1000', 1);
+
+INSERT INTO "public"."tokenowner" ("id", "token_id", "resolver", "user_id", "realm_id") VALUES (16, 17, 'passwd1', '1000', 1);
 
 INSERT INTO "public"."tokenrealm" ("id", "token_id", "realm_id") VALUES (1, 1, 1);
 
@@ -1259,6 +1344,8 @@ INSERT INTO "public"."tokenrealm" ("id", "token_id", "realm_id") VALUES (14, 14,
 INSERT INTO "public"."tokenrealm" ("id", "token_id", "realm_id") VALUES (15, 15, 1);
 
 INSERT INTO "public"."tokenrealm" ("id", "token_id", "realm_id") VALUES (16, 16, 1);
+
+INSERT INTO "public"."tokenrealm" ("id", "token_id", "realm_id") VALUES (17, 17, 1);
 
 INSERT INTO "public"."tokentokengroup" ("id", "token_id", "tokengroup_id") VALUES (1, 2, 1);
 
@@ -1330,7 +1417,7 @@ SELECT pg_catalog.setval('"public"."smtpserver_seq"', 1, true);
 
 SELECT pg_catalog.setval('"public"."subscription_seq"', 1, false);
 
-SELECT pg_catalog.setval('"public"."token_seq"', 16, true);
+SELECT pg_catalog.setval('"public"."token_seq"', 17, true);
 
 SELECT pg_catalog.setval('"public"."tokencontainer_id_seq"', 2, true);
 
@@ -1346,11 +1433,11 @@ SELECT pg_catalog.setval('"public"."tokencredentialidhash_seq"', 1, false);
 
 SELECT pg_catalog.setval('"public"."tokengroup_seq"', 1, true);
 
-SELECT pg_catalog.setval('"public"."tokeninfo_seq"', 57, true);
+SELECT pg_catalog.setval('"public"."tokeninfo_seq"', 61, true);
 
-SELECT pg_catalog.setval('"public"."tokenowner_seq"', 15, true);
+SELECT pg_catalog.setval('"public"."tokenowner_seq"', 16, true);
 
-SELECT pg_catalog.setval('"public"."tokenrealm_seq"', 16, true);
+SELECT pg_catalog.setval('"public"."tokenrealm_seq"', 17, true);
 
 SELECT pg_catalog.setval('"public"."tokentokengroup_seq"', 1, true);
 

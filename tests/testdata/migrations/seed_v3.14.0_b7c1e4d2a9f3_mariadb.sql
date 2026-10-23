@@ -192,9 +192,9 @@ CREATE TABLE `admin` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `admin` VALUES ('admin','$argon2id$v=19$m=65536,t=9,p=4$fi+llDKGUEqJ8R5DqJUSYg$njIkdwRhfJNzc2+nwo92WqldJwOc1bcbdCHiZGsw24I','admin@example.com');
+INSERT INTO `admin` VALUES ('admin','$argon2id$v=19$m=65536,t=9,p=4$CEEIAYDwXisFwHjPuZeScg$p3otH4OeS3D1oxSCmiVNsFAAykmlaGFIv91iMn7XOYM','admin@example.com');
 
-INSERT INTO `admin` VALUES ('helpdesk','$argon2id$v=19$m=65536,t=9,p=4$xHiPUaqV0to7p5TynjNGKA$GpieCJ5y8wIWUn047d8Dq8nt77O90JpMXfaMCrzTrR4','helpdesk@example.com');
+INSERT INTO `admin` VALUES ('helpdesk','$argon2id$v=19$m=65536,t=9,p=4$HKPUuldq7d279/5/7703hg$WJVtwt29lQA/pa1jnPj9jbF6KKaxdoGQmaC1HAtHBe4','helpdesk@example.com');
 
 COMMIT;
 
@@ -350,17 +350,17 @@ CREATE TABLE `challenge` (
   `received_count` int(11) DEFAULT NULL,
   `otp_valid` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`id`),
+  KEY `ix_challenge_timestamp` (`timestamp`),
   KEY `ix_challenge_serial` (`serial`),
   KEY `ix_challenge_transaction_id` (`transaction_id`),
-  KEY `ix_challenge_timestamp` (`timestamp`),
   KEY `ix_challenge_expiration` (`expiration`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `challenge` VALUES (1,'01234567890123456789','','please enter otp','','HOTP0001','2026-10-22 13:47:05.568816','2026-10-22 13:57:05.568816',0,0);
+INSERT INTO `challenge` VALUES (1,'01234567890123456789','','please enter otp','','HOTP0001','2026-10-23 13:27:26.518451','2026-10-23 13:37:26.518451',0,0);
 
-INSERT INTO `challenge` VALUES (2,'98765432109876543210','81261312f39ee5f48f671123e1a0ce45:2905f8e23f7476605cfe4c4c8bb382fa','nonce','','PUSH0001','2026-10-22 13:47:05.577376','2026-10-22 13:57:05.577376',0,0);
+INSERT INTO `challenge` VALUES (2,'98765432109876543210','5fab29a3ad3adc8d97becc3933612e3b:2d814b648a3913645968afb6146ac4f2','nonce','','PUSH0001','2026-10-23 13:27:26.525267','2026-10-23 13:37:26.525267',0,0);
 
 COMMIT;
 
@@ -528,13 +528,13 @@ CREATE TABLE `config` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `config` VALUES ('__timestamp__','1792676826.206461','','config timestamp. last changed.');
+INSERT INTO `config` VALUES ('__timestamp__','1792762047.240419','','config timestamp. last changed.');
 
 INSERT INTO `config` VALUES ('IncFailCountOnFalsePin','True','','');
 
 INSERT INTO `config` VALUES ('PrependPin','True','','');
 
-INSERT INTO `config` VALUES ('seed.secret.option','54f7104c9d80569cc3cc280cb6b76ccd:b1c1d5452f173ca3355e3a3a9a7de5b0','password','');
+INSERT INTO `config` VALUES ('seed.secret.option','761a173905a35699070a663400c3edec:8caaab6e4dd01be84982340ff9bdc6b6','password','');
 
 INSERT INTO `config` VALUES ('splitAtSign','1','','');
 
@@ -578,15 +578,15 @@ CREATE TABLE `description` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `description` VALUES (1,1,'policy','2026-10-22 15:47:03.601812',NULL);
+INSERT INTO `description` VALUES (1,1,'policy','2026-10-23 15:27:22.526189',NULL);
 
-INSERT INTO `description` VALUES (2,2,'policy','2026-10-22 15:47:03.644002','PIN from the user store');
+INSERT INTO `description` VALUES (2,2,'policy','2026-10-23 15:27:22.586450','PIN from the user store');
 
-INSERT INTO `description` VALUES (3,3,'policy','2026-10-22 15:47:03.687357',NULL);
+INSERT INTO `description` VALUES (3,3,'policy','2026-10-23 15:27:22.643288',NULL);
 
-INSERT INTO `description` VALUES (4,4,'policy','2026-10-22 15:47:03.732213',NULL);
+INSERT INTO `description` VALUES (4,4,'policy','2026-10-23 15:27:22.700167',NULL);
 
-INSERT INTO `description` VALUES (5,5,'policy','2026-10-22 15:47:03.772205',NULL);
+INSERT INTO `description` VALUES (5,5,'policy','2026-10-23 15:27:22.761137',NULL);
 
 COMMIT;
 
@@ -709,11 +709,11 @@ CREATE TABLE `internaluserattribute` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `internaluserattribute` VALUES (1,'1000','passwd1',1,'fido2_user_id','\"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8\"','2026-10-22 13:47:05.539982',NULL);
+INSERT INTO `internaluserattribute` VALUES (1,'1000','passwd1',1,'fido2_user_id','\"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8\"','2026-10-23 13:27:26.494575',NULL);
 
-INSERT INTO `internaluserattribute` VALUES (2,'1000','passwd1',1,'last_used_token','{\"privacyidea-cp\": \"hotp\", \"privacyidea-keycloak\": \"webauthn\"}','2026-10-22 13:47:05.544958',NULL);
+INSERT INTO `internaluserattribute` VALUES (2,'1000','passwd1',1,'last_used_token','{\"privacyidea-cp\": \"hotp\", \"privacyidea-keycloak\": \"webauthn\"}','2026-10-23 13:27:26.498282',NULL);
 
-INSERT INTO `internaluserattribute` VALUES (3,'1118','passwd1',1,'last_used_token','{\"privacyidea-cp\": \"totp\"}','2026-10-22 13:47:05.549073',NULL);
+INSERT INTO `internaluserattribute` VALUES (3,'1118','passwd1',1,'last_used_token','{\"privacyidea-cp\": \"totp\"}','2026-10-23 13:27:26.502609',NULL);
 
 COMMIT;
 
@@ -815,7 +815,7 @@ CREATE TABLE `metric_aggregate` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `metric_aggregate` VALUES (1,'resolver_op_duration_seconds','{\"op\":\"get_user_id\",\"resolver\":\"passwd1\",\"resolver_type\":\"passwdresolver\"}','fe9c46b3d11a13bc49f17c7b09ca4cdefe3ff9ea89823828bb4a1240df5849de','seednode','2026-10-22 13:45:00.000000',6,0.000019983,0.000005511,6,6,6,6,6,6,6,6,6);
+INSERT INTO `metric_aggregate` VALUES (1,'resolver_op_duration_seconds','{\"op\":\"get_user_id\",\"resolver\":\"passwd1\",\"resolver_type\":\"passwdresolver\"}','fe9c46b3d11a13bc49f17c7b09ca4cdefe3ff9ea89823828bb4a1240df5849de','seednode','2026-10-23 13:25:00.000000',7,0.000019681,0.000003625,7,7,7,7,7,7,7,7,7);
 
 COMMIT;
 
@@ -848,7 +848,7 @@ CREATE TABLE `nodename` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `nodename` VALUES ('8e4e2a5c-0b5f-4f7e-9d43-6a1c2f3b4d5e','seednode','2026-10-22 13:47:02.458678');
+INSERT INTO `nodename` VALUES ('8e4e2a5c-0b5f-4f7e-9d43-6a1c2f3b4d5e','seednode','2026-10-23 13:27:21.250647');
 
 COMMIT;
 
@@ -890,7 +890,7 @@ CREATE TABLE `periodictask` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `periodictask` VALUES (1,'statistics',1,1,'*/5 * * * *','seednode','SimpleStats',0,'2026-10-22 13:47:06.288798');
+INSERT INTO `periodictask` VALUES (1,'statistics',1,1,'*/5 * * * *','seednode','SimpleStats',0,'2026-10-23 13:27:27.340051');
 
 COMMIT;
 
@@ -964,25 +964,25 @@ CREATE TABLE `pidea_audit` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `pidea_audit` VALUES (1,'2026-10-22 15:47:05.631091','2026-10-22 15:47:05.586145','1970-01-01 00:00:00.044946','rsa_sha256_pss:058ddfe7fec4dd89d3acd346216cd34b3a7fedad0e0bfe68392f9e29a08cea120d92d7ef47a9c52c2ccf1a1404ee80535a943d139c76b426d1d2584c7d0f726a6afb16809966b2f5f24e64e941bb971476dbbe0ac050e8b130ce1f769f5e5ff5d21fb1c5fb554e58db6b5a50a07ddf3ec76581691a53306be1625e984b5c84b265a81c16eac269fa58e8ee4fdb483642eca3d2a6626af1286fffb48b77553c667d352c95780bfa90ceeb87f241e724c1c1460bfb341db21c95275efedc69308fb13352315d2caa4d4dc93e4f881ba58153db89b49221168993a5222367d042104f3dc3a43005e3b4ca62f2accfb0d249e4d4dbf62e5270e08a35ad05a759bb0b','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 0','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (1,'2026-10-23 15:27:26.589784','2026-10-23 15:27:26.531574','1970-01-01 00:00:00.058210','rsa_sha256_pss:a7272e468fa05cce0034e6328df7412f36f54000c15862850d89a25c4394a6478f1839d586eafeb12b58a37896d82e1c553190b11b24645f4f4200f980e46df944fc5b581abeb8f37b4a8fbfcde6f72fffb0e2985d64e34fa53dc294cec14ced59b2f545f4f8f1cf88e3b30c388b7d07c5316788a9eb574eb9b609beb79c73db06bb03623b392699ffb551f94a71bed1fdb3ab1ed72cda5b0fc6b412fe743dfa51f5b0e2537049139ecfa3d6a2692d4b13dc6226ca5e3de393be1dfa07804c613fcc73a52888e58e11c1e7955de8d81f7fc9d03cf10fea89e18036118b2049a1192b7272f0f4e8239b57bdfa0a0246820cdc0c92aaf36fc15e8dfe86ad6ec6d1','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 0','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (2,'2026-10-22 15:47:05.643815','2026-10-22 15:47:05.643158','1970-01-01 00:00:00.000657','rsa_sha256_pss:1cd94962b50b55ec74c1ea40198afef02c8fe6d98374b2f4c886ecca89dd4b35995e35631162ef91832fd886feff25728d1e6e88e52ea8071d276e3b1e6132cf3ec12b189d8deab47b035f181d92d100d56762d3a5783dd33e11600d37b940cf88a9d2651e1522f08262a1dbd248e485143efc2bb24ee39547fb58cec97e3a9ecbd1b3db48fb3df0794a27a8536d808bdd8c08c655c8b3d46c6cc0c06c98aace8cb10e9b53e462e629f4b71a6afa8d468108244ac6166be445013eb4f1357c734a4bfbe429c823b996329e4afe5e605cc2143327e17d32ad79e037d3131469579fe685bb9d00aa6b8278b6784676ccb219f4ad0ef140ee3ff67d41afc6195ee1','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 1','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (2,'2026-10-23 15:27:26.605708','2026-10-23 15:27:26.604745','1970-01-01 00:00:00.000963','rsa_sha256_pss:62345275c2291f5c5ab0e00ecce5e3f824b94af9629aba316fcd0232275453b794b29f08e7fc4b7266f9b7631a470461a49793df6036d71c3356556c8c7ea6b1d8b411c69df6147eaaa770bc54438779223ef2ea62834c7b64d7027c0ac54d17966de5508251cbef97e8df8db4b0cb476f62f04da769603b4f40b73a8f1514da4c035027a8ae468a0a6cea315331c626f57c5225108af6304530d6ac6244e93d9188d4ea536a5e9801056d3d6cb96900828033546e7d526af085a18274b9d46b3d6be302d1884060b89d7b1b765b0936a6727efb9f20a82790224b547227e9c592d4f4faed725764552244c0d25df6c86c06a8108f2538c40915d0d96f297c2c','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 1','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (3,'2026-10-22 15:47:05.692619','2026-10-22 15:47:05.691612','1970-01-01 00:00:00.001007','rsa_sha256_pss:3298b2e4c76e5efbb57797f2d3e6f043b27d8e40914ddc829a90b97429ee18525d909c14e69ccd8f01018adabfc066b0399201feb176a8924c783025a63e4e98e8a13af6906c7aa844cae4e123353dd115e74f1f04e3db01cb58dbab36e688364458811054fde628c5eec8d9bfb4df5e8d92a53672bb9cca9af67fa8b77114e106b2d720f2e5b1491bfb14b7b95ad0f8af4b672f49dc1f3931c2ed38f65d9a4535cc16809c15a225ba667e165fd16efc3b31fde897a1897292a0d8e4edef903ae6f44ccca2182a476517fc18dc53cb37a3ddfe2fc13aaec312a6a160b21b796d379c514622512a0f663369a804cb7f7d46c8efb6def4defdfc2c9d6783cc0d7b','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 2','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (3,'2026-10-23 15:27:26.658133','2026-10-23 15:27:26.657248','1970-01-01 00:00:00.000885','rsa_sha256_pss:2718129f9fe099c3d32a1852e60d398af9b912e03faf30d46a5c3682b94863d35c507b11398b695c8957e624ace0cb9634f90af55d34bd7e0a11b3b4af327b6c036f1edd815252847649aadd4cfab6559a995e1b388838bd570c023db53d69dfd6e14c429f739e38c6c34f3a5b2ebb51a3681a80e9ad16427c2c27beb49cbcc1579fa9f6a31880ea8b774f1854253fea3a47cea1ed83a4eae6ba6eba34cb590d65de6ccc27466586effdc475806520063b9c7be16560f20ed55375da8b0ae2e3d36d32b762859424667a570f21da2e0a4c8a9790b96fb2791632b23fed8c7ed21b6bb209ddd334c752877069491b7303aec779890b73e5a697b15abe40207f8c','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 2','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (4,'2026-10-22 15:47:05.739305','2026-10-22 15:47:05.738528','1970-01-01 00:00:00.000777','rsa_sha256_pss:628588be311541f486460de1075ad7e888cb59d890ed43af6e959cad425319083ed3c44229688573ec43932bd321f9ad3028a3e54d164566f21b25a8e15567e3156fe8dbb1ea0ac476ced962df3ea3854288e3343fc3e92d0719900eb43f1b0657b1a856592890a0310b09b31166c7d66a147874c4d866e86925dfc2c7083383c21353525d2fe43e78b359fda6e8995dfc8989a4b6b834e8aa69c2b955a5e63d1777a3b8901c5d65b0f4ea42dc471890cef8955a7b035c4c88fce210059a687b78b422e5842fb923905b532e4afe19899e42add9fe6d2cfbbbba27117498e99af4ff3a17e0d5fb2bdfdf8258413074f649b6e20e21a0ce05d91b659e1663f8e1','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 3','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (4,'2026-10-23 15:27:26.708554','2026-10-23 15:27:26.707550','1970-01-01 00:00:00.001004','rsa_sha256_pss:9a8ac7e01a7e5bcae7bb3b43e7d4cd591f1f09446f256488ffc7463529d4b7c6f739184c9a90c8d1434a2fc71943d7775353649293d109fa7a694b156f436ec9f4e0ee80745fc5d6e6a664c9eb7631abd0165dd6bdfde49d91f30ec95be6de183dc33145cee913070661b2421b07601f40138e7f297235fbd84f4df9ea219092505a864a5477d6cdb7c3a1f2daee98251a4effd955c827a959c03124985285d1f42f16aa728fc6a162d42534e7f76add8df77e8ba7ceebeb50a666753cd983a7bb685a4137c8c6bc5ce8458ba56037c887a5797d4d88231b00af998a3f96c06129ae0fe93107ed97edd25c797981fcfcd20356f2eed726a44c56de3889ac5f07','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 3','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (5,'2026-10-22 15:47:05.799190','2026-10-22 15:47:05.798047','1970-01-01 00:00:00.001143','rsa_sha256_pss:03c5286a197b5f58eeaae3530ba0c0568d926985bd79eff262c1b8f2fe4b294986b007c85cdf37dddac9c08e3840fc0fc543ae406a5745d7f1437bd8d8e6084d66d96af177e12387952e3b8ff263db0b52b9af217dd76784091b03d2a03d85055882f494b7c36146c12dc67617dfe89e799001ebfdfadb5794efa4478af86958b12e56137f6f1a27668e03c3f8f4ba18f4c294c7abec4fbd6d2fe3e7e88a3dad20bb0b87ec9e1fd33a1797a39aab7f4f534239691729fd6b37b819ca2cbc204d85490c7e39d26a6d0ffe651b4ef186b1e7b2233fd4eba1835c83f7b66942e281d185d08e02f1a13be414868054199a47f5976e2d1dc66bdd856bc5f15c54b1ec','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 4','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (5,'2026-10-23 15:27:26.769708','2026-10-23 15:27:26.768726','1970-01-01 00:00:00.000982','rsa_sha256_pss:7ae5fd3ef5fc62ab0d8d1722e10ceb66fca18abbd359654f471ffbb201af24332757f993db0da84ffdde6931a62bb492c3dfdb86e816ba6e98c5e909780fa28b37d02e2ebba6f2829533e7658db6bfe81718cead7ea2e6ec34fcb1f26fa934febc4b6bd94bd2442c39e84a4dd2b8cade91b6aa841b759c438a2d3626a269801911b71c77178788684b4e4f3559f1b9c23f107ace1fc4f6436105ded2ba66f263abb8c53c26bbb6f8aaa3208ccc6120086192e5c2d113400e5c412c78337c2969cd90ec61d45d2e9646d7eb663e57e47cec43e84c06a3b6dca6c4240ff9a54533884641c9e93ff76d282c97f94964c45a528cfc6280080158249c15492d5e0534','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 4','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (6,'2026-10-22 15:47:05.855959','2026-10-22 15:47:05.854916','1970-01-01 00:00:00.001043','rsa_sha256_pss:8890021b0c4ba6911d50f5024427b6667cdadf18e2c170c53e9f66ab282157856b41ca7c8721df2fca8c5eab37cf93b41a6db3fc98cd87c95aac2f0a65cec0dcd419c9acd5222cec293c16bd759ae7abe53c76bbdd6417d730399dbea085ba307b4b5c3086c993adc6e68d5548c6c813b56dea195c65ce574dfea5d15e124e84a483c41531c39da56b3a07f2b36203a7daa8895b0aefd6435505bdbecaa4fa6b97af31b0494f7b751f73ebbff983957ef5689954caa5f872571b35b575f15be26cccf0cc8b7453e50c93de542dbda6b2abc8738d7c01fc106beef3407341e749068b0f810e466f286f8582837f22046ee1435839afddec43997f72c145e2fe09','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 5','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (6,'2026-10-23 15:27:26.810218','2026-10-23 15:27:26.809324','1970-01-01 00:00:00.000894','rsa_sha256_pss:ae2d4ceffeb39ccaeec4e842a30a90d9738fe71038374c0dcc8e2cb882dba8b9ed10aaf0d7813b1700eacef73e67045dbe4b9aa658b1485305cb1fa3d1f3d8aef42278daed5317de59a2dacf74a390b95ac30191c80dd08182017a0a6aa8859026815842a6603ce9570ea4490522ee45d8efab046ed35f13d01ef01db897d47e9a6f735ce4dccab58957253524f135ddb6e4c32f20f43253ad168f4d89d4b5d5824e3f07d9852394c8b3e69b7d04c73e7f5d4277132b95ce27f6e2f73723a8edabe610a26551a9c6602e97383b19715dff11469da0af31fb47a0f9264b54028c0ee48e63268f5fd33eff1f0c3011013744736621cfd34761bfaefd2ecf41fab9','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 5','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (7,'2026-10-22 15:47:05.906665','2026-10-22 15:47:05.905659','1970-01-01 00:00:00.001006','rsa_sha256_pss:403e091458e388f0b3a0722dad50d0cef5801f6c7a2b883710bd329861f4fe37bc25bed97ee320de50b14418bab107e2e9f5603a919646979f4aa5d0003dfbc8413a3edd8a042daa9dfac1e373e5a14ff61097a9a348ec23ea7181e936de4b7ee75ec2e039991baf99be145c97685461df405c54d23b9bfc405f45892670e8e092e475f07d6ce6fb74a2886e50230ac59562dc512784923c1ea801bb83238d0101d23d9505cc2da18a7d62c3b75df653f0f7c93c262aa55323331549620f7365392e097379153b2d9409791effeffa914059e49032fd91b0b2313e10ef2a0b22359ca6af420bb64ea0622d6f2a0043495b5985ff43972d8eabff52a9477d20d1','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 6','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (7,'2026-10-23 15:27:26.866770','2026-10-23 15:27:26.865741','1970-01-01 00:00:00.001029','rsa_sha256_pss:a57fedb376536b73ae5b8c392dcc97469c9c40cd5b602527363b95995aa7aa8408057be78e704d360eaf3f5697511a843298c5c2ee0e14ddf78eecb3cfb68e798b4d561d837c51022eb2a5cae2d7ddb2224b97bc703c94567ca7570c65751599674ba7b5ed1a69646f03449a626e6f803cf393a52fff77cf1a802280d0d667bd9dd5728e4c3439340b56b84457054f219f8e7684256c3173249f11dd32005c2dbd7847cef488580d00d78fbb9f4dfd23a6187434d48f6ea17e4cc590eb5c799fba59929873bc72d4c702958a0311a4723868ce6451bd6c01f2988ca6fd3603929cab2e3fcaccc4320660d0641289bc0d5fcff4195cb41f69af0b688f88ce27b9','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 6','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (8,'2026-10-22 15:47:05.960082','2026-10-22 15:47:05.959194','1970-01-01 00:00:00.000888','rsa_sha256_pss:0d15e5634e4179828a6549b2974175649319b946d677acf83dd02e84960d5f43f961d76b9704e063cb4443ce9c65f6ad60ecb0f45cee7dfe750c1d9b24b1a105e1e88d675519ff0d599a58b55eb033ef6fc240e72033aba2e7adc333a8090fefe8a7002a16b0af8c92e03a6f595610c885bc3301cc9da7b57c0446cc753e795c00aa3666d4f5aa373e56f180d5ddcd312dd6ca79b3344cf9cf60b89560b8ed7eb65e64eceec0b6306f4293b070c8f0e1c12bb592fcd98f437dd55b0e2709ad3d69ee1052e327f83f5eeb2debba00469261cddafdf0f34abc5d0003fb894d0b473cf851a6e01d44e1045c02489109ccfc98a0f2bf1bdfe20da1e3893723c152d6','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 7','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (8,'2026-10-23 15:27:26.922534','2026-10-23 15:27:26.921557','1970-01-01 00:00:00.000977','rsa_sha256_pss:811039053eb249f14020b8dd780b911de3b59c5d5c20ce8bb793de52b1e2a6e5ef748611a784c03a8c0fcd0a9427bd127202468355f565fb02bbef2ce8643603f79c9f5e75a4aea84dc42a1583791df4f2b760c6a298b70bebfd56c8b480693d489d66b8700b2c980cca668544e3610f3fc7ec2a9c08109468eb556a436e5b6b4e3c40a104ba6e918482af7c025974f6f7cdd0dee7a6b9a39a3f61e8da388a00b5d1c7c4e0c30765b385c6f293cebca2773b97b9d4d46538782239db57fbe3fe64136654a737df18629425fdeecf772cb11867b74b9fb1d93af330fa852b76c2052250ab144ae800e42def087592f0cabacadf0b39b1ab725e60e84bea2bccd7','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 7','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (9,'2026-10-22 15:47:06.011070','2026-10-22 15:47:06.010453','1970-01-01 00:00:00.000617','rsa_sha256_pss:50dea9eec633729a146eeb2a1c1d2f5f228daa5b52a57de328146fae2b4359ea95afa49d408d397611e00ef95bd73d436d59503c9d23864bf31b0a6fad3b168dccf45f6128a97523721817f22a5a296e6c47f458e4277f1623f3f204bc18ae21c48eeed00ec5c23c8ff6eb812dab7865acf16b08bea236e5f3f6cd8d0f4bf2631dbd9b28a1c4149172b132bc9f8bc144b19bc33ef430b240310f7d8584de587191026e56dfff535b5d6f0764a5e70894a5e455e7cd859093e1e799025c4a162549c564a3b9e1f9cecf633aa7dbfc3280f9c635bbebbf613b042c3e5b29a4bbb1b7fcf27ea6b5cd0b714ef9d8350462af523018aa5d110a0fc822529bd9c27740','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 8','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (9,'2026-10-23 15:27:26.979026','2026-10-23 15:27:26.978362','1970-01-01 00:00:00.000664','rsa_sha256_pss:90e504970369682e051dbabee862dfb813e7fedfb5f7e0d5e9d3f7c982cb73cd2ded265d58443d6447f1815ae02975b8399e15fccd72b6817bdd0c67847c6e7089fe3053561f71bd482aacb807968bcd61574279b1b54d04ca6474c7823d94ff7cd61ec5cfa09a9afee17c69d5fcc401ec703cb93ffd61aa03430d134240ebd8bbae0e9f930bb61a71c72caf580965d53a4c2ae88331bbb90341674e2872f9a72caaf96ff10ec68e6fab90bfdecb4ce12f8dd633c06fdab028875ea2564e1220c73a33b335199d72bc3dc47fbe9c57c6f368dec7b44593f1ff1a01f41e97b4e78689ca53409e312bb074b16428ac6f8f4e33a51cf70526a1423b4dc1df86c35d','POST /validate/check',0,'REJECT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 8','','10.0.0.1','','','default','default','0','');
 
-INSERT INTO `pidea_audit` VALUES (10,'2026-10-22 15:47:06.062567','2026-10-22 15:47:06.061965','1970-01-01 00:00:00.000602','rsa_sha256_pss:028bffd9fcd506bbe0892b700381a51605b16962073be2584492e181b0f33a38a3ac82c8dd41e006a1e519df3a1158397ff1f8e4032cce420bcb909af6a1c8b5e2e71c4f63197493022cf4137ddd403b9ae2ed89c61c0a64b78670a99a8a7094aa7dfcd107c6a18ca837f7afc05df2e40a4526955c9b2b64402db00dfc216c6ad7b0c1914504ff6f7271e0d14229dab7beaa7b95869ee6d9a4a8526700303117fee5a784e6bf008445b8bfbeb40f127bb5b283a1b333ec8ab2c21b53aa996f9a486773f648e5e53145d3b3ab469f9e7ec38e2830790886a26c47594cae4889c2b5e587d079318d16e3fc37466825d5da82f9bec10028ed747b1561bdf1507da4','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 9','','10.0.0.1','','','default','default','0','');
+INSERT INTO `pidea_audit` VALUES (10,'2026-10-23 15:27:27.042574','2026-10-23 15:27:27.041572','1970-01-01 00:00:00.001002','rsa_sha256_pss:52a5633e9eb11edd6106c3f522dce70d9819169dfc3ab30569aa2aaf36c0e69d8502c188e962b9631b4e735a8cc2316d3e4536f08f3b15b8d024334c27447dfe03a2a16dc874940594b69610e6f855948ced6b4fb183d3e299a5b3a2fe27c8c68b40183c41f326d36ec4d9ef9e242053b72221779f5b79acbbb5702da90578b8819708f3dc2cb97c2ff2623a622dc17f0ce941f6f42e788383c42162002af61f90e563b5a069b90e800273a832c95b0fe3657481e76fc4592391db15b41606c49b682a6288c64b7d025d98ef9eabb163139d9bebc9b4785f6f786ac55a6cc194da436c24898c43236574bebc7e4c6871bb4dcd41cddd8cb87901d6e4a4b7b4ab','POST /validate/check',1,'ACCEPT','HOTP0001','hotp','','','cornelius','realm1','passwd1','','','entry 9','','10.0.0.1','','','default','default','0','');
 
 COMMIT;
 
@@ -1081,7 +1081,7 @@ CREATE TABLE `radiusserver` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `radiusserver` VALUES (1,'radius1','radius.example.com',1812,'2013eac5c576d546c4e4a614cc47bb17:871d3a542533c084d011ee873591e001','/etc/privacyidea/dictionary','',5,3,'null');
+INSERT INTO `radiusserver` VALUES (1,'radius1','radius.example.com',1812,'78eb19732c9d98fc1d2a6e30125f8332:f360a867348e6906977e3db73eb9fa38','/etc/privacyidea/dictionary','',5,3,'null');
 
 COMMIT;
 
@@ -1177,7 +1177,7 @@ INSERT INTO `resolverconfig` VALUES (3,2,'LDAPBASE','dc=example,dc=org','string'
 
 INSERT INTO `resolverconfig` VALUES (4,2,'BINDDN','cn=admin,dc=example,dc=org','string','');
 
-INSERT INTO `resolverconfig` VALUES (5,2,'BINDPW','a1c4e17d2705a7dfc137b19e88d8ab40:ae671ab64d5fb9ea006ba01f4250caea','password','');
+INSERT INTO `resolverconfig` VALUES (5,2,'BINDPW','8669986319548d811b33b98062018a64:f625384c8c7aa0f7ac021f32f0fcb55b','password','');
 
 INSERT INTO `resolverconfig` VALUES (6,2,'LOGINNAMEATTRIBUTE','uid','string','');
 
@@ -1284,7 +1284,7 @@ INSERT INTO `smsgatewayoption` VALUES (2,'HTTP_METHOD','POST','option',0,1);
 
 INSERT INTO `smsgatewayoption` VALUES (3,'USERNAME','smsuser','option',0,1);
 
-INSERT INTO `smsgatewayoption` VALUES (4,'PASSWORD','7ea76dae59667b7c620a5e4df43390f4:0e87490a590873719c79e2089fde470fd2d5f2f4a4099ca08f06946dd4b47786','option',1,1);
+INSERT INTO `smsgatewayoption` VALUES (4,'PASSWORD','217237df1c7a2135a7ceaa203b8db482:5a22d7f1cfd637fcca590208d032f326bd01f1af8d5302c61f6b5927d240c8bf','option',1,1);
 
 INSERT INTO `smsgatewayoption` VALUES (5,'TEXT','{otp}','option',0,1);
 
@@ -1324,7 +1324,7 @@ CREATE TABLE `smtpserver` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `smtpserver` VALUES (1,'smtp1','mail.example.com',587,'mailer','2236a629fd40aa2d4069e1f26cc463e8:a48953ba7f642b24555ec0fe5720577a','privacyidea@example.com',1,'',10,0,0,0,'','','');
+INSERT INTO `smtpserver` VALUES (1,'smtp1','mail.example.com',587,'mailer','0dac965697a53d7cf505a131f45e4e51:c1edb61d78d9da4bbeabad37c443e94b','privacyidea@example.com',1,'',10,0,0,0,'','','');
 
 COMMIT;
 
@@ -1391,31 +1391,33 @@ CREATE TABLE `token` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `token` VALUES (1,'','HOTP0001','hotp','','','','','',6,'$argon2id$v=19$m=65536,t=9,p=4$Puc8x1gLQQiBkJLSOifEeA$JJ5s5DDENUyQZSJyldXQmvVns4jUq+vv6u5sROD7xrY','f01ed1652f628815b56a33c93b4c33b2750e8e050b78cb13ce2a9aa345dc4f0b58617022e98717c6b47babb2cfb731a7','dd5d2f579c71723c7efa1941a6c6e0df',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (1,'','HOTP0001','hotp','','','','','',6,'$argon2id$v=19$m=65536,t=9,p=4$VQqBEOJcC2HM2TuntBaidA$7Wo3wcmXQtVqE8EMmfSrtmjpc+XW745MqYF3Jf5qDpE','586961c24f48eccf0cb00550e0c39a3f8ca3ee6eff8cc80abce4329418e9bba8c00bb16e9d05d9918e527f61cd7c1064','33460964d409f0c2786b0f13683943ce',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (2,'','TOTP0001','totp','','','','','',6,'$argon2id$v=19$m=65536,t=9,p=4$EMLYG4MQIoSwdg7hHKP0Pg$P3E+Ss/dsxi+H8rBbNsirap2wYlqwYCXuaQPofzL5pk','8916e2aceae4626d51a585e36f5760c6c640ea448f9ffd125e52f6de9674ee1a572a894a1d401dfd9eda48b796054e40','c539bc704c6054da377c953a834721d7',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (2,'','TOTP0001','totp','','','','','',6,'$argon2id$v=19$m=65536,t=9,p=4$H8NYq5VSytnbu3cOQQjhHA$mldI8yBU2U4UluDy+/u9RzF7vxLLJSHCI7E9ZprayOc','3c7fc9ad4957e4e476aad98a4be7db85077a7b056783b2f5bfa5d85bcea67dbc49462c8fcb740f1140461c5168851ace','5ff64a7ee3bd3666f902c50ae657b192',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (3,'','SPASS001','spass','','','','','',6,'$argon2id$v=19$m=65536,t=9,p=4$IOT8fy8FICTEeM/ZOyckxA$fYOLKalJYgc1Gp6Q/YcC3oXWuyzgHWTGck3ce0hZFU8','4f73293f513ca15f043a79227e455f3c5d67249adbac205e886a273e957520fa49dc73d4179976d091ccc6cf34dc2d19','6235eb80286978075ae037a0e8e3d046',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (3,'','SPASS001','spass','','','','','',6,'$argon2id$v=19$m=65536,t=9,p=4$qxUC4Nz739u7V+o95zxHyA$UAbN6/nZzZdWo87pxv2pagavZ9hP7uFKfCbNpKcDv0w','90cdaa4b9af6914940afb8a19066868659185619c439c500ad6d951be11a3f2ea52161b4b83f224ebac3d1efb54193d0','beef4e52792aa4cc1103713b084826b4',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (4,'','PW000001','pw','','','','','',15,'','8c617b8bd4e101629d3131e4f914ffb2','61995464d94f86d330b16694421d6354',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (4,'','PW000001','pw','','','','','',15,'','39466d0fccbc877c5e4187107f9af902','36d1249069e83119419191a183958efb',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (5,'','SSHK0001','sshkey','','','','','',6,'','0c44456b208665965c90bf0376d6db1595f174c0b3ba827f8448b2ae0fe4441f46ff553fea001c2513c4094a9878fef26447e35840bfcacffb87fcacfadd02d0ed895d6a2a6288111b8df82edb02dc78','847d384748c634cac2ae8724f1057916',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (5,'','SSHK0001','sshkey','','','','','',6,'','ab542e8a554e0668d478c9873ce7b4d2300b131e0d95da97011c4dd14e6e0c04be31a9aed1293c166c8f6d5d756d027c372338f8a4c0a54bc6875e99c7680ac3e34aa86f356f4d41aa4583e36f7878bf','c1607967d95184e44fb5502fea55f510',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (6,'','REG00001','registration','','','','','',24,'','addfa3c44f113afddba47f57a6eace901ef094c1b40a59c077272bd377c59e67','f6b1b941f3a2cc4dfb9adb74ca14e130',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (6,'','REG00001','registration','','','','','',24,'','176fc9ab6cbe039a933431d9aa2c95c4540e546100c850fd25bb860da0d68968','cff1a93a61c1a643e1e8c1b931374254',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (7,'','EMAIL001','email','','','','','',6,'','f6e2b7d36c86e55f14ec2be8d7d95f583d082a02b60ce949afeabcdb9536d0faf5e47b6f7c146da3516bb5114aa46f85','8b09448213d0bfebe5ad283d44fdbf11',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (7,'','EMAIL001','email','','','','','',6,'','afc04bb4258abb1b54d6b3ee13a834425442b407fb35bfeb4e835ce992a0e73320e12653d145a365e2e33ea5efdf4f2e','30ac368d37bbff7ff051b663d384356f',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (8,'','SMS00001','sms','','','','','',6,'','158773d7036b3d25b926f52af7520dd7eaa9da14c499218c3fff5c5590fa74ef5134d7bc3e4b6f1cef86f9e2bf908af8','364a982049743017dcc8e57e1f6843e4',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (8,'','SMS00001','sms','','','','','',6,'','fa633ab01dbc7df1d3a322d3e519ef4872a1662a2ff660ccab32f4c4cfe240ed4db4bd4aa250b98e634aec3ddcd982d5','2666154f94ba399cee221c6360add780',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (9,'','IDXS0001','indexedsecret','','','','','',6,'','c9809e2a631836c7b7c799974bf7b0f955091f2574729e1d26db474c1ca2abca','321b860a138fb5790d1d1de656369dac',10,1,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (9,'','IDXS0001','indexedsecret','','','','','',6,'','b6b9b4f0f9149bf3aa41a433ac6d06aa31c42539b8046976fcc51f7cb0736031','058044ed040148c8ff95a0dbedd4353c',10,1,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (10,'','HOTP0002','hotp','','','','','',6,'','ab31372db2b5b96a4c9d80bc09beff33fcde2007e6722cd2578be34f26a68d3c0a5d749bcbefe9c3c5a577b1034be48a','c20dfd652f00bc9787e28e74635f85e8',10,0,0,0,0,0,10,1000,'enrolled');
+INSERT INTO `token` VALUES (10,'','HOTP0002','hotp','','','','','',6,'','53ed6bf11d9584aa9588a71052ba45df637bc1dd5afc65089b989eb7b82655496387a6b4471e560998e0228f8dc95afb','107128d037693ce461633e4e9cee80c4',10,0,0,0,0,0,10,1000,'enrolled');
 
-INSERT INTO `token` VALUES (11,'','WAN00001','webauthn','','','','','',6,'','43a91323b2f318e7b819e8d20720965d','e05c1150f7b4acae3465e4c9f80aafae',10,1,0,0,0,0,10,1000,'');
+INSERT INTO `token` VALUES (11,'','WAN00001','webauthn','','','','','',6,'','56779a4280335ee5010aceb9dd18bfba','e50dc24493e46045fde1129f74c4a270',10,1,0,0,0,0,10,1000,'');
 
-INSERT INTO `token` VALUES (12,'','PUSH0001','push','','','','','',6,'','ad2c309bdbba25fc8eea740937b6f471','0ca57a28855c801027c50a418ff8452f',10,1,0,0,0,0,10,1000,'clientwait');
+INSERT INTO `token` VALUES (12,'','PUSH0001','push','','','','','',6,'','b11ed7e0b773263d80312517ac792137','ad56d08bcc66686262c7c4a7ac749bf4',10,1,0,0,0,0,10,1000,'clientwait');
 
-INSERT INTO `token` VALUES (13,'','TIQR0001','tiqr','','','','','',6,'','0c4567560f34c1792ed06e9130a035d0','161efb7004a9c7c63f9e94000942af18',10,1,0,0,0,0,10,1000,'');
+INSERT INTO `token` VALUES (13,'','TIQR0001','tiqr','','','','','',6,'','c15ec2c7fb7f369a220ccb4aa3ac0ef3','b86802297cf22636032fa59a1b101ef1',10,1,0,0,0,0,10,1000,'');
+
+INSERT INTO `token` VALUES (14,'','CERT0001','certificate','','','','','',6,'','d9db603d8934e909e86caca7c0f53fe1','1b5743c18b1f0904b539b5f1949f6a3e',10,1,0,0,0,0,10,1000,'enrolled');
 
 COMMIT;
 
@@ -1460,9 +1462,9 @@ CREATE TABLE `tokencontainerinfo` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `tokencontainerinfo` VALUES (1,'creation_date','2026-10-22T13:47:06+00:00','pi_internal','',1);
+INSERT INTO `tokencontainerinfo` VALUES (1,'creation_date','2026-10-23T13:27:27+00:00','pi_internal','',1);
 
-INSERT INTO `tokencontainerinfo` VALUES (2,'creation_date','2026-10-22T13:47:06+00:00','pi_internal','',2);
+INSERT INTO `tokencontainerinfo` VALUES (2,'creation_date','2026-10-23T13:27:27+00:00','pi_internal','',2);
 
 COMMIT;
 
@@ -1608,17 +1610,17 @@ CREATE TABLE `tokeninfo` (
 
 SET @OLD_AUTOCOMMIT=@@AUTOCOMMIT, @@AUTOCOMMIT=0;
 
-INSERT INTO `tokeninfo` VALUES (1,'assignment_date','2026-10-22T13:47:04+00:00','','',1);
+INSERT INTO `tokeninfo` VALUES (1,'assignment_date','2026-10-23T13:27:23+00:00','','',1);
 
 INSERT INTO `tokeninfo` VALUES (2,'tokenkind','software','','',1);
 
 INSERT INTO `tokeninfo` VALUES (3,'hashlib','sha1','','',1);
 
-INSERT INTO `tokeninfo` VALUES (4,'creation_date','2026-10-22T13:47:04+00:00','','',1);
+INSERT INTO `tokeninfo` VALUES (4,'creation_date','2026-10-23T13:27:23+00:00','','',1);
 
 INSERT INTO `tokeninfo` VALUES (5,'comment','value with ümlaut','','',1);
 
-INSERT INTO `tokeninfo` VALUES (6,'assignment_date','2026-10-22T13:47:04+00:00','','',2);
+INSERT INTO `tokeninfo` VALUES (6,'assignment_date','2026-10-23T13:27:23+00:00','','',2);
 
 INSERT INTO `tokeninfo` VALUES (7,'tokenkind','software','','',2);
 
@@ -1630,21 +1632,21 @@ INSERT INTO `tokeninfo` VALUES (10,'timeShift','0.0','','',2);
 
 INSERT INTO `tokeninfo` VALUES (11,'timeStep','30','','',2);
 
-INSERT INTO `tokeninfo` VALUES (12,'creation_date','2026-10-22T13:47:04+00:00','','',2);
+INSERT INTO `tokeninfo` VALUES (12,'creation_date','2026-10-23T13:27:23+00:00','','',2);
 
-INSERT INTO `tokeninfo` VALUES (13,'assignment_date','2026-10-22T13:47:04+00:00','','',3);
+INSERT INTO `tokeninfo` VALUES (13,'assignment_date','2026-10-23T13:27:23+00:00','','',3);
 
 INSERT INTO `tokeninfo` VALUES (14,'tokenkind','software','','',3);
 
-INSERT INTO `tokeninfo` VALUES (15,'creation_date','2026-10-22T13:47:04+00:00','','',3);
+INSERT INTO `tokeninfo` VALUES (15,'creation_date','2026-10-23T13:27:23+00:00','','',3);
 
 INSERT INTO `tokeninfo` VALUES (16,'tokenkind','software','','',4);
 
-INSERT INTO `tokeninfo` VALUES (17,'creation_date','2026-10-22T13:47:04+00:00','','',4);
+INSERT INTO `tokeninfo` VALUES (17,'creation_date','2026-10-23T13:27:23+00:00','','',4);
 
-INSERT INTO `tokeninfo` VALUES (18,'assignment_date','2026-10-22T13:47:05+00:00','','',5);
+INSERT INTO `tokeninfo` VALUES (18,'assignment_date','2026-10-23T13:27:23+00:00','','',5);
 
-INSERT INTO `tokeninfo` VALUES (19,'ssh_key','9788966d8a2b5c4ae0b672ec1db89270:31d8d1a9fe11f709309147e53e11e64b10967df2a5059fb95afac92fb0c4931a9603c5272ef4e75297b70f7aa05ac71137514a326402666db0e3df5e0483bbd7f4ad0ded456f9d5c9f13705bd5d1bf07','password','',5);
+INSERT INTO `tokeninfo` VALUES (19,'ssh_key','5e226d02ff662660c66bd9c6b816055d:7529f72033e32e85f4338db2bbf9b4f25029292c0da88832d877a323f4e59bcf16e1c33cd38cc93c8f7c5288014b57b62439a8dbcecd0c6c78e6c2f6487e884186e7991cef15ae982289acea370bd7d7','password','',5);
 
 INSERT INTO `tokeninfo` VALUES (20,'ssh_type','ssh-ed25519','','',5);
 
@@ -1652,15 +1654,15 @@ INSERT INTO `tokeninfo` VALUES (21,'ssh_comment','cornelius@host','','',5);
 
 INSERT INTO `tokeninfo` VALUES (22,'tokenkind','software','','',5);
 
-INSERT INTO `tokeninfo` VALUES (23,'creation_date','2026-10-22T13:47:05+00:00','','',5);
+INSERT INTO `tokeninfo` VALUES (23,'creation_date','2026-10-23T13:27:24+00:00','','',5);
 
-INSERT INTO `tokeninfo` VALUES (24,'assignment_date','2026-10-22T13:47:05+00:00','','',6);
+INSERT INTO `tokeninfo` VALUES (24,'assignment_date','2026-10-23T13:27:24+00:00','','',6);
 
 INSERT INTO `tokeninfo` VALUES (25,'tokenkind','software','','',6);
 
-INSERT INTO `tokeninfo` VALUES (26,'creation_date','2026-10-22T13:47:05+00:00','','',6);
+INSERT INTO `tokeninfo` VALUES (26,'creation_date','2026-10-23T13:27:24+00:00','','',6);
 
-INSERT INTO `tokeninfo` VALUES (27,'assignment_date','2026-10-22T13:47:05+00:00','','',7);
+INSERT INTO `tokeninfo` VALUES (27,'assignment_date','2026-10-23T13:27:24+00:00','','',7);
 
 INSERT INTO `tokeninfo` VALUES (28,'email','cornelius@example.com','','',7);
 
@@ -1668,9 +1670,9 @@ INSERT INTO `tokeninfo` VALUES (29,'tokenkind','software','','',7);
 
 INSERT INTO `tokeninfo` VALUES (30,'hashlib','sha1','','',7);
 
-INSERT INTO `tokeninfo` VALUES (31,'creation_date','2026-10-22T13:47:05+00:00','','',7);
+INSERT INTO `tokeninfo` VALUES (31,'creation_date','2026-10-23T13:27:24+00:00','','',7);
 
-INSERT INTO `tokeninfo` VALUES (32,'assignment_date','2026-10-22T13:47:05+00:00','','',8);
+INSERT INTO `tokeninfo` VALUES (32,'assignment_date','2026-10-23T13:27:24+00:00','','',8);
 
 INSERT INTO `tokeninfo` VALUES (33,'phone','+49123456','','',8);
 
@@ -1678,21 +1680,21 @@ INSERT INTO `tokeninfo` VALUES (34,'tokenkind','software','','',8);
 
 INSERT INTO `tokeninfo` VALUES (35,'hashlib','sha1','','',8);
 
-INSERT INTO `tokeninfo` VALUES (36,'creation_date','2026-10-22T13:47:05+00:00','','',8);
+INSERT INTO `tokeninfo` VALUES (36,'creation_date','2026-10-23T13:27:24+00:00','','',8);
 
-INSERT INTO `tokeninfo` VALUES (37,'assignment_date','2026-10-22T13:47:05+00:00','','',9);
+INSERT INTO `tokeninfo` VALUES (37,'assignment_date','2026-10-23T13:27:24+00:00','','',9);
 
 INSERT INTO `tokeninfo` VALUES (38,'tokenkind','software','','',9);
 
-INSERT INTO `tokeninfo` VALUES (39,'creation_date','2026-10-22T13:47:05+00:00','','',9);
+INSERT INTO `tokeninfo` VALUES (39,'creation_date','2026-10-23T13:27:24+00:00','','',9);
 
-INSERT INTO `tokeninfo` VALUES (40,'assignment_date','2026-10-22T13:47:05+00:00','','',10);
+INSERT INTO `tokeninfo` VALUES (40,'assignment_date','2026-10-23T13:27:24+00:00','','',10);
 
 INSERT INTO `tokeninfo` VALUES (41,'tokenkind','software','','',10);
 
 INSERT INTO `tokeninfo` VALUES (42,'hashlib','sha1','','',10);
 
-INSERT INTO `tokeninfo` VALUES (43,'creation_date','2026-10-22T13:47:05+00:00','','',10);
+INSERT INTO `tokeninfo` VALUES (43,'creation_date','2026-10-23T13:27:24+00:00','','',10);
 
 INSERT INTO `tokeninfo` VALUES (44,'tokenkind','hardware','','',11);
 
@@ -1703,6 +1705,14 @@ INSERT INTO `tokeninfo` VALUES (46,'appId','https://privacyidea.example.com','',
 INSERT INTO `tokeninfo` VALUES (47,'tokenkind','software','','',12);
 
 INSERT INTO `tokeninfo` VALUES (48,'tokenkind','software','','',13);
+
+INSERT INTO `tokeninfo` VALUES (49,'assignment_date','2026-10-23T13:27:26+00:00','','',14);
+
+INSERT INTO `tokeninfo` VALUES (50,'tokenkind','software','','',14);
+
+INSERT INTO `tokeninfo` VALUES (51,'certificate','-----BEGIN CERTIFICATE-----\nMIIE3TCCAsWgAwIBAgIUYFkAhlBCuxMG8s5T6XhZ1gXb4pYwDQYJKoZIhvcNAQEL\nBQAwKzEpMCcGA1UEAwwgcHJpdmFjeUlERUEgc2VlZCBpbnRlcm1lZGlhdGUgQ0Ew\nHhcNMjYwMTAxMDAwMDAwWhcNMzYwMTAxMDAwMDAwWjAUMRIwEAYDVQQDDAljb3Ju\nZWxpdXMwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQCVagPrmivtDSlQ\ncjH9Y9X4u49MFLh85v8Ki3vSbXIERzTXuJVcDpvNReS84bwP2rBNri6JMlIKVFG/\n5+XFnpnOR5y3hKCLcJw+Rmr0/l8O1mB78aaLds8DPaMzRim50hljlFMoYOsqQw7W\nSV0C5X6MK/IS3uH4DiO7gumr6UXH4FYstvfkGf4gDJ9dFbl2I5vyJMgcChTMIFTO\n0Kg9w/b6UYbHBHE6Aq0Qp05xFX2GUyb1aRm6fliW5Uk8YsLPBN7z9eAe8FchIOav\nfxVdn95mwBTBSogp8RDuv35GB9JNGDPFm+cqlpeN3GZixESsTuEhKH9hfu/hi44/\noO5zjUtFeJ9xibMooOXbo/q6C6SnhD07kifA0claK+zJBkIY/824xF6526hXpNhb\nJwwYi/NL28l2kkI02AowiwEI/7/4TEVDO9xV/+CNHUfkL0IYtFtIXgq406Re4Miq\nIgBjgm9wm0b2Xn4vb69qHBqGmTNsxh/0R34zKXuZccS8EMKXrHXpYKQV8UwXhP2C\nk2rg7jDyP8qTmsYkXYc8XB7g1QXrUoeJpDj8V74VyucFe4hQ/bVuabpty62odSvC\ntqM9gLbWsRGmQKOfD3vfmoE3itKv+ZhLYHkJiTV9LQpoQ/wqQHSSboOcsP5kmVCm\nQfpqUEAky5YPkl+lGpjjcI2mItJFtQIDAQABoxAwDjAMBgNVHRMBAf8EAjAAMA0G\nCSqGSIb3DQEBCwUAA4ICAQCMaxfVB9e7b0FkQ/NX/dN/dUBmud4OuDI/WcOqBuYO\nKqFmUvpBnnMD28xPFTsnxk+UBLIG095b8w1mv4xe45oHTIIZXPv8MfmZpC4AaTjq\nEOKqHlckmCvbvv/YW2zBtsaEqwUYPOpv66TxculZEDKeCSAI5bagOdnHS23qeMuj\nCoc6lkuxSboFYG3Q5cm9YNb7EsnbOOOvuXmKzLOvyobdf9auEa3BwsFU+uQX/gB2\nYyfZnhfo1CIlqZTgqF0pXb4VTQX7kwkIasmUUiL6CF/pwjoItN9bCFwPvj1n3ljR\nqeyKg/H96Y34ZCMoGTqNC00FnNaH+Kawvkf8oFIFylIBHbvnQGziLFpikiAdm4aS\ntmNsumyR9FTSpfjGqXfSP3Is7u+bky+IdTa/ELUsY2+0fo/TdbqSYQbnXewbvE3H\nGR2TaBAmpFGtMxVadcCf0adFoQuPeRg3V/EXt6vaym8cnCOWIwjP8k4bRWinvNSu\nB6iosZA9Yb5pKeriKHPzRFu/HkBVqXJatZFNlEnSVs7ah0+ZyYI4/N6xvIwQCuQC\niFIKPn0vlY7WiZkmRwWMg3sN2dNnHcjcvLkdn0ipY0sj2acTrF/erx7FNODKvJ7r\nVoc3YqlkuUlFqkqxsD+eSC+v2FeZaxZr8UQbD5neqVi4x1pNVXWFfbPEfZiU8u0G\nvg==\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIEEDCCAvigAwIBAgIUIOZzV8GUVBSUcEBW73ntwR3zqNowDQYJKoZIhvcNAQEL\nBQAwRDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIGA1UECgwLcHJp\ndmFjeWlkZWExDjAMBgNVBAMMBUNBMDAxMB4XDTI2MDEwMTAwMDAwMFoXDTM2MDEw\nMTAwMDAwMFowKzEpMCcGA1UEAwwgcHJpdmFjeUlERUEgc2VlZCBpbnRlcm1lZGlh\ndGUgQ0EwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQC47y4KJ94knxnS\nhnrKdYf+N5wKIZxPPJAexhQtQrLe3/nmosNtO4kYGEniL6uBsRyEuCaCsJk2Pm3d\neNAOLNbNzm4V+2afH4BOdEkC5H06d84ktIcnXDmZLm9stPYk3uvfeOg9EoaC5SJQ\n2mb0+qWN8Nh4ROKKwKRGeKfP/DToe+lJAeD5ZStNnBIep+2v6WP0GgbQGiLNHH3r\nOaYiWS8BMAOh77LGRSywLSfwwWVbXCyM0xJAi4EUlvD/12akUZHJnB1z0DxjeEuS\nzJX9Esw3kCid0N/CyfSF2Dttb7mW5vvPhuLQ/N/T6T2mvSoXvLvhiBHNSNmQCXHz\nEg1crFvyffuzYgqnoKD29MsB+OIny/zNbyEzN4wYem9+XCnJdAk1m/zXQtfLDipX\ngFjeDaaWfswfUJzlSNYJvqam0B/NhJw/dgey3QmWWqrNNntgiWy/0qYBciCSw706\nC/QKUCspo3F7lWpKdYwmYczgL1qbfPM5qJV/i75Kx45ol+PMFfhQokF36ZKSBpCQ\nSLR0D5qWE/kxOGd6IVeUS3LJ3wsLCOk6UY24RpaB27W6tA6jIdmXan8w0K4+0Ydt\ny4OpVZSaQA8UKnIH1WAs5nSpwFRFP3nSw0cZOKh//a+h7xO6fX1KHJ8eTAaljm+d\ngPRe7GoDjE2k9F+jo6fGUKsfBGah/QIDAQABoxMwETAPBgNVHRMBAf8EBTADAQH/\nMA0GCSqGSIb3DQEBCwUAA4IBAQCrdNve45twN0PYdSU5+drlEAJYStUtaKMr+KBy\nMFDFwxhglRLGbsScg8LCUABbi+swLqquHXXKZw5kpbp01NhqjDCXj/xFty5ttrkz\nr9LjbnXDtNYCtT66LS3k3mGvi2Fs3xmzMAj42WOoGExlbf09EdmNUSt7TJW3tV5E\nwCIrtjMBU2mDaVaATrrlrsdQEfsGJo7ndUbtvRfgrb/z9ecWnYgsV4Gu3CUOUQPK\nCy43m8MC2ZzyzAdc1UlmRdafSTeV1wjZ63v/CKMk4G3x1yLbqDUar9qe20AWGmkb\nYlaI5n9yzDqv+r820CyV2rQpG4wt1I80KR1i0gM1C6ZQFrwx\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMIIDWzCCAkOgAwIBAgIJAPvI66yDzRIHMA0GCSqGSIb3DQEBCwUAMEQxCzAJBgNV\nBAYTAkRFMQ8wDQYDVQQIDAZIZXNzZW4xFDASBgNVBAoMC3ByaXZhY3lpZGVhMQ4w\nDAYDVQQDDAVDQTAwMTAeFw0xNTA0MjIxMzU2MDhaFw0yMDEwMTIxMzU2MDhaMEQx\nCzAJBgNVBAYTAkRFMQ8wDQYDVQQIDAZIZXNzZW4xFDASBgNVBAoMC3ByaXZhY3lp\nZGVhMQ4wDAYDVQQDDAVDQTAwMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoC\nggEBAMCcdwPNvk8BseikUZ9w7PN3y3ZvcNeOQs9ld804tPj2hpJ9LdMw0Z6ZkbBB\n/TPMNOXFklkCTDy2MtvbngXU0Grvy6IZRRDfTkpA3eI/VXPW6Cn3a2WHeYnhEMBo\nI+XC+XLAeLmG8629C820NmBCg5Rg3xsu9uzGEgwK0y3iVmcH7Zi/XgrpI4D1WCjw\nda6E5BAEnuhg8+PrVTK7fxEHv1OtpLyyzVLssBc7DeQPzqnlN6YzW5KrGGunR84s\nyC3WJ4xZ+6pLCrMZOl4gPaoWt4sltKSRcCro440DDdVoDVpVniLey94LVgfUHHX6\nCjkfs5nM8QU2UYiZ42DT53kqnLUCAwEAAaNQME4wHQYDVR0OBBYEFPSnwMyRRq9k\n85HyJ/jIsm+KhzJzMB8GA1UdIwQYMBaAFPSnwMyRRq9k85HyJ/jIsm+KhzJzMAwG\nA1UdEwQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAJKQRaWnSrzMCVrkrD9zGGnq\nXvK7+fcXap6zwUAwu5FTLPl9X67KtH4YcZpvXUQqRJxlFbzIHh+j6/2vk38eb208\nfq5g57PjAQrDR7CCg5r4/d1WmUtFYEf/bdavz67fW9iAAffBbHZKNCyuFA9TrGit\nIBLSh5HQZBPIKK1yV62GUcbWI8hpN+r27ziZ7SjqYVbVoRhq7hq/xNY0b3PJlQOT\nSCw8/pGzWX7r5w4js+KIgEd5x0Vtbg1FU0cc89GJxAw0TuLXs2RPtXzgmwgB4DZy\neV7BGZkSb5hHpM1oyW7K42JHqxh1jeWRxP/7HyCKTMkLiTbYyk2nQSjsGcJ0m7Q=\n-----END CERTIFICATE-----\n','','',14);
+
+INSERT INTO `tokeninfo` VALUES (52,'creation_date','2026-10-23T13:27:26+00:00','','',14);
 
 COMMIT;
 
@@ -1749,6 +1759,8 @@ INSERT INTO `tokenowner` VALUES (11,12,'passwd1','1000',1);
 
 INSERT INTO `tokenowner` VALUES (12,13,'passwd1','1000',1);
 
+INSERT INTO `tokenowner` VALUES (13,14,'passwd1','1000',1);
+
 COMMIT;
 
 SET AUTOCOMMIT=@OLD_AUTOCOMMIT;
@@ -1791,6 +1803,8 @@ INSERT INTO `tokenrealm` VALUES (11,11,1);
 INSERT INTO `tokenrealm` VALUES (12,12,1);
 
 INSERT INTO `tokenrealm` VALUES (13,13,1);
+
+INSERT INTO `tokenrealm` VALUES (14,14,1);
 
 COMMIT;
 
