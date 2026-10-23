@@ -9,6 +9,7 @@ import functools
 import os
 import pathlib
 import re
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -628,6 +629,16 @@ class MigrationTestBase:
         installation on which the migration failed at that point. Follow it with :meth:`_upgrade` to check that the
         migration can run again from there.
         """
+        self._run_failing_after(statement_pattern, self._upgrade)
+
+    def _downgrade_failing_after(self, statement_pattern: str) -> None:
+        """
+        Run the downgrade to PARENT_REVISION, but stop it like :meth:`_upgrade_failing_after`. Follow it with
+        :meth:`_downgrade` to check that the downgrade can run again from there.
+        """
+        self._run_failing_after(statement_pattern, self._downgrade)
+
+    def _run_failing_after(self, statement_pattern: str, step: Callable[[], None]) -> None:
         from privacyidea.models import db
 
         pattern = re.compile(statement_pattern, re.IGNORECASE)
@@ -642,7 +653,7 @@ class MigrationTestBase:
         event.listen(db.engine, "after_cursor_execute", fail_after_matching_statement)
         try:
             with pytest.raises(InjectedFailure):
-                self._upgrade()
+                step()
         finally:
             event.remove(db.engine, "after_cursor_execute", fail_after_matching_statement)
 

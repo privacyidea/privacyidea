@@ -215,11 +215,24 @@ def downgrade():
     if conn.dialect.supports_sequences and sa.inspect(conn).has_sequence(OLD_SEQUENCE_NAME):
         restart_sequence_past_max(op, 'customuserattribute', OLD_SEQUENCE_NAME)
 
+    # A downgrade that failed after copying some rows back copies only the others when it runs again
+    def _copied_back(user_id: str, resolver: str, realm_id: int | None, key: str) -> bool:
+        return conn.execute(
+            sa.select(old.c.id).where(
+                old.c.user_id == user_id,
+                old.c.resolver == resolver,
+                old.c.realm_id == realm_id,
+                old.c.Key == key,
+            )
+        ).first() is not None
+
     fido_rows = conn.execute(
         sa.select(new.c.user_id, new.c.resolver, new.c.realm_id, new.c.Value)
         .where(new.c.Key == FIDO2_USER_ID_KEY)
     ).fetchall()
     for row in fido_rows:
+        if _copied_back(row.user_id, row.resolver, row.realm_id, FIDO2_USER_ID_KEY):
+            continue
         conn.execute(
             old.insert().values(
                 user_id=row.user_id,
@@ -239,6 +252,8 @@ def downgrade():
     for row in last_used_rows:
         value_dict = row.Value or {}
         for user_agent, token_type in value_dict.items():
+            if _copied_back(row.user_id, row.resolver, row.realm_id, f'{LAST_USED_TOKEN_PREFIX}{user_agent}'):
+                continue
             conn.execute(
                 old.insert().values(
                     user_id=row.user_id,
