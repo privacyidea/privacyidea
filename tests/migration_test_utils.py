@@ -16,7 +16,7 @@ from alembic import command
 from alembic.config import Config as AlembicConfig
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, event, inspect as sa_inspect, text
+from sqlalchemy import Sequence, create_engine, event, inspect as sa_inspect, select, text
 from sqlalchemy.engine import Connection, Engine, ExecutionContext
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
@@ -238,12 +238,34 @@ def _id_sequence(table: str) -> str | None:
 
 def next_sequence_value(conn: Connection, sequence: str) -> int:
     """Take the next value of *sequence*, the way privacyIDEA takes the id of a new row."""
-    db_url = str(conn.engine.url)
-    if is_postgres(db_url):
-        return conn.execute(text(f"SELECT nextval('{sequence}')")).scalar()
-    if is_oracle(db_url):
-        return conn.execute(text(f"SELECT {sequence}.NEXTVAL FROM dual")).scalar()
-    return conn.execute(text(f"SELECT NEXT VALUE FOR {sequence}")).scalar()
+    return conn.execute(select(Sequence(sequence).next_value())).scalar()
+
+
+def sequences_behind_their_table(engine: Engine) -> dict[str, tuple[int, int]]:
+    """
+    The tables whose sequence would hand out an id that already exists, as {table: (next value, highest id)}, for every
+    table whose model takes the id from a sequence. Taking the next value leaves a gap of one id in every sequence.
+    Empty on a database without sequences (MySQL).
+    """
+    from privacyidea.models import db
+
+    inspector = sa_inspect(engine)
+    tables = {name.lower() for name in inspector.get_table_names()}
+    behind = {}
+    with engine.connect() as conn:
+        if not conn.dialect.supports_sequences:
+            return behind
+        sequences = {name.lower() for name in inspector.get_sequence_names()}
+        for table in db.metadata.sorted_tables:
+            sequence = _id_sequence(table.name)
+            if sequence is None or table.name not in tables or sequence not in sequences:
+                continue
+            highest_id = conn.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table.name}")).scalar()
+            next_value = next_sequence_value(conn, sequence)
+            if next_value <= highest_id:
+                behind[table.name] = (next_value, highest_id)
+        conn.commit()
+    return behind
 
 
 @functools.cache

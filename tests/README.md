@@ -48,6 +48,7 @@ own (see `test_migration_c8d9e0f1a2b3.py`).
 | **Reversibility** | `downgrade()` crashing | `test_migrations_since_start_revision_are_reversible` |
 | **Data survival** | Rows deleted from tables that survive a downgrade | `test_downgrade_does_not_destroy_data_in_surviving_tables` |
 | **Running again** | `upgrade()` failing or changing the schema or the rows when it runs again on its own result (after a failure midway or a stamp set back by hand) | `test_each_migration_runs_again_on_its_own_result` — from every seed; known exceptions are listed in `NOT_RERUNNABLE_REVISIONS` |
+| **Sequences ahead** | A sequence that hands out ids that already exist, because rows got their ids elsewhere (AUTO_INCREMENT, a data migration inserting rows without an id) | `test_every_sequence_is_ahead_of_its_table_at_head` — from every seed |
 | **Downgrade to a release** | A database of a release, upgraded to head and downgraded back, differing from what it was | `test_downgrade_returns_the_database_of_a_release` — for every release in `RELEASE_HEADS`, from the v3.9 seed upgraded to the release and from the seed of the release; the changes a downgrade does not undo on purpose are listed in `_expected_contents_after_downgrade` |
 
 ### What requires a dedicated test
@@ -194,7 +195,10 @@ a 3.14 migration from the v3.9 seed and the 3.13.4 seed, those of a 3.14.1 migra
 MariaDB, the sequence on PostgreSQL and Oracle), a release seed has none, and only privacyIDEA gives the id, from the
 sequence (MySQL fills it with `AUTO_INCREMENT` in every seed). `_insert_rows` takes the ids from the sequences when
 the test starts from a release seed. A migration that inserts rows without an id passes from the v3.9 seed and fails
-from a release seed.
+from a release seed. The layouts stay different: the id columns get no sequence as their default,
+because a table whose default uses a sequence cannot be restored from a dump on MariaDB (`LOCK TABLES` does not lock
+the sequence) and keeps PostgreSQL from dropping the sequence. Migration 7e3010cbe03e moves every sequence past the
+highest id of its table instead.
 
 ## Running the tests
 

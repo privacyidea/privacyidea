@@ -19,7 +19,7 @@
 from typing import TYPE_CHECKING
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, Sequence, event, inspect, text, types as sqltypes
+from sqlalchemy import Column, Integer, Sequence, event, inspect, select, text, types as sqltypes
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.ext.compiler import compiles
@@ -193,9 +193,13 @@ def sequence_id_column(op, sequence_name):  # pragma: no cover
     return Column('id', Integer(), nullable=False, autoincrement=True)
 
 
-def restart_sequence_past_max(op, table_name, sequence_name):  # pragma: no cover
+def restart_sequence_past_max(op, table_name, sequence_name, only_forward=False):  # pragma: no cover
     """Advance ``sequence_name`` past ``MAX(id)`` in ``table_name`` on backends
     that support sequences; a no-op elsewhere.
+
+    With ``only_forward``, a sequence that is already past ``MAX(id)`` stays
+    where it is. Finding that out takes one value from it, which leaves a gap of
+    one id.
 
     Covers the table-already-exists case where the sequence (newly created or
     pre-existing) would otherwise hand out a value ``<= MAX(id)`` and cause a
@@ -208,6 +212,8 @@ def restart_sequence_past_max(op, table_name, sequence_name):  # pragma: no cove
     bind = op.get_bind()
     if bind.dialect.supports_sequences:
         max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0  # nosec B608
+        if only_forward and bind.execute(select(Sequence(sequence_name).next_value())).scalar() > max_id:
+            return
         op.execute(build_restart_sequence_sql(sequence_name, max_id + 1, bind.dialect.name))
 
 

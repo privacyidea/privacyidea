@@ -83,6 +83,7 @@ from tests.migration_test_utils import (
     load_seed,
     quote_identifier,
     revisions_up_to,
+    sequences_behind_their_table,
     set_stamp_before,
 )
 
@@ -724,6 +725,26 @@ def test_model_created_schema_accepts_a_row_in_every_table(flask_app):
         "write those tables:\n"
         + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
     )
+
+
+@pytest.mark.parametrize("seed", sorted(SEEDS))
+def test_every_sequence_is_ahead_of_its_table_at_head(flask_app, seed: str):
+    """
+    After the upgrade to head, the sequence of every table whose model takes the id from one hands out ids after the
+    highest id of the table, also where rows got their ids elsewhere, e.g. from AUTO_INCREMENT or from a data migration
+    that inserted them without an id (see migration 7e3010cbe03e).
+    """
+    from flask_migrate import upgrade as flask_upgrade
+
+    load_seed(SEEDS[seed])
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    try:
+        behind = sequences_behind_their_table(engine)
+    finally:
+        engine.dispose()
+    assert not behind, f"These sequences hand out ids that exist, as {{table: (next value, highest id)}}: {behind}"
 
 
 def test_all_down_revisions_point_to_existing_revisions():
