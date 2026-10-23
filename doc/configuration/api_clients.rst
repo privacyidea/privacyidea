@@ -203,6 +203,18 @@ is the first knob to reach for against false positives; it trades
 theft-detection tightness for fewer of them. The user is never wrongly
 authenticated either way.
 
+The source IP is the client IP privacyIDEA determines for the request. Without
+further configuration that is the address of the integration, which is the same
+for every user behind it, so for such an integration the exception is only
+bounded by time. If the integration passes the end user's address (as ``client``
+parameter or in ``X-Forwarded-For``) and :ref:`override_client` allows that for
+the integration, the duplicate request has to come from the address the device
+was last seen at, and the list of remembered devices shows the end users'
+addresses. Configuring the override this way is recommended for integrations
+that can pass the address. Turning it on or off later does not affect the
+remembered devices: a recognition with the current counter does not compare
+addresses, and it records the new one.
+
 
 .. _api_clients_revoking_devices:
 
