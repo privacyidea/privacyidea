@@ -56,6 +56,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
                                                                            build_reason_detail,
                                                                            NO_FIRST_FACTOR_KEY)
+from privacyidea.lib.conditional_access.request_context import confirm_attempt_for_serials
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_auth_time_limit
@@ -436,6 +437,10 @@ def auth_user_timelimit(wrapped_function: Callable, user: User, password: str,
     if options.get("g"):
         time_limit = check_auth_time_limit(user)
         if not time_limit.allowed:
+            if options.get("transaction_id") or options.get("state"):
+                # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer
+                from privacyidea.lib.token import get_tokens
+                confirm_attempt_for_serials(token.token.serial for token in get_tokens(user=user))
             # Set on the lib-to-api channel every classification uses (see AUTH_EVENT_TYPE_KEY), which the view pops
             # to read and the response boundary strips whatever is left.
             reply_dict = dict(time_limit.reply_dict)

@@ -1366,6 +1366,27 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         reason=AuthEventReason.AUTHORIZATION_DENIED, policies=["authlog_deny"],
                                         reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path)
 
+    def test_attempt_id_groups_an_answer_refused_by_auth_max_fail(self):
+        # An answer refused before its token is checked is still a step of the attempt of the challenge it answers
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
 
 class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     """The shared contract plus /auth-only cases: local-admin login, divergent error codes and authorization."""
