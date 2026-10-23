@@ -111,7 +111,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
-                                           disabled_token_types, load_challenge_text)
+                                           disabled_token_types, load_challenge_text,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
                                                     RejectionShape, REMEMBER_DEVICE_REJECTION,
                                                     TRIGGER_CHALLENGE_REJECTION)
@@ -1016,6 +1017,7 @@ def _handle_serial_auth(context: dict, serial: str):
             request.User = user
             context["user"] = user
             context["options"]["user"] = user
+            context["options"].update(rerun_user_dependent_prepolicies(request))
 
     # Perform Check
     if not otp_only:

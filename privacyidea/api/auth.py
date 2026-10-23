@@ -83,7 +83,8 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           disabled_token_types, auth_timelimit, load_challenge_text)
+                                           disabled_token_types, auth_timelimit, load_challenge_text,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token,
@@ -719,8 +720,7 @@ def get_auth_token():
                     # row, which a refused login must not be given the chance to write.
                     reject_locked_fallback_user(user)
                     auth_timelimit(request, None)
-                    increase_failcounter_on_challenge(request, None)
-                    disabled_token_types(request, None)
+                    rerun_user_dependent_prepolicies(request)
 
             if local_admin_exist and not user.exist():
                 # Only a local admin's wrong password is left, and the WebUI login mode does not apply to local admins

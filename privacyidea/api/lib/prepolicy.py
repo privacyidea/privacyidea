@@ -3294,6 +3294,28 @@ def disabled_token_types(request, action):
     return True
 
 
+def rerun_user_dependent_prepolicies(request: Request) -> dict:
+    """
+    Match the pre-policies that depend on the user again, for a request whose user is only known after the
+    pre-policies ran, e.g. the owner of the token named by serial or credential id.
+
+    The pre-policies that rewrite the user (set_realm, mangle) are not run again, nor the ones an endpoint sets up
+    differently (pushtoken_validate, pushtoken_disable_wait).
+
+    :param request: The request object with the user to match the policies for in request.User
+    :return: The parameters the pre-policies changed in request.all_data, for a caller that copied them before
+    """
+    previous = dict(request.all_data)
+    increase_failcounter_on_challenge(request, None)
+    webauthntoken_request(request, None)
+    webauthntoken_authz(request, None)
+    disabled_token_types(request, None)
+    load_challenge_text(request, None)
+    fido2_auth(request, None)
+    return {key: value for key, value in request.all_data.items()
+            if key not in previous or previous[key] != value}
+
+
 def auth_timelimit(request, action):
     """
     This decorator retrieves the auth timelimit from the policies and adds it to the request data.
