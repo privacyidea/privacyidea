@@ -1985,8 +1985,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
                                                      transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
-                                        transaction_id=transaction_id, endpoint='/validate/check',
-                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+                                        serials={self.passkey_serial}, transaction_id=transaction_id,
+                                        endpoint='/validate/check', reason=AuthEventReason.AUTH_MAX_FAIL)
 
     def test_27c_auth_max_success_on_usernameless_login(self):
         self.passkey_serial = self._enroll_static_passkey()

@@ -3832,8 +3832,8 @@ class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL,
                                              AuthEventType.NOT_AUTHORIZED], transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=User("cornelius", self.realm1),
-                                        transaction_id=transaction_id, endpoint="/validate/check",
-                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint="/validate/check", reason=AuthEventReason.AUTH_MAX_FAIL)
 
     def test_07_auth_max_success_by_serial(self):
         self._set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=1/1m")
