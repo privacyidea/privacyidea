@@ -2869,6 +2869,23 @@ class TokenContainerTemplateTestCase(MyTestCase):
 
         template.delete()
 
+    def test_21a_compare_container_with_template_without_options(self):
+        # A template created without options has no tokens to compare
+        create_container_template(container_type="generic", template_name="no_options", options={})
+        template = get_template_obj("no_options")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        token = init_token({"type": "spass"})
+        container.add_token(token)
+
+        result = compare_template_with_container(template, container)
+        self.assertEqual([], result["tokens"]["missing"])
+        self.assertEqual(["spass"], result["tokens"]["additional"])
+
+        template.delete()
+        delete_container_by_serial(container_serial)
+        remove_token(token.get_serial())
+
     def test_22_get_template_options_as_dict(self):
         # create template
         template_options = {"tokens": [{"type": "hotp", "genkey": True}, {"type": "totp", "genkey": True}]}
