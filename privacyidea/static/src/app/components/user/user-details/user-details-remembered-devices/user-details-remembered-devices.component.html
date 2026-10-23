@@ -161,13 +161,16 @@
             class="col-width-s"
             mat-cell>
             @if (authService.actionAllowed("remembered_device_revoke")) {
-              <button
-                (click)="revokeDevice(device)"
-                matTooltip="Revoke this device"
-                i18n-matTooltip="@@apiClient.revokeThisDevice"
-                mat-icon-button>
-                <mat-icon>delete</mat-icon>
-              </button>
+              <!-- Icon buttons are flex boxes (see _material-overrides.scss), which text-align does not move -->
+              <div class="flex-center">
+                <button
+                  (click)="revokeDevice(device)"
+                  matTooltip="Revoke this device"
+                  i18n-matTooltip="@@apiClient.revokeThisDevice"
+                  mat-icon-button>
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             }
           </td>
         </ng-container>
@@ -189,13 +192,16 @@
       </table>
     </div>
 
-    <mat-paginator
-      (page)="onPage($event)"
-      [length]="count()"
-      [pageIndex]="pageIndex()"
-      [pageSize]="pageSize()"
-      [pageSizeOptions]="pageSizeOptions"
-      showFirstLastButtons />
+    <!-- Only needed when there is more than one page; also kept on a later page, so it never strands an emptied one -->
+    @if (count() > pageSize() || pageIndex() > 0) {
+      <mat-paginator
+        (page)="onPage($event)"
+        [length]="count()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="pageSizeOptions"
+        showFirstLastButtons />
+    }
   } @else {
     <app-table-state
       [table]="tableState"
