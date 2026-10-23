@@ -3,6 +3,9 @@
 The table is only created when it does not exist yet, and the data step skips rows that are already moved, so the
 migration can run again on its own result.
 
+The downgrade copies the rows back with ids from customuserattribute_seq and stops before it drops the table if the
+copy fails.
+
 Revision ID: 7d4e9b2c1a3f
 Revises: b1a2c3d4e5f6
 Create Date: 2026-04-28 00:00:00.000000
@@ -25,6 +28,7 @@ branch_labels = None
 depends_on = None
 
 SEQUENCE_NAME = "internaluserattribute_seq"
+OLD_SEQUENCE_NAME = "customuserattribute_seq"
 FIDO2_USER_ID_KEY = 'fido2_user_id'
 LAST_USED_TOKEN_KEY = 'last_used_token'
 LAST_USED_TOKEN_PREFIX = 'last_used_token_'
@@ -44,6 +48,24 @@ def _old_table():
         sa.column('Key', sa.Unicode(255)),
         sa.column('Value', sa.UnicodeText),
         sa.column('Type', sa.Unicode(100)),
+    )
+
+
+def _old_table_with_sequence():
+    """
+    customuserattribute for the inserts of the downgrade: the copied rows take their id from customuserattribute_seq,
+    like every row privacyIDEA writes, also where the id column has no default.
+    """
+    return sa.Table(
+        'customuserattribute',
+        sa.MetaData(),
+        sa.Column('id', sa.Integer, sa.Sequence(OLD_SEQUENCE_NAME), primary_key=True),
+        sa.Column('user_id', sa.Unicode(320)),
+        sa.Column('resolver', sa.Unicode(120)),
+        sa.Column('realm_id', sa.Integer),
+        sa.Column('Key', sa.Unicode(255)),
+        sa.Column('Value', sa.UnicodeText),
+        sa.Column('Type', sa.Unicode(100)),
     )
 
 
@@ -182,47 +204,66 @@ def _run_data_migration(conn) -> None:
 
 
 def downgrade():
-    # Best-effort rollback: copy the data back into customuserattribute and drop the new table.
+    # Copy the data back into customuserattribute, then drop the new table. A failed copy stops the downgrade before
+    # the table and its data are dropped.
     conn = op.get_bind()
-    old = _old_table()
+    old = _old_table_with_sequence()
     new = _new_table()
 
-    try:
-        fido_rows = conn.execute(
-            sa.select(new.c.user_id, new.c.resolver, new.c.realm_id, new.c.Value)
-            .where(new.c.Key == FIDO2_USER_ID_KEY)
-        ).fetchall()
-        for row in fido_rows:
+    # The copied rows take their ids from the sequence. Rows that got their id from the column default can be ahead
+    # of it, so it starts after the highest id.
+    if conn.dialect.supports_sequences and sa.inspect(conn).has_sequence(OLD_SEQUENCE_NAME):
+        restart_sequence_past_max(op, 'customuserattribute', OLD_SEQUENCE_NAME)
+
+    # A downgrade that failed after copying some rows back copies only the others when it runs again
+    def _copied_back(user_id: str, resolver: str, realm_id: int | None, key: str) -> bool:
+        return conn.execute(
+            sa.select(old.c.id).where(
+                old.c.user_id == user_id,
+                old.c.resolver == resolver,
+                old.c.realm_id == realm_id,
+                old.c.Key == key,
+            )
+        ).first() is not None
+
+    fido_rows = conn.execute(
+        sa.select(new.c.user_id, new.c.resolver, new.c.realm_id, new.c.Value)
+        .where(new.c.Key == FIDO2_USER_ID_KEY)
+    ).fetchall()
+    for row in fido_rows:
+        if _copied_back(row.user_id, row.resolver, row.realm_id, FIDO2_USER_ID_KEY):
+            continue
+        conn.execute(
+            old.insert().values(
+                user_id=row.user_id,
+                resolver=row.resolver,
+                realm_id=row.realm_id,
+                Key=FIDO2_USER_ID_KEY,
+                Value=row.Value,
+                # The column default, which the passkey enrollment of the releases before wrote
+                Type='',
+            )
+        )
+
+    last_used_rows = conn.execute(
+        sa.select(new.c.user_id, new.c.resolver, new.c.realm_id, new.c.Value)
+        .where(new.c.Key == LAST_USED_TOKEN_KEY)
+    ).fetchall()
+    for row in last_used_rows:
+        value_dict = row.Value or {}
+        for user_agent, token_type in value_dict.items():
+            if _copied_back(row.user_id, row.resolver, row.realm_id, f'{LAST_USED_TOKEN_PREFIX}{user_agent}'):
+                continue
             conn.execute(
                 old.insert().values(
                     user_id=row.user_id,
                     resolver=row.resolver,
                     realm_id=row.realm_id,
-                    Key=FIDO2_USER_ID_KEY,
-                    Value=row.Value,
-                    Type=None,
+                    Key=f'{LAST_USED_TOKEN_PREFIX}{user_agent}',
+                    Value=token_type,
+                    Type='pi_internal',
                 )
             )
-
-        last_used_rows = conn.execute(
-            sa.select(new.c.user_id, new.c.resolver, new.c.realm_id, new.c.Value)
-            .where(new.c.Key == LAST_USED_TOKEN_KEY)
-        ).fetchall()
-        for row in last_used_rows:
-            value_dict = row.Value or {}
-            for user_agent, token_type in value_dict.items():
-                conn.execute(
-                    old.insert().values(
-                        user_id=row.user_id,
-                        resolver=row.resolver,
-                        realm_id=row.realm_id,
-                        Key=f'{LAST_USED_TOKEN_PREFIX}{user_agent}',
-                        Value=token_type,
-                        Type='pi_internal',
-                    )
-                )
-    except (OperationalError, ProgrammingError) as ex:
-        print(f"Could not copy data back to 'customuserattribute': {ex}")
 
     try:
         op.drop_table('internaluserattribute')

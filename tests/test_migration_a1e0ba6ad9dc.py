@@ -98,13 +98,14 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_u2f_token(engine, 1001, "U2F_MIGR_001")
         self._insert_u2f_token(engine, 1002, "U2F_MIGR_002")
+        u2f_tokens = self._count_tokens_of_type(engine, "u2f")
         engine.dispose()
 
         self._upgrade()
 
         engine = self._engine()
         self.assertEqual_(self._count_tokens_of_type(engine, "u2f"), 0)
-        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), 2)
+        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), u2f_tokens)
         self.assertEqual_(self._fetch_token_type(engine, 1001), "deprecated")
         self.assertEqual_(self._fetch_token_type(engine, 1002), "deprecated")
         engine.dispose()
@@ -177,17 +178,21 @@ class TestMigrationA1e0ba6ad9dc(MigrationTestBase):
         self.assertEqual_(self._fetch_tokeninfo_value(engine, 1001, "appId"), "https://example.com")
         engine.dispose()
 
-    def test_upgrade_is_noop_when_no_u2f_tokens(self, flask_app):
-        """upgrade() must not error when there are no u2f tokens."""
+    def test_upgrade_deprecates_only_u2f_tokens(self, flask_app):
+        """
+        upgrade() must leave the tokens of other types as they are, and must not fail when there are no u2f tokens at
+        all, as in the v3.9 seed.
+        """
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_other_token(engine, 1002, "HOTP_MIGR_001", "hotp")
+        u2f_tokens = self._count_tokens_of_type(engine, "u2f")
         engine.dispose()
 
-        self._upgrade()  # must not raise
+        self._upgrade()
 
         engine = self._engine()
-        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), 0)
+        self.assertEqual_(self._count_tokens_of_type(engine, "deprecated"), u2f_tokens)
         self.assertEqual_(self._fetch_token_type(engine, 1002), "hotp")
         engine.dispose()
 

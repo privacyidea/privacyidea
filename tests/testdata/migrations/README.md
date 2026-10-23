@@ -1,7 +1,8 @@
 # Migration Test Data
 
 This directory contains dialect-specific SQL seed files used by the migration
-test suite.
+test suite: the v3.9 seed, which every migration test starts from, and the
+release seeds (see "Release seeds" below).
 
 ## Naming convention
 
@@ -47,7 +48,39 @@ incompatible:
   `LONGTEXT` `Value` columns (`tokeninfo`, `smsgatewayoption`,
   `customuserattribute`) drop their `DEFAULT ''` in the `mysql` seed.
 
-## Generating seeds
+## Release seeds
+
+A release seed is a database that `pi-manage setup create_tables` of a release
+created and the code of the release filled, dumped as SQL. It differs from the
+v3.9 seed in what the tests need to see: the id columns have no default (only
+privacyIDEA gives the id, from the sequence; MySQL uses `AUTO_INCREMENT`), the
+container tables have identity columns, the constraints have the names the
+database gave them, and the rows are the ones the release writes, including
+u2f tokens, internal user attributes, SMS gateway secrets, SSH key tokens and a
+certificate token whose certificate chain has line breaks and is longer than an
+Oracle string literal.
+
+`tools/generate_release_seed.py` creates them against the database containers
+of `compose-dev.yml`. It runs the release from `git archive` with the Python of
+the current environment, encrypts with `tests/testdata/enckey` (the key of the
+test configuration) and stamps the file name with the revision that
+`create_tables` stamped:
+
+```bash
+for engine in postgresql mariadb mysql oracle; do
+    python tools/generate_release_seed.py v3.13.4 3.13.4 $engine
+done
+```
+
+3.14.0 was released from commit `0aa4afc4d`, not from the tag `v3.14`, which
+was moved afterwards; its seeds are generated from that commit. The script
+loads every seed it writes into a second database, the way the tests read it,
+and compares it table by table with the database it dumped; a seed that does
+not come back the same stops it. The files are not edited by hand. To change the data, change the fill step of the script and
+generate them again. When a release is published, generate its seeds and add
+its head revision to `RELEASE_HEADS` in `tests/migration_test_utils.py`.
+
+## Generating the v3.9 seed
 
 Use `tools/generate_seed_sql.py` to generate seeds from a historical version
 of the models. The tool can load a single historical `models.py` (extracted
@@ -74,6 +107,13 @@ The tool emits the schema DDL (the Oracle dialect also injects
 then hand-extended with representative `INSERT` rows, `START WITH` values on the
 MariaDB sequences (omitted entirely for MySQL — see above), and the
 `alembic_version` stamp.
+
+The DDL comes from the models without a database, so it is not the DDL of an
+installation: on MariaDB the ids are `AUTO_INCREMENT`, because the dialect has
+no connection that tells it about sequences, and on PostgreSQL and Oracle the
+ids default to the next value of their sequence, which the seed added by hand.
+A database that `create_tables` created has no such defaults. That is what the
+release seeds are for.
 
 ## Updating the seed pin
 

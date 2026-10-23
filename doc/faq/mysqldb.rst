@@ -16,10 +16,12 @@ Tested database versions
 
 The continuous integration runs the full test suite against **MariaDB 10.11**
 (the LTS most installations run) and **PostgreSQL 17**. On every change to the
-database models or migrations it additionally runs the migration test suite,
-which verifies that the schema migrations apply cleanly in both directions
-(upgrade *and* downgrade) starting from the v3.9 schema — against **MariaDB
-10.11 and 11**, **MySQL 8.4** and **PostgreSQL 17**. A single-node MariaDB Galera cluster is
+database models or migrations it additionally runs the migration test suite
+against **MariaDB 10.11 and 11**, **MySQL 8.4** and **PostgreSQL 17**. It
+upgrades databases of version 3.9 and databases as recent releases create them,
+with their data, to the current schema and downgrades them back, and it runs
+every migration a second time, as after a failed update. It also restores
+backups made with ``pi-manage backup``. A single-node MariaDB Galera cluster is
 covered as well, to catch cluster-specific DDL constraints.
 
 **SQLite** is the default for development and small, single-node installations.

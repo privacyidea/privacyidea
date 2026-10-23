@@ -35,6 +35,7 @@ BEFORE_U2F_DEPRECATION_MIGRATION = "b1a2c3d4e5f6"
 class TestMigration4b810261d282(MigrationTestBase):
     REVISION = "4b810261d282"
     PARENT_REVISION = "9e8487714b46"
+    STARTS_BEFORE = "a1e0ba6ad9dc"
 
     def test_upgrade_lets_the_model_add_internal_user_attributes(self, flask_app):
         """
@@ -59,7 +60,8 @@ class TestMigration4b810261d282(MigrationTestBase):
             db.session.commit()
 
         engine = self._engine()
-        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM internaluserattribute") == 7
+        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM internaluserattribute WHERE user_id LIKE 'moved%' "
+                                          "OR user_id LIKE 'new%'") == 7
         engine.dispose()
 
     def test_upgrade_lets_the_model_add_token_info(self, flask_app):
@@ -74,7 +76,6 @@ class TestMigration4b810261d282(MigrationTestBase):
             {"id": token_id, "serial": f"U2F{token_id}", "tokentype": "u2f", "active": True}
             for token_id in token_ids
         ])
-        token_info_count = self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo")
         engine.dispose()
 
         self._upgrade()
@@ -88,6 +89,6 @@ class TestMigration4b810261d282(MigrationTestBase):
 
         engine = self._engine()
         markers_per_token = 3
-        expected = token_info_count + len(token_ids) * (markers_per_token + len(new_keys))
-        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo") == expected
+        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo WHERE token_id IN (9001, 9002, 9003)") == (
+            len(token_ids) * (markers_per_token + len(new_keys)))
         engine.dispose()

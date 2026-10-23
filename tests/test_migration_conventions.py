@@ -173,8 +173,19 @@ LINTED_AFTER_REVISION = "d3a4b5c6e7f8"
 # together with the fix.
 MIGRATION_LINT_EXCEPTIONS = {
     # The data step inserts the moved rows without an id (4b810261d282 restarts the sequence after them). The downgrade
-    # prints a failed copy-back and drops the table anyway.
-    "7d4e9b2c1a3f": {"insert-without-sequence-id", "swallowed-error"},
+    # recognises a table that is already gone by the error text, see below.
+    "7d4e9b2c1a3f": {"insert-without-sequence-id", "error-text-guard"},
+    # The downgrade drops the table of the migration and recognises a table that is already gone by the error text.
+    # The texts it checks match on PostgreSQL, MariaDB, MySQL, Oracle and SQLite.
+    "0147d78cbace": {"error-text-guard"},
+    "173d32328846": {"error-text-guard"},
+    "b2f5c9e1a7d4": {"error-text-guard"},
+    "b7c8d9e0f1a2": {"error-text-guard"},
+    "c1a9f7e2b840": {"error-text-guard"},
+    "c8d9e0f1a2b3": {"error-text-guard"},
+    "d3e8b1c47f92": {"error-text-guard"},
+    "d4f5a6b7c8e9": {"error-text-guard"},
+    "d9e0f1a2b3c4": {"error-text-guard"},
     # Ignores every OperationalError and ProgrammingError of CREATE SEQUENCE and DROP SEQUENCE, not only the ones of a
     # database without sequences.
     "c2d3e4f5a6b7": {"swallowed-error"},
@@ -198,7 +209,10 @@ LINT_RULES = {
 }
 
 # Error texts that a guard compares the error message with, as databases word them for an object that already exists
-ERROR_TEXTS = ("already exists", "duplicate column", "duplicate key", "already used")
+# or that does not exist
+ERROR_TEXTS = ("already exists", "duplicate column", "duplicate key", "already used",
+               "does not exist", "doesn't exist", "no such table", "no such column", "no such constraint",
+               "unknown table", "can't drop")
 
 # Exceptions that a migration must not catch without re-raising them
 DATABASE_ERRORS = {"Exception", "BaseException", "SQLAlchemyError", "DBAPIError", "DatabaseError", "OperationalError",
@@ -385,3 +399,17 @@ def test_lint_flags_error_text_guards_and_swallowed_errors():
         "        pass\n"
     )
     assert _migration_lint_findings(source, set()) == {"error-text-guard": ["line 4"], "swallowed-error": ["line 9"]}
+
+
+def test_lint_flags_guards_on_a_missing_object():
+    source = (
+        "def downgrade():\n"
+        "    try:\n"
+        "        op.drop_table('usersetting')\n"
+        "    except (OperationalError, ProgrammingError) as error:\n"
+        "        if 'no such table' in str(error) or 'does not exist' in str(error):\n"
+        "            print('Table already removed.')\n"
+        "        else:\n"
+        "            raise\n"
+    )
+    assert _migration_lint_findings(source, set()) == {"error-text-guard": ["line 4"]}
