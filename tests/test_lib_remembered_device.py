@@ -8,8 +8,11 @@ from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          create_remembered_device, consume_remember_device_cookie,
                                          get_valid_device, user_identity, UserIdentity, rotate_device,
                                          cleanup_expired_remembered_devices, count_user_devices,
-                                         hash_series_id, parse_device_duration,
+                                         hash_series_id, parse_device_duration, remove_idle_devices,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, delete_policy, get_policies, set_policy
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
 from privacyidea.models import RememberedDevice, db
@@ -318,7 +321,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
                            .values(counter=loaded.counter + 1, last_used_at=utc_now()))
         db.session.commit()
 
-        self.assertIsNone(rotate_device(loaded, parse_cookie(cookie)[0], "10.0.0.1"))
+        self.assertIsNone(rotate_device(loaded, "10.0.0.1"))
 
     def test_a_cookie_rotated_by_another_request_is_graced_or_reused(self):
         # The same situation through consume_remember_device_cookie: the presented cookie now carries the
@@ -349,8 +352,8 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # the cookie one counter behind - a duplicate of the request that won, from the same address.
         real_rotate = remembered_device_module.rotate_device
 
-        def rotated_by_someone_else(device, series_id, client_ip=None):
-            real_rotate(device, series_id, client_ip)
+        def rotated_by_someone_else(device, client_ip=None):
+            real_rotate(device, client_ip)
             return None
 
         with patch.object(remembered_device_module, "rotate_device", side_effect=rotated_by_someone_else):
@@ -400,7 +403,8 @@ class RememberedDeviceLibTestCase(MyTestCase):
         # A number without a unit counts as days
         self.assertEqual(timedelta(days=7), parse_device_duration("7"))
         # Empty, malformed, zero and negative values set no duration
-        for value in (None, "", "   ", "abc", "5x", "h", "1.5h", "0", "0h", "-5d", "+-5d"):
+        # A value with a space would be split into two values by the policy
+        for value in (None, "", "   ", "abc", "5x", "h", "1.5h", "12H", "1d12h", "8 h", "0", "0h", "-5d", "+-5d"):
             self.assertIsNone(parse_device_duration(value), value)
         # A duration is at most MAX_DEVICE_VALIDITY_DAYS, also one too large for a timedelta
         max_duration = timedelta(days=MAX_DEVICE_VALIDITY_DAYS)
@@ -469,14 +473,55 @@ class RememberedDeviceLibTestCase(MyTestCase):
         result = consume_remember_device_cookie(result.cookie_value, client_id, sam, idle_timeout=timedelta(hours=1))
         self.assertEqual("recognized", result.status)
 
-    def test_idle_devices_are_not_counted(self):
+    def test_replay_on_an_idle_device_is_theft(self):
+        # An outdated counter is reported as a replay before the idle timeout is looked at
         client_id = self._client_id()
+        uma = self._identity("uma")
+        device, cookie = create_remembered_device(uma, client_id)
+        stored_series_id = device.series_id
+        consume_remember_device_cookie(cookie, client_id, uma)   # -> counter 2
+        stored = RememberedDevice.query.filter_by(series_id=stored_series_id).first()
+        stored.last_used_at = utc_now() - timedelta(hours=2)
+        stored.save()
+
+        result = consume_remember_device_cookie(cookie, client_id, uma, idle_timeout=timedelta(hours=1))
+        self.assertEqual("theft", result.status)
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=stored_series_id).first())
+
+    def test_remove_idle_devices(self):
+        # Only the idle devices of this user on this client are removed
+        client_id = self._client_id()
+        other_client_id = self._client_id()
         tara = self._identity("tara")
         idle, _cookie = create_remembered_device(tara, client_id)
         idle.created_at = utc_now() - timedelta(hours=2)
         idle.save()
-        create_remembered_device(tara, client_id)
+        idle_series_id = idle.series_id
+        used, _cookie = create_remembered_device(tara, client_id)
+        used.created_at = utc_now() - timedelta(hours=2)
+        used.last_used_at = utc_now() - timedelta(minutes=10)
+        used.save()
+        fresh, _cookie = create_remembered_device(tara, client_id)
+        other_user, _cookie = create_remembered_device(self._identity("ulf"), client_id)
+        other_client, _cookie = create_remembered_device(tara, other_client_id)
+        for device in (other_user, other_client):
+            device.created_at = utc_now() - timedelta(hours=2)
+            device.save()
+        kept = {used.series_id, fresh.series_id, other_user.series_id, other_client.series_id}
 
+        self.assertEqual(1, remove_idle_devices(client_id, tara, timedelta(hours=1)))
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=idle_series_id).first())
+        self.assertEqual(kept, {device.series_id for device in RememberedDevice.query.filter(
+            RememberedDevice.series_id.in_(kept)).all()})
         self.assertEqual(2, count_user_devices(client_id, tara.resolver, tara.user_id, tara.realm_id))
-        self.assertEqual(1, count_user_devices(client_id, tara.resolver, tara.user_id, tara.realm_id,
-                                               idle_timeout=timedelta(hours=1)))
+
+    def test_duration_policy_values_are_checked_when_saved(self):
+        self.addCleanup(lambda: delete_policy("duration_check") if get_policies(name="duration_check") else None)
+        for action in (PolicyAction.REMEMBER_DEVICE_VALIDITY, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT):
+            for value in ("8h", "30", "90m"):
+                set_policy("duration_check", scope=SCOPE.AUTH, action=f"{action}={value}")
+            for value in ("12H", "1d12h", "1.5d", "8 h", "0", "-5d"):
+                with self.assertRaises(ParameterError, msg=f"{action}={value}"):
+                    set_policy("duration_check", scope=SCOPE.AUTH, action=f"{action}={value}")
+            with self.assertRaises(ParameterError):
+                set_policy("duration_check", scope=SCOPE.AUTH, action=action)

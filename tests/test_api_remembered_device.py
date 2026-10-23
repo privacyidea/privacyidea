@@ -216,9 +216,10 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             delete_policy("remember")
             delete_policy("remember_max")
 
-    def test_09_idle_devices_do_not_count_towards_max_devices(self):
-        # A device not recognized within remember_device_idle_timeout is no longer recognized, so it does not take
-        # up a place: once the only device of the user is idle, an opt-in issues a new one.
+    def test_09_idle_devices_are_removed_at_issuance(self):
+        # A device not recognized within remember_device_idle_timeout is no longer recognized. An opt-in removes the
+        # user's idle devices on the client before the cap is checked, so it issues a new device in place of the idle
+        # one.
         client, api_key = create_client("idle cap client", "privacyidea-cp")
         set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
         set_policy("remember_max", scope=SCOPE.AUTH,
@@ -231,8 +232,10 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             device = RememberedDevice.query.filter_by(client_id=client.id).first()
             device.created_at = utc_now() - timedelta(hours=2)
             device.save()
+            idle_series_id = device.series_id
             self.assertEqual(1, len(self._cookies(self._check(api_key))))
-            self.assertEqual(2, RememberedDevice.query.filter_by(client_id=client.id).count())
+            self.assertEqual(1, RememberedDevice.query.filter_by(client_id=client.id).count())
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=idle_series_id).first())
         finally:
             delete_policy("remember")
             delete_policy("remember_max")

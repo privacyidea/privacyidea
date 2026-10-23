@@ -35,26 +35,23 @@ DIGEST = re.compile(r"[0-9a-f]{64}")
 remembered_devices = sa.table("remembered_devices", sa.column("series_id", sa.Unicode(64)))
 
 
-def _stored_series_ids() -> list[str]:
-    return list(op.get_bind().execute(sa.select(remembered_devices.c.series_id)).scalars())
-
-
 def upgrade() -> None:
     bind = op.get_bind()
-    series_ids = [series_id for series_id in _stored_series_ids() if not DIGEST.fullmatch(series_id)]
-    for series_id in series_ids:
-        bind.execute(remembered_devices.update()
-                     .where(remembered_devices.c.series_id == series_id)
-                     .values(series_id=hashlib.sha256(series_id.encode("utf-8")).hexdigest()))
-    if series_ids:
-        log.info(f"Stored the digest of the series id of {len(series_ids)} remembered devices.")
+    stored = bind.execute(sa.select(remembered_devices.c.series_id)).scalars()
+    digests = [{"stored_series_id": series_id, "digest": hashlib.sha256(series_id.encode("utf-8")).hexdigest()}
+               for series_id in stored if not DIGEST.fullmatch(series_id)]
+    if not digests:
+        return
+    bind.execute(remembered_devices.update()
+                 .where(remembered_devices.c.series_id == sa.bindparam("stored_series_id"))
+                 .values(series_id=sa.bindparam("digest")), digests)
+    log.info(f"Stored the digest of the series id of {len(digests)} remembered devices.")
 
 
 def downgrade() -> None:
-    bind = op.get_bind()
-    digests = [series_id for series_id in _stored_series_ids() if DIGEST.fullmatch(series_id)]
-    for digest in digests:
-        bind.execute(remembered_devices.delete().where(remembered_devices.c.series_id == digest))
-    if digests:
-        log.warning(f"Removed {len(digests)} remembered devices. Their users log in with the second factor once and "
-                    f"can have the device remembered again.")
+    # A digest has 64 characters, a series id privacyIDEA creates 43
+    removed = op.get_bind().execute(
+        remembered_devices.delete().where(sa.func.length(remembered_devices.c.series_id) == 64)).rowcount
+    if removed:
+        log.warning(f"Removed {removed} remembered devices. Their users log in with the second factor once and can "
+                    f"have the device remembered again.")

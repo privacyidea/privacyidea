@@ -122,7 +122,7 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft, parse_device_duration)
+                                               handle_device_theft, parse_device_duration, remove_idle_devices)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -1268,6 +1268,11 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
         return None
     if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         return None
+    # A device past the idle timeout is no longer recognised. Remove the user's idle devices on this client first, so
+    # they are not listed until they expire and do not take up a place of the device cap below.
+    idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
+    if idle_timeout:
+        remove_idle_devices(g.client_id, identity, idle_timeout)
     # Optional per-user device cap (remember_device_max_devices, off by default):
     # once the user has this many live devices for this client, opt-in issues no
     # new cookie - the existing devices keep working. Unset / invalid / <=0 =
@@ -1285,10 +1290,8 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
             max_devices = int(list(max_pols)[0])
         except (ValueError, TypeError):
             max_devices = 0
-        # A device past the idle timeout is no longer recognised, so it does not take up a place
-        idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
         if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
-                                                  identity.realm_id, idle_timeout) >= max_devices:
+                                                  identity.realm_id) >= max_devices:
             return None
     # The cookie lifetime is a policy value so it can differ per realm/user/client
     # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
@@ -1305,6 +1308,8 @@ def _remember_device_duration(user: User, action: str) -> timedelta | None:
     """
     Return the duration a remember-device policy action (``remember_device_validity`` or
     ``remember_device_idle_timeout``) sets for *user*, or ``None`` if no policy sets a valid one.
+    Policies of the same priority that set different values raise a PolicyError, as for every
+    action that takes a single value; saving a policy already refuses a value that is no duration.
     """
     values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
     if not values:

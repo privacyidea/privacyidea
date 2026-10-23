@@ -1506,7 +1506,8 @@ type: ``string``
 
 How long a "remember this device" cookie stays valid after it is issued, like
 ``30d``, ``8h`` or ``90m`` (``s``, ``m``, ``h``, ``d`` and ``y`` are allowed). A
-number without a unit counts as days. If unset, the default is 30 days. Because
+number without a unit counts as days; a policy with another value is not saved.
+If unset, the default is 30 days. Because
 it is a policy value, it can be scoped per realm or user with the usual
 conditions - for example a shorter lifetime for administrators than for regular
 users. The lifetime is fixed when the cookie is issued; recognition rotates the
@@ -1554,10 +1555,11 @@ already remembered as well.
 
 The cookie keeps the expiry of the validity, so a client still presents the
 cookie of an idle device. privacyIDEA then answers that the device is not
-recognized, removes the device and clears the cookie. An idle device whose
-cookie is not presented again stays in the list of the client's remembered
-devices until its validity ends, but it does not count towards
-:ref:`policy_remember_device_max_devices`.
+recognized, removes the device and clears the cookie. When the user has a device
+remembered again, privacyIDEA also removes the user's other idle devices on that
+client, so they do not count towards :ref:`policy_remember_device_max_devices`.
+A cookie presented with an outdated counter is still a replay, also when the
+device is idle.
 
 .. versionadded:: 3.14.1
 
