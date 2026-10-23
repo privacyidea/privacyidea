@@ -1,16 +1,21 @@
+import re
+
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
-from privacyidea.lib.remembered_device import PERSISTENT_COOKIE_NAME, create_remembered_device, user_identity
+from privacyidea.lib.remembered_device import (PERSISTENT_COOKIE_NAME, create_remembered_device, user_identity,
+                                               parse_cookie, hash_series_id)
 from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
+from privacyidea.lib.policy import AUTHORIZED, set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import enable_token, init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import RememberedDevice
 from privacyidea.models.utils import utc_now
+
+from datetime import timedelta
 
 
 class CapabilitiesEndpointTestCase(MyApiTestCase):
@@ -67,8 +72,8 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
         return [v for k, v in res.headers if k == "Set-Cookie"
                 and v.startswith(PERSISTENT_COOKIE_NAME + "=")]
 
-    def _check(self, api_key=None, opt_in=True):
-        data = {"user": "cornelius", "realm": self.realm1, "pass": "test"}
+    def _check(self, api_key=None, opt_in=True, user="cornelius", password="test"):
+        data = {"user": user, "realm": self.realm1, "pass": password}
         if opt_in:
             data["request_persistent_cookie"] = True
         headers = {'X-API-Key': api_key} if api_key else {}
@@ -104,7 +109,10 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             self.assertEqual(identity.resolver, device.resolver)
             self.assertEqual(identity.user_id, device.user_id)
             self.assertEqual(identity.realm_id, device.realm_id)
-            self.assertIn(f"{PERSISTENT_COOKIE_NAME}={device.series_id}:1", cookie)
+            # The cookie carries the series id, the device stores its digest
+            series_id, counter = parse_cookie(cookie.split(";", 1)[0].split("=", 1)[1])
+            self.assertEqual(1, counter)
+            self.assertEqual(hash_series_id(series_id), device.series_id)
         finally:
             delete_policy("remember")
 
@@ -169,6 +177,20 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             self._check(other_key)
             device2 = RememberedDevice.query.filter_by(client_id=other.id).first()
             self.assertAlmostEqual((device2.expires_at - utc_now()).days, 7, delta=1)
+
+            # The validity also takes a unit, like 8h
+            set_policy("remember_validity", scope=SCOPE.AUTH,
+                       action=f"{PolicyAction.REMEMBER_DEVICE_VALIDITY}=8h")
+            third, third_key = create_client("validity client 3", "privacyidea-cp")
+            res = self._check(third_key)
+            device3 = RememberedDevice.query.filter_by(client_id=third.id).first()
+            remaining = device3.expires_at - utc_now()
+            self.assertGreater(remaining, timedelta(hours=7, minutes=59))
+            self.assertLessEqual(remaining, timedelta(hours=8))
+            # The cookie expires with the device
+            max_age = int(re.search(r"Max-Age=(\d+)", self._cookies(res)[0]).group(1))
+            self.assertGreater(max_age, 8 * 3600 - 60)
+            self.assertLessEqual(max_age, 8 * 3600)
         finally:
             delete_policy("remember")
             try:
@@ -194,6 +216,117 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
             delete_policy("remember")
             delete_policy("remember_max")
 
+    def test_09_idle_devices_are_removed_at_issuance(self):
+        # A device not recognized within remember_device_idle_timeout is no longer recognized. An opt-in removes the
+        # user's idle devices on the client before the cap is checked, so it issues a new device in place of the idle
+        # one.
+        client, api_key = create_client("idle cap client", "privacyidea-cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        set_policy("remember_max", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.REMEMBER_DEVICE_MAX_DEVICES}=1, "
+                          f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=1h")
+        try:
+            self.assertEqual(1, len(self._cookies(self._check(api_key))))
+            self.assertEqual([], self._cookies(self._check(api_key)))
+
+            device = RememberedDevice.query.filter_by(client_id=client.id).first()
+            device.created_at = utc_now() - timedelta(hours=2)
+            device.save()
+            idle_series_id = device.series_id
+            self.assertEqual(1, len(self._cookies(self._check(api_key))))
+            self.assertEqual(1, RememberedDevice.query.filter_by(client_id=client.id).count())
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=idle_series_id).first())
+        finally:
+            delete_policy("remember")
+            delete_policy("remember_max")
+
+    def test_10_no_cookie_without_a_verified_token(self):
+        # A remembered device stands for a token the user presented. A login that a policy accepts without verifying a
+        # token gets no cookie: passOnNoToken, passthru to the user store and a credential served from the
+        # authentication cache.
+        client, api_key = create_client("token check client", "privacyidea-cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.addCleanup(delete_policy, "remember")
+        for login in ("hans", "passthru"):
+            remove_token(user=User(login, self.realm1))
+
+        set_policy("no_token", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
+        try:
+            self.assertEqual([], self._cookies(self._check(api_key, user="hans", password="anything")))
+        finally:
+            delete_policy("no_token")
+
+        set_policy("pass_thru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        try:
+            self.assertEqual([], self._cookies(self._check(api_key, user="passthru", password="pthru")))
+        finally:
+            delete_policy("pass_thru")
+
+        set_policy("cache", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4m")
+        try:
+            # The token verifies the first login, which puts the credential into the cache
+            self._check(api_key, opt_in=False)
+            res = self._check(api_key)
+            self.assertIn("AuthCache", res.json["detail"]["message"])
+            self.assertEqual([], self._cookies(res))
+        finally:
+            delete_policy("cache")
+
+        self.assertIsNone(RememberedDevice.query.filter_by(client_id=client.id).first())
+
+
+    def test_11_audit_says_what_came_of_the_requested_device(self):
+        # When the client asks for a remembered device, the audit entry of /validate/check says whether one was issued
+        # or why not. Without the request it says nothing about it.
+        def action_detail():
+            return self.find_most_recent_audit_entry(action="*validate/check*").get("action_detail") or ""
+
+        client, api_key = create_client("audit issue client", "privacyidea-cp")
+        self._check(api_key, opt_in=False)
+        self.assertNotIn("remembered device", action_detail())
+
+        self._check(api_key)
+        self.assertIn("remembered device not issued: no remember_device policy applies to the user", action_detail())
+        self._check(api_key=None)
+        self.assertIn("remembered device not issued: no API client is identified by an X-API-Key header",
+                      action_detail())
+
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        set_policy("remember_max", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_MAX_DEVICES}=1")
+        self.addCleanup(delete_policy, "remember")
+        self.addCleanup(delete_policy, "remember_max")
+        self._check(api_key)
+        device = RememberedDevice.query.filter_by(client_id=client.id).first()
+        self.assertIn(f"remembered device issued, device id {device.device_id}, valid until ", action_detail())
+        self._check(api_key)
+        self.assertIn("remembered device not issued: the user has reached remember_device_max_devices (1) on this "
+                      "client", action_detail())
+
+        remove_token(user=User("hans", self.realm1))
+        set_policy("no_token", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
+        self.addCleanup(delete_policy, "no_token")
+        self._check(api_key, user="hans", password="anything")
+        self.assertIn("remembered device not issued: the login was accepted without a token", action_detail())
+
+    def test_12_no_device_when_an_authorization_policy_refuses(self):
+        # The device is issued after the authorization policies checked the authentication. A login they refuse
+        # after the token was verified gets neither a cookie nor a stored device.
+        client, api_key = create_client("refused client", "privacyidea-cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.addCleanup(delete_policy, "remember")
+        for action in (f"{PolicyAction.TOKENTYPE}=hotp", f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}"):
+            set_policy("refuse", scope=SCOPE.AUTHZ, action=action)
+            try:
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": "cornelius", "realm": self.realm1, "pass": "test",
+                                                         "request_persistent_cookie": True},
+                                                   headers={"X-API-Key": api_key}):
+                    res = self.app.full_dispatch_request()
+                self.assertFalse(res.json["result"].get("value"), res.json)
+                self.assertEqual([], self._cookies(res), action)
+                self.assertIsNone(RememberedDevice.query.filter_by(client_id=client.id).first(), action)
+            finally:
+                delete_policy("refuse")
 
 class RememberDeviceRecognitionTestCase(MyApiTestCase):
     """
@@ -211,6 +344,10 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         self.setUp_user_realms()
         self.identity = user_identity(User(login="cornelius", realm=self.realm1))
         set_policy(self.POLICY, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        # A device is only recognised while the user has a usable token
+        init_token({"type": "spass", "pin": "test", "serial": "SPASS_RECOGNISE"},
+                   user=User(login="cornelius", realm=self.realm1))
+        self.addCleanup(remove_token, "SPASS_RECOGNISE")
 
     def tearDown(self):
         try:
@@ -257,7 +394,7 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         # Cookie rotated to counter 2.
         headers = self._cookie_headers(res)
         self.assertEqual(1, len(headers), headers)
-        self.assertIn(f"{PERSISTENT_COOKIE_NAME}={series}:2", headers[0])
+        self.assertIn(f"{PERSISTENT_COOKIE_NAME}={parse_cookie(cookie)[0]}:2", headers[0])
         # Counter incremented in the DB.
         self.assertEqual(2, RememberedDevice.query.filter_by(series_id=series).first().counter)
 
@@ -412,3 +549,59 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         # and cornelius's real device is never even reached, so it is untouched.
         self._recognise(api_key=api_key, cookie=cookie, user="ghost", expect_value=False)
         self.assertEqual(1, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)
+
+    def test_11_idle_device_is_not_recognized(self):
+        # A device not recognized within remember_device_idle_timeout is removed and its cookie cleared. A device
+        # used within the timeout is recognized.
+        set_policy("remember_idle", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=1h")
+        try:
+            client, api_key = create_client("idle client", "privacyidea-cp")
+            device, cookie = create_remembered_device(self.identity, client.id)
+            device.created_at = utc_now() - timedelta(minutes=50)
+            device.save()
+            self._recognise(api_key=api_key, cookie=cookie)
+
+            idle, idle_cookie = create_remembered_device(self.identity, client.id)
+            idle_series = idle.series_id
+            idle.created_at = utc_now() - timedelta(hours=2)
+            idle.save()
+            res = self._recognise(api_key=api_key, cookie=idle_cookie, expect_value=False)
+            self.assertTrue(any(h.startswith(f"{PERSISTENT_COOKIE_NAME}=;")
+                                for h in self._cookie_headers(res)), self._cookie_headers(res))
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=idle_series).first())
+        finally:
+            delete_policy("remember_idle")
+
+    def test_12_device_needs_a_usable_token(self):
+        # While no token of the user could be used for a login, the device is not recognised. The cookie is neither
+        # rotated nor cleared, so the device is recognised again once a token is usable.
+        client, api_key = create_client("token state client", "privacyidea-cp")
+        device, cookie = create_remembered_device(self.identity, client.id)
+        stored_series_id = device.series_id
+
+        enable_token("SPASS_RECOGNISE", False)
+        res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        self.assertEqual([], self._cookie_headers(res))
+        self.assertEqual(1, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+        entry = self.find_most_recent_audit_entry(action="*validate/remember_device*")
+        self.assertEqual("device not recognised: the user has no usable token", entry["info"])
+
+        enable_token("SPASS_RECOGNISE", True)
+        res = self._recognise(api_key=api_key, cookie=cookie)
+        self.assertEqual(1, len(self._cookie_headers(res)))
+        self.assertEqual(2, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+
+    def test_13_audit_names_the_reason(self):
+        # The audit entry of a recognition says why a device was not recognised
+        client, api_key = create_client("audit reason client", "privacyidea-cp")
+        self._recognise(api_key=api_key, expect_value=False)
+        self.assertEqual("device not recognised: no cookie presented",
+                         self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
+        self._recognise(api_key=api_key, cookie="doesnotexist:1", expect_value=False)
+        self.assertEqual("device not recognised: the cookie is unknown, expired or idle and is cleared",
+                         self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
+        _device, cookie = create_remembered_device(self.identity, client.id)
+        delete_policy(self.POLICY)
+        self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        self.assertEqual("device not recognised: no remember_device policy applies to the user",
+                         self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])

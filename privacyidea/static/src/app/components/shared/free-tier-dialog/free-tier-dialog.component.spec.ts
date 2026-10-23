@@ -42,7 +42,7 @@ describe("FreeTierDialogComponent", () => {
 
   it("shows the free tier warning under the enterprise heading", () => {
     expect(fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim()).toBe(
-      "The added value of privacyIDEA Enterprise Edition"
+      "The Added Value of privacyIDEA Enterprise Edition"
     );
     expect(fixture.nativeElement.textContent).toContain("You are using privacyIDEA with more than 50 users.");
   });

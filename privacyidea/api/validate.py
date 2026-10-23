@@ -89,8 +89,10 @@ import copy
 import json
 import logging
 import threading
+from datetime import timedelta
+from typing import NamedTuple
 
-from flask import (Blueprint, request, g, Response)
+from flask import (Blueprint, request, g, Request, Response)
 from flask_babel import _
 
 from privacyidea.api.auth import admin_required
@@ -121,7 +123,8 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft)
+                                               handle_device_theft, has_usable_token, parse_device_duration,
+                                               remove_idle_devices)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -442,8 +445,39 @@ def _challenge_owner(challenge) -> User:
         return User()
 
 
+class RememberedDeviceRequest(NamedTuple):
+    """The successful authentication a remembered device may be issued for (see :func:`issue_remembered_device`)."""
+    user: User
+    token_verified: bool
+
+
+def issue_remembered_device(request: Request, response: Response, *args, **kwargs) -> Response:
+    """
+    Postpolicy of ``/validate/check`` that issues the remembered device the client asked for with
+    ``request_persistent_cookie``. It is the outermost postpolicy, so it runs after all others: a device is only
+    created when the response still reports a successful authentication. A login that an authorization policy refuses
+    afterwards (tokentype, serial, tokeninfo, authorized) raises before this runs and gets no device.
+    """
+    candidate = g.pop("remembered_device_request", None)
+    if not candidate or not response.is_json or response.json.get("result", {}).get("value") is not True:
+        return response
+    # Issuing is optional on an already successful authentication, so a failure here (e.g. a transient database
+    # error while storing the device) must not turn that success into an error - the login succeeds without a device.
+    try:
+        cookie_action = _resolve_persistent_cookie(candidate.user, candidate.token_verified)
+    except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
+        log.warning(f"Could not issue a remembered device for user {candidate.user.login!r} in realm "
+                    f"{candidate.user.realm!r}, the login succeeds without one: {exc!r}")
+        g.audit_object.add_to_log({"action_detail": "remembered device not issued: storing it failed"},
+                                  add_with_comma=True)
+        cookie_action = None
+    apply_cookie_action(response, cookie_action)
+    return response
+
+
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
+@postpolicy(issue_remembered_device, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
 @postpolicy(mangle_challenge_response, request=request)
@@ -641,6 +675,8 @@ def check():
         "response_params": {},
         "serial_list": [],
         "is_container_challenge": False,
+        # Whether a token (or a container) verified this request, rather than a policy accepting it without one
+        "token_verified": False,
         AUTH_EVENT_TYPE_KEY: None,
         AUTH_EVENT_REASON_KEY: [],
         AUTH_EVENT_REASON_DETAIL_KEY: None,
@@ -966,6 +1002,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
 
     # Success Handling
     if context["result"]:
+        context["token_verified"] = True
         context["details"].update({
             "username": user.login,
             "message": _("Found matching challenge"),
@@ -1036,6 +1073,7 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
 
     context["result"] = success
+    context["token_verified"] = success
     context["details"] = details
 
     if "serial" in details:
@@ -1068,6 +1106,9 @@ def _handle_standard_auth(context: dict):
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
             raise
 
+    # The token layer classifies every request it decides. A policy that accepts a login without a token (passOnNoToken,
+    # passOnNoUser, passthru, the authentication cache) leaves it unclassified.
+    context["token_verified"] = success and (context["is_container_challenge"] or AUTH_EVENT_TYPE_KEY in details)
     if AUTH_EVENT_TYPE_KEY not in details:
         # An absent key means nothing classified this request; a token suppressing its own terminal event (push_wait
         # timeout) leaves it present but None, which must survive so nothing overwrites the logged CHALLENGE_TRIGGERED.
@@ -1183,18 +1224,12 @@ def _finalize_auth_response(context):
 
     serials_str = ",".join(context["serial_list"])
 
-    # Decide whether to issue a persistent "remember device" cookie. This is an
-    # optional enhancement on an already-successful auth, so a failure here (e.g.
-    # a transient DB error while creating the device) must never turn that success
-    # into a 500 - fall back to issuing no cookie.
-    try:
-        cookie_action = _resolve_persistent_cookie(user, success)
-    except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
-        log.warning(f"Could not issue a remember-device cookie: {exc}")
-        cookie_action = None
+    if success:
+        # The issue_remembered_device postpolicy issues the remembered device the client may have asked for, once all
+        # other postpolicies have accepted this authentication.
+        g.remembered_device_request = RememberedDeviceRequest(user, context["token_verified"])
 
     ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
-    apply_cookie_action(ret, cookie_action)
 
     audit_entry = {
         "info": log_used_user(user, details.get("message")),
@@ -1242,31 +1277,44 @@ def _log_authentication_event(context):
     )
 
 
-def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None:
+def _resolve_persistent_cookie(user: User, token_verified: bool) -> CookieAction | None:
     """
-    Decide whether to *issue* a new persistent ("remember device") cookie on a
+    Decide whether to *issue* a new persistent ("remember device") cookie after a
     successful authentication, returning a ``"set"`` :class:`CookieAction` or
     ``None``.
 
     ``/validate/check`` only issues cookies. A presented cookie is consumed and
     rotated by the dedicated recognition endpoint (``/validate/remember_device``),
     never here, so this endpoint carries no cookie theft/rotation logic. A cookie
-    is issued when the request is made by an identified API client, opts in
-    (``request_persistent_cookie``) and the ``remember_device`` policy (scope
-    auth, matched on user/realm) allows it.
+    is issued when the request verified a token, is made by an identified API
+    client, opts in (``request_persistent_cookie``) and the ``remember_device``
+    policy (scope auth, matched on user/realm) allows it. A remembered device lets
+    the client skip the second factor later, so it is only issued after a login in
+    which the user presented one.
     """
-    if not success or not g.get("client_id"):
-        return None
     if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
         return None
+    # From here on the client asked for a remembered device, so the audit entry and the log say what came of it
+    if not g.get("client_id"):
+        return _no_remembered_device(user, "no API client is identified by an X-API-Key header")
+    if not token_verified:
+        return _no_remembered_device(user, "the login was accepted without a token")
     identity = user_identity(user)
     if not identity:
         # The recognition endpoint binds and matches on the resolver-stable user
         # identity, so a remembered device for a userless (serial-only) auth could
         # never be recognised. Do not issue a cookie that can never be redeemed.
-        return None
+        return _no_remembered_device(user, "the login names no user the device could be bound to")
     if not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
-        return None
+        return _no_remembered_device(user, "no remember_device policy applies to the user")
+    # A device past the idle timeout is no longer recognised. Remove the user's idle devices on this client first, so
+    # they are not listed until they expire and do not take up a place of the device cap below.
+    idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
+    if idle_timeout:
+        removed = remove_idle_devices(g.client_id, identity, idle_timeout)
+        if removed:
+            log.info(f"Removed {removed} remembered devices of user {user.login!r} in realm {user.realm!r} on API "
+                     f"client {g.client_id!r} that were not used within the remember_device_idle_timeout.")
     # Optional per-user device cap (remember_device_max_devices, off by default):
     # once the user has this many live devices for this client, opt-in issues no
     # new cookie - the existing devices keep working. Unset / invalid / <=0 =
@@ -1284,25 +1332,48 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
             max_devices = int(list(max_pols)[0])
         except (ValueError, TypeError):
             max_devices = 0
-        if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
-                                                  identity.realm_id) >= max_devices:
-            return None
+        if max_devices > 0:
+            device_count = count_user_devices(g.client_id, identity.resolver, identity.user_id, identity.realm_id)
+            if device_count >= max_devices:
+                return _no_remembered_device(user, f"the user has reached remember_device_max_devices "
+                                                   f"({max_devices}) on this client")
     # The cookie lifetime is a policy value so it can differ per realm/user/client
     # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.
-    validity_days = None
-    validity_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_VALIDITY,
-                               user_object=user).action_values(unique=True)
-    if validity_pols:
-        try:
-            validity_days = int(list(validity_pols)[0])
-        except (ValueError, TypeError):
-            validity_days = None
+    validity = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_VALIDITY)
     device, cookie_value = create_remembered_device(identity,
                                                     client_id=g.client_id,
                                                     ip_address=g.client_ip,
                                                     user_agent=g.get("user_agent"),
-                                                    validity_days=validity_days)
+                                                    validity=validity)
+    expires = f"{device.expires_at:%Y-%m-%d %H:%M} UTC"
+    log.info(f"Remembered a device of user {user.login!r} in realm {user.realm!r} on API client {g.client_id!r}, "
+             f"device id {device.device_id!r}, valid until {expires}.")
+    g.audit_object.add_to_log({"action_detail": f"remembered device issued, device id {device.device_id}, "
+                                                f"valid until {expires}"}, add_with_comma=True)
     return CookieAction("set", cookie_value, device.expires_at)
+
+
+def _no_remembered_device(user: User, reason: str) -> None:
+    """
+    Record in the log and in the audit entry of the request why the remembered device the client asked for is not
+    issued, and return None - no cookie.
+    """
+    log.info(f"No remembered device issued for user {user.login!r} in realm {user.realm!r}: {reason}.")
+    g.audit_object.add_to_log({"action_detail": f"remembered device not issued: {reason}"}, add_with_comma=True)
+    return None
+
+
+def _remember_device_duration(user: User, action: str) -> timedelta | None:
+    """
+    Return the duration a remember-device policy action (``remember_device_validity`` or
+    ``remember_device_idle_timeout``) sets for *user*, or ``None`` if no policy sets a valid one.
+    Policies of the same priority that set different values raise a PolicyError, as for every
+    action that takes a single value; saving a policy already refuses a value that is no duration.
+    """
+    values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
+    if not values:
+        return None
+    return parse_device_duration(list(values)[0])
 
 
 @validate_blueprint.route('/capabilities', methods=['GET'])
@@ -1378,7 +1449,12 @@ def check_remember_device():
     invalidated and the cookie cleared. Recognition is only offered when the
     ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
     reports); otherwise the answer is always ``false`` and a presented cookie is
-    left untouched.
+    left untouched. A device that was not recognised for the
+    ``remember_device_idle_timeout`` is removed and its cookie cleared. A device is
+    also not recognised while none of the user's tokens could be used for a login
+    (disabled, revoked, a counter exceeded, outside its validity period or not yet
+    enrolled); the cookie is then left untouched, so the device is recognised again
+    once a token is usable.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1434,23 +1510,39 @@ def check_remember_device():
     presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
     identity = user_identity(user)
 
-    if presented and identity and Match.user(g, scope=SCOPE.AUTH,
-                                             action=PolicyAction.REMEMBER_DEVICE,
-                                             user_object=user).any():
-        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"))
+    if not presented:
+        info = "device not recognised: no cookie presented"
+    elif not identity:
+        info = "device not recognised: the user does not resolve"
+    elif not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
+        info = "device not recognised: no remember_device policy applies to the user"
+    elif not has_usable_token(user):
+        # The device stands in for the second factor, and the user has no token left to present one with - a full
+        # login would fail as well. The cookie is neither consumed nor cleared, so the device is recognised again once
+        # a token of the user is usable, like after a refusal by conditional access.
+        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: none of the "
+                 f"user's tokens is usable (disabled, revoked, fail or authentication counter exceeded, outside its "
+                 f"validity period or not yet enrolled). The device is kept and recognised again once a token of "
+                 f"the user is usable.")
+        info = "device not recognised: the user has no usable token"
+    else:
+        idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
+        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout)
         if result.status == RememberStatus.RECOGNIZED:
             recognised = True
             cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
+            info = "remembered device recognised"
         elif result.status == RememberStatus.GRACE:
             # Tolerated concurrent/duplicate request: recognised, but do not
             # rotate (the client keeps the cookie it already has).
             recognised = True
+            info = "remembered device recognised again within the grace window, cookie not rotated"
         elif result.status == RememberStatus.FOREIGN:
             # The cookie is live but belongs to a different user on this same
             # client (a shared browser). Not recognised, but leave the cookie
             # alone - clearing it would wipe the rightful user's remembered device
             # off the shared browser just because someone else logged in.
-            pass
+            info = "device not recognised: the cookie belongs to another user of this client"
         elif result.status == RememberStatus.THEFT:
             # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
             # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
@@ -1467,8 +1559,10 @@ def check_remember_device():
                                other_info={"client_id": g.get("client_id")})
             handle_device_theft(identity)
             cookie_action = CookieAction("clear")
-        else:  # miss: the cookie is dead (unknown or expired) - clear it
+            info = "device not recognised: cookie reuse detected, all remembered devices of the user revoked"
+        else:  # miss: the cookie is dead (unknown, expired or idle) - clear it
             cookie_action = CookieAction("clear")
+            info = "device not recognised: the cookie is unknown, expired or idle and is cleared"
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
@@ -1476,7 +1570,7 @@ def check_remember_device():
     g.audit_object.log({
         "user": user.login, "resolver": user.resolver, "realm": user.realm,
         "success": recognised,
-        "info": "remembered device recognised" if recognised else "device not recognised",
+        "info": info,
     })
 
     # Default rid (1) so send_result does not stamp result.authentication

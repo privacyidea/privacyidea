@@ -22,52 +22,52 @@
 export const PAGE_NAMES = {
   login: $localize`:@@pageTitle.login:Login`,
   dashboard: $localize`:@@common.dashboard:Dashboard`,
-  settings: $localize`:@@pageTitle.settings:UI settings`,
-  audit: $localize`:@@pageTitle.audit:Audit log`,
+  settings: $localize`:@@pageTitle.settings:UI Settings`,
+  audit: $localize`:@@pageTitle.audit:Audit Log`,
   news: $localize`:@@common.news:News`,
   clients: $localize`:@@pageTitle.clients:Clients`,
-  authenticationLog: $localize`:@@pageTitle.authenticationLog:Authentication log`,
-  lockedUsers: $localize`:@@pageTitle.lockedUsers:Locked users`,
+  authenticationLog: $localize`:@@pageTitle.authenticationLog:Authentication Log`,
+  lockedUsers: $localize`:@@pageTitle.lockedUsers:Locked Users`,
   blocklist: $localize`:@@pageTitle.blocklist:Blocklist`,
   tokens: $localize`:@@common.tokens:Tokens`,
-  challenges: $localize`:@@pageTitle.challenges:Token challenges`,
-  applications: $localize`:@@pageTitle.applications:Token applications`,
-  getSerial: $localize`:@@pageTitle.getSerial:Find a token serial`,
-  importTokens: $localize`:@@pageTitle.importTokens:Import tokens`,
-  enrollToken: $localize`:@@pageTitle.enrollToken:Enroll a token`,
-  assignToken: $localize`:@@pageTitle.assignToken:Assign a token`,
-  tokenWizard: $localize`:@@pageTitle.tokenWizard:Token enrollment wizard`,
+  challenges: $localize`:@@pageTitle.challenges:Token Challenges`,
+  applications: $localize`:@@pageTitle.applications:Token Applications`,
+  getSerial: $localize`:@@pageTitle.getSerial:Find a Token Serial`,
+  importTokens: $localize`:@@pageTitle.importTokens:Import Tokens`,
+  enrollToken: $localize`:@@pageTitle.enrollToken:Enroll a Token`,
+  assignToken: $localize`:@@pageTitle.assignToken:Assign a Token`,
+  tokenWizard: $localize`:@@pageTitle.tokenWizard:Token Enrollment Wizard`,
   containers: $localize`:@@pageTitle.containers:Containers`,
-  containerTemplates: $localize`:@@common.containerTemplates:Container templates`,
-  containerWizard: $localize`:@@pageTitle.containerWizard:Container creation wizard`,
+  containerTemplates: $localize`:@@common.containerTemplates:Container Templates`,
+  containerWizard: $localize`:@@pageTitle.containerWizard:Container Creation Wizard`,
   users: $localize`:@@common.users:Users`,
   realms: $localize`:@@common.realms:Realms`,
   resolvers: $localize`:@@common.resolvers:Resolvers`,
   policies: $localize`:@@common.policies:Policies`,
-  conditionalAccess: $localize`:@@common.conditionalAccess:Conditional access policies`,
-  apiClients: $localize`:@@common.apiClients:API clients`,
-  events: $localize`:@@common.eventHandlers:Event handlers`,
-  machineResolvers: $localize`:@@pageTitle.machineResolvers:Machine resolvers`,
+  conditionalAccess: $localize`:@@common.conditionalAccess:Conditional Access Policies`,
+  apiClients: $localize`:@@common.apiClients:API Clients`,
+  events: $localize`:@@common.eventHandlers:Event Handlers`,
+  machineResolvers: $localize`:@@pageTitle.machineResolvers:Machine Resolvers`,
   machines: $localize`:@@common.machines:Machines`,
   periodicTasks: $localize`:@@common.periodicTasks:Periodic Tasks`,
-  system: $localize`:@@pageTitle.system:System configuration`,
-  tokenTypes: $localize`:@@pageTitle.tokenTypes:Token type configuration`,
+  system: $localize`:@@pageTitle.system:System Configuration`,
+  tokenTypes: $localize`:@@pageTitle.tokenTypes:Token Type Configuration`,
   subscription: $localize`:@@common.subscription:Subscription`,
-  smtp: $localize`:@@common.smtpServers:SMTP servers`,
-  radius: $localize`:@@common.radiusServers:RADIUS servers`,
-  sms: $localize`:@@common.smsGateways:SMS gateways`,
-  privacyideaServers: $localize`:@@common.privacyideaServers:privacyIDEA servers`,
-  caConnectors: $localize`:@@common.caConnectors:CA connectors`,
-  tokengroups: $localize`:@@common.tokengroups:Token groups`,
+  smtp: $localize`:@@common.smtpServers:SMTP Servers`,
+  radius: $localize`:@@common.radiusServers:RADIUS Servers`,
+  sms: $localize`:@@common.smsGateways:SMS Gateways`,
+  privacyideaServers: $localize`:@@common.privacyideaServers:privacyIDEA Servers`,
+  caConnectors: $localize`:@@common.caConnectors:CA Connectors`,
+  tokengroups: $localize`:@@common.tokengroups:Token Groups`,
   serviceIds: $localize`:@@common.serviceIds:Service IDs`
 };
 
 // The title of the page that creates a record of the list called `base`.
 export function newTitle(base: string): string {
-  return $localize`:@@pageTitle.new:${base}:PAGE: - new`;
+  return $localize`:@@pageTitle.new:${base}:PAGE: - New`;
 }
 
 // The title of the page that shows one record of the list called `base`.
 export function detailsTitle(base: string): string {
-  return $localize`:@@pageTitle.details:${base}:PAGE: - details`;
+  return $localize`:@@pageTitle.details:${base}:PAGE: - Details`;
 }

@@ -1056,7 +1056,9 @@ of the :ref:`api_clients` "remember this device" feature. Two near-simultaneous
 requests carrying the same rotating cookie would otherwise make the second look
 like a replay (a stale counter) and destroy the session series. Within this many
 seconds, and from the same source IP, the immediately-previous counter is
-accepted without rotating, so concurrent requests converge on one token.
+accepted without rotating, so concurrent requests converge on one token. Which
+address counts as the source IP behind an integration is described with the
+feature, see :ref:`api_clients`.
 
 This is an advanced knob with a sensible default; most deployments never need to
 change it. It is a system-wide protocol tolerance, not a per-user or per-realm

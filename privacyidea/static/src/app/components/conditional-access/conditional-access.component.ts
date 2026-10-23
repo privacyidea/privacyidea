@@ -533,7 +533,7 @@ export class ConditionalAccessComponent implements OnDestroy {
       .openDialog({
         component: ConditionalAccessToggleDialogComponent,
         data: {
-          title: $localize`:@@conditionalAccess.toggleDryRunSelected:Toggle Dry Run For Selected Policies`,
+          title: $localize`:@@conditionalAccess.toggleDryRunSelected:Toggle Dry Run for Selected Policies`,
           intro: $localize`:@@conditionalAccess.dryRunModeFollowing:The dry-run mode of the following policies will be toggled:`,
           onWord: $localize`:@@conditionalAccess.dryRun:dry-run`,
           offWord: $localize`:@@conditionalAccess.enforce:enforce`,

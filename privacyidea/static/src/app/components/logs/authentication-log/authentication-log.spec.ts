@@ -608,7 +608,7 @@ describe("AuthenticationLog", () => {
       "filter_alt_offClear Filter",
       "Action",
       "Policy",
-      "Dry run"
+      "Dry Run"
     ]);
   });
 
@@ -841,7 +841,7 @@ describe("AuthenticationLog", () => {
     });
 
     it("dateRangeLabel is the neutral default, a matched preset name, or the custom fallback", () => {
-      expect(component.dateRangeLabel()).toBe("Date range");
+      expect(component.dateRangeLabel()).toBe("Date Range");
 
       // A start ~1 year ago with an open end reads as the "Last year" preset.
       const yearAgo = new Date();

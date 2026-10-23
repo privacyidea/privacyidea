@@ -19,7 +19,8 @@ This module implements persistent ("remember this device") authentication
 devices using a rotating-token scheme.
 
 A device is represented by a cookie of the form ``series_id:counter``. The
-``series_id`` identifies the row in the ``remembered_devices`` table; the ``counter``
+``series_id`` identifies the row in the ``remembered_devices`` table, which stores
+its SHA-256 digest (see :func:`hash_series_id`); the ``counter``
 is bumped on every use, both in the cookie and in the database. If a request
 presents a valid ``series_id`` with a stale ``counter``, the token has been
 replayed - a sign the cookie was stolen - so the whole series is deleted and
@@ -30,18 +31,21 @@ client via ``client_id``, which is matched against ``g.client_id`` (set by the
 API-key middleware) on every validation.
 """
 import enum
+import hashlib
 import logging
+import re
 import secrets
 from datetime import datetime, timedelta
 from typing import NamedTuple, TYPE_CHECKING
 
 from flask_babel import _
 
-from sqlalchemy import update
+from sqlalchemy import func, update
 
 from privacyidea.lib.error import AuthError, ParameterError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
+from privacyidea.lib.utils import parse_timedelta
 from privacyidea.models import RememberedDevice, Realm, db
 
 if TYPE_CHECKING:
@@ -68,8 +72,9 @@ DEFAULT_GRACE_SECONDS = 10
 # truncated); a user whose identity would overflow simply gets no device.
 RESOLVER_MAX_LEN = 120
 USER_ID_MAX_LEN = 320
-# Hard cap on a device's configured validity, so an absurd
-# remember_device_validity policy value cannot overflow timedelta.
+# Hard cap on the durations of the remember-device policies, so an absurd
+# remember_device_validity or remember_device_idle_timeout value cannot overflow
+# the date arithmetic.
 MAX_DEVICE_VALIDITY_DAYS = 3650
 
 
@@ -80,6 +85,46 @@ def _grace_window_seconds() -> int:
                                                DEFAULT_GRACE_SECONDS)))
     except (TypeError, ValueError):
         return DEFAULT_GRACE_SECONDS
+
+
+def parse_device_duration(value: str | None) -> timedelta | None:
+    """
+    Parse the duration of a remember-device policy action, like ``30d``, ``8h`` or
+    ``90m`` (the units of :func:`~privacyidea.lib.utils.parse_timedelta`). A number
+    without a unit counts as days.
+
+    :param value: the value of the policy action
+    :return: the duration, at most ``MAX_DEVICE_VALIDITY_DAYS``, or ``None`` if the
+        value is empty, malformed or not positive
+    """
+    text = str(value or "").strip()
+    # The policy splits an action value at whitespace, so "8 h" would be read as the two values "8" and "h"
+    if not text or text.startswith("-") or re.search(r"\s", text):
+        return None
+    if text.isdecimal():
+        text = f"{text}d"
+    max_duration = timedelta(days=MAX_DEVICE_VALIDITY_DAYS)
+    try:
+        duration = parse_timedelta(text)
+    except (TypeError, ValueError):
+        return None
+    except OverflowError:
+        return max_duration
+    if duration <= timedelta(0):
+        return None
+    return min(duration, max_duration)
+
+
+def hash_series_id(series_id: str) -> str:
+    """
+    Return the value the ``remembered_devices`` table stores for a series id: its
+    SHA-256 digest as 64 hex characters. The cookie carries the series id itself,
+    so a presented cookie is looked up by the digest of its series id.
+
+    :param series_id: the series id of a cookie
+    :return: the hex digest
+    """
+    return hashlib.sha256(series_id.encode("utf-8")).hexdigest()
 
 
 def build_cookie_value(series_id: str, counter: int) -> str:
@@ -148,9 +193,32 @@ def user_identity(user: "User | None") -> UserIdentity | None:
     return UserIdentity(resolver, user_id, user.realm_id)
 
 
+def has_usable_token(user: "User") -> bool:
+    """
+    Whether at least one token of the user could be used to log in right now, by the checks a login applies to each
+    token (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not), neither
+    its fail counter nor its authentication counters are exceeded, it is within its validity period and it is fully
+    enrolled. Like a login, this first clears a fail counter whose clear timeout has passed.
+
+    A remembered device stands in for the second factor, so it is recognised only while the user has a token to
+    present one with.
+
+    :param user: the user the device is bound to
+    :return: True if at least one token of the user is usable
+    """
+    # Imported lazily: privacyidea.lib.token pulls in a large part of the library, and this module is imported early
+    # through the policy evaluators.
+    from privacyidea.lib.token import get_tokens
+    for token in get_tokens(user=user):
+        token.check_reset_failcount()
+        if token.check_all([]):
+            return True
+    return False
+
+
 def create_remembered_device(identity: UserIdentity, client_id: str, ip_address: str | None = None,
                              user_agent: str | None = None,
-                             validity_days: int | None = None) -> tuple[RememberedDevice, str]:
+                             validity: timedelta | None = None) -> tuple[RememberedDevice, str]:
     """
     Create and persist a new remembered device.
 
@@ -159,24 +227,24 @@ def create_remembered_device(identity: UserIdentity, client_id: str, ip_address:
     :param client_id: id of the API client the device is bound to
     :param ip_address: the client IP address the device was created from
     :param user_agent: the user agent the device was created from
-    :param validity_days: device lifetime in days; ``None`` (or a
-        non-positive value) uses the model default (``DEFAULT_DEVICE_VALIDITY``)
+    :param validity: device lifetime; ``None`` (or a non-positive value) uses the
+        model default (``DEFAULT_DEVICE_VALIDITY``)
     :return: a tuple of the stored ``RememberedDevice`` and the cookie value
         (``series_id:1``) to send to the client
     """
     series_id = secrets.token_urlsafe(SERIES_ID_BYTES)
     device_id = secrets.token_urlsafe(DEVICE_ID_BYTES)
-    if validity_days and validity_days > 0:
-        # Cap the validity so an absurd policy value cannot overflow timedelta and
+    if validity and validity > timedelta(0):
+        # Cap the validity so an absurd policy value cannot overflow the expiry date and
         # turn an already-successful auth into a 500.
-        expires_at = utc_now() + timedelta(days=min(validity_days, MAX_DEVICE_VALIDITY_DAYS))
+        expires_at = utc_now() + min(validity, timedelta(days=MAX_DEVICE_VALIDITY_DAYS))
     else:
         expires_at = None
     # The identity is a lookup key and is stored verbatim (user_identity
     # has already ensured it fits its columns). Only the free-form metadata
     # (ip/user agent) is truncated, so an over-long value there can never raise on
     # save and turn an already-successful auth into a 500.
-    device = RememberedDevice(series_id=series_id, device_id=device_id, client_id=client_id,
+    device = RememberedDevice(series_id=hash_series_id(series_id), device_id=device_id, client_id=client_id,
                               resolver=identity.resolver, user_id=identity.user_id,
                               realm_id=identity.realm_id,
                               ip_address=(ip_address or None) and ip_address[:64],
@@ -199,7 +267,7 @@ class ValidDevice(NamedTuple):
 
 
 def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
-                      client_ip: str | None = None) -> ValidDevice | None:
+                      client_ip: str | None = None, idle_timeout: timedelta | None = None) -> ValidDevice | None:
     """
     Look up and validate a remember-device cookie **without** rotating it.
 
@@ -208,8 +276,9 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
     only ever validates for the client it was issued to and the user it was
     issued for.
 
-    * Returns ``None`` if no matching device exists or it has expired (an
-      expired device is deleted).
+    * Returns ``None`` if no matching device exists, it has expired or it was
+      not used within ``idle_timeout`` (such a device is deleted). A stale
+      counter on an idle device is still a replay, see below.
     * If the presented counter matches the stored one, returns
       ``(device, False)`` (a fresh use; the caller should rotate it).
     * If the presented counter is the immediately-previous one and the request
@@ -239,8 +308,10 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
         (see :func:`user_identity`)
     :param client_ip: the source IP of the request; used to bound the grace
         window (a grace hit must come from the IP the device was last seen at)
-    :return: ``None`` if there is no live device for this cookie (unknown or
-        expired); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
+    :param idle_timeout: if given, a device whose last recognition (or, if it was
+        never recognised, its creation) lies further back than this is no longer valid
+    :return: ``None`` if there is no live device for this cookie (unknown,
+        expired or idle); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
         ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
         token) and ``True`` for a tolerated grace-window hit (the caller must
         **not** rotate - it converges on the current token)
@@ -250,7 +321,7 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
     if not series_id or counter is None or not identity:
         return None
 
-    device = RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id,
+    device = RememberedDevice.query.filter_by(series_id=hash_series_id(series_id), client_id=client_id,
                                           resolver=identity.resolver, user_id=identity.user_id,
                                           realm_id=identity.realm_id).first()
     if not device:
@@ -263,10 +334,23 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
         device.delete()
         return None
 
-    if device.counter == counter:
-        return ValidDevice(device, False)
+    is_grace = device.counter != counter and _is_within_grace(device, counter, client_ip)
+    if device.counter != counter and not is_grace:
+        # Any other counter mismatch means the cookie was replayed. Invalidate the
+        # whole series so neither the legitimate client nor the attacker can use it.
+        # This comes before the idle timeout, so a replay is reported as one also when
+        # the device has not been used for a while.
+        log.warning(f"Remembered device token reuse detected for client {client_id!r}; "
+                    f"deleting the device.")
+        device.delete()
+        raise AuthError(_("Authentication failure. Device token reuse detected."))
 
-    if _is_within_grace(device, counter, client_ip):
+    if idle_timeout and (device.last_used_at or device.created_at) + idle_timeout < utc_now():
+        log.info(f"Remembered device for client {client_id!r} was not used within the idle timeout; removing it.")
+        device.delete()
+        return None
+
+    if is_grace:
         # Concurrent/duplicate request presenting the just-superseded counter -
         # tolerate it without rotating (single-step, time- and IP-bounded).
         # last_used_at is deliberately NOT refreshed here: the window stays
@@ -277,12 +361,7 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
                   f"counter within the grace window.")
         return ValidDevice(device, True)
 
-    # Any other counter mismatch means the cookie was replayed. Invalidate the
-    # whole series so neither the legitimate client nor the attacker can use it.
-    log.warning(f"Remembered device token reuse detected for client {client_id!r}; "
-                f"deleting the device.")
-    device.delete()
-    raise AuthError(_("Authentication failure. Device token reuse detected."))
+    return ValidDevice(device, False)
 
 
 def _is_within_grace(device: RememberedDevice, counter: int, client_ip: str) -> bool:
@@ -303,16 +382,17 @@ def _is_within_grace(device: RememberedDevice, counter: int, client_ip: str) -> 
     return True
 
 
-class RotatedCookie(NamedTuple):
-    """A rotated cookie's new value and its expiry (see :func:`rotate_device`)."""
-    value: str
+class RotatedDevice(NamedTuple):
+    """A rotated device's new counter and its expiry (see :func:`rotate_device`)."""
+    counter: int
     expires_at: datetime | None
 
 
-def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> RotatedCookie | None:
+def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> RotatedDevice | None:
     """
     Rotate a validated device: bump the counter, refresh ``last_used_at`` and
-    return the new cookie value plus its expiry.
+    return the new counter plus its expiry. The device stores only the digest of the
+    series id, so the caller builds the new cookie value from the presented cookie.
 
     The counter is moved with a single conditional UPDATE from the value this request validated, so of
     several requests presenting the same cookie at the same moment only one rotates it. The others get
@@ -320,11 +400,11 @@ def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> Rot
 
     :param device: a device returned by :func:`get_valid_device`
     :param client_ip: the source of this request, recorded as where the device was last seen
-    :return: a :class:`RotatedCookie` ``(value, expires_at)``, or None if another request rotated it first
+    :return: a :class:`RotatedDevice` ``(counter, expires_at)``, or None if another request rotated it first
     """
     # Read what is needed before the commit: it expires the instance, and the attributes would be
     # reloaded from a row another request may already have moved.
-    series_id = device.series_id
+    stored_series_id = device.series_id
     presented_counter = device.counter
     expires_at = device.expires_at
     values = {"counter": presented_counter + 1, "last_used_at": utc_now()}
@@ -338,7 +418,7 @@ def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> Rot
     # MariaDB >= 11.6.2 does not refuse it with 1020.
     db.session.commit()
     statement = (update(RememberedDevice)
-                 .where(RememberedDevice.series_id == series_id,
+                 .where(RememberedDevice.series_id == stored_series_id,
                         RememberedDevice.counter == presented_counter)
                  .values(**values)
                  .execution_options(synchronize_session=False))
@@ -346,7 +426,7 @@ def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> Rot
     db.session.commit()
     if not rotated:
         return None
-    return RotatedCookie(build_cookie_value(series_id, presented_counter + 1), expires_at)
+    return RotatedDevice(presented_counter + 1, expires_at)
 
 
 class RememberStatus(str, enum.Enum):
@@ -360,7 +440,7 @@ class RememberStatus(str, enum.Enum):
     * ``FOREIGN`` - the series is live but bound to a *different* user on the
       same client (a shared browser). Not recognised, but the caller must **not**
       clear it, or one user logging in would wipe another user's cookie.
-    * ``MISS`` - no live device for this cookie (unknown or expired); the caller
+    * ``MISS`` - no live device for this cookie (unknown, expired or idle); the caller
       should clear it.
     * ``THEFT`` - replay detected; the series has already been invalidated and
       the caller must clear the cookie.
@@ -386,7 +466,8 @@ class ConsumeResult(NamedTuple):
 
 
 def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: UserIdentity,
-                                   client_ip: str | None = None) -> ConsumeResult:
+                                   client_ip: str | None = None,
+                                   idle_timeout: timedelta | None = None) -> ConsumeResult:
     """
     Consume a presented remember-device cookie: validate it (see
     :func:`get_valid_device`) and rotate it on a fresh use. This is the single
@@ -404,12 +485,15 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
     :param identity: the resolver-stable identity the cookie must be bound to
         (see :func:`user_identity`)
     :param client_ip: the source IP of the request (bounds the grace window)
+    :param idle_timeout: if given, a device not used for longer than this is no
+        longer recognised (see :func:`get_valid_device`)
     :return: a :class:`ConsumeResult`. Theft is reported as ``status ==
         "theft"`` (the series has already been invalidated) rather than raised,
         so the caller can answer "not recognised" uniformly.
     """
+    series_id, _counter = parse_cookie(cookie_value)
     try:
-        result = get_valid_device(cookie_value, client_id, identity, client_ip)
+        result = get_valid_device(cookie_value, client_id, identity, client_ip, idle_timeout)
     except AuthError:
         return ConsumeResult(RememberStatus.THEFT, None, None)
     if not result:
@@ -418,9 +502,8 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         # where the cookie is a single browser-level value. Distinguish the two:
         # if the series is still live for some user of this client, treat it as a
         # "foreign" soft miss so we do not clear it and wipe that user's device.
-        series_id, _counter = parse_cookie(cookie_value)
         if series_id:
-            other = RememberedDevice.query.filter_by(series_id=series_id, client_id=client_id).first()
+            other = RememberedDevice.query.filter_by(series_id=hash_series_id(series_id), client_id=client_id).first()
             if other and not (other.expires_at and other.expires_at < utc_now()):
                 return ConsumeResult(RememberStatus.FOREIGN, None, None)
         return ConsumeResult(RememberStatus.MISS, None, None)
@@ -432,13 +515,13 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         # presents what is now the previous counter. Validate once more and answer it the way a later
         # request with that cookie is answered: tolerated within the grace window, reuse otherwise.
         try:
-            again = get_valid_device(cookie_value, client_id, identity, client_ip)
+            again = get_valid_device(cookie_value, client_id, identity, client_ip, idle_timeout)
         except AuthError:
             return ConsumeResult(RememberStatus.THEFT, None, None)
         if again and again.is_grace:
             return ConsumeResult(RememberStatus.GRACE, None, None)
         return ConsumeResult(RememberStatus.MISS, None, None)
-    return ConsumeResult(RememberStatus.RECOGNIZED, rotated.value, rotated.expires_at)
+    return ConsumeResult(RememberStatus.RECOGNIZED, build_cookie_value(series_id, rotated.counter), rotated.expires_at)
 
 
 def set_persistent_cookie(response, cookie_value: str, expires_at) -> None:
@@ -548,6 +631,30 @@ def count_user_devices(client_id: str, resolver: str, user_id: str, realm_id: in
         RememberedDevice.realm_id == realm_id,
         (RememberedDevice.expires_at.is_(None)) | (RememberedDevice.expires_at >= utc_now()),
     ).count()
+
+
+def remove_idle_devices(client_id: str, identity: UserIdentity, idle_timeout: timedelta) -> int:
+    """
+    Remove the remembered devices of a user on a client that were not used within the idle timeout. They are no
+    longer recognised (see :func:`get_valid_device`), but a device whose cookie is not presented again would otherwise
+    stay until it expires, listed among the client's devices and counted towards the
+    ``remember_device_max_devices`` cap.
+
+    :param client_id: the id of the API client
+    :param identity: the resolver-stable identity of the user
+    :param idle_timeout: the time since the last recognition, or since the creation of a device never recognised,
+        after which a device is idle
+    :return: the number of removed devices
+    """
+    count = RememberedDevice.query.filter(
+        RememberedDevice.client_id == client_id,
+        RememberedDevice.resolver == identity.resolver,
+        RememberedDevice.user_id == identity.user_id,
+        RememberedDevice.realm_id == identity.realm_id,
+        func.coalesce(RememberedDevice.last_used_at, RememberedDevice.created_at) < utc_now() - idle_timeout,
+    ).delete(synchronize_session=False)
+    db.session.commit()
+    return count
 
 
 def get_client_devices(client_id: str, realm_ids: list[int] | set[int] | None = None,

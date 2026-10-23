@@ -26,6 +26,8 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import {
   ApiClientService,
   ApiClientServiceInterface,
@@ -52,7 +54,8 @@ const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, n
     MatFormFieldModule,
     MatSelectModule,
     MatPaginatorModule,
-    DatePipe
+    DatePipe,
+    TableStateComponent
   ],
   templateUrl: "./api-client-remembered-devices.component.html",
   styleUrl: "./api-client-remembered-devices.component.scss"
@@ -115,8 +118,14 @@ export class ApiClientRememberedDevicesComponent {
 
   readonly devices = computed<RememberedDevice[]>(() => this.loadedPage().devices);
   readonly count = computed<number>(() => this.loadedPage().count);
-  readonly loadFailed = computed<boolean>(() => this.devicesResource.error() !== undefined);
-  readonly isLoading = computed<boolean>(() => this.devicesResource.isLoading());
+
+  readonly tableState = new TableState({
+    resource: this.devicesResource,
+    count: () => this.count(),
+    filterActive: () => !!this.realmFilter(),
+    allowed: () => this.authService.actionAllowed("remembered_device_list"),
+    resetFilter: () => this.onRealmFilterChange("")
+  });
 
   userDevicesTooltip(): string {
     return $localize`:@@apiClient.revokeAllUserDevices:Revoke all of this user's remembered devices on this client`;
@@ -184,11 +193,11 @@ export class ApiClientRememberedDevicesComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`:@@apiClient.revokeAllDevicesForUser:Revoke All Devices For User`,
+          title: $localize`:@@apiClient.revokeAllDevicesForUser:Revoke All Devices for User`,
           items: [`${user}@${device.realm}`],
           itemType: "remembered-device",
           confirmAction: {
-            label: $localize`:@@apiClient.revokeAllForThisClient:Revoke all for this client`,
+            label: $localize`:@@apiClient.revokeAllForThisClient:Revoke All for This Client`,
             value: true,
             type: "destruct"
           }
@@ -206,8 +215,8 @@ export class ApiClientRememberedDevicesComponent {
 
   revokeAllLabel(): string {
     return this.realmFilter()
-      ? $localize`:@@apiClient.revokeAllInThisRealm:Revoke all in this realm`
-      : $localize`:@@apiClient.revokeAll:Revoke all`;
+      ? $localize`:@@apiClient.revokeAllInThisRealm:Revoke All in This Realm`
+      : $localize`:@@apiClient.revokeAll:Revoke All`;
   }
 
   revokeAll(): void {
@@ -218,7 +227,7 @@ export class ApiClientRememberedDevicesComponent {
         component: SimpleConfirmationDialogComponent,
         data: {
           title: realm
-            ? $localize`:@@apiClient.revokeAllInRealm:Revoke All In Realm`
+            ? $localize`:@@apiClient.revokeAllInRealm:Revoke All in Realm`
             : $localize`:@@apiClient.revokeAllRememberedDevices:Revoke All Remembered Devices`,
           items: [
             realm

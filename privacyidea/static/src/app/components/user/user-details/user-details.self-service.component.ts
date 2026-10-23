@@ -68,7 +68,7 @@ export class UserDetailsSelfServiceComponent {
 
   readonly labels: Record<string, string> = {
     username: $localize`:@@common.username:Username`,
-    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    givenname: $localize`:@@user.givenNameLabel:Given Name`,
     surname: $localize`:@@user.surname:Surname`,
     email: $localize`:@@common.email:Email`,
     phone: $localize`:@@user.phone:Phone`,

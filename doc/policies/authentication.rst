@@ -1477,8 +1477,10 @@ remember_device
 type: ``bool``
 
 Allow an API client to obtain a persistent "remember this device" cookie on a
-successful authentication at :http:post:`/validate/check` (the client must send
-``request_persistent_cookie=1``). The feature is off by default and requires the
+successful authentication with a token at :http:post:`/validate/check` (the
+client must send ``request_persistent_cookie=1``). A login that a policy accepts
+without a token, like :ref:`passonnotoken` or :ref:`passthru_policy`,
+gets no cookie. The feature is off by default and requires the
 request to be made by an identified API client (the ``X-API-Key`` header, see
 the :ref:`policy_api_client_list` admin action): without a client, no cookie is
 issued and the recognition endpoint returns ``401``.
@@ -1486,14 +1488,27 @@ issued and the recognition endpoint returns ``401``.
 The cookie holds only a rotating ``series_id:counter`` token (never the API key)
 and is later checked at :http:post:`/validate/remember_device`, which reports
 whether the device is recognized so the calling client can decide to skip the
-second factor. Recognition is **not** an authentication and does not by itself
-grant access.
+second factor. A device is only recognized while the user has a token that could
+be used for a login, see :ref:`api_clients_recognizing_device`. Recognition is
+**not** an authentication and does not by itself grant access.
 
 .. note:: :http:get:`/validate/capabilities` reports whether this policy makes
     the feature available to a client. That is a *client-level* answer; whether
     it applies to a specific user is decided at issuance and recognition, so a
     policy scoped to specific users/realms may still report ``true`` to the
     client.
+
+Removing or deactivating the policy does not end the devices that are already
+remembered. While no ``remember_device`` policy applies to a user, their devices
+are not recognized and the presented cookie is not read. Once a policy applies
+again, the devices are recognized again until they expire. To end them, revoke
+them, see :ref:`api_clients_revoking_devices`.
+
+A recognized device is not a use of a token: a login in which the client skips
+the second factor does not update the ``last_auth`` of the user's tokens. With a
+:ref:`policy_last_auth` policy, keep :ref:`policy_remember_device_validity`
+shorter than its time frame, or the next login with the token after a period of
+remembered logins is refused.
 
 .. versionadded:: 3.14
 
@@ -1502,15 +1517,66 @@ grant access.
 remember_device_validity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: ``integer``
+type: ``string``
 
-How many days a "remember this device" cookie stays valid. If unset, the default
-is 30 days. Because it is a policy value, it can be scoped per realm or user with
-the usual conditions - for example a shorter lifetime for administrators than for
-regular users. The lifetime is fixed when the cookie is issued; recognition
-rotates the token but does not extend the expiry.
+How long a "remember this device" cookie stays valid after it is issued, like
+``30d``, ``8h`` or ``90m`` (``s``, ``m``, ``h``, ``d`` and ``y`` are allowed). A
+number without a unit counts as days; a policy with another value is not saved.
+If unset, the default is 30 days. Because
+it is a policy value, it can be scoped per realm or user with the usual
+conditions - for example a shorter lifetime for administrators than for regular
+users. The lifetime is fixed when the cookie is issued; recognition rotates the
+token but does not extend the expiry, so after this time the user logs in with
+the second factor again. Changing the policy applies to the devices issued
+afterwards. To also forget a device that is not recognized for a while, set
+:ref:`policy_remember_device_idle_timeout`.
 
 .. versionadded:: 3.14
+
+.. versionchanged:: 3.14.1 The value takes a unit.
+
+.. _policy_remember_device_idle_timeout:
+
+remember_device_idle_timeout
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+A remembered device that is not recognized for this long, like ``7d`` or
+``4h``, is no longer recognized. The user logs in with the second factor again
+and can have the device remembered anew. The units are those of
+:ref:`policy_remember_device_validity`, and a number without a unit counts as
+days. If unset, a device stays recognized until its validity ends.
+
+The idle timeout counts from the last recognition at
+:http:post:`/validate/remember_device`, or from the issuance for a device that
+was never recognized. A login with the second factor at
+:http:post:`/validate/check` does not reset it; if the client opts in again
+there, it gets a new device with its own validity.
+
+Together with :ref:`policy_remember_device_validity`, a remembered device ends at
+whichever limit it reaches first. The validity is fixed at issuance and no
+recognition moves it, while the idle timeout starts again with every
+recognition. For example, with a validity of ``30d`` and an idle timeout of
+``7d``, a device that is recognized every day stays remembered for 30 days after
+its issuance, and a device that is not recognized for 7 days is forgotten after
+these 7 days. An idle timeout that is not shorter than the validity has no
+effect.
+
+The two policies are read at different times. The validity is read when a
+device is issued, so a change applies to the devices issued afterwards. The
+idle timeout is read at each recognition, so a change applies to the devices
+already remembered as well.
+
+The cookie keeps the expiry of the validity, so a client still presents the
+cookie of an idle device. privacyIDEA then answers that the device is not
+recognized, removes the device and clears the cookie. When the user has a device
+remembered again, privacyIDEA also removes the user's other idle devices on that
+client, so they do not count towards :ref:`policy_remember_device_max_devices`.
+A cookie presented with an outdated counter is still a replay, also when the
+device is idle.
+
+.. versionadded:: 3.14.1
 
 .. _policy_remember_device_max_devices:
 

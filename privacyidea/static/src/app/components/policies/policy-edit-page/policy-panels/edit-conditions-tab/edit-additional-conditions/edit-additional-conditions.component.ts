@@ -226,7 +226,7 @@ export class EditAdditionalConditionsComponent {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`:@@common.discardChanges:Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard Changes`,
           allowSaveExit: this.canSaveCondition(),
           saveExitDisabled: !this.canSaveCondition()
         }
