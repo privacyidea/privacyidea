@@ -157,7 +157,8 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
-from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
+from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
+                                                      confirm_attempt_for_serials)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
                                    check_fido2_token_state, record_fido2_login_success)
@@ -807,13 +808,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
-    # auth_max_fail and auth_max_success, which check_user_pass applies to every other authentication and to the
-    # answers of enrollment challenges
-    time_limit = check_auth_time_limit(user)
-    if not time_limit.allowed:
-        context["details"].update(time_limit.reply_dict)
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
-        _record_context_reason(context, time_limit.reason)
+    # Also for the answers of enrollment challenges, as check_user_pass does
+    if not _check_time_limit(context, user):
         return  # Result remains False
 
     # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
@@ -954,6 +950,23 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.CHALLENGE_WRONG_RESPONSE, token.get_serial())
 
 
+def _check_time_limit(context: dict, user: User) -> bool:
+    """
+    Check the auth_max_fail and auth_max_success policies of the user, which check_user_pass applies to an
+    authentication with a user, and record a refusal in the context.
+
+    :param context: The context of the authentication request
+    :param user: The user who authenticates
+    :return: True if the user may authenticate
+    """
+    time_limit = check_auth_time_limit(user)
+    if not time_limit.allowed:
+        context["details"].update(time_limit.reply_dict)
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+        _record_context_reason(context, time_limit.reason)
+    return time_limit.allowed
+
+
 def _handle_serial_auth(context: dict, serial: str):
     """
     Handles authentication with serial provided
@@ -981,6 +994,12 @@ def _handle_serial_auth(context: dict, serial: str):
             context["user"] = user
             context["options"]["user"] = user
             context["options"].update(rerun_user_dependent_prepolicies(request))
+
+    if user and user.exist():
+        # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer
+        confirm_attempt_for_serials([serial])
+        if not _check_time_limit(context, user):
+            return  # Result remains False
 
     # Perform Check
     if not otp_only:

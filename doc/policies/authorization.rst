@@ -269,8 +269,8 @@ performed the authentication request is refused, and the OTP value stays valid.
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value. A FIDO2 authentication that names no user is matched for the
-owner of the token.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
 
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
@@ -303,8 +303,8 @@ failed authentications were performed the authentication request is refused, and
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value. A FIDO2 authentication that names no user is matched for the
-owner of the token.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.
