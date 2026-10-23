@@ -438,6 +438,12 @@
           }
         </ng-template>
       </app-details-card>
+
+      @if (authService.actionAllowed("remembered_device_list")) {
+        <app-details-card class="details-card--remembered-devices">
+          <app-user-details-remembered-devices />
+        </app-details-card>
+      }
     </div>
   </div>
 }
