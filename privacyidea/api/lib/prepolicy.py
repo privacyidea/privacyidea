@@ -84,6 +84,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
                                       log_authentication)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
+from privacyidea.lib.conditional_access.request_context import confirm_attempt_for_serials
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -3365,7 +3366,12 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, reasons=[reason])
+        transaction_id = get_optional(request.all_data, "transaction_id")
+        if transaction_id and not local_admin:
+            # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer
+            confirm_attempt_for_serials(token.token.serial for token in get_tokens(user=user))
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, transaction_id=transaction_id,
+                           reasons=[reason])
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

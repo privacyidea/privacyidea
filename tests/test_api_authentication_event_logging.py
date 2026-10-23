@@ -1708,6 +1708,28 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path,
                                         reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["authlog_login_disabled"])
 
+    def test_attempt_id_groups_an_answer_refused_by_auth_max_fail(self):
+        # An answer refused before its token is checked is still a step of the attempt of the challenge it answers.
+        # The refusal comes from the auth_timelimit pre-policy, which does not know the token, so the row names none.
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
     """Authentication-log coverage for the admin /validate/triggerchallenge endpoint."""
