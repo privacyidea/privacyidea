@@ -101,7 +101,8 @@ class EventHandler(MethodsMixin, db.Model):
         condition_dict = {}
         # Fetching all conditions from the relationship
         for cond in self.conditions:
-            condition_dict[cond.Key] = cond.Value
+            # Oracle stores an empty condition as NULL, the handlers compare it as a string
+            condition_dict[cond.Key] = cond.Value or ""
         d["conditions"] = condition_dict
         return d
 

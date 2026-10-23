@@ -203,12 +203,14 @@ class EventHandlerLibTestCase(MyTestCase):
 
         delete_event(eid)
 
-    def test_01c_empty_option_is_an_empty_string(self):
-        # An option saved empty reaches the handler as an empty string on every database
+    def test_01c_empty_option_and_condition_are_empty_strings(self):
+        # An option or condition saved empty reaches the handler as an empty string on every database
         eid = set_event("empty_option", "token_init", "UserNotification", "sendmail",
+                        conditions={"realm": "", "result_value": "True"},
                         options={"emailconfig": "themis", "mimetype": ""})
         event = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
         self.assertEqual({"emailconfig": "themis", "mimetype": ""}, event.get()["options"])
+        self.assertEqual({"realm": "", "result_value": "True"}, event.get()["conditions"])
 
         delete_event(eid)
 
