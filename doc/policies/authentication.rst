@@ -1498,6 +1498,18 @@ be used for a login, see :ref:`api_clients_recognizing_device`. Recognition is
     policy scoped to specific users/realms may still report ``true`` to the
     client.
 
+Removing or deactivating the policy does not end the devices that are already
+remembered. While no ``remember_device`` policy applies to a user, their devices
+are not recognized and the presented cookie is not read. Once a policy applies
+again, the devices are recognized again until they expire. To end them, revoke
+them, see :ref:`api_clients_revoking_devices`.
+
+A recognized device is not a use of a token: a login in which the client skips
+the second factor does not update the ``last_auth`` of the user's tokens. With a
+:ref:`policy_last_auth` policy, keep :ref:`policy_remember_device_validity`
+shorter than its time frame, or the next login with the token after a period of
+remembered logins is refused.
+
 .. versionadded:: 3.14
 
 .. _policy_remember_device_validity:

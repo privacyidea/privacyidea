@@ -311,6 +311,8 @@ authenticate anymore, and vice versa.
 
 .. versionadded:: 2.8
 
+.. _policy_last_auth:
+
 last_auth
 ~~~~~~~~~
 
@@ -327,6 +329,14 @@ if the token was not successfully used for 12 hours, 123 days or 2 years.
 The date of the last successful authentication is stored in the ``tokeninfo``
 field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
 passkey authentications).
+
+A login through a remembered device (see :ref:`policy_remember_device`) skips
+the second factor, so it does not use a token and does not update ``last_auth``.
+A user who logs in that way for longer than this time frame is refused at the
+next login with the token. For such users, keep
+:ref:`policy_remember_device_validity` shorter than the time frame of this
+policy: when the validity ends, the user logs in with the token again, which
+updates ``last_auth``.
 
 .. versionadded:: 2.8
 

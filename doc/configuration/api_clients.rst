@@ -204,6 +204,8 @@ theft-detection tightness for fewer of them. The user is never wrongly
 authenticated either way.
 
 
+.. _api_clients_revoking_devices:
+
 Viewing and revoking remembered devices
 ----------------------------------------
 
