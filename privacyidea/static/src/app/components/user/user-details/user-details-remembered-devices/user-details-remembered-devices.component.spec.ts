@@ -122,6 +122,18 @@ describe("UserDetailsRememberedDevicesComponent", () => {
     expect(element.querySelector("table")).toBeNull();
   });
 
+  it("should show the paginator only when there is more than one page", async () => {
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector("mat-paginator")).toBeNull();
+
+    apiClientServiceMock.getUserRememberedDevices = jest
+      .fn()
+      .mockResolvedValue({ devices: [device], count: 11, prev: null, next: 2 });
+    apiClientServiceMock.reloadRememberedDevices();
+    await settle();
+    expect(element.querySelector("mat-paginator")).not.toBeNull();
+  });
+
   it("should revoke a single device on its client after confirmation", async () => {
     component.revokeDevice(device);
     confirmClosed.next(true);
