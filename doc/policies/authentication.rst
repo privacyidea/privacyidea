@@ -1488,8 +1488,9 @@ issued and the recognition endpoint returns ``401``.
 The cookie holds only a rotating ``series_id:counter`` token (never the API key)
 and is later checked at :http:post:`/validate/remember_device`, which reports
 whether the device is recognized so the calling client can decide to skip the
-second factor. Recognition is **not** an authentication and does not by itself
-grant access.
+second factor. A device is only recognized while the user has a token that could
+be used for a login, see :ref:`api_clients_recognizing_device`. Recognition is
+**not** an authentication and does not by itself grant access.
 
 .. note:: :http:get:`/validate/capabilities` reports whether this policy makes
     the feature available to a client. That is a *client-level* answer; whether

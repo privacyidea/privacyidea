@@ -193,6 +193,29 @@ def user_identity(user: "User | None") -> UserIdentity | None:
     return UserIdentity(resolver, user_id, user.realm_id)
 
 
+def has_usable_token(user: "User") -> bool:
+    """
+    Whether at least one token of the user could be used to log in right now, by the checks a login applies to each
+    token (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not), neither
+    its fail counter nor its authentication counters are exceeded, it is within its validity period and it is fully
+    enrolled. Like a login, this first clears a fail counter whose clear timeout has passed.
+
+    A remembered device stands in for the second factor, so it is recognised only while the user has a token to
+    present one with.
+
+    :param user: the user the device is bound to
+    :return: True if at least one token of the user is usable
+    """
+    # Imported lazily: privacyidea.lib.token pulls in a large part of the library, and this module is imported early
+    # through the policy evaluators.
+    from privacyidea.lib.token import get_tokens
+    for token in get_tokens(user=user):
+        token.check_reset_failcount()
+        if token.check_all([]):
+            return True
+    return False
+
+
 def create_remembered_device(identity: UserIdentity, client_id: str, ip_address: str | None = None,
                              user_agent: str | None = None,
                              validity: timedelta | None = None) -> tuple[RememberedDevice, str]:

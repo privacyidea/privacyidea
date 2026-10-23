@@ -122,7 +122,8 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft, parse_device_duration, remove_idle_devices)
+                                               handle_device_theft, has_usable_token, parse_device_duration,
+                                               remove_idle_devices)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -1400,7 +1401,11 @@ def check_remember_device():
     ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
     reports); otherwise the answer is always ``false`` and a presented cookie is
     left untouched. A device that was not recognised for the
-    ``remember_device_idle_timeout`` is removed and its cookie cleared.
+    ``remember_device_idle_timeout`` is removed and its cookie cleared. A device is
+    also not recognised while none of the user's tokens could be used for a login
+    (disabled, revoked, a counter exceeded, outside its validity period or not yet
+    enrolled); the cookie is then left untouched, so the device is recognised again
+    once a token is usable.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1456,24 +1461,39 @@ def check_remember_device():
     presented = request.cookies.get(PERSISTENT_COOKIE_NAME)
     identity = user_identity(user)
 
-    if presented and identity and Match.user(g, scope=SCOPE.AUTH,
-                                             action=PolicyAction.REMEMBER_DEVICE,
-                                             user_object=user).any():
+    if not presented:
+        info = "device not recognised: no cookie presented"
+    elif not identity:
+        info = "device not recognised: the user does not resolve"
+    elif not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
+        info = "device not recognised: no remember_device policy applies to the user"
+    elif not has_usable_token(user):
+        # The device stands in for the second factor, and the user has no token left to present one with - a full
+        # login would fail as well. The cookie is neither consumed nor cleared, so the device is recognised again once
+        # a token of the user is usable, like after a refusal by conditional access.
+        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: none of the "
+                 f"user's tokens is usable (disabled, revoked, fail or authentication counter exceeded, outside its "
+                 f"validity period or not yet enrolled). The device is kept and recognised again once a token of "
+                 f"the user is usable.")
+        info = "device not recognised: the user has no usable token"
+    else:
         idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
         result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout)
         if result.status == RememberStatus.RECOGNIZED:
             recognised = True
             cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
+            info = "remembered device recognised"
         elif result.status == RememberStatus.GRACE:
             # Tolerated concurrent/duplicate request: recognised, but do not
             # rotate (the client keeps the cookie it already has).
             recognised = True
+            info = "remembered device recognised again within the grace window, cookie not rotated"
         elif result.status == RememberStatus.FOREIGN:
             # The cookie is live but belongs to a different user on this same
             # client (a shared browser). Not recognised, but leave the cookie
             # alone - clearing it would wipe the rightful user's remembered device
             # off the shared browser just because someone else logged in.
-            pass
+            info = "device not recognised: the cookie belongs to another user of this client"
         elif result.status == RememberStatus.THEFT:
             # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
             # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
@@ -1490,8 +1510,10 @@ def check_remember_device():
                                other_info={"client_id": g.get("client_id")})
             handle_device_theft(identity)
             cookie_action = CookieAction("clear")
+            info = "device not recognised: cookie reuse detected, all remembered devices of the user revoked"
         else:  # miss: the cookie is dead (unknown, expired or idle) - clear it
             cookie_action = CookieAction("clear")
+            info = "device not recognised: the cookie is unknown, expired or idle and is cleared"
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
@@ -1499,7 +1521,7 @@ def check_remember_device():
     g.audit_object.log({
         "user": user.login, "resolver": user.resolver, "realm": user.realm,
         "success": recognised,
-        "info": "remembered device recognised" if recognised else "device not recognised",
+        "info": info,
     })
 
     # Default rid (1) so send_result does not stamp result.authentication

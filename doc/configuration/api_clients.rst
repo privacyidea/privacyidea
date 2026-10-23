@@ -101,6 +101,8 @@ relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
 ``Max-Age``), and holds only a
 rotating ``series_id:counter`` token — **never** the API key.
 
+.. _api_clients_recognizing_device:
+
 Recognizing the device
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -136,6 +138,16 @@ the policy, exactly as at ``/validate/check``; with nothing configured the
    refusal, which would cost the user their remembered device on every temporary
    lock — a worse trade against a party that is already trusted enough to hold a
    key, and that can learn the same thing from ``/validate/check``.
+
+A remembered device stands in for the second factor, so it is only recognized
+while the user still has a token that could be used for a login: one that is
+active and not revoked, within its validity period, fully enrolled, and whose
+fail counter and authentication counters are not exceeded. These are the checks
+a login applies, so a user whose tokens were all disabled, revoked, removed or
+locked gets "not recognized" from a remembered device as well. As with conditional
+access, the cookie is neither rotated nor cleared and the device is kept, so it is
+recognized again once a token of the user is usable. To end the devices for good,
+revoke them (see below).
 
 On a miss the answer is simply "not recognized". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or

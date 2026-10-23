@@ -10,7 +10,7 @@ from privacyidea.lib.remembered_device import (PERSISTENT_COOKIE_NAME, create_re
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import enable_token, init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import RememberedDevice
 from privacyidea.models.utils import utc_now
@@ -291,6 +291,10 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         self.setUp_user_realms()
         self.identity = user_identity(User(login="cornelius", realm=self.realm1))
         set_policy(self.POLICY, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        # A device is only recognised while the user has a usable token
+        init_token({"type": "spass", "pin": "test", "serial": "SPASS_RECOGNISE"},
+                   user=User(login="cornelius", realm=self.realm1))
+        self.addCleanup(remove_token, "SPASS_RECOGNISE")
 
     def tearDown(self):
         try:
@@ -514,3 +518,37 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
             self.assertIsNone(RememberedDevice.query.filter_by(series_id=idle_series).first())
         finally:
             delete_policy("remember_idle")
+
+    def test_12_device_needs_a_usable_token(self):
+        # While no token of the user could be used for a login, the device is not recognised. The cookie is neither
+        # rotated nor cleared, so the device is recognised again once a token is usable.
+        client, api_key = create_client("token state client", "privacyidea-cp")
+        device, cookie = create_remembered_device(self.identity, client.id)
+        stored_series_id = device.series_id
+
+        enable_token("SPASS_RECOGNISE", False)
+        res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        self.assertEqual([], self._cookie_headers(res))
+        self.assertEqual(1, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+        entry = self.find_most_recent_audit_entry(action="*validate/remember_device*")
+        self.assertEqual("device not recognised: the user has no usable token", entry["info"])
+
+        enable_token("SPASS_RECOGNISE", True)
+        res = self._recognise(api_key=api_key, cookie=cookie)
+        self.assertEqual(1, len(self._cookie_headers(res)))
+        self.assertEqual(2, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+
+    def test_13_audit_names_the_reason(self):
+        # The audit entry of a recognition says why a device was not recognised
+        client, api_key = create_client("audit reason client", "privacyidea-cp")
+        self._recognise(api_key=api_key, expect_value=False)
+        self.assertEqual("device not recognised: no cookie presented",
+                         self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
+        self._recognise(api_key=api_key, cookie="doesnotexist:1", expect_value=False)
+        self.assertEqual("device not recognised: the cookie is unknown, expired or idle and is cleared",
+                         self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
+        _device, cookie = create_remembered_device(self.identity, client.id)
+        delete_policy(self.POLICY)
+        self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        self.assertEqual("device not recognised: no remember_device policy applies to the user",
+                         self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])

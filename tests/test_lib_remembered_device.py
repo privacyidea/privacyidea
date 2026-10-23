@@ -8,12 +8,16 @@ from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          create_remembered_device, consume_remember_device_cookie,
                                          get_valid_device, user_identity, UserIdentity, rotate_device,
                                          cleanup_expired_remembered_devices, count_user_devices,
-                                         hash_series_id, parse_device_duration, remove_idle_devices,
+                                         hash_series_id, has_usable_token, parse_device_duration,
+                                         remove_idle_devices,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, get_policies, set_policy
 from privacyidea.lib.realm import set_realm
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
+from privacyidea.lib.token import enable_token, get_one_token, init_token, remove_token, revoke_token
+from privacyidea.lib.tokenclass import DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, FAILCOUNTER_EXCEEDED, RolloutState
 from privacyidea.lib.user import User
 from privacyidea.models import RememberedDevice, db
 from privacyidea.models.utils import utc_now
@@ -21,7 +25,7 @@ from privacyidea.models.utils import utc_now
 from sqlalchemy import update
 
 import hashlib
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class RememberedDeviceLibTestCase(MyTestCase):
@@ -525,3 +529,56 @@ class RememberedDeviceLibTestCase(MyTestCase):
                     set_policy("duration_check", scope=SCOPE.AUTH, action=f"{action}={value}")
             with self.assertRaises(ParameterError):
                 set_policy("duration_check", scope=SCOPE.AUTH, action=action)
+
+    def test_has_usable_token(self):
+        # The checks a login applies to each token decide whether the user still has a usable token
+        user = User(login="cornelius", realm=self.realm1)
+        remove_token(user=user)
+        self.assertFalse(has_usable_token(user))
+
+        init_token({"type": "spass", "pin": "test", "serial": "USABLE_1"}, user=user)
+        self.addCleanup(remove_token, "USABLE_1")
+        self.assertTrue(has_usable_token(user))
+
+        enable_token("USABLE_1", False)
+        self.assertFalse(has_usable_token(user))
+        enable_token("USABLE_1", True)
+
+        token = get_one_token(serial="USABLE_1")
+        token.set_validity_period_end("2020-01-01T00:00+0000")
+        self.assertFalse(has_usable_token(user))
+        token.set_validity_period_end("")
+        self.assertTrue(has_usable_token(user))
+
+        token.token.rollout_state = RolloutState.CLIENTWAIT
+        token.token.save()
+        self.assertFalse(has_usable_token(user))
+        token.token.rollout_state = ""
+        token.token.save()
+
+        token.token.failcount = token.token.maxfail
+        token.token.save()
+        self.assertFalse(has_usable_token(user))
+
+        # A second, usable token is enough
+        init_token({"type": "spass", "pin": "test", "serial": "USABLE_2"}, user=user)
+        self.addCleanup(remove_token, "USABLE_2")
+        self.assertTrue(has_usable_token(user))
+        revoke_token("USABLE_2")
+        self.assertFalse(has_usable_token(user))
+
+    def test_has_usable_token_clears_an_expired_fail_counter(self):
+        # Like a login, the check first clears a fail counter whose clear timeout has passed
+        user = User(login="cornelius", realm=self.realm1)
+        remove_token(user=user)
+        init_token({"type": "spass", "pin": "test", "serial": "USABLE_FAIL"}, user=user)
+        self.addCleanup(remove_token, "USABLE_FAIL")
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial="USABLE_FAIL")
+        token.set_maxfail(5)
+        token.set_failcount(5)
+        exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
+        self.assertTrue(has_usable_token(user))
+        self.assertEqual(0, get_one_token(serial="USABLE_FAIL").token.failcount)
