@@ -20,12 +20,13 @@ This directory contains the migration test suite for privacyIDEA.
 >
 > **Lint:** `test_migration_conventions.py` also checks every migration since
 > 3.14 against `LINT_RULES`: an insert into a sequence-backed table takes its
-> id from the sequence, existence is checked by reflection rather than by the
-> error text, database errors are not printed and ignored, and nothing is
-> imported from `privacyidea.lib` or the models (except the helper modules
-> `privacyidea.models.db` and `privacyidea.models.utils`). Known exceptions are
-> listed in `MIGRATION_LINT_EXCEPTIONS`; the test fails for an entry that no
-> longer applies, so remove it together with the fix.
+> id from the sequence, whether an object exists or is already gone is checked
+> by reflection rather than by the error text, database errors are not printed
+> and ignored, and nothing is imported from `privacyidea.lib` or the models
+> (except the helper modules `privacyidea.models.db` and
+> `privacyidea.models.utils`). Known exceptions are listed in
+> `MIGRATION_LINT_EXCEPTIONS`; the test fails for an entry that no longer
+> applies, so remove it together with the fix.
 
 ---
 
