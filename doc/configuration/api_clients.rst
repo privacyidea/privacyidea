@@ -91,8 +91,11 @@ Issuing the cookie
 ~~~~~~~~~~~~~~~~~~
 
 On a successful :http:post:`/validate/check` where the client sends
-``request_persistent_cookie=1``, privacyIDEA issues a cookie when the client is
-identified, the policy allows it and the authenticating user is resolvable. The
+``request_persistent_cookie=1``, privacyIDEA issues a cookie when a token of the
+user verified the request, the client is identified, the policy allows it and
+the authenticating user is resolvable. A login that a policy accepts without a
+token - :ref:`passonnotoken`, :ref:`passonnouser`,
+:ref:`passthru_policy` or the :ref:`policy_auth_cache` - gets no cookie. The
 cookie is ``HttpOnly`` + ``Secure`` + ``SameSite=Strict``, carries both a
 relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
 ``Max-Age``), and holds only a

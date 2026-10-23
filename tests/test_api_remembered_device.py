@@ -72,8 +72,8 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
         return [v for k, v in res.headers if k == "Set-Cookie"
                 and v.startswith(PERSISTENT_COOKIE_NAME + "=")]
 
-    def _check(self, api_key=None, opt_in=True):
-        data = {"user": "cornelius", "realm": self.realm1, "pass": "test"}
+    def _check(self, api_key=None, opt_in=True, user="cornelius", password="test"):
+        data = {"user": user, "realm": self.realm1, "pass": password}
         if opt_in:
             data["request_persistent_cookie"] = True
         headers = {'X-API-Key': api_key} if api_key else {}
@@ -239,6 +239,40 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("remember")
             delete_policy("remember_max")
+
+    def test_10_no_cookie_without_a_verified_token(self):
+        # A remembered device stands for a token the user presented. A login that a policy accepts without verifying a
+        # token gets no cookie: passOnNoToken, passthru to the user store and a credential served from the
+        # authentication cache.
+        client, api_key = create_client("token check client", "privacyidea-cp")
+        set_policy("remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.addCleanup(delete_policy, "remember")
+        for login in ("hans", "passthru"):
+            remove_token(user=User(login, self.realm1))
+
+        set_policy("no_token", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
+        try:
+            self.assertEqual([], self._cookies(self._check(api_key, user="hans", password="anything")))
+        finally:
+            delete_policy("no_token")
+
+        set_policy("pass_thru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        try:
+            self.assertEqual([], self._cookies(self._check(api_key, user="passthru", password="pthru")))
+        finally:
+            delete_policy("pass_thru")
+
+        set_policy("cache", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4m")
+        try:
+            # The token verifies the first login, which puts the credential into the cache
+            self._check(api_key, opt_in=False)
+            res = self._check(api_key)
+            self.assertIn("AuthCache", res.json["detail"]["message"])
+            self.assertEqual([], self._cookies(res))
+        finally:
+            delete_policy("cache")
+
+        self.assertIsNone(RememberedDevice.query.filter_by(client_id=client.id).first())
 
 
 class RememberDeviceRecognitionTestCase(MyApiTestCase):

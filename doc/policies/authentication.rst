@@ -1477,8 +1477,10 @@ remember_device
 type: ``bool``
 
 Allow an API client to obtain a persistent "remember this device" cookie on a
-successful authentication at :http:post:`/validate/check` (the client must send
-``request_persistent_cookie=1``). The feature is off by default and requires the
+successful authentication with a token at :http:post:`/validate/check` (the
+client must send ``request_persistent_cookie=1``). A login that a policy accepts
+without a token, like :ref:`passonnotoken` or :ref:`passthru_policy`,
+gets no cookie. The feature is off by default and requires the
 request to be made by an identified API client (the ``X-API-Key`` header, see
 the :ref:`policy_api_client_list` admin action): without a client, no cookie is
 issued and the recognition endpoint returns ``401``.

@@ -642,6 +642,8 @@ def check():
         "response_params": {},
         "serial_list": [],
         "is_container_challenge": False,
+        # Whether a token (or a container) verified this request, rather than a policy accepting it without one
+        "token_verified": False,
         AUTH_EVENT_TYPE_KEY: None,
         AUTH_EVENT_REASON_KEY: [],
         AUTH_EVENT_REASON_DETAIL_KEY: None,
@@ -967,6 +969,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
 
     # Success Handling
     if context["result"]:
+        context["token_verified"] = True
         context["details"].update({
             "username": user.login,
             "message": _("Found matching challenge"),
@@ -1037,6 +1040,7 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
 
     context["result"] = success
+    context["token_verified"] = success
     context["details"] = details
 
     if "serial" in details:
@@ -1069,6 +1073,9 @@ def _handle_standard_auth(context: dict):
                 context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
             raise
 
+    # The token layer classifies every request it decides. A policy that accepts a login without a token (passOnNoToken,
+    # passOnNoUser, passthru, the authentication cache) leaves it unclassified.
+    context["token_verified"] = success and (context["is_container_challenge"] or AUTH_EVENT_TYPE_KEY in details)
     if AUTH_EVENT_TYPE_KEY not in details:
         # An absent key means nothing classified this request; a token suppressing its own terminal event (push_wait
         # timeout) leaves it present but None, which must survive so nothing overwrites the logged CHALLENGE_TRIGGERED.
@@ -1189,7 +1196,7 @@ def _finalize_auth_response(context):
     # a transient DB error while creating the device) must never turn that success
     # into a 500 - fall back to issuing no cookie.
     try:
-        cookie_action = _resolve_persistent_cookie(user, success)
+        cookie_action = _resolve_persistent_cookie(user, success, context["token_verified"])
     except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
         log.warning(f"Could not issue a remember-device cookie: {exc}")
         cookie_action = None
@@ -1243,7 +1250,7 @@ def _log_authentication_event(context):
     )
 
 
-def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None:
+def _resolve_persistent_cookie(user: User, success: bool, token_verified: bool) -> CookieAction | None:
     """
     Decide whether to *issue* a new persistent ("remember device") cookie on a
     successful authentication, returning a ``"set"`` :class:`CookieAction` or
@@ -1252,11 +1259,13 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
     ``/validate/check`` only issues cookies. A presented cookie is consumed and
     rotated by the dedicated recognition endpoint (``/validate/remember_device``),
     never here, so this endpoint carries no cookie theft/rotation logic. A cookie
-    is issued when the request is made by an identified API client, opts in
-    (``request_persistent_cookie``) and the ``remember_device`` policy (scope
-    auth, matched on user/realm) allows it.
+    is issued when the request verified a token, is made by an identified API
+    client, opts in (``request_persistent_cookie``) and the ``remember_device``
+    policy (scope auth, matched on user/realm) allows it. A remembered device lets
+    the client skip the second factor later, so it is only issued after a login in
+    which the user presented one.
     """
-    if not success or not g.get("client_id"):
+    if not success or not token_verified or not g.get("client_id"):
         return None
     if not is_true(get_optional(request.all_data, "request_persistent_cookie")):
         return None
