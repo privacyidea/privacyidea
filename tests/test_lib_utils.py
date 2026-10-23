@@ -114,8 +114,28 @@ class UtilsTestCase(MyTestCase):
     def test_04a_parse_proxy(self):
         self.assertEqual(parse_proxy(""), set())
         # 127.0.0.1 may rewrite to any IP
+        # A bare entry is documented as "may mask as any arbitrary client IP", which covers
+        # IPv6 clients as well (an IPv6 address is not contained in an IPv4 network), so it
+        # expands to one proxy path per address family.
         self.assertEqual(parse_proxy("127.0.0.1"),
-                         {(IPNetwork("127.0.0.1/32"), IPNetwork("0.0.0.0/0"))})
+                         {(IPNetwork("127.0.0.1/32"), IPNetwork("0.0.0.0/0")),
+                          (IPNetwork("127.0.0.1/32"), IPNetwork("::/0"))})
+        # A bare IPv6 entry expands the same way: whatever the entry's own family, the
+        # clients it may map are not limited to that family (master covered IPv4
+        # clients for every bare entry via 0.0.0.0/0).
+        self.assertEqual(
+            parse_proxy("2001:db8::1"),
+            {(IPNetwork("2001:db8::1/128"), IPNetwork("0.0.0.0/0")), (IPNetwork("2001:db8::1/128"), IPNetwork("::/0"))},
+        )
+        # An entry written in the mapped form is canonicalized to its IPv4 network, so
+        # it keeps matching the canonicalized path to client (see test_23l).
+        self.assertEqual(
+            parse_proxy("::ffff:10.0.0.1"),
+            {(IPNetwork("10.0.0.1/32"), IPNetwork("0.0.0.0/0")), (IPNetwork("10.0.0.1/32"), IPNetwork("::/0"))},
+        )
+        self.assertEqual(
+            parse_proxy("::ffff:10.0.0.0/120 > 192.0.2.0/24"), {(IPNetwork("10.0.0.0/24"), IPNetwork("192.0.2.0/24"))}
+        )
         # 127.0.0.x may rewrite to 10.0.x.x
         self.assertEqual(parse_proxy("127.0.0.1/24 >  10.0.0.0/16"),
                          {(IPNetwork("127.0.0.1/24"), IPNetwork("10.0.0.0/16"))})
@@ -131,9 +151,10 @@ class UtilsTestCase(MyTestCase):
                     ">10.0.0.0/8   "
         r = parse_proxy(proxy_def)
 
-        self.assertEqual(len(r), 3)
+        self.assertEqual(len(r), 4)
         self.assertIn((IPNetwork("1.2.3.4/16"), IPNetwork("192.168.1.0/24")), r)
         self.assertIn((IPNetwork("10.0.0.12/32"), IPNetwork("0.0.0.0/0")), r)
+        self.assertIn((IPNetwork("10.0.0.12/32"), IPNetwork("::/0")), r)
         self.assertIn((IPNetwork("172.16.0.1/32"), IPNetwork("10.0.0.0/8")), r)
 
         # check paths with only a single hop
@@ -859,6 +880,174 @@ class UtilsTestCase(MyTestCase):
         r.remote_addr = "not-an-ip-address"
         r.access_route = ["not-an-ip-address"]
         self.assertIsNone(get_client_ip(r, "10.0.0.1"))
+
+    def test_23j_client_ip_hops_with_ports_and_brackets_are_parsed(self):
+        # Some reverse proxies write X-Forwarded-For hops as "IP:port", bracketed IPv6
+        # addresses, or IPv4-mapped IPv6 addresses. None of those spellings may make the
+        # real client IP get lost (see issue #6002): the hop has to be admitted, not dropped.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "10.199.1.18"
+            all_data = {}
+            access_route = []
+
+        v6_client = "2001:638:822:2f33:f87d:c326:6404:e3d9"
+        proxy_settings = "10.199.1.18 > 0.0.0.0/0, 10.199.1.18 > ::/0"
+        for xff, expected in (
+            (v6_client, v6_client),
+            ("[" + v6_client + "]", v6_client),
+            ("[" + v6_client + "]:51234", v6_client),
+            ("192.0.2.43:51234", "192.0.2.43"),
+        ):
+            with self.subTest(xff=xff):
+                r = RequestMock()
+                r.access_route = [xff]
+                info = get_client_ip_info(r, proxy_settings)
+                self.assertEqual(expected, info.ip)
+                self.assertEqual("X_FORWARDED_FOR", info.source)
+
+        # The bare-IPv6 spelling keeps working: a bare IPv6 address must not be mistaken for
+        # "address:port" and cut at its first zero run.
+        r = RequestMock()
+        r.access_route = [v6_client]
+        self.assertEqual(v6_client, get_client_ip(r, proxy_settings))
+
+        # A suffix that is not a valid port is not stripped, in the unbracketed branch
+        # exactly as in the bracket branch: the hop stays unparsed and cuts the chain
+        # (see test_23m), rather than being read as the address in front of the suffix.
+        for bad in ("10.0.0.1:junk", "10.0.0.1:", "10.0.0.1:99999999", "[" + v6_client + "]:junk"):
+            with self.subTest(xff=bad):
+                r = RequestMock()
+                r.access_route = [bad]
+                info = get_client_ip_info(r, proxy_settings)
+                self.assertEqual("10.199.1.18", info.ip)
+                self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
+
+    def test_23k_bare_proxy_entry_maps_ipv6_clients(self):
+        # "172.16.0.1" is documented as "the proxy may mask as any arbitrary client IP" -
+        # which includes IPv6 clients. A bare IPv4 entry therefore expands to both address
+        # families, otherwise an IPv6 client behind it is reported as the proxy itself
+        # (issue #6002).
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "172.16.0.1"
+            all_data = {}
+            access_route = ["2001:db8::1"]
+
+        self.assertEqual("2001:db8::1", get_client_ip(RequestMock(), "172.16.0.1"))
+        # ... and an IPv4 client keeps being mapped by the same entry.
+        r = RequestMock()
+        r.access_route = ["192.0.2.7"]
+        self.assertEqual("192.0.2.7", get_client_ip(r, "172.16.0.1"))
+        # A bare IPv6 entry maps clients of either family (a bare network entry expands
+        # to one path per address family, a bare host to that host only).
+        r = RequestMock()
+        r.remote_addr = "2001:db8::1"
+        r.access_route = ["2001:db8:ffff::1"]
+        self.assertEqual("2001:db8:ffff::1", get_client_ip(r, "2001:db8::1"))
+        # ... including IPv4 clients: master mapped those for every bare entry via
+        # 0.0.0.0/0, so the entry's own family must not restrict the mapped family.
+        r = RequestMock()
+        r.remote_addr = "2001:db8::1"
+        r.access_route = ["192.0.2.7"]
+        self.assertEqual("192.0.2.7", get_client_ip(r, "2001:db8::1"))
+
+    def test_23l_mapped_ipv6_peer_matches_an_ipv4_proxy_entry(self):
+        # On a dual-stack socket an IPv4 connection is reported with an IPv4-mapped IPv6
+        # peer address ("::ffff:10.0.0.1"). The proxy entries are written in the family the
+        # admin sees, so the mapped spelling is canonicalized before it is matched
+        # (issue #6002).
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "::ffff:10.0.0.1"
+            all_data = {}
+            access_route = ["192.0.2.43"]
+
+        self.assertEqual("192.0.2.43", get_client_ip(RequestMock(), "10.0.0.1"))
+        info = get_client_ip_info(RequestMock(), "10.0.0.1")
+        self.assertEqual("X_FORWARDED_FOR", info.source)
+        # ``peer_ip`` is the record of what the socket reported, so it keeps the mapped
+        # spelling; the *effective* address is the one that is canonicalized.
+        self.assertEqual("::ffff:10.0.0.1", info.peer_ip)
+        # A route that does not go past the peer leaves the mapped hop as the effective
+        # address, reported in its IPv4 spelling so check_ip_in_policy and the
+        # conditional-access engine match it against IPv4 policy entries.
+        r = RequestMock()
+        r.access_route = ["::ffff:192.0.2.9"]
+        self.assertEqual("192.0.2.9", get_client_ip(r, "10.0.0.1 > 0.0.0.0/0"))
+        # An entry written in the mapped form - what a dual-stack listener shows as the
+        # peer, and on such a listener the only spelling that matched on master - keeps
+        # working: the entry is canonicalized to its IPv4 network before it is matched.
+        self.assertEqual("192.0.2.43", get_client_ip(RequestMock(), "::ffff:10.0.0.1"))
+        self.assertEqual("192.0.2.43", get_client_ip(RequestMock(), "::ffff:10.0.0.0/120"))
+
+    def test_23m_unparseable_hop_cuts_the_chain_instead_of_shifting_it(self):
+        # A dropped hop must not move the hops behind it one position up: the hop after it
+        # would then be checked against the network configured for the dropped hop, and an
+        # attacker-chosen address beyond the unparseable one could be admitted as if it had
+        # been sent in the dropped hop's place (issue #6002). The chain is cut at the
+        # unparseable hop instead - the hops after it stay recorded, but unmapped.
+        class RequestMock:
+            blueprint = "token_blueprint"
+            remote_addr = "10.0.0.1"
+            all_data = {}
+            # Origin-first, as in the header: the origin "8.8.8.8" claims it passed a proxy
+            # whose XFF hop is unparseable, which in turn sits in front of our trusted proxy.
+            access_route = ["8.8.8.8", "not-an-ip", "172.16.0.5"]
+
+        # With the three-hop path below, the *shifted* reading used to check 8.8.8.8 against
+        # 8.0.0.0/8 - the network meant for the unparseable hop's position - and admit it.
+        # The cut reads the path as ending at "not-an-ip", so the request did not pass the
+        # third hop and the peer itself is the client.
+        with self.assertLogs("privacyidea.lib.utils", level="WARNING") as logs:
+            info = get_client_ip_info(RequestMock(), "10.0.0.1 > 0.0.0.0/0 > 8.0.0.0/8")
+        self.assertEqual("10.0.0.1", info.ip)
+        self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
+        # The cut is operator-visible as a warning, asserted rather than incidental. The
+        # logged hop is capped at MAX_IP_CHAIN_HOP_LENGTH: it is client-controlled and
+        # must not be echoed into the log in full.
+        self.assertEqual(1, len(logs.output))
+        self.assertIn("'not-an-ip'", logs.output[0])
+        long_hop = "A" * (MAX_IP_CHAIN_HOP_LENGTH + 30)
+        r = RequestMock()
+        r.access_route = [long_hop]
+        with self.assertLogs("privacyidea.lib.utils", level="WARNING") as logs:
+            get_client_ip_info(r, "10.0.0.1 > 0.0.0.0/0")
+        self.assertIn(repr("A" * MAX_IP_CHAIN_HOP_LENGTH), logs.output[0])
+        self.assertNotIn(repr(long_hop), logs.output[0])
+        # The whole chain, including the unparseable hop, stays in the forensic record.
+        self.assertEqual(["10.0.0.1", "172.16.0.5", "not-an-ip", "8.8.8.8"], [hop.ip for hop in info.chain])
+        # A path that ends within the cut prefix still admits the hops before the cut.
+        info = get_client_ip_info(RequestMock(), "10.0.0.1 > 0.0.0.0/0")
+        self.assertEqual("172.16.0.5", info.ip)
+        self.assertEqual("X_FORWARDED_FOR", info.source)
+        # ... and get_client_ip, which reduces get_client_ip_info, cuts the same way.
+        self.assertEqual("10.0.0.1", get_client_ip(RequestMock(), "10.0.0.1 > 0.0.0.0/0 > 8.0.0.0/8"))
+
+    def test_23n_a_non_string_client_parameter_is_not_an_ip_hop(self):
+        # The ``client`` parameter is untyped request data: a JSON body can carry it as a number or a
+        # boolean. Neither is an address spelling any proxy writes, so neither is a hop. Recording one
+        # anyway made the hop-length cap in _cap_chain raise a TypeError - a client-supplied parameter
+        # 500ing the request (proven on master at 87a647a, both with and without an override configured).
+        # The parameter is skipped instead, and the request is served as if it had not been sent.
+        for client_param in (123, 2130706433, True, 1.5, None, ["10.0.0.1"], {"client": "10.0.0.1"}, ""):
+            with self.subTest(client_param=client_param):
+                class RequestMock:
+                    blueprint = "ttype_blueprint"
+                    remote_addr = "10.0.0.1"
+                    all_data = {"client": client_param}
+                    access_route = ["10.0.0.1"]
+                # Without an override, the request must not raise, and the peer is the client.
+                info = get_client_ip_info(RequestMock(), "")
+                self.assertEqual("10.0.0.1", info.ip)
+                self.assertEqual("REMOTE_ADDR", info.source)
+                self.assertNotIn("CLIENT_PARAM", [hop.source for hop in info.chain])
+                # With an override that the peer satisfies but no XFF header to map, the peer is
+                # the client, this time explicitly "we do not map" rather than unconfigured.
+                info = get_client_ip_info(RequestMock(), "10.0.0.1 > 0.0.0.0/0")
+                self.assertEqual("10.0.0.1", info.ip)
+                self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
+                self.assertNotIn("CLIENT_PARAM", [hop.source for hop in info.chain])
 
     def test_24_sanity_name_check(self):
         self.assertTrue(sanity_name_check('Hello_World'))
