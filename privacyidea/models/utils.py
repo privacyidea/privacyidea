@@ -83,8 +83,9 @@ class _OracleEmptyString(TypeDecorator):
 
     Oracle stores ``''`` as NULL, so an empty string cannot be written to a NOT NULL or primary key column there,
     reads back as None and is not found by ``== ''``. This type writes :data:`ORACLE_EMPTY_STRING` instead and reads
-    it back as ``''``. A compared value is converted the same way, because SQLAlchemy binds it with the column's
-    type; literal SQL is not converted. The DDL is that of the wrapped type.
+    it back as ``''``. A value compared with the column itself (``column == ''``, ``column.in_([''])``) is converted
+    the same way, because SQLAlchemy binds it with the column's type. A comparison with an expression such as
+    ``func.lower(column)`` and literal SQL are not converted. The DDL is that of the wrapped type.
     """
     impl = Unicode
     cache_ok = True
