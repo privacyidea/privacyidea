@@ -3367,8 +3367,9 @@ def auth_timelimit(request, action):
 
     if not result:
         transaction_id = get_optional(request.all_data, "transaction_id")
-        if transaction_id and not local_admin:
-            # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer
+        if transaction_id and not local_admin and user.exist():
+            # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer. A
+            # user who does not exist owns no token, so the challenge is someone else's.
             confirm_attempt_for_serials(token.token.serial for token in get_tokens(user=user))
         log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, transaction_id=transaction_id,
                            reasons=[reason])

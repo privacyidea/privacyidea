@@ -1730,6 +1730,34 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         transaction_id=transaction_id, endpoint=self.endpoint_path,
                                         reason=AuthEventReason.AUTH_MAX_FAIL)
 
+    def test_answer_of_an_unknown_user_refused_by_auth_max_fail(self):
+        # A user who does not exist is refused like one who does, and owns no token, so the challenge it names is
+        # someone else's and the refusal is no step of its attempt
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        unknown_user = {"username": "doesnotexist", "realm": self.realm1, "password": "wrong"}
+        try:
+            transaction_id = self._trigger_challenge()
+            self._auth(unknown_user, status=401)
+            response = self._auth({**unknown_user, "transaction_id": transaction_id}, status=401)
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        self.assertEqual(403, response.json["result"]["error"]["code"], response.json)
+        self.assertEqual("Authentication failure. The account has exceeded the authentication time limit!",
+                         response.json["result"]["error"]["message"], response.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
+                         response.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id, same_attempt=False)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=User("doesnotexist", self.realm1),
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+        self.assertNotEqual(entries[AuthEventType.CHALLENGE_TRIGGERED].attempt_id,
+                            entries[AuthEventType.NOT_AUTHORIZED].attempt_id)
+
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
     """Authentication-log coverage for the admin /validate/triggerchallenge endpoint."""
