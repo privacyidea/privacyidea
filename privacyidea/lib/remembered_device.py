@@ -41,12 +41,13 @@ from typing import NamedTuple, TYPE_CHECKING
 from flask_babel import _
 
 from sqlalchemy import func, update
+from sqlalchemy.orm import Query
 
 from privacyidea.lib.error import AuthError, ParameterError
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.sqlutils import delete_matching_rows
 from privacyidea.lib.utils import parse_timedelta
-from privacyidea.models import RememberedDevice, Realm, db
+from privacyidea.models import Client, RememberedDevice, Realm, db
 
 if TYPE_CHECKING:
     from privacyidea.lib.user import User
@@ -690,6 +691,25 @@ def get_client_devices(client_id: str, realm_ids: list[int] | set[int] | None = 
         query = query.filter(RememberedDevice.realm_id.in_(realm_ids))
     if realm_id is not None:
         query = query.filter_by(realm_id=realm_id)
+    return _device_page(query, page, page_size)
+
+
+def get_user_devices(identity: UserIdentity, page: int = 1, page_size: int = 50) -> dict:
+    """
+    Return a page of the remembered devices of one user on all API clients, newest first.
+
+    :param identity: the resolver-stable identity of the user (see :func:`user_identity`)
+    :param page: 1-indexed page number
+    :param page_size: number of devices per page
+    :return: dict with ``devices``, ``count``, ``prev`` and ``next`` as :func:`get_client_devices` returns it
+    """
+    query = RememberedDevice.query.filter_by(resolver=identity.resolver, user_id=identity.user_id,
+                                             realm_id=identity.realm_id)
+    return _device_page(query, page, page_size)
+
+
+def _device_page(query: Query, page: int, page_size: int) -> dict:
+    """Return one page of the devices *query* selects, newest first, with the total count and the adjacent pages."""
     total_count = query.count()
     offset = (page - 1) * page_size
     devices = query.order_by(RememberedDevice.created_at.desc()).limit(page_size).offset(offset).all()
@@ -790,13 +810,15 @@ def handle_device_theft(identity: UserIdentity) -> int:
     return revoke_devices(realm_id=identity.realm_id, resolver=identity.resolver, user_id=identity.user_id)
 
 
-def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:
+def devices_to_dicts(devices: list[RememberedDevice], include_client: bool = False) -> list[dict]:
     """
     Serialise a list of remembered devices, resolving all their realm names in a
     single query instead of one per device (avoiding an N+1 pattern when listing
     a client's devices).
 
     :param devices: the remembered devices to serialise
+    :param include_client: also add the display name and type of each device's API
+        client, for a listing that spans several clients
     :return: a list of JSON-serialisable dicts, in input order
     """
     realm_ids = {device.realm_id for device in devices if device.realm_id is not None}
@@ -814,11 +836,17 @@ def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:
         identity = (device.resolver, device.user_id, realm_name)
         if identity not in logins:
             logins[identity] = _resolve_login(device.resolver, device.user_id, realm_name)
-    return [device_to_dict(device, realm_names=realm_names, logins=logins) for device in devices]
+    clients = None
+    if include_client:
+        client_ids = {device.client_id for device in devices}
+        clients = {}
+        if client_ids:
+            clients = {client.id: client for client in Client.query.filter(Client.id.in_(client_ids)).all()}
+    return [device_to_dict(device, realm_names=realm_names, logins=logins, clients=clients) for device in devices]
 
 
 def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] | None = None,
-                   logins: dict | None = None) -> dict:
+                   logins: dict | None = None, clients: dict | None = None) -> dict:
     """
     Serialise a remembered device for API output. Neither the secret
     ``series_id`` nor the rotating ``counter`` (i.e. no part of the cookie) is
@@ -835,6 +863,9 @@ def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] | None 
         :func:`devices_to_dicts`); when omitted the realm name is looked up here
     :param logins: an optional pre-resolved ``{(resolver, user_id, realm): login}``
         map (see :func:`devices_to_dicts`); when omitted the login is resolved here
+    :param clients: an optional ``{client_id: Client}`` map; when given, the display
+        name and type of the device's API client are added as ``client_name`` and
+        ``client_type``
     :return: a JSON-serialisable dict
     """
     if realm_names is not None:
@@ -846,8 +877,9 @@ def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] | None 
         login = logins.get((device.resolver, device.user_id, realm_name))
     else:
         login = _resolve_login(device.resolver, device.user_id, realm_name)
-    return {
+    result = {
         "device_id": device.device_id,
+        "client_id": device.client_id,
         "resolver": device.resolver,
         "user_id": device.user_id,
         "realm": realm_name,
@@ -858,6 +890,11 @@ def device_to_dict(device: RememberedDevice, realm_names: dict[int, str] | None 
         "last_used_at": utc_isoformat(device.last_used_at),
         "expires_at": utc_isoformat(device.expires_at),
     }
+    if clients is not None:
+        client = clients.get(device.client_id)
+        result["client_name"] = client.display_name if client else None
+        result["client_type"] = client.client_type if client else None
+    return result
 
 
 def _resolve_login(resolver: str, user_id: str, realm_name: str) -> str | None:
