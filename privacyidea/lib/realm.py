@@ -42,7 +42,7 @@ from sqlalchemy import delete, select
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.error import DatabaseError, Error, UserError
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from .framework import get_app_config_value
 from .log import log_with
 from ..models import (Realm,
@@ -419,7 +419,7 @@ def import_realms(data, name=None):
     # TODO: the set_realm() function always creates the realm in the DB even if
     #  the associated resolver are not available. So the realms must be imported
     #  *after* the resolver.
-    log.debug(f'Import realm config: {data!s}')
+    log.debug(f'Import realm config: {get_import_names(data)}')
     for realm, r_config in data.items():
         if name and name != realm:
             continue

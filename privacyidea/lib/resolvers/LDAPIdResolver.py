@@ -1381,6 +1381,39 @@ class IdResolver(UserIdResolver):
             return pools[pool_description]
 
     @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        The LDAP resolver is documented by how it binds and secures the connection, the attribute it identifies the
+        users by, the number of servers and how they are pooled, the cache timeout and whether the groups of a user
+        are searched.
+        """
+        documented = super().get_config_for_documentation(config)
+        auth_types = {AUTHTYPE.ANONYMOUS, AUTHTYPE.SIMPLE, AUTHTYPE.SASL_DIGEST_MD5, AUTHTYPE.NTLM,
+                      AUTHTYPE.SASL_KERBEROS}
+        auth_type = config.get("AUTHTYPE") or AUTHTYPE.SIMPLE
+        documented["auth_type"] = auth_type if auth_type in auth_types else "unknown"
+        uris = [uri.strip() for uri in (config.get("LDAPURI") or "").split(",") if uri.strip()]
+        # As in loadConfig(), START_TLS is used for the servers that are no ldaps server, unless the first one is
+        start_tls = (is_true(config.get("START_TLS"))
+                     and not (config.get("LDAPURI") or "").lower().startswith("ldaps"))
+        documented["tls"] = sorted({"ldaps" if uri.lower().startswith("ldaps") else "start_tls" if start_tls else "none"
+                                    for uri in uris})
+        documented["tls_verify"] = is_true(config.get("TLS_VERIFY"))
+        documented["uid_type"] = config.get("UIDTYPE") or "DN"
+        documented["servers"] = len(uris)
+        strategy = config.get("SERVERPOOL_STRATEGY") or SERVERPOOL_STRATEGY
+        documented["serverpool_strategy"] = strategy if strategy in LDAP_STRATEGY else "unknown"
+        try:
+            documented["cache_timeout"] = int(config.get("CACHE_TIMEOUT", 120))
+        except (TypeError, ValueError):
+            documented["cache_timeout"] = "unknown"
+        documented["group_search"] = (is_true(config.get("recursive_group_search"))
+                                      and all(config.get(key) for key in ("group_name_attribute",
+                                                                          "group_search_filter",
+                                                                          "group_attribute_mapping_key")))
+        return documented
+
+    @classmethod
     def getResolverClassDescriptor(cls):
         """
         return the descriptor of the resolver, which is

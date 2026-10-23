@@ -198,7 +198,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    determine_logged_in_userparams, parse_string_to_dict,
                                    SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from .log import log_with
 from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
@@ -3990,7 +3990,7 @@ def import_policy(data, name=None, skip_invalid=False):
         whole policy. A policy that has no valid action left after dropping is
         skipped without causing a failure.
     """
-    log.debug(f'Import policy config: {data!s}')
+    log.debug(f'Import policy config: {get_import_names(data)}')
     imported = []
     skipped = []
     failed = {}

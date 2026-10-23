@@ -572,6 +572,16 @@ class AuditTestCase(MyTestCase):
             engine_mock.assert_called_once_with(AUDIT_DB, pool_size=20,
                                                 pool_recycle=600, foo='baz')
 
+        # The engine options are logged with the values of their credentials hidden
+        with mock.patch('privacyidea.lib.auditmodules.sqlaudit.create_engine'):
+            cfg = self.app.config.copy()
+            cfg.update({'PI_AUDIT_SQL_OPTIONS': {'connect_args': {'password': 'engine-password'}}})
+            with self.assertLogs('privacyidea.lib.auditmodules.sqlaudit', level='DEBUG') as captured:
+                _audit = getAudit(cfg)
+            output = "\n".join(captured.output)
+            self.assertIn("connect_args", output)
+            self.assertNotIn("engine-password", output)
+
         # TODO: add new audit entry and check for new style signature
         # remove the audit SQL URI from app config
         self.app.config.pop("PI_AUDIT_SQL_URI", None)
