@@ -217,6 +217,11 @@ the WebUI on the client's *Remembered devices* view, or over
 a non-secret ``device_id``; the cookie's secret ``series_id`` is never returned,
 so viewing a device never exposes a usable credential.
 
+The remembered devices of one user on all clients are listed on the user's
+details page in the WebUI, or over :http:get:`/clients/remembered_devices` with
+``user`` and ``realm``. There each device also names the client it is
+remembered for, which helps when offboarding a user.
+
 Revoking (which requires :ref:`policy_remembered_device_revoke`) invalidates the affected
 device cookies immediately, and comes in two forms:
 
@@ -226,7 +231,10 @@ device cookies immediately, and comes in two forms:
   ``realm`` or to one ``user`` (together with ``realm``). This is a single
   atomic, server-side delete scoped to the client, so it also catches devices
   created between listing and revoking — useful for incident response ("re-MFA
-  every remembered device for this realm now").
+  every remembered device for this realm now");
+* all remembered devices of a realm, or of one ``user`` in it, on every client,
+  with :http:delete:`/clients/remembered_devices`. The user's details page in the
+  WebUI offers this for the user.
 
 .. note:: The IP address shown for a device is the client IP privacyIDEA
    determined for the request: the address of the integration, or the end user's
