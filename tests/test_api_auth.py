@@ -562,6 +562,138 @@ class AuthApiTestCase(MyApiTestCase):
         delete_policy(name='remote')
         set_privacyidea_config(SYSCONF.SPLITATSIGN, True)
 
+    def test_04a_remote_user_login_via_trusted_proxy_header(self):
+        """#6055: REMOTE_USER login behind an HTTP reverse proxy (gunicorn/Docker image).
+
+        gunicorn never sets the WSGI REMOTE_USER, so the proxy passes the authenticated
+        user in the header configured as PI_REMOTE_USER_HEADER. The header is only
+        honoured from a peer listed in OverrideAuthorizationClient.
+        """
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
+        self.app.config["PI_REMOTE_USER_HEADER"] = "X-Forwarded-User"
+        # The test request arrives directly from the "proxy" peer, which the
+        # OverrideAuthorizationClient setting lists as allowed to pass the user.
+        set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "127.0.0.1")
+        try:
+            # Login via the header of the trusted proxy succeeds...
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius"},
+                                               environ_base={"REMOTE_ADDR": "127.0.0.1"},
+                                               headers={"X-Forwarded-User": "cornelius"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertEqual(result.get("value").get("role"), "user", result)
+                # authtype travels in the JWT: the remote-user login must be marked as such.
+                verify_result = verify_auth_token(result.get("value").get("token"))
+                self.assertEqual("remote_user", verify_result.get("authtype"), verify_result)
+            aentry = self.find_most_recent_audit_entry(action='POST /auth')
+            self.assertEqual(aentry['success'], 1, aentry)
+            self.assertEqual(aentry['policies'], 'remote', aentry)
+
+            # ...while the same header sent by a peer that is not the configured
+            # proxy is ignored: the login fails like without any remote user.
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius"},
+                                               environ_base={"REMOTE_ADDR": "203.0.113.9"},
+                                               headers={"X-Forwarded-User": "cornelius"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("status"), result)
+                self.assertEqual(result.get("error").get('code'), 4031, result)
+        finally:
+            del self.app.config["PI_REMOTE_USER_HEADER"]
+            delete_policy(name="remote")
+            set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "")
+
+    def test_04b_remote_user_header_does_not_override_remote_user(self):
+        """#6055: the header never overrides a REMOTE_USER an upstream web server set.
+
+        The upstream web server (Apache mod_wsgi, nginx with uWSGI) authenticated
+        "cornelius"; the header sent along tries to escalate to the internal admin.
+        The header must be ignored, so the login fails instead of escalating -
+        and a matching REMOTE_USER still logs in while the feature is enabled.
+        """
+        self.setUp_user_realms()
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
+        self.app.config["PI_REMOTE_USER_HEADER"] = "X-Forwarded-User"
+        set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "127.0.0.1")
+        try:
+            # The header claims the internal admin, but the web server authenticated
+            # cornelius. The web server wins: the admin login fails (no password),
+            # the header must not turn it into a remote-user admin login.
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "testadmin"},
+                                               environ_base={"REMOTE_ADDR": "127.0.0.1",
+                                                             "REMOTE_USER": "cornelius"},
+                                               headers={"X-Forwarded-User": "testadmin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 401, res)
+                result = res.json.get("result")
+                self.assertFalse(result.get("status"), result)
+            aentry = self.find_most_recent_audit_entry(action='POST /auth')
+            self.assertEqual(aentry['success'], 0, aentry)
+
+            # A REMOTE_USER that matches the requested user still logs in with the
+            # feature enabled: the upstream web server path is unaffected.
+            with self.app.test_request_context('/auth',
+                                               method='POST',
+                                               data={"username": "cornelius"},
+                                               environ_base={"REMOTE_ADDR": "127.0.0.1",
+                                                             "REMOTE_USER": "cornelius"},
+                                               headers={"X-Forwarded-User": "testadmin"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertEqual(result.get("value").get("role"), "user", result)
+        finally:
+            del self.app.config["PI_REMOTE_USER_HEADER"]
+            delete_policy(name="remote")
+            set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "")
+
+    def test_04c_get_ui_config_with_remote_user(self):
+        """#6055: GET /config offers the remote login when the proxy header carries a user."""
+        self.setUp_user_realms()
+        set_policy(name="remote", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
+        self.app.config["PI_REMOTE_USER_HEADER"] = "X-Forwarded-User"
+        set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "127.0.0.1")
+        try:
+            with self.app.test_request_context('/config',
+                                               method='GET',
+                                               environ_base={"REMOTE_ADDR": "127.0.0.1"},
+                                               headers={"X-Forwarded-User": "cornelius"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                self.assertTrue(result.get("status"), result)
+                self.assertEqual("cornelius", result.get("value").get("remote_user"), result)
+                self.assertFalse(result.get("value").get("force_remote_user"), result)
+
+            # Without the header (and without REMOTE_USER) the WebUI does not offer the login.
+            with self.app.test_request_context('/config',
+                                               method='GET',
+                                               environ_base={"REMOTE_ADDR": "127.0.0.1"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                self.assertEqual("", result.get("value").get("remote_user"), result)
+        finally:
+            del self.app.config["PI_REMOTE_USER_HEADER"]
+            delete_policy(name="remote")
+            set_privacyidea_config(SYSCONF.OVERRIDECLIENT, "")
+
+
     @ldap3mock.activate
     def test_05_local_admin_with_failing_resolver(self):
         ldap3mock.setLDAPDirectory([])

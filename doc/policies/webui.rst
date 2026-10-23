@@ -88,6 +88,13 @@ can only log in with the REMOTE_USER from the browser.
 .. note:: The policies *login_mode* and *remote_user* work independently of each
    other. I.e. you can disable *login_mode* and allow *remote_user*.
 
+Behind a plain HTTP reverse proxy (gunicorn, and with it the Docker image with
+its Caddy front), the web server never sets ``REMOTE_USER``, so this policy has
+no effect there: the proxy can instead pass the verified user name in a request
+header configured as ``PI_REMOTE_USER_HEADER``, which privacyIDEA turns into
+the ``REMOTE_USER`` - but only for a peer listed in
+``OverrideAuthorizationClient``. See :ref:`picfg_remote_user_header`.
+
 You can use this policy to enable Single-Sign-On and integration into Kerberos
 or Active Directory. Using the Apache module *mod_auth_gssapi*, add the following
 template into your apache configuration
