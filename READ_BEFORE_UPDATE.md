@@ -52,6 +52,19 @@
   any spelling of its name. `POST /defaultrealm/` with an empty realm name is refused with a 400; remove the default
   realm with `DELETE /defaultrealm`.
 
+* **Abort on error for request manglers, response manglers and scripts** — The schema update sets **Abort on error**
+  on every existing request mangler and response mangler binding and on every script binding that is configured to
+  raise an error, also where the option was cleared in 3.14. A failure of such a handler then fails the request. New
+  request mangler and response mangler bindings start with the option enabled. Review these bindings under
+  *Config -> Events* after the update and clear the option where a failure should not fail the request.
+
+* **The policy actions of the `u2f` token type are removed** — The schema update removes `enrollU2F` and the actions
+  starting with `u2f_` from the stored policies and prints the names of the policies it changed. A policy that holds
+  only u2f actions is left as it is and named in a warning: it allows nothing any more, so replace its actions or
+  delete it. Deleting the last admin policy or the last user policy gives every administrator or user all rights of
+  that scope. A configuration exported from an earlier version that still contains these actions is imported with
+  `pi-manage config import --skip-invalid`.
+
 * **Boolean policy actions with a false value are stored as excluded actions.** Saving a boolean action with the
   value `false` (in any case) or `0`, like `policywrite=false`, stores the excluded action `-policywrite`. This applies
   to the WebUI, the API, `pi-manage` and the policy import. Applying a policy template in the WebUI leaves out the
@@ -112,6 +125,10 @@
   (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
   Build the WebUI from the repository if you need to modify it. This also means the sources are no longer reachable
   over HTTP under `/static/`.
+
+* **privacyIDEA checks `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` at start** — An unknown algorithm or parameter,
+  a parameter for an algorithm that is not in the list, or a value PassLib would adjust stops the server and
+  `pi-manage`, and with it the schema update. Check both settings before updating.
 
 * **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
@@ -476,9 +493,12 @@
       pi-tokenjanitor deprecated delete u2f
 
   The schema update also removes the policy actions of the `u2f` token type (`enrollU2F` and the actions starting with
-  `u2f_`) from the policies and logs the names of the policies it changed. A configuration exported from an earlier
-  version that still contains them is imported with `pi-manage config import --skip-invalid`, which drops these actions;
-  without the option, the import refuses such a policy.
+  `u2f_`) from the policies and logs the names of the policies it changed. A policy that holds only u2f actions is
+  left as it is and named in a warning: it allows nothing any more, so replace its actions or delete it. Deleting the
+  last admin policy or the last user policy gives every administrator or user all rights of that scope. A
+  configuration exported from an earlier version that still contains them is imported with
+  `pi-manage config import --skip-invalid`, which drops these actions; without the option, the import refuses such a
+  policy.
 
 * The `rollout_state` of fully enrolled tokens has changed. Previously, tokens that completed enrollment could have an
   empty string (`""`) as their `rollout_state`. Now, fully enrolled tokens have the `rollout_state` set to `enrolled`. A
