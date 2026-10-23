@@ -30,6 +30,50 @@ This directory contains the migration test suite for privacyIDEA.
 
 ---
 
+## What a passing run guarantees
+
+A passing run of the migration and backup tests (`-m migration`, `-m backup`) on a database means, for that
+database:
+
+- The migration history is well formed: one head, every parent exists, every migration names its release, and the
+  migrations since 3.14 follow the lint rules apart from the listed exceptions.
+- The upgrade to head runs from the v3.9 seed and from the seed of every release in `RELEASE_HEADS`. At head, the
+  schema matches the models, privacyIDEA can write a row into every table with the ids from its sequences, and no
+  sequence hands out an id that already exists. A schema that `pi-manage setup create_tables` creates takes a row in
+  every table, too.
+- Every migration since 3.9 can go down and up again with the same columns, indexes, foreign keys and unique
+  constraints, and the full downgrade to 3.9 restores the schema of 3.9 without losing rows of the tables that stay.
+- Every migration since a seed can run again on its own result, as after a failure or a stamp set back by hand,
+  without changing the schema or any row (exceptions in `NOT_RERUNNABLE_REVISIONS`).
+- A database of a release, upgraded to head and downgraded back, has the schema and every row of that release again,
+  apart from the changes listed in `_expected_contents_after_downgrade`.
+- The migrations with a test of their own convert the rows of that test correctly, leave other rows alone, run again
+  after a stop at the statements the test chooses, and downgrade without losing data. They do so from every seed
+  their migration has not run on yet.
+- A backup of a database of privacyIDEA at head, made and restored with `pi-manage backup`, brings back every row,
+  the stamp and the sequences. A backup from before an upgrade can be restored into the upgraded database, and the
+  upgrade then runs again; on PostgreSQL that restore is a known, expected failure.
+
+It does not guarantee:
+
+- Anything about data the tests do not have. The data migrations only see the rows of the seeds and of the tests;
+  an installation with other data, much more data or unusual values can still hit a case nobody tried.
+- Anything about schema details the comparisons leave out. The comparison with the models ignores some kinds of
+  differences per database (indexes, nullability and defaults in places, server defaults always, see
+  `test_schema_matches_models_after_upgrade_to_head`). The comparisons before and after a downgrade look at columns
+  by name, indexes, foreign keys and unique constraints, not at types, defaults or nullability.
+- Anything about databases built in other ways: created by a release without a seed of its own and not upgraded
+  from 3.9, moved over from another database engine, changed by hand, with another character set or collation, or
+  run by a database version the CI does not test.
+- That a migration runs again after a stop at any statement. That is tested only where a migration has a test of
+  its own that stops it there.
+- Anything about several nodes upgrading at the same time.
+- How long a migration takes on a large database.
+- That privacyIDEA itself works on the result: no test starts the application after an upgrade, or the older release
+  after a downgrade.
+
+---
+
 ## When do you need a `test_migration_<rev>.py`?
 
 **Only when the migration's `upgrade()` or `downgrade()` transforms existing
