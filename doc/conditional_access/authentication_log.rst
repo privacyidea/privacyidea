@@ -158,6 +158,11 @@ Failure
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
+   ``POST_AUTHENTICATION_FAIL``
+     the authentication succeeded or triggered a challenge, but the request was still answered with an error, for
+     example raised by a policy that is evaluated after the authentication. If the authentication failed, the entry
+     keeps the type of that failure instead, and records the error message as well if the error was not the failure's
+     own response. The error message is recorded in the other info as ``error``. A conditional access policy cannot count it.
    ``DEVICE_TOKEN_REUSED``
      a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
      device series, and every other remembered device of this user, is revoked.
@@ -177,7 +182,8 @@ policy's *deny* action refused this single request).
 
 These entries record that the refusal happened, and can be filtered and sorted
 like any other, so an administrator can see how often a lock or block took
-effect. They, ``SUSPENDED_API_KEY_USED`` and ``USER_STORE_UNAVAILABLE`` are,
+effect. They, ``SUSPENDED_API_KEY_USED``, ``USER_STORE_UNAVAILABLE`` and
+``POST_AUTHENTICATION_FAIL`` are,
 however, the only types a conditional access policy cannot count.
 
 .. _authentication_log_reasons:
@@ -214,8 +220,14 @@ The state of a token
 A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
-     (``authorized=deny``); the next three are authorization decisions too,
-     each naming the specific limit that was hit.
+     (``authorized=deny``); the others below are authorization decisions too,
+     each naming the specific policy or limit that refused the request.
+   ``TOKENTYPE_NOT_ALLOWED``
+     the type of the token used is not one the :ref:`tokentype <tokentype_policy>` policy allows.
+   ``SERIAL_NOT_ALLOWED``
+     the serial of the token used does not match the :ref:`policy_serial` policy.
+   ``TOKENINFO_MISMATCH``
+     a tokeninfo field of the token used does not match the :ref:`policy_tokeninfo` policy.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see
      :ref:`policy_auth_max_fail`.
