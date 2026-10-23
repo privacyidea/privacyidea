@@ -82,6 +82,13 @@
   owner's resolver is in no realm any more, e.g. because it was deleted, is now listed on every node as well. It was
   only listed on the nodes that serve the realm of its owner.
 
+* **For Oracle operators: empty strings in `user_lock_state` and `metric_aggregate`** — Oracle stores an empty string
+  as NULL, which these tables cannot hold in all places. On Oracle, the columns `resolver` and `realm` of
+  `user_lock_state` and `labels_key` and `node` of `metric_aggregate` store the character `chr(0)` instead of an empty
+  string, and privacyIDEA reads it back as an empty string. Scripts or reporting tools that read these tables directly
+  see `chr(0)` there, e.g. in the lock of a local database administrator or in a metric without labels. Other
+  databases are not affected.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
