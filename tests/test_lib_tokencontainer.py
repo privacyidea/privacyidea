@@ -37,6 +37,7 @@ from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pa
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError,
                                    ResolverError)
+from privacyidea.lib.realm import set_realm
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, Challenge, db
@@ -2100,8 +2101,8 @@ class TokenContainerSynchronization(MyTestCase):
         add_tokens = synced_container_details["tokens"]["add"]
         self.assertEqual(0, len(add_tokens))
         updated_tokens = synced_container_details["tokens"]["update"]
-        for token in updated_tokens:
-            self.assertIn(token["serial"], [hotp_token.get_serial(), totp_token.get_serial()])
+        self.assertDictEqual({hotp_token.get_serial(): "hotp", totp_token.get_serial(): "totp"},
+                             {token["serial"]: token["tokentype"] for token in updated_tokens})
 
         # Pass empty client container
         synced_container_details = smartphone.synchronize_container_details({})
@@ -2319,18 +2320,25 @@ class TokenContainerSynchronization(MyTestCase):
     def test_22_check_container_challenge(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
+        self.setUp_user_realm3()
         owner = User("cornelius", self.realm1)
         other_user = User("selfservice", self.realm1)
         owner_in_realm2 = User("cornelius", self.realm2)
         container_serial = init_container({"type": "smartphone", "user": "cornelius",
                                            "realm": self.realm1})["container_serial"]
+        # franzi of the second resolver of realm1 has the user id of the owner cornelius of the first resolver
+        set_realm(self.realm1, [{"name": self.resolvername1, "priority": 1},
+                                {"name": self.resolvername3, "priority": 2}])
+        user_of_another_resolver = User("franzi", self.realm1)
+        self.assertEqual(User("cornelius", self.realm1, self.resolvername1).uid, user_of_another_resolver.uid)
 
         def create_container_challenge(serial: str = container_serial, challenge_user: User | None = owner,
-                                       answered: bool = True, transaction_id: str | None = None) -> Challenge:
+                                       answered: bool = True, transaction_id: str | None = None,
+                                       validity_time: int = 120) -> Challenge:
             data = {"type": "container"}
             if challenge_user:
                 data["user"] = get_container_challenge_user(challenge_user)
-            challenge = Challenge(serial=serial, transaction_id=transaction_id, data=data)
+            challenge = Challenge(serial=serial, transaction_id=transaction_id, data=data, validitytime=validity_time)
             challenge.set_otp_status(answered)
             challenge.save()
             return challenge
@@ -2338,12 +2346,15 @@ class TokenContainerSynchronization(MyTestCase):
         rejected = {"empty user": ({}, User()),
                     "unknown container": ({"serial": "SMPH_UNKNOWN"}, owner),
                     "not answered": ({"answered": False}, owner),
+                    "expired": ({"validity_time": 0}, owner),
                     "challenge without user": ({"challenge_user": None}, owner),
                     "challenge of another user": ({"challenge_user": other_user}, owner),
                     "user is not the challenge user": ({}, other_user),
                     "challenge user is not an owner": ({"challenge_user": other_user}, other_user),
                     "challenge user is an owner in another realm": ({"challenge_user": owner_in_realm2},
-                                                                    owner_in_realm2)}
+                                                                    owner_in_realm2),
+                    "challenge user has the user id of the owner in another resolver": (
+                        {"challenge_user": user_of_another_resolver}, user_of_another_resolver)}
         for description, (challenge_kwargs, user) in rejected.items():
             with self.subTest(description):
                 challenge = create_container_challenge(**challenge_kwargs)
@@ -2365,8 +2376,15 @@ class TokenContainerSynchronization(MyTestCase):
         # The challenge can only be used once
         self.assertFalse(check_container_challenge(challenge.transaction_id, owner)["success"])
 
+        # Another request removed the challenge in the meantime: only the request that removes it succeeds
+        challenge = create_container_challenge()
+        with mock.patch("privacyidea.lib.container.delete_challenges", return_value=mock.Mock(removed=0)):
+            result = check_container_challenge(challenge.transaction_id, owner)
+        self.assertDictEqual({"success": False, "details": {}}, result)
+
         delete_challenges(transaction_id=challenge.transaction_id)
         delete_container_by_serial(container_serial)
+        set_realm(self.realm1, [{"name": self.resolvername1}])
 
     def test_99_container_without_challenge_response_raises(self):
         # A container type that implements no challenge-response protocol can not authenticate an anonymous

@@ -1882,6 +1882,7 @@ class EntraIDResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             if user["username"] == "Adams@contoso.com":
                 self.assertSetEqual({"Group1", "Group2"}, set(user["groups"]))
@@ -1899,6 +1900,7 @@ class EntraIDResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             if user["username"] == "Adams@contoso.com":
                 self.assertSetEqual({"Group1", "Group2"}, set(user[custom_groups_key]))
@@ -1911,6 +1913,7 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"},
                             set(user["username"] for user in user_list))
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertNotIn("groups", user)
 
@@ -1981,11 +1984,13 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # request specific attributes without groups
         user_list = resolver.getUserList(attributes=["username", "email", "unknown"])
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual({"username", "email"}, set(user.keys()))
 
         # request specific attributes with groups
         user_list = resolver.getUserList(attributes=["username", custom_groups_key])
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual({"username", custom_groups_key}, set(user.keys()))
             if user["username"] == "Adams@contoso.com":
@@ -1995,6 +2000,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # request without attributes defined should return all attributes
         user_list = resolver.getUserList()
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual(
                 {"username", "userid", "givenname", "surname", "email", "mobile", "phone", custom_groups_key},
