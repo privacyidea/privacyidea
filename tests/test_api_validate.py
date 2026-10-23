@@ -9,6 +9,7 @@ from base64 import b32encode
 from datetime import timezone
 from urllib.parse import quote
 
+import jwt
 import mock
 import responses
 from cryptography.hazmat.backends import default_backend
@@ -20,6 +21,7 @@ from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import verify_pass_hash
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
@@ -59,7 +61,7 @@ from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Audit, Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
-                                NodeName)
+                                NodeName, AuthenticationLog)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
@@ -3729,9 +3731,9 @@ class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
         last_auth = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
         self.token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.isoformat(timespec="seconds"))
 
-    def _check_serial(self, password: str):
+    def _check_serial(self, password: str, headers: dict | None = None):
         with self.app.test_request_context("/validate/check", method="POST",
-                                           data={"serial": self.serial, "pass": password}):
+                                           data={"serial": self.serial, "pass": password}, headers=headers):
             return self.app.full_dispatch_request()
 
     def test_01_last_auth_policy_of_the_owner_realm(self):
@@ -3789,6 +3791,22 @@ class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
         response = self._check_serial("pin")
         self.assertEqual(200, response.status_code, response.json)
         self.assertEqual("Realm one text", response.json["detail"]["message"], response.json)
+
+    def test_05_api_key_of_the_owner_realm(self):
+        self._set_policy("api_key_realm1", scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, realm=self.realm1)
+        log_rows = db.session.query(AuthenticationLog).count()
+        response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertEqual(403, response.status_code, response.json)
+        self.assertEqual("No valid API key was passed.", response.json["result"]["error"]["message"], response.json)
+        # Refused before the authentication, like a request with a user
+        self.assertEqual(log_rows, db.session.query(AuthenticationLog).count())
+
+        api_key = jwt.encode({"role": ROLE.VALIDATE,
+                              "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)},
+                             self.app.secret_key)
+        response = self._check_serial(f"pin{self.otps[0]}", headers={"Authorization": api_key})
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
 
 
 

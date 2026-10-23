@@ -26,16 +26,21 @@ import logging
 from dataclasses import dataclass, replace
 from datetime import timedelta, datetime, timezone
 
-from privacyidea.api.lib.utils import report_owner_lookup_error, resolve_token_owner
+from flask import Request
+
+from privacyidea.api.lib.utils import (report_owner_lookup_error, resolve_token_owner, get_optional,
+                                       get_optional_one_of, log_authentication)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined, get_ordered_resolvers
 from privacyidea.lib.tokens.push_types import PushAction
-from privacyidea.lib.token import get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_tokens_from_serial_or_user, get_one_token
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta
@@ -479,6 +484,63 @@ def check_last_auth_policy(g, token: TokenClass, user: User | None) -> tuple[boo
             return True, []
         return False, last_auth_policy[timeframe]
     return True, []
+
+
+def get_request_identity(request: Request) -> User:
+    """
+    Resolve the user a request of an endpoint that accepts a token instead of a user is for: the user named in the
+    request, else the owner of the token named by ``serial`` or ``credential_id``, else the (empty) request user.
+    Used for ``/validate/check`` and ``/validate/triggerchallenge``, and by the api_key_required pre-policy also for
+    ``/validate/polltransaction``, which names no token and so keeps the request user.
+
+    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
+    (identified by ``credential_id``) or a serial-only request arrives without a login name, at most with a realm.
+    Checks of the user would be silently skipped for it. Two of them use this identity:
+
+    * The conditional-access pre-check gates on it, so a locked user can not authenticate by credential id or
+      serial, nor an admin trigger a challenge that pushes a prompt to a locked user's phone. The lock is enforced
+      before any token work runs.
+    * The api_key_required pre-policy matches its policies for it.
+
+    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
+    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
+    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
+    resolved, so the IP-block check still applies. That costs a user-scoped check only on a request that cannot
+    authenticate anyway: the authenticating path repeats this lookup without ``silent_fail``
+    (:func:`~privacyidea.lib.token.check_serial_pass`), so a serial that does not resolve to exactly one token
+    raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
+    itself, so an attempt that does reach a token is still counted.
+
+    :param request: The request object
+    :return: the user the request is for
+    :raises ResolverError: if the owner of the token can not be looked up in the user store
+    """
+    if request.User and request.User.login:
+        return request.User
+    credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
+    serial = get_optional(request.all_data, "serial")
+    token = None
+    try:
+        if serial:
+            token = get_one_token(serial=serial, silent_fail=True)
+        elif credential_id:
+            # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
+            # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
+            # practice - a passkey is hashed at enrollment, the webauthn second leg carries the user - and not worth
+            # a challenge lookup plus otpkey decrypt on every request.
+            token = get_fido2_token_by_credential_id(credential_id)
+    except Exception as ex:
+        log.debug(f"Could not resolve the owner of the token named in the request: {ex!r}")
+    if not token:
+        return request.User
+    try:
+        owner = token.user
+    except Exception:
+        # The request is refused with the error, which has to be logged here as the view never runs
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=token.get_serial(),
+                           transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
+    return owner or request.User
 
 
 def get_login_mode_values(g, user: User) -> dict[str, list[str]]:

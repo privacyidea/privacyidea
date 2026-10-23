@@ -228,7 +228,9 @@ type: ``bool``
    clients are stored, individually revocable and rotatable — but it does not
    yet cover this ``/validate`` gating use case.
 
-This policy is checked *before* the user is validated.
+This policy is checked *before* the user is validated. A request to
+``/validate/check`` that names only the serial of a token or a FIDO2 credential
+is matched for the owner of the token.
 
 You can create an API key that needs to be passed to use the validate API.
 If an API key is required, but no key is passed, the authentication request

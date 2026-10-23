@@ -19,6 +19,7 @@
 import itertools
 from datetime import datetime, timedelta, timezone
 
+import jwt
 from dateutil.tz import tzlocal
 from unittest.mock import patch
 
@@ -27,6 +28,7 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
@@ -1924,6 +1926,29 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("The authentication method is not available.", result["error"]["message"])
 
         remove_token(serial)
+
+    def test_27a_api_key_scoped_to_realm(self):
+        """
+        An api_key_required policy scoped to the token owner's realm applies to the usernameless login.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        self.set_policy_with_cleanup("api_key_realm1", scope=SCOPE.AUTHZ, realm=self.realm1,
+                                     action=PolicyAction.APIKEY)
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertEqual("No valid API key was passed.", res.json["result"]["error"]["message"], res.json)
+
+        api_key = jwt.encode({"role": ROLE.VALIDATE, "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+                             self.app.secret_key)
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin, "Authorization": api_key}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
 
     def test_28_locked_owner_rejected_before_token_work(self):
         """A locked passkey owner is rejected at /validate/check by the

@@ -79,7 +79,8 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               user_is_owner,
                                               UserAttributes,
-                                              get_container_user_attributes)
+                                              get_container_user_attributes,
+                                              get_request_identity)
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
                                       log_authentication)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
@@ -2225,7 +2226,12 @@ def api_key_required(request=None, action=None):
         future release. The X-API-Key API clients feature is intended to replace
         them; it does not yet cover this use case.
     """
-    user_object = request.User
+    # Without any such policy the user does not matter. Listed regardless of the conditions, which can not be
+    # evaluated without the user.
+    if not g.policy_object.list_policies(scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, active=True):
+        return True
+    # A request that names only a serial or a credential id is matched for the owner of the token
+    user_object = get_request_identity(request)
 
     # Get the policies
     action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
@@ -2248,8 +2254,7 @@ def api_key_required(request=None, action=None):
 
         role = g.logged_in_user.get("role")
         if role != ROLE.VALIDATE:
-            raise PolicyError("A correct JWT was passed, but it was no API "
-                              "key.")
+            raise PolicyError("A correct JWT was passed, but it was no API key.")
 
     # If everything went fine, we call the original function
     return True
