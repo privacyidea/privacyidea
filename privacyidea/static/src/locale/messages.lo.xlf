@@ -5939,7 +5939,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">70</context>
+          <context context-type="linenumber">81</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-table-actions/container-templates-table-actions.component.ts</context>
@@ -25207,7 +25207,7 @@
         <target state="new">Send by email</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">77</context>
+          <context context-type="linenumber">96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.downloadDocumentation" datatype="html">
@@ -25215,7 +25215,7 @@
         <target state="new">Download</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">84</context>
+          <context context-type="linenumber">103</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationCopied" datatype="html">
@@ -25223,7 +25223,7 @@
         <target state="new">The system documentation was copied to the clipboard.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">155</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationNotCopied" datatype="html">
@@ -25231,7 +25231,7 @@
         <target state="new">The system documentation could not be copied to the clipboard.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">159</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationEmailSubject" datatype="html">
@@ -25239,15 +25239,15 @@
         <target state="new">privacyIDEA system documentation of <x id="server" equiv-text="this.server"/> from <x id="date" equiv-text="this.date"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">156</context>
+          <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationEmailBody" datatype="html">
-        <source>The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="this.fileName"/>.</source>
-        <target state="new">The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="this.fileName"/>.</target>
+        <source>The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="fileName"/>.</source>
+        <target state="new">The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="fileName"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">157</context>
+          <context context-type="linenumber">206</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationEmailAttach" datatype="html">
@@ -25255,7 +25255,7 @@
         <target state="new">The system documentation was downloaded as <x id="fileName" equiv-text="this.fileName"/>. Attach it to the email.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
-          <context context-type="linenumber">164</context>
+          <context context-type="linenumber">201</context>
         </context-group>
       </trans-unit>
       <trans-unit id="subscription.notValidAnymore" datatype="html">
@@ -25272,6 +25272,22 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
           <context context-type="linenumber">31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.shareDocumentation" datatype="html">
+        <source>Share</source>
+        <target state="new">Share</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">88</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationNotShared" datatype="html">
+        <source>The system documentation could not be shared.</source>
+        <target state="new">The system documentation could not be shared.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">177</context>
         </context-group>
       </trans-unit>
     </body>
