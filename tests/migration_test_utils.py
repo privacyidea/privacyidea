@@ -529,6 +529,9 @@ class MigrationTestBase:
 
     REVISION: str
     PARENT_REVISION: str
+    # The revision whose seeds the tests start from, if not REVISION: the tests of a repair start before the migration
+    # whose data it repairs
+    STARTS_BEFORE: str | None = None
 
     @pytest.fixture
     def flask_app(self):
@@ -553,9 +556,10 @@ class MigrationTestBase:
         ctx.pop()
 
     def pytest_generate_tests(self, metafunc: pytest.Metafunc) -> None:
-        """Run the tests of a revision from every seed it has not been applied to yet, see seeds_before."""
+        """Run the tests of a revision from every seed it has not been applied to yet (see seeds_before and
+        STARTS_BEFORE)."""
         if "seed" in metafunc.fixturenames:
-            metafunc.parametrize("seed", seeds_before(self.REVISION), indirect=True)
+            metafunc.parametrize("seed", seeds_before(self.STARTS_BEFORE or self.REVISION), indirect=True)
 
     @pytest.fixture
     def seed(self, request: pytest.FixtureRequest) -> str:
@@ -645,12 +649,20 @@ class MigrationTestBase:
         After this call the database is in the state immediately before the
         migration under test. The caller is responsible for disposing *engine*.
         """
+        self._load_seed_and_upgrade_to(engine, self.PARENT_REVISION)
+
+    def _load_seed_and_upgrade_to(self, engine: Engine, revision: str) -> None:
+        """
+        Load the seed of the test into *engine* then upgrade to *revision*, e.g. to the
+        state before an earlier migration whose data the migration under test
+        works on (see STARTS_BEFORE). The caller is responsible for disposing *engine*.
+        """
         statements = read_seed_statements(SEEDS[self.seed])
         with engine.connect() as conn:
             for stmt in statements:
                 conn.execute(text(stmt))
             conn.commit()
-        command.upgrade(get_alembic_cfg(), self.PARENT_REVISION)
+        command.upgrade(get_alembic_cfg(), revision)
 
     def _fetch_scalar(self, engine, query: str, params: dict | None = None):
         """Execute *query* and return the first column of the first row."""
