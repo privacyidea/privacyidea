@@ -28,8 +28,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
 from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import (BASE58, SQL_LIKE_ESCAPE, check_serial_valid, escape_sql_like,
-                                   hexlify_and_unicode)
+from privacyidea.lib.utils import (BASE58, hexlify_and_unicode, check_serial_valid, text_column_equals)
 from privacyidea.models import (db, Token, TokenInfo, TokenOwner)
 
 from privacyidea.lib.token.const import PI_TOKEN_SERIAL_RANDOM, B32_ALPHABET, LOST_TOKEN_FOR
@@ -492,10 +491,8 @@ def _activate_replacement(serial: str, new_serial: str) -> None:
     db.session.execute(select(Token.id).where(Token.serial == serial).with_for_update()).first()
 
     replacement = db.session.scalars(select(Token).where(Token.serial == new_serial)).unique().one()
-    # LIKE rather than "=": the token info value is a CLOB on Oracle, which refuses to compare one with "="
     predecessors = select(Token).join(TokenInfo, TokenInfo.token_id == Token.id).where(
-        TokenInfo.Key == LOST_TOKEN_FOR, TokenInfo.Value.like(escape_sql_like(serial), escape=SQL_LIKE_ESCAPE),
-        Token.id != replacement.id)
+        TokenInfo.Key == LOST_TOKEN_FOR, text_column_equals(TokenInfo.Value, serial), Token.id != replacement.id)
     for previous in db.session.scalars(predecessors).unique():
         log.info(f"Disabling the earlier replacement {previous.serial} of the token {serial}.")
         previous.active = False

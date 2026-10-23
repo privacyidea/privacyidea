@@ -27,7 +27,7 @@ from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.tokengroup import set_tokengroup
 from privacyidea.lib.user import (User)
-from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, text_column_equals, to_unicode
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge, Realm, TokenOwner, db, TokenRealm, Tokengroup, TokenTokengroup, TokenInfo,
@@ -322,8 +322,8 @@ class TokenBaseTestCase(MyTestCase):
         token_token_group = db.session.scalar(
             select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == token_group.id))
         self.assertIsNone(token_token_group, "TokenTokengroup relationship was not deleted.")
-        # LIKE, because Oracle cannot compare the CLOB value with "="
-        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key", TokenInfo.Value.like("value")))
+        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key",
+                                                               text_column_equals(TokenInfo.Value, "value")))
         self.assertIsNone(token_info, "TokenInfo was not deleted.")
         container = db.session.scalar(select(TokenContainer).where(TokenContainer.serial == container_serial))
         self.assertIsNotNone(container, "TokenContainer was deleted.")
