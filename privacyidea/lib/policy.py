@@ -2149,8 +2149,8 @@ def get_static_policy_definitions(scope=None):
                                               "group": GROUP.SYSTEM,
                                               'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_DOWNLOAD: {'type': 'bool',
-                                          "desc": _("The admin is allowed to download "
-                                                    "the complete auditlog."),
+                                          "desc": _("The admin is allowed to download the audit log entries "
+                                                    "that their auditlog policies let them see."),
                                           "group": GROUP.SYSTEM,
                                           'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.ADDUSER: {'type': 'bool',

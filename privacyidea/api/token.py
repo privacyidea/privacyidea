@@ -105,7 +105,7 @@ from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..lib.policy import Match
 from ..lib.auth import ROLE
-from .lib.policyhelper import check_token_import_allowed, UserAttributes
+from .lib.policyhelper import check_token_import_allowed, hide_tokeninfo_per_token, UserAttributes
 from ..models.audit import audit_column_length
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
@@ -801,6 +801,7 @@ def list_api():
                                  userid=userid, allowed_realms=allowed_realms,
                                  tokeninfo=tokeninfo, rollout_state=rollout_state,
                                  hidden_tokeninfo=hidden_tokeninfo, container_serial=container_serial)
+    hide_tokeninfo_per_token(g, tokens["tokens"])
     g.audit_object.log({"success": True})
     if output_format == "csv":
         return send_csv_result(tokens)
