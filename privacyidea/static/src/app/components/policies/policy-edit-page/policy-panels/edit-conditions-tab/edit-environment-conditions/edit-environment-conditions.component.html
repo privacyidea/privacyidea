@@ -43,8 +43,8 @@
         [formField]="validTimeField"
         i18n-placeholder="@@policy.monFri918Sat"
         placeholder="Mon-Fri: 9-18, Sat: 10-15" />
-      @if (validTimeField().errors().some(e => e.kind === 'invalidValidTime')) {
-        <mat-error i18n="@@policy.pleaseEnterValidTime">Please enter a valid time format</mat-error>
+      @if (hasError(validTimeField, 'invalidValidTime')) {
+        <mat-error i18n="@@policy.pleaseEnterValidTime">Enter a valid time format.</mat-error>
       }
       @if (validTimeSignal() !== "") {
         <app-clear-button
@@ -89,8 +89,8 @@
           </mat-option>
         }
       </mat-autocomplete>
-      @if (clientField().errors().some(e => e.kind === 'invalidClient')) {
-        <mat-error i18n="@@policy.pleaseEnterValid">Please enter a valid client format</mat-error>
+      @if (hasError(clientField, 'invalidClient')) {
+        <mat-error i18n="@@policy.pleaseEnterValid">Enter a valid client format.</mat-error>
       }
       @if (clientSignal() !== "") {
         <app-clear-button
@@ -100,22 +100,41 @@
     </mat-form-field>
   </div>
 
-  <div class="user-agent-list-wrapper">
-    <div class="user-agent-list">
-      @for (userAgent of selectedUserAgents(); track $index) {
-        <div class="user-agent-chip-edit">
-          <span>{{ getUserAgentLabel(userAgent) }}</span>
-          <button
-            mat-icon-button
-            (click)="removeUserAgent(userAgent)"
-            class="remove-user-agent-btn">
-            <mat-icon class="remove-user-agent-icon">close</mat-icon>
-          </button>
-        </div>
+  <mat-form-field
+    subscriptSizing="dynamic"
+    appearance="outline"
+    class="input-width-l user-agent-select">
+    <mat-label i18n="@@common.userAgent">User Agent</mat-label>
+    <mat-select
+      #uaSelect
+      [value]="null"
+      (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
+      panelClass="auto-width-dropdown">
+      @for (ua of availableUserAgentPresets(); track ua.key) {
+        <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
       }
-    </div>
-    @if (selectedUserAgents().length > 0) {
-      <div class="clear-user-agents-container">
+
+      @if (availableUserAgentPresets().length === 0) {
+        <mat-option
+          disabled
+          i18n="@@policy.noAgentsFound"
+          >No agents found</mat-option
+        >
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <app-chip-list-input
+    fieldClass="input-width-xl"
+    label="Add Custom User Agent"
+    i18n-label="@@policy.addCustomUser"
+    gridLabel="User agents"
+    i18n-gridLabel="@@policy.userAgentsGrid"
+    [values]="selectedUserAgents()"
+    [chipLabel]="getUserAgentLabel"
+    (valuesChange)="emitEdits({ user_agents: $event })">
+    <ng-container chipListExtras>
+      @if (selectedUserAgents().length > 0) {
         <button
           mat-stroked-button
           class="action-button-secondary button-width-m"
@@ -123,53 +142,7 @@
           <mat-icon>clear_all</mat-icon>
           <span i18n="@@policy.clearUserAgents">Clear User Agents</span>
         </button>
-      </div>
-    }
-  </div>
-
-  <div class="user-agent-input-container">
-    <mat-form-field
-      subscriptSizing="dynamic"
-      appearance="outline"
-      class="input-width-l">
-      <mat-label i18n="@@common.userAgent">User Agent</mat-label>
-      <mat-select
-        #uaSelect
-        [value]="null"
-        (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
-        panelClass="auto-width-dropdown">
-        @for (ua of availableUserAgentPresets(); track ua.key) {
-          <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
-        }
-
-        @if (availableUserAgentPresets().length === 0) {
-          <mat-option
-            disabled
-            i18n="@@policy.noAgentsFound"
-            >No agents found</mat-option
-          >
-        }
-      </mat-select>
-    </mat-form-field>
-    <mat-form-field
-      subscriptSizing="dynamic"
-      appearance="outline"
-      class="add-user-agent-input input-width-l">
-      <mat-label i18n="@@policy.addCustomUser">Add Custom User Agent</mat-label>
-      <input
-        matInput
-        [formField]="addUserAgentField"
-        (keyup.enter)="addUserAgent()" />
-      @if (addUserAgentField().errors().some(e => e.kind === 'includesComma')) {
-        <mat-error i18n="@@policy.userAgentMust">User Agent must not contain commas.</mat-error>
       }
-    </mat-form-field>
-
-    <button
-      mat-icon-button
-      [disabled]="!addUserAgentSignal().trim() || addUserAgentField().errors().length > 0"
-      (click)="addUserAgent()">
-      <mat-icon>add</mat-icon>
-    </button>
-  </div>
+    </ng-container>
+  </app-chip-list-input>
 </div>

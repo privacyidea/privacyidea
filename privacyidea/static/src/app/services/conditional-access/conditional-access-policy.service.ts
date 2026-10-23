@@ -125,6 +125,11 @@ export interface ConditionalAccessStageAction {
   retrigger_above_threshold?: boolean;
 }
 
+// The actions that state a standing verdict instead of reacting to a failure count. They are the only ones a
+// stage may carry at threshold 0, where they then apply to every request the policy covers - mirroring
+// DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access/policy.py.
+export const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
+
 export interface ConditionalAccessPolicyStage {
   id?: number;
   name?: string | null;

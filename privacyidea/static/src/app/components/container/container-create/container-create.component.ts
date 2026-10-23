@@ -31,6 +31,7 @@ import {
   signal,
   untracked
 } from "@angular/core";
+import { form, maxLength } from "@angular/forms/signals";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
@@ -53,7 +54,11 @@ import {
   ContainerTokensEnrolledDialogComponent,
   ContainerTokensEnrolledDialogData
 } from "@components/container/container-create/container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
-import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
+import {
+  ContainerRegistrationModel,
+  emptyRegistration,
+  registrationRules
+} from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -73,8 +78,18 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { EnrollTokenArguments, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { touchAll } from "@utils/form-state.utils";
 import { firstValueFrom } from "rxjs";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+
+interface ContainerCreateModel {
+  description: string;
+  registration: ContainerRegistrationModel;
+}
+
+function emptyCreateModel(): ContainerCreateModel {
+  return { description: "", registration: emptyRegistration() };
+}
 
 @Component({
   selector: "app-container-create",
@@ -109,11 +124,16 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
 
   @ViewChild(UserAssignmentComponent) userAssignmentComponent!: UserAssignmentComponent;
-  @ViewChild(ContainerRegistrationConfigComponent) registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
-  validInput = true;
-
-  description = signal("");
+  readonly model = signal<ContainerCreateModel>(emptyCreateModel());
+  readonly form = form(this.model, (f) => {
+    maxLength(f.description, this.tokenService.maxDescriptionLength);
+    registrationRules(f.registration, {
+      value: () => this.model().registration,
+      active: () => this.generateQRCode(),
+      hasOwner: () => this.isUserSelected()
+    });
+  });
   containerSerial = this.containerService.containerSerial;
   selectedUser = this.userService.selectionUsernameFilter;
   selectedUserRealm = this.userService.selectedUserRealm;
@@ -145,10 +165,6 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
       this.authService.actionAllowed("container_create")
   });
 
-  passphrasePrompt = signal("");
-  passphraseResponse = signal("");
-  userStorePassphrase = signal(false);
-
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
@@ -175,19 +191,19 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () => this.description() !== "" || this.selectedTemplate().name !== "" || this.selectedUser() !== ""
+      () => this.form().dirty() || this.selectedTemplate().name !== "" || this.selectedUser() !== ""
     );
-    this.pendingChangesService.registerValidChanges(() => this.validInput);
+    this.pendingChangesService.registerValidChanges(() => this.formValid());
     this.pendingChangesService.registerSave(() => this._saveForPendingChanges());
   }
 
   private async _saveForPendingChanges(): Promise<boolean> {
     const containerType = this.containerService.selectedContainerType()?.containerType;
-    if (!containerType || !this.validInput) return false;
+    if (!containerType || !this.formValid()) return false;
 
     const createData: ContainerCreateData = {
       type: containerType,
-      description: this.description(),
+      description: this.model().description,
       user: this.userAssignmentComponent?.onlyAddToRealm()
         ? ""
         : this.userAssignmentComponent?.userFilter() || this.userService.selectedUser()?.username || ""
@@ -210,8 +226,11 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  protected onValidInputChange(isValid: boolean) {
-    this.validInput = isValid;
+  /**
+   * The create form is valid, and so is the user assignment once it is shown.
+   */
+  protected formValid(): boolean {
+    return this.form().valid() && (this.userAssignmentComponent?.valid() ?? true);
   }
 
   protected onTemplateChange(template: ContainerTemplate) {
@@ -227,13 +246,17 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   };
 
   createContainer() {
+    if (!this.formValid()) {
+      void touchAll(this.form);
+      return;
+    }
     this.registerResponse.set(null);
     const containerType = this.containerService.selectedContainerType()?.containerType;
     if (!containerType) return;
 
     const createData: ContainerCreateData = {
       type: containerType,
-      description: this.description(),
+      description: this.model().description,
       user: this.userAssignmentComponent?.onlyAddToRealm()
         ? ""
         : this.userAssignmentComponent?.userFilter() || this.userService.selectedUser()?.username || ""
@@ -307,12 +330,13 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   }
 
   protected registerContainer(serial: string, regenerate = false) {
+    const registration = this.model().registration;
     this.containerService
       .registerContainer({
         container_serial: serial,
-        passphrase_user: this.registrationConfigComponent?.userStorePassphrase() || false,
-        passphrase_response: this.registrationConfigComponent?.passphraseResponse() || "",
-        passphrase_prompt: this.registrationConfigComponent?.passphrasePrompt() || ""
+        passphrase_user: registration.store,
+        passphrase_response: registration.response,
+        passphrase_prompt: registration.prompt
       })
       .subscribe((registerResponse) => {
         this.registerResponse.set(registerResponse);
@@ -365,10 +389,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
 
   protected resetCreateOptions = () => {
     this.registerResponse.set(null);
-    this.passphrasePrompt.set("");
-    this.passphraseResponse.set("");
-    this.userStorePassphrase.set(false);
-    this.description.set("");
+    this.form().reset(emptyCreateModel());
     this.clearTemplateSelection();
   };
 

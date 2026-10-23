@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -34,7 +35,6 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
@@ -46,7 +46,13 @@ import {
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { ERR, identifierName, RESOLVER_RESERVED_NAMES } from "@utils/form-rules.utils";
+import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { lastValueFrom } from "rxjs";
+
+interface ResolverNameModel {
+  resolvername: string;
+}
 
 @Component({
   selector: "app-machine-resolver-details",
@@ -54,6 +60,7 @@ import { lastValueFrom } from "rxjs";
   styleUrls: ["./machine-resolver-details.component.scss"],
   standalone: true,
   imports: [
+    FormField,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -64,11 +71,13 @@ import { lastValueFrom } from "rxjs";
     ScrollToTopDirective,
     MachineResolverHostsTabComponent,
     MachineResolverLdapTabComponent,
-    MatProgressSpinner,
-    ErrorStateDirective
+    MatProgressSpinner
   ]
 })
 export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+
   readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
@@ -76,6 +85,19 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
+  private static withName(resolver: MachineResolver, name: string): MachineResolver {
+    return { ...resolver, resolvername: name, data: { ...resolver.data, resolver: name } };
+  }
+
+  // A data field that is empty is the same as one that is absent, so a field typed and cleared again is no change.
+  // The type in the data repeats the type of the resolver, which the backend does not return with the stored data.
+  private static comparable(resolver: MachineResolver): MachineResolver {
+    const data = Object.fromEntries(
+      Object.entries(resolver.data).filter(([key, value]) => value !== "" && key !== "type")
+    );
+    return { ...resolver, data: data as unknown as MachineResolverData };
+  }
 
   private static readonly machineResolverDefault: MachineResolver = {
     resolvername: "",
@@ -86,7 +108,10 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   private _loadedName: string | null = null;
 
   readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
-  readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
+
+  readonly hostsTab = viewChild(MachineResolverHostsTabComponent);
+  readonly ldapTab = viewChild(MachineResolverLdapTabComponent);
+  readonly activeTab = computed(() => this.hostsTab() ?? this.ldapTab());
 
   readonly selectedName = signal<string>("");
   readonly isEditMode = computed(() => this.selectedName() !== "");
@@ -96,6 +121,12 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     () => this.isEditMode() && this.authService.actionAllowed("mresolverdelete")
   );
 
+  // The name is held by nameForm. currentMachineResolver carries the type and the data of the active tab.
+  readonly nameModel = signal<ResolverNameModel>({ resolvername: "" });
+  readonly nameForm = form(this.nameModel, (f) => {
+    identifierName(f.resolvername, { reserved: RESOLVER_RESERVED_NAMES });
+  });
+
   readonly originalMachineResolver = signal<MachineResolver>(
     deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
   );
@@ -103,18 +134,22 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
   );
 
-  readonly isEdited = computed(
-    () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
+  // The resolver as posted: the name of the form, also carried in the data.
+  readonly machineResolverToSave = computed(() =>
+    MachineResolverDetailsComponent.withName(this.currentMachineResolver(), this.nameModel().resolvername)
   );
 
-  readonly nameHasPatternError = computed(() => {
-    const name = this.currentMachineResolver().resolvername;
-    return name.length > 0 && !/^[a-zA-Z0-9._-]*$/.test(name);
+  readonly isEdited = computed(() => {
+    const original = this.originalMachineResolver();
+    return (
+      JSON.stringify(MachineResolverDetailsComponent.comparable(this.machineResolverToSave())) !==
+      JSON.stringify(
+        MachineResolverDetailsComponent.comparable(
+          MachineResolverDetailsComponent.withName(original, original.resolvername)
+        )
+      )
+    );
   });
-
-  // POST /machineresolver/test is the connection test endpoint, and browsers drop "." and ".." from the URL,
-  // so a machine resolver with one of these names is never saved.
-  readonly nameIsReserved = computed(() => ["test", ".", ".."].includes(this.currentMachineResolver().resolvername));
 
   // True only for the first fetch, before the resource has ever resolved: a reload keeps the
   // previous value in place instead, so the page does not blank out under the user's own change.
@@ -124,11 +159,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
       !this.machineResolverService.machineResolverResource.hasValue()
   );
 
-  readonly canSaveMachineResolver = computed(() => {
-    const current = this.currentMachineResolver();
-    if (!current.resolvername.trim() || this.nameHasPatternError() || this.nameIsReserved()) return false;
-    return this.dataValidatorSignal()(current.data);
-  });
+  readonly canSaveMachineResolver = computed(() => this.nameForm().valid() && (this.activeTab()?.isValid() ?? false));
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -153,6 +184,8 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
       if (resolver) {
         this.originalMachineResolver.set(deepCopy(resolver));
         this.currentMachineResolver.set(deepCopy(resolver));
+        this.nameModel.set({ resolvername: resolver.resolvername });
+        this.nameForm().reset();
         this._loadedName = name;
       } else {
         this.notificationService.error(
@@ -173,13 +206,8 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     this.pendingChangesService.clearAllRegistrations();
   }
 
-  onResolvernameChange(newName: string) {
-    const current = this.currentMachineResolver();
-    this.currentMachineResolver.set({
-      ...current,
-      resolvername: newName,
-      data: { ...current.data, resolver: newName }
-    });
+  clearName(): void {
+    clearField(this.nameForm.resolvername, "");
   }
 
   onMachineResolverTypeChange(newType: string) {
@@ -187,7 +215,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     this.currentMachineResolver.set({
       ...current,
       type: newType,
-      data: { resolver: current.resolvername, type: newType }
+      data: { resolver: this.nameModel().resolvername, type: newType }
     });
   }
 
@@ -195,12 +223,12 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     this.currentMachineResolver.set({ ...this.currentMachineResolver(), data: newData });
   }
 
-  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
-    this.dataValidatorSignal.set(newValidator);
-  }
-
   async saveMachineResolver(): Promise<boolean> {
-    const current = this.currentMachineResolver();
+    if (!this.canSaveMachineResolver()) {
+      await Promise.all([touchAll(this.nameForm), this.activeTab()?.touchAll()]);
+      return false;
+    }
+    const current = this.machineResolverToSave();
     try {
       await this.machineResolverService.postTestMachineResolver(current);
     } catch (error) {

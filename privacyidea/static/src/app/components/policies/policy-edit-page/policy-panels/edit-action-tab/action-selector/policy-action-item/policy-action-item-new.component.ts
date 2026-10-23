@@ -18,14 +18,15 @@
  **/
 
 import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
+import { FieldTree, FormField, form } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { ToggleGroupComponent } from "@components/shared/toggle-group/toggle-group.component";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import {
   labeledOptions,
@@ -34,6 +35,7 @@ import {
   valueDisplayLabels,
   ValueLabelOptions
 } from "@utils/value-label.utils";
+import { actionValueRule } from "../../action-value.rule";
 
 export interface SelectableAction {
   label: string;
@@ -46,9 +48,10 @@ export interface SelectableAction {
   selector: "app-policy-action-item-new",
   standalone: true,
   imports: [
+    FormField,
     MatButtonModule,
     MatIconModule,
-    SelectorButtonsComponent,
+    ToggleGroupComponent,
     MatInputModule,
     MatSelectModule,
     MatAutocompleteModule,
@@ -72,22 +75,24 @@ export class PolicyActionItemComponent {
     return $localize`:@@policy.addAction:Add ${action}:ACTION:`;
   });
   readonly isBooleanAction = computed(() => this.selectableAction().detail?.type === "bool");
-  readonly inputIsValid = computed<boolean>(() => {
-    const detail = this.selectableAction().detail;
-    const actionValue = this.currentAction()?.value;
-    if (!detail || actionValue === undefined || actionValue === "") return false;
-    return this.policyService.actionValueIsValid(detail, actionValue);
-  });
   readonly actionAdd = output<{ name: string; value: string | number | boolean | undefined }>();
 
-  currentAction = linkedSignal({
+  // The value being edited. The select, the multi select and the toggle group write it through
+  // `updateSelectedActionValue`; the native inputs are bound to it by `valueForm`.
+  readonly valueModel = linkedSignal<SelectableAction, string | number>({
     source: () => this.selectableAction(),
-    computation: (selectableAction) => {
-      const { actionName, detail } = selectableAction;
-      const defaultValue = detail?.type === "bool" ? "true" : (this.actionValue() ?? "");
-      return { name: actionName, value: defaultValue };
-    }
+    computation: ({ detail }) => (detail?.type === "bool" ? "true" : (this.actionValue() ?? ""))
   });
+
+  // Holds the one rule every kind of control shares: the value must suit the action's type.
+  readonly valueForm = form(this.valueModel, (path) =>
+    actionValueRule(path, this.policyService, () => this.selectableAction().detail)
+  );
+
+  // The text and the textarea write strings, so they bind the value form as a text field.
+  readonly textField = this.valueForm as unknown as FieldTree<string>;
+
+  readonly currentAction = computed(() => ({ name: this.selectableAction().actionName, value: this.valueModel() }));
 
   private readonly labelOptions = computed<ValueLabelOptions>(() => ({
     vocabulary: POLICY_VOCABULARY_ACTIONS.has(this.selectableAction().actionName)
@@ -103,6 +108,13 @@ export class PolicyActionItemComponent {
 
   readonly valueOptions = computed(() => labeledOptions(this.selectableAction().detail?.value, this.labelOptions()));
 
+  // The option equal to the current value when both are compared as text, so a stored "6" selects the option 6.
+  readonly selectedValue = computed<string | number>(() => {
+    const value = this.currentAction().value;
+    const options = this.selectableAction().detail?.value;
+    return (options?.find((option) => String(option) === String(value)) ?? value) as string | number;
+  });
+
   selectedItems = computed<(string | number)[]>(() => {
     const value = this.currentAction()?.value;
     const valueList = typeof value === "string" ? value.split(" ") : [value];
@@ -116,17 +128,15 @@ export class PolicyActionItemComponent {
   }
 
   updateSelectedActionValue(value: string | number | boolean | (string | number | boolean)[]) {
-    const actionName = this.selectableAction().actionName;
     if (Array.isArray(value)) {
-      const stringValue = value.map((v) => v.toString()).join(" ");
-      this.currentAction.set({ name: actionName, value: stringValue });
+      this.valueModel.set(value.map((v) => v.toString()).join(" "));
     } else {
-      this.currentAction.set({ name: actionName, value: typeof value === "boolean" ? String(value) : value });
+      this.valueModel.set(typeof value === "boolean" ? String(value) : value);
     }
   }
 
   onEnter(): void {
-    if (!this.inputIsValid()) {
+    if (!this.valueForm().valid()) {
       return;
     }
     this.addAction();
@@ -135,7 +145,7 @@ export class PolicyActionItemComponent {
   inputElementRef = viewChild<ElementRef>("inputElement");
   selectElementRef = viewChild<MatSelect>("selectElement");
   buttonElementRef = viewChild<ElementRef>("buttonElement");
-  selectorComponent = viewChild<SelectorButtonsComponent<string | number>>("selectorComponent");
+  selectorComponent = viewChild<ToggleGroupComponent<string | number>>("selectorComponent");
 
   focusFirstInput() {
     setTimeout(() => {
@@ -152,7 +162,7 @@ export class PolicyActionItemComponent {
         return;
       }
       if (selector) {
-        selector.focusFirst();
+        selector.focus();
         return;
       }
       if (button) {

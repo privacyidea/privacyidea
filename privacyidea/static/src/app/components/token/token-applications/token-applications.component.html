@@ -30,9 +30,7 @@
     appearance="fill"
     class="input-width-xl margin-left-16 margin-top-16">
     <mat-label i18n="@@token.selectApplication">Select Application Type</mat-label>
-    <mat-select
-      [(value)]="selectedApplicationType"
-      [value]="selectedApplicationType()">
+    <mat-select [(value)]="selectedApplicationType">
       <mat-option
         i18n="@@token.sshAttachingSsh"
         value="ssh"

@@ -27,7 +27,7 @@ import { EditConditionsTabComponent } from "./edit-conditions-tab.component";
 @Component({ selector: "app-edit-admin-conditions", standalone: true, template: "" })
 class MockAdminComp {
   policy = input.required<PolicyDetail>();
-  policyEdit = output<PolicyDetail>();
+  policyEdit = output<Partial<PolicyDetail>>();
 }
 
 @Component({ selector: "app-edit-user-conditions", standalone: true, template: "" })

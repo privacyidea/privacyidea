@@ -19,7 +19,7 @@
 <div class="ca-action-row">
   <mat-expansion-panel
     class="ca-action-item"
-    [expanded]="!action().id">
+    [expanded]="!current().id">
     <mat-expansion-panel-header>
       <mat-panel-title>
         @if (!isActionAllowedForTarget() || actionValueError()) {
@@ -29,7 +29,7 @@
             i18n-aria-label="@@conditionalAccess.actionNeedsAttention">
             warning
           </mat-icon>
-        } @else if (actionConflict()) {
+        } @else if (conflictMessage()) {
           <mat-icon
             class="ca-action-warn-icon"
             aria-label="Action conflicts with another action on this stage"
@@ -37,7 +37,7 @@
             warning
           </mat-icon>
         }
-        {{ action().action_type }}
+        {{ current().action_type }}
       </mat-panel-title>
       <mat-panel-description class="ca-action-panel-description">
         <span class="ca-action-desc-text">{{ actionDescription() }}</span>
@@ -51,7 +51,7 @@
         class="input-width-l margin-bottom-16">
         <mat-label i18n="@@common.action">Action</mat-label>
         <mat-select
-          [value]="action().action_type"
+          [value]="current().action_type"
           (selectionChange)="onActionTypeChange($event.value)">
           @for (actionType of allowedActionTypes(); track actionType) {
             <mat-option
@@ -70,7 +70,7 @@
           This action is not allowed for the policy's target. Choose a different action, or change the target.
         </p>
       }
-      @if (actionConflict()) {
+      @if (conflictMessage()) {
         <p class="ca-action-target-error">{{ conflictMessage() }}</p>
       }
 

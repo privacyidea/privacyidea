@@ -20,113 +20,183 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { QuestionnaireConfigComponent } from "@components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component";
 import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { touchAll } from "@utils/form-state.utils";
 
 const mockQuestionKeys = ["question.question.1", "question.question.2", "question.question.3"];
+const filledConfig = () => ({
+  [QUESTION_NUMBER_OF_ANSWERS]: "2",
+  "question.question.1": "Q1",
+  "question.question.2": "Q2",
+  "question.question.3": "Q3"
+});
 
 describe("QuestionnaireConfigComponent", () => {
   let fixture: ComponentFixture<QuestionnaireConfigComponent>;
   let component: QuestionnaireConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
 
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const answersInput = () => fixture.nativeElement.querySelector("input[type=number]") as HTMLInputElement;
+  const questionInputs = () =>
+    Array.from(fixture.nativeElement.querySelectorAll(".questionnaire-grid input") as NodeListOf<HTMLInputElement>);
+  const type = async (element: HTMLInputElement, value: string) => {
+    element.value = value;
+    element.dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const errors = () =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error") as NodeListOf<HTMLElement>).map((error) =>
+      error.textContent?.trim()
+    );
+
+  const create = async (config: Record<string, string> = filledConfig(), questionKeys: string[] = mockQuestionKeys) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(QuestionnaireConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    fixture.componentRef.setInput("questionKeys", questionKeys);
+    component = fixture.componentInstance;
+    await flush();
+  };
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [QuestionnaireConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(QuestionnaireConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    fixture.componentRef.setInput("questionKeys", mockQuestionKeys);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "10";
-    component.updateFormData(QUESTION_NUMBER_OF_ANSWERS, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [QUESTION_NUMBER_OF_ANSWERS]: newValue });
+  it("shows the number of answers and the questions of the form", async () => {
+    await create(filledConfig());
+
+    expect(answersInput().value).toBe("2");
+    expect(questionInputs().map((element) => element.value)).toEqual(["Q1", "Q2", "Q3"]);
   });
 
-  it("should display current formData value for num_answers", () => {
-    const testData = {
-      [QUESTION_NUMBER_OF_ANSWERS]: 7
-    };
-    fixture.componentRef.setInput("formData", testData);
-    fixture.detectChanges();
+  it("writes the typed number of answers and question to the form", async () => {
+    await create(filledConfig());
 
-    expect(component.formData()[QUESTION_NUMBER_OF_ANSWERS]).toEqual(7);
+    await type(answersInput(), "10");
+    await type(questionInputs()[1], "Changed");
+
+    expect(configForm.model().values[QUESTION_NUMBER_OF_ANSWERS]).toBe("10");
+    expect(configForm.model().values["question.question.2"]).toBe("Changed");
+    expect(configForm.form.values["question.question.2"]().dirty()).toBe(true);
   });
 
-  it("should emit addQuestionRequest when addQuestion is called", () => {
+  it("should emit addQuestionRequest when addQuestion is called", async () => {
+    await create();
     jest.spyOn(component.addQuestionRequest, "emit");
     component.addQuestion();
     expect(component.addQuestionRequest.emit).toHaveBeenCalled();
   });
 
-  it("should emit deleteRequest when deleteEntry is called", () => {
+  it("should emit deleteRequest when deleteEntry is called", async () => {
+    await create();
     jest.spyOn(component.deleteRequest, "emit");
     const keyToDelete = "question.question.1";
     component.deleteEntry(keyToDelete);
     expect(component.deleteRequest.emit).toHaveBeenCalledWith(keyToDelete);
   });
 
-  it("should handle multiple question keys", () => {
-    const multipleKeys = ["question.question.1", "question.question.2", "question.question.3", "question.question.4"];
+  it("should emit deleteRequest when a delete button is clicked", async () => {
+    await create(filledConfig());
+    jest.spyOn(component.deleteRequest, "emit");
+
+    (fixture.nativeElement.querySelectorAll(".questionnaire-grid button")[2] as HTMLButtonElement).click();
+
+    expect(component.deleteRequest.emit).toHaveBeenCalledWith("question.question.3");
+  });
+
+  it("should handle multiple question keys", async () => {
+    await create(filledConfig());
+    const multipleKeys = [...mockQuestionKeys, "question.question.4"];
+    configForm.model.update((model) => ({ ...model, values: { ...model.values, "question.question.4": "Q4" } }));
     fixture.componentRef.setInput("questionKeys", multipleKeys);
-    fixture.detectChanges();
+    await flush();
+
     expect(component.questionKeys().length).toBe(4);
+    expect(questionInputs().map((element) => element.value)).toEqual(["Q1", "Q2", "Q3", "Q4"]);
   });
 
-  it("should handle empty question keys array", () => {
-    fixture.componentRef.setInput("questionKeys", []);
-    fixture.detectChanges();
+  it("should handle empty question keys array", async () => {
+    await create({}, []);
     expect(component.questionKeys().length).toBe(0);
+    expect(questionInputs().length).toBe(0);
   });
 
-  describe("blockNonNumeric", () => {
-    function keyEvent(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
-      return {
-        key,
-        ctrlKey: false,
-        metaKey: false,
-        preventDefault: jest.fn(),
-        ...modifiers
-      } as unknown as KeyboardEvent;
-    }
+  describe("number of answers input", () => {
+    it("writes an empty string when the input is cleared", async () => {
+      await create({ [QUESTION_NUMBER_OF_ANSWERS]: "2" }, []);
 
-    it("allows digit keys", () => {
-      const event = keyEvent("5");
-      component.blockNonNumeric(event);
-      expect(event.preventDefault).not.toHaveBeenCalled();
+      await type(answersInput(), "");
+
+      expect(configForm.model().values[QUESTION_NUMBER_OF_ANSWERS]).toBe("");
     });
 
-    it("blocks non-digit printable keys", () => {
-      for (const key of ["a", "-", ".", "e"]) {
-        const event = keyEvent(key);
-        component.blockNonNumeric(event);
-        expect(event.preventDefault).toHaveBeenCalled();
-      }
+    it("does not require the number of answers once a question exists, the backend defaults it", async () => {
+      await create({ "question.question.1": "Q1" }, ["question.question.1"]);
+
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
     });
 
-    it("allows multi-character (control) keys like Backspace and Enter", () => {
-      for (const key of ["Backspace", "Enter", "ArrowLeft", "Tab"]) {
-        const event = keyEvent(key);
-        component.blockNonNumeric(event);
-        expect(event.preventDefault).not.toHaveBeenCalled();
-      }
+    it("shows a message for text the number input cannot parse", async () => {
+      await create({ [QUESTION_NUMBER_OF_ANSWERS]: "2" }, []);
+      Object.defineProperty(answersInput(), "validity", { value: { badInput: true } });
+
+      await type(answersInput(), "");
+      configForm.form.values[QUESTION_NUMBER_OF_ANSWERS]().markAsTouched();
+      await flush();
+
+      expect(errors()).toEqual(["Enter a valid number."]);
+      expect(configForm.form().valid()).toBe(false);
+      expect(fixture.nativeElement.querySelector(".panel-incomplete")?.textContent).toContain("Incomplete");
     });
 
-    it("allows keyboard shortcuts with ctrl or meta held", () => {
-      const ctrlEvent = keyEvent("a", { ctrlKey: true });
-      component.blockNonNumeric(ctrlEvent);
-      expect(ctrlEvent.preventDefault).not.toHaveBeenCalled();
+    it("shows a message for a number that is not a whole number", async () => {
+      await create({ [QUESTION_NUMBER_OF_ANSWERS]: "2" }, []);
 
-      const metaEvent = keyEvent("v", { metaKey: true });
-      component.blockNonNumeric(metaEvent);
-      expect(metaEvent.preventDefault).not.toHaveBeenCalled();
+      await type(answersInput(), "-1");
+      configForm.form.values[QUESTION_NUMBER_OF_ANSWERS]().markAsTouched();
+      await flush();
+
+      expect(errors()).toEqual(["Enter a whole number."]);
+      expect(configForm.form().valid()).toBe(false);
+    });
+  });
+
+  describe("question inputs", () => {
+    it("shows the error of an empty question once the form is touched", async () => {
+      await create({ ...filledConfig(), "question.question.2": "" });
+      expect(errors()).toEqual([]);
+
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual(["Question is required."]);
+    });
+
+    it("removes the error once the question is filled", async () => {
+      await create({ ...filledConfig(), "question.question.2": "" });
+      await touchAll(configForm.form);
+      await flush();
+
+      await type(questionInputs()[1], "Filled");
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
     });
   });
 });

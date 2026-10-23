@@ -13,14 +13,8 @@
     padding: 8px 12px;
   }
 
-  .tab-buttons {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 8px;
-    justify-content: center;
-    padding: 8px 32px;
+  .tab-container {
+    margin: 16px 0;
   }
 
   .name-scope-priority-row {
@@ -30,11 +24,20 @@
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 16px;
+    // Each field reserves one subscript line itself; this adds the second line the long name error needs
+    // plus a margin to the description, so showing or hiding a hint or error never moves the description below.
+    padding-bottom: 24px;
 
     app-policy-name-edit,
     app-policy-scope-edit,
     app-policy-priority-edit {
       flex: 0 1 auto;
+    }
+
+    // The name takes the width the scope and priority leave, which keeps its error to two lines.
+    app-policy-name-edit {
+      flex: 1 1 var(--input-width-l);
+      min-width: 0;
     }
   }
 }

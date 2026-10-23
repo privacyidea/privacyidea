@@ -16,23 +16,19 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (isEditing()) {
-  <mat-form-field
-    class="input-width-m description details-field-multiline"
-    subscriptSizing="dynamic">
-    <textarea
-      [value]="value()"
-      (input)="value.set($any($event.target).value)"
-      [attr.maxlength]="maxLength()"
-      i18n-placeholder="@@common.enterDescription"
-      matInput
-      placeholder="Enter description"
-      [rows]="rows()"></textarea>
-  </mat-form-field>
-} @else {
-  <div class="details-description-div">
-    <span class="details-table-item">
-      {{ value() }}
-    </span>
-  </div>
-}
+<mat-button-toggle-group
+  [attr.aria-label]="groupLabel()"
+  [value]="value()"
+  [disabled]="disabled()"
+  [hideSingleSelectionIndicator]="hideSelectionIndicator()"
+  (change)="value.set($event.value)">
+  @for (v of values(); track v; let i = $index) {
+    <mat-button-toggle
+      [value]="v"
+      [tabIndex]="tabIndexFor(v)"
+      [appTruncationTooltip]="labelAt(i)"
+      clipSelector=".mat-button-toggle-label-content"
+      >{{ labelAt(i) }}</mat-button-toggle
+    >
+  }
+</mat-button-toggle-group>

@@ -34,8 +34,7 @@
     >
   }
   <mat-checkbox
-    [checked]="readNumberDynamically()"
-    (change)="readNumberDynamically.set($event.checked)"
+    [formField]="readNumberDynamicallyForm"
     i18n="@@token.readNumberDynamically"
     >Read number dynamically from user source on each request.</mat-checkbox
   >
@@ -47,15 +46,14 @@
           >If this token should not use the system wide SMS gateway but an individual SMS gateway, you can select the
           gateway here.</mat-hint
         >
-        <mat-select
-          [value]="smsGateway()"
-          (selectionChange)="smsGateway.set($event.value)"
-          required>
+        <mat-select [formField]="smsGatewayForm">
           @for (option of smsGatewayOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>
           }
         </mat-select>
-        <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong></mat-error>
+        @if (hasError(smsGatewayForm, ERR.required)) {
+          <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong>.</mat-error>
+        }
       </mat-form-field>
     }
 
@@ -64,7 +62,7 @@
       <input
         [formField]="phoneNumberForm"
         matInput />
-      <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong>.</mat-error>
     </mat-form-field>
   </div>
 </div>

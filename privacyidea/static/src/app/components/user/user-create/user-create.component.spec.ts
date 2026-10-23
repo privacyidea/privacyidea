@@ -18,6 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 
 import { provideRouter, Router } from "@angular/router";
 import { Observer } from "rxjs";
@@ -81,6 +83,9 @@ describe("UserCreateComponent", () => {
     fixture.detectChanges();
   });
 
+  const setUsername = (username: string) => component.userModel.update((model) => ({ ...model, username }));
+  const setResolver = (resolver: string) => component.userModel.update((model) => ({ ...model, resolver }));
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
@@ -99,35 +104,79 @@ describe("UserCreateComponent", () => {
     expect(component.resolver()).toBe("");
   });
 
-  it("resolver signal should update when value changes", () => {
+  it("resolver should follow the model", () => {
     expect(component.resolver()).toBe("resolver1");
-    component.resolver.set("resolver2");
+    setResolver("resolver2");
     fixture.detectChanges();
     expect(component.resolver()).toBe("resolver2");
   });
 
-  it("should initialize form signals", () => {
-    expect(component.username).toBeDefined();
-    expect(component.resolver).toBeDefined();
-    expect(component.usernameForm).toBeDefined();
-    expect(component.resolverForm).toBeDefined();
+  it("should hold username and resolver in one form", () => {
+    expect(component.userForm.username().value()).toBe("");
+    expect(component.userForm.resolver().value()).toBe("resolver1");
+  });
+
+  it("should mark the form invalid for a blank username", () => {
+    setUsername("   ");
+    expect(
+      component.userForm
+        .username()
+        .errors()
+        .map((e) => e.kind)
+    ).toEqual(["required"]);
+    expect(component.canSave()).toBe(false);
+  });
+
+  it("should write the typed username into the model and mark the form dirty", () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector("input");
+    input.value = "typed";
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+    expect(component.userModel().username).toBe("typed");
+    expect(component.userForm().dirty()).toBe(true);
+    expect(component.isDirty()).toBe(true);
+  });
+
+  it("should write the selected resolver into the model", () => {
+    mockResolverService.editableResolvers.set(["resolver1", "resolver2"]);
+    fixture.detectChanges();
+    const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+    select.open();
+    fixture.detectChanges();
+    const options: HTMLElement[] = Array.from(document.querySelectorAll("mat-option"));
+    options[1].click();
+    fixture.detectChanges();
+    expect(component.userModel().resolver).toBe("resolver2");
+    expect(component.userForm.resolver().dirty()).toBe(true);
+  });
+
+  it("should show the required errors after a failed save", async () => {
+    setResolver("");
+    await component.onSave();
+    fixture.detectChanges();
+    expect(component.userForm.username().touched()).toBe(true);
+    expect(component.userForm.resolver().touched()).toBe(true);
+    const errors = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-error")).map((e) =>
+      e.textContent?.trim()
+    );
+    expect(errors).toEqual(["Resolver is required.", "Username is required."]);
   });
 
   it("should mark form invalid if username is empty", () => {
-    component.username.set("");
+    setUsername("");
     fixture.detectChanges();
     expect(component.canSave()).toBe(false);
   });
 
   it("should mark form invalid if resolver is empty", () => {
-    component.resolver.set("");
+    setResolver("");
     fixture.detectChanges();
     expect(component.canSave()).toBe(false);
   });
 
   it("should call notificationService if form is invalid on save", () => {
-    component.username.set("");
-    component.resolver.set("");
+    setUsername("");
+    setResolver("");
     fixture.detectChanges();
     component.onSave();
     expect(mockNotificationService.warning).toHaveBeenCalledWith(
@@ -136,8 +185,8 @@ describe("UserCreateComponent", () => {
   });
 
   it("should call userService.createUser on valid form", async () => {
-    component.username.set("testuser");
-    component.resolver.set("testresolver");
+    setUsername("testuser");
+    setResolver("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: Partial<Observer<boolean>>) => next!(true)
     });
@@ -149,9 +198,22 @@ describe("UserCreateComponent", () => {
     );
   });
 
+  it("should send the typed username without mutating editedUserData", async () => {
+    setUsername("testuser");
+    setResolver("testresolver");
+    const edited = { username: "", email: "a@b.c" };
+    component.editedUserData.set(edited);
+    mockUserService.createUser.mockReturnValue({
+      subscribe: ({ next }: Partial<Observer<boolean>>) => next!(true)
+    });
+    await component.onSave();
+    expect(mockUserService.createUser).toHaveBeenCalledWith("testresolver", { username: "testuser", email: "a@b.c" });
+    expect(edited.username).toBe("");
+  });
+
   it("should reload usersResource and navigate back on successful user creation", async () => {
-    component.username.set("testuser");
-    component.resolver.set("testresolver");
+    setUsername("testuser");
+    setResolver("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: Partial<Observer<boolean>>) => next!(true)
     });
@@ -174,7 +236,7 @@ describe("UserCreateComponent", () => {
       realmA: { resolver: [{ name: "resolver1" } as RealmResolver] } as Realm,
       realmB: { resolver: [{ name: "resolver2" } as RealmResolver] } as Realm
     });
-    component.resolver.set("resolver1");
+    setResolver("resolver1");
     fixture.detectChanges();
     expect(component.correspondingRealms()).toContain("realmA");
     expect(component.correspondingRealms()).not.toContain("realmB");
@@ -231,7 +293,7 @@ describe("UserCreateComponent", () => {
   it("onCancel should call pendingChangesService.save when dialog result is save-exit and form is valid", () => {
     const mockDialogRef = new MockMatDialogRef();
     mockDialogService.openDialog.mockReturnValue(mockDialogRef);
-    component.username.set("testuser");
+    setUsername("testuser");
     component.editedUserData.set({ username: "testuser" });
     fixture.detectChanges();
     component.onCancel();
@@ -242,7 +304,7 @@ describe("UserCreateComponent", () => {
   it("onCancel should not save when dialog result is save-exit but form is invalid", () => {
     const mockDialogRef = new MockMatDialogRef();
     mockDialogService.openDialog.mockReturnValue(mockDialogRef);
-    component.username.set("");
+    setUsername("");
     component.editedUserData.set({ username: "draft" });
     fixture.detectChanges();
     component.onCancel();
@@ -251,8 +313,8 @@ describe("UserCreateComponent", () => {
   });
 
   it("onSave should resolve false when createUser returns false", async () => {
-    component.username.set("testuser");
-    component.resolver.set("testresolver");
+    setUsername("testuser");
+    setResolver("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: Partial<Observer<boolean>>) => next!(false)
     });
@@ -262,8 +324,8 @@ describe("UserCreateComponent", () => {
   });
 
   it("onSave should resolve false when createUser errors", async () => {
-    component.username.set("testuser");
-    component.resolver.set("testresolver");
+    setUsername("testuser");
+    setResolver("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ error }: Partial<Observer<boolean>>) => error!(new Error("network error"))
     });

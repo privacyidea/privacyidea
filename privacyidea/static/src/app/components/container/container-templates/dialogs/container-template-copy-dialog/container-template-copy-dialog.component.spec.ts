@@ -28,6 +28,8 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateCopyDialogComponent } from "./container-template-copy-dialog.component";
 
@@ -71,6 +73,16 @@ describe("ContainerTemplateCopyDialogComponent", () => {
     fixture.detectChanges();
   });
 
+  const nameInput = (): HTMLInputElement => fixture.nativeElement.querySelector("input");
+  const errors = (): string[] =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((e) => (e as HTMLElement).textContent!.trim());
+  // Types into the name input the way a user does, so the field becomes dirty.
+  const type = (name: string): void => {
+    nameInput().value = name;
+    nameInput().dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+  };
+
   it("should create", () => {
     expect(component).toBeTruthy();
   });
@@ -85,8 +97,7 @@ describe("ContainerTemplateCopyDialogComponent", () => {
 
     it("asks before discarding an edited name instead of closing right away", () => {
       const dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
-      component.editName("RenamedTemplate");
-      fixture.detectChanges();
+      type("RenamedTemplate");
 
       clickCloseButton();
 
@@ -108,36 +119,84 @@ describe("ContainerTemplateCopyDialogComponent", () => {
 
   it("should initialize with the name from MAT_DIALOG_DATA", () => {
     expect(component.template().name).toBe(INITIAL_NAME);
+    expect(nameInput().value).toBe(INITIAL_NAME);
     expect(component.isDirty()).toBeFalsy();
   });
 
-  it("should detect name conflicts and disable save", () => {
-    component.editName("ExistingCopy");
+  it("registers the validity of the name with the pending changes service", () => {
+    const pendingChanges = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
-    expect(component.nameConflict()).toBeTruthy();
+    expect(pendingChanges.registerValidChanges).toHaveBeenCalledWith(component.canSave);
+  });
+
+  it("starts without a copy that can be saved and without an error", () => {
+    expect(component.canSave()).toBe(false);
+    expect(component.actions()[0].disabled).toBe(true);
+    expect(errors()).toEqual([]);
+  });
+
+  it("should detect name conflicts, disable save and show the error", () => {
+    type("ExistingCopy");
+
+    expect(hasError(component.form.name, ERR.nameTaken)).toBe(true);
     expect(component.canSave()).toBeFalsy();
     expect(component.actions()[0].disabled).toBeTruthy();
+    expect(errors()).toEqual(["A template with this name already exists."]);
   });
 
   it("should be dirty when name is changed from original", () => {
-    component.editName("BrandNewName");
+    type("BrandNewName");
 
     expect(component.isDirty()).toBeTruthy();
     expect(component.canSave()).toBeTruthy();
+    expect(component.actions()[0].disabled).toBe(false);
+    expect(errors()).toEqual([]);
   });
 
   it("should not allow saving if the name is the same as the original", () => {
-    // Manually setting it back to original after it was dirty
-    component.editName(INITIAL_NAME);
+    type("Other");
+    type(INITIAL_NAME);
 
     expect(component.canSave()).toBeFalsy();
+    expect(hasError(component.form.name, "notChanged")).toBe(true);
+    expect(hasError(component.form.name, ERR.nameTaken)).toBe(false);
+    expect(errors()).toEqual(["Template name must be different from the original."]);
+  });
+
+  it("requires a name and shows the error once it is emptied", () => {
+    type("");
+
+    expect(component.canSave()).toBe(false);
+    expect(hasError(component.form.name, ERR.required)).toBe(true);
+    expect(errors()).toEqual(["Template name is required."]);
+  });
+
+  it.each(["has space", "bad!"])("rejects the name %p for its characters", (name) => {
+    type(name);
+
+    expect(component.canSave()).toBe(false);
+    expect(hasError(component.form.name, ERR.pattern)).toBe(true);
+    expect(errors()).toHaveLength(1);
+    expect(errors()[0]).toContain("invalid characters");
+  });
+
+  it("copies on Enter only while the name is valid", () => {
+    const copySpy = jest.spyOn(component, "onAction").mockResolvedValue();
+    const pressEnter = () => nameInput().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+
+    pressEnter();
+    expect(copySpy).not.toHaveBeenCalled();
+
+    type("UniqueName");
+    pressEnter();
+    expect(copySpy).toHaveBeenCalledWith("copy");
   });
 
   it("should close the dialog with the new name on successful copy", async () => {
     const NEW_NAME = "UniqueCopyName";
     jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(true);
 
-    component.editName(NEW_NAME);
+    type(NEW_NAME);
     await component.onAction("copy");
 
     expect(containerTemplateServiceMock.postTemplateEdits).toHaveBeenCalledWith(
@@ -149,18 +208,10 @@ describe("ContainerTemplateCopyDialogComponent", () => {
   it("should not close the dialog if service call fails", async () => {
     jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(false);
 
-    component.editName("SomeNewName");
+    type("SomeNewName");
     await component.onAction("copy");
 
     expect(dialogRefMock.close).not.toHaveBeenCalled();
-  });
-
-  it("should correctly handle nameErrorMatcher", () => {
-    component.editName("ExistingCopy");
-    expect(component.nameErrorMatcher.isErrorState()).toBeTruthy();
-
-    component.editName("UniqueName");
-    expect(component.nameErrorMatcher.isErrorState()).toBeFalsy();
   });
 
   it("should trigger copy on onSave call", async () => {

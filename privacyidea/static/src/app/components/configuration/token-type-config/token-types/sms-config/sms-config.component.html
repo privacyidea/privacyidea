@@ -18,9 +18,10 @@
 -->
 <mat-expansion-panel
   id="sms"
-  [expanded]="expanded()">
+  [expanded]="expanded() || panel.revealed()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@common.sms">SMS</mat-panel-title>
+    <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.smsTokenEvent">The SMS Token is an event based token.</p>
@@ -38,9 +39,7 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.smsGatewayConfiguration">SMS Gateway Configuration</mat-label>
         @if (smsGatewaysListable()) {
-          <mat-select
-            [value]="formData()[SMS_GATEWAY]"
-            (valueChange)="updateFormData(SMS_GATEWAY, $event)">
+          <mat-select [formField]="config().values[SMS_GATEWAY]">
             @for (gateway of smsGateways(); track gateway) {
               <mat-option [value]="gateway">{{ gateway }}</mat-option>
             }
@@ -48,12 +47,11 @@
         } @else {
           <input
             matInput
-            [value]="formData()[SMS_GATEWAY] ?? ''"
-            (input)="updateFormData(SMS_GATEWAY, $event.target.value)" />
+            [formField]="config().values[SMS_GATEWAY]" />
         }
         <app-clear-button
           matSuffix
-          (clearButtonClick)="clearField(SMS_GATEWAY); $event.stopPropagation()"></app-clear-button>
+          (clearButtonClick)="clearValue(config().values[SMS_GATEWAY]); $event.stopPropagation()"></app-clear-button>
         @if (smsGatewaysListable()) {
           <mat-hint i18n="@@tokenTypeConfig.selectPredefinedSms"
             >Select a predefined
@@ -75,11 +73,13 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.otpValidityTime">OTP Validity Time</mat-label>
         <input
-          [value]="formData()[SMS_PROVIDER_TIMEOUT] ?? ''"
-          (input)="updateFormData(SMS_PROVIDER_TIMEOUT, $any($event.target).valueAsNumber)"
+          [formField]="config().values[SMS_PROVIDER_TIMEOUT]"
           matInput
           placeholder="300"
           type="number" />
+        @if (hasError(config().values[SMS_PROVIDER_TIMEOUT], ERR.parse)) {
+          <mat-error i18n="@@tokenTypeConfig.invalidNumber">Enter a valid number.</mat-error>
+        }
         <mat-hint i18n="@@tokenTypeConfig.timeSecondsWhich"
           >The time in seconds for which the sent OTP value is valid for authentication.</mat-hint
         >

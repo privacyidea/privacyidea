@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+.chip-list-extras {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+
+  &:empty {
+    display: none;
+  }
+}

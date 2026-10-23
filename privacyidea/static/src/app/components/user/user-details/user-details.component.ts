@@ -29,6 +29,7 @@ import {
   signal,
   WritableSignal
 } from "@angular/core";
+import { applyWhen, form, FormField } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -77,6 +78,27 @@ import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-
 import { formatLocalDateTime } from "@utils/date-format.utils";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { exactMatch, withUser } from "@utils/filter.utils";
+import { requiredNonBlank } from "@utils/form-rules.utils";
+
+/** Value of the key select's last option, which switches the add-attribute row to a free-text key. */
+export const CUSTOM_KEY_OPTION = "__CUSTOM__";
+
+/** The add-attribute row: the key comes from the select or from the text input, depending on `keyMode`. */
+interface AttributeRowModel {
+  keyMode: "select" | "input";
+  selectedKey: string;
+  customKey: string;
+  selectedValue: string;
+  customValue: string;
+}
+
+const EMPTY_ATTRIBUTE_ROW: AttributeRowModel = {
+  keyMode: "select",
+  selectedKey: "",
+  customKey: "",
+  selectedValue: "",
+  customValue: ""
+};
 
 @Component({
   selector: "app-user-details",
@@ -94,6 +116,7 @@ import { exactMatch, withUser } from "@utils/filter.utils";
     MatLabel,
     MatOption,
     MatFormField,
+    FormField,
     NgClass,
     NgTemplateOutlet,
     UserDetailsContainerTableComponent,
@@ -169,15 +192,38 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
-  addKeyInput = signal<string>("");
-  addValueInput = signal<string>("");
-  selectedKey = signal<string | null>(null);
-  selectedValue = signal<string | null>(null);
-  keyMode = signal<"select" | "input">("select");
+  protected readonly CUSTOM_KEY_OPTION = CUSTOM_KEY_OPTION;
+  attributeRow = signal<AttributeRowModel>({ ...EMPTY_ATTRIBUTE_ROW });
+  attributeForm = form(this.attributeRow, (f) => {
+    applyWhen(
+      f.selectedKey,
+      ({ valueOf }) => valueOf(f.keyMode) === "select",
+      (key) => requiredNonBlank(key)
+    );
+    applyWhen(
+      f.customKey,
+      ({ valueOf }) => valueOf(f.keyMode) === "input",
+      (key) => requiredNonBlank(key)
+    );
+    applyWhen(
+      f.selectedValue,
+      () => !this.isValueInput(),
+      (value) => requiredNonBlank(value)
+    );
+    applyWhen(
+      f.customValue,
+      () => this.isValueInput(),
+      (value) => requiredNonBlank(value)
+    );
+  });
+  keyMode = computed(() => this.attributeRow().keyMode);
+  attributeKey = computed(() => {
+    const row = this.attributeRow();
+    return (row.keyMode === "input" ? row.customKey : row.selectedKey).trim();
+  });
   valueOptions = computed<string[]>(() => {
     const map = this.attributeSetMap();
-    const mode = this.keyMode();
-    const key = mode === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "");
+    const key = this.attributeKey();
     if (key && map[key]) return map[key];
     if (map["*"]) return map["*"];
     return [];
@@ -187,20 +233,26 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     if (opts.includes("*")) return true;
     return opts.length === 0;
   });
-  canAddAttribute = computed<boolean>(() => {
-    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-    return key.length > 0 && value.length > 0;
+  attributeValue = computed(() => {
+    const row = this.attributeRow();
+    return (this.isValueInput() ? row.customValue : row.selectedValue).trim();
+  });
+  canAddAttribute = computed<boolean>(() => this.attributeForm().valid());
+  hasAttributeInput = computed(() => {
+    const row = this.attributeRow();
+    return !!(row.selectedKey || row.customKey || row.selectedValue || row.customValue);
   });
 
   constructor() {
     effect(() => {
       const hasWildcard = this.hasWildcardKey();
       const hasFixedKeys = this.keyOptions().length > 0;
-      if (hasWildcard && !hasFixedKeys) {
-        this.keyMode.set("input");
-      } else {
-        this.keyMode.set("select");
+      const keyMode = hasWildcard && !hasFixedKeys ? "input" : "select";
+      this.attributeRow.update((row) => ({ ...row, keyMode }));
+    });
+    effect(() => {
+      if (this.attributeRow().selectedKey === CUSTOM_KEY_OPTION) {
+        this.switchToCustomKey();
       }
     });
   }
@@ -251,20 +303,8 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(
-      () =>
-        this.editIsDirty() ||
-        !!this.addKeyInput() ||
-        !!this.addValueInput() ||
-        !!this.selectedKey() ||
-        !!this.selectedValue()
-    );
-    this.pendingChangesService.registerValidChanges(() => {
-      if (this.editMode()) return true;
-      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-      return !!key && !!value;
-    });
+    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.hasAttributeInput());
+    this.pendingChangesService.registerValidChanges(() => this.editMode() || this.canAddAttribute());
     this.pendingChangesService.registerSave(() => {
       if (this.editMode()) return this.saveEditAsync();
       return this.addCustomAttribute();
@@ -309,29 +349,22 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   }
 
   switchToCustomKey() {
-    this.keyMode.set("input");
-    this.selectedKey.set(null);
+    this.attributeRow.update((row) => ({ ...row, keyMode: "input", selectedKey: "" }));
   }
 
   switchToSelectKey() {
-    this.keyMode.set("select");
-    this.addKeyInput.set("");
+    this.attributeRow.update((row) => ({ ...row, keyMode: "select", customKey: "" }));
   }
 
   async addCustomAttribute(): Promise<boolean> {
-    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-
-    if (!key || !value) return false;
+    if (!this.canAddAttribute()) return false;
 
     try {
-      await firstValueFrom(this.userService.setUserAttribute(key, value));
+      await firstValueFrom(this.userService.setUserAttribute(this.attributeKey(), this.attributeValue()));
       this.userService.userAttributesResource.reload();
       this.userService.userResource.reload();
-      this.addKeyInput.set("");
-      this.addValueInput.set("");
-      this.selectedKey.set(null);
-      this.selectedValue.set(null);
+      this.attributeRow.set({ ...EMPTY_ATTRIBUTE_ROW, keyMode: this.keyMode() });
+      this.attributeForm().reset();
       return true;
     } catch {
       return false;

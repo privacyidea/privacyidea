@@ -19,7 +19,6 @@
 
 @use "styles-api" as styles;
 @use "table";
-@use "@angular/material" as mat;
 
 .settings-container {
   @include styles.main-component-style;
@@ -125,16 +124,4 @@ h4.settings-item-label {
 .settings-panel {
   --expansion-panel-header-padding: 0 16px;
   --expansion-panel-body-padding: 0 16px 16px;
-}
-
-// Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
-// so plain properties would depend on stylesheet order.
-mat-button-toggle-group {
-  @include mat.button-toggle-overrides(
-    (
-      shape: var(--border-radius),
-      selected-state-background-color: var(--mat-sys-primary-light),
-      selected-state-text-color: var(--mat-sys-on-primary)
-    )
-  );
 }

@@ -42,6 +42,7 @@ describe("ContainerTemplateService", () => {
   let authServiceMock: MockAuthService;
   let contentServiceMock: MockContentService;
   let notificationServiceMock: MockNotificationService;
+  let containerServiceMock: MockContainerService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -60,6 +61,7 @@ describe("ContainerTemplateService", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    containerServiceMock = TestBed.inject(ContainerService) as unknown as MockContainerService;
     authServiceMock.actionAllowed.mockReturnValue(true);
   });
 
@@ -97,6 +99,56 @@ describe("ContainerTemplateService", () => {
       expect(value?.result?.value?.templates).toBeDefined();
       expect(value?.result?.value?.templates).toEqual([{ name: "template1" }]);
       expect(service.templates()).toEqual([{ name: "template1" }]);
+    });
+
+    it.each([
+      ["the templates list", ROUTE_PATHS.CONTAINERS_TEMPLATES],
+      ["the template create page", ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE],
+      ["a template details page", ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + "MyTemplate"]
+    ])("fetches the templates on %s", async (_label, route) => {
+      contentServiceMock.routeUrl.set(route);
+      TestBed.tick();
+
+      const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      req.flush({ result: { value: { templates: [{ name: "Existing" }] } } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      expect(service.templates()).toEqual([{ name: "Existing" }]);
+    });
+
+    it.each([
+      ["the template create page", ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE],
+      ["a template details page", ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + "MyTemplate"]
+    ])("fetches the templates of every container type on %s", async (_label, route) => {
+      (containerServiceMock.selectedContainerType as unknown as { set(v: unknown): void }).set({
+        containerType: "generic",
+        description: "",
+        token_types: []
+      });
+      contentServiceMock.routeUrl.set(route);
+      TestBed.tick();
+
+      const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
+      expect(req.request.params.has("container_type")).toBe(false);
+      req.flush({ result: { value: { templates: [] } } });
+      TestBed.tick();
+      await Promise.resolve();
+    });
+
+    it("filters the templates by the selected container type on the container create page", async () => {
+      (containerServiceMock.selectedContainerType as unknown as { set(v: unknown): void }).set({
+        containerType: "generic",
+        description: "",
+        token_types: []
+      });
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === `${service.containerTemplateBaseUrl}`);
+      expect(req.request.params.get("container_type")).toBe("generic");
+      req.flush({ result: { value: { templates: [] } } });
+      TestBed.tick();
+      await Promise.resolve();
     });
 
     it("should not fetch templates if action is not allowed", async () => {
@@ -427,34 +479,6 @@ describe("ContainerTemplateService", () => {
     });
   });
 
-  describe("canSaveTemplate", () => {
-    let validTemplate: ContainerTemplate;
-    beforeEach(() => {
-      validTemplate = {
-        name: "valid-template",
-        container_type: "generic",
-        default: false,
-        template_options: {
-          tokens: [{ type: "hotp", genkey: false, hashlib: "", otplen: 6, timeStep: 0, user: false }]
-        }
-      };
-    });
-    it("should return true on valid template", () => {
-      expect(service.canSaveTemplate(validTemplate)).toBe(true);
-    });
-    it("should return false on empty name", () => {
-      const invalidTemplate = { ...validTemplate, name: "   " };
-      expect(service.canSaveTemplate(invalidTemplate)).toBe(false);
-    });
-    it("should return false on empty token list", () => {
-      const invalidTemplate = {
-        ...validTemplate,
-        template_options: { ...validTemplate.template_options, tokens: [] }
-      };
-      expect(service.canSaveTemplate(invalidTemplate)).toBe(false);
-    });
-  });
-
   describe("Error handling", () => {
     afterEach(() => {
       const req = [
@@ -495,46 +519,6 @@ describe("ContainerTemplateService", () => {
 
       const result = await promise;
       expect(result).toBe(true);
-    });
-
-    it("canSaveTemplate returns false for names with special characters", () => {
-      const template: ContainerTemplate = {
-        name: "bad name!",
-        container_type: "generic",
-        default: false,
-        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
-      };
-      expect(service.canSaveTemplate(template)).toBe(false);
-    });
-
-    it("canSaveTemplate returns false when name is empty", () => {
-      const template: ContainerTemplate = {
-        name: "",
-        container_type: "generic",
-        default: false,
-        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
-      };
-      expect(service.canSaveTemplate(template)).toBe(false);
-    });
-
-    it("canSaveTemplate returns false when container_type is empty", () => {
-      const template: ContainerTemplate = {
-        name: "valid",
-        container_type: "",
-        default: false,
-        template_options: { tokens: [{ type: "hotp" } as Partial<TokenEnrollmentPayload> as TokenEnrollmentPayload] }
-      };
-      expect(service.canSaveTemplate(template)).toBe(false);
-    });
-
-    it("canSaveTemplate returns false when tokens list is empty", () => {
-      const template: ContainerTemplate = {
-        name: "valid",
-        container_type: "generic",
-        default: false,
-        template_options: { tokens: [] }
-      };
-      expect(service.canSaveTemplate(template)).toBe(false);
     });
 
     it("should show a generic error notification on post if error response contains no message", async () => {

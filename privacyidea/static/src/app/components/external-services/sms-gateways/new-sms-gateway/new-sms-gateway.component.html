@@ -55,7 +55,7 @@
         </button>
         <button
           (click)="save()"
-          [disabled]="!smsForm().valid() || !parametersValid()"
+          [disabled]="!canSave"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
@@ -72,17 +72,17 @@
             class="input-width-l">
             <mat-label i18n="@@common.name">Name</mat-label>
             <app-clearable-input
-              (clearButtonClick)="smsModel.update(m => ({...m, name: ''}))"
+              (clearButtonClick)="clearField(smsForm.name, '')"
               [showClearButton]="!isEditMode() && !!smsModel().name">
               <input
                 [formField]="smsForm.name"
                 matInput
                 placeholder="mySmsGateway" />
             </app-clearable-input>
-            @if (smsForm.name().errors().some(e => e.kind === 'required')) {
-              <mat-error i18n="@@smsGateway.nameRequired">Name is <strong>required</strong></mat-error>
+            @if (hasError(smsForm.name, ERR.required)) {
+              <mat-error i18n="@@smsGateway.nameRequired">Name is <strong>required</strong>.</mat-error>
             }
-            @if (smsForm.name().errors().some(e => e.kind === 'pattern')) {
+            @if (hasError(smsForm.name, ERR.pattern)) {
               <mat-error i18n="@@common.nameContainsInvalid"
                 >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
                 hyphens are allowed.</mat-error
@@ -94,19 +94,16 @@
             appearance="fill"
             class="input-width-l">
             <mat-label i18n="@@smsGateway.providerModule">Provider Module</mat-label>
-            <mat-select
-              [value]="smsModel().providermodule"
-              (selectionChange)="smsModel.update(m => ({...m, providermodule: $event.value}))"
-              required>
+            <mat-select [formField]="smsForm.providermodule">
               @for (provider of providerEntries(); track provider.key) {
                 <mat-option [value]="provider.key">
                   {{ provider.key.split(".").pop() }}
                 </mat-option>
               }
             </mat-select>
-            @if (smsForm.providermodule().errors().some(e => e.kind === 'required')) {
+            @if (hasError(smsForm.providermodule, ERR.required)) {
               <mat-error i18n="@@smsGateway.providerModuleRequired"
-                >Provider Module is <strong>required</strong></mat-error
+                >Provider Module is <strong>required</strong>.</mat-error
               >
             }
           </mat-form-field>
@@ -117,7 +114,7 @@
           class="input-width-xl">
           <mat-label i18n="@@common.description">Description</mat-label>
           <app-clearable-input
-            (clearButtonClick)="smsModel.update(m => ({...m, description: ''}))"
+            (clearButtonClick)="clearField(smsForm.description, '')"
             [showClearButton]="!!smsModel().description">
             <textarea
               [formField]="smsForm.description"
@@ -132,57 +129,52 @@
         <h3 i18n="@@smsGateway.parameters">Parameters</h3>
         <div class="parameters-form">
           @for (param of parameterEntries(); track param.key) {
-            <mat-form-field
-              [class.input-width-l]="param.key !== 'REGEXP' && param.value.type !== 'text'"
-              [class.input-width-xl]="param.key === 'REGEXP' || param.value.type === 'text'"
-              [class.margin-bottom-64]="
-                param.key === 'PROXY' &&
-                smsModel().providermodule === 'privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider'
-              "
-              appearance="fill"
-              class="margin-bottom-16">
-              <mat-label>{{ param.key }}</mat-label>
+            @if (parameterField(param.key); as field) {
+              <mat-form-field
+                [class.input-width-l]="param.key !== 'REGEXP' && param.value.type !== 'text'"
+                [class.input-width-xl]="param.key === 'REGEXP' || param.value.type === 'text'"
+                [class.margin-bottom-64]="
+                  param.key === 'PROXY' &&
+                  smsModel().providermodule === 'privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider'
+                "
+                appearance="fill"
+                class="margin-bottom-16">
+                <mat-label>{{ param.key }}</mat-label>
 
-              @if (param.value.values) {
-                <mat-select
-                  [value]="parametersModel()[param.key]"
-                  (selectionChange)="updateParameter(param.key, $event.value)"
-                  [required]="param.value.required">
-                  @for (val of param.value.values; track val) {
-                    <mat-option [value]="val">
-                      {{ val }}
-                    </mat-option>
-                  }
-                </mat-select>
-              }
+                @if (param.value.values) {
+                  <mat-select [formField]="field">
+                    @for (val of param.value.values; track val) {
+                      <mat-option [value]="val">
+                        {{ val }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                }
 
-              @if (!param.value.values && param.value.type === "text") {
-                <textarea
-                  [value]="parametersModel()[param.key]"
-                  (input)="updateParameter(param.key, $any($event.target).value)"
-                  [required]="param.value.required"
-                  matInput
-                  rows="2"></textarea>
-              }
+                @if (!param.value.values && param.value.type === "text") {
+                  <textarea
+                    [formField]="field"
+                    matInput
+                    rows="2"></textarea>
+                }
 
-              @if (!param.value.values && param.value.type !== "text") {
-                <app-clearable-input
-                  (clearButtonClick)="clearParameter(param.key)"
-                  [showClearButton]="!!parametersModel()[param.key]">
-                  <input
-                    [value]="parametersModel()[param.key]"
-                    (input)="updateParameter(param.key, $any($event.target).value)"
-                    [required]="param.value.required"
-                    matInput />
-                </app-clearable-input>
-              }
+                @if (!param.value.values && param.value.type !== "text") {
+                  <app-clearable-input
+                    (clearButtonClick)="clearField(field, '')"
+                    [showClearButton]="!!field().value()">
+                    <input
+                      [formField]="field"
+                      matInput />
+                  </app-clearable-input>
+                }
 
-              <mat-hint>{{ param.value.description }}</mat-hint>
+                <mat-hint>{{ param.value.description }}</mat-hint>
 
-              @if (param.value.required && !parametersModel()[param.key]) {
-                <mat-error i18n="@@smsGateway.isRequired">{{ param.key }} is <strong>required</strong></mat-error>
-              }
-            </mat-form-field>
+                @if (hasError(field, ERR.required)) {
+                  <mat-error i18n="@@smsGateway.isRequired">{{ param.key }} is <strong>required</strong>.</mat-error>
+                }
+              </mat-form-field>
+            }
           }
         </div>
       }
@@ -284,16 +276,19 @@
                 mat-footer-cell>
                 <mat-form-field
                   appearance="fill"
-                  class="add-footer-field">
+                  class="add-footer-field"
+                  subscriptSizing="dynamic">
                   <mat-label i18n="@@smsGateway.optionName">Option Name</mat-label>
                   <app-clearable-input
-                    (clearButtonClick)="newOptionKey.set('')"
-                    [showClearButton]="!!newOptionKey()">
+                    (clearButtonClick)="clearField(optionDraftForm.key, '')"
+                    [showClearButton]="!!optionDraft().key">
                     <input
-                      [value]="newOptionKey()"
-                      (input)="newOptionKey.set($any($event.target).value)"
+                      [formField]="optionDraftForm.key"
                       matInput />
                   </app-clearable-input>
+                  @if (hasError(optionDraftForm.key, ERR.required)) {
+                    <mat-error i18n="@@smsGateway.optionNameRequired">Option name is <strong>required</strong>.</mat-error>
+                  }
                 </mat-form-field>
               </td>
             </ng-container>
@@ -308,11 +303,10 @@
                   class="add-footer-field">
                   <mat-label i18n="@@common.value">Value</mat-label>
                   <app-clearable-input
-                    (clearButtonClick)="newOptionValue.set('')"
-                    [showClearButton]="!!newOptionValue()">
+                    (clearButtonClick)="clearField(optionDraftForm.value, '')"
+                    [showClearButton]="!!optionDraft().value">
                     <input
-                      [value]="newOptionValue()"
-                      (input)="newOptionValue.set($any($event.target).value)"
+                      [formField]="optionDraftForm.value"
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
@@ -325,8 +319,7 @@
                 class="col-width-s"
                 mat-footer-cell>
                 <mat-checkbox
-                  (change)="newOptionSecret.set(!newOptionSecret())"
-                  [checked]="newOptionSecret()"
+                  [formField]="optionDraftForm.secret"
                   aria-label="Secret"
                   i18n-aria-label="@@common.secret"></mat-checkbox>
               </td>
@@ -340,7 +333,7 @@
                 <div class="add-button">
                   <button
                     (click)="addOption()"
-                    [disabled]="!newOptionKey()"
+                    [disabled]="!optionDraftForm().valid()"
                     aria-label="Add"
                     color="primary"
                     i18n-aria-label="@@common.add"
@@ -456,16 +449,19 @@
                 mat-footer-cell>
                 <mat-form-field
                   appearance="fill"
-                  class="add-footer-field">
+                  class="add-footer-field"
+                  subscriptSizing="dynamic">
                   <mat-label i18n="@@smsGateway.headerName">Header Name</mat-label>
                   <app-clearable-input
-                    (clearButtonClick)="newHeaderKey.set('')"
-                    [showClearButton]="!!newHeaderKey()">
+                    (clearButtonClick)="clearField(headerDraftForm.key, '')"
+                    [showClearButton]="!!headerDraft().key">
                     <input
-                      [value]="newHeaderKey()"
-                      (input)="newHeaderKey.set($any($event.target).value)"
+                      [formField]="headerDraftForm.key"
                       matInput />
                   </app-clearable-input>
+                  @if (hasError(headerDraftForm.key, ERR.required)) {
+                    <mat-error i18n="@@smsGateway.headerNameRequired">Header name is <strong>required</strong>.</mat-error>
+                  }
                 </mat-form-field>
               </td>
             </ng-container>
@@ -480,11 +476,10 @@
                   class="add-footer-field">
                   <mat-label i18n="@@common.value">Value</mat-label>
                   <app-clearable-input
-                    (clearButtonClick)="newHeaderValue.set('')"
-                    [showClearButton]="!!newHeaderValue()">
+                    (clearButtonClick)="clearField(headerDraftForm.value, '')"
+                    [showClearButton]="!!headerDraft().value">
                     <input
-                      [value]="newHeaderValue()"
-                      (input)="newHeaderValue.set($any($event.target).value)"
+                      [formField]="headerDraftForm.value"
                       matInput />
                   </app-clearable-input>
                 </mat-form-field>
@@ -497,8 +492,7 @@
                 class="col-width-s"
                 mat-footer-cell>
                 <mat-checkbox
-                  (change)="newHeaderSecret.set(!newHeaderSecret())"
-                  [checked]="newHeaderSecret()"
+                  [formField]="headerDraftForm.secret"
                   aria-label="Secret"
                   i18n-aria-label="@@common.secret"></mat-checkbox>
               </td>
@@ -512,7 +506,7 @@
                 <div class="flex ali-center just-center">
                   <button
                     (click)="addHeader()"
-                    [disabled]="!newHeaderKey()"
+                    [disabled]="!headerDraftForm().valid()"
                     aria-label="Add"
                     color="primary"
                     i18n-aria-label="@@common.add"

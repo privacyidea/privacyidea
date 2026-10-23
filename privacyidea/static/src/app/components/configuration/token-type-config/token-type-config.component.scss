@@ -7,6 +7,18 @@
     margin-bottom: 20px;
   }
 
+  // The hint takes the space between the title and the buttons and wraps in it. It adds nothing to the intrinsic width, so
+  // showing it neither widens the card nor makes the header taller. When the row is too narrow for its minimum width it
+  // moves to a line of its own.
+  .save-blocked-hint {
+    color: var(--mat-sys-error);
+    contain: inline-size;
+    flex: 1 1 0;
+    margin: 0 8px;
+    min-width: 12rem;
+    text-align: right;
+  }
+
   .actions-container {
     margin-top: 20px;
     display: flex;

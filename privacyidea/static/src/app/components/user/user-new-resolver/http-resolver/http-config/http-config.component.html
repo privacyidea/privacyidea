@@ -25,11 +25,10 @@
     <mat-form-field class="input-width-xl">
       <mat-label i18n="@@resolver.endpoint">Endpoint</mat-label>
       <app-clearable-input
-        (clearButtonClick)="model.update(m => ({ ...m, endpoint: '' }))"
-        [showClearButton]="!!model().endpoint">
+        (clearButtonClick)="clearField(field().endpoint, '')"
+        [showClearButton]="!!field().endpoint().value()">
         <input
-          (input)="model.update(m => ({ ...m, endpoint: $any($event.target).value }))"
-          [value]="model().endpoint"
+          [formField]="field().endpoint"
           matInput
           placeholder="/users" />
       </app-clearable-input>
@@ -40,9 +39,7 @@
 
     <mat-form-field class="input-width-s">
       <mat-label i18n="@@resolver.method">Method</mat-label>
-      <mat-select
-        (selectionChange)="model.update(m => ({ ...m, method: $event.value }))"
-        [value]="model().method">
+      <mat-select [formField]="field().method">
         <mat-option value="POST">POST</mat-option>
         <mat-option value="GET">GET</mat-option>
         <mat-option value="PUT">PUT</mat-option>
@@ -55,8 +52,7 @@
   <mat-form-field class="input-width-xl margin-bottom-16">
     <mat-label i18n="@@resolver.headersJson">Headers (JSON format)</mat-label>
     <textarea
-      (input)="model.update(m => ({ ...m, headers: $any($event.target).value }))"
-      [value]="model().headers"
+      [formField]="field().headers"
       matInput
       placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
   </mat-form-field>
@@ -64,8 +60,7 @@
   <mat-form-field class="input-width-xl margin-bottom-16">
     <mat-label i18n="@@resolver.requestMappingJsonFormat">Request Mapping (JSON format)</mat-label>
     <textarea
-      (input)="model.update(m => ({ ...m, requestMapping: $any($event.target).value }))"
-      [value]="model().requestMapping"
+      [formField]="field().requestMapping"
       matInput
       placeholder='{"customerid":"{userid}","accessKey":"{secre3t!}"}'></textarea>
     @if (endpointHint()) {
@@ -76,26 +71,23 @@
   <mat-form-field class="input-width-xl">
     <mat-label i18n="@@resolver.responseMappingJsonFormat">Response Mapping (JSON format)</mat-label>
     <textarea
-      (input)="model.update(m => ({ ...m, responseMapping: $any($event.target).value }))"
-      [value]="model().responseMapping"
+      [formField]="field().responseMapping"
       matInput
       placeholder='{"Authorization":"Bearer {access_token}"}'></textarea>
   </mat-form-field>
 
   <mat-checkbox
-    (change)="model.update(m => ({ ...m, hasSpecialErrorHandler: $event.checked }))"
-    [checked]="model().hasSpecialErrorHandler"
+    [formField]="field().hasSpecialErrorHandler"
     class="checkbox-inline"
     i18n="@@resolver.specialErrorHandling"
     >Special Error Handling</mat-checkbox
   >
 
-  @if (model().hasSpecialErrorHandler) {
+  @if (field().hasSpecialErrorHandler().value()) {
     <mat-form-field class="input-width-xl">
       <mat-label i18n="@@resolver.responseContainsJson">Response Contains (JSON format)</mat-label>
       <textarea
-        (input)="model.update(m => ({ ...m, errorResponse: $any($event.target).value }))"
-        [value]="model().errorResponse"
+        [formField]="field().errorResponse"
         matInput
         placeholder='{"success": false, "message": "An error occurred!"}'></textarea>
     </mat-form-field>

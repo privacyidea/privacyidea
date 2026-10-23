@@ -17,15 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, output, ViewChild } from "@angular/core";
 
-import { form, FormField, validate } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -35,14 +32,11 @@ import { ResolverService, ResolverServiceInterface } from "@services/resolver/re
   selector: "app-edit-admin-conditions",
   standalone: true,
   imports: [
-    FormField,
-    MatIconModule,
-    MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
-    MatButtonModule,
     MatExpansionModule,
-    MultiSelectOnlyComponent
+    MultiSelectOnlyComponent,
+    ChipListInputComponent
   ],
   templateUrl: "./edit-admin-conditions.component.html",
   styleUrl: "./edit-admin-conditions.component.scss"
@@ -56,12 +50,7 @@ export class EditAdminConditionsComponent {
   readonly policyService = inject(PolicyService);
 
   readonly policy = input.required<PolicyDetail>();
-  readonly policyEdit = output<PolicyDetail>();
-
-  readonly adminSignal = signal("");
-  readonly adminField = form(this.adminSignal, (f) => {
-    validate(f, (ctx) => (/[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []));
-  });
+  readonly policyEdit = output<Partial<PolicyDetail>>();
 
   readonly selectedRealms = computed(() => this.policy().realm || []);
   readonly selectedResolvers = computed(() => this.policy().resolver || []);
@@ -115,26 +104,7 @@ export class EditAdminConditionsComponent {
     this.updatePolicy({ adminrealm: $event });
   }
 
-  addAdmin(adminuser: string) {
-    const trimmed = adminuser?.trim();
-    if (this.adminField().errors().length > 0 || !trimmed) {
-      return;
-    }
-    if (!this.selectedAdmins().includes(trimmed)) {
-      this.updatePolicy({ adminuser: [...this.selectedAdmins(), trimmed] });
-      this.adminSignal.set("");
-    }
-  }
-
-  removeAdmin(adminuser: string) {
-    this.updatePolicy({ adminuser: this.selectedAdmins().filter((u) => u !== adminuser) });
-  }
-
-  clearAdmins() {
-    this.updatePolicy({ adminuser: [] });
-  }
-
   updatePolicy(patch: Partial<PolicyDetail>) {
-    this.policyEdit.emit({ ...this.policy(), ...patch });
+    this.policyEdit.emit(patch);
   }
 }

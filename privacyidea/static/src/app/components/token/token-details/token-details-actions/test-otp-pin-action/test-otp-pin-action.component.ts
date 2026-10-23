@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
@@ -27,7 +28,7 @@ import { ValidateService, ValidateServiceInterface } from "@services/validate/va
 
 @Component({
   selector: "app-test-otp-pin-action",
-  imports: [MatFormField, MatLabel, MatInput, MatSuffix, MatButtonModule, MatIcon],
+  imports: [FormField, MatFormField, MatLabel, MatInput, MatSuffix, MatButtonModule, MatIcon],
   templateUrl: "./test-otp-pin-action.component.html",
   styleUrl: "./test-otp-pin-action.component.scss"
 })
@@ -37,8 +38,9 @@ export class TestOtpPinActionComponent {
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  hide = true;
+  hide = signal(true);
   otpOrPinToTest = signal("");
+  otpOrPinForm = form(this.otpOrPinToTest);
 
   testToken() {
     this.validateService.testToken(this.tokenService.tokenSerial(), this.otpOrPinToTest()).subscribe({

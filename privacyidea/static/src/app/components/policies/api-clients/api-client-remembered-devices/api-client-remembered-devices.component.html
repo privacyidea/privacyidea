@@ -31,9 +31,7 @@
         class="realm-filter"
         subscriptSizing="dynamic">
         <mat-label i18n="@@common.realm">Realm</mat-label>
-        <mat-select
-          [value]="realmFilter()"
-          (selectionChange)="onRealmFilterChange($event.value)">
+        <mat-select [formField]="realmFilterForm">
           <mat-option
             value=""
             i18n="@@apiClient.allRealms"

@@ -16,12 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, model } from "@angular/core";
+import { Component, input } from "@angular/core";
+import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { clearField } from "@utils/form-state.utils";
 
 export interface HttpConfigModel {
   method: string;
@@ -36,13 +38,15 @@ export interface HttpConfigModel {
 @Component({
   selector: "app-http-config",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, ClearableInputComponent],
+  imports: [FormField, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, ClearableInputComponent],
   templateUrl: "./http-config.component.html",
   styleUrl: "./http-config.component.scss"
 })
 export class HttpConfigComponent {
-  model = model.required<HttpConfigModel>();
+  /** The slice of the parent form this component edits. */
+  field = input.required<FieldTree<HttpConfigModel>>();
   title = input.required<string>();
   description = input<string>();
   endpointHint = input<string>();
+  protected readonly clearField = clearField;
 }
