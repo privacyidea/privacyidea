@@ -85,6 +85,8 @@ from tests.migration_test_utils import (
     revisions_up_to,
     sequences_behind_their_table,
     set_stamp_before,
+    sorted_rows,
+    table_contents,
 )
 
 # Skip these tests if no database URL is provided
@@ -1044,10 +1046,10 @@ def test_each_migration_runs_again_on_its_own_result(flask_app, seed: str):
 
 
 def _comparable_contents(engine: Engine) -> dict[str, list[dict]]:
-    """The contents of every table (see _table_contents), with the OTP keys of SSH key tokens decrypted."""
-    contents = {table: _sorted_rows(rows) for table, rows in _table_contents(engine).items()}
+    """The contents of every table (see table_contents), with the OTP keys of SSH key tokens decrypted."""
+    contents = {table: sorted_rows(rows) for table, rows in table_contents(engine).items()}
     if "token" in contents:
-        contents["token"] = _sorted_rows(_with_decrypted_ssh_keys(contents["token"]))
+        contents["token"] = sorted_rows(_with_decrypted_ssh_keys(contents["token"]))
     return contents
 
 
@@ -1121,26 +1123,6 @@ def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
             f"Data in the 'realm' table was lost during downgrade. "
             f"Expected 'defrealm', got {realm_check!r}."
         )
-
-
-def _table_contents(engine: Engine) -> dict[str, list[dict]]:
-    """Every row of every table except alembic_version, sorted, as {table: [{column: value}]}."""
-    import sqlalchemy as sa
-
-    inspector = sa_inspect(engine)
-    contents = {}
-    with engine.connect() as conn:
-        for table in inspector.get_table_names():
-            if table.lower() == "alembic_version":
-                continue
-            columns = [sa.column(column["name"]) for column in inspector.get_columns(table)]
-            rows = conn.execute(sa.select(*columns).select_from(sa.table(table))).mappings().all()
-            contents[table.lower()] = [dict(row) for row in rows]
-    return contents
-
-
-def _sorted_rows(rows: list[dict]) -> list[dict]:
-    return sorted(rows, key=lambda row: sorted((column, repr(value)) for column, value in row.items()))
 
 
 def _release_dataset() -> dict[str, list[dict]]:
@@ -1240,7 +1222,7 @@ def _expected_contents_after_downgrade(release: str, before: dict[str, list[dict
                 rows = [{column: value for column, value in row.items() if column != "id"} for row in rows]
         if table == "token":
             rows = _with_decrypted_ssh_keys(rows)
-        expected[table] = _sorted_rows(rows)
+        expected[table] = sorted_rows(rows)
     return expected
 
 
@@ -1252,7 +1234,7 @@ def _comparable_contents_after_downgrade(release: str, after: dict[str, list[dic
             rows = [{column: value for column, value in row.items() if column != leave_out} for row in rows]
         if table == "token":
             rows = _with_decrypted_ssh_keys(rows)
-        comparable[table] = _sorted_rows(rows)
+        comparable[table] = sorted_rows(rows)
     return comparable
 
 
@@ -1281,7 +1263,7 @@ def test_downgrade_returns_the_database_of_a_release(flask_app, release: str, se
             insert_rows(engine, table, [{column: value for column, value in row.items() if column in existing_columns}
                                         for row in rows])
         schema_before = _get_schema_snapshot(engine)
-        contents_before = _table_contents(engine)
+        contents_before = table_contents(engine)
     finally:
         engine.dispose()
 
@@ -1291,7 +1273,7 @@ def test_downgrade_returns_the_database_of_a_release(flask_app, release: str, se
     engine = create_engine(DB_URL)
     try:
         schema_after = _get_schema_snapshot(engine)
-        contents_after = _table_contents(engine)
+        contents_after = table_contents(engine)
         with engine.connect() as conn:
             stamps = [row[0] for row in conn.execute(text("SELECT version_num FROM alembic_version"))]
     finally:

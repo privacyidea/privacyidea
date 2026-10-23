@@ -17,7 +17,8 @@ from alembic import command
 from alembic.config import Config as AlembicConfig
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import Sequence, create_engine, event, inspect as sa_inspect, select, text
+from sqlalchemy import (Sequence, column as sa_column, create_engine, event, inspect as sa_inspect, select,
+                        table as sa_table, text)
 from sqlalchemy.engine import Connection, Engine, ExecutionContext
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
@@ -267,6 +268,24 @@ def sequences_behind_their_table(engine: Engine) -> dict[str, tuple[int, int]]:
                 behind[table.name] = (next_value, highest_id)
         conn.commit()
     return behind
+
+
+def table_contents(engine: Engine) -> dict[str, list[dict]]:
+    """Every row of every table except alembic_version, as {table: [{column: value}]}."""
+    inspector = sa_inspect(engine)
+    contents = {}
+    with engine.connect() as conn:
+        for table in inspector.get_table_names():
+            if table.lower() == "alembic_version":
+                continue
+            columns = [sa_column(column["name"]) for column in inspector.get_columns(table)]
+            rows = conn.execute(select(*columns).select_from(sa_table(table))).mappings().all()
+            contents[table.lower()] = [dict(row) for row in rows]
+    return contents
+
+
+def sorted_rows(rows: list[dict]) -> list[dict]:
+    return sorted(rows, key=lambda row: sorted((column, repr(value)) for column, value in row.items()))
 
 
 @functools.cache
