@@ -32,6 +32,10 @@ describe("WidgetPaletteComponent", () => {
   let registry: WidgetRegistryService;
   let overlayContainer: OverlayContainer;
   let overlayContainerElement: HTMLElement;
+  let auth: MockAuthService;
+
+  const setShowAppearanceSettings = (show: boolean): void =>
+    auth.authData.update((data) => ({ ...data!, show_appearance_settings: show }));
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -39,7 +43,9 @@ describe("WidgetPaletteComponent", () => {
       providers: [provideZonelessChangeDetection(), { provide: AuthService, useClass: MockAuthService }]
     }).compileComponents();
 
-    (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
+    auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+    auth.actionAllowed.mockReturnValue(true);
+    setShowAppearanceSettings(true);
     layoutService = TestBed.inject(DashboardLayoutService);
     registry = TestBed.inject(WidgetRegistryService);
     overlayContainer = TestBed.inject(OverlayContainer);
@@ -70,6 +76,18 @@ describe("WidgetPaletteComponent", () => {
 
     const items = overlayContainerElement.querySelectorAll(".mat-mdc-menu-item");
     expect(items.length).toBe(registry.widgetTypes.filter((widget) => !widget.pinned).length);
+  });
+
+  it("should not offer the appearance widget until the show_appearance_settings policy is set", () => {
+    setShowAppearanceSettings(false);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector("button").click();
+    fixture.detectChanges();
+
+    const items = overlayContainerElement.querySelectorAll(".mat-mdc-menu-item");
+    expect(items.length).toBe(registry.widgetTypes.filter((widget) => !widget.pinned).length - 1);
+    expect(overlayContainerElement.textContent).not.toContain("Appearance");
   });
 
   it("should add the corresponding widget when a menu item is clicked", () => {

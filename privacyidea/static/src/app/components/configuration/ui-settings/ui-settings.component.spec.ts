@@ -28,8 +28,10 @@ import {
   LIGHT_SOURCE_LEVELS,
   LightSourceLevel
 } from "@services/appearance/appearance.service";
+import { AuthService } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
 import { UISettingsComponent } from "./ui-settings.component";
 
@@ -37,6 +39,7 @@ describe("UISettingsComponent", () => {
   let fixture: ComponentFixture<UISettingsComponent>;
   let component: UISettingsComponent;
   let uiPreferencesService: MockUiPreferencesService;
+  let authService: MockAuthService;
   let themeService: { visualTheme: ReturnType<typeof signal<"light" | "dark">>; setTheme: jest.Mock };
   let appearanceService: {
     depth: ReturnType<typeof signal<DepthLevel>>;
@@ -68,6 +71,9 @@ describe("UISettingsComponent", () => {
     selectStatusColors: (level: StatusColorLevel) => void;
   }
 
+  const setShowAppearanceSettings = (show: boolean): void =>
+    authService.authData.update((data) => ({ ...data!, show_appearance_settings: show }));
+
   const testable = (): TestableSettings => component as unknown as TestableSettings;
 
   beforeEach(async () => {
@@ -89,11 +95,14 @@ describe("UISettingsComponent", () => {
         provideZonelessChangeDetection(),
         { provide: ThemeService, useValue: themeService },
         { provide: AppearanceService, useValue: appearanceService },
-        { provide: UiPreferencesService, useClass: MockUiPreferencesService }
+        { provide: UiPreferencesService, useClass: MockUiPreferencesService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
     uiPreferencesService = TestBed.inject(UiPreferencesService) as unknown as MockUiPreferencesService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    setShowAppearanceSettings(true);
     fixture = TestBed.createComponent(UISettingsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -104,6 +113,22 @@ describe("UISettingsComponent", () => {
   });
 
   // Toggling is covered by ThemeToggleComponent's own spec.
+  const panelTitles = (): string[] =>
+    Array.from(host().querySelectorAll("mat-panel-title")).map((title) => title.textContent!.trim());
+
+  it("should show the Accessibility and Appearance sections when the show_appearance_settings policy is set", () => {
+    expect(panelTitles()).toEqual(["Accessibility", "Appearance"]);
+  });
+
+  it("should hide the Accessibility and Appearance sections until the show_appearance_settings policy is set", () => {
+    setShowAppearanceSettings(false);
+    fixture.detectChanges();
+
+    expect(panelTitles()).toEqual([]);
+    // The rest of the settings stay.
+    expect(host().querySelector(".language-field")).not.toBeNull();
+  });
+
   it("should offer the shared theme knob", () => {
     expect(host().querySelector("app-theme-toggle .theme-toggle input")).toBeTruthy();
   });

@@ -587,6 +587,24 @@ test instances and production instances. This way you can easily distinguish the
 
 .. versionadded:: 3.5
 
+show_appearance_settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The WebUI hides its appearance options until this policy is set. If it is set, the *Accessibility* section (status
+colors) and the *Appearance* section (corners, depth and light source) of the UI Settings are shown, and the
+*Appearance* widget can be added to the dashboard. Without the policy, both sections and the widget are hidden, and an
+Appearance widget already on a dashboard is removed.
+
+While the options are hidden, the theme switch also sets the look. The dark theme gets AAA contrast status colors, the
+default depth and a light source at 280 degrees. The light theme gets AA contrast status colors, subtle depth and the
+default light source. The corners are not changed. With the policy set, the switch changes the theme only.
+
+Hiding the options does not reset them: an appearance a user has already chosen stays in effect.
+
+.. versionadded:: 3.14
+
 show_seed
 ~~~~~~~~~
 

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, Directive, input, Signal, signal, TemplateRef, Type } from "@angular/core";
+import type { AuthServiceInterface } from "@services/auth/auth.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 
 export const DASHBOARD_COLUMNS = 24;
@@ -99,6 +100,9 @@ export abstract class DashboardWidget {
   // The right(s) a widget needs to be offered at all; a list means any one is enough, for a widget summarizing several
   // separately-governed areas that then shows only the parts the admin may read.
   static readonly requiredAction: PolicyAction | PolicyAction[] | null = null;
+  // A further condition on the auth data, for a widget that a WebUI policy switches on rather than a right; it must
+  // also hold for the widget to be offered. Null adds no condition.
+  static readonly availableWhen: ((auth: AuthServiceInterface) => boolean) | null = null;
   // Where the widget's title links to, for a widget that summarizes one page. Null leaves the title as plain text.
   static readonly titleLink: string | null = null;
   static readonly titleLinkAction: PolicyAction | null = null;

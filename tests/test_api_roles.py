@@ -1323,6 +1323,22 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         delete_policy("webui5")
 
+    def test_41a_webui_show_appearance_settings(self):
+        def auth_value():
+            with self.app.test_request_context('/auth', method='POST',
+                                               data={"username": "selfservice@realm1", "password": "test"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                return res.json["result"]["value"]
+
+        # The appearance settings are hidden until the policy is set
+        self.assertIs(False, auth_value()["show_appearance_settings"])
+
+        set_policy(name="webui_appearance", scope=SCOPE.WEBUI, action=PolicyAction.SHOW_APPEARANCE_SETTINGS)
+        self.assertIs(True, auth_value()["show_appearance_settings"])
+
+        delete_policy("webui_appearance")
+
     def test_42_auth_timelimit_maxfail_auth(self):
         self.setUp_user_realm2()
         # check that AUTHMAXFAIL also takes effect for /auth with loginmode=privacyIDEA

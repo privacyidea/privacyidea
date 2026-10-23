@@ -19,6 +19,7 @@
 import { Component, computed, inject } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
+import { AppearanceService } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 
 /**
@@ -35,6 +36,7 @@ import { ThemeService } from "@services/theme/theme.service";
 })
 export class ThemeToggleComponent {
   private readonly themeService = inject(ThemeService);
+  private readonly appearanceService = inject(AppearanceService);
 
   protected readonly theme = this.themeService.visualTheme;
   // Names the mode a click switches to, not the current one; serves as both tooltip and aria-label.
@@ -45,6 +47,8 @@ export class ThemeToggleComponent {
   );
 
   protected toggle(): void {
-    this.themeService.setTheme(this.theme() === "dark" ? "light" : "dark");
+    const next = this.theme() === "dark" ? "light" : "dark";
+    this.themeService.setTheme(next);
+    this.appearanceService.followTheme(next);
   }
 }
