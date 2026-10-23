@@ -70,6 +70,7 @@ from tests.migration_test_utils import (
     START_REVISION,
     drop_all_tables,
     get_alembic_cfg,
+    insert_minimal_row_into_every_table,
     is_mariadb,
     is_oracle,
     is_postgres,
@@ -667,183 +668,6 @@ def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
     )
 
 
-def _generic_dummy_value(col):
-    """
-    Return a value appropriate for *col*'s SQL type, used by the insert smoke
-    test to populate NOT NULL columns without per-table fixtures. Returns None
-    only for column types we don't know how to fill — caller must skip those.
-    """
-    import datetime as dt
-    from sqlalchemy import (
-        BigInteger, Boolean, Date, DateTime, Float, Integer, Interval,
-        JSON, LargeBinary, Numeric, SmallInteger, String, Text, Time,
-        Unicode, UnicodeText,
-    )
-
-    t = col.type
-    if isinstance(t, (String, Unicode, UnicodeText, Text)):
-        length = getattr(t, "length", None) or 8
-        return "x" * min(length, 8)
-    if isinstance(t, Boolean):
-        return False
-    if isinstance(t, (Integer, BigInteger, SmallInteger)):
-        return 1
-    if isinstance(t, DateTime):
-        return dt.datetime(2000, 1, 1)
-    if isinstance(t, Date):
-        return dt.date(2000, 1, 1)
-    if isinstance(t, Time):
-        return dt.time(0, 0)
-    if isinstance(t, Interval):
-        return dt.timedelta(0)
-    if isinstance(t, (Float, Numeric)):
-        return 0
-    if isinstance(t, LargeBinary):
-        return b"x"
-    if isinstance(t, JSON):
-        return {}
-    return None
-
-
-def _insert_minimal_row_into_every_table() -> list[tuple[str, str]]:
-    """
-    Build a minimal INSERT for every table the SQLAlchemy models declare and run it
-    against the live database. Returns one ``(table, message)`` pair per table whose
-    INSERT failed, so a caller can report them all at once.
-
-    Strategy:
-      - PKs whose default is a Sequence or that are autoincrement are omitted
-        so SQLAlchemy fires its auto-PK path — this is the exact path that
-        breaks when the schema was built without the matching CREATE SEQUENCE /
-        AUTO_INCREMENT / IDENTITY machinery the model expects.
-      - NOT NULL columns without any default get a type-appropriate dummy.
-      - Nullable columns and columns with Python/server defaults are omitted.
-      - FK checks are disabled for the duration so we don't have to insert in
-        dependency order; this is about INSERT mechanics, not referential
-        integrity.
-      - All inserts run inside a single transaction that is rolled back at
-        the end, so no rows leak into the test DB.
-    """
-    from sqlalchemy import Sequence
-    from privacyidea.models import db
-
-    engine = create_engine(DB_URL)
-    is_pg = is_postgres()
-    is_ora = is_oracle()
-    failures: list[tuple[str, str]] = []
-
-    # Oracle has no session-level FK switch like MySQL/Postgres, so disable
-    # every FK constraint up front and re-enable them in the finally. The DDL
-    # auto-commits, but no real rows are ever committed (each insert is rolled
-    # back to a savepoint), so re-enabling validates only the untouched seed
-    # data, which already satisfies every FK.
-    disabled_fks: list[tuple[str, str]] = []
-    if is_ora:
-        with engine.connect() as setup_conn:
-            rows = setup_conn.execute(text(
-                "SELECT table_name, constraint_name FROM user_constraints "
-                "WHERE constraint_type = 'R'"
-            )).fetchall()
-            for tbl, con in rows:
-                setup_conn.execute(text(f'ALTER TABLE "{tbl}" DISABLE CONSTRAINT "{con}"'))
-                disabled_fks.append((tbl, con))
-            setup_conn.commit()
-
-    try:
-        with engine.connect() as conn:
-            outer = conn.begin()
-            try:
-                if is_pg:
-                    conn.execute(text("SET session_replication_role = 'replica'"))
-                elif not is_ora:
-                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-
-                for table in db.metadata.sorted_tables:
-                    values = {}
-                    skip_reason = None
-                    for col in table.columns:
-                        # A PK column is auto-generated only if it has an
-                        # explicit Sequence/Identity, OR it's the sole integer
-                        # PK with autoincrement not explicitly disabled.
-                        # Composite PKs and string PKs do not auto-generate
-                        # — every member must be filled by the caller.
-                        from sqlalchemy import BigInteger, Integer, SmallInteger
-                        is_sole_int_pk = (
-                            col.primary_key
-                            and len(table.primary_key.columns) == 1
-                            and isinstance(col.type, (Integer, BigInteger, SmallInteger))
-                            and col.autoincrement is not False
-                        )
-                        is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
-                        if is_auto_pk:
-                            continue
-                        # Oracle stores '' as NULL, so a scalar empty-string
-                        # default does not satisfy a NOT NULL column — relying on
-                        # it produces ORA-01400. Fall through to supply a dummy in
-                        # that case instead of trusting the default to fire.
-                        default_is_empty_string = (
-                            col.default is not None
-                            and getattr(col.default, "is_scalar", False)
-                            and col.default.arg == ""
-                        )
-                        skip_for_default = col.default is not None or col.server_default is not None
-                        if is_ora and not col.nullable and default_is_empty_string:
-                            skip_for_default = False
-                        if skip_for_default:
-                            continue
-                        if col.nullable:
-                            continue
-                        val = _generic_dummy_value(col)
-                        if val is None:
-                            skip_reason = f"no dummy generator for column {col.name!r} of type {col.type!r}"
-                            break
-                        values[col.name] = val
-
-                    if skip_reason is not None:
-                        failures.append((table.name, f"SKIPPED: {skip_reason}"))
-                        continue
-
-                    # Oracle has no "INSERT ... DEFAULT VALUES" / empty-column-list
-                    # syntax (ORA-00928). A table whose every column is an auto PK
-                    # or nullable therefore yields an empty value set; supply a
-                    # dummy for one fillable non-PK column so the statement is
-                    # valid (FK checks are disabled, so an FK column is fine).
-                    if is_ora and not values:
-                        for col in table.columns:
-                            is_sole_int_pk = (
-                                col.primary_key
-                                and len(table.primary_key.columns) == 1
-                                and isinstance(col.type, (BigInteger, Integer, SmallInteger))
-                                and col.autoincrement is not False
-                            )
-                            if isinstance(col.default, Sequence) or is_sole_int_pk:
-                                continue
-                            val = _generic_dummy_value(col)
-                            if val is not None:
-                                values[col.name] = val
-                                break
-
-                    sp = conn.begin_nested()
-                    try:
-                        conn.execute(table.insert().values(**values))
-                        sp.rollback()
-                    except Exception as e:
-                        sp.rollback()
-                        first_line = str(e).splitlines()[0] if str(e) else type(e).__name__
-                        failures.append((table.name, first_line))
-            finally:
-                outer.rollback()
-    finally:
-        if disabled_fks:
-            with engine.connect() as teardown_conn:
-                for tbl, con in disabled_fks:
-                    teardown_conn.execute(text(f'ALTER TABLE "{tbl}" ENABLE CONSTRAINT "{con}"'))
-                teardown_conn.commit()
-        engine.dispose()
-
-    return failures
-
-
 def test_default_insert_succeeds_for_every_model_table(flask_app):
     """
     Run those INSERTs against a database built the way an upgrade builds it: the
@@ -857,7 +681,7 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
     load_seed()
     flask_upgrade()
 
-    failures = _insert_minimal_row_into_every_table()
+    failures = insert_minimal_row_into_every_table()
 
     assert not failures, (
         "INSERT failed for the following model tables after upgrade-to-head. "
@@ -883,7 +707,7 @@ def test_model_created_schema_accepts_a_row_in_every_table(flask_app):
 
     db.create_all()
 
-    failures = _insert_minimal_row_into_every_table()
+    failures = insert_minimal_row_into_every_table()
 
     assert not failures, (
         "INSERT failed for the following model tables in a schema created from the "
