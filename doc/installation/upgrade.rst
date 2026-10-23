@@ -150,8 +150,6 @@ using::
 
 The ``privacyidea`` package is only upgraded together with the server package
 (``privacyidea-apache2`` or ``privacyidea-nginx``), which runs the schema upgrade.
-``apt upgrade`` keeps the ``privacyidea`` package back if its server package is
-missing, while ``apt dist-upgrade`` would remove the server package instead.
 
 The server package runs the schema upgrade while the web server keeps serving
 requests, and restarts the web server afterwards. Plan the upgrade for a time with
