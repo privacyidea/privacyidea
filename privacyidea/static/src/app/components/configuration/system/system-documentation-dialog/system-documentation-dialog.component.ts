@@ -29,7 +29,7 @@ import { DialogAction } from "@models/dialog";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { downloadBlob } from "@utils/download.utils";
 
-export type SystemDocumentationAction = "copy" | "download" | "mail";
+export type SystemDocumentationAction = "copy" | "share" | "download" | "mail";
 
 /**
  * Copying a long text to the clipboard can fail on the first attempt, so it is tried a few times.
@@ -40,8 +40,8 @@ export const COPY_ATTEMPTS = 3;
  * Names the file after the server and the day, so that the documentation of several installations can be told apart.
  * Characters a browser does not keep in a file name, like the brackets and colons of an IPv6 address, are replaced.
  */
-export function systemDocumentationFileName(server: string, date: string): string {
-  return `privacyidea-system-documentation-${server.replace(/[^A-Za-z0-9.-]/g, "_")}-${date}.rst`;
+export function systemDocumentationFileName(server: string, date: string, extension = "rst"): string {
+  return `privacyidea-system-documentation-${server.replace(/[^A-Za-z0-9.-]/g, "_")}-${date}.${extension}`;
 }
 
 @Component({
@@ -63,6 +63,17 @@ export class SystemDocumentationDialogComponent
   private readonly server = window.location.hostname;
   private readonly date = formatDate(new Date(), "yyyy-MM-dd", "en-US");
   readonly fileName = systemDocumentationFileName(this.server, this.date);
+  private readonly emailSubject = $localize`:@@systemConfig.documentationEmailSubject:privacyIDEA system documentation of ${this.server}:server: from ${this.date}:date:`;
+
+  /**
+   * The share dialog of the operating system passes the file on, e.g. to the email program as an attachment. Chrome
+   * shares only files of a few known extensions, .txt among them but not .rst.
+   */
+  readonly shareFile = new File([this.documentation], systemDocumentationFileName(this.server, this.date, "txt"), {
+    type: "text/plain"
+  });
+  private readonly canShare =
+    typeof navigator.canShare === "function" && navigator.canShare({ files: [this.shareFile] });
 
   readonly actions: DialogAction<SystemDocumentationAction>[] = [
     {
@@ -70,6 +81,14 @@ export class SystemDocumentationDialogComponent
       label: $localize`:@@common.copy:Copy`,
       value: "copy",
       icon: "content_copy",
+      className: "button-width-m"
+    },
+    {
+      type: "auxiliary",
+      label: $localize`:@@systemConfig.shareDocumentation:Share`,
+      value: "share",
+      icon: "share",
+      hidden: !this.canShare,
       className: "button-width-m"
     },
     {
@@ -108,6 +127,9 @@ export class SystemDocumentationDialogComponent
       case "copy":
         this.copyDocumentation();
         break;
+      case "share":
+        void this.shareDocumentation();
+        break;
       case "download":
         this.downloadDocumentation();
         break;
@@ -141,6 +163,23 @@ export class SystemDocumentationDialogComponent
     attempt();
   }
 
+  async shareDocumentation(): Promise<void> {
+    try {
+      await navigator.share({
+        files: [this.shareFile],
+        title: this.emailSubject,
+        text: this.emailBody(this.shareFile.name)
+      });
+    } catch (error) {
+      // Closing the share dialog without choosing where to share to rejects the share as well
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        this.notificationService.error(
+          $localize`:@@systemConfig.documentationNotShared:The system documentation could not be shared.`
+        );
+      }
+    }
+  }
+
   downloadDocumentation(): void {
     downloadBlob(new Blob([this.documentation], { type: "text/plain" }), this.fileName);
   }
@@ -153,15 +192,17 @@ export class SystemDocumentationDialogComponent
    */
   sendDocumentationByEmail(): void {
     this.downloadDocumentation();
-    const subject = $localize`:@@systemConfig.documentationEmailSubject:privacyIDEA system documentation of ${this.server}:server: from ${this.date}:date:`;
-    const body = $localize`:@@systemConfig.documentationEmailBody:The system documentation of privacyIDEA is attached as ${this.fileName}:fileName:.`;
     const anchor = document.createElement("a");
-    anchor.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    anchor.href = `mailto:?subject=${encodeURIComponent(this.emailSubject)}&body=${encodeURIComponent(this.emailBody(this.fileName))}`;
     anchor.target = "_blank";
     anchor.rel = "noopener";
     anchor.click();
     this.notificationService.info(
       $localize`:@@systemConfig.documentationEmailAttach:The system documentation was downloaded as ${this.fileName}:fileName:. Attach it to the email.`
     );
+  }
+
+  private emailBody(fileName: string): string {
+    return $localize`:@@systemConfig.documentationEmailBody:The system documentation of privacyIDEA is attached as ${fileName}:fileName:.`;
   }
 }

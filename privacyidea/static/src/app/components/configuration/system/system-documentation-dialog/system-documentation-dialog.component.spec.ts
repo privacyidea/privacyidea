@@ -140,6 +140,61 @@ describe("SystemDocumentationDialogComponent", () => {
     expect(notificationService.error).toHaveBeenCalled();
   });
 
+  it("offers no sharing where the browser can not share files", () => {
+    expect(fixture.nativeElement.querySelector(".pi-dialog-footer").textContent).not.toContain("Share");
+  });
+
+  describe("where the browser can share files", () => {
+    let share: jest.Mock;
+
+    beforeEach(() => {
+      share = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, "canShare", { configurable: true, value: jest.fn(() => true) });
+      Object.defineProperty(navigator, "share", { configurable: true, value: share });
+      fixture = TestBed.createComponent(SystemDocumentationDialogComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    });
+
+    afterEach(() => {
+      delete (navigator as Partial<Navigator>).canShare;
+      delete (navigator as Partial<Navigator>).share;
+    });
+
+    it("offers to share the documentation", () => {
+      expect(fixture.nativeElement.querySelector(".pi-dialog-footer").textContent).toContain("Share");
+    });
+
+    it("shares the documentation as a text file named after the server and the day", async () => {
+      await component.shareDocumentation();
+
+      const data = share.mock.calls[0][0] as ShareData;
+      expect(data.files).toHaveLength(1);
+      expect(data.files?.[0]).toBe(component.shareFile);
+      expect(component.shareFile.name).toMatch(/^privacyidea-system-documentation-.*-\d{4}-\d{2}-\d{2}\.txt$/);
+      expect(component.shareFile.type).toBe("text/plain");
+      expect(component.shareFile.size).toBe("Some documentation".length);
+      expect(data.text).toContain(component.shareFile.name);
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+
+    it("stays quiet when the share dialog is closed without sharing", async () => {
+      share.mockRejectedValue(new DOMException("Share canceled", "AbortError"));
+
+      await component.shareDocumentation();
+
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+
+    it("reports a share the browser refused", async () => {
+      share.mockRejectedValue(new DOMException("Permission denied", "NotAllowedError"));
+
+      await component.shareDocumentation();
+
+      expect(notificationService.error).toHaveBeenCalled();
+    });
+  });
+
   it("downloads the documentation as a file named after the server and the day", () => {
     component.onAction("download");
 
@@ -166,6 +221,12 @@ describe("systemDocumentationFileName", () => {
   it("names the file after the server and the day", () => {
     expect(systemDocumentationFileName("pi.example.com", "2026-10-22")).toBe(
       "privacyidea-system-documentation-pi.example.com-2026-10-22.rst"
+    );
+  });
+
+  it("takes another extension", () => {
+    expect(systemDocumentationFileName("pi.example.com", "2026-10-22", "txt")).toBe(
+      "privacyidea-system-documentation-pi.example.com-2026-10-22.txt"
     );
   });
 
