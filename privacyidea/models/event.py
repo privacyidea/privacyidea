@@ -95,7 +95,8 @@ class EventHandler(MethodsMixin, db.Model):
         option_dict = {}
         # Fetching all options from the relationship
         for option in self.options:
-            option_dict[option.Key] = option.Value
+            # Oracle stores an empty option as NULL, the handlers expect a string
+            option_dict[option.Key] = option.Value or ""
         d["options"] = option_dict
         condition_dict = {}
         # Fetching all conditions from the relationship
