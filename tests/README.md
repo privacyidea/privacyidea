@@ -44,10 +44,11 @@ own (see `test_migration_c8d9e0f1a2b3.py`).
 | Category | Example operations | How it's covered |
 |---|---|---|
 | **DDL** | `add_column`, `drop_column`, `create_table`, `drop_table`, `alter_column`, `add_index`, `drop_constraint` | `test_each_migration_survives_round_trip` — snapshots the schema before and after a downgrade→upgrade cycle for every revision |
-| **Schema equivalence** | Any gap between migration output and ORM models | `test_schema_matches_models_after_upgrade_to_head` — uses Alembic's `compare_metadata` |
+| **Schema equivalence** | Any gap between migration output and ORM models | `test_schema_matches_models_after_upgrade_to_head` — uses Alembic's `compare_metadata`, from every seed |
 | **Reversibility** | `downgrade()` crashing | `test_migrations_since_start_revision_are_reversible` |
 | **Data survival** | Rows deleted from tables that survive a downgrade | `test_downgrade_does_not_destroy_data_in_surviving_tables` |
-| **Running again** | `upgrade()` failing or changing the schema or row counts when it runs again on its own result (after a failure midway or a stamp set back by hand) | `test_each_migration_runs_again_on_its_own_result` — known exceptions are listed in `NOT_RERUNNABLE_REVISIONS` |
+| **Running again** | `upgrade()` failing or changing the schema or the rows when it runs again on its own result (after a failure midway or a stamp set back by hand) | `test_each_migration_runs_again_on_its_own_result` — from every seed; known exceptions are listed in `NOT_RERUNNABLE_REVISIONS` |
+| **Downgrade to a release** | A database of a release, upgraded to head and downgraded back, differing from what it was | `test_downgrade_returns_the_database_of_a_release` — for every release in `RELEASE_HEADS`, from the v3.9 seed upgraded to the release and from the seed of the release; the changes a downgrade does not undo on purpose are listed in `_expected_contents_after_downgrade` |
 
 ### What requires a dedicated test
 
@@ -71,11 +72,11 @@ the above.  Examples:
 
    | Helper | What it does |
    |---|---|
-   | `_load_seed_and_upgrade_to_parent(engine)` | Loads the v3.9 seed then upgrades to `PARENT_REVISION` |
+   | `_load_seed_and_upgrade_to_parent(engine)` | Loads the seed of the test (see "Seeds, downgrades and id layouts") then upgrades to `PARENT_REVISION` |
    | `_insert_rows(engine, table, rows)` | Inserts a list of dicts; handles dialect quoting for `Key`/`Value` columns |
    | `_fetch_scalar(engine, query, params)` | Runs a query and returns the first column of the first row |
    | `_upgrade(target=None)` | Runs `alembic upgrade` to `REVISION` (or `target`) |
-   | `_downgrade(target=None)` | Runs `alembic downgrade` to `PARENT_REVISION` (or `target`) |
+   | `_downgrade(target=None)` | Runs `alembic downgrade` to `PARENT_REVISION` (or `target`), leaving the revisions of a release seed applied |
    | `_upgrade_failing_after(pattern)` | Runs the upgrade to `REVISION` but stops it right after the first statement matching the regular expression, leaving what it did so far committed |
    | `_set_stamp_back_to_parent()` | Sets the stamp back to `PARENT_REVISION` without undoing the migration |
    | `_assert_every_table_accepts_a_row_at_head()` | Upgrades to head and inserts a row into every table the way the models do, ids from their sequences included |
@@ -89,7 +90,8 @@ the above.  Examples:
    - Unrelated rows: rows with different keys/tables are untouched
    - Running again: after `_upgrade_failing_after(...)` at each step of the data conversion, or after
      `_set_stamp_back_to_parent()`, a second `_upgrade()` succeeds and converts nothing twice
-   - Downgrade: `downgrade()` correctly reverts the change
+   - Downgrade: `downgrade()` correctly reverts the change, and fails instead
+     of dropping data it could not copy back
    - Round-trip: upgrade → downgrade leaves unrelated rows unchanged
    - Writing afterwards: a migration that inserts rows ends one test with
      `_assert_every_table_accepts_a_row_at_head()`. A row that got its id from
@@ -142,13 +144,57 @@ class TestMigrationAbcd1234(MigrationTestBase):
 
 ### Checking the seed for existing rows
 
-The seed (`tests/testdata/migrations/`) may already contain rows in the tables
-you want to test.  If adding duplicate rows would violate a unique constraint,
-insert into a different parent record or use a different key.  See
-`test_migration_7301d5130c3a.py` for a concrete example (eventhandler id=2 is
-used because id=1 is already present in the seed).
+The seeds (`tests/testdata/migrations/`) already contain rows in many tables,
+the release seeds in most of them. If adding duplicate rows would violate a
+unique constraint, insert into a different parent record or use a different
+key. See `test_migration_7301d5130c3a.py` for a concrete example (eventhandler
+id=2 is used because id=1 is already present in the seed). Count and compare
+your own rows, not whole tables: a release seed has u2f tokens, challenges and
+policies of its own.
 
 ---
+
+## Seeds, downgrades and id layouts
+
+`tests/testdata/migrations/` has two kinds of seeds:
+
+- The v3.9 seed was written by hand. It stands for the databases that an older release created and the releases
+  since upgraded. Every migration test starts from it.
+- A release seed is a database that `pi-manage setup create_tables` of a release created and the code of the release
+  filled, dumped per engine by `tools/generate_release_seed.py`. Its tables are built the way the release builds them
+  on a new installation: the ids without defaults, the identity columns, the names of constraints. Its rows are the
+  ones the release writes, including those the data migrations since convert.
+  `test_schema_matches_models_after_upgrade_to_head`, `test_default_insert_succeeds_for_every_model_table` and
+  `test_downgrade_returns_the_database_of_a_release` also start from it.
+
+**When a release is published, generate its seeds** for all four engines (see the README in
+`tests/testdata/migrations/`) **and add its head revision to `RELEASE_HEADS`**.
+
+A downgrade takes a database back to the previous release: its schema is that release's again, and its data is what
+it was, apart from what a migration cannot bring back. A downgrade that cannot copy data back fails instead of
+dropping it. What a downgrade does not undo on purpose (e.g. deleted challenges) is said in the migration's docstring
+and listed in `_expected_contents_after_downgrade` of `test_migrations.py`.
+
+`test_downgrade_returns_the_database_of_a_release` proves this for every release in `RELEASE_HEADS`
+(`migration_test_utils.py`): it takes a database of the release, adds data for the migrations since, upgrades it to
+head, downgrades it back and compares the schema and the contents of every table. Add rows to `_release_dataset` for
+every new data migration.
+
+Head reaches 3.13.4 through a merge, so a database of 3.13.4 that runs a 3.14 migration has two revisions stamped,
+e.g. `d3a4b5c6e7f8` and `a1e0ba6ad9dc`. Alembic downgrades by undoing every applied revision that descends from the
+target. A downgrade to the parent `b1a2c3d4e5f6` therefore also undoes the two 3.13.4 migrations after the branch
+point, and a downgrade to `d3a4b5c6e7f8` from head stops at the merge and leaves the 3.14 branch stamped next to it.
+`downgrade_keeping(target, keep)` downgrades to the target and leaves the release's revisions applied, taking a
+branch that is still stamped down on its own (`<revision>@-<steps>`). `MigrationTestBase._downgrade` and the
+downgrade to a release use it.
+
+The per-migration tests run from every seed their revision has not been applied to yet (`seeds_before`): the tests of
+a 3.14 migration from the v3.9 seed and the 3.13.4 seed, those of a 3.14.1 migration also from the 3.14.0 seed. The
+`seed` fixture says which. The id columns differ between them: the v3.9 seed gives them a default (`AUTO_INCREMENT` on
+MariaDB, the sequence on PostgreSQL and Oracle), a release seed has none, and only privacyIDEA gives the id, from the
+sequence (MySQL fills it with `AUTO_INCREMENT` in every seed). `_insert_rows` takes the ids from the sequences when
+the test starts from a release seed. A migration that inserts rows without an id passes from the v3.9 seed and fails
+from a release seed.
 
 ## Running the tests
 

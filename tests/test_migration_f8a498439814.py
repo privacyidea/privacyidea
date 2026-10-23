@@ -20,6 +20,12 @@ from sqlalchemy import text
 from privacyidea.models.policy import parse_action_string
 from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
+# The actions of the policies in the release seeds that the cleanup changes, by policy name
+SEED_POLICIES_AFTER_CLEANUP = {
+    "container_client": "-disable_client_token_deletion, initially_add_tokens_to_container=True",
+    "user_tokens": "enrollHOTP=true, disable, setpin",
+}
+
 pytestmark = [
     pytest.mark.migration,
     pytest.mark.skipif(
@@ -211,14 +217,14 @@ class TestMigrationF8a498439814(MigrationTestBase):
         assert self._fetch_all_actions(engine) == EXPECTED
         engine.dispose()
 
-    def test_upgrade_leaves_seed_policies_untouched(self, flask_app):
+    def test_upgrade_cleans_the_seed_policies(self, flask_app):
         """
-        upgrade() runs on the seed data without changing its policies. They use no real scope name and no action given
-        more than once, so this only guards against a failing upgrade, the cases above cover the cleanup itself.
+        upgrade() changes the policies of the seed that have a boolean action with a value other than true, and no
+        others. The v3.9 seed has none of them, the release seeds two (see SEED_POLICIES_AFTER_CLEANUP).
         """
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
-        query = f"SELECT id, {quote_identifier('action')} FROM policy ORDER BY id"
+        query = f"SELECT name, {quote_identifier('action')} FROM policy ORDER BY name"
         with engine.connect() as conn:
             before = conn.execute(text(query)).fetchall()
         engine.dispose()
@@ -229,7 +235,7 @@ class TestMigrationF8a498439814(MigrationTestBase):
         with engine.connect() as conn:
             after = conn.execute(text(query)).fetchall()
         engine.dispose()
-        assert after == before
+        assert after == [(name, SEED_POLICIES_AFTER_CLEANUP.get(name, action)) for name, action in before]
 
     def test_upgrade_leaves_empty_actions(self, flask_app):
         """upgrade() leaves a policy without actions as it is, Oracle stores the empty string as NULL."""

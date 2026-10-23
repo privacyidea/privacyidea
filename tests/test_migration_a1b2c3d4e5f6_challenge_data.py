@@ -183,3 +183,53 @@ class TestMigrationA1b2c3d4e5f6(MigrationTestBase):
             assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM challenge") == 0
         finally:
             engine.dispose()
+
+    def _encrypted_column_exists(self) -> bool:
+        engine = self._engine()
+        try:
+            columns = sa_inspect(engine).get_columns("smsgatewayoption")
+            return "encrypted" in {column["name"].lower() for column in columns}
+        finally:
+            engine.dispose()
+
+    def test_downgrade_decrypts_the_sms_gateway_options(self, flask_app):
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+
+        self._downgrade()
+
+        assert not self._encrypted_column_exists()
+        engine = self._engine()
+        try:
+            with engine.connect() as conn:
+                options = dict(conn.execute(
+                    sa.select(SMS_GATEWAY_OPTION.c.Key, SMS_GATEWAY_OPTION.c.Value)
+                    .where(SMS_GATEWAY_OPTION.c.gateway_id == 9001)
+                ).all())
+        finally:
+            engine.dispose()
+        assert options == {"PASSWORD": PLAINTEXT_PASSWORD, "URL": "https://sms.example.com"}
+
+    def test_downgrade_stops_on_an_option_it_cannot_decrypt(self, flask_app):
+        """
+        An option encrypted with another key stops the downgrade before it changes anything: without the Encrypted
+        column, 3.13 would send the encrypted value to the SMS gateway.
+        """
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+        foreign_ciphertext = "00" * 16 + ":" + "11" * 16
+        engine = self._engine()
+        try:
+            with engine.begin() as conn:
+                conn.execute(SMS_GATEWAY_OPTION.insert(), [{
+                    "id": 9003, "gateway_id": 9001, "Key": "SECRET", "Value": foreign_ciphertext, "Type": "option",
+                    "Encrypted": True}])
+        finally:
+            engine.dispose()
+        options_before = self._sms_gateway_options()
+
+        with pytest.raises(RuntimeError, match="SECRET"):
+            self._downgrade()
+
+        assert self._encrypted_column_exists()
+        assert self._sms_gateway_options() == options_before

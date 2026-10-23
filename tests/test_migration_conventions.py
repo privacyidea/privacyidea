@@ -172,9 +172,8 @@ LINTED_AFTER_REVISION = "d3a4b5c6e7f8"
 # exception, never a default: the lint fails for an entry whose rule the revision no longer breaks, so remove the entry
 # together with the fix.
 MIGRATION_LINT_EXCEPTIONS = {
-    # The data step inserts the moved rows without an id (4b810261d282 restarts the sequence after them). The downgrade
-    # prints a failed copy-back and drops the table anyway.
-    "7d4e9b2c1a3f": {"insert-without-sequence-id", "swallowed-error"},
+    # The data step inserts the moved rows without an id (4b810261d282 restarts the sequence after them).
+    "7d4e9b2c1a3f": {"insert-without-sequence-id"},
     # Ignores every OperationalError and ProgrammingError of CREATE SEQUENCE and DROP SEQUENCE, not only the ones of a
     # database without sequences.
     "c2d3e4f5a6b7": {"swallowed-error"},
