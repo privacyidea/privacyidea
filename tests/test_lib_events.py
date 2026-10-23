@@ -11,6 +11,8 @@ from datetime import datetime, timedelta, UTC
 
 from unittest import mock
 import requests.exceptions
+import socket
+
 import responses
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
@@ -29,7 +31,7 @@ from privacyidea.lib.counter import increase as counter_increase
 from privacyidea.lib.error import ResourceNotFoundError, ConfigAdminError
 from privacyidea.lib.event import (delete_event, set_event,
                                    EventConfiguration, get_handler_object,
-                                   enable_event)
+                                   enable_event, import_event, IMPORT_MARKER)
 from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
@@ -54,6 +56,8 @@ from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.webhook import get_webhook, set_webhook
+from privacyidea.models.webhook import Webhook
 from privacyidea.models import Challenge
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.models import db, EventHandler
@@ -4688,52 +4692,50 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_called_with(200)
 
     @patch('requests.post')
-    def test_08_replace_function_error(self, mock_post):
-        with mock.patch("logging.Logger.warning") as mock_log:
-            with mock.patch("logging.Logger.info") as mock_info:
-                mock_post.return_value.status_code = 200
+    def test_08_an_unknown_tag_is_kept_and_costs_nothing_else(self, mock_post):
+        """
+        An unknown placeholder is left as written. It used to abort the whole substitution, which
+        delivered a payload in which nothing at all was replaced - and the only sign of it was a
+        log line, while the webhook reported success.
+        """
+        mock_post.return_value.status_code = 200
 
-                g = self._make_g(username='cornelius')
-                data = '{"{token_serial}": "{token_owner} {unknown_tag}"}'
-                opts = self._make_options(g, data=data, replace=True)
-                res, _ = self._do_webhook(opts)
-                self.assertTrue(res)
-                mock_log.assert_any_call(
-                    "Unable to replace placeholder: ('unknown_tag')!"
-                    " Please check the webhooks data option.")
-                mock_info.assert_any_call(
-                    f"A webhook is called at 'http://test.com' with data: '{data}'")
-                mock_info.assert_called_with(200)
+        g = self._make_g(username='cornelius')
+        opts = self._make_options(
+            g, data='{"user": "{logged_in_user}", "nope": "{unknown_tag}"}', replace=True)
+        res, _ = self._do_webhook(opts)
+
+        self.assertTrue(res)
+        posted = self._posted_json(mock_post)
+        self.assertEqual("cornelius", posted["user"])
+        self.assertEqual("{unknown_tag}", posted["nope"])
 
     @patch('requests.post')
-    def test_09_replace_function_typo(self, mock_post):
-        with mock.patch("logging.Logger.warning") as mock_log:
-            with mock.patch("logging.Logger.info") as mock_info:
-                mock_post.return_value.status_code = 200
+    def test_09_a_typo_no_longer_suppresses_the_other_tags(self, mock_post):
+        mock_post.return_value.status_code = 200
 
-                init_token({"serial": "SPASS01", "type": "spass"},
-                           User("cornelius", self.realm1))
-                g = FakeFlaskG()
-                builder = EnvironBuilder(method='POST',
-                                         data={'serial': "SPASS01"},
-                                         headers={})
-                env = builder.get_environ()
-                env["REMOTE_ADDR"] = "10.0.0.1"
-                g.client_ip = env["REMOTE_ADDR"]
-                req = Request(env)
-                req.all_data = {"serial": "SPASS01"}
-                req.User = User("cornelius", self.realm1)
+        init_token({"serial": "SPASS01", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS01"}
+        req.User = User("cornelius", self.realm1)
 
-                data = '{"text": "The token serial is {token_seril}"}'
-                opts = self._make_options(g, data=data, replace=True, request=req)
-                res, _ = self._do_webhook(opts)
-                self.assertTrue(res)
-                mock_log.assert_any_call(
-                    "Unable to replace placeholder: ('token_seril')!"
-                    " Please check the webhooks data option.")
-                mock_info.assert_any_call(
-                    f"A webhook is called at 'http://test.com' with data: '{data}'")
-                mock_info.assert_called_with(200)
+        opts = self._make_options(
+            g, data='{"typo": "{token_seril}", "correct": "{token_serial}"}',
+            replace=True, request=req)
+        res, _ = self._do_webhook(opts)
+
+        self.assertTrue(res)
+        posted = self._posted_json(mock_post)
+        # The misspelled one arrives verbatim, so the admin can see what went wrong...
+        self.assertEqual("{token_seril}", posted["typo"])
+        # ...and the one spelled correctly is still substituted.
+        self.assertEqual("SPASS01", posted["correct"])
 
     @patch('requests.post')
     def test_10_content_type_header_is_set_correctly(self, mock_post):
@@ -4881,3 +4883,781 @@ class WebhookTestCase(MyTestCase):
         # The unformatted data is still sent — the webhook call itself is not aborted
         posted = mock_post.call_args.kwargs["data"]
         self.assertEqual(posted, data)
+
+
+def _fake_getaddrinfo(mapping):
+    """
+    Stand-in for socket.getaddrinfo() that resolves each hostname in *mapping* to the given
+    addresses and raises socket.gaierror for anything else. Needed wherever a test has to tell
+    the destination and a proxy apart, which a single flat return value cannot.
+    """
+
+    def fake(host, port, *args, **kwargs):
+        if host not in mapping:
+            raise socket.gaierror(f"no mock DNS entry for {host!r}")
+        return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, port or 0))
+                for ip in mapping[host]]
+
+    return fake
+
+
+class WebhookObjectHandlerTestCase(MyTestCase):
+    """
+    The WebHookHandler posting to a configured webhook object instead of to
+    an inline URL. See https://github.com/privacyidea/privacyidea/issues/5751
+    """
+
+    WEBHOOK_URL = "https://hook.example.com/endpoint"
+    INLINE_URL = "https://inline.example.com/endpoint"
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super().tearDown()
+
+    @staticmethod
+    def _cleanup():
+        for wh in Webhook.query.all():
+            wh.delete()
+
+    def _make_g(self, username='hans', realm=None):
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': username, 'realm': realm or self.realm1}
+        return g
+
+    def _make_options(self, g, handler_opts, request=None):
+        opts = {"g": g, "handler_def": {"options": handler_opts}}
+        if request is not None:
+            opts["request"] = request
+        return opts
+
+    def _do_webhook(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        return WebHookHandler().do(action, options=options)
+
+    @responses.activate
+    def test_01_webhook_object_is_used(self):
+        """A selected webhook supplies the endpoint; the handler supplies the body."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.WEBHOOK_URL)
+        self.assertEqual(request.body, '{"a": 1}')
+        self.assertEqual(request.headers["Content-Type"], "application/json")
+
+    @responses.activate
+    def test_02_webhook_wins_over_the_inline_url(self):
+        """A migrated definition carries both shapes; the webhook object wins."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem",
+                                   "URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, self.WEBHOOK_URL)
+
+    @responses.activate
+    def test_03_unknown_webhook_sends_nothing(self):
+        """A dangling reference is a configuration error, not a request."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "does-not-exist", "data": "x"})
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.assertFalse(self._do_webhook(opts))
+            mock_log.assert_any_call(
+                "The webhook 'does-not-exist' configured in this event handler does not exist.")
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_04_failing_webhook_is_reported_not_raised(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"no": True}, status=500)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "data": '{"a": 1}'})
+        self.assertFalse(self._do_webhook(opts))
+
+    @responses.activate
+    def test_05_tags_are_replaced_as_json(self):
+        """The webhook's content type decides how the payload is substituted."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01"}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": '{"user": "{logged_in_user}", "serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        posted = json.loads(responses.calls[0].request.body)
+        self.assertEqual(posted["user"], "hans")
+        self.assertEqual(posted["serial"], "SPASS01")
+
+    @responses.activate
+    def test_05d_a_content_type_with_parameters_is_still_json(self):
+        """
+        A Content-Type is a media type plus optional parameters, and the field that stores it
+        offers "any valid MIME type". Comparing the whole string sends the document down the
+        plain-text branch, where str.format() reads its own braces as placeholder syntax and
+        raises - leaving the template unreplaced while the delivery still reports success.
+        """
+        for content_type in ("application/json; charset=utf-8",
+                             "APPLICATION/JSON ;charset=UTF-8",
+                             "application/json"):
+            with self.subTest(content_type=content_type):
+                responses.reset()
+                responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+                set_webhook("siem", url=self.WEBHOOK_URL, content_type=content_type)
+
+                opts = self._make_options(
+                    self._make_g(),
+                    {"webhook": "siem", "replace": True,
+                     "data": '{"user": "{logged_in_user}"}'})
+                self.assertTrue(self._do_webhook(opts))
+
+                self.assertEqual({"user": "hans"},
+                                 json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_05e_a_quote_is_still_escaped_under_a_parameterised_content_type(self):
+        # The document-safe path is the whole reason the JSON branch exists, so the parameters
+        # must not cost it either.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL,
+                    content_type="application/json; charset=utf-8")
+
+        builder = EnvironBuilder(method="POST", data={"serial": 'SP"01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": 'SP"01'}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": '{"serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual('SP"01', json.loads(responses.calls[0].request.body)["serial"])
+
+    @responses.activate
+    def test_05b_a_plain_text_payload_is_replaced_under_a_json_webhook(self):
+        """
+        The payload decides how it is substituted, not only the content type. Substituting a JSON
+        body key by key exists so a tag carrying a quote cannot break the document - a reason that
+        does not apply to a payload which is not a document. Before, json.loads() simply raised and
+        the text was returned untouched, which in the UI is indistinguishable from `replace` being
+        switched off: the admin sees the placeholders arrive verbatim at the endpoint.
+        """
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method="POST", data={"serial": "SPASS01"}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01"}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": "this is the handler {token_serial}, {logged_in_user}"},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual("this is the handler SPASS01, hans", responses.calls[0].request.body)
+
+    @responses.activate
+    def test_05c_a_json_payload_is_still_substituted_key_by_key(self):
+        # The fallback must not cost the document-safe path: a value carrying a quote still has to
+        # be escaped into the JSON rather than pasted into the text.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method="POST", data={"serial": 'SP"01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": 'SP"01'}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True, "data": '{"serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual({"serial": 'SP"01'}, json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_06_tags_are_replaced_as_plain_text(self):
+        """A non-JSON webhook substitutes the payload as plain text."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL,
+                    content_type="application/x-www-form-urlencoded")
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "replace": True,
+                                   "data": "user={logged_in_user}"})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, "user=hans")
+
+    @responses.activate
+    def test_07_empty_data_falls_back_to_the_default_payload(self):
+        """An empty payload lets the webhook's own default_payload apply."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"from": "webhook"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": ""})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, '{"from": "webhook"}')
+
+    @responses.activate
+    def test_08_the_url_is_never_logged(self):
+        """The webhook object may embed a token in its URL; log the name instead."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": "x"})
+        with self.assertLogs("privacyidea.lib.eventhandler.webhookeventhandler",
+                             level="INFO") as logs:
+            self.assertTrue(self._do_webhook(opts))
+        self.assertTrue(any("siem" in line for line in logs.output))
+        self.assertFalse(any(self.WEBHOOK_URL in line for line in logs.output))
+
+    @responses.activate
+    def test_09_inline_definition_still_fires(self):
+        """The legacy reader stays: a definition without a webhook keeps working."""
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        opts = self._make_options(self._make_g(),
+                                  {"URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, self.INLINE_URL)
+
+    def test_10_the_dropdown_offers_the_configured_webhooks(self):
+        set_webhook("siem", url=self.WEBHOOK_URL)
+        set_webhook("ticket", url=self.WEBHOOK_URL)
+
+        options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
+        self.assertEqual(options["webhook"]["value"], ["siem", "ticket"])
+        # The inline fields are no longer mandatory, since a webhook may
+        # supply the endpoint instead.
+        self.assertFalse(options["URL"]["required"])
+        self.assertFalse(options["content_type"]["required"])
+
+    def test_10b_no_option_of_this_action_is_mandatory(self):
+        """
+        Every option here has a meaningful empty state, so requiring any of them only blocks a
+        valid configuration:
+
+        * `data` empty is what makes the selected webhook's own default_payload apply - the reason
+          the payload lives on the webhook object at all
+        * `replace` off is a plain choice, and the editor counts an untouched checkbox as empty, so
+          a required one cannot be saved until it has been switched on once
+        * `URL` / `content_type` belong to the inline shape, which a selected webhook supersedes
+        * `webhook` is empty for a definition that stays on the inline shape
+        """
+        options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
+
+        required = sorted(name for name, option in options.items() if option.get("required"))
+        self.assertListEqual([], required)
+
+    @responses.activate
+    def test_10c_an_empty_payload_sends_the_webhooks_own_default(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"source": "privacyidea"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem"})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual({"source": "privacyidea"}, json.loads(responses.calls[0].request.body))
+
+    # --- audit (run_details lands in the audit "info" column, see lib.event) ---
+
+    def _run(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        """Run the handler and hand back the object, so its run_details can be read."""
+        handler = WebHookHandler()
+        return handler.do(action, options=options), handler
+
+    @responses.activate
+    def test_11_a_fired_webhook_is_audited_by_identifier_and_status(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual("webhook 'siem': HTTP 200", handler.run_details)
+
+    @responses.activate
+    def test_12_a_failing_webhook_is_audited_with_the_reason(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"no": True}, status=500)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertFalse(result)
+        self.assertIn("siem", handler.run_details)
+        self.assertIn("500", handler.run_details)
+
+    @responses.activate
+    def test_13_the_audit_entry_never_carries_the_webhook_url(self):
+        """
+        The URL is a property of the webhook object, not of the handler definition, so it appears
+        nowhere else in the audit entry - and it may embed a token. A transport error quotes the
+        endpoint it failed on, which is the way it would otherwise get in.
+        """
+        secret_url = "https://siem.example.com/t/SUPERSECRETTOKEN"
+        responses.add(responses.POST, secret_url,
+                      body=requests.exceptions.ConnectionError(
+                          "HTTPSConnectionPool(host='siem.example.com', port=443): "
+                          "Max retries exceeded with url: /t/SUPERSECRETTOKEN"))
+        set_webhook("siem", url=secret_url)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertFalse(result)
+        self.assertNotIn("SUPERSECRETTOKEN", handler.run_details)
+        self.assertIn("siem", handler.run_details)
+
+    @responses.activate
+    def test_14_a_dangling_reference_is_audited(self):
+        _, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "does-not-exist", "data": "x"}))
+
+        self.assertEqual("webhook 'does-not-exist' is not configured", handler.run_details)
+
+    @responses.activate
+    def test_15_the_inline_path_is_audited_too(self):
+        # The pre-3.15 shape. Its URL is part of the handler definition, which the audit entry
+        # already carries in action_detail, so naming it here reveals nothing new.
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"URL": self.INLINE_URL,
+                             "content_type": ContentType.JSON,
+                             "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(f"{self.INLINE_URL}: HTTP 200", handler.run_details)
+
+    @responses.activate
+    def test_16_the_inline_path_obeys_the_outbound_guard(self):
+        """
+        The inline shape does not go through fire_webhook(), so without its own check it would be
+        the one way to reach an address the guard refuses - and it is the older, more widely used
+        shape, configured by whoever holds eventhandling_write rather than webhook_write.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                           "", ("127.0.0.1", 80))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertFalse(result)
+            self.assertIn("outbound request guard", handler.run_details)
+            self.assertEqual(0, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_17_the_inline_path_still_sends_while_the_guard_is_off(self):
+        # The default, and the upgrade-safety case: an installation that has not opted in must see
+        # the behaviour of privacyIDEA 3.14 and older.
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        with mock.patch("socket.getaddrinfo",
+                        return_value=[(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                       "", ("127.0.0.1", 80))]):
+            result, _ = self._run(self._make_options(
+                self._make_g(), {"URL": self.INLINE_URL,
+                                 "content_type": ContentType.JSON,
+                                 "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(1, len(responses.calls))
+
+    @responses.activate
+    def test_17b_an_unfollowed_redirect_is_a_failure(self):
+        """
+        Only enforce withholds a redirect, and then nothing is delivered - so reporting the run as
+        successful would put a notification in the audit log that never arrived. An endpoint
+        answering 301/302 is ordinary (an http->https rewrite, a load balancer), which is why
+        fire_webhook() draws the same line for a webhook object.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, status=302,
+                          headers={"Location": "https://elsewhere.example/x"})
+            responses.add(responses.GET, "https://elsewhere.example/x", json={}, status=200)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM,
+                                           socket.IPPROTO_TCP, "", ("203.0.113.5", 443))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertFalse(result)
+            self.assertIn("302", handler.run_details)
+            self.assertIn("nothing was delivered", handler.run_details)
+            # The redirect was not followed, so exactly one request went out.
+            self.assertEqual(1, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_17c_a_redirect_is_still_followed_while_the_guard_is_off(self):
+        # The upgrade-safety case: an installation that has not opted in keeps delivering through
+        # the redirect and keeps reporting success.
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        responses.add(responses.POST, self.INLINE_URL, status=302,
+                      headers={"Location": "https://elsewhere.example/x"})
+        responses.add(responses.GET, "https://elsewhere.example/x", json={}, status=200)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"URL": self.INLINE_URL,
+                             "content_type": ContentType.JSON,
+                             "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(f"{self.INLINE_URL}: HTTP 200", handler.run_details)
+        self.assertEqual(2, len(responses.calls))
+
+    @responses.activate
+    def test_17d_an_http_error_status_still_counts_as_a_run_under_enforce(self):
+        # The change is deliberately narrow. Ignoring an error status is how this shape has always
+        # behaved and what the documentation promises; only the redirect is new, because only the
+        # redirect is a consequence of switching the guard to enforce.
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"no": True}, status=500)
+
+            with mock.patch("socket.getaddrinfo",
+                            return_value=[(socket.AF_INET, socket.SOCK_STREAM,
+                                           socket.IPPROTO_TCP, "", ("203.0.113.5", 443))]):
+                result, handler = self._run(self._make_options(
+                    self._make_g(), {"URL": self.INLINE_URL,
+                                     "content_type": ContentType.JSON,
+                                     "data": '{"a": 1}'}))
+
+            self.assertTrue(result)
+            self.assertEqual(f"{self.INLINE_URL}: HTTP 500", handler.run_details)
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_18_the_inline_path_guards_the_proxy_from_the_environment(self):
+        """
+        requests runs with trust_env=True, so http(s)_proxy in the server's environment is used
+        for the inline post even though this shape cannot configure a proxy of its own. Checking
+        the destination would then protect against nothing: the connection goes to the proxy,
+        which resolves the destination itself.
+        """
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+            dns = _fake_getaddrinfo({"inline.example.com": ["203.0.113.5"],
+                                     "proxy.internal": ["10.9.9.9"]})
+
+            with patch.dict(os.environ,
+                            {"https_proxy": "https://proxy.internal:3128"}, clear=False):
+                with mock.patch("socket.getaddrinfo", dns):
+                    result, handler = self._run(self._make_options(
+                        self._make_g(), {"URL": self.INLINE_URL,
+                                         "content_type": ContentType.JSON,
+                                         "data": '{"a": 1}'}))
+
+            # The destination is public, but the environment proxy the connection actually goes
+            # to resolves into blocked space.
+            self.assertFalse(result)
+            self.assertIn("outbound request guard", handler.run_details)
+            self.assertEqual(0, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+    @responses.activate
+    def test_20_the_inline_shape_is_reported_as_deprecated_once_per_definition(self):
+        """
+        The handler definition is the unit, not the event: a WebHook handler on validate_check
+        fires on every authentication, and a warning per request would bury what it says.
+        """
+        import privacyidea.lib.eventhandler.webhookeventhandler as weh
+        weh._INLINE_DEPRECATION_REPORTED.clear()
+        self.addCleanup(weh._INLINE_DEPRECATION_REPORTED.clear)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+        options = self._make_options(self._make_g(),
+                                     {"URL": self.INLINE_URL,
+                                      "content_type": ContentType.JSON,
+                                      "data": '{"a": 1}'})
+        options["handler_def"]["id"] = 7
+        options["handler_def"]["name"] = "Coffee maker"
+
+        with mock.patch.object(weh.log, "warning") as mock_warning:
+            self.assertTrue(self._run(options)[0])
+            self.assertTrue(self._run(options)[0])
+
+        deprecations = [call.args[0] for call in mock_warning.call_args_list
+                        if "deprecated" in call.args[0]]
+        self.assertEqual(1, len(deprecations), deprecations)
+        self.assertIn("Coffee maker", deprecations[0])
+        self.assertIn("3.16", deprecations[0])
+        # Both runs still delivered - a deprecation notice must not change what the handler does.
+        self.assertEqual(2, len(responses.calls))
+
+    @responses.activate
+    def test_21_a_webhook_object_is_not_reported_as_deprecated(self):
+        import privacyidea.lib.eventhandler.webhookeventhandler as weh
+        weh._INLINE_DEPRECATION_REPORTED.clear()
+        self.addCleanup(weh._INLINE_DEPRECATION_REPORTED.clear)
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        with mock.patch.object(weh.log, "warning") as mock_warning:
+            self.assertTrue(self._do_webhook(self._make_options(
+                self._make_g(), {"webhook": "siem", "data": '{"a": 1}'})))
+
+        self.assertEqual([], [call.args[0] for call in mock_warning.call_args_list
+                              if "deprecated" in call.args[0]])
+
+    @responses.activate
+    def test_19_no_proxy_puts_the_inline_destination_back_in_scope(self):
+        # The other half: get_environ_proxies() applies no_proxy, so a destination excluded there
+        # is checked as itself rather than as a proxy it never goes through.
+        self.app.config["PI_OUTBOUND_GUARD"] = "enforce"
+        try:
+            responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+            dns = _fake_getaddrinfo({"inline.example.com": ["203.0.113.5"]})
+
+            with patch.dict(os.environ,
+                            {"https_proxy": "https://proxy.internal:3128",
+                             "no_proxy": "inline.example.com"}, clear=False):
+                with mock.patch("socket.getaddrinfo", dns):
+                    result, _ = self._run(self._make_options(
+                        self._make_g(), {"URL": self.INLINE_URL,
+                                         "content_type": ContentType.JSON,
+                                         "data": '{"a": 1}'}))
+
+            self.assertTrue(result)
+            self.assertEqual(1, len(responses.calls))
+        finally:
+            self.app.config.pop("PI_OUTBOUND_GUARD", None)
+
+
+class ImportInlineWebhookHandlerTestCase(MyTestCase):
+    """
+    pi-manage config import converting the pre-3.15 inline WebHook shape.
+
+    An import is not an upgrade: a configuration exported from 3.14 or older re-creates the inline
+    options on an installation that migrated long ago, where no migration will ever see them
+    again. See https://github.com/privacyidea/privacyidea/issues/5751
+    """
+
+    URL = "https://inline.example.com/hook"
+
+    def setUp(self):
+        super().setUp()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super().tearDown()
+
+    @staticmethod
+    def _cleanup():
+        for handler in EventConfiguration().events:
+            delete_event(handler["id"])
+        for webhook in Webhook.query.all():
+            webhook.delete()
+
+    @staticmethod
+    def _exported(name="Coffee maker", options=None, handlermodule="WebHook",
+                  action="post_webhook", handler_id=1):
+        """A single entry as export_event() writes it for a pre-3.15 definition."""
+        return [{
+            "id": handler_id,
+            "name": name,
+            "active": True,
+            "ordering": 0,
+            "position": "post",
+            "abort_on_error": False,
+            "event": ["validate_check"],
+            "handlermodule": handlermodule,
+            "action": action,
+            "condition": None,
+            "conditions": {},
+            "options": options if options is not None else {
+                "URL": "https://inline.example.com/hook",
+                "content_type": "application/json",
+                "data": '{"a": 1}',
+            },
+        }]
+
+    def test_an_inline_definition_gets_a_webhook_object(self):
+        import_event(self._exported())
+
+        handler = EventConfiguration().events[0]
+        identifier = handler["options"]["webhook"]
+        self.assertEqual(f"from_Coffee_maker_{handler['id']}", identifier)
+
+        webhook = get_webhook(identifier)
+        self.assertEqual(self.URL, webhook["url"])
+        self.assertEqual("application/json", webhook["content_type"])
+        self.assertEqual("POST", webhook["http_method"])
+        self.assertEqual("none", webhook["auth_type"])
+        self.assertTrue(webhook["verify_tls"])
+        # The inline shape's fixed TIMEOUT, so the imported handler behaves as it did.
+        self.assertEqual(10, webhook["timeout"])
+        self.assertTrue(webhook["description"].startswith(IMPORT_MARKER), webhook["description"])
+
+    def test_the_inline_options_are_kept(self):
+        # Exactly as the migration keeps them: the webhook option wins in do(), and they stay
+        # readable until the release that removes the inline shape drops them.
+        import_event(self._exported())
+
+        options = EventConfiguration().events[0]["options"]
+        self.assertEqual(self.URL, options["URL"])
+        self.assertEqual("application/json", options["content_type"])
+        self.assertEqual('{"a": 1}', options["data"])
+
+    def test_a_legacy_content_type_is_normalised(self):
+        import_event(self._exported(options={"URL": self.URL, "content_type": "urlencoded"}))
+
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual("application/x-www-form-urlencoded",
+                         get_webhook(identifier)["content_type"])
+
+    def test_a_missing_content_type_gets_the_default(self):
+        import_event(self._exported(options={"URL": self.URL}))
+
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual("application/json", get_webhook(identifier)["content_type"])
+
+    def test_a_definition_that_already_names_a_webhook_is_untouched(self):
+        set_webhook("siem", url="https://siem.example.com/hook")
+        import_event(self._exported(options={"URL": self.URL, "webhook": "siem"}))
+
+        self.assertEqual("siem", EventConfiguration().events[0]["options"]["webhook"])
+        # No second webhook was created for it.
+        self.assertEqual(["siem"], [w.identifier for w in Webhook.query.all()])
+
+    def test_a_definition_without_a_url_is_skipped(self):
+        # It sends nothing as it stands and cannot be given a webhook, so storing it would put a
+        # handler into the database that the release removing the inline shape cannot repair.
+        import_event(self._exported(options={"data": '{"a": 1}'}))
+
+        self.assertEqual([], EventConfiguration().events)
+        self.assertEqual(0, Webhook.query.count())
+
+    def test_a_definition_with_an_unusable_content_type_is_skipped(self):
+        # The inline handler refuses the value, so this one sends nothing either. Reading it as
+        # JSON would be a guess about what was meant.
+        import_event(self._exported(options={"URL": self.URL, "content_type": "nonsense"}))
+
+        self.assertEqual([], EventConfiguration().events)
+        self.assertEqual(0, Webhook.query.count())
+
+    def test_skipping_one_definition_does_not_stop_the_import(self):
+        broken = self._exported(name="Broken", options={"URL": self.URL,
+                                                        "content_type": "nonsense"},
+                                handler_id=1)
+        intact = self._exported(name="Intact", handler_id=2)
+
+        import_event(broken + intact)
+
+        names = [handler["name"] for handler in EventConfiguration().events]
+        self.assertEqual(["Intact"], names)
+        self.assertEqual(1, Webhook.query.count())
+
+    def test_a_webhook_definition_without_a_url_is_imported(self):
+        # No URL is only a defect in the inline shape. A definition that names a webhook has no
+        # business carrying one.
+        set_webhook("siem", url="https://siem.example.com/hook")
+        import_event(self._exported(options={"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertEqual("siem", EventConfiguration().events[0]["options"]["webhook"])
+
+    def test_a_foreign_webhook_of_the_same_name_is_not_hijacked(self):
+        # Adopting it would point the handler at an endpoint nobody chose for it. Leaving the
+        # handler inline is no answer either - that shape is being removed - so it gets its own
+        # webhook under the next free name.
+        import_event(self._exported())
+        taken = EventConfiguration().events[0]["options"]["webhook"]
+        self._cleanup()
+        set_webhook(taken, url="https://somewhere.else.example/hook")
+
+        import_event(self._exported())
+
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual(f"{taken}_2", identifier)
+        self.assertEqual(self.URL, get_webhook(identifier)["url"])
+        # The foreign webhook keeps its endpoint.
+        self.assertEqual("https://somewhere.else.example/hook", get_webhook(taken)["url"])
+
+    def test_several_foreign_webhooks_push_the_name_further_along(self):
+        import_event(self._exported())
+        base = EventConfiguration().events[0]["options"]["webhook"]
+        self._cleanup()
+        set_webhook(base, url="https://one.example/hook")
+        set_webhook(f"{base}_2", url="https://two.example/hook")
+
+        import_event(self._exported())
+
+        self.assertEqual(f"{base}_3",
+                         EventConfiguration().events[0]["options"]["webhook"])
+
+    def test_importing_the_same_configuration_twice_reuses_its_own_webhook(self):
+        import_event(self._exported())
+        import_event(self._exported())
+
+        self.assertEqual(1, len(EventConfiguration().events))
+        self.assertEqual(1, Webhook.query.count())
+        identifier = EventConfiguration().events[0]["options"]["webhook"]
+        self.assertEqual(self.URL, get_webhook(identifier)["url"])
+
+    def test_a_handler_without_a_name_gets_the_fallback_identifier(self):
+        import_event(self._exported(name=None))
+
+        handler = EventConfiguration().events[0]
+        self.assertEqual(f"webhook_from_handler_{handler['id']}",
+                         handler["options"]["webhook"])
+
+    def test_another_handler_module_is_untouched(self):
+        import_event(self._exported(handlermodule="UserNotification", action="sendmail",
+                                    options={"URL": self.URL}))
+
+        self.assertNotIn("webhook", EventConfiguration().events[0]["options"])
+        self.assertEqual(0, Webhook.query.count())

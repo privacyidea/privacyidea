@@ -130,18 +130,15 @@
             (selectionChange)="onDurationUnitChange($event.value)">
             <mat-option
               value="seconds"
-              i18n="@@conditionalAccess.seconds"
-              >Seconds
+              i18n="@@conditionalAccess.seconds">Seconds
             </mat-option>
             <mat-option
               value="minutes"
-              i18n="@@conditionalAccess.minutes"
-              >Minutes
+              i18n="@@conditionalAccess.minutes">Minutes
             </mat-option>
             <mat-option
               value="hours"
-              i18n="@@conditionalAccess.hours"
-              >Hours
+              i18n="@@conditionalAccess.hours">Hours
             </mat-option>
           </mat-select>
         </mat-form-field>
@@ -247,9 +244,9 @@
         }
 
         <details class="ca-placeholder-help margin-top-16">
-          <summary i18n="@@conditionalAccess.availablePlaceholdersSubjectBody"
-            >Available placeholders for subject and body</summary
-          >
+          <summary
+            i18n="@@conditionalAccess.availablePlaceholdersSubjectBody">Available placeholders for subject and body
+          </summary>
           <div class="margin-left-16">
             <p
               class="ca-placeholder-intro"
@@ -267,10 +264,106 @@
             <p
               class="ca-placeholder-intro"
               i18n="@@conditionalAccess.addRBeforeClosing">
-              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g.
-              <code>{{ "{" }} policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lock'</code> instead of
-              <code>Brute Force PIN Lock</code>.
+              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g. <code>{{ "{" }}
+              policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lock'</code> instead of <code>Brute Force PIN
+                                                                                                    Lock</code>.
             </p>
+          </div>
+        </details>
+      }
+      @case ("webhook") {
+        @if (actionValueError()) {
+          <p class="ca-action-value-error">{{ actionValueError() }}</p>
+        }
+        @if (webhooksListable()) {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@conditionalAccess.webhook">Webhook</mat-label>
+            <mat-select
+              (selectionChange)="onWebhookFieldInput('webhook', $event.value)"
+              [value]="webhookFieldValue('webhook')">
+              @for (identifier of webhookOptions(); track identifier) {
+                <mat-option [value]="identifier">
+                  {{ identifier }}
+                  @if (identifier === staleWebhookIdentifier()) {
+                    <span i18n="@@conditionalAccess.notConfigured">(not configured)</span>
+                  }
+                </mat-option>
+              }
+            </mat-select>
+            <!-- A hint, not a mat-error: a mat-select without a form control never enters errorState, so a
+              mat-error would be silently dropped, while a hint is announced via aria-describedby. -->
+            @if (staleWebhookIdentifier()) {
+              <mat-hint
+                class="ca-action-stale"
+                i18n="@@conditionalAccess.noWebhookNamedConfigured">
+                No webhook named "{{ staleWebhookIdentifier() }}" is configured, so nothing would be sent.
+              </mat-hint>
+            } @else if (webhookOptions().length === 0 && !webhooksLoading()) {
+              <mat-hint
+                class="ca-action-stale"
+                i18n="@@conditionalAccess.noWebhookToChoose">
+                No webhook to choose from. Configure one under External Services.
+              </mat-hint>
+            } @else {
+              <mat-hint
+                i18n="@@conditionalAccess.webhookDefinitionOwns">The webhook definition that owns the URL, method,
+                                                                 headers and credentials.
+              </mat-hint>
+            }
+          </mat-form-field>
+        } @else {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@conditionalAccess.webhook">Webhook</mat-label>
+            <input
+              (input)="onWebhookFieldInput('webhook', $any($event.target).value)"
+              [value]="webhookFieldValue('webhook')"
+              matInput />
+            <mat-hint class="ca-action-stale">{{ webhookTextHint }}</mat-hint>
+          </mat-form-field>
+        }
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-xxl"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@conditionalAccess.payload">Payload</mat-label>
+          <textarea
+            (input)="onWebhookFieldInput('payload', $any($event.target).value)"
+            [value]="webhookFieldValue('payload')"
+            matInput
+            rows="4"></textarea>
+          <mat-hint
+            i18n="@@conditionalAccess.optionalLeftEmpty">Optional. Left empty, the webhook's own default payload is
+                                                         sent.
+          </mat-hint>
+        </mat-form-field>
+
+        <details class="ca-placeholder-help margin-top-16">
+          <summary
+            i18n="@@conditionalAccess.availablePlaceholdersPayload">Available placeholders for the payload
+          </summary>
+          <div class="margin-left-16">
+            <p
+              class="ca-placeholder-intro"
+              i18n="@@conditionalAccess.payloadJsonSubstitution">
+              A payload that is a JSON object or array is substituted value by value, so a placeholder carrying a quote
+              cannot break the document; anything else is substituted as plain text. Unknown placeholders are left
+              as-is.
+            </p>
+            <ul class="ca-placeholder-list">
+              @for (placeholder of webhookPlaceholders; track placeholder.tag) {
+                <li>
+                  <code>{{ placeholder.tag }}</code>
+                  <span>{{ placeholder.description }}</span>
+                </li>
+              }
+            </ul>
           </div>
         </details>
       }

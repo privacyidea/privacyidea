@@ -1464,6 +1464,39 @@ def split_pin_pass(passw, otplen, prependpin):
     return pin, otpval
 
 
+class SafeFormatDict(dict):
+    """
+    A ``str.format_map`` mapping that leaves an unknown ``{placeholder}`` as written instead of
+    raising ``KeyError``, so an administrator's typo in a template never costs the whole message.
+    """
+
+    def __missing__(self, key: str) -> str:
+        return "{" + key + "}"
+
+
+def safe_format(template: str, tags: dict) -> str:
+    """
+    Substitute ``{tag}`` placeholders in *template* from *tags*.
+
+    Unknown placeholders are left untouched and a malformed template is returned verbatim:
+    rendering an admin-supplied string must never raise. The companion of
+    :func:`create_tag_dict`, which builds the *tags* these templates are written against.
+
+    The alternative - ``template.format(**tags)`` - fails the whole substitution on the first
+    unknown name, which is the worse outcome wherever the result is a notification: one typo
+    then means every other placeholder arrives unreplaced at the receiving system, and nothing
+    about the delivery says so.
+
+    :param template: the string to substitute into
+    :param tags: the values available to it
+    :return: the substituted string
+    """
+    try:
+        return template.format_map(SafeFormatDict(tags))
+    except Exception:
+        return template
+
+
 def create_tag_dict(logged_in_user=None,
                     request=None,
                     serial=None,
