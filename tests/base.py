@@ -1,10 +1,15 @@
 """Base test configuration to set up/teardown tests."""
 import pathlib
 import unittest
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+
 import mock
 from sqlalchemy import Sequence, select, text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
+from testfixtures import Replace, test_datetime
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -21,6 +26,17 @@ from privacyidea.lib.lifecycle import call_finalizers
 
 PWFILE = "tests/testdata/passwords"
 PWFILE2 = "tests/testdata/passwd"
+
+
+@contextmanager
+def clock_moved_forward(seconds: int) -> Iterator[None]:
+    """
+    Move the clock of the challenges and of the sent Email and SMS OTP values forward by the given seconds.
+    """
+    later = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=seconds)
+    with (Replace("privacyidea.models.utils.datetime", test_datetime(later, delta=0)),
+          Replace("privacyidea.lib.tokens.sent_otp_validity.datetime", test_datetime(later, delta=0))):
+        yield
 
 
 def force_expire_challenges(transaction_id):
