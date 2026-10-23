@@ -28,7 +28,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
 from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import (BASE58, hexlify_and_unicode, check_serial_valid)
+from privacyidea.lib.utils import (BASE58, hexlify_and_unicode, check_serial_valid, text_column_equals)
 from privacyidea.models import (db, Token, TokenInfo, TokenOwner)
 
 from privacyidea.lib.token.const import PI_TOKEN_SERIAL_RANDOM, B32_ALPHABET, LOST_TOKEN_FOR
@@ -492,7 +492,7 @@ def _activate_replacement(serial: str, new_serial: str) -> None:
 
     replacement = db.session.scalars(select(Token).where(Token.serial == new_serial)).unique().one()
     predecessors = select(Token).join(TokenInfo, TokenInfo.token_id == Token.id).where(
-        TokenInfo.Key == LOST_TOKEN_FOR, TokenInfo.Value == serial, Token.id != replacement.id)
+        TokenInfo.Key == LOST_TOKEN_FOR, text_column_equals(TokenInfo.Value, serial), Token.id != replacement.id)
     for previous in db.session.scalars(predecessors).unique():
         log.info(f"Disabling the earlier replacement {previous.serial} of the token {serial}.")
         previous.active = False

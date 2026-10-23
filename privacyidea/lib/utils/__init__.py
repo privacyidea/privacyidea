@@ -1130,6 +1130,22 @@ def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
     return "%".join(escape_sql_like(part) for part in value.split(wildcard))
 
 
+def text_column_equals(column: "sqlalchemy.ColumnElement", value: str) -> "sqlalchemy.ColumnElement[bool]":
+    """
+    Compare a text column with *value* exactly, also where the column is a CLOB.
+
+    Oracle stores long text, such as the token info value, as a CLOB, which it can neither compare with ``=``
+    (ORA-00932) nor convert to a string beyond 4000 bytes (ORA-22835). ``LIKE`` has neither limit and works on every
+    database; with the metacharacters of *value* escaped it matches the value exactly. On SQLite, ``LIKE`` ignores
+    the case of ASCII letters.
+
+    :param column: the text column
+    :param value: the value the column has to hold
+    :return: the condition
+    """
+    return column.like(escape_sql_like(value), escape=SQL_LIKE_ESCAPE)
+
+
 def convert_timestamp_to_utc(timestamp):
     """
     Convert a timezone-aware datetime object to a naive UTC datetime.

@@ -17,7 +17,7 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, text_column_equals
 from privacyidea.models import TokenCredentialIdHash, TokenInfo
 from tests.authlog_utils import assert_authentication_log
 from .base import MyApiTestCase
@@ -311,7 +311,7 @@ class WebAuthn(MyApiTestCase):
         self.assertTrue(tcih)
         tcih.delete()
         token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                            .filter(TokenInfo.Value == credential_id_hash).first())
+                            .filter(text_column_equals(TokenInfo.Value, credential_id_hash)).first())
         self.assertTrue(token_info_entry)
         token_info_entry.delete()
 

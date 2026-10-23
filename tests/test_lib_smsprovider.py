@@ -1246,7 +1246,7 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
 
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
         option = db.session.execute(stmt).scalar_one()
-        self.assertEqual(option.Value, "")
+        self.assert_empty_string(option.Value)
         self.assertFalse(option.Encrypted)
 
         # Clean up
