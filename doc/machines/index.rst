@@ -208,6 +208,11 @@ WebAuthn/Passkey
 ................
 For WebAuthn/Passkey token, the ``auth_items`` object contains the parameters ``rpId``, ``pubKey`` and ``credentialId``.
 These can be used by a client to verify a FIDO2 assertion locally.
+The ``response`` also contains the parameter ``userVerification``, the user verification requirement that the
+policy with scope *authentication* and action ``webauthn_user_verification_requirement`` defines for the user,
+i.e. ``required``, ``preferred`` or ``discouraged``. It is always sent for WebAuthn/Passkey items, so a client that
+receives a credential without it can refuse to verify it offline and send the user to an online authentication
+instead. HOTP items do not contain ``userVerification``.
 Because WebAuthn/Passkey token can have their credentials offline on multiple machines, the client has to identify itself via the UserAgent in the headers.
 By default, the UserAgent is checked for the following keys (in order): ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"].
 The key has to be followed by a slash and the machine name, e.g. ``ComputerName/Laptop-1``; the machine name ends at the next blank. The keys are case-sensitive.

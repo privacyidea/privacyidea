@@ -1640,6 +1640,63 @@ class WebAuthnOfflineTestCase(MyApiTestCase):
                 self.assertEqual(self.serial, data.get("auth_items").get("offline")[0].get("serial"))
                 self.refilltokens[i] = data.get("auth_items").get("offline")[0].get("refilltoken")
 
+    def test_05_uv_requirement_travels_with_offline_items(self):
+        """
+        The user verification requirement of the policy with scope authentication travels
+        with the WebAuthn offline data, so that a client can enforce it during the offline
+        verification of an assertion.
+        """
+        token = get_one_token(serial=self.serial)
+        if not token:
+            self.fail(f"No token found for serial {self.serial}")
+        headers = {"Host": "puck.office.netknights.it",
+                   "Origin": "https://puck.office.netknights.it",
+                   "User-Agent": self.user_agents[0]}
+
+        # A policy requirement is passed on with the offline data
+        set_policy("uv_off", scope=SCOPE.AUTH,
+                   action="webauthn_user_verification_requirement=discouraged")
+        try:
+            # Set the sign count back to be able to use the same recorded data again
+            token.set_otp_count(0)
+            transaction_id = self._trigger_and_modify_challenge(headers)
+            res = self._validate_check(headers, transaction_id)
+            self.assertEqual(200, res.status_code, res)
+            data = res.json
+            self.assertTrue(data.get("result").get("value"), data)
+            offline = data.get("auth_items").get("offline")[0]
+            self.assertEqual("discouraged", offline.get("response").get("userVerification"))
+            # The rest of the WebAuthn offline data is unchanged
+            self.assertEqual(self.recorded_allow_credentials,
+                             offline.get("response").get("credentialId"))
+            self.assertEqual(self.rp_id, offline.get("response").get("rpId"))
+        finally:
+            delete_policy("uv_off")
+
+        # A user-scoped policy overrides the global one
+        set_policy("uv_global", scope=SCOPE.AUTH, priority=2,
+                   action="webauthn_user_verification_requirement=required")
+        set_policy("uv_user", scope=SCOPE.AUTH, priority=1,
+                   action="webauthn_user_verification_requirement=discouraged",
+                   user=self.username)
+        try:
+            token.set_otp_count(0)
+            transaction_id = self._trigger_and_modify_challenge(headers)
+            res = self._validate_check(headers, transaction_id)
+            self.assertEqual(200, res.status_code, res)
+            offline = res.json.get("auth_items").get("offline")[0]
+            self.assertEqual("discouraged", offline.get("response").get("userVerification"))
+        finally:
+            delete_policy("uv_user")
+            delete_policy("uv_global")
+
+        # Without a policy the default requirement is passed on
+        token.set_otp_count(0)
+        transaction_id = self._trigger_and_modify_challenge(headers)
+        res = self._validate_check(headers, transaction_id)
+        self.assertEqual(200, res.status_code, res)
+        offline = res.json.get("auth_items").get("offline")[0]
+        self.assertEqual("preferred", offline.get("response").get("userVerification"))
     def test_06_remove_machine(self):
         deleted_count = detach_token(self.serial, "offline")
         self.assertEqual(1, deleted_count)

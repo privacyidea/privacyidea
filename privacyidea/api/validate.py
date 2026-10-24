@@ -111,7 +111,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
-                                           disabled_token_types, load_challenge_text)
+                                           disabled_token_types, load_challenge_text,
+                                           get_user_verification_requirement)
 from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
                                                     REMEMBER_DEVICE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
@@ -785,8 +786,12 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                                   action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE,
                                   user_object=user).any():
                 __ = attach_token(token.get_serial(), "offline")
+                # Pass the user verification requirement of the policy with the offline
+                # data, the same way /validate/check does, so the client can enforce it.
                 offline_data = get_auth_items(serial=token.get_serial(), application="offline",
-                                              user_agent=request.user_agent.string)
+                                              user_agent=request.user_agent.string,
+                                              user_verification=get_user_verification_requirement(
+                                                  SCOPE.AUTH, user))
                 if offline_data:
                     context["response_params"]["auth_items"] = offline_data
 

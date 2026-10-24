@@ -157,7 +157,8 @@ class MachineApplication(MachineApplicationBase):
         return otps
 
     @staticmethod
-    def get_authentication_item(token_type, serial, challenge=None, options=None, filter_param=None, user_agent=None):
+    def get_authentication_item(token_type, serial, challenge=None, options=None, filter_param=None,
+                                user_agent=None, user_verification=None):
         """
         :param token_type: the type of the token. At the moment
                            we support HOTP and WebAuthn/Passkey tokens.
@@ -168,7 +169,10 @@ class MachineApplication(MachineApplicationBase):
         :param options: options
         :param filter_param: parameters
         :param user_agent: The user agent of the request
-        :return auth_item: A list of hashed OTP values or pubKey, rpId and credentialId for WebAuthn token
+        :param user_verification: The user verification requirement resolved from the FIDO2
+                                  policy: required, preferred or discouraged
+        :return auth_item: A list of hashed OTP values or pubKey, rpId, credentialId and
+                           userVerification for WebAuthn token
         """
         ret = {}
         options = options or {}
@@ -215,6 +219,11 @@ class MachineApplication(MachineApplicationBase):
                     "rpId": token.get_tokeninfo("relying_party_id"),
                     "credentialId": token.token.get_otpkey().getKey().decode("utf-8")
                 })
+            # A client that verifies an assertion offline needs to know which user
+            # verification the policy requires for this credential, so it can tell a
+            # credential with PIN or biometrics from mere possession.
+            if token_type in ["webauthn", "passkey"] and user_verification is not None:
+                ret["response"]["userVerification"] = user_verification
         else:
             log.info(f"Token {serial} of type {token_type} is not supported by OFFLINE application module")
 
