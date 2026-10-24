@@ -17,6 +17,9 @@ from privacyidea.lib.applications import (get_auth_item,
                                           get_application_types)
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
+from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.models import Token
 import passlib.hash
 from unittest import mock
 
@@ -178,6 +181,59 @@ class OfflineApplicationTestCase(MyTestCase):
         auth_item = OfflineApplication.get_authentication_item("unsupported",
                                                                "s")
         self.assertEqual(auth_item, {})
+
+    def test_04_get_auth_item_user_verification(self):
+        serial = "WAUV1"
+        self.setUp_user_realms()
+        user = User("cornelius", realm=self.realm1)
+        # A WebAuthn token with the token information the offline module reads
+        db_token = Token(serial, tokentype="webauthn")
+        db_token.update_otpkey(OTPKEY)
+        db_token.save()
+        token = WebAuthnTokenClass(db_token)
+        token.add_user(user)
+        token.add_tokeninfo_dict({"pubKey": "a5010203262001215820",
+                                 "relying_party_id": "example.com"})
+
+        # A given user verification requirement travels with the offline data. The
+        # UserAgent must name a computer, the refill token is generated per machine.
+        user_agent = "privacyidea-cp/1.1.1 ComputerName/Laptop-1"
+        auth_item = OfflineApplication.get_authentication_item("webauthn", serial,
+                                                               user_agent=user_agent,
+                                                               user_verification="required")
+        self.assertEqual("required", auth_item.get("response").get("userVerification"))
+        self.assertEqual("a5010203262001215820", auth_item.get("response").get("pubKey"))
+        self.assertEqual("example.com", auth_item.get("response").get("rpId"))
+
+        # Without a given requirement the key is not sent
+        auth_item = OfflineApplication.get_authentication_item("webauthn", serial,
+                                                               user_agent=user_agent)
+        self.assertNotIn("userVerification", auth_item.get("response"))
+
+        # A Passkey token behaves like a WebAuthn token
+        serial_passkey = "PUV1"
+        db_token = Token(serial_passkey, tokentype="passkey")
+        db_token.update_otpkey(OTPKEY)
+        db_token.save()
+        token = PasskeyTokenClass(db_token)
+        token.add_user(user)
+        token.add_tokeninfo_dict({"public_key": "a5010203262001215820",
+                                 "relying_party_id": "example.com"})
+        auth_item = OfflineApplication.get_authentication_item("passkey", serial_passkey,
+                                                               user_agent=user_agent,
+                                                               user_verification="discouraged")
+        self.assertEqual("discouraged", auth_item.get("response").get("userVerification"))
+
+        # HOTP items never carry the user verification requirement
+        serial_hotp = "HUV1"
+        init_token({"serial": serial_hotp, "type": "hotp", "otpkey": OTPKEY},
+                   user=user)
+        auth_item = OfflineApplication.get_authentication_item("hotp", serial_hotp,
+                                                               challenge="pin123456",
+                                                               user_agent=user_agent,
+                                                               user_verification="required")
+        self.assertNotIn("userVerification", auth_item.get("response"))
+
 
 
 class BaseApplicationTestCase(MyTestCase):

@@ -14,6 +14,7 @@ from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.models import (Token)
 from .base import MyApiTestCase
+from privacyidea.api.lib.prepolicy import get_user_verification_requirement
 
 from .api_validate_common import HOSTSFILE
 
@@ -339,3 +340,47 @@ class AValidateOfflineTestCase(MyApiTestCase):
             self.assertEqual("ERR905: Token is not an offline token or refill token is incorrect",
                              res.json["result"]["error"]["message"])
         remove_token(serial)
+
+    def test_05_uv_requirement_not_in_hotp_items(self):
+        """
+        HOTP offline items do not carry the user verification requirement, and an invalid
+        requirement of a FIDO2 policy does not fail a successful response.
+        """
+        serial = "PIUV0001"
+        db_token = Token(serial, tokentype="hotp")
+        db_token.update_otpkey(self.otpkey)
+        db_token.save()
+        token = HotpTokenClass(db_token)
+        token.add_user(User("cornelius", self.realm1))
+        token.set_pin("pin")
+        # the current OTP value of the fresh token, the pass is the pin and the OTP,
+        # prepended like in the tests above
+        otp = token.get_otp()[2]
+        # Reuse the machine resolver of the tests above: a second resolver with the
+        # same hosts file would make every hostname identify two machines.
+        attach_token(serial, "offline", hostname="pippin", resolver_name="testresolver",
+                     options={"count": 100})
+
+        set_policy("uv_bogus", scope=SCOPE.AUTH,
+                   action="webauthn_user_verification_requirement=Always")
+        try:
+            with self.app.test_request_context('/validate/check',
+                                               method='POST',
+                                               data={"serial": serial,
+                                                     "pass": "pin" + otp},
+                                               environ_base={'REMOTE_ADDR': '192.168.0.2'}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                self.assertTrue(res.json.get("result").get("value"), res.json)
+                offline_entries = res.json["auth_items"]["offline"]
+                self.assertEqual(1, len(offline_entries))
+                # HOTP items never carry the user verification requirement
+                self.assertNotIn("userVerification", offline_entries[0]["response"])
+                # The invalid policy value fell back to the default instead of failing
+                # the request or dropping the offline data
+                self.assertEqual("preferred",
+                                 get_user_verification_requirement(
+                                     SCOPE.AUTH, User("cornelius", self.realm1)))
+        finally:
+            delete_policy("uv_bogus")
+            remove_token(serial)

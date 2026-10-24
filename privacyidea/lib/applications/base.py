@@ -98,7 +98,8 @@ class MachineApplication:
                                 challenge=None,
                                 options=None,
                                 filter_param=None,
-                                user_agent=None):
+                                user_agent=None,
+                                user_verification=None):
         """
         returns a dictionary of authentication items
         like public keys, challenges, responses...
@@ -124,7 +125,8 @@ class MachineApplication:
 
 @log_with(log)
 def get_auth_item(application, token_type,serial,
-                  challenge=None, options=None, filter_param=None, user_agent=None):
+                  challenge=None, options=None, filter_param=None, user_agent=None,
+                  user_verification=None):
 
     options = options or {}
     # application_module from application
@@ -136,7 +138,8 @@ def get_auth_item(application, token_type,serial,
                                                    challenge=challenge,
                                                    options=options,
                                                    filter_param=filter_param,
-                                                   user_agent=user_agent)
+                                                   user_agent=user_agent,
+                                                   user_verification=user_verification)
     return auth_item
 
 

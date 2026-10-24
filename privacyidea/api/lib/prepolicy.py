@@ -2449,6 +2449,40 @@ def get_first_policy_value(policy_action: str, default: str, scope: str, user: U
     return policy_value
 
 
+def get_user_verification_requirement(scope: str, user=None) -> str:
+    """
+    Resolve the FIDO2 user verification requirement policy for the given scope and user.
+
+    This is meant for paths that attach the value to an otherwise successful response,
+    like the offline data of WebAuthn/Passkey tokens. An invalid policy value is logged
+    and answered with the default, it must not fail the request at this point.
+
+    :param scope: the policy scope the requirement is resolved for
+    :param user: the user the policy is resolved for, or None for unscoped policies
+    :return: the user verification requirement: required, preferred or discouraged
+    """
+    try:
+        policies = (Match.user(g, scope=scope, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+                               user_object=user)
+                    .action_values(unique=True, write_to_audit_log=False))
+        user_verification = list(policies)[0] if policies else DEFAULT_USER_VERIFICATION_REQUIREMENT
+    except PolicyError as e:
+        # Conflicting policies are a configuration problem. Like an invalid value, they
+        # must not fail an otherwise successful response, so they are logged and the
+        # requirement falls back to the default.
+        log.warning(f"Ignoring the policy action {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT} "
+                    f"because of a conflict: {e}. "
+                    f"Falling back to {DEFAULT_USER_VERIFICATION_REQUIREMENT!r}.")
+        user_verification = DEFAULT_USER_VERIFICATION_REQUIREMENT
+    if user_verification not in USER_VERIFICATION_LEVELS:
+        allowed_values = ", ".join(USER_VERIFICATION_LEVELS)
+        log.warning(f"Ignoring the invalid value {user_verification!r} of the policy action "
+                    f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}, falling back to "
+                    f"{DEFAULT_USER_VERIFICATION_REQUIREMENT!r}. "
+                    f"The value must be one of: {allowed_values}.")
+        user_verification = DEFAULT_USER_VERIFICATION_REQUIREMENT
+    return user_verification
+
 def get_policy_value_set(policy_action: str, scope: str, user: User | None = None) -> list:
     """
     Get the deduplicated set of space-separated values from every matching policy for the given action and

@@ -78,7 +78,8 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)
-from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age, container_registration_config
+from .prepolicy import (check_max_token_user, check_max_token_realm, fido2_enroll, rss_age,
+                        container_registration_config, get_user_verification_requirement)
 from ...lib.challenge import get_challenges
 from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
                               create_container_tokens_from_template, get_container_challenge_user)
@@ -656,9 +657,17 @@ def offline_info(request, response):
         serial = content.get("detail", {}).get("serial")
         if serial:
             try:
+                user_object = (request.User
+                               if hasattr(request, "User") and not request.User.is_empty()
+                               else None)
+                # The client needs the user verification requirement of the policy with the
+                # WebAuthn/Passkey offline data, so it can enforce it during the offline
+                # verification. HOTP items are not affected by it.
                 auth_items = get_auth_items(serial=serial, application="offline",
                                             challenge=request.all_data.get("pass"),
-                                            user_agent=request.user_agent.string)
+                                            user_agent=request.user_agent.string,
+                                            user_verification=get_user_verification_requirement(
+                                                SCOPE.AUTH, user_object))
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))
