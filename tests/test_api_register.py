@@ -209,6 +209,28 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
             self.app.config.pop("PI_BASE_URL", None)
 
     @smtpmock.activate
+    def test_02a_recover_link_opens_the_current_webui(self):
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
+        set_privacyidea_config("recovery.identifier", "myserver")
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+        try:
+            with mock.patch("privacyidea.api.recover.is_new_webui_served", return_value=True):
+                with self.app.test_request_context('/recover',
+                                                   method='POST',
+                                                   data={"user": "corneliusReg",
+                                                         "realm": "register",
+                                                         "email": "cornelius@privacyidea.org"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.data)
+            body = message_from_string(
+                smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+            # The compiled WebUI routes by path below its mount point, not by hashbang
+            self.assertIn("https://pi.example.com/app/v2/reset/corneliusReg@register/", body)
+            self.assertNotIn("#!", body)
+        finally:
+            self.app.config.pop("PI_BASE_URL", None)
+
+    @smtpmock.activate
     def test_02b_recover_requires_base_url(self):
         # Without a configured PI_BASE_URL, the recovery link would be built
         # from the untrusted HTTP Host header, so the endpoint must refuse

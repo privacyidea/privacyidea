@@ -45,6 +45,10 @@ This module is tested in tests/test_lib_passwordreset.py
 
 log = logging.getLogger(__name__)
 
+# The previous WebUI routes by hashbang, the current one below its mount point.
+WEBUI_LEGACY_ROUTE_PREFIX = "/#!"
+WEBUI_ROUTE_PREFIX = "/app/v2"
+
 BODY = """Someone requested to reset the password within privacyIDEA.
 
 To reset your user password please visit the link
@@ -55,7 +59,7 @@ To reset your user password please visit the link
 
 @log_with(log)
 def create_recoverycode(user, email=None, expiration_seconds=3600,
-                        recoverycode=None, base_url=""):
+                        recoverycode=None, base_url="", legacy_webui=False):
     """
     Create and send a password recovery code
 
@@ -63,6 +67,8 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
     :type user: User Object
     :param email: The optional email of the user
     :param recoverycode: Only used for testing purpose
+    :param base_url: The trusted base URL of the server the link in the email points to
+    :param legacy_webui: Link to the reset page of the previous WebUI instead of the current one
     :return: bool
     """
     # Validate everything before persisting a recovery code, so a rejected
@@ -81,9 +87,9 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
                                "recovery.identifier.")
 
     # ``base_url`` is expected to be a trusted base URL (see
-    # privacyidea.lib.framework.get_base_url); append the Web UI hashbang route
+    # privacyidea.lib.framework.get_base_url); append the route of the Web UI
     # that consumes the recovery code.
-    base_url = base_url.rstrip("/") + "/#!"
+    base_url = base_url.rstrip("/") + (WEBUI_LEGACY_ROUTE_PREFIX if legacy_webui else WEBUI_ROUTE_PREFIX)
     recoverycode = recoverycode or generate_password(size=24)
     hash_code = hash_with_pepper(recoverycode)
     pwreset = PasswordReset(hash_code, username=user.login,

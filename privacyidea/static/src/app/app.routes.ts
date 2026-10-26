@@ -21,6 +21,8 @@ import { RouterModule, Routes } from "@angular/router";
 import { PAGE_NAMES } from "@core/route-titles";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
+import { PasswordRecoveryRequestComponent } from "./components/password-recovery/request/password-recovery-request.component";
+import { PasswordRecoveryResetComponent } from "./components/password-recovery/reset/password-recovery-reset.component";
 import { adminMatch, AuthGuard, loginGuard, selfServiceMatch } from "./guards/auth.guard";
 import { ApiClientService } from "@services/api-client/api-client.service";
 import { ApplicationService } from "@services/application/application.service";
@@ -61,6 +63,14 @@ import { UserService } from "@services/user/user.service";
 
 export const routes: Routes = [
   { path: "login", title: PAGE_NAMES.login, component: LoginComponent, canActivate: [loginGuard] },
+  {
+    path: "recover",
+    title: PAGE_NAMES.passwordRecovery,
+    component: PasswordRecoveryRequestComponent,
+    canActivate: [loginGuard]
+  },
+  // The link in the recovery email opens this route: the login name with the realm, then the recovery code.
+  { path: "reset/:user/:code", title: PAGE_NAMES.passwordReset, component: PasswordRecoveryResetComponent },
   { path: "", redirectTo: "login", pathMatch: "full" },
   {
     path: "",

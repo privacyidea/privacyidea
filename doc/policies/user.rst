@@ -379,10 +379,26 @@ If the user is located in an editable user store, this policy can define, if
 the user is allowed to perform a password reset. During the password reset an
 email with a link to reset the password is sent to the user.
 
-This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it
-as described in :ref:`legacy_webui`. The current WebUI offers no password reset, and
-the link in the email (``/#!/reset/...``) opens its login page. The endpoints of
-:ref:`rest_recover` can be used directly.
+If the policy is active, the login page of the WebUI shows a *Reset password* link. It opens a
+page that asks for the username, the realm (if the ``realm_dropdown`` WebUI policy
+is configured) and the email address stored for the user. The server sends an email with a link
+that is valid for one hour. The link opens a page of the WebUI where the user enters the new
+password twice. Afterwards the user can log in with the new password.
+
+The password reset needs
+
+* an editable user store for the user,
+* an email address stored for the user,
+* an :ref:`SMTP server definition <smtpserver>` that is selected as *SMTP Server for Password
+  Recovery* in the system configuration (``recovery.identifier``) and
+* ``PI_BASE_URL`` in ``pi.cfg`` (see :ref:`cfgfile`), which the link in the email is built from.
+
+The link in the email points to the WebUI that is served: ``<PI_BASE_URL>/app/v2/reset/<user>@<realm>/<code>``
+for the current WebUI and ``<PI_BASE_URL>/#!/reset/<user>@<realm>/<code>`` for the previous WebUI
+(see :ref:`legacy_webui`). The endpoints of :ref:`rest_recover` can also be used directly.
+
+.. versionchanged:: 3.14
+   The current WebUI offers the password reset. Before, only the previous WebUI did.
 
 .. versionadded:: 2.10
 

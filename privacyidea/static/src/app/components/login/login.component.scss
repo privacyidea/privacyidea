@@ -18,37 +18,6 @@ $border-radius: var(--border-radius);
     margin-bottom: 96px;
   }
 
-  .logo {
-    width: 150px;
-    height: auto;
-    border-radius: 50%;
-    box-shadow: var(--elevation-5);
-    margin-bottom: 20px;
-  }
-
-  .logo-text {
-    width: 300px;
-    height: auto;
-  }
-
-  @media (min-resolution: 1.5dppx) {
-    .logo {
-      display: none;
-    }
-
-    .logo-text {
-      margin-top: 86px;
-      width: 300px;
-    }
-  }
-
-  .custom-logo {
-    max-width: 307px;
-    max-height: 307px;
-    width: auto;
-    height: auto;
-  }
-
   .login-form {
     display: flex;
     flex-direction: column;
@@ -95,5 +64,10 @@ $border-radius: var(--border-radius);
   .reset-btn.margin-top-16,
   .passkey-btn.margin-top-16 {
     margin-top: 0;
+  }
+
+  .password-reset-link {
+    color: var(--mat-sys-primary);
+    font-size: 0.875rem;
   }
 }
