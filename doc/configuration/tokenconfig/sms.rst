@@ -50,4 +50,4 @@ Configuration Parameters
 
   A value sent automatically after a successful authentication (authentication
   policy ``smsautosend``) and a value sent to verify the enrollment have no time
-  limit; they stay valid until they or a later value are used.
+  limit; they stay valid until they are used or a later value is sent or used.
