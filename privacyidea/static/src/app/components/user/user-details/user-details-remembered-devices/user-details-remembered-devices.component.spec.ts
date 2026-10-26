@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { PageEvent } from "@angular/material/paginator";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ApiClientService } from "@services/api-client/api-client.service";
@@ -157,6 +158,76 @@ describe("UserDetailsRememberedDevicesComponent", () => {
     await settle();
 
     expect(apiClientServiceMock.revokeAllForUser).toHaveBeenCalledWith("alice", "realm1");
+  });
+
+  it.each([null, ""])("should name the client by its id when its display name is %p", (clientName) => {
+    component.revokeDevice({ ...device, client_name: clientName });
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ items: ["client1"] }) })
+    );
+  });
+
+  it("should go back a page when the last device of a later page is revoked", async () => {
+    component.pageIndex.set(1);
+    await settle();
+    apiClientServiceMock.reloadRememberedDevices.mockClear();
+
+    component.revokeDevice(device);
+    confirmClosed.next(true);
+    confirmClosed.complete();
+    await settle();
+
+    expect(component.pageIndex()).toBe(0);
+    expect(apiClientServiceMock.reloadRememberedDevices).not.toHaveBeenCalled();
+  });
+
+  it("should return to the first page after revoking all devices from a later page", async () => {
+    component.pageIndex.set(1);
+    await settle();
+
+    component.revokeAll();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+    await settle();
+
+    expect(apiClientServiceMock.revokeAllForUser).toHaveBeenCalledWith("alice", "realm1");
+    expect(component.pageIndex()).toBe(0);
+  });
+
+  it("should not revoke all devices when the confirmation is cancelled", () => {
+    component.revokeAll();
+    confirmClosed.next(false);
+    expect(apiClientServiceMock.revokeAllForUser).not.toHaveBeenCalled();
+  });
+
+  it("should not ask to revoke all devices when the user has none", async () => {
+    apiClientServiceMock.getUserRememberedDevices = jest
+      .fn()
+      .mockResolvedValue({ devices: [], count: 0, prev: null, next: null });
+    apiClientServiceMock.reloadRememberedDevices();
+    await settle();
+
+    component.revokeAll();
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
+  });
+
+  it("should load the requested page on a paginator event", async () => {
+    component.onPage({ pageIndex: 1, pageSize: 25, length: 30 } as PageEvent);
+    await settle();
+
+    expect(apiClientServiceMock.getUserRememberedDevices).toHaveBeenLastCalledWith("alice", "realm1", {
+      page: 2,
+      pageSize: 25
+    });
+  });
+
+  it("should show the error state when loading the devices fails", async () => {
+    apiClientServiceMock.getUserRememberedDevices = jest.fn().mockRejectedValue(new Error("boom"));
+    apiClientServiceMock.reloadRememberedDevices();
+    await settle();
+
+    expect(component.tableState.status()).toBe("error");
+    expect(component.devices()).toEqual([]);
   });
 
   it("should open the API client of a device", () => {

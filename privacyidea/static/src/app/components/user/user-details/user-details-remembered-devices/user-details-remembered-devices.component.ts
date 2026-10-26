@@ -80,13 +80,12 @@ export class UserDetailsRememberedDevicesComponent {
   readonly devicesResource = resource({
     params: () => ({
       ...this.viewedUser(),
-      allowed: this.authService.actionAllowed("remembered_device_list"),
       page: this.pageIndex() + 1,
       pageSize: this.pageSize(),
       reloadTrigger: this.apiClientService.rememberedDevicesReloadTrigger()
     }),
     loader: ({ params }) => {
-      if (!params.user || !params.realm || !params.allowed) return Promise.resolve(EMPTY_PAGE);
+      if (!params.user || !params.realm) return Promise.resolve(EMPTY_PAGE);
       return this.apiClientService.getUserRememberedDevices(params.user, params.realm, {
         page: params.page,
         pageSize: params.pageSize
@@ -113,10 +112,10 @@ export class UserDetailsRememberedDevicesComponent {
   readonly devices = computed<RememberedDevice[]>(() => this.loadedPage().devices);
   readonly count = computed<number>(() => this.loadedPage().count);
 
+  // The user details page only shows this list to an admin allowed to list remembered devices
   readonly tableState = new TableState({
     resource: this.devicesResource,
-    count: () => this.count(),
-    allowed: () => this.authService.actionAllowed("remembered_device_list")
+    count: () => this.count()
   });
 
   goToClient(device: RememberedDevice): void {
@@ -134,7 +133,7 @@ export class UserDetailsRememberedDevicesComponent {
         component: SimpleConfirmationDialogComponent,
         data: {
           title: $localize`:@@apiClient.revokeRememberedDevice:Revoke Remembered Device`,
-          items: [device.client_name ?? device.client_id],
+          items: [device.client_name || device.client_id],
           itemType: "remembered-device",
           confirmAction: { label: $localize`:@@token.revoke:Revoke`, value: true, type: "destruct" }
         }
