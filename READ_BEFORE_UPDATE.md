@@ -30,6 +30,16 @@
   such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
   documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
 
+* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy chain.** It used to be
+  skipped, which shifted the entries behind it onto the wrong proxy networks. The client IP of such a request is now
+  usually your proxy's address, so configure the proxy to write the client address instead. Entries with a port or
+  in brackets are now read as addresses.
+
+* **IPv4 clients now match entries in both spellings.** `10.0.0.5` and its IPv4-mapped form `::ffff:10.0.0.5`, which
+  a dual-stack listener may report, match the same entries in policy client conditions, the `client_ip` condition of
+  event handlers and *Override Authorization Client*. If your audit log shows client IPs starting with `::ffff:`,
+  check your client-restricted policies and event handlers: IPv4 entries now apply to these clients.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
