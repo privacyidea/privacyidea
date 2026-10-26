@@ -216,6 +216,18 @@ class LibPolicyTestCase(MyTestCase):
                          "to 'pol1'")
         delete_policy("pol1")
 
+    def test_04b_empty_user_is_not_accepted_by_passOnNoUser(self):
+        # An empty user object is left behind by a failed lookup, it is no user that does not exist
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        set_policy(name="pol1", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER)
+        try:
+            self.assertRaises(UserError, auth_user_does_not_exist, check_user_pass, User(), "somePW",
+                              options={"g": g})
+        finally:
+            delete_policy("pol1")
+
     def test_05_user_has_no_tokens(self):
         user = User("cornelius", realm="r1")
         passw = "test"

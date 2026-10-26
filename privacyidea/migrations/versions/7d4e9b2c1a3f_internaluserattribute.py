@@ -1,5 +1,8 @@
 """v3.14: Add internaluserattribute table and migrate internal entries out of customuserattribute
 
+The table is only created when it does not exist yet, and the data step skips rows that are already moved, so the
+migration can run again on its own result.
+
 Revision ID: 7d4e9b2c1a3f
 Revises: b1a2c3d4e5f6
 Create Date: 2026-04-28 00:00:00.000000
@@ -62,7 +65,9 @@ def upgrade():
     # emits SELECT nextval(...) on every ORM insert; create it where supported.
     create_sequence_if_supported(op, SEQUENCE_NAME)
 
-    try:
+    if sa.inspect(op.get_bind()).has_table('internaluserattribute'):
+        print("Table 'internaluserattribute' already exists.")
+    else:
         op.create_table(
             'internaluserattribute',
             sequence_id_column(op, SEQUENCE_NAME),
@@ -78,12 +83,6 @@ def upgrade():
             sa.UniqueConstraint('user_id', 'resolver', 'realm_id', 'Key',
                                 name='uq_internaluserattribute_user_key'),
         )
-    except (OperationalError, ProgrammingError) as ex:
-        if "already exists" in str(ex.orig).lower():
-            print("Table 'internaluserattribute' already exists.")
-        else:
-            print("Could not add table 'internaluserattribute' to database.")
-            raise
 
     # Advance the sequence past any existing rows. Covers the
     # table-already-exists branch above where rows may already be present

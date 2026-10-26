@@ -1220,7 +1220,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             tokenlist = result.get("value").get("tokens")
             # NO token assigned, yet
-            self.assertGreaterEqual(len(tokenlist), 0, "{0!s}".format(tokenlist))
+            self.assertEqual(0, len(tokenlist), tokenlist)
 
         # get unassigned tokens
         with self.app.test_request_context('/token/',
@@ -1331,9 +1331,9 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
-            tokens = result.get("value").get("tokens")
-            for token in tokens:
-                self.assertIn(token["tokentype"], ["hotp", "totp"])
+            serials = {token["serial"] for token in result.get("value").get("tokens")}
+            self.assertTrue({hotp_token.get_serial(), totp_token.get_serial()} <= serials, serials)
+            self.assertNotIn(spass_token.get_serial(), serials)
         remove_token(hotp_token.get_serial())
         remove_token(totp_token.get_serial())
         remove_token(spass_token.get_serial())
