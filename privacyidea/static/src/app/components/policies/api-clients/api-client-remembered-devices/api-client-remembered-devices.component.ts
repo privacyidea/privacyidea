@@ -36,6 +36,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, next: null };
 
@@ -43,6 +44,7 @@ const EMPTY_PAGE: RememberedDevicesPage = { devices: [], count: 0, prev: null, n
   selector: "app-api-client-remembered-devices",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatTableModule,
     MatButtonModule,
     MatIconModule,

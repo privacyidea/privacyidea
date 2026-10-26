@@ -2,18 +2,6 @@
 
 $input-focus-outline: theme.$focus-outline;
 
-.edit-policy-layout .mat-mdc-form-field-subscript-wrapper {
-  line-height: 16px;
-}
-
-.edit-policy-layout .ca-priority-field .mat-mdc-form-field-subscript-wrapper {
-  line-height: 16px;
-}
-
-.edit-policy-layout .ca-priority-field .mat-mdc-form-field-hint-wrapper {
-  height: 32px;
-}
-
 .input {
   height: 40px;
   width: 107px;
@@ -36,14 +24,6 @@ $input-focus-outline: theme.$focus-outline;
 
     &:last-of-type {
       border-bottom: none;
-    }
-
-    .mdc-list-item__primary-text {
-      align-items: flex-start;
-      column-gap: 8px;
-      display: flex;
-      white-space: normal;
-      width: 100%;
     }
   }
 
@@ -97,19 +77,6 @@ $input-focus-outline: theme.$focus-outline;
   }
 }
 
-// The global option state layers paint an opaque primary fill, which only reads next to the text
-// colour override that applies inside select panels. These rows are in an autocomplete panel and
-// bring their own colours (a primary-coloured IP, chips), so the states stay a surface step.
-// Both panel classes are named so this outranks the [_ngcontent]-stamped copy of the global rule,
-// which ties on specificity and is injected later.
-.mat-mdc-autocomplete-panel.known-clients-autocomplete-panel {
-  .mat-mdc-option:hover:not(.mdc-list-item--disabled),
-  .mat-mdc-option.mat-mdc-option-active:not(.mdc-list-item--disabled),
-  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-    background-color: var(--mat-sys-surface-container-high);
-  }
-}
-
 .hint-spacer {
   margin-bottom: 1.2em;
 }
@@ -159,10 +126,6 @@ $input-focus-outline: theme.$focus-outline;
 .input-width-xs {
   width: 100%;
   max-width: var(--input-width-xs);
-
-  .mat-mdc-form-field-infix {
-    width: var(--input-width-xs);
-  }
 }
 
 .input-width-s {
@@ -188,23 +151,6 @@ $input-focus-outline: theme.$focus-outline;
 .input-width-xxl {
   width: 100%;
   max-width: var(--input-width-xxl);
-}
-
-mat-form-field.height-52 {
-  --mat-form-field-container-height: 52px;
-  --mat-form-field-container-vertical-padding: 8px;
-}
-
-mat-form-field.height-77 {
-  height: 76.5px;
-}
-
-.mat-mdc-form-field-required .mdc-floating-label {
-  font-weight: bold;
-}
-
-.mat-mdc-form-field-required-marker {
-  font-weight: bold;
 }
 
 .filter-autocomplete-ghost {

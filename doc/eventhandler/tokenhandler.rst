@@ -11,6 +11,10 @@ certain events.
 This way you can define workflows to automatically modify tokens, delete or
 even create new tokens.
 
+The actions that modify or delete tokens act on the token identified in the
+request. If the request names several tokens, the action is applied to each of
+them that fulfils the token conditions.
+
 Possible Actions
 ~~~~~~~~~~~~~~~~
 

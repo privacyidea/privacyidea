@@ -71,6 +71,12 @@
   width: 100%;
 }
 
+.action-value-input:focus-visible,
+.action-value-textarea:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
 .action-value-textarea {
   min-height: 40px;
   resize: vertical;

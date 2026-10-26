@@ -26,6 +26,8 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
@@ -67,6 +69,7 @@ describe("ContainerTemplatesComponent", () => {
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useValue: mockDialogService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
         provideRouter([])
       ]
     }).compileComponents();
@@ -241,8 +244,30 @@ describe("ContainerTemplatesComponent", () => {
     expect(component.getFilterIconName("name")).toBe("filter_alt_off");
   });
 
+  it("hands a sort button click to the shared sort cycle, falling back to unsorted", () => {
+    const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+
+    component.onSortClick("name");
+
+    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith("name", component.activeSort, {
+      active: "",
+      direction: ""
+    });
+  });
+
+  it("reports the sort of a column as aria-sort", () => {
+    expect(component.ariaSort("name")).toBe("none");
+
+    component.activeSort.set({ active: "name", direction: "asc" });
+    expect(component.ariaSort("name")).toBe("ascending");
+    expect(component.ariaSort("default")).toBe("none");
+
+    component.activeSort.set({ active: "name", direction: "desc" });
+    expect(component.ariaSort("name")).toBe("descending");
+  });
+
   it("should sort data by name ascending", () => {
-    component.onSortChange({ active: "name", direction: "asc" });
+    component.activeSort.set({ active: "name", direction: "asc" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -250,7 +275,7 @@ describe("ContainerTemplatesComponent", () => {
   });
 
   it("should sort data by name descending", () => {
-    component.onSortChange({ active: "name", direction: "desc" });
+    component.activeSort.set({ active: "name", direction: "desc" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -258,7 +283,7 @@ describe("ContainerTemplatesComponent", () => {
   });
 
   it("should sort data by boolean 'default' column", () => {
-    component.onSortChange({ active: "default", direction: "desc" });
+    component.activeSort.set({ active: "default", direction: "desc" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();
@@ -267,7 +292,7 @@ describe("ContainerTemplatesComponent", () => {
   });
 
   it("should return unsorted data if sort direction is empty", () => {
-    component.onSortChange({ active: "name", direction: "" });
+    component.activeSort.set({ active: "name", direction: "" });
     fixture.detectChanges();
 
     const data = component.pagedContainerTemplates();

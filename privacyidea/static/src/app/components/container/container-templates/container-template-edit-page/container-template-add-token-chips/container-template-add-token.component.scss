@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 .add-token-chips-card {
   background-color: var(--mat-sys-surface-container-low) !important;
 
@@ -8,8 +10,12 @@
   }
 
   mat-card {
-    --mat-card-elevated-container-shape: var(--border-radius);
-    --mat-card-elevated-container-color: var(--mat-sys-surface-container);
+    @include mat.card-overrides(
+      (
+        elevated-container-shape: var(--border-radius),
+        elevated-container-color: var(--mat-sys-surface-container)
+      )
+    );
     margin-bottom: 1rem;
   }
 
@@ -27,7 +33,11 @@
   }
 
   mat-chip {
-    --mat-chip-container-shape-radius: var(--border-radius);
+    @include mat.chips-overrides(
+      (
+        container-shape-radius: var(--border-radius)
+      )
+    );
     white-space: nowrap;
     cursor: pointer !important;
     flex: 0 0 auto !important;
@@ -37,5 +47,25 @@
     font-size: 20px;
     width: 20px;
     height: 20px;
+  }
+
+  .chip-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  // The button is the chip's only tab stop, so the chip draws its focus ring (inset, because the chip set clips overflow).
+  mat-chip:has(.chip-action:focus-visible) {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -2px;
   }
 }

@@ -35,6 +35,12 @@ affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_veri
 the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
 requires user verification, and so does a login to the WebUI without a username with a WebAuthn token.
 
+.. note:: A login without a username identifies the user by the passkey alone, while every request afterwards looks
+    the user up by the login name and realm of the session. In a realm where the same login name exists in several
+    resolvers, only the user that the realm's resolver order finds first can log in this way; a passkey of another
+    user with that login name is refused, and the authentication log records ``LOGIN_NAME_NOT_UNIQUE``. The same
+    applies to a login name that ends in ``@`` and the name of a defined realm while ``splitAtSign`` is switched on.
+
 .. note:: If user verification is **not** required on authentication and a user has multiple discoverable credentials
     for the same relying party on one authenticator (typically an external FIDO2 security key with several passkeys
     enrolled to the same site), the browser's account picker may display generic placeholder labels for the

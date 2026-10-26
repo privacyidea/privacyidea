@@ -42,6 +42,7 @@ from datetime import timedelta, datetime
 from enum import Enum
 from importlib import import_module
 from importlib import metadata
+from typing import TYPE_CHECKING
 
 import segno
 import sqlalchemy
@@ -53,6 +54,9 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.conditional_access.authentication_event_types import strip_internal_classification
 from privacyidea.lib.framework import get_app_config_value, get_base_url
+
+if TYPE_CHECKING:
+    from privacyidea.models import Config
 
 log = logging.getLogger(__name__)
 
@@ -855,39 +859,31 @@ def check_ip_in_policy(client_ip, policy):
     return client_found, client_excluded
 
 
-def reload_db(timestamp, db_ts):
+def reload_db(loaded_db_timestamp: str | None, db_ts: "Config | None") -> bool:
     """
-    Check if the configuration database should be reloaded. This is verified
-    by comparing the chache timestamp and the database timestamp
+    Check if the configuration has to be reloaded from the database.
 
-    :param timestamp: cache timestamp
-    :type timestamp: timestamp
-    :param db_ts: database timestamp
-    :type db_ts: Config Object with timestamp str in .Value
+    The database holds the time of the last configuration change, as written by
+    the node that made the change. The configuration is reloaded if this value
+    differs from the value that was read together with the currently loaded
+    configuration. The value is not compared with the local clock, so a change is
+    noticed whatever the clock difference between the nodes and however long the
+    last reload took.
 
-    :return: bool
+    :param loaded_db_timestamp: the database timestamp that was read with the
+        currently loaded configuration, None if no configuration is loaded yet
+    :param db_ts: the database timestamp, a Config object with the timestamp
+        string in ``.Value``, or None if the database has no timestamp
+    :return: True if the configuration has to be reloaded
     """
-    internal_timestamp = ''
-    if timestamp:
-        internal_timestamp = timestamp.strftime("%s")
-    rdb = False
-    # Reason to reload
-    if db_ts and db_ts.Value.startswith("2016-"):
-        # If there is an old timestamp in the database
-        rdb = True
-        log.debug("Old timestamp. We need to reread policies "
-                  "from DB.")
-    if not (timestamp and db_ts):
-        # If values are not initialized
-        rdb = True
-        log.debug("Values are not initialized. We need to reread "
-                  "policies from DB.")
-    if db_ts and db_ts.Value >= internal_timestamp:
-        # If the DB contents is newer
-        rdb = True
-        log.debug("timestamp in DB newer. We need to reread policies "
-                  "from DB.")
-    return rdb
+    if loaded_db_timestamp is None or db_ts is None:
+        log.debug("Configuration or database timestamp not initialized. We need to reread the configuration "
+                  "from the database.")
+        return True
+    if db_ts.Value != loaded_db_timestamp:
+        log.debug("The configuration in the database has changed. We need to reread it.")
+        return True
+    return False
 
 
 def reduce_realms(all_realms, policies):

@@ -22,6 +22,7 @@ import { Subject, of } from "rxjs";
 import {
   AppearanceService,
   CornerLevel,
+  StatusColorLevel,
   DEFAULT_LIGHT_SOURCE,
   DepthLevel,
   LIGHT_SOURCE_LEVELS,
@@ -41,10 +42,12 @@ describe("UISettingsComponent", () => {
     depth: ReturnType<typeof signal<DepthLevel>>;
     lightSource: ReturnType<typeof signal<LightSourceLevel>>;
     corners: ReturnType<typeof signal<CornerLevel>>;
+    statusColors: ReturnType<typeof signal<StatusColorLevel>>;
     setDepth: jest.Mock;
     resetToDefaults: jest.Mock;
     setLightSource: jest.Mock;
     setCorners: jest.Mock;
+    setStatusColors: jest.Mock;
   };
 
   const host = (): HTMLElement => fixture.nativeElement;
@@ -57,10 +60,12 @@ describe("UISettingsComponent", () => {
     depth: () => DepthLevel;
     lightSource: () => LightSourceLevel;
     corners: () => CornerLevel;
+    statusColors: () => StatusColorLevel;
     resetSettings: () => void;
     selectDepth: (level: DepthLevel) => void;
     selectLightSource: (level: LightSourceLevel) => void;
     selectCorners: (level: CornerLevel) => void;
+    selectStatusColors: (level: StatusColorLevel) => void;
   }
 
   const testable = (): TestableSettings => component as unknown as TestableSettings;
@@ -71,10 +76,12 @@ describe("UISettingsComponent", () => {
       depth: signal<DepthLevel>("default"),
       lightSource: signal<LightSourceLevel>(DEFAULT_LIGHT_SOURCE),
       corners: signal<CornerLevel>("default"),
+      statusColors: signal<StatusColorLevel>("aa"),
       resetToDefaults: jest.fn(() => of(null)),
       setDepth: jest.fn((level: DepthLevel) => appearanceService.depth.set(level)),
       setLightSource: jest.fn((level: LightSourceLevel) => appearanceService.lightSource.set(level)),
-      setCorners: jest.fn((level: CornerLevel) => appearanceService.corners.set(level))
+      setCorners: jest.fn((level: CornerLevel) => appearanceService.corners.set(level)),
+      setStatusColors: jest.fn((level: StatusColorLevel) => appearanceService.statusColors.set(level))
     };
     await TestBed.configureTestingModule({
       imports: [UISettingsComponent],
@@ -163,6 +170,21 @@ describe("UISettingsComponent", () => {
 
     expect(appearanceService.setCorners).toHaveBeenCalledWith("square");
     expect(testable().corners()).toBe("square");
+  });
+
+  it("should apply a picked status color level", () => {
+    testable().selectStatusColors("aa");
+
+    expect(appearanceService.setStatusColors).toHaveBeenCalledWith("aa");
+    expect(testable().statusColors()).toBe("aa");
+  });
+
+  it("should offer the three status color levels", () => {
+    const levels = (component as unknown as { statusColorLevels: { value: string; label: string }[] })
+      .statusColorLevels;
+
+    expect(levels.map((level) => level.value)).toEqual(["aaa", "aa", "a"]);
+    expect(host().querySelector("mat-select[aria-label='Status colors']")).toBeTruthy();
   });
 
   it("should toggle the pending-request list", () => {

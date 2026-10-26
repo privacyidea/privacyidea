@@ -133,8 +133,12 @@ class EntraIDResolver(HTTPResolver):
             self.client_credential = get_required(self.config, CLIENT_SECRET)
 
         try:
+            # MSAL does the OIDC discovery here and requests the access tokens later. Without a timeout, an
+            # endpoint that does not answer would block the request forever. The TLS settings of the resolver
+            # apply to these requests as they do to the requests to the Graph API.
             self.ms_graph_app = msal.ConfidentialClientApplication(self.client_id, authority=self.authority,
-                                                                   client_credential=self.client_credential)
+                                                                   client_credential=self.client_credential,
+                                                                   timeout=self.timeout, verify=self.tls)
         except ValueError as error:
             raise ParameterError(f"Invalid Authorization Configuration: {error}")
 
@@ -348,10 +352,15 @@ class EntraIDResolver(HTTPResolver):
         ``{"error": "code": "ErrorCode", "message": "Error message"}``
 
         :param response: Response object
-        :return: Error dataclass containing the error info
+        :return: Error dataclass containing the error info, with ``error`` False if the response carries none in this
+            format, e.g. the HTML error page of a proxy
         """
-        error_data = response.json().get("error")
-        if error_data:
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        error_data = data.get("error") if isinstance(data, dict) else None
+        if isinstance(error_data, dict):
             error = Error(True, error_data.get("code", ""), error_data.get("message", ""))
         else:
             error = Error(False, "", "")
@@ -377,6 +386,20 @@ class EntraIDResolver(HTTPResolver):
 
         if not success:
             raise ResolverError("Failed to get the user list!")
+
+    @staticmethod
+    def _is_lookup_failure(response: Response) -> bool:
+        """
+        Entra ID answers 202 when it is too busy to process the request, which is no answer either. A user that does
+        not exist is a 404 with the error code Request_ResourceNotFound, any other 404 (e.g. a wrong endpoint) is an
+        error.
+
+        :param response: The response of an unsuccessful user request
+        :return: True if the user store failed to answer
+        """
+        if response.status_code == 404:
+            return EntraIDResolver.get_error(response).code != "Request_ResourceNotFound"
+        return response.status_code == 202 or HTTPResolver._is_lookup_failure(response)
 
     def _get_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """
@@ -519,14 +542,19 @@ class EntraIDResolver(HTTPResolver):
 
         return users
 
-    def _get_user(self, user_identifier: str, config: RequestConfig, attributes: list[str] = None) -> dict:
+    def _get_user(self, user_identifier: str, config: RequestConfig, attributes: list[str] = None,
+                  raise_on_lookup_failure: bool = False) -> dict:
         """
         Fetches a single user from the user store
 
         :param user_identifier: Either the UID or the username
         :param config: Configuration to fetch the user
         :param attributes: list of attributes to be returned for the user
+        :param raise_on_lookup_failure: Raise if the user store could not answer instead of returning an empty dict,
+            see :meth:`_is_lookup_failure`
         :return: Dictionary containing pi conform user attributes
+        :raises ResolverError: if the request to the user store failed, or with *raise_on_lookup_failure* if the user
+            store did not answer the lookup
         """
         # Request
         config.headers.update(self._get_auth_header())
@@ -544,6 +572,8 @@ class EntraIDResolver(HTTPResolver):
 
         # Error handling
         success = self._get_user_error_handling(response, config, user_identifier)
+        if not success and raise_on_lookup_failure and self._is_lookup_failure(response):
+            raise ResolverError(f"The user store answered with status {response.status_code}.")
 
         # Map user store attributes to pi attributes
         user_info = {}

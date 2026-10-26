@@ -1,0 +1,30 @@
+// The part of the shared styles that component stylesheets pull in with
+// `@use "styles-api" as styles;` (mixins, card treatments, dial constants). It emits no CSS, so
+// a component stylesheet using it does not re-emit the global sheet, scoped to itself: a
+// scoped copy of a global rule outranks the global one by an attribute selector and is injected
+// after it. The global rules live in styles.scss, which only the global bundle loads.
+@use "sass:math";
+@forward "cards";
+@forward "tokens";
+
+// Stops of the light-source dial, shared with light-source-dial.component.scss.
+$light-source-steps: 18;
+$light-source-step-angle: math.div(360, $light-source-steps);
+// Must stay in step with AppearanceService's DEFAULT_LIGHT_SOURCE.
+$default-light-source: 16;
+
+// The outer container of a routed page. `.admin-content` / `.selfservice-content-container`
+// (layout.component.scss) are size containers, so 100cq* is whatever the toolbars, the
+// self-service drawer and the region's own padding leave over. With border-box the caps measure
+// the padded box, so a page sizing its container to a content width must add this mixin's own
+// 16px padding on both sides, i.e. 32px.
+@mixin main-component-style {
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--elevation-5);
+  background: var(--surface-raised);
+  max-width: 100cqw;
+  max-height: 100cqh;
+  overflow: auto;
+}

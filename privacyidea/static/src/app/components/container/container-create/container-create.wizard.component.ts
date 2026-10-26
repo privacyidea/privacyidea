@@ -40,10 +40,21 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { map } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-create-wizard",
-  imports: [MatButton, MatIcon, MatIconButton, AsyncPipe, ScrollToTopDirective, MatTooltip, NgClass, TitleCasePipe],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatButton,
+    MatIcon,
+    MatIconButton,
+    AsyncPipe,
+    ScrollToTopDirective,
+    MatTooltip,
+    NgClass,
+    TitleCasePipe
+  ],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"
 })

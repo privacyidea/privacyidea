@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
@@ -728,6 +729,56 @@ class WebAuthn(MyApiTestCase):
 
         # Authenticate
         self._authenticate_webauthn(data)
+
+        delete_policies(["wan1", "wan2", "wan3"])
+        remove_token(serial=serial)
+
+    def test_31a_webauthn_passkey_login_outside_validity_period(self):
+        """
+        A WebAuthn token answering with credential_id is subject to its validity period, like every other token.
+        """
+        delete_policies(["wan1", "wan2"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        set_policy("wan3", scope=SCOPE.ENROLL,
+                   action="webauthn_authenticator_attestation_level=none, webauthn_authenticator_attestation_form=none")
+        serial = "WAN00037300"
+        mock_nonce = hexlify_and_unicode(webauthn_b64_decode("u2UUrVcqwF4tlKaZH7nfLM2V0wWZ-1-RPCF1rwsmhEo"))
+        reg_data = ("o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViY1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pdAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAFKyhLhHxRLvrqQY8OFUfwMDp5x5rpQECAyYgASFYIJohLFYLJp3Gk7h8oy5M9rjaGsyiffu1HU9plGWySuv-"
+                    "Ilgg4bJtPzLqiwWEZWIKIrNFkIoYT8SRwa4bCxUB2OFlba4")
+        client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoidTJVVXJWY3F3RjR0bEthWkg3bmZMTTJWMHdXWi0xLVJ"
+                       "QQ0YxcndzbWhFbyIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9")
+        self._enroll_webauthn(serial, client_data, reg_data, mock_nonce)
+
+        token = get_one_token(serial=serial)
+        token.set_validity_period_end((datetime.now(timezone.utc) - timedelta(days=1)).isoformat())
+        token.save()
+
+        with self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"},
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            transaction_id = res.json["detail"]["transaction_id"]
+
+        self._change_challenge_nonce(transaction_id, "0Bw6Kfs-i5-rqYvgykgQFpVD8jXYshoDeqKjOn_4x1c")
+        data = {
+            "userHandle": "V0FOMDAwMzczMDA=",
+            "transaction_id": transaction_id,
+            "credential_id": "rKEuEfFEu-upBjw4VR_AwOnnHms",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiTUVKM05rdG1jeTFwTlMxeWNWbDJaM2xyWjFGR2NG"
+                              "WkVPR3BZV1hOb2IwUmxjVXRxVDI1Zk5IZ3hZdyIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMi"
+                              "LCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signature": "MEYCIQCxSkkSc0wMwUdyfZq2sRnBQa2AuBbgz8I/B51wN0TiNQIhAIZplnq87VrRfHcJZBZvk0xuR5nVfg2YGVKoabiuH"
+                         "Vcm",
+            "authenticatorData": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ+1odAAAAAA=="
+        }
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"])
 
         delete_policies(["wan1", "wan2", "wan3"])
         remove_token(serial=serial)

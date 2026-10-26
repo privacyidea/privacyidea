@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 // Material's default table row height. Cells carry horizontal padding only, so the space above and below a
 // single line is leftover row height rather than padding - which is why it disappears the moment a cell grows
 // past it and the row starts sizing to its content instead.
@@ -39,7 +41,11 @@ $line-height: 1.5;
 // them the hover circle keeps Material's default 40px and spills well past the 24px button.
 .expandable-message__toggle.mat-mdc-icon-button.mat-mdc-button-base {
   --mdc-icon-button-state-layer-size: 24px;
-  --mat-icon-button-state-layer-size: 24px;
+  @include mat.icon-button-overrides(
+    (
+      state-layer-size: 24px
+    )
+  );
   --mdc-icon-button-icon-size: 20px;
   flex: none;
   height: 24px;

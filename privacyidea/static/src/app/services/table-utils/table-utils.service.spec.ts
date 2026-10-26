@@ -308,11 +308,14 @@ describe("TableUtilsService", () => {
       expect(service.getChildClassForColumnKey("active")).toBe("");
     });
 
+    it('getTdClassForKey("description") has no fixed row height', () => {
+      expect(service.getTdClassForKey("description")).toEqual(["details-value-cell-width"]);
+    });
+
     it.each([
-      ["description", "height-127"],
-      ["realms", "height-78"],
-      ["tokengroup", "height-78"],
-      ["id", "height-53"]
+      ["realms", "details-row-height-tall"],
+      ["tokengroup", "details-row-height-tall"],
+      ["id", "details-row-height"]
     ])('getTdClassForKey("%s") includes %s', (key, expectedPart) => {
       expect(service.getTdClassForKey(key)).toContain(expectedPart);
     });

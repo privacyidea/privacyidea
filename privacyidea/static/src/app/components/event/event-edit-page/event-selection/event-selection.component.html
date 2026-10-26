@@ -81,13 +81,7 @@
                 role="button"
                 tabindex="0">
                 <span class="event-name">{{ event }}</span>
-                <button
-                  (click)="$event.stopPropagation(); addEvent(event)"
-                  aria-hidden="true"
-                  mat-icon-button
-                  tabindex="-1">
-                  <mat-icon>add</mat-icon>
-                </button>
+                <mat-icon aria-hidden="true">add</mat-icon>
               </div>
             }
           </div>

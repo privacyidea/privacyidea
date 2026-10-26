@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Routes } from "@angular/router";
+import { detailsTitle, newTitle, PAGE_NAMES } from "@core/route-titles";
 
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
 import { AuditSelfServiceComponent } from "./components/logs/audit/audit.self-service.component";
@@ -42,43 +43,66 @@ export const routes: Routes = [
       {
         path: "",
         pathMatch: "full",
+        title: PAGE_NAMES.tokens,
         component: TokenTableSelfServiceComponent
       },
-      { path: "enrollment", component: TokenEnrollmentSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
-      { path: "assign-token", component: AssignTokenSelfServiceComponent },
-      { path: "details/:serial", component: TokenDetailsSelfServiceComponent },
-      { path: "wizard", component: TokenEnrollmentWizardComponent, canDeactivate: [pendingChangesGuard] }
+      {
+        path: "enrollment",
+        title: PAGE_NAMES.enrollToken,
+        component: TokenEnrollmentSelfServiceComponent,
+        canDeactivate: [pendingChangesGuard]
+      },
+      { path: "assign-token", title: PAGE_NAMES.assignToken, component: AssignTokenSelfServiceComponent },
+      { path: "details/:serial", title: detailsTitle(PAGE_NAMES.tokens), component: TokenDetailsSelfServiceComponent },
+      {
+        path: "wizard",
+        title: PAGE_NAMES.tokenWizard,
+        component: TokenEnrollmentWizardComponent,
+        canDeactivate: [pendingChangesGuard]
+      }
     ]
   },
   {
     path: "containers",
     children: [
-      { path: "", component: ContainerTableSelfServiceComponent },
-      { path: "create", component: ContainerCreateSelfServiceComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "", title: PAGE_NAMES.containers, component: ContainerTableSelfServiceComponent },
+      {
+        path: "create",
+        title: newTitle(PAGE_NAMES.containers),
+        component: ContainerCreateSelfServiceComponent,
+        canDeactivate: [pendingChangesGuard]
+      },
       {
         path: "details/:serial",
+        title: detailsTitle(PAGE_NAMES.containers),
         component: ContainerDetailsComponent
       },
-      { path: "wizard", component: ContainerCreateWizardComponent, canDeactivate: [pendingChangesGuard] }
+      {
+        path: "wizard",
+        title: PAGE_NAMES.containerWizard,
+        component: ContainerCreateWizardComponent,
+        canDeactivate: [pendingChangesGuard]
+      }
     ]
   },
   {
     path: "users",
     children: [
-      { path: "", pathMatch: "full", component: UserSelfServiceComponent },
-      { path: "details", component: UserDetailsSelfServiceComponent }
+      { path: "", pathMatch: "full", title: PAGE_NAMES.users, component: UserSelfServiceComponent },
+      { path: "details", title: detailsTitle(PAGE_NAMES.users), component: UserDetailsSelfServiceComponent }
     ]
   },
   {
     path: "logs",
     children: [
       { path: "", pathMatch: "full", redirectTo: logsLandingRedirect },
-      { path: "audit", component: AuditSelfServiceComponent },
-      { path: "authentication-log", component: AuthenticationLog }
+      { path: "audit", title: PAGE_NAMES.audit, component: AuditSelfServiceComponent },
+      { path: "authentication-log", title: PAGE_NAMES.authenticationLog, component: AuthenticationLog }
     ]
   },
   {
     path: "news",
+    title: PAGE_NAMES.news,
     component: NewsComponent
   }
 ];

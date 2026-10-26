@@ -196,6 +196,11 @@ If a user with the same login name exists in more than one resolver, the user
 will be taken from the resolver with the lowest priority number (i.e. the
 highest priority).
 
+If a resolver fails to answer the lookup, for example because its user store
+is not reachable or returns an error, the lookup stops with an error. The
+resolvers with a lower priority are not asked, as they could hold another user
+with the same login name.
+
 Priorities are numbers between 1 and 999. The lower the number the higher the
 priority. If no priority is set, the resolver defaults to priority 1000.
 

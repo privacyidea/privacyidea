@@ -89,6 +89,9 @@ class FourEyesTokenClass(TokenClass):
            separator=%20
     """
     owned_tokeninfo_keys = frozenset({"4eyes", "separator"})
+    # The answered challenge is kept until has_further_challenge has read it, so check_token_list
+    # consumes it for this token class.
+    consumes_answered_challenge = False
 
     def __init__(self, db_token):
         """

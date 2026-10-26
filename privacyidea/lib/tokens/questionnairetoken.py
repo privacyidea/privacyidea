@@ -57,6 +57,9 @@ class QuestionnaireTokenClass(TokenClass):
     challenge.
     The user has to remember and pass the right answer.
     """
+    # The answered challenge is kept until has_further_challenge has read it, so check_token_list
+    # consumes it for this token class.
+    consumes_answered_challenge = False
 
     @classmethod
     def is_owned_tokeninfo_key(cls, key: str) -> bool:

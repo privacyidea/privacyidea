@@ -104,6 +104,15 @@ Each policy can contain the following attributes:
   ``string`` and ``integer`` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
 
+  An action with a leading ``-`` or ``!`` is excluded from the policy, also
+  from a ``*`` that stands for all actions: the admin policy
+  ``*, -policywrite`` allows every admin action but writing policies. Another
+  policy can still allow the excluded action.
+
+  A boolean action saved with the value ``false`` (in any case) or ``0``, like
+  ``policywrite=false``, is disabled: it is stored as the excluded action
+  ``-policywrite``. This also applies to importing a policy.
+
 .. versionadded:: 2.0
 
 

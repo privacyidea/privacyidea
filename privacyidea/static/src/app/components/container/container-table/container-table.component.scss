@@ -1,9 +1,11 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .container-table-container {
   @include styles.main-component-style;
-  @include table.paginator-range-floor;
+  // The card is as wide as the table's col-width-* tiers (below), not the default floor, which would leave dead space
+  // beside a narrower table.
+  @include table.paginator-range-floor(table.table-width(checkbox, m, s, m, xl, s, s, m));
   @include table.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
@@ -13,9 +15,25 @@
   // is as wide as the table it stands in for, not the unrelated 44rem default.
   @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, m));
 
-  // In the self-service layout the scroll region takes its content height, not the full container.
-  :host-context(body.self-service-layout) & .table-scroll-region {
-    flex: 0 1 auto;
+  // The table is as wide as its col-width-* tiers, not stretched across the card: a stretched table
+  // hands its spare width to every column in proportion, so no column stays at its tier.
+  .container-table {
+    width: auto;
+  }
+  @include table.scroll-region-fits-table;
+
+  // The self-service layout shares this stylesheet but shows fewer columns (serial m + type s + status m
+  // + description xl + delete s, no select, user, realm or container realms), so the card and the
+  // table-state panel follow those tiers, and the scroll region takes its content height, not the
+  // full container. Its header row is a title, one button and the paginator, far narrower than the admin
+  // filter row that paginator-range-floor keeps the card above.
+  :host-context(body.self-service-layout) & {
+    min-width: min(#{table.table-width(m, s, m, xl, s)}, 100cqw);
+    @include table.page-table-state-size(table.table-width(m, s, m, xl, s));
+
+    .table-scroll-region {
+      flex: 0 1 auto;
+    }
   }
 
   @include table.actions-row-collapse(".container-actions-row", ".container-actions-row-inner");
@@ -40,6 +58,20 @@ tr.example-element-row:active {
 
 tr.example-detail-row td {
   border-top-width: 0;
+}
+
+// The detail cell spans every column. In Firefox a visible right border on it makes the table drop its own right edge
+// line from every element row below the first, so there the cell's edge is transparent and an open detail draws the
+// line as a background instead. Other engines keep the cell's border.
+@supports (-moz-appearance: none) {
+  .container-table-container .container-table tr.example-detail-row td {
+    border-right-color: transparent;
+
+    &:has(.expanded-detail) {
+      background: linear-gradient(var(--mat-sys-outline-variant), var(--mat-sys-outline-variant)) right / 1px 100%
+        no-repeat border-box;
+    }
+  }
 }
 
 .expanded-detail {

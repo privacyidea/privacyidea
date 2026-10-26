@@ -95,7 +95,7 @@ export interface AuthenticationLogEventType {
   outcome: string;
 }
 
-const DEFAULT_PAGE_SIZE = 100;
+export const AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE = 100;
 
 // Shallow value-equality for the flat string->string filter params record.
 function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
@@ -210,7 +210,7 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     { equal: shallowEqualRecord }
   );
 
-  pageSize = signal(DEFAULT_PAGE_SIZE);
+  pageSize = signal(AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE);
   timestampFrom = signal<string | null>(null);
   timestampTo = signal<string | null>(null);
   sort = signal({ active: "timestamp", direction: "desc" } as Sort);

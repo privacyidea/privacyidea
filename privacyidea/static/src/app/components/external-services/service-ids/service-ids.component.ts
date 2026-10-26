@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -28,7 +29,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -49,16 +49,16 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-service-ids",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -109,6 +109,28 @@ export class ServiceIdsComponent {
     keyGetter: (service) => service.servicename,
     visibleRows: renderedRows(this.serviceIdDataSource)
   });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createService:Create Service ID`,
+      tone: "primary",
+      width: "l",
+      icon: "storage",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      run: () => this.onCreateNewServiceId()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      run: () => this.deleteSelected()
+    }
+  ]);
 
   onCreateNewServiceId(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW);

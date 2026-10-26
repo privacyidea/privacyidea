@@ -29,6 +29,7 @@ from privacyidea.lib.container import init_container, find_container_by_serial, 
 from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policies.actions import PolicyAction
@@ -38,6 +39,7 @@ from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.subscriptions import _USER_COUNT_KEY
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token, unassign_token)
@@ -56,7 +58,7 @@ from privacyidea.lib.users.internal_user_attributes import InternalUserAttribute
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
+from privacyidea.models import (Audit, Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
@@ -3693,10 +3695,125 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
 
     def test_07_registration_code_is_consumed(self):
         # Digits only: the test client sends no user agent, so the API percent-decodes the values it receives
-        token = init_token({"type": "registration", "serial": "OTPONLYREG", "registration.contents": "n"})
+        token = init_token({"type": "registration", "serial": "OTPONLYREG", "registration.contents": "-cs"})
         registration_code = token.get_init_detail().get("registrationcode")
         response = self._check_otp_only(registration_code, serial="OTPONLYREG")
         self.assertTrue(response.json["result"]["value"], response.json)
         # The registration token deletes itself after its one successful use
         self.assertIsNone(get_one_token(serial="OTPONLYREG", silent_fail=True))
 
+
+
+class AuthMaxOperatorLoginTestCase(MyApiTestCase):
+    realm = "operatorrealm"
+    resolver = "operatorresolver"
+    operator_logins = ["!cornelius", "corn*", "*"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolver, "type": "passwdresolver",
+                       "fileName": "tests/testdata/passwd-search-operator-logins"})
+        set_realm(self.realm, [{"name": self.resolver}])
+        # The policies count the audit entries, which earlier tests leave behind.
+        Audit.query.delete()
+        db.session.commit()
+        for login in ["cornelius", "cornerstone"] + self.operator_logins:
+            init_token({"type": "spass", "pin": "spass"}, user=User(login, realm=self.realm))
+
+    def tearDown(self) -> None:
+        for token in get_tokens(realm=self.realm):
+            remove_token(token.token.serial)
+        delete_realm(self.realm)
+        delete_resolver(self.resolver)
+        super().tearDown()
+
+    def _set_policy(self, action: str) -> None:
+        set_policy("max_operator", scope=SCOPE.AUTHZ, action=f"{action}=2/1m", realm=self.realm)
+        self.addCleanup(delete_policy, "max_operator")
+
+    def _check(self, login: str, pin: str) -> bool:
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": login, "realm": self.realm, "pass": pin}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]
+
+    def test_failures_of_another_user_do_not_count(self):
+        self._set_policy(PolicyAction.AUTHMAXFAIL)
+        for _attempt in range(2):
+            self.assertFalse(self._check("cornerstone", "wrongpin"))
+
+        for login in ["cornelius"] + self.operator_logins:
+            with self.subTest(login=login):
+                self.assertTrue(self._check(login, "spass"))
+
+    def test_own_failures_count(self):
+        self._set_policy(PolicyAction.AUTHMAXFAIL)
+        for login in self.operator_logins:
+            with self.subTest(login=login):
+                for _attempt in range(2):
+                    self.assertFalse(self._check(login, "wrongpin"))
+                self.assertFalse(self._check(login, "spass"))
+
+    def test_successes_of_another_user_do_not_count(self):
+        self._set_policy(PolicyAction.AUTHMAXSUCCESS)
+        for _attempt in range(2):
+            self.assertTrue(self._check("cornerstone", "spass"))
+
+        for login in ["cornelius"] + self.operator_logins:
+            with self.subTest(login=login):
+                self.assertTrue(self._check(login, "spass"))
+
+    def test_own_successes_count(self):
+        self._set_policy(PolicyAction.AUTHMAXSUCCESS)
+        for login in self.operator_logins:
+            with self.subTest(login=login):
+                for _attempt in range(2):
+                    self.assertTrue(self._check(login, "spass"))
+                self.assertFalse(self._check(login, "spass"))
+
+
+class FreeRADIUSSubscriptionTestCase(MyApiTestCase):
+    """
+    FreeRADIUS is shown under the server's subscription, which only has a soft limit: above the free tier the WebUI
+    warns, but RADIUS authentications are never refused.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        init_token({"type": "spass", "serial": "FRSUB1", "pin": "test"})
+        self.addCleanup(remove_token, "FRSUB1")
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+        self.addCleanup(get_app_local_store().pop, _USER_COUNT_KEY, None)
+        # Far over every free tier, and any metered check that is exceeded refuses
+        patches = [mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens", return_value=100_000),
+                   mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=100_000),
+                   mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[]),
+                   mock.patch("random.randrange", return_value=100_000)]
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def _check(self, user_agent: str):
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": "FRSUB1", "pass": "test"},
+                                           headers={"User-Agent": user_agent}):
+            return self.app.full_dispatch_request()
+
+    def test_01_freeradius_is_never_refused(self):
+        for _attempt in range(20):
+            response = self._check("FreeRADIUS/3.2.1")
+            self.assertEqual(200, response.status_code, response.json)
+            self.assertTrue(response.json["result"]["value"], response.json)
+
+    def test_02_metered_client_is_refused(self):
+        # The same setup refuses a metered client, so test_01 did exceed a limit
+        response = self._check("privacyidea-cp/1.0")
+        self.assertEqual(Error.SUBSCRIPTION, response.json["result"]["error"]["code"], response.json)
+
+    def test_03_admin_login_reports_the_exceeded_free_tier(self):
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": self.testadmin, "password": self.testadminpw}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(1, response.json["result"]["value"]["subscription_status"], response.json)

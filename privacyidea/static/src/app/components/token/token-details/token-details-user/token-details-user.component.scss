@@ -33,8 +33,8 @@ $border-color: var(--mat-sys-outline-variant);
     th,
     td {
       border: 1px solid $border-color;
-      padding-left: 12px !important;
-      padding-right: 12px !important;
+      padding-left: 12px;
+      padding-right: 12px;
     }
 
     td:nth-child(1) {

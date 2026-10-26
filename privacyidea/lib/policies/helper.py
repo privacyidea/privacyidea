@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import logging
+from collections import defaultdict
 from collections.abc import Callable, Iterable
 from datetime import timedelta
 from typing import TYPE_CHECKING
@@ -59,19 +60,24 @@ def check_max_auth_fail(user: User, user_search_dict: dict, check_validate_check
         return result, reply_dict
 
     policy_count, time_delta = parse_timelimit(list(max_fail_dict)[0])
+    # The identity is matched literally, since a login may contain "!" or "*". An empty value does not restrict.
+    identity = {key: value for key, value in user_search_dict.items() if value}
     fail_count = 0
     if check_validate_check:
         # Local admins can not authenticate at validate/check, no need to search the audit log for it
         # at validate/check users and admins are not distinguished: always search for user
-        search_dict = {"action": "*/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}",
-                       "user": user.login, "realm": user_search_dict.get("realm", "*")}
-        fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
+        search_dict = {"action": "*/validate/check", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
+        validate_check_identity = {"user": user.login}
+        if "realm" in identity:
+            validate_check_identity["realm"] = identity["realm"]
+        fail_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta,
+                                              exact_params=validate_check_identity)
         log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_count} failed authentications with "
                   "/validate/check")
     # Exclude challenge-trigger entries from the count, as for */validate/check above.
     search_dict = {"action": "*/auth", "authentication": f"!{AUTH_RESPONSE.CHALLENGE}"}
-    search_dict.update(user_search_dict)
-    fail_auth_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta)
+    fail_auth_count = g.audit_object.get_count(search_dict, success=False, timedelta=time_delta,
+                                               exact_params=identity)
     log.debug(f"Checking users timelimit {list(max_fail_dict)[0]}: {fail_auth_count} failed authentications with "
               "/auth")
     fail_count += fail_auth_count
@@ -103,18 +109,17 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
 
     # Check for maximum successful authentications
     policy_count, time_delta = parse_timelimit(list(max_success_dict)[0])
+    # The identity is matched literally, since a login may contain "!" or "*". An empty value does not restrict.
+    identity = {key: value for key, value in user_search_dict.items() if value}
     # Check the successful authentications for this user
     success_count = 0
     if check_validate_check:
-        search_dict = {"action": "*/validate/check"}
-        search_dict.update(user_search_dict)
-        success_count = g.audit_object.get_count(search_dict, success=True, timedelta=time_delta)
+        success_count = g.audit_object.get_count({"action": "*/validate/check"}, success=True, timedelta=time_delta,
+                                                 exact_params=identity)
         log.debug(f"Checking users timelimit {list(max_success_dict)[0]}: {success_count} successful "
                   "authentications with /validate/check")
-    search_dict = {"action": "*/auth"}
-    search_dict.update(user_search_dict)
-    success_auth_count = g.audit_object.get_count(search_dict,
-                                                  success=True, timedelta=time_delta)
+    success_auth_count = g.audit_object.get_count({"action": "*/auth"}, success=True, timedelta=time_delta,
+                                                  exact_params=identity)
     log.debug(f"Checking users timelimit {list(max_success_dict)[0]}: {success_auth_count} successful "
               "authentications with /auth")
     success_count += success_auth_count
@@ -277,6 +282,63 @@ def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] |
     return list(granted_realms)
 
 
+def admin_granted_resolvers(action: str, every_realm: bool = False) -> set[str] | None:
+    """
+    The resolvers the logged-in admin's policies grant for *action*, as the union over every applicable policy.
+
+    A resolver belongs to the realms it is part of, so a policy grants the resolvers of the realms in its realm field,
+    narrowed to the resolvers in its resolver field if that is set. Such a policy also grants the resolvers that are
+    part of no realm, narrowed the same way: they serve no user of any realm yet, and an admin adds a new user store
+    to a realm by creating the resolver first. A policy with only a resolver field grants the resolvers it names,
+    whether they are part of a realm or not, and whether they exist yet or not.
+
+    The user field of a policy restricts nothing here: the configuration of a user store is not bound to any of its
+    users, so a policy that names users grants the resolvers the same policy without them grants.
+
+    :param action: the policy action whose scoping to read, like ``resolverread``
+    :param every_realm: a resolver granted through realms is only granted if it is granted in every realm it is part
+        of, on any node, for callers that change the resolver and so the users of all these realms
+    :return: ``None`` for unrestricted - no active admin policy at all, or an applicable policy restricting neither
+        realm nor resolver - otherwise the set of granted resolver names, which may be empty
+    """
+    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+        return None
+    granted_resolvers = set()
+    granting_realms = defaultdict(set)
+    all_realms = None
+    resolvers_without_realm = set()
+    for policy in Match.admin(g, action=action).policies():
+        realm_names = policy_realm_names(policy.get("realm"))
+        resolver_names = _policy_field_names(policy.get("resolver"), get_resolver_list)
+        if realm_names is None and resolver_names is None:
+            return None
+        if realm_names is None:
+            granted_resolvers.update(resolver_names)
+            continue
+        if not realm_names:
+            # A realm field that matches no realm grants nothing
+            continue
+        if all_realms is None:
+            all_realms = get_realms()
+            resolvers_in_realms = {entry.get("name") for config in all_realms.values()
+                                   for entry in config.get("resolver", [])}
+            resolvers_without_realm = set(get_resolver_list()) - resolvers_in_realms
+        granted_resolvers.update(resolver for resolver in resolvers_without_realm
+                                 if resolver_names is None or resolver in resolver_names)
+        for realm in realm_names:
+            for entry in all_realms.get(realm, {}).get("resolver", []):
+                if resolver_names is None or entry.get("name") in resolver_names:
+                    granting_realms[entry.get("name")].add(realm)
+    if every_realm and granting_realms:
+        realms_of_resolver = defaultdict(set)
+        for realm, config in all_realms.items():
+            for entry in config.get("resolver", []):
+                realms_of_resolver[entry.get("name")].add(realm)
+        granting_realms = {resolver: realms for resolver, realms in granting_realms.items()
+                           if realms_of_resolver[resolver] <= realms}
+    return granted_resolvers | set(granting_realms)
+
+
 def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:
     """
     The realms a policy's realm field matches, read the way the policy engine matches it.
@@ -331,19 +393,6 @@ def _policy_usernames(policy_users: list[str] | None, case_insensitive: bool) ->
     named_users = [user for user in dict.fromkeys(policy_users)
                    if user[:1] not in ("!", "-") and fold(user) not in excluded_folded]
     return (named_users, []) if named_users else None
-
-
-def policy_target_is_unrestricted(policy: dict) -> bool:
-    """
-    Whether an admin policy grants its actions on every target: its realm, resolver and user fields are each empty or
-    ``"*"``, read the way the policy engine matches them. Such a policy makes :func:`get_policy_visibility_scopes`
-    answer ``None``.
-
-    :param policy: the policy as the policy engine returns it
-    """
-    return (policy_realm_names(policy.get("realm")) is None
-            and _policy_field_names(policy.get("resolver"), get_resolver_list) is None
-            and _policy_usernames(policy.get("user"), bool(policy.get("user_case_insensitive"))) == ([], []))
 
 
 def _accounts_of(logins: list[str], realms: list[str]) -> list[tuple[str, str]]:

@@ -127,6 +127,15 @@ class AuthEventType(str, Enum):
     MFA_FAIL = "MFA_FAIL"
     # Username not found in any resolver, or the resolved user is empty.
     USER_UNKNOWN = "USER_UNKNOWN"
+    # The credential identified its user, but the login name and realm that a session carries do not lead back to
+    # them: another user of the realm has the same login name and the realm's resolver order finds them first, so
+    # the session would act as that other user. Unlike USER_UNKNOWN the login name resolves - just to somebody
+    # else.
+    LOGIN_NAME_NOT_UNIQUE = "LOGIN_NAME_NOT_UNIQUE"
+    # The user store failed to answer the lookup of the login name (e.g. the LDAP server is busy, the SQL query
+    # failed, the HTTP user store answered with a server error). Unlike USER_UNKNOWN it says nothing about the login
+    # name, so the request is refused without anything being decided about the user.
+    USER_STORE_UNAVAILABLE = "USER_STORE_UNAVAILABLE"
     # User is known but has no tokens assigned, or the requested token does not exist.
     NO_TOKEN = "NO_TOKEN"
     # Tokens exist but every one is unusable (revoked, locked, disabled, expired, or over max-fail).
@@ -401,6 +410,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.TOKEN_ONLY_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.MFA_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_UNKNOWN: AuthEventOutcome.FAILURE,
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE: AuthEventOutcome.FAILURE,
+    AuthEventType.USER_STORE_UNAVAILABLE: AuthEventOutcome.FAILURE,
     AuthEventType.NO_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.NO_USABLE_TOKEN: AuthEventOutcome.FAILURE,
     AuthEventType.INVALID_TOKEN_TYPE: AuthEventOutcome.FAILURE,
@@ -463,17 +474,26 @@ CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.SUSPENDED_API_KEY_USED,
 })
 
+#: Event types that record the server failing to process an authentication rather than anything the request did. They
+#: are the outcome of their attempt, but a policy cannot count them: the user did nothing wrong, and while a user store
+#: is down every login fails, so counting them would lock users and block the source IPs of every client in front of
+#: privacyIDEA for the outage.
+SERVER_FAILURE_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.USER_STORE_UNAVAILABLE,
+})
+
 #: Every event type that must never be an attempt's representative - the row whose type classifies the whole
 #: attempt: the rejections conditional access wrote itself, and the signals about the request's client. What they
 #: have in common is that neither is an outcome the attempt reached.
 NON_REPRESENTATIVE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
-#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, and
-#: the signals about the request's client. Neither is an outcome an authentication attempt reached, which is also
-#: why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`, the same membership seen from the
-#: other side. The two sets are equal today and are kept apart because they answer different questions: one what a
+#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, the
+#: signals about the request's client, and the server failures. The first two are no outcome an authentication attempt
+#: reached, which is also why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`. A server failure
+#: is the outcome of its attempt and represents it, which is why the two sets answer different questions: one what a
 #: policy may count, the other what may stand for an attempt.
-UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = (CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+                                                     | SERVER_FAILURE_EVENT_TYPES)
 
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
@@ -586,6 +606,12 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.NO_TOKEN,
     AuthEventType.USER_UNKNOWN,
+    # Next to USER_UNKNOWN, which it is the counterpart of: the login name resolves, just not to the user the
+    # credential identified. Like it, it classifies a request the endpoint refused before any token flow ran, so
+    # it never actually reaches reduce_request_events and is ranked here to satisfy the invariant.
+    AuthEventType.LOGIN_NAME_NOT_UNIQUE,
+    # Refused before any token flow ran as well, and is the only event of its request.
+    AuthEventType.USER_STORE_UNAVAILABLE,
     # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
     # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
     # is the better classification. In practice neither reduces against anything - the endpoints that emit them

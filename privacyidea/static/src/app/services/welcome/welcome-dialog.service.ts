@@ -17,9 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { effect, inject, Injectable, signal } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
+import { ComponentType } from "@angular/cdk/overlay";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { FreeTierDialogComponent } from "@components/shared/free-tier-dialog/free-tier-dialog.component";
 import { WelcomeDialogComponent } from "@components/shared/welcome-dialog/welcome-dialog.component";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthService, AuthServiceInterface, SUBSCRIPTION_STATUS } from "@services/auth/auth.service";
+import { filter } from "rxjs";
 
 @Injectable({ providedIn: "root" })
 export class WelcomeDialogService {
@@ -45,14 +48,35 @@ export class WelcomeDialogService {
         return;
       }
       this.welcomeHandled = true;
-      // The dialog is for administrators, as the hide_welcome_info policy says
-      if (this.auth.role() === "admin" && !this.auth.hideWelcome()) {
-        this.opened.set(true);
-        this.dialog.open(WelcomeDialogComponent, {
-          disableClose: true,
-          autoFocus: false
-        });
+      // The dialogs are for administrators. The hide_welcome_info policy hides the welcome dialog only, the free
+      // tier warning is shown regardless, after the welcome dialog if both are due.
+      if (this.auth.role() !== "admin") {
+        return;
       }
+      const freeTierExceeded = this.auth.subscriptionStatus() === SUBSCRIPTION_STATUS.FREE_TIER_EXCEEDED;
+      // Every login stores a new AuthData object, so it identifies the session the dialogs belong to.
+      const session = this.auth.authData();
+      if (!this.auth.hideWelcome()) {
+        const welcome = this.openDialog(WelcomeDialogComponent);
+        if (freeTierExceeded) {
+          // The welcome dialog is also closed programmatically when the session ends; the free tier
+          // warning must not follow it onto the login screen or into the next session.
+          welcome
+            .afterClosed()
+            .pipe(filter(() => this.auth.authData() === session))
+            .subscribe(() => this.openDialog(FreeTierDialogComponent));
+        }
+      } else if (freeTierExceeded) {
+        this.openDialog(FreeTierDialogComponent);
+      }
+    });
+  }
+
+  private openDialog<T>(component: ComponentType<T>): MatDialogRef<T> {
+    this.opened.set(true);
+    return this.dialog.open(component, {
+      disableClose: true,
+      autoFocus: false
     });
   }
 }

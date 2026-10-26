@@ -19,7 +19,7 @@ import binascii
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText
+from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
-                                    verify_pass_hash, SecretObj)
+                                    verify_pass_hash, safe_compare, SecretObj)
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.log import log_with, redacted_attributes
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -121,13 +121,19 @@ class Token(MethodsMixin, db.Model):
                                                        default=1000)
     rollout_state: Mapped[str | None] = mapped_column(Unicode(10),
                                                          default='')
-    info_list = relationship('TokenInfo', lazy='select', back_populates='token', cascade="all, delete-orphan")
+    # Ordered, so that the token info comes in the same order whether it is read for one token or for a
+    # page of tokens at once
+    info_list = relationship('TokenInfo', lazy='select', back_populates='token', cascade="all, delete-orphan",
+                             order_by='TokenInfo.id')
     # order_by makes first_owner deterministic for a token with more than one
     # owner -- without it, "the first owner" is whatever order the database
     # happens to return, which can differ from a query that orders explicitly
     # (e.g. the token-list page's batched owner lookup).
     owners = relationship('TokenOwner', lazy='dynamic', back_populates='token', cascade="all, delete-orphan",
                           order_by='TokenOwner.id')
+    # The same owners as a plain collection, which can be filled for a whole page of tokens at once (the dynamic
+    # relationship above can not). Only first_owner reads it, and only once it is loaded.
+    owner_list = relationship('TokenOwner', viewonly=True, order_by='TokenOwner.id')
 
     # Container
     container = relationship('TokenContainer', secondary='tokencontainertoken', back_populates='tokens')
@@ -138,7 +144,8 @@ class Token(MethodsMixin, db.Model):
     realm_list = relationship('TokenRealm', lazy='joined', back_populates='token')
 
     tokengroup_list: Mapped[list['Tokengroup']] = relationship('Tokengroup', secondary='tokentokengroup',
-                                                               back_populates='tokens', single_parent=True)
+                                                               back_populates='tokens', single_parent=True,
+                                                               order_by='Tokengroup.id')
     machine_list: Mapped[list['MachineToken']] = relationship('MachineToken', back_populates='token',
                                                               cascade="all, delete-orphan")
 
@@ -162,6 +169,9 @@ class Token(MethodsMixin, db.Model):
 
     @property
     def first_owner(self):
+        if "owner_list" in self.__dict__:
+            # Filled by a token list that read the owners of its whole page in one query
+            return self.owner_list[0] if self.owner_list else None
         return self.owners.first()
 
     @property
@@ -297,7 +307,7 @@ class Token(MethodsMixin, db.Model):
                 log.debug("we got an encrypted PIN!")
                 token_pin = self.pin_hash[2:]
                 decrypted_token_pin = decryptPin(token_pin)
-                if decrypted_token_pin == pin:
+                if isinstance(pin, str) and safe_compare(decrypted_token_pin, pin):
                     res = True
             else:
                 log.debug("we got a hashed PIN!")
@@ -312,7 +322,7 @@ class Token(MethodsMixin, db.Model):
                         pin_hash = self.get_hashed_pin(pin)
                 else:
                     pin_hash = pin
-                if pin_hash == (self.pin_hash or ""):
+                if isinstance(pin_hash, str) and safe_compare(pin_hash, self.pin_hash or ""):
                     res = True
                     if legacy_hash:
                         # The PIN is correct but stored with the legacy hash format. Rewrite it with
@@ -564,7 +574,9 @@ class TokenRealm(MethodsMixin, db.Model):
                          back_populates='token_list')
     __table_args__ = (db.UniqueConstraint('token_id',
                                           'realm_id',
-                                          name='trix_2'),)
+                                          name='trix_2'),
+                      # The tokens of a realm, e.g. the token list of a realm administrator
+                      Index('ix_tokenrealm_realm_token', 'realm_id', 'token_id'))
 
     def __init__(self, realm_id=0, token_id=0, realmname=None):
         log.debug(f"setting realm_id to {realm_id}")

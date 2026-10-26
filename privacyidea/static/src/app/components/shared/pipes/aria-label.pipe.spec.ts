@@ -17,8 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal } from "@angular/core";
+import { FilterByLabelPipe, SortByLabelPipe } from "./aria-label.pipe";
 
-export class WelcomeDialogServiceMock {
-  opened = signal(false);
-}
+describe("aria-label pipes", () => {
+  it("names a sort button after its column", () => {
+    expect(new SortByLabelPipe().transform("Serial")).toBe("Sort by Serial");
+  });
+
+  it("names a filter button after its column", () => {
+    expect(new FilterByLabelPipe().transform("Serial")).toBe("Filter by Serial");
+  });
+});

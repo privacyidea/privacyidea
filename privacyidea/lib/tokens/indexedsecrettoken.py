@@ -64,6 +64,9 @@ class IndexedSecretTokenClass(TokenClass):
     positions in a shared secret.
     """
     mode = [AuthenticationMode.CHALLENGE]
+    # The answered challenge is kept until has_further_challenge has read it, so check_token_list
+    # consumes it for this token class.
+    consumes_answered_challenge = False
 
     # "multichallenge" is not declared: nothing in the server ever writes it, it is a switch an administrator
     # sets on a single token to ask for one position at a time, so it stays free-form token info.
