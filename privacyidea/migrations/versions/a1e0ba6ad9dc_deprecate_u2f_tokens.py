@@ -9,6 +9,11 @@ upgrade() creates three tokeninfo marker rows per affected token:
     original_active    = '1' or '0'   (so downgrade is lossless)
     deprecated_in      = '3.14'
 
+The marker rows take their id from tokeninfo_seq where the database has sequences, like every token info privacyIDEA
+writes. A tokeninfo table created by "pi-manage setup create_tables" has no default on its id column. The sequence is
+first restarted after the highest id, because rows that got their id from the column default can be ahead of it. A
+token that already has a marker does not get it again, so the migration can run again after it stopped midway.
+
 Revision ID: a1e0ba6ad9dc
 Revises: 06b105a4f941
 Create Date: 2026-04-15 10:00:00.000000
@@ -21,6 +26,8 @@ import sqlalchemy as sa
 from sqlalchemy import Boolean, Integer, Unicode, UnicodeText, case, func, select
 from sqlalchemy.sql import column, insert, table
 from sqlalchemy.sql.elements import BinaryExpression
+
+from privacyidea.models.db import restart_sequence_past_max
 
 
 # revision identifiers, used by Alembic.
@@ -42,14 +49,17 @@ _token = table(
     column("active", Boolean),
 )
 
-_tokeninfo = table(
+# A Table rather than a table() construct, so that an insert takes the id from tokeninfo_seq on the databases that
+# have sequences. Databases without sequences ignore it and fill the id themselves.
+_tokeninfo = sa.Table(
     "tokeninfo",
-    column("id", Integer),
-    column("token_id", Integer),
-    column("Key", Unicode(255)),
-    column("Value", UnicodeText),
-    column("Type", Unicode(100)),
-    column("Description", Unicode(2000)),
+    sa.MetaData(),
+    sa.Column("id", Integer, sa.Sequence("tokeninfo_seq"), primary_key=True),
+    sa.Column("token_id", Integer),
+    sa.Column("Key", Unicode(255)),
+    sa.Column("Value", UnicodeText),
+    sa.Column("Type", Unicode(100)),
+    sa.Column("Description", Unicode(2000)),
 )
 
 
@@ -69,12 +79,13 @@ def _marker_value_is(marker_value: str) -> BinaryExpression:
 
 def _stash_marker(bind, marker_key: str, marker_value_expr) -> None:
     """
-    Insert one marker tokeninfo row per u2f token.
+    Insert one marker tokeninfo row per u2f token that does not have this marker yet.
 
     ``marker_value_expr`` may be a plain literal (for ``'u2f'``,
     ``'3.14'``) or a SQLAlchemy expression (for the ``CASE WHEN active``
     used by ``original_active``).
     """
+    existing_marker = _tokeninfo.alias("existing_marker")
     stmt = insert(_tokeninfo).from_select(
         ["token_id", "Key", "Value", "Type", "Description"],
         select(
@@ -83,7 +94,9 @@ def _stash_marker(bind, marker_key: str, marker_value_expr) -> None:
             sa.type_coerce(marker_value_expr, UnicodeText()).label("Value"),
             sa.literal("").label("Type"),
             sa.literal("").label("Description"),
-        ).where(_token.c.tokentype == "u2f"),
+        ).where(_token.c.tokentype == "u2f").where(
+            ~sa.exists().where(existing_marker.c.token_id == _token.c.id).where(existing_marker.c.Key == marker_key)
+        ),
     )
     bind.execute(stmt)
 
@@ -109,6 +122,8 @@ def upgrade():
         + "=" * 70
     )
 
+    if bind.dialect.supports_sequences and sa.inspect(bind).has_sequence("tokeninfo_seq"):
+        restart_sequence_past_max(op, "tokeninfo", "tokeninfo_seq")
     _stash_marker(bind, "original_tokentype", sa.literal("u2f"))
     _stash_marker(
         bind,

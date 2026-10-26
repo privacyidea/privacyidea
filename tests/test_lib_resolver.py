@@ -23,12 +23,14 @@ from contextlib import contextmanager
 import ldap3
 import mock
 import responses
-from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
+from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from testfixtures import LogCapture
 
 from privacyidea.lib.crypto import decryptPassword, encryptPassword
+from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
@@ -46,7 +48,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver,
 from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.models import ResolverConfig, Resolver, db, save_config_timestamp
 from . import ldap3mock
@@ -822,6 +824,54 @@ class SQLResolverTestCase(MyTestCase):
                                    side_effect=Exception("the database is not reachable")):
                 self.assertRaises(Exception, resolver.get_user_info, "1", attributes=["username"])
         mock_rollback.assert_called_once()
+
+    def test_13c_get_user_id_raises_on_a_db_error(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # A failed query is not a user that does not exist
+        with mock.patch.object(resolver.session, "rollback", wraps=resolver.session.rollback) as mock_rollback:
+            with mock.patch.object(resolver.session, "execute", side_effect=Exception("the database is not reachable")):
+                with self.assertRaises(ResolverError) as error:
+                    resolver.getUserId("cornelius")
+        self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+        mock_rollback.assert_called_once()
+
+        # The session can be used afterwards
+        self.assertEqual("3", resolver.getUserId("cornelius"))
+        self.assertEqual("", resolver.getUserId("unknown_user"))
+
+    def test_13e_load_config_raises_when_the_database_is_not_reachable(self):
+        # Loading the table is the first time the resolver connects to the database
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+            with self.assertRaises(ResolverError) as error:
+                SQLResolver().loadConfig(self.parameters)
+        self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+    def test_13f_a_resolver_that_fails_to_load_is_not_cached(self):
+        save_resolver({"resolver": "sql_failing_load", "type": "sqlresolver", **self.parameters})
+        get_request_local_store().pop("resolver_objects", None)
+        table_error = OperationalError("SELECT", {}, Exception("could not connect to server"))
+        try:
+            with mock.patch("privacyidea.lib.resolvers.SQLIdResolver.Table", side_effect=table_error):
+                # Every call of the request tries again, instead of handing out a resolver without its table
+                for _ in range(2):
+                    self.assertRaises(ResolverError, get_resolver_object, "sql_failing_load")
+            self.assertEqual("3", get_resolver_object("sql_failing_load").getUserId("cornelius"))
+        finally:
+            get_request_local_store().pop("resolver_objects", None)
+            delete_resolver("sql_failing_load")
+
+    def test_13d_get_user_id_of_a_row_without_user_id(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        for user_id in [None, ""]:
+            with mock.patch.object(resolver.session, "execute") as mock_execute:
+                mock_execute.return_value.mappings.return_value.all.return_value = [
+                    {"id": user_id, "username": "cornelius"}]
+                self.assertEqual("", resolver.getUserId("cornelius"), user_id)
 
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
@@ -1606,6 +1656,59 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(r, "hans\\28\\29")
         r = LDAPResolver._escape_loginname("hans\\/")
         self.assertEqual(r, "hans\\5c\\2f")
+        self.assertEqual("hans\\00", LDAPResolver._escape_loginname("hans\x00"))
+
+    @ldap3mock.activate
+    def test_10b_search_error_is_not_an_unknown_user(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({"LDAPURI": "ldap://localhost", "LDAPBASE": "o=test",
+                             "BINDDN": "cn=manager,ou=example,o=test", "BINDPW": "ldaptest",
+                             "LOGINNAMEATTRIBUTE": "cn", "LDAPSEARCHFILTER": "(cn=*)",
+                             "USERINFO": '{"username": "cn", "email": "mail"}', "UIDTYPE": "DN",
+                             "CACHE_TIMEOUT": 0})
+        self.assertEqual("cn=alice,ou=example,o=test", resolver.getUserId("alice"))
+        self.assertEqual("", resolver.getUserId("unknown_user"))
+
+        def search_with_result(result_code: int, description: str, response: list[dict] | None = None):
+            # ldap3 without raise_exceptions reports the result of the operation only in connection.result
+            def search(connection, *args, **kwargs):
+                connection.response = response or []
+                connection.result = {"result": result_code, "description": description, "message": ""}
+                return False
+            return search
+
+        for result_code, description in [(1, "operationsError"), (3, "timeLimitExceeded"), (10, "referral"),
+                                         (32, "noSuchObject"), (50, "insufficientAccessRights"), (51, "busy"),
+                                         (52, "unavailable")]:
+            with mock.patch.object(ldap3mock.Connection, "search", search_with_result(result_code, description)):
+                with self.assertRaises(ResolverError, msg=description) as error:
+                    resolver.getUserId("bob")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # The other reads of the user do not pass on the details of the LDAP server either
+        with mock.patch.object(ldap3mock.Connection, "search", search_with_result(51, "busy")):
+            with self.assertRaises(ResolverError) as error:
+                resolver.get_user_info("cn=bob,ou=example,o=test")
+            self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A receive timeout or a connection dropped after the bind raises, whatever raise_exceptions is set to
+        with mock.patch.object(ldap3mock.Connection, "search", side_effect=LDAPSocketReceiveError("timed out")):
+            for read in [lambda: resolver.getUserId("bob"),
+                         lambda: resolver.get_user_info("cn=bob,ou=example,o=test")]:
+                with self.assertRaises(ResolverError) as error:
+                    read()
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+        # A size limit answers with the entries up to the limit, which is no error
+        bob = {"type": "searchResEntry", "dn": "cn=bob,ou=example,o=test", "attributes": {"cn": "bob"}}
+        with mock.patch.object(ldap3mock.Connection, "search",
+                               search_with_result(RESULT_SIZE_LIMIT_EXCEEDED, "sizeLimitExceeded", [bob])):
+            self.assertEqual("cn=bob,ou=example,o=test", resolver.getUserId("bob"))
+
+        # The DN of a user who was deleted from the directory does not exist any longer
+        with mock.patch.object(ldap3mock.Connection, "search", search_with_result(32, "noSuchObject")):
+            self.assertDictEqual({}, resolver.get_user_info("cn=deleted,ou=example,o=test"))
 
     @ldap3mock.activate
     def test_11_extended_userinfo(self):
@@ -3074,9 +3177,9 @@ class LDAPResolverTestCase(MyTestCase):
         search_filters = []
         original_search = LDAPResolver._search
 
-        def counting_search(self, search_base, search_filter, attributes):
+        def counting_search(self, search_base, search_filter, attributes, **kwargs):
             search_filters.append(search_filter)
-            return original_search(self, search_base, search_filter, attributes)
+            return original_search(self, search_base, search_filter, attributes, **kwargs)
 
         with mock.patch.object(LDAPResolver, "_search", counting_search):
             yield search_filters
@@ -3262,10 +3365,10 @@ class LDAPResolverTestCase(MyTestCase):
         resolver = self._get_batch_resolver()
         original_search = LDAPResolver._search
 
-        def truncating_search(self, search_base, search_filter, attributes):
+        def truncating_search(self, search_base, search_filter, attributes, **kwargs):
             # A server that applies a size limit answers with a part of the result set and reports
             # it in the result code, it does not raise
-            result = original_search(self, search_base, search_filter, attributes)
+            result = original_search(self, search_base, search_filter, attributes, **kwargs)
             if len(result) > 1:
                 self.connection.result = {"result": RESULT_SIZE_LIMIT_EXCEEDED}
                 return result[:1]

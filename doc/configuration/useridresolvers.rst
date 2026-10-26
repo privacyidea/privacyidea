@@ -680,8 +680,14 @@ Possible tag: ``{userid}``
 
 **Get User by Name**
 
-Configure the endpoint to retrieve a single user for the username. If an error occurs, the resolver will only log it
-and not throw an exception.
+Configure the endpoint to retrieve a single user for the username. The user does not exist if the endpoint answers
+with ``404 Not Found`` or with a successful (``2xx``) response that matches the *Special error handling*. Any other
+error status, e.g. a server error or a failed authorization, and an unreachable user store make the lookup fail with
+an error, and so does the request that needed the user.
+
+.. note:: A ``404 Not Found`` is also the answer to an endpoint that does not exist, e.g. a typo in the configured
+   path. privacyIDEA can not tell this apart from a user that does not exist, so every user would be unknown. Use
+   *Test Connection* with a *Test Username* to check the endpoint after changing it.
 
 For example, this is used when a user tries to authenticate against privacyIDEA. To resolve the complete user and
 evaluate if the user exists, this endpoint is used.

@@ -35,11 +35,13 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_plugin_info_from_useragent, get_computer_name_from_user_agent,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
-                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE, reload_db)
 from privacyidea.lib.params import require_in
 from privacyidea.lib import utils as privacyidea_utils
 from privacyidea.lib.utils import check_module_allowed
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+from privacyidea.models import Config
+from privacyidea.models.config import PRIVACYIDEA_TIMESTAMP
 from .base import MyTestCase, OverrideConfigTestCase
 
 
@@ -1192,6 +1194,18 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("****-******89", redacted_phone_number("01234567890123456789"))
         self.assertEqual("****-******01", redacted_phone_number("01"))
         self.assertEqual("****-********", redacted_phone_number(""))
+
+    def test_40_reload_db(self):
+        loaded = "1791456789.123456"
+        # Nothing loaded yet, or no timestamp in the database
+        self.assertTrue(reload_db(None, Config(PRIVACYIDEA_TIMESTAMP, loaded)))
+        self.assertTrue(reload_db(loaded, None))
+        # The database timestamp is the one read with the loaded configuration
+        self.assertFalse(reload_db(loaded, Config(PRIVACYIDEA_TIMESTAMP, loaded)))
+        # A later change, also within the same second
+        self.assertTrue(reload_db(loaded, Config(PRIVACYIDEA_TIMESTAMP, "1791456789.523456")))
+        # A change written by a node whose clock is behind
+        self.assertTrue(reload_db(loaded, Config(PRIVACYIDEA_TIMESTAMP, "1791456779.000001")))
 
 
 class ModuleAllowlistTestCase(MyTestCase):

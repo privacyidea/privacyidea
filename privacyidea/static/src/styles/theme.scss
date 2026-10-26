@@ -28,9 +28,6 @@ html {
     --flat-border-light-2: light-dark(hsl(0, 0%, 86%), hsl(0, 0%, 42%));
     --flat-border-light-3: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 52%));
 
-    // What a status fill is shaded toward for its edge (see --green-edge in styles.scss): dark on light, light on dark.
-    --status-edge-tone: light-dark(black, white);
-
     --mat-sys-primary-dark: light-dark(hsl(199, 67%, 21%), hsl(198, 66%, 70%));
     --mat-sys-primary-base: light-dark(hsl(199, 67%, 26%), hsl(198, 66%, 65%));
     --mat-sys-primary-base-active: light-dark(hsl(199, 67%, 28.5%), hsl(198, 66%, 62.5%));
@@ -120,8 +117,6 @@ html {
     --flat-border-light-2: hsl(0, 0%, 86%);
     --flat-border-light-3: hsl(0, 0%, 90%);
 
-    --status-edge-tone: black;
-
     --mat-sys-primary-dark: hsl(199, 67%, 21%);
     --mat-sys-primary-base: hsl(199, 67%, 26%);
     --mat-sys-primary-base-active: hsl(199, 67%, 28.5%);
@@ -207,8 +202,6 @@ html {
     --flat-border-light-1: hsl(0, 0%, 12%);
     --flat-border-light-2: hsl(0, 0%, 20%);
     --flat-border-light-3: hsl(0, 0%, 28%);
-
-    --status-edge-tone: white;
 
     --mat-sys-primary-dark: hsl(198, 66%, 70%);
     --mat-sys-primary-base: hsl(198, 66%, 65%);
