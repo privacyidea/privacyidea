@@ -348,8 +348,10 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
 
+        # The locked token has no owner, so there is nobody to notify, which the audit entry of the handler records
         r = uhandler.do("sendmail", options=options)
-        self.assertEqual(r, True)
+        self.assertFalse(r)
+        self.assertIn("No recipient", uhandler.run_details)
 
     def test_06_check_conditions_realm(self):
         uhandler = UserNotificationEventHandler()
@@ -1223,9 +1225,9 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         # this should not send an email and should not throw an error
         uhandler = UserNotificationEventHandler()
         res = uhandler.do('sendmail', options)
-        # TODO: the handler should return False here
         # TODO: Also we should check that no email was sent (i.e. call of smtpserver)
-        self.assertTrue(res)
+        self.assertFalse(res)
+        self.assertIn("No recipient", uhandler.run_details)
         # Cleanup
         remove_token("SPNOTIFY")
         delete_realm("notify_realm")
@@ -1762,8 +1764,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options)
-        # Handler returns True (default, short-circuited before send)
-        self.assertTrue(res)
+        # Nothing was sent, which the audit entry of the handler records as a failure
+        self.assertFalse(res)
         # No SMTP send was attempted
         self.assertIsNone(smtpmock.get_sent_recipient())
         self.assertIsNone(smtpmock.get_sent_message())
@@ -1784,8 +1786,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
 
         un_handler = UserNotificationEventHandler()
         res = un_handler.do("sendmail", options=options_none)
-        # Handler returns True (default, short-circuited before send)
-        self.assertTrue(res)
+        self.assertFalse(res)
         # No SMTP send was attempted
         self.assertIsNone(smtpmock.get_sent_recipient())
         self.assertIsNone(smtpmock.get_sent_message())

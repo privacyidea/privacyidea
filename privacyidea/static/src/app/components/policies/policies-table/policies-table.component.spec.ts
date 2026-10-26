@@ -243,8 +243,30 @@ describe("PoliciesTableComponent", () => {
     expect(component.getFilterIconName("name")).toBe("filter_alt_off");
   });
 
+  it("hands a sort button click to the shared sort cycle, falling back to priority", () => {
+    const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+
+    component.onSortClick("name");
+
+    expect(tableUtils.onSortButtonClick).toHaveBeenCalledWith("name", component.sort, {
+      active: "priority",
+      direction: "asc"
+    });
+  });
+
+  it("reports the sort of a column as aria-sort", () => {
+    expect(component.ariaSort("priority")).toBe("ascending");
+    expect(component.ariaSort("name")).toBe("none");
+
+    component.sort.set({ active: "name", direction: "desc" });
+    expect(component.ariaSort("name")).toBe("descending");
+
+    component.sort.set({ active: "name", direction: "" });
+    expect(component.ariaSort("name")).toBe("none");
+  });
+
   it("should sort data by priority ascending", () => {
-    component.onSortChange({ active: "priority", direction: "asc" });
+    component.sort.set({ active: "priority", direction: "asc" });
     fixture.detectChanges();
 
     const data = component.sortedFilteredPolicies();
@@ -254,7 +276,7 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should sort data by priority descending", () => {
-    component.onSortChange({ active: "priority", direction: "desc" });
+    component.sort.set({ active: "priority", direction: "desc" });
     fixture.detectChanges();
 
     const data = component.sortedFilteredPolicies();
@@ -264,7 +286,7 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should return unsorted data if sort direction is empty", () => {
-    component.onSortChange({ active: "priority", direction: "" });
+    component.sort.set({ active: "priority", direction: "" });
     fixture.detectChanges();
 
     const data = component.sortedFilteredPolicies();

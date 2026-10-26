@@ -24,11 +24,12 @@ import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-keyword-filter-generic",
   standalone: true,
-  imports: [NgClass, MatIcon, MatFabButton, MatTooltip],
+  imports: [TooltipAriaLabelDirective, NgClass, MatIcon, MatFabButton, MatTooltip],
   templateUrl: "./keyword-filter-generic.component.html",
   styleUrl: "./keyword-filter-generic.component.scss"
 })

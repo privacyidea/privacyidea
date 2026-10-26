@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "table";
 
 .subscription-layout {
@@ -67,21 +67,19 @@
   border-radius: var(--border-radius);
   margin-bottom: 1rem;
   font-weight: 500;
+  color: var(--status-ink);
 }
 
 .alert-success {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: var(--green-fill);
 }
 
 .alert-warning {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: var(--yellow-fill);
 }
 
 .alert-danger {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: var(--red-fill);
 }
 
 .subscriptions-grid {

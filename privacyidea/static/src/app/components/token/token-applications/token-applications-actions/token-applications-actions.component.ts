@@ -23,11 +23,12 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-applications-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
+  imports: [TooltipAriaLabelDirective, MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: "./token-applications-actions.component.html"
 })
 export class TokenApplicationsActionsComponent {

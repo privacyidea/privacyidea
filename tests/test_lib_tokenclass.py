@@ -19,7 +19,8 @@ from privacyidea.lib.error import TokenAdminError, ParameterError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
-from privacyidea.lib.token import init_token, assign_tokengroup, remove_token
+from privacyidea.lib.challenge_types import ChallengeSession
+from privacyidea.lib.token import init_token, assign_tokengroup, remove_token, get_one_token
 from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
@@ -761,8 +762,8 @@ class TokenBaseTestCase(MyTestCase):
         token = TokenClass(db_token)
         token.write_tokeninfo("tokenkind", "software")
 
-        # A generic write, the way the token info endpoints and the token event handler do it, cannot touch a
-        # key the token class owns, neither to change it nor to remove it
+        # A generic write, the way the token info endpoints do it, cannot touch a key the token class owns,
+        # neither to change it nor to remove it
         self.assertRaises(PolicyError, token.add_tokeninfo, "tokenkind", "hardware")
         self.assertRaises(PolicyError, token.delete_tokeninfo, "tokenkind")
         self.assertEqual("software", token.get_tokeninfo("tokenkind"))
@@ -1302,6 +1303,46 @@ class TokenBaseTestCase(MyTestCase):
 
         token_obj.delete_token()
 
+    def test_40a_advance_otp_count(self):
+        db_token = Token("advancecount", tokentype="hotp")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        token_obj.set_otp_count(5)
+
+        # A higher value moves the counter
+        self.assertTrue(token_obj.advance_otp_count(6))
+        self.assertEqual(6, get_one_token(serial="advancecount").token.count)
+        # The same value and a lower one do not, and leave the counter where it is
+        self.assertFalse(token_obj.advance_otp_count(6))
+        self.assertFalse(token_obj.advance_otp_count(3))
+        self.assertEqual(6, get_one_token(serial="advancecount").token.count)
+
+        # set_otp_count stays unconditional, for the callers that bring their own counter
+        token_obj.set_otp_count(2)
+        self.assertEqual(2, get_one_token(serial="advancecount").token.count)
+        token_obj.delete_token()
+
+    def test_40b_inc_failcount_stops_at_maxfail(self):
+        from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED
+        db_token = Token("failcountstop", tokentype="spass")
+        db_token.save()
+        token_obj = TokenClass(db_token)
+        token_obj.set_maxfail(3)
+
+        self.assertEqual(1, token_obj.inc_failcount())
+        self.assertEqual(2, token_obj.inc_failcount())
+        self.assertIsNone(token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED))
+        # The attempt that reaches maxfail writes the timestamp
+        self.assertEqual(3, token_obj.inc_failcount())
+        exceeded_at = token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED)
+        self.assertIsNotNone(exceeded_at)
+
+        # Further attempts neither count nor write the timestamp again
+        self.assertEqual(3, token_obj.inc_failcount())
+        self.assertEqual(3, token_obj.inc_failcount())
+        self.assertEqual(exceeded_at, token_obj.get_tokeninfo(FAILCOUNTER_EXCEEDED))
+        token_obj.delete_token()
+
     def test_41_import_csv(self):
         # sha1
         r = TokenClass.get_import_csv(["ser1", geturandom(20, True), "hotp", "6"])
@@ -1327,6 +1368,35 @@ class TokenBaseTestCase(MyTestCase):
         token_obj = TokenClass(db_token)
         self.assertFalse(token_obj.has_further_challenge())
         token_obj.delete_token()
+
+    def test_42a_a_challenge_used_by_another_request_is_not_accepted(self):
+        """The answer verifies, but another request removed the challenge first, so it is not accepted."""
+        token = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": "LOSTCHAL"})
+        transaction_id = token.create_challenge()[2]
+        options = {"transaction_id": transaction_id}
+
+        self.assertEqual(1, token.check_challenge_response(passw="287082", options=dict(options)))
+
+        transaction_id = token.create_challenge()[2]
+        with mock.patch("privacyidea.lib.tokenclass.consume_challenge", return_value=False):
+            self.assertEqual(-1, token.check_challenge_response(passw="359152",
+                                                                options={"transaction_id": transaction_id}))
+        remove_token("LOSTCHAL")
+
+    def test_42b_an_enrollment_step_used_by_another_request_does_not_enroll(self):
+        """The second step of an enrollment claims its challenge first, so the request that lost it does not
+        overwrite what the other one enrolled."""
+        token = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": "LOSTENROLL"})
+        challenge = Challenge(token.token.serial, challenge="enroll", session=ChallengeSession.ENROLLMENT)
+        challenge.save()
+
+        with (mock.patch("privacyidea.lib.tokenclass.consume_challenge", return_value=False),
+              mock.patch.object(TokenClass, "enroll_via_validate_2nd_step") as enroll):
+            otp_counter = token.check_challenge_response(passw="anything",
+                                                         options={"transaction_id": challenge.transaction_id})
+        self.assertEqual(-1, otp_counter)
+        enroll.assert_not_called()
+        remove_token("LOSTENROLL")
 
     def test_43_remove_token_owner(self):
         # Create a token and assign a user to it

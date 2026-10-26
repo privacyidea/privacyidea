@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { NgClass } from "@angular/common";
@@ -28,7 +29,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
@@ -54,6 +54,8 @@ import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -70,6 +72,10 @@ const columnKeysMap = [
   selector: "app-challenges-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
+    ScrollFocusableDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -80,7 +86,6 @@ const columnKeysMap = [
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    MatTooltipModule,
     NgClass,
     CopyableComponent,
     FilterValueButtonComponent,

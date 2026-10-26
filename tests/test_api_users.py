@@ -8,11 +8,11 @@ from urllib.parse import urlencode, quote
 from privacyidea.lib.error import ResolverError, ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, Match
-from privacyidea.lib.realm import set_realm, delete_realm, set_default_realm
+from privacyidea.lib.realm import set_realm, delete_realm, set_default_realm, get_default_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver, get_resolver_object
-from privacyidea.lib.token import init_token, remove_token, get_tokens
+from privacyidea.lib.token import init_token, remove_token, get_tokens, unassign_token
 from privacyidea.lib.container import init_container, delete_container_by_serial
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, create_user
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from .base import MyApiTestCase, PristineSqliteFixtures
 from .test_lib_user import patch_resolver_to_raise
@@ -1510,3 +1510,106 @@ class UserListScopeTestCase(MyApiTestCase):
         self.assertEqual(200, self._get('/user/', {"realm": self.realm1, "has_tokens": "False"})[0])
         audit_entry = self.find_most_recent_audit_entry(action="GET /user/")
         self.assertIn("has_tokens: False", audit_entry.get("info", ""), audit_entry)
+
+
+class DeleteUserResolverBindingTestCase(PristineSqliteFixtures, MyApiTestCase):
+    """
+    DELETE /user/<resolvername>/<username> checks the resolver of the user it deletes against the admin's realms,
+    whatever other resolver or user the request names.
+    """
+    pristine_fixtures = ["tests/testdata/testuser-api.sqlite"]
+    sql_parameters = {"Driver": "sqlite",
+                      "Server": "/tests/testdata/",
+                      "Database": "testuser-api.sqlite",
+                      "Table": "users",
+                      "Encoding": "utf8",
+                      "Editable": True,
+                      "type": "sqlresolver",
+                      "Map": '{"username": "username", "userid": "id", "email": "email", "surname": "name", '
+                             '"givenname": "givenname", "password": "password", "phone": "phone", '
+                             '"mobile": "mobile"}'}
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.assertTrue(save_resolver(dict(self.sql_parameters, resolver="foreign_sql")) > 0)
+        set_realm("otherrealm", [{"name": "foreign_sql"}])
+        set_policy("admin_realm1", scope=SCOPE.ADMIN, action="deleteuser", realm=self.realm1)
+        self.default_realm = get_default_realm()
+        create_user("foreign_sql", {"username": "deletetarget"}, password="Test1234!")
+
+    def tearDown(self) -> None:
+        resolver = get_resolver_object("foreign_sql")
+        uid = resolver.getUserId("deletetarget")
+        if uid:
+            resolver.delete_user(uid)
+        set_default_realm(self.default_realm)
+        delete_policy("admin_realm1")
+        delete_realm("otherrealm")
+        delete_resolver("foreign_sql")
+        super().tearDown()
+
+    def _delete(self, path: str, query: dict | None = None):
+        url = f"{path}?{urlencode(query)}" if query else path
+        with self.app.test_request_context(url, method="DELETE", headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    def _target_exists(self) -> bool:
+        return bool(get_resolver_object("foreign_sql").getUserId("deletetarget"))
+
+    def test_01_a_resolver_parameter_does_not_replace_the_resolver_of_the_path(self):
+        res = self._delete("/user/foreign_sql/deletetarget", {"resolver": self.resolvername1})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertTrue(self._target_exists())
+
+    def test_02_a_user_parameter_does_not_replace_the_user_of_the_path(self):
+        set_default_realm("otherrealm")
+        self._delete(f"/user/{self.resolvername1}/cornelius", {"user": "deletetarget"})
+        self.assertTrue(self._target_exists())
+
+    def test_03_the_resolver_of_the_path_alone_is_still_checked(self):
+        res = self._delete("/user/foreign_sql/deletetarget")
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertTrue(self._target_exists())
+
+
+class ResolverRealmAccessWithoutRealmTestCase(MyApiTestCase):
+    """
+    An admin whose policy names a resolver or a user but no realm acts on the users the policy names. The resolver of
+    the user is matched by the policy check of the endpoint.
+    """
+    serial = "RRA_ASSIGN"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        init_token({"serial": self.serial, "type": "spass"})
+
+    def tearDown(self) -> None:
+        remove_token(self.serial)
+        with suppress(ResourceNotFoundError):
+            delete_policy("admin_assign")
+        super().tearDown()
+
+    def _assign(self) -> Any:
+        with self.app.test_request_context("/token/assign", method="POST",
+                                           data={"serial": self.serial, "user": "cornelius", "realm": self.realm1},
+                                           headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_01_resolver_and_user_restricted_permissions_assign_their_users(self):
+        for restriction in ({"resolver": self.resolvername1}, {"user": "cornelius"}):
+            with self.subTest(restriction=restriction):
+                set_policy("admin_assign", scope=SCOPE.ADMIN, action=str(PolicyAction.ASSIGN), **restriction)
+                res = self._assign()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual("cornelius", get_tokens(serial=self.serial)[0].user.login)
+                unassign_token(self.serial)
+                delete_policy("admin_assign")
+
+    def test_02_a_permission_for_another_resolver_is_refused(self):
+        set_policy("admin_assign", scope=SCOPE.ADMIN, action=str(PolicyAction.ASSIGN), resolver=self.resolvername3)
+        res = self._assign()
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertIsNone(get_tokens(serial=self.serial)[0].user)

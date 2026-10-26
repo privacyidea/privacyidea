@@ -29,6 +29,7 @@ from privacyidea.lib.container import init_container, find_container_by_serial, 
 from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
+from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policies.actions import PolicyAction
@@ -38,6 +39,7 @@ from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.subscriptions import _USER_COUNT_KEY
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token, unassign_token)
@@ -56,7 +58,7 @@ from privacyidea.lib.users.internal_user_attributes import InternalUserAttribute
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.lib.utils import to_unicode
-from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
+from privacyidea.models import (Audit, Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
@@ -1783,6 +1785,90 @@ class ValidateAPITestCase(MyApiTestCase):
             remove_token(serial)
         delete_policy("test26a")
 
+    def test_26b_event_handler_on_wrong_response_to_several_challenges(self):
+        # A wrong response to the challenges of several tokens is attributed to none of them: the audit entry
+        # names the challenged tokens, but an event handler does not act on them
+        self.setUp_user_realms()
+        user = User("multichal", self.realm1)
+        pin = "test26b"
+        serials = ["CR4A0001", "CR4B0002"]
+        init_token({"serial": serials[0], "type": "hotp", "otpkey": self.otpkey, "pin": pin}, user)
+        init_token({"serial": serials[1], "type": "hotp", "genkey": 1, "pin": pin}, user)
+        set_policy("test26b", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
+        event_id = set_event("disable_on_reject", event=["validate_check"], handlermodule="Token",
+                             action="disable", conditions={"result_authentication": "REJECT"})
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1, "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            transaction_id = res.json.get("detail").get("transaction_id")
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1,
+                                                 "transaction_id": transaction_id, "pass": "111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual("REJECT", res.json.get("result").get("authentication"))
+
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual(set(serials), set(audit_entry.get('serial').split(',')), audit_entry)
+        for token in get_tokens(user=user):
+            self.assertTrue(token.is_active(), token.get_serial())
+
+        # A wrong value for the serial of one token is attributed to that token, and the handler acts on it
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"serial": serials[0], "pass": f"{pin}111111"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual("REJECT", res.json.get("result").get("authentication"))
+        self.assertFalse(get_tokens(serial=serials[0])[0].is_active())
+        self.assertTrue(get_tokens(serial=serials[1])[0].is_active())
+
+        delete_event(event_id)
+        for serial in serials:
+            remove_token(serial)
+        delete_policy("test26b")
+
+    def test_26c_logging_handler_on_wrong_response_to_several_challenges(self):
+        # A wrong response to the challenges of several tokens is attributed to none of them, so the Logging handler
+        # names the tokens of the user, like the UserNotification handler
+        self.setUp_user_realms()
+        user = User("multichal", self.realm1)
+        pin = "test26c"
+        challenged_serials = ["CR5A0001", "CR5B0002"]
+        init_token({"serial": challenged_serials[0], "type": "hotp", "otpkey": self.otpkey, "pin": pin}, user)
+        init_token({"serial": challenged_serials[1], "type": "hotp", "genkey": 1, "pin": pin}, user)
+        init_token({"serial": "CR5C0003", "type": "hotp", "genkey": 1, "pin": "other26c"}, user)
+        set_policy("test26c", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
+        event_id = set_event("log_reject", event=["validate_check"], handlermodule="Logging", action="logging",
+                             conditions={"result_authentication": "REJECT"},
+                             options={"name": "pi-eventlogger-test26c", "message": "serial={serial}"})
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "multichal", "realm": self.realm1, "pass": pin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            transaction_id = res.json.get("detail").get("transaction_id")
+
+        with self.assertLogs("pi-eventlogger-test26c", level="INFO") as captured:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "multichal", "realm": self.realm1,
+                                                     "transaction_id": transaction_id, "pass": "111111"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                self.assertEqual("REJECT", res.json.get("result").get("authentication"))
+
+        user_serials = {token.get_serial() for token in get_tokens(user=user)}
+        self.assertEqual(1, len(captured.records), captured.output)
+        logged_serials = set(captured.records[0].getMessage().removeprefix("serial=").split(","))
+        self.assertEqual(user_serials, logged_serials)
+
+        delete_event(event_id)
+        for serial in user_serials:
+            remove_token(serial)
+        delete_policy("test26c")
+
     def test_27_multiple_challenge_response_different_pin(self):
         # Test the challenges for multiple active tokens with different PINs
         # Test issue #649
@@ -3487,3 +3573,247 @@ class ValidateAPITestCase(MyApiTestCase):
         result = response.json.get("result")
         self.assertEqual("REJECT", result.get("authentication"))
         self.assertFalse(result.get("value"))
+
+
+class RequestManglerResetUserRealmTestCase(MyApiTestCase):
+    """
+    With reset_user, a request mangler that sets a user@realm login name moves the request to the user in that realm,
+    unless the client sent a realm parameter or a request mangler set one.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_default_realm(self.realm1)
+        init_token({"serial": "MANGLER_R1", "type": "spass", "pin": "pinR1"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "MANGLER_R2", "type": "spass", "pin": "pinR2"}, user=User("cornelius", self.realm2))
+        self.event_ids = []
+
+    def tearDown(self) -> None:
+        self._delete_events()
+        for serial in ["MANGLER_R1", "MANGLER_R2"]:
+            if get_tokens(serial=serial):
+                remove_token(serial)
+        super().tearDown()
+
+    def _delete_events(self) -> None:
+        for event_id in self.event_ids:
+            delete_event(event_id)
+        self.event_ids = []
+
+    def _mangle(self, event_name: str, parameter: str, value: str) -> None:
+        self.event_ids.append(set_event(f"mangle_{event_name}", event=[event_name], handlermodule="RequestMangler",
+                                        action="set", position="pre", conditions={},
+                                        options={"parameter": parameter, "value": value, "reset_user": "1"}))
+
+    def _validate(self, data: dict) -> tuple[bool, str | None]:
+        with self.app.test_request_context("/validate/check", method="POST", data=data):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"], res.json.get("detail", {}).get("serial")
+
+    def test_01_validate_check_uses_the_realm_of_the_new_login_name(self):
+        self._mangle("validate_check", "user", f"cornelius@{self.realm2}")
+        self.assertEqual((True, "MANGLER_R2"), self._validate({"user": "hans", "pass": "pinR2"}))
+        self.assertFalse(self._validate({"user": "hans", "pass": "pinR1"})[0])
+
+    def test_02_auth_uses_the_realm_of_the_new_login_name(self):
+        self._mangle("auth", "username", f"cornelius@{self.realm2}")
+        with self.app.test_request_context("/auth", method="POST", data={"username": "hans", "password": "test"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        value = res.json["result"]["value"]
+        self.assertEqual(("cornelius", self.realm2), (value["username"], value["realm"]))
+
+    def test_03_realm_parameter_and_login_without_realm_are_unchanged(self):
+        self._mangle("validate_check", "user", f"cornelius@{self.realm2}")
+        # A realm parameter sent by the client takes precedence over the realm in the new login name
+        self.assertEqual((True, "MANGLER_R1"), self._validate({"user": "hans", "realm": self.realm1, "pass": "pinR1"}))
+        self._delete_events()
+        # A new login name without a realm stays in the realm of the original request
+        self._mangle("validate_check", "user", "cornelius")
+        self.assertEqual((True, "MANGLER_R2"), self._validate({"user": "hans", "realm": self.realm2, "pass": "pinR2"}))
+        self.assertEqual((True, "MANGLER_R1"), self._validate({"user": "hans", "pass": "pinR1"}))
+
+
+class OtpOnlyTokenStateTestCase(MyApiTestCase):
+    """
+    /validate/check with serial and otponly=1 applies the same token checks as every other authentication path: a token
+    that may not authenticate (disabled, outside its validity period, fail counter exceeded, revoked) is refused, and a
+    wrong value counts as a failed attempt.
+    """
+    # RFC 4226 test key, counter 0..2
+    otp_key = "3132333435363738393031323334353637383930"
+    otps = ["755224", "287082", "359152"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        init_token({"serial": "OTPONLY1", "otpkey": self.otp_key, "pin": "pin"})
+        self.addCleanup(remove_token, "OTPONLY1")
+
+    def _check_otp_only(self, otp: str, serial: str = "OTPONLY1"):
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": serial, "otponly": "1", "pass": otp}):
+            return self.app.full_dispatch_request()
+
+    def test_01_active_token_is_accepted(self):
+        response = self._check_otp_only(self.otps[0])
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+    def test_02_disabled_token_is_refused(self):
+        enable_token("OTPONLY1", enable=False)
+        response = self._check_otp_only(self.otps[0])
+        self.assertFalse(response.json["result"].get("value"), response.json)
+
+    def test_03_token_outside_validity_period_is_refused(self):
+        token = get_one_token(serial="OTPONLY1")
+        token.set_validity_period_end((datetime.datetime.now(datetime.timezone.utc)
+                                       - datetime.timedelta(days=1)).isoformat())
+        token.save()
+        response = self._check_otp_only(self.otps[0])
+        self.assertFalse(response.json["result"].get("value"), response.json)
+
+    def test_04_wrong_value_increases_the_failcounter(self):
+        for _attempt in range(3):
+            self._check_otp_only("000000")
+        self.assertEqual(3, get_one_token(serial="OTPONLY1").token.failcount)
+
+    def test_05_token_past_its_failcounter_is_refused(self):
+        token = get_one_token(serial="OTPONLY1")
+        token.set_maxfail(3)
+        token.set_failcount(3)
+        token.save()
+        response = self._check_otp_only(self.otps[0])
+        self.assertFalse(response.json["result"].get("value"), response.json)
+
+    def test_06_revoked_token_is_refused(self):
+        revoke_token("OTPONLY1")
+        response = self._check_otp_only(self.otps[0])
+        self.assertFalse(response.json["result"].get("value"), response.json)
+
+    def test_07_registration_code_is_consumed(self):
+        # Digits only: the test client sends no user agent, so the API percent-decodes the values it receives
+        token = init_token({"type": "registration", "serial": "OTPONLYREG", "registration.contents": "-cs"})
+        registration_code = token.get_init_detail().get("registrationcode")
+        response = self._check_otp_only(registration_code, serial="OTPONLYREG")
+        self.assertTrue(response.json["result"]["value"], response.json)
+        # The registration token deletes itself after its one successful use
+        self.assertIsNone(get_one_token(serial="OTPONLYREG", silent_fail=True))
+
+
+
+class AuthMaxOperatorLoginTestCase(MyApiTestCase):
+    realm = "operatorrealm"
+    resolver = "operatorresolver"
+    operator_logins = ["!cornelius", "corn*", "*"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolver, "type": "passwdresolver",
+                       "fileName": "tests/testdata/passwd-search-operator-logins"})
+        set_realm(self.realm, [{"name": self.resolver}])
+        # The policies count the audit entries, which earlier tests leave behind.
+        Audit.query.delete()
+        db.session.commit()
+        for login in ["cornelius", "cornerstone"] + self.operator_logins:
+            init_token({"type": "spass", "pin": "spass"}, user=User(login, realm=self.realm))
+
+    def tearDown(self) -> None:
+        for token in get_tokens(realm=self.realm):
+            remove_token(token.token.serial)
+        delete_realm(self.realm)
+        delete_resolver(self.resolver)
+        super().tearDown()
+
+    def _set_policy(self, action: str) -> None:
+        set_policy("max_operator", scope=SCOPE.AUTHZ, action=f"{action}=2/1m", realm=self.realm)
+        self.addCleanup(delete_policy, "max_operator")
+
+    def _check(self, login: str, pin: str) -> bool:
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": login, "realm": self.realm, "pass": pin}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]
+
+    def test_failures_of_another_user_do_not_count(self):
+        self._set_policy(PolicyAction.AUTHMAXFAIL)
+        for _attempt in range(2):
+            self.assertFalse(self._check("cornerstone", "wrongpin"))
+
+        for login in ["cornelius"] + self.operator_logins:
+            with self.subTest(login=login):
+                self.assertTrue(self._check(login, "spass"))
+
+    def test_own_failures_count(self):
+        self._set_policy(PolicyAction.AUTHMAXFAIL)
+        for login in self.operator_logins:
+            with self.subTest(login=login):
+                for _attempt in range(2):
+                    self.assertFalse(self._check(login, "wrongpin"))
+                self.assertFalse(self._check(login, "spass"))
+
+    def test_successes_of_another_user_do_not_count(self):
+        self._set_policy(PolicyAction.AUTHMAXSUCCESS)
+        for _attempt in range(2):
+            self.assertTrue(self._check("cornerstone", "spass"))
+
+        for login in ["cornelius"] + self.operator_logins:
+            with self.subTest(login=login):
+                self.assertTrue(self._check(login, "spass"))
+
+    def test_own_successes_count(self):
+        self._set_policy(PolicyAction.AUTHMAXSUCCESS)
+        for login in self.operator_logins:
+            with self.subTest(login=login):
+                for _attempt in range(2):
+                    self.assertTrue(self._check(login, "spass"))
+                self.assertFalse(self._check(login, "spass"))
+
+
+class FreeRADIUSSubscriptionTestCase(MyApiTestCase):
+    """
+    FreeRADIUS is shown under the server's subscription, which only has a soft limit: above the free tier the WebUI
+    warns, but RADIUS authentications are never refused.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        init_token({"type": "spass", "serial": "FRSUB1", "pin": "test"})
+        self.addCleanup(remove_token, "FRSUB1")
+        get_app_local_store().pop(_USER_COUNT_KEY, None)
+        self.addCleanup(get_app_local_store().pop, _USER_COUNT_KEY, None)
+        # Far over every free tier, and any metered check that is exceeded refuses
+        patches = [mock.patch("privacyidea.lib.subscriptions.get_users_with_active_tokens", return_value=100_000),
+                   mock.patch("privacyidea.lib.subscriptions.get_tokens", return_value=100_000),
+                   mock.patch("privacyidea.lib.subscriptions.get_subscription", return_value=[]),
+                   mock.patch("random.randrange", return_value=100_000)]
+        for patch in patches:
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def _check(self, user_agent: str):
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": "FRSUB1", "pass": "test"},
+                                           headers={"User-Agent": user_agent}):
+            return self.app.full_dispatch_request()
+
+    def test_01_freeradius_is_never_refused(self):
+        for _attempt in range(20):
+            response = self._check("FreeRADIUS/3.2.1")
+            self.assertEqual(200, response.status_code, response.json)
+            self.assertTrue(response.json["result"]["value"], response.json)
+
+    def test_02_metered_client_is_refused(self):
+        # The same setup refuses a metered client, so test_01 did exceed a limit
+        response = self._check("privacyidea-cp/1.0")
+        self.assertEqual(Error.SUBSCRIPTION, response.json["result"]["error"]["code"], response.json)
+
+    def test_03_admin_login_reports_the_exceeded_free_tier(self):
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": self.testadmin, "password": self.testadminpw}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(1, response.json["result"]["value"]["subscription_status"], response.json)

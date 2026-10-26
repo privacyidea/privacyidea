@@ -36,41 +36,18 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthL
                                                                            RestrictionCause)
 from privacyidea.lib.conditional_access.state import lock_internal_admin
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
-from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.audit import Audit
-from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.conditional_access_policy import (
-    BlockList,
-    ConditionalAccessPolicy,
-    ConditionalAccessPolicyCounterType,
-    ConditionalAccessPolicyStage,
-    ConditionalAccessStageAction,
-    UserLockState,
-)
+from privacyidea.models.conditional_access_policy import BlockList, UserLockState
 from privacyidea.models.utils import utc_now
-from .base import MyApiTestCase
+from .conditional_access_base import ConditionalAccessApiTestCase
 
 
-class ConditionalAccessStateApiTestCase(MyApiTestCase):
+class ConditionalAccessStateApiTestCase(ConditionalAccessApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.setUp_user_realms()
         self.authenticate()
-        self.user = User("cornelius", self.realm1, self.resolvername1)
-        self._clear()
-
-    def tearDown(self):
-        self._clear()
-        super().tearDown()
-
-    @staticmethod
-    def _clear() -> None:
-        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
-                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
 
     def _request(self, path: str, method: str = "GET", json_data: dict | None = None,
                  query_string: dict | None = None, auth_token: str | None = None) -> TestResponse:
@@ -82,26 +59,14 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         with self.app.test_request_context(f"/conditionalaccess/{path}", **kwargs):
             return self.app.full_dispatch_request()
 
-    def _lock_user(self, lock_expires_at, user=None) -> None:
-        user = user or self.user
-        db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm, username=user.login,
-                                        lock_expires_at=lock_expires_at))
-        db.session.commit()
-
-    @staticmethod
-    def _orphan_admin_lock(uid: str) -> None:
+    def _orphan_admin_lock(self, uid: str) -> None:
         """
         A local-admin lock row standing under *uid* with no account of that exact spelling behind it - what an
         account removed and recreated under a different one leaves behind. Written directly, there being no
         supported way to produce it: lock_internal_admin only ever writes the spelling the admin table holds.
         """
-        db.session.add(UserLockState(resolver="", uid=uid, realm="", username=uid,
-                                     user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
-        db.session.commit()
-
-    def _block(self, ip, block_expires_at) -> None:
-        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
-        db.session.commit()
+        self._lock_user(None, resolver="", uid=uid, realm="", username=uid,
+                        user_role=AuthLogUserRole.ADMIN_INTERNAL)
 
     # --- GET lock/users ----------------------------------------------------
 
@@ -378,7 +343,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     # --- GET blocklist --------------------------------------------------------
 
     def test_list_blocklist(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         res = self._request("blocklist")
         value = res.json["result"]["value"]
         self.assertEqual(1, len(value))
@@ -387,7 +352,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     # --- DELETE blocklist/<entry> ---------------------------------------------
 
     def test_remove_blocklist_entry(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         res = self._request("blocklist/203.0.113.7", method="DELETE")
         self.assertEqual(200, res.status_code, res.json)
         self.assertTrue(res.json["result"]["value"])
@@ -395,7 +360,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(0, BlockList.query.count())
 
     def test_remove_missing_blocklist_entry_returns_false(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         res = self._request("blocklist/203.0.113.9", method="DELETE")
         self.assertEqual(200, res.status_code, res.json)
         self.assertFalse(res.json["result"]["value"])
@@ -404,8 +369,8 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(1, BlockList.query.count())
 
     def test_purge_blocklist(self):
-        self._block("203.0.113.1", utc_now() - timedelta(seconds=60))  # expired -> purged
-        self._block("203.0.113.2", utc_now() + timedelta(seconds=600))  # active -> kept
+        self._block_ip("203.0.113.1", utc_now() - timedelta(seconds=60))  # expired -> purged
+        self._block_ip("203.0.113.2", utc_now() + timedelta(seconds=600))  # active -> kept
         res = self._request("blocklist/purge", method="POST")
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(1, res.json["result"]["value"])
@@ -516,7 +481,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         # A blocklist entry is a source IP and carries none of the three terms an admin policy scopes a target
         # by, so a scoped permission names nothing in it. Refused rather than read as unrestricted, which would
         # hand an admin delegated one realm the whole list and the power to lift another realm's blocks.
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         set_policy("ca_state_scoped_blocklist", scope=SCOPE.ADMIN, realm=self.realm1,
                    action=f"{PolicyAction.BLOCKLIST_READ},{PolicyAction.BLOCKLIST_SET},"
                           f"{PolicyAction.BLOCKLIST_RESET}")
@@ -532,7 +497,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
 
     def test_a_permission_granted_for_every_realm_reaches_the_blocklist(self):
         # "*" is how a policy says every realm, so it names no target and leaves the permission unrestricted.
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         set_policy("ca_state_wildcard_blocklist", scope=SCOPE.ADMIN, realm="*",
                    action=f"{PolicyAction.BLOCKLIST_READ},{PolicyAction.BLOCKLIST_RESET}")
         try:
@@ -546,7 +511,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     def test_an_admin_realm_scoped_permission_reaches_the_blocklist(self):
         # adminrealm says who the administrator is, not which targets they may act on, so it leaves the
         # permission unrestricted in the sense that matters here.
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         set_policy("ca_state_adminrealm_blocklist", scope=SCOPE.ADMIN, adminuser=self.testadmin,
                    action=str(PolicyAction.BLOCKLIST_READ))
         try:
@@ -690,7 +655,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     def test_read_action_does_not_grant_reset(self):
         # An admin policy that grants only the read actions must block the resets.
         self._lock_user(utc_now() + timedelta(seconds=600))
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         set_policy("ca_state_read", scope=SCOPE.ADMIN,
                    action=f"{PolicyAction.USER_LOCK_READ},{PolicyAction.BLOCKLIST_READ}")
         try:

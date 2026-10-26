@@ -26,7 +26,9 @@ export class ScrollToTopDirective implements OnDestroy {
   private readonly SCROLL_THRESHOLD = 200;
   private button!: HTMLElement;
   private isButtonVisible = false;
-  private clickListenerDispose?: () => void;
+  private listenerDisposers: (() => void)[] = [];
+  // A button holding keyboard focus stays shown: hiding it would drop that focus to the page.
+  private isButtonFocused = false;
 
   private el = inject(ElementRef);
   private renderer = inject(Renderer2);
@@ -42,15 +44,13 @@ export class ScrollToTopDirective implements OnDestroy {
 
     if (isScrolled && !this.isButtonVisible) {
       this.showButton();
-    } else if (!isScrolled && this.isButtonVisible) {
+    } else if (!isScrolled && this.isButtonVisible && !this.isButtonFocused) {
       this.hideButton();
     }
   }
 
   ngOnDestroy() {
-    if (this.clickListenerDispose) {
-      this.clickListenerDispose();
-    }
+    this.listenerDisposers.forEach((dispose) => dispose());
   }
 
   private createButton() {
@@ -80,12 +80,21 @@ export class ScrollToTopDirective implements OnDestroy {
     this.renderer.setStyle(this.button, "align-self", "flex-end");
     this.renderer.setStyle(this.button, "justify-self", "end");
 
-    this.clickListenerDispose = this.renderer.listen(this.button, "click", () => {
-      this.el.nativeElement.scrollTo({
-        top: 0,
-        behavior: "smooth"
-      });
-    });
+    this.listenerDisposers.push(
+      this.renderer.listen(this.button, "click", () => {
+        this.el.nativeElement.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
+        // The button hides once the page is back at the top; focus leaves it first.
+        this.button.blur();
+      }),
+      this.renderer.listen(this.button, "focus", () => (this.isButtonFocused = true)),
+      this.renderer.listen(this.button, "blur", () => {
+        this.isButtonFocused = false;
+        this.onScroll();
+      })
+    );
 
     this.renderer.appendChild(this.el.nativeElement, this.button);
     this.onScroll();

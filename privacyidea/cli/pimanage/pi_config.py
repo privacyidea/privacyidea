@@ -201,10 +201,11 @@ def realm_delete(realm, delete_custom_attributes):
             delete_realm(realm, delete_custom_attributes=True)
         else:
             click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
-            return
+            sys.exit(1)
         click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
     except ResourceNotFoundError as e:
         click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
+        sys.exit(1)
     else:
         click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
 

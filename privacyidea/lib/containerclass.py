@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 from sqlalchemy import select, delete, and_, update
 
 from privacyidea.lib import _
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, consume_challenge
 from privacyidea.lib.config import get_token_types
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        INITIALLY_SYNCHRONIZED)
@@ -694,7 +694,7 @@ class TokenContainerClass:
 
         :param server_url: URL of the server reachable for the client.
         :param scope: The URL the client contacts to finalize the registration
-                      e.g. "https://pi.net/container/register/finalize".
+                      e.g. ``https://privacyidea.example.com/container/register/finalize``.
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters
@@ -827,9 +827,10 @@ class TokenContainerClass:
                     # DTO auto-saves itself, but Challenge.set_otp_status
                     # is in-memory only.
                     challenge.save()
-                else:
-                    # Valid challenge: delete it
-                    challenge.delete()
+                elif not consume_challenge(challenge):
+                    # The challenge was already used by another request, which is the one that may be accepted.
+                    log.info(f"The challenge of container {self.serial} was used by another request.")
+                    verify_res["valid"] = False
                 break
             else:
                 # Delete expired challenge

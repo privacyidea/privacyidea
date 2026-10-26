@@ -39,6 +39,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { BlocklistEntry } from "@services/conditional-access-state/conditional-access-state.service";
+import { grantRights, toolbarAction, toolbarActions, toolbarButton } from "@testing/toolbar-actions";
 
 const activeEntry: BlocklistEntry = {
   identifier: "192.168.1.100",
@@ -384,5 +385,161 @@ describe("BlocklistComponent", () => {
     expect(component.getSortIcon("identifier")).toBe("keyboard_arrow_upward");
     component.onSortEvent("identifier"); // -> desc
     expect(component.getSortIcon("identifier")).toBe("keyboard_arrow_downward");
+  });
+
+  describe("toolbar actions", () => {
+    it("offers block, unblock and delete-expired in that order", () => {
+      expect(toolbarActions(component).map((candidate) => candidate.id)).toEqual([
+        "block",
+        "unblock",
+        "delete-expired"
+      ]);
+    });
+
+    it("hides every action without a blocklist right", () => {
+      expect(toolbarActions(component).map((candidate) => candidate.visible)).toEqual([false, false, false]);
+    });
+
+    it("shows Block IP only with blocklist_set", () => {
+      grantRights(["blocklist_set"]);
+      expect(toolbarAction(component, "block").visible).toBe(true);
+      expect(toolbarAction(component, "unblock").visible).toBe(false);
+      expect(toolbarAction(component, "delete-expired").visible).toBe(false);
+    });
+
+    it("shows Unblock and Delete Expired only with blocklist_reset", () => {
+      grantRights(["blocklist_reset"]);
+      expect(toolbarAction(component, "block").visible).toBe(false);
+      expect(toolbarAction(component, "unblock").visible).toBe(true);
+      expect(toolbarAction(component, "delete-expired").visible).toBe(true);
+    });
+
+    it("disables Unblock without a selection and enables it with one", () => {
+      grantRights(["blocklist_reset"]);
+      casService.setBlocklistEntries([activeEntry, permanentEntry]);
+      expect(toolbarAction(component, "unblock").disabled).toBe(true);
+
+      component.selection.set([activeEntry]);
+
+      expect(toolbarAction(component, "unblock").disabled).toBe(false);
+    });
+
+    it("keeps Block IP and Delete Expired enabled whatever is selected", () => {
+      grantRights(["blocklist_set", "blocklist_reset"]);
+      expect(toolbarAction(component, "block").disabled).toBeFalsy();
+      expect(toolbarAction(component, "delete-expired").disabled).toBeFalsy();
+    });
+
+    it("runs blockIp from Block IP", () => {
+      const blockIp = jest.spyOn(component, "blockIp").mockImplementation();
+      const removeSelected = jest.spyOn(component, "removeSelected").mockImplementation();
+      const cleanUpExpired = jest.spyOn(component, "cleanUpExpired").mockImplementation();
+
+      toolbarAction(component, "block").run!();
+
+      expect(blockIp).toHaveBeenCalledTimes(1);
+      expect(removeSelected).not.toHaveBeenCalled();
+      expect(cleanUpExpired).not.toHaveBeenCalled();
+    });
+
+    it("runs removeSelected from Unblock", () => {
+      const blockIp = jest.spyOn(component, "blockIp").mockImplementation();
+      const removeSelected = jest.spyOn(component, "removeSelected").mockImplementation();
+      const cleanUpExpired = jest.spyOn(component, "cleanUpExpired").mockImplementation();
+
+      toolbarAction(component, "unblock").run!();
+
+      expect(removeSelected).toHaveBeenCalledTimes(1);
+      expect(blockIp).not.toHaveBeenCalled();
+      expect(cleanUpExpired).not.toHaveBeenCalled();
+    });
+
+    it("runs cleanUpExpired from Delete Expired", () => {
+      const blockIp = jest.spyOn(component, "blockIp").mockImplementation();
+      const removeSelected = jest.spyOn(component, "removeSelected").mockImplementation();
+      const cleanUpExpired = jest.spyOn(component, "cleanUpExpired").mockImplementation();
+
+      toolbarAction(component, "delete-expired").run!();
+
+      expect(cleanUpExpired).toHaveBeenCalledTimes(1);
+      expect(blockIp).not.toHaveBeenCalled();
+      expect(removeSelected).not.toHaveBeenCalled();
+    });
+
+    it("unblocks the selected entries through the Unblock action", () => {
+      grantRights(["blocklist_reset"]);
+      casService.setBlocklistEntries([activeEntry, permanentEntry]);
+      component.selection.set([permanentEntry]);
+      const dialogRef = new MockMatDialogRef<unknown, boolean>();
+      (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+      (casService.removeBlocklistEntry as jest.Mock).mockReturnValue(of(true));
+
+      toolbarAction(component, "unblock").run!();
+      dialogRef.close(true);
+
+      expect(casService.removeBlocklistEntry).toHaveBeenCalledTimes(1);
+      expect(casService.removeBlocklistEntry).toHaveBeenCalledWith(permanentEntry);
+    });
+
+    it("purges the expired entries through the Delete Expired action", () => {
+      grantRights(["blocklist_reset"]);
+      const dialogRef = new MockMatDialogRef<unknown, boolean>();
+      (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+      (casService.purgeBlocklist as jest.Mock).mockReturnValue(of(1));
+
+      toolbarAction(component, "delete-expired").run!();
+      dialogRef.close(true);
+
+      expect(casService.purgeBlocklist).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders only the permitted buttons in the toolbar", () => {
+      grantRights(["blocklist_set"]);
+      casService.setBlocklistEntries([activeEntry]);
+      fixture.detectChanges();
+
+      expect(toolbarButton(fixture, "Block IP")).toBeDefined();
+      expect(toolbarButton(fixture, "Unblock")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete Expired")).toBeUndefined();
+    });
+
+    it("opens the block dialog when the Block IP toolbar button is clicked", () => {
+      grantRights(["blocklist_set"]);
+      casService.setBlocklistEntries([activeEntry]);
+      fixture.detectChanges();
+      const dialogRef = new MockMatDialogRef<unknown, BlocklistBlockDialogResult>();
+      (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+
+      toolbarButton(fixture, "Block IP")!.click();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ component: BlocklistBlockDialogComponent })
+      );
+    });
+
+    it("disables the rendered Unblock button until a row is selected", () => {
+      grantRights(["blocklist_reset"]);
+      casService.setBlocklistEntries([activeEntry]);
+      fixture.detectChanges();
+      expect(toolbarButton(fixture, "Unblock")!.disabled).toBe(true);
+
+      component.selection.set([activeEntry]);
+      fixture.detectChanges();
+
+      expect(toolbarButton(fixture, "Unblock")!.disabled).toBe(false);
+    });
+
+    it("asks to confirm the clean-up when the Delete Expired toolbar button is clicked", () => {
+      grantRights(["blocklist_reset"]);
+      casService.setBlocklistEntries([activeEntry]);
+      fixture.detectChanges();
+      const dialogRef = new MockMatDialogRef<unknown, boolean>();
+      (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+
+      toolbarButton(fixture, "Delete Expired")!.click();
+      dialogRef.close(true);
+
+      expect(casService.purgeBlocklist).toHaveBeenCalledTimes(1);
+    });
   });
 });

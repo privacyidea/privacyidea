@@ -8,5 +8,4 @@ Subscriptions endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: subscriptions_blueprint
-
    :include-empty-docstring:

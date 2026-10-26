@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 .select-header-actions {
   position: sticky;
   top: 0;
@@ -59,8 +61,12 @@
   // `color` / `border-color` declarations - a tie between the two is decided by nothing better
   // than stylesheet load order. The resting pair is for the plain option background; the rules
   // below swap it for the on-primary pair wherever the row itself turns primary.
-  --mat-button-outlined-label-text-color: var(--mat-sys-secondary);
-  --mat-button-outlined-outline-color: var(--mat-sys-outline-variant);
+  @include mat.button-overrides(
+    (
+      outlined-label-text-color: var(--mat-sys-secondary),
+      outlined-outline-color: var(--mat-sys-outline-variant)
+    )
+  );
 }
 
 // Where the pointer can hover, the button belongs to the row under it and stays out of the way
@@ -84,12 +90,20 @@
 // label answers with on-primary - so the button on it has to move to the same pair.
 .mat-mdc-option:hover .only-button,
 .mat-mdc-option.mat-mdc-option-active .only-button {
-  --mat-button-outlined-label-text-color: var(--mat-sys-on-primary);
-  --mat-button-outlined-outline-color: color-mix(in srgb, var(--mat-sys-on-primary) 50%, transparent);
+  @include mat.button-overrides(
+    (
+      outlined-label-text-color: var(--mat-sys-on-primary),
+      outlined-outline-color: color-mix(in srgb, var(--mat-sys-on-primary) 50%, transparent)
+    )
+  );
 
   &:hover {
     background-color: color-mix(in srgb, var(--mat-sys-on-primary) 15%, transparent);
-    --mat-button-outlined-outline-color: var(--mat-sys-on-primary);
+    @include mat.button-overrides(
+      (
+        outlined-outline-color: var(--mat-sys-on-primary)
+      )
+    );
   }
 }
 
@@ -97,5 +111,9 @@
 // active background that its on-primary colours are built for.
 .mat-mdc-option.mat-mdc-option-active.only-key-focused .only-button {
   background-color: color-mix(in srgb, var(--mat-sys-on-primary) 15%, transparent);
-  --mat-button-outlined-outline-color: var(--mat-sys-on-primary);
+  @include mat.button-overrides(
+    (
+      outlined-outline-color: var(--mat-sys-on-primary)
+    )
+  );
 }

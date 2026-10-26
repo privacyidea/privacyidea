@@ -55,7 +55,9 @@ export type AuthEventType =
   | "ENROLLMENT_FAIL"
   | "UNKNOWN_FAIL_REASON"
   | "DEVICE_TOKEN_REUSED"
-  | "SUSPENDED_API_KEY_USED";
+  | "SUSPENDED_API_KEY_USED"
+  | "OFFLINE_REFILL_SUCCESS"
+  | "OFFLINE_REFILL_FAIL";
 
 export type ConditionalAccessActionType =
   | "LOCK_USER"

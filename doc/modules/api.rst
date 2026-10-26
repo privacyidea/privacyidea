@@ -43,4 +43,5 @@ Start to read about authentication to the API at :ref:`rest_auth`.
    api/radiusserver
    api/subscriptions
    api/client
+   api/clients
    api/info

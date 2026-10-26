@@ -54,14 +54,14 @@ from sqlalchemy.orm.exc import StaleDataError
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
-from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges, consume_challenge
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_TYPE_KEY,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.crypto import geturandom, generate_keypair
+from privacyidea.lib.crypto import geturandom, generate_keypair, safe_compare
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
@@ -543,6 +543,9 @@ class _PushChallengeState:
     """
     otp_counter: int = -1
     refused_status: str | None = None  # "declined" | "cancelled" | None
+    # The challenge that carried the answer, so check_challenge_response can claim it. The push_wait loop in
+    # authenticate reads the scan directly and deletes afterwards; its transaction id never leaves the server.
+    answered_challenge: "Challenge | ChallengeDTO | None" = None
 
 
 class PushTokenClass(TokenClass):
@@ -817,7 +820,9 @@ class PushTokenClass(TokenClass):
             if self.token.rollout_state != RolloutState.CLIENTWAIT:
                 raise ParameterError("Invalid state! The token you want to enroll is not in the state 'clientwait'.")
             enrollment_credential = get_required(upd_param, "enrollment_credential")
-            if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
+            stored_credential = self.get_tokeninfo("enrollment_credential")
+            if not (stored_credential and isinstance(enrollment_credential, str)
+                    and safe_compare(stored_credential, enrollment_credential)):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
             self.remove_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
@@ -1413,8 +1418,7 @@ class PushTokenClass(TokenClass):
 
         - In some cases the Firebase service changes the token of a device. This
           needs to be communicated to privacyIDEA through this endpoint
-          (https://github.com/privacyidea/privacyidea/wiki/concept%3A-pushtoken-poll#update
-          -firebase-token):
+          (https://github.com/privacyidea/privacyidea/wiki/concept:-PushToken-update-Firebase-device-token):
 
             .. sourcecode:: http
 
@@ -1767,6 +1771,7 @@ class PushTokenClass(TokenClass):
                 _, status = challenge.get_otp_status()
                 if status is True:
                     state.otp_counter = 1
+                    state.answered_challenge = challenge
                     return state
                 continue
 
@@ -1784,8 +1789,9 @@ class PushTokenClass(TokenClass):
                     return state
                 # Step 2: smartphone has confirmed, check the display_code
                 display_code = data.get("display_code", "")
-                if display_code and display_code == passw:
+                if display_code and isinstance(passw, str) and safe_compare(display_code, passw):
                     state.otp_counter = 1
+                    state.answered_challenge = challenge
                     return state
                 elif passw is not None:
                     log.debug("Received the wrong display code for push code_to_phone!")
@@ -1799,7 +1805,7 @@ class PushTokenClass(TokenClass):
                 if status is True:
                     # create a positive response
                     state.otp_counter = 1
-                    # do not delete the challenge yet, that is the job of the calling context
+                    state.answered_challenge = challenge
                     break
         return state
 
@@ -1834,6 +1840,10 @@ class PushTokenClass(TokenClass):
             # CHALLENGE_CANCELLED from those templates exists to avoid.
             self.auth_details[AUTH_EVENT_TYPE_KEY] = REFUSAL_STATUS_AUTH_EVENTS[state.refused_status]
             self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE
+        if state.otp_counter >= 0 and not consume_challenge(state.answered_challenge):
+            # Another request already redeemed this approval, so only that one is accepted.
+            log.info(f"The challenge {transaction_id} of token {self.token.serial} was used by another request.")
+            return -1
         return state.otp_counter
 
     @classmethod

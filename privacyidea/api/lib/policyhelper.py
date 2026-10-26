@@ -23,7 +23,7 @@ in some cases also used beside the API.
 Like policies, that are supposed to read and pass parameters during enrollment of a token.
 """
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import timedelta, datetime, timezone
 
 from privacyidea.api.lib.utils import report_owner_lookup_error, resolve_token_owner
@@ -33,7 +33,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
-from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.realm import realm_is_defined, get_ordered_resolvers
 from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.token import get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
@@ -249,6 +249,10 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
         if action in [PolicyAction.CONTAINER_ADD_TOKEN, PolicyAction.CONTAINER_REMOVE_TOKEN]:
             if not user_is_owner(user_attributes.user, token_owner_attributes.user, allow_no_owner=False):
                 return False
+        elif action == PolicyAction.ASSIGN:
+            # users are allowed to assign tokens that are in their realm or in no realm
+            if not is_in_realm_of_user(user_attributes.user, token_owner_attributes.additional_realms):
+                return False
 
     # Do not check extended conditions for containers
     condition_check = ConditionSection.get_all_sections()
@@ -356,8 +360,9 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             # container has no owner yet, skip this check
             is_owner = True
         elif action == PolicyAction.CONTAINER_ASSIGN_USER:
-            # users are allowed to assign containers without owner
-            is_owner = user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=True)
+            # users are allowed to assign containers without owner that are in their realm or in no realm
+            is_owner = (user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=True)
+                        and is_in_realm_of_user(user_attributes.user, container_owner_attributes.additional_realms))
         else:
             is_owner = user_is_owner(user_attributes.user, container_owner_attributes.user, allow_no_owner=False)
         if not is_owner:
@@ -383,6 +388,50 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
                                    container_serial=container_serial,
                                    extended_condition_check=condition_check).allowed()
     return action_allowed
+
+
+def check_token_import_allowed(g, import_tokens: dict, user_attributes: UserAttributes) -> None:
+    """
+    Checks the import action for each token of an import file before any of them is written. A token that already
+    exists with the serial of the file is matched by its owner or one of its realms, like the other token actions.
+    A user given in the file (OATH CSV version 2) is matched as the owner the token gets.
+
+    :param g: The global flask object g
+    :param import_tokens: The parsed tokens of the file, as a dictionary serial -> token data
+    :param user_attributes: User attributes of the logged-in admin
+    :raises PolicyError: if the action is not allowed for one of the tokens
+    """
+    for serial, token_data in import_tokens.items():
+        try:
+            existing_token_allowed = check_token_action_allowed(g, PolicyAction.IMPORT, serial,
+                                                                replace(user_attributes))
+        except ResourceNotFoundError:
+            # A new token, matched by the user of the file below
+            existing_token_allowed = True
+        if not existing_token_allowed:
+            raise PolicyError(f"Admin actions are defined, but you are not allowed to import the token {serial}.")
+        file_user = token_data.get("user") or {}
+        user = User(file_user.get("username", ""), file_user.get("realm", ""), file_user.get("resolver", ""))
+        if user and user.resolver and user.resolver not in get_ordered_resolvers(user.realm):
+            # The user object takes the resolver of the file as it is, the policy is matched against the realm
+            raise PolicyError(f"The resolver {user.resolver} of the user of the token {serial} is not part of the "
+                              f"realm {user.realm}.")
+        if user and not Match.generic(g, scope=user_attributes.role, action=PolicyAction.IMPORT, user_object=user,
+                                      adminrealm=user_attributes.adminrealm,
+                                      adminuser=user_attributes.adminuser).allowed():
+            raise PolicyError(f"Admin actions are defined, but you are not allowed to import tokens for the user "
+                              f"{user}.")
+
+
+def is_in_realm_of_user(user: User, object_realms: list[str] | None) -> bool:
+    """
+    Checks if a token or container that a user wants to take over is in the realm of the user or in no realm.
+
+    :param user: The logged-in user
+    :param object_realms: The realms of the token or container
+    :return: True if the object is in no realm or one of its realms is the realm of the user
+    """
+    return not object_realms or bool(user and user.realm in object_realms)
 
 
 def user_is_owner(logged_in_user: User, owner: User, allow_no_owner: bool = False) -> bool:

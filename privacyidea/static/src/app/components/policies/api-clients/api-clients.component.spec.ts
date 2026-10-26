@@ -38,6 +38,7 @@ import {
   MockTableUtilsService
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
+import { setRights, toolbarAction } from "@testing/toolbar-actions";
 
 describe("ApiClientsComponent", () => {
   let component: ApiClientsComponent;
@@ -206,5 +207,89 @@ describe("ApiClientsComponent", () => {
 
   it("should fall back to the raw value for an unknown client type", () => {
     expect(component.clientTypeLabel("custom_type")).toBe("custom_type");
+  });
+
+  describe("toolbar actions", () => {
+    it("lists the create and delete actions in order", () => {
+      expect(component["toolbarActions"]().map((a) => a.id)).toEqual(["create", "delete"]);
+    });
+
+    it("shows create only with the api_client_add right", () => {
+      setRights(fixture, []);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      setRights(fixture, ["api_client_add"]);
+      expect(toolbarAction(component, "create").visible).toBe(true);
+      setRights(fixture, ["api_client_delete"]);
+      expect(toolbarAction(component, "create").visible).toBe(false);
+    });
+
+    it("shows delete only with the api_client_delete right", () => {
+      setRights(fixture, []);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      setRights(fixture, ["api_client_delete"]);
+      expect(toolbarAction(component, "delete").visible).toBe(true);
+      setRights(fixture, ["api_client_add"]);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+    });
+
+    it("never disables create", () => {
+      setRights(fixture, ["api_client_add"]);
+      expect(toolbarAction(component, "create").disabled).toBeFalsy();
+    });
+
+    it("disables delete without a selection and enables it with one", () => {
+      setRights(fixture, ["api_client_delete"]);
+      expect(toolbarAction(component, "delete").disabled).toBe(true);
+      component.selector.selectRow(apiClientServiceMock.apiClients()[0]);
+      expect(toolbarAction(component, "delete").disabled).toBe(false);
+    });
+
+    it("navigates to the create page when the create action runs", () => {
+      setRights(fixture, ["api_client_add"]);
+      toolbarAction(component, "create").run!();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_NEW);
+    });
+
+    it("deletes the selected clients when the delete action runs", () => {
+      setRights(fixture, ["api_client_delete"]);
+      component.selector.selectRow(apiClientServiceMock.apiClients()[1]);
+      toolbarAction(component, "delete").run!();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ items: ["Client Two"] })
+        })
+      );
+      confirmClosed.next(true);
+      confirmClosed.complete();
+      expect(apiClientServiceMock.deleteClient).toHaveBeenCalledWith("client2");
+      expect(apiClientServiceMock.deleteClient).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders only the permitted actions and wires the clicks to the handlers", () => {
+      setRights(fixture, ["api_client_list", "api_client_add", "api_client_delete"]);
+      const buttons = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>("app-table-actions button")
+      );
+      const create = buttons.find((b) => b.textContent?.includes("Create API Client"))!;
+      const del = buttons.find((b) => b.classList.contains("action-button-delete-secondary"))!;
+      expect(create).toBeTruthy();
+      expect(del).toBeTruthy();
+      expect(del.disabled).toBe(true);
+
+      create.click();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_NEW);
+
+      component.selector.selectRow(apiClientServiceMock.apiClients()[0]);
+      fixture.detectChanges();
+      expect(del.disabled).toBe(false);
+      del.click();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    });
+
+    it("renders no toolbar button without any right", () => {
+      setRights(fixture, ["api_client_list"]);
+      expect(fixture.nativeElement.querySelector("app-table-actions")).toBeTruthy();
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll("app-table-actions button").length).toBe(0);
+    });
   });
 });

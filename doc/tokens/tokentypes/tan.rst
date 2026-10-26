@@ -5,8 +5,6 @@ TAN Token
 
 .. index:: TAN Token
 
-(added in version 2.23)
-
 The token type *tan* is related to the :ref:`paper_token`.
 
 In contrast to the *paper* token, a user can use the OTP values of a *tan* token in
@@ -26,9 +24,13 @@ After enrollment, you are prompted to print the generated TAN list.
 Import of TAN token
 ~~~~~~~~~~~~~~~~~~~
 
-The import schema for TAN tokens via the OATH CSV file look like this:
+The import schema for TAN tokens via the OATH CSV file looks like this::
 
     <serial>, <seed>, tan, <white space separated list of tans>
 
 The TANs are located in the 4th column. TANs are separated by blanks or whitespaces.
 The *<seed>* is not used with a TAN token. You can leave this blank or set to any (not used) value.
+
+All TANs of one token must have the same length: the OTP length of the token is the length of the first TAN, and
+TANs of another length are imported but never accepted. The same applies to the ``tans`` parameter of
+``/token/init``.

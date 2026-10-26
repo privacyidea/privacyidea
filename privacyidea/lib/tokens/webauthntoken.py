@@ -244,7 +244,7 @@ data, returned as an ArrayBuffer.
 
 The problem and ways to solve it are described in detail in this MDN-Article:
 
-https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa#unicode_strings
 
 Authentication
 --------------
@@ -947,6 +947,7 @@ class WebAuthnTokenClass(TokenClass):
         Update token state during WebAuthn enrollment.
 
         The method handles both enrollment phases:
+
         1. Bootstrap phase (no registration data): move token to
            ``ROLLOUTSTATE.CLIENTWAIT`` and keep it inactive.
         2. Finalization phase (with ``regdata`` and ``clientdata`` while in
@@ -954,6 +955,7 @@ class WebAuthnTokenClass(TokenClass):
            challenge, persist credential metadata, and activate the token.
 
         Required parameters for finalization include:
+
         - ``transaction_id``
         - ``regdata`` (attestationObject, base64url)
         - ``clientdata`` (clientDataJSON, base64url)
@@ -962,6 +964,7 @@ class WebAuthnTokenClass(TokenClass):
         - ``FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL``
 
         Side effects in finalization:
+
         - writes otp key/sign counter
         - stores credential hash and tokeninfo metadata
         - deletes enrollment challenges
@@ -1590,7 +1593,16 @@ def _aaguid_is_allowed(aaguid: str | None, allowed_aaguids: list[str]) -> bool:
     return _normalize_aaguid(aaguid) in {_normalize_aaguid(allowed_aaguid) for allowed_aaguid in allowed_aaguids}
 
 
-def is_webauthn_assertion_response(request_data):
+#: The parameters an assertion is verified with, each with the aliases a legacy WebAuthn client may send
+#: instead. One table, so the boolean shape test and the two callers that require the shape can never drift.
+FIDO2_ASSERTION_PARAMETERS: dict[str, list[str]] = {
+    "authenticatorData": ["authenticatorData", "authenticatordata"],
+    "clientDataJSON": ["clientDataJSON", "clientdata"],
+    "signature": ["signature", "signaturedata"],
+}
+
+
+def is_webauthn_assertion_response(request_data: dict) -> bool:
     """
     Verify the request received is an assertion response.
 
@@ -1599,12 +1611,41 @@ def is_webauthn_assertion_response(request_data):
     this is not the case, check_otp() will immediately fail.
 
     :param request_data: The parameters passed in the request.
-    :type request_data: dict
     :return: Whether all data necessary to verify the assertion is available.
-    :rtype: bool
     """
 
     return bool(get_optional_one_of(request_data, ["credential_id", "credentialid"])
-                and get_optional_one_of(request_data, ["authenticatorData", "authenticatordata"])
-                and get_optional_one_of(request_data, ["clientDataJSON", "clientdata"])
-                and get_optional_one_of(request_data, ["signature", "signaturedata"]))
+                and get_optional_one_of(request_data, FIDO2_ASSERTION_PARAMETERS["authenticatorData"])
+                and get_optional_one_of(request_data, FIDO2_ASSERTION_PARAMETERS["clientDataJSON"])
+                and get_optional_one_of(request_data, FIDO2_ASSERTION_PARAMETERS["signature"]))
+
+
+def require_fido2_assertion(request_data: dict) -> None:
+    """
+    Require every parameter a FIDO2 assertion is verified with, raising a ParameterError that names the missing
+    one.
+
+    The assertion is verified in the token class, which reads these parameters only once the view has resolved
+    the token and run its own checks. An incomplete request would therefore be classified - and logged as an
+    authentication attempt - before anything noticed that it could never have been verified. The views call this
+    directly after the transaction_id check, so such a request is answered as the malformed request it is.
+
+    The origin is not among them: it is never a parameter of the request, the FIDO2 prepolicies take it from the
+    request environment further down, so the views require it from there.
+
+    :param request_data: The parameters passed in the request.
+    """
+    for keys in FIDO2_ASSERTION_PARAMETERS.values():
+        get_required_one_of(request_data, keys)
+
+
+def require_fido2_registration(request_data: dict) -> None:
+    """
+    Require every parameter a FIDO2 registration is finalized with, raising a ParameterError that names the
+    missing one. These are the parameters PasskeyTokenClass.update() needs, checked up front for the same reason
+    as require_fido2_assertion() above.
+
+    :param request_data: The parameters passed in the request.
+    """
+    for key in ("clientDataJSON", "rawId", "authenticatorAttachment"):
+        get_required(request_data, key)

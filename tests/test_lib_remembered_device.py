@@ -1,15 +1,20 @@
+from unittest.mock import patch
+
+import privacyidea.lib.remembered_device as remembered_device_module
 from .base import MyTestCase
 
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          create_remembered_device, consume_remember_device_cookie,
-                                         get_valid_device, user_identity, UserIdentity,
+                                         get_valid_device, user_identity, UserIdentity, rotate_device,
                                          cleanup_expired_remembered_devices,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
-from privacyidea.models import RememberedDevice
+from privacyidea.models import RememberedDevice, db
 from privacyidea.models.utils import utc_now
+
+from sqlalchemy import update
 
 from datetime import timedelta
 
@@ -290,6 +295,58 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id_b, dave).status)
         # ... and client A's device is untouched.
         self.assertEqual(1, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)
+
+    def test_rotation_refuses_a_counter_another_request_moved(self):
+        # rotate_device writes from the counter it validated. If another request moved the device in the
+        # meantime, this one rotates nothing and says so, instead of overwriting that request's cookie.
+        client_id = self._client_id()
+        rose = self._identity("rose")
+        device, cookie = create_remembered_device(rose, client_id, ip_address="10.0.0.1")
+        loaded = get_valid_device(cookie, client_id, rose, "10.0.0.1").device
+        db.session.expunge(loaded)
+        # What a request that rotated the device first leaves behind
+        db.session.execute(update(RememberedDevice)
+                           .where(RememberedDevice.series_id == device.series_id)
+                           .values(counter=loaded.counter + 1, last_used_at=utc_now()))
+        db.session.commit()
+
+        self.assertIsNone(rotate_device(loaded, "10.0.0.1"))
+
+    def test_a_cookie_rotated_by_another_request_is_graced_or_reused(self):
+        # The same situation through consume_remember_device_cookie: the presented cookie now carries the
+        # previous counter, so it is answered as a later request with that cookie is.
+        client_id = self._client_id()
+        iris = self._identity("iris")
+        device, cookie = create_remembered_device(iris, client_id, ip_address="10.0.0.1")
+        self.assertEqual("recognized", consume_remember_device_cookie(cookie, client_id, iris, "10.0.0.1").status)
+
+        # From the address the winner came from and within the window: a tolerated duplicate
+        self.assertEqual("grace", consume_remember_device_cookie(cookie, client_id, iris, "10.0.0.1").status)
+        # From anywhere else: reuse, and the series is gone
+        self.assertEqual("theft", consume_remember_device_cookie(cookie, client_id, iris, "9.9.9.9").status)
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+    def test_a_lost_rotation_is_answered_like_a_later_request(self):
+        """When another request rotated the device between the validation and the rotation, this one is
+        answered the way a later request with the cookie it holds is: a tolerated duplicate, or a miss."""
+        client_id = self._client_id()
+        ada = self._identity("ada")
+        _device, cookie = create_remembered_device(ada, client_id, ip_address="10.0.0.1")
+
+        # Nothing moved the device, so re-validating finds the current one, which is not in grace
+        with patch.object(remembered_device_module, "rotate_device", return_value=None):
+            self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
+
+        # The race itself: the rotation this request lost is the one that happened, so re-validating finds
+        # the cookie one counter behind - a duplicate of the request that won, from the same address.
+        real_rotate = remembered_device_module.rotate_device
+
+        def rotated_by_someone_else(device, client_ip=None):
+            real_rotate(device, client_ip)
+            return None
+
+        with patch.object(remembered_device_module, "rotate_device", side_effect=rotated_by_someone_else):
+            self.assertEqual("grace", consume_remember_device_cookie(cookie, client_id, ada, "10.0.0.1").status)
 
     def test_unknown_series_returns_miss(self):
         client_id = self._client_id()

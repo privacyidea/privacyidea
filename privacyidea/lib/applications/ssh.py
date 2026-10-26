@@ -54,7 +54,7 @@ class MachineApplication(MachineApplicationBase):
                                 user_agent=None):
         """
         :param token_type: the type of the token. At the moment
-                           we support the tokenype "sshkey"
+                           we support the tokentype "sshkey"
         :param serial:     the serial number of the token.
         :return auth_item: Return the SSH pub keys.
         """

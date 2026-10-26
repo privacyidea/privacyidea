@@ -42,8 +42,8 @@ import ldap3
 import yaml
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Tls
-from ldap3.core.exceptions import LDAPOperationResult
-from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
+from ldap3.core.exceptions import LDAPException, LDAPOperationResult
+from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED, RESULT_SUCCESS, RESULT_NO_SUCH_OBJECT
 from ldap3.utils.conv import escape_bytes
 from passlib.hash import ldap_salted_sha1
 
@@ -54,7 +54,7 @@ from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from .UserIdResolver import UserIdResolver
+from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
 from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
@@ -317,6 +317,9 @@ class IdResolver(UserIdResolver):
     # If the resolver could be configured editable
     updateable = True
 
+    # A cache timeout of 0 switches the user cache off
+    zero_is_a_value = frozenset({"CACHE_TIMEOUT"})
+
     def __init__(self):
         self.i_am_bound = False
         self.uri = ""
@@ -459,7 +462,7 @@ class IdResolver(UserIdResolver):
         return new_list
 
     @staticmethod
-    def _escape_loginname(loginname):
+    def _escape_loginname(loginname: str) -> str:
         """
         This function escapes the loginname according to
         https://msdn.microsoft.com/en-us/library/aa746475(v=vs.85).aspx
@@ -471,11 +474,12 @@ class IdResolver(UserIdResolver):
            achme*
            achemd*
 
+        Besides the characters of RFC 4515 (see :meth:`_escape_filter_value`) the slash is escaped.
+
         :param loginname: The loginname
         :return: The escaped loginname
         """
-        return loginname.replace("\\", "\\5c").replace("*", "\\2a").replace(
-            "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
+        return IdResolver._escape_filter_value(loginname).replace("/", "\\2f")
 
     @staticmethod
     def _escape_filter_value(filter_value: str or bytes, allow_wildcards: bool = False) -> str:
@@ -631,12 +635,41 @@ class IdResolver(UserIdResolver):
                                     f"{result.get('description')} ({result.get('result')})")
             self.i_am_bound = True
 
-    def _search(self, search_base, search_filter, attributes):
+    def _search(self, search_base: str, search_filter: str, attributes: list[str],
+                missing_base_is_empty: bool = False) -> list[dict]:
+        """
+        Bind if necessary and search the directory with the scope of the resolver.
+
+        :param search_base: The DN the search starts at
+        :param search_filter: The LDAP search filter, with all values already escaped
+        :param attributes: The attributes to return for each entry
+        :param missing_base_is_empty: Read a search base that does not exist as an empty result instead of an error,
+            for a search based on the DN of a user, which is gone when the user is.
+        :return: The entries found, without search result references if the resolver does not follow referrals
+        :raises ResolverError: if the bind failed, or with the message USER_LOOKUP_FAILED if the LDAP server did not
+            answer the search, e.g. with an error result, a receive timeout or a dropped connection
+        """
         self._bind()
-        self.connection.search(search_base=search_base,
-                               search_scope=self.scope,
-                               search_filter=search_filter,
-                               attributes=attributes)
+        try:
+            self.connection.search(search_base=search_base,
+                                   search_scope=self.scope,
+                                   search_filter=search_filter,
+                                   attributes=attributes)
+        except LDAPException as error:
+            # ldap3 raises communication errors whatever raise_exceptions is set to
+            log.error(f"LDAP search in {search_base!r} with filter {search_filter!r} failed: {error!r}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
+        # Without raise_exceptions, ldap3 reports a failed search (e.g. busy, unavailable, time limit exceeded) only in
+        # the result code and an empty response, which must not be read as "no such entry". A size limit still
+        # answers with the entries up to it, which callers check for themselves. ldap3mock sets no result.
+        search_result = self.connection.result or {}
+        result_code = search_result.get("result", RESULT_SUCCESS)
+        if missing_base_is_empty and result_code == RESULT_NO_SUCH_OBJECT:
+            return []
+        if result_code not in (RESULT_SUCCESS, RESULT_SIZE_LIMIT_EXCEEDED):
+            log.error(f"LDAP search in {search_base!r} with filter {search_filter!r} failed: "
+                      f"{search_result.get('description')} ({result_code}): {search_result.get('message')}")
+            raise ResolverError(str(USER_LOOKUP_FAILED))
         result = self.connection.response
         result = self._trim_result(result)
         log.debug(f"LDAP search operation took {self.connection.usage.elapsed_time}")
@@ -646,7 +679,7 @@ class IdResolver(UserIdResolver):
     def get_tls_context(ldap_uri=None, start_tls=False, tls_version=None, tls_verify=None,
                         tls_ca_file=None, tls_options=None):
         """
-        This method creates the Tls object to be used with ldap3.
+        This method creates the TLS object to be used with ldap3.
         """
         if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
             if not tls_version:
@@ -697,7 +730,8 @@ class IdResolver(UserIdResolver):
             search_base = self.basedn
 
         result = self._search(search_base=search_base, search_filter=search_filter,
-                              attributes=list(self.userinfo.values()))
+                              attributes=list(self.userinfo.values()),
+                              missing_base_is_empty=self.uidtype.lower() == "dn")
 
         if len(result) > 1:  # pragma: no cover
             raise ResolverError(f"Found more than one object for uid {user_id!r}")
@@ -944,14 +978,13 @@ class IdResolver(UserIdResolver):
 
     @track_resolver_op("get_user_id")
     @cache
-    def getUserId(self, login_name):
+    def getUserId(self, login_name: str) -> str:
         """
         resolve the loginname to the userid.
 
         :param login_name: The login name from the credentials
-        :type login_name: str
-        :return: UserId as found for the LoginName
-        :rtype: str
+        :return: UserId as found for the LoginName, an empty string if the user store has no such user
+        :raises ResolverError: if the user store could not be searched
         """
         userid = ""
         login_name = to_unicode(login_name)
@@ -990,8 +1023,13 @@ class IdResolver(UserIdResolver):
             attributes.append(str(self.uidtype))
 
         log.debug(f"Searching user {login_name!r} in LDAP.")
-        result = self._search(search_base=self.basedn, search_filter=search_filter,
-                              attributes=attributes)
+        try:
+            result = self._search(search_base=self.basedn, search_filter=search_filter,
+                                  attributes=attributes)
+        except ResolverError as error:
+            # A failed bind raises with the details of the LDAP server, which must not reach the client
+            log.error(f"Could not look up the user {login_name!r}: {error}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         if len(result) > 1:  # pragma: no cover
             raise ResolverError(f"Found more than one object for Login {login_name!r}")
 
@@ -1251,7 +1289,7 @@ class IdResolver(UserIdResolver):
         LDAP servers. These are split and then added to the pool.
 
         See
-        https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
+        https://ldap3.readthedocs.io/en/latest/server.html#server-pool
 
         :param urilist: The list of LDAP URIs, comma separated
         :type urilist: basestring

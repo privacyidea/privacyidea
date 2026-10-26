@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 .flex-column {
   display: flex;
   flex-direction: column;
@@ -7,7 +9,11 @@
 
 mat-form-field {
   width: 100%;
-  --mat-form-field-filled-container-color: transparent;
+  @include mat.form-field-overrides(
+    (
+      filled-container-color: transparent
+    )
+  );
 }
 
 .flex-fix-size {

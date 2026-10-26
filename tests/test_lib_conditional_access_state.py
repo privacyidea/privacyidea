@@ -47,53 +47,13 @@ from privacyidea.lib.conditional_access.state import (
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.user import User
 from privacyidea.models import db
-from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.conditional_access_policy import (
-    BlockList,
-    ConditionalAccessPolicy,
-    ConditionalAccessPolicyCounterType,
-    ConditionalAccessPolicyStage,
-    ConditionalAccessStageAction,
-    UserLockState,
-)
+from privacyidea.models.conditional_access_policy import BlockList, UserLockState
 from privacyidea.models.utils import utc_now
-from .base import MyTestCase, skip_unless_admin_lookup_folds_case
+from .base import skip_unless_admin_lookup_folds_case
+from .conditional_access_base import ConditionalAccessTestCase
 
 
-class UserLockStateTestCase(MyTestCase):
-
-    def setUp(self):
-        self.setUp_user_realms()
-        # "cornelius" resolves to a non-empty uid, so it is a fully resolved (resolver, uid, realm) identity.
-        self.user = User("cornelius", self.realm1, self.resolvername1)
-        self._clear()
-
-    def tearDown(self):
-        self._clear()
-        super().tearDown()
-
-    @staticmethod
-    def _clear():
-        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
-                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
-
-    def _lock(self, lock_expires_at, user=None, resolver=None, uid=None, realm=None, username=None,
-              error_message=None):
-        user = user or self.user
-        db.session.add(UserLockState(
-            resolver=resolver if resolver is not None else user.resolver,
-            uid=uid if uid is not None else user.uid,
-            realm=realm if realm is not None else user.realm,
-            username=username if username is not None else user.login,
-            lock_expires_at=lock_expires_at,
-            error_message=error_message))
-        db.session.commit()
-
-    def _block(self, ip, block_expires_at, error_message=None):
-        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at, error_message=error_message))
-        db.session.commit()
+class UserLockStateTestCase(ConditionalAccessTestCase):
 
     # --- lock_user / block_ip (the manual write path) -------------------------
 
@@ -198,9 +158,8 @@ class UserLockStateTestCase(MyTestCase):
         create_db_admin("lockadmin", password="secret")
         try:
             lock_internal_admin("lockadmin")
-            db.session.add(UserLockState(resolver="", uid="LockAdmin", realm="", username="LockAdmin",
-                                         user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
-            db.session.commit()
+            self._lock_user(None, resolver="", uid="LockAdmin", realm="", username="LockAdmin",
+                            user_role=AuthLogUserRole.ADMIN_INTERNAL)
 
             self.assertTrue(unlock_internal_admin_by_uid("LockAdmin"))
 
@@ -274,7 +233,7 @@ class UserLockStateTestCase(MyTestCase):
         self.assertTrue(get_user_lock_dict(self.user)["permanent"])
 
     def test_lock_user_replaces_a_policy_lock_and_its_cause(self):
-        self._lock(utc_now() + timedelta(seconds=3600))
+        self._lock_user(utc_now() + timedelta(seconds=3600))
         self.assertEqual(RestrictionCause.POLICY, db.session.query(UserLockState).one().lock_cause)
         lock_user(self.user, duration_seconds=60)
         self.assertEqual(RestrictionCause.MANUAL, db.session.query(UserLockState).one().lock_cause)
@@ -283,7 +242,7 @@ class UserLockStateTestCase(MyTestCase):
         # The stored wording describes the lock in force. A policy's - written for its own expiry, and often
         # carrying a {duration} countdown - describes neither the expiry nor the cause an administrator just
         # wrote, and on a permanent lock the tag has nothing to substitute and would reach the user verbatim.
-        self._lock(utc_now() + timedelta(seconds=3600),
+        self._lock_user(utc_now() + timedelta(seconds=3600),
                    error_message="Temporarily locked. Try again in about {duration}.")
         lock_user(self.user)
         self.assertIsNone(db.session.query(UserLockState).one().error_message)
@@ -354,11 +313,20 @@ class UserLockStateTestCase(MyTestCase):
     # --- the lock cause --------------------------------------------------------
 
     def test_locked_user_dict_reports_the_cause(self):
-        self._lock(None)
+        self._lock_user(None)
         self.assertEqual(RestrictionCause.POLICY, list_locked_users()[0]["lock_cause"])
 
+    def test_a_manual_lock_replaced_by_a_policy_one_is_no_longer_attributed_to_the_admin(self):
+        # The cause travels with the expiry, so a row that an admin locked and a policy then re-locked reads as the
+        # policy lock it now is. Asserted on the fixture writer too, which has to state the whole row rather than
+        # inherit half of it from whatever stood there - the mistake is invisible until a cause filter is involved.
+        lock_user(self.user)
+        self.assertEqual(RestrictionCause.MANUAL, self._state().lock_cause)
+        self._lock_user_for()
+        self.assertEqual(RestrictionCause.POLICY, self._state().lock_cause)
+
     def test_list_locked_users_filters_by_cause(self):
-        self._lock(None)
+        self._lock_user(None)
         lock_user(User("selfservice", self.realm1, self.resolvername1))
         self.assertEqual(2, len(list_locked_users()))
         self.assertEqual([RestrictionCause.MANUAL], [row["lock_cause"] for row in list_locked_users(causes=["MANUAL"])])
@@ -366,7 +334,7 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_list_locked_users_rejects_an_unknown_cause(self):
         # Ignoring it would widen the result to every cause, so a typo would return more than was asked for.
-        self._lock(None)
+        self._lock_user(None)
         self.assertRaisesRegex(ParameterError, "Unknown lock cause", list_locked_users, causes=["ADMIN"])
 
     # --- list_locked_users ----------------------------------------------------
@@ -375,7 +343,7 @@ class UserLockStateTestCase(MyTestCase):
         self.assertListEqual([], list_locked_users())
 
     def test_list_locked_users_returns_active_lock(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         users = list_locked_users()
         self.assertEqual(1, len(users))
         entry = users[0]
@@ -389,21 +357,21 @@ class UserLockStateTestCase(MyTestCase):
     def test_list_locked_users_reports_the_stored_wording(self):
         # The wording this user is actually being shown, so an admin can see it without reading the policy -
         # and can tell a stale snapshot from what the stage carries now.
-        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Try again in about {duration}.")
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Try again in about {duration}.")
         self.assertEqual("Locked. Try again in about {duration}.", list_locked_users()[0]["error_message"])
 
     def test_list_locked_users_reports_no_wording_when_the_stage_configured_none(self):
         # Silent is the default, and the table has to show that as plainly as it shows a message.
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertIsNone(list_locked_users()[0]["error_message"])
 
     def test_list_locked_users_filters_on_the_stored_wording(self):
         # So an admin can find every lock still quoting wording they have since changed - the row keeps a
         # snapshot, so those users go on reading it until the lock is rewritten.
-        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
-        self._lock(utc_now() + timedelta(seconds=600), username="bob", uid="uid002",
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
+        self._lock_user(utc_now() + timedelta(seconds=600), username="bob", uid="uid002",
                    error_message="Blocked for a while.")
-        self._lock(utc_now() + timedelta(seconds=600), username="carol", uid="uid003")
+        self._lock_user(utc_now() + timedelta(seconds=600), username="carol", uid="uid003")
         matched = list_locked_users(error_messages=["*administrator*"])
         self.assertEqual(1, len(matched))
         self.assertEqual("cornelius", matched[0]["username"])
@@ -412,7 +380,7 @@ class UserLockStateTestCase(MyTestCase):
         # An exact filter value matches case-sensitively on every backend: error_message is pinned to
         # utf8mb4_bin, so MySQL/MariaDB's default (*_ci, and accent-insensitive too) cannot widen it. Only
         # case_insensitive opts in - a wildcard value goes through ILIKE and is case-insensitive anyway.
-        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
         self.assertListEqual([], list_locked_users(error_messages=["locked. contact your administrator."]))
         matched = list_locked_users(error_messages=["locked. contact your administrator."], case_insensitive=True)
         self.assertEqual(1, len(matched))
@@ -441,21 +409,21 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_list_locked_users_default_returns_all_states(self):
         # No states filter -> everything, including expired records.
-        self._lock(utc_now() - timedelta(seconds=60))
+        self._lock_user(utc_now() - timedelta(seconds=60))
         self.assertEqual(1, len(list_locked_users()))
         # Restricting to the currently-locked states hides the expired one.
         self.assertListEqual([], list_locked_users(states=["permanent", "temporary"]))
 
     def test_list_locked_users_active_row(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         row = list_locked_users()[0]
         self.assertFalse(row["permanent"])
         self.assertGreater(row["seconds_remaining"], 0)
 
     def test_list_locked_users_states_filter(self):
-        self._lock(utc_now() + timedelta(seconds=600))                                  # temporary
-        self._lock(None, resolver=self.resolvername1, uid="2", realm=self.realm1, username="perm")  # permanent
-        self._lock(utc_now() - timedelta(seconds=60),
+        self._lock_user(utc_now() + timedelta(seconds=600))                                  # temporary
+        self._lock_user(None, resolver=self.resolvername1, uid="2", realm=self.realm1, username="perm")  # permanent
+        self._lock_user(utc_now() - timedelta(seconds=60),
                    resolver=self.resolvername1, uid="3", realm=self.realm1, username="old")  # expired
         # No states filter -> all three states.
         self.assertEqual(3, len(list_locked_users()))
@@ -474,7 +442,7 @@ class UserLockStateTestCase(MyTestCase):
         self.assertEqual(3, len(list_locked_users(states=["permanent", "temporary", "expired"])))
 
     def test_list_locked_users_unknown_state_raises(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         # An unknown state must not be ignored: dropping it would widen the result to every state,
         # so a typo would silently return more than was asked for.
         self.assertRaises(ParameterError, list_locked_users, states=["bogus"])
@@ -483,7 +451,7 @@ class UserLockStateTestCase(MyTestCase):
         self.assertRaises(ParameterError, list_locked_users_paginate, states=["bogus"])
 
     def test_list_locked_users_includes_permanent(self):
-        self._lock(None)
+        self._lock_user(None)
         users = list_locked_users()
         self.assertEqual(1, len(users))
         self.assertTrue(users[0]["permanent"])
@@ -491,28 +459,28 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_list_locked_users_uses_stored_username(self):
         # The username is captured at lock time; it is returned as-is even if user does not exist anymore.
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver=self.resolvername1, uid="999999", realm=self.realm1, username="ghost")
         self.assertEqual("ghost", list_locked_users()[0]["username"])
 
     def test_list_locked_users_username_filter(self):
-        self._lock(utc_now() + timedelta(seconds=600))
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver=self.resolvername1, uid="7", realm=self.realm1, username="hans")
         filtered = list_locked_users(usernames=["cornelius"])
         self.assertEqual(1, len(filtered))
         self.assertEqual("cornelius", filtered[0]["username"])
 
     def test_list_locked_users_wildcard_filter(self):
-        self._lock(utc_now() + timedelta(seconds=600))                                 # cornelius
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() + timedelta(seconds=600))                                 # cornelius
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver=self.resolvername1, uid="7", realm=self.realm1, username="hans")
         matched = list_locked_users(usernames=["corn*"])
         self.assertEqual(1, len(matched))
         self.assertEqual("cornelius", matched[0]["username"])
 
     def test_list_locked_users_case_insensitive_filter(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         # Case-sensitive by default: an upper-case query does not match.
         self.assertListEqual([], list_locked_users(usernames=["CORNELIUS"]))
         # ...but does with case_insensitive.
@@ -520,7 +488,7 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_list_locked_users_paginate(self):
         for i in range(5):
-            self._lock(utc_now() + timedelta(seconds=600),
+            self._lock_user(utc_now() + timedelta(seconds=600),
                        resolver=self.resolvername1, uid=str(100 + i), realm=self.realm1,
                        username=f"u{i}")
         first = list_locked_users_paginate(page=1, page_size=2, sort_column="username", sort_order="asc")
@@ -535,16 +503,16 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(last["next"])
 
     def test_list_locked_users_realm_filter(self):
-        self._lock(utc_now() + timedelta(seconds=600))
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver="other", uid="7", realm="otherrealm")
         filtered = list_locked_users(realms=[self.user.realm])
         self.assertEqual(1, len(filtered))
         self.assertEqual(self.user.realm, filtered[0]["realm"])
 
     def test_list_locked_users_multi_realm_and_resolver_filter(self):
-        self._lock(utc_now() + timedelta(seconds=600))
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver="other", uid="7", realm="otherrealm")
         self.assertEqual(2, len(list_locked_users(realms=[self.user.realm, "otherrealm"])))
         self.assertEqual(1, len(list_locked_users(resolvers=["other"])))
@@ -552,8 +520,8 @@ class UserLockStateTestCase(MyTestCase):
     # --- visibility scoping ---------------------------------------------------
 
     def test_visibility_scope_realm_limits_results(self):
-        self._lock(utc_now() + timedelta(seconds=600))
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver="other", uid="7", realm="otherrealm")
         scopes = [AuthenticationLogVisibilityScope(realms=[self.user.realm], resolvers=[], usernames=[])]
         result = list_locked_users(visibility_scopes=scopes)
@@ -561,12 +529,12 @@ class UserLockStateTestCase(MyTestCase):
         self.assertEqual(self.user.realm, result[0]["realm"])
 
     def test_visibility_scope_none_is_unrestricted(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertEqual(1, len(list_locked_users(visibility_scopes=None)))
 
     def test_visibility_scope_username_enforced(self):
         # The denormalized username column lets a user-scoped policy be enforced in SQL.
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         match = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["cornelius"])]
         self.assertEqual(1, len(list_locked_users(visibility_scopes=match)))
         miss = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["nobody"])]
@@ -574,7 +542,7 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_visibility_scope_excluded_usernames_enforced(self):
         # Every user but some: the excluded users' locks are left out, everyone else's are listed.
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         others = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
                                                    excluded_usernames=["nobody"])]
         self.assertEqual(1, len(list_locked_users(visibility_scopes=others)))
@@ -594,7 +562,7 @@ class UserLockStateTestCase(MyTestCase):
     def test_visibility_scope_uid_enforced(self):
         # A lock row is keyed by the same (resolver, uid, realm) identity as an auth-log entry, so the uid dimension
         # has to be enforced here too - a scope carrying one must not fall back to matching the whole realm.
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         match = [AuthenticationLogVisibilityScope(realms=[], resolvers=[self.user.resolver], usernames=[],
                                                   uids=[str(self.user.uid)])]
         self.assertEqual(1, len(list_locked_users(visibility_scopes=match)))
@@ -649,7 +617,7 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(get_user_lock_dict(self.user))
 
     def test_get_user_lock_dict_returns_status(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         entry = get_user_lock_dict(self.user)
         self.assertIsNotNone(entry)
         self.assertEqual("cornelius", entry["username"])
@@ -657,13 +625,13 @@ class UserLockStateTestCase(MyTestCase):
         self.assertGreater(entry["seconds_remaining"], 0)
 
     def test_get_user_lock_dict_none_when_expired(self):
-        self._lock(utc_now() - timedelta(seconds=60))
+        self._lock_user(utc_now() - timedelta(seconds=60))
         self.assertIsNone(get_user_lock_dict(self.user))
 
     # --- unlock ---------------------------------------------------------------
 
     def test_unlock_user_by_id(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertTrue(unlock_user_by_id(self.user.uid, self.user.realm, self.user.resolver))
         self.assertIsNone(db.session.get(
             UserLockState, (self.user.resolver, self.user.uid, self.user.realm)))
@@ -673,16 +641,16 @@ class UserLockStateTestCase(MyTestCase):
     def test_unlock_user_by_id_without_resolver(self):
         # Resolver is an optional disambiguator (mirrors unlock_user_by_username): omitting it
         # must still unlock, matching on (uid, realm).
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertTrue(unlock_user_by_id(self.user.uid, self.user.realm))
         self.assertListEqual([], list_locked_users())
 
     def test_unlock_user_by_id_uid_collision_across_resolvers(self):
         # uid is resolver-local and opaque: the same uid can name unrelated users in two resolvers of a realm.
         # Omitting resolver clears both matching locks; passing one removes only that resolver's lock.
-        self._lock(utc_now() + timedelta(seconds=600), resolver="resoA", uid="1001",
+        self._lock_user(utc_now() + timedelta(seconds=600), resolver="resoA", uid="1001",
                    realm="collide", username="alice")
-        self._lock(utc_now() + timedelta(seconds=600), resolver="resoB", uid="1001",
+        self._lock_user(utc_now() + timedelta(seconds=600), resolver="resoB", uid="1001",
                    realm="collide", username="bob")
         # Targeted: only resoA's lock goes.
         self.assertTrue(unlock_user_by_id("1001", "collide", "resoA"))
@@ -692,12 +660,12 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(db.session.get(UserLockState, ("resoB", "1001", "collide")))
 
     def test_unlock_user_by_username(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm, self.user.resolver))
         self.assertListEqual([], list_locked_users())
 
     def test_unlock_user_by_username_without_resolver(self):
-        self._lock(utc_now() + timedelta(seconds=600))
+        self._lock_user(utc_now() + timedelta(seconds=600))
         self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm))
         self.assertListEqual([], list_locked_users())
 
@@ -707,35 +675,35 @@ class UserLockStateTestCase(MyTestCase):
         self.assertListEqual([], list_blocklist())
 
     def test_list_blocklist_default_returns_all_states(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
-        self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.8", utc_now() - timedelta(seconds=60))
         entries = list_blocklist()
         self.assertSetEqual({"203.0.113.7", "203.0.113.8"}, {entry["identifier"] for entry in entries})
 
     def test_list_blocklist_reports_the_stored_wording(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600), error_message="Blocked for {duration}.")
-        self._block("203.0.113.8", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600), error_message="Blocked for {duration}.")
+        self._block_ip("203.0.113.8", utc_now() + timedelta(seconds=600))
         by_ip = {entry["identifier"]: entry["error_message"] for entry in list_blocklist()}
         self.assertEqual("Blocked for {duration}.", by_ip["203.0.113.7"])
         self.assertIsNone(by_ip["203.0.113.8"])
 
     def test_list_blocklist_excludes_expired_on_request(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
-        self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.8", utc_now() - timedelta(seconds=60))
         entries = list_blocklist(include_expired=False)
         self.assertEqual(1, len(entries))
         self.assertEqual("203.0.113.7", entries[0]["identifier"])
         self.assertFalse(entries[0]["permanent"])
 
     def test_list_blocklist_includes_permanent(self):
-        self._block("203.0.113.9", None)
+        self._block_ip("203.0.113.9", None)
         entries = list_blocklist()
         self.assertEqual(1, len(entries))
         self.assertTrue(entries[0]["permanent"])
         self.assertIsNone(entries[0]["seconds_remaining"])
 
     def test_remove_blocklist_entry(self):
-        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=600))
         self.assertTrue(remove_blocklist_entry("203.0.113.7"))
         self.assertIsNone(db.session.get(BlockList, "203.0.113.7"))
         # A second removal finds nothing.
@@ -744,19 +712,19 @@ class UserLockStateTestCase(MyTestCase):
     def test_remove_blocklist_entry_accepts_another_spelling_of_the_address(self):
         # Blocking accepts any spelling of an address, so unblocking has to as well - otherwise an admin
         # who types the address the same way twice can create a block they cannot clear.
-        self._block("2001:db8::1", utc_now() + timedelta(seconds=600))
+        self._block_ip("2001:db8::1", utc_now() + timedelta(seconds=600))
         self.assertTrue(remove_blocklist_entry("2001:0DB8::0:1"))
         self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_remove_blocklist_entry_keeps_taking_the_identifier_as_typed(self):
         # An identifier that is not an IP address at all - a future entry type, or a row from a path that
         # did not canonicalize - stays deletable by exactly the string it is stored under.
-        self._block("not-an-ip", None)
+        self._block_ip("not-an-ip", None)
         self.assertTrue(remove_blocklist_entry("not-an-ip"))
         self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_list_blocklist_include_expired_marks_stale(self):
-        self._block("203.0.113.8", utc_now() - timedelta(seconds=60))
+        self._block_ip("203.0.113.8", utc_now() - timedelta(seconds=60))
         entries = list_blocklist(include_expired=True)
         self.assertEqual(1, len(entries))
         self.assertEqual(0, entries[0]["seconds_remaining"])
@@ -764,16 +732,16 @@ class UserLockStateTestCase(MyTestCase):
     # --- purge expired --------------------------------------------------------
 
     def test_purge_expired_user_locks(self):
-        self._lock(utc_now() - timedelta(seconds=60))                       # expired -> purged
-        self._lock(utc_now() + timedelta(seconds=600),
+        self._lock_user(utc_now() - timedelta(seconds=60))                       # expired -> purged
+        self._lock_user(utc_now() + timedelta(seconds=600),
                    resolver="r", uid="2", realm="realm2")                   # active -> kept
-        self._lock(None, resolver="r", uid="3", realm="realm3")            # permanent -> kept
+        self._lock_user(None, resolver="r", uid="3", realm="realm3")            # permanent -> kept
         self.assertEqual(1, purge_expired_user_locks())
         self.assertEqual(2, UserLockState.query.count())
 
     def test_purge_expired_blocklist(self):
-        self._block("203.0.113.1", utc_now() - timedelta(seconds=60))       # expired -> purged
-        self._block("203.0.113.2", utc_now() + timedelta(seconds=600))      # active -> kept
-        self._block("203.0.113.3", None)                                    # permanent -> kept
+        self._block_ip("203.0.113.1", utc_now() - timedelta(seconds=60))       # expired -> purged
+        self._block_ip("203.0.113.2", utc_now() + timedelta(seconds=600))      # active -> kept
+        self._block_ip("203.0.113.3", None)                                    # permanent -> kept
         self.assertEqual(1, purge_expired_blocklist())
         self.assertEqual(2, BlockList.query.count())

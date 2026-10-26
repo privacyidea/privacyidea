@@ -243,7 +243,8 @@ def user_init(wrapped_function, self):
             # cache entry associating foo with resolverA before checking the cache entries
             # of resolverB. Otherwise, we could end up with a cache that associates foo with
             # resolverB even though it should be associated with resolverA.
-            if self._locate_user_in_resolver(resolvername):
+            # A user built from a uid and a resolver (e.g. a token owner) has no login name to look for.
+            if self.login and self._locate_user_in_resolver(resolvername):
                 break
     # Either we could not determine a resolver or we could, but the user is not in cache.
     # We need to get additional information from the userstore.

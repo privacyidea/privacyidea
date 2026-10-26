@@ -26,7 +26,7 @@ import re
 
 from privacyidea.lib import _
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.user import User, get_user_from_param
+from privacyidea.lib.user import User, get_user_from_param, split_user
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -54,6 +54,9 @@ class RequestManglerEventHandler(BaseEventHandler):
 
     identifier = "RequestMangler"
     description = "This event handler can modify the parameters in the request."
+    # The endpoint works with the mangled parameters. Continuing without the handler would process the request with
+    # the values the client sent.
+    default_abort_on_error = True
 
     @property
     def allowed_positions(self):
@@ -129,6 +132,7 @@ class RequestManglerEventHandler(BaseEventHandler):
         :return:
         """
         ret = True
+        g = options.get("g")
         request = options.get("request")
         handler_def = options.get("handler_def")
         handler_options = handler_def.get("options", {})
@@ -138,6 +142,7 @@ class RequestManglerEventHandler(BaseEventHandler):
             if action.lower() == ACTION_TYPE.DELETE:
                 if parameter in request.all_data:
                     del (request.all_data[parameter])
+                    _note_mangled_parameter(request, parameter)
             elif action.lower() == ACTION_TYPE.SET:
                 value = handler_options.get("value")
                 match_parameter = handler_options.get("match_parameter")
@@ -166,18 +171,47 @@ class RequestManglerEventHandler(BaseEventHandler):
                             except IndexError:
                                 log.warning(f"The number of found tags ({m.groups()!r}) "
                                             f"do not match the required number ({value!r}).")
+                                self.run_details = (f"The value of the parameter {parameter!r} names more groups "
+                                                    f"than the match pattern has.")
+                                ret = False
                     if new_value is not None:
                         request.all_data[parameter] = new_value
+                        _note_mangled_parameter(request, parameter)
                         # Optionally reset the user if a param of the user was mangled
                         # TODO this should be a UserMangler to explicitly change the user
                         # TODO then remove any user info from all_data...
                         if parameter in USER_PARAMETERS and is_true(handler_options.get("reset_user")):
-                            request.User = _user_from_parameters(request.all_data)
+                            request.User = _user_from_parameters(request.all_data,
+                                                                 _realm_is_named_by_request(g, request))
 
         return ret
 
 
-def _user_from_parameters(parameters: dict) -> User:
+def _note_mangled_parameter(request, parameter: str) -> None:
+    """
+    Remember that a request mangler definition set or deleted *parameter* in this request.
+    """
+    mangled_parameters = getattr(request, "mangled_parameters", None)
+    if mangled_parameters is None:
+        mangled_parameters = request.mangled_parameters = set()
+    mangled_parameters.add(parameter)
+
+
+def _realm_is_named_by_request(g, request) -> bool:
+    """
+    Whether the realm parameter was sent by the client or set by a request mangler definition. ``/validate`` and
+    ``/auth`` also fill it in themselves before the event handlers run, with the realm of the original login name or
+    the default realm, and that value does not name a realm for a new login name.
+
+    :return: True if the realm parameter is one the request named, also if the client parameters are not known
+    """
+    client_parameters = getattr(g, "request_data", None)
+    if client_parameters is None:
+        return True
+    return bool(client_parameters.get("realm")) or "realm" in getattr(request, "mangled_parameters", set())
+
+
+def _user_from_parameters(parameters: dict, realm_is_named: bool = True) -> User:
     """
     The user the request parameters name, read like any other request that names a user
     (:func:`~privacyidea.lib.user.get_user_from_param`): a ``user@realm`` login name is split as the Split@Sign
@@ -186,9 +220,14 @@ def _user_from_parameters(parameters: dict) -> User:
     that one is read first.
 
     :param parameters: the request parameters, after the mangling
+    :param realm_is_named: False if the realm parameter was only filled in by the server for the original login name.
+        Then the realm of a new ``user@realm`` login name is used instead.
     :return: the user of the request
     """
     # Only what names the user is passed on, so no other request parameter, such as the password, reaches its debug log.
     user_parameters = {key: parameters[key] for key in ("realm", "resolver") if key in parameters}
-    user_parameters["user"] = parameters.get("username") or parameters.get("user")
+    login_name = parameters.get("username") or parameters.get("user")
+    user_parameters["user"] = login_name
+    if not realm_is_named and login_name and split_user(login_name)[1]:
+        user_parameters.pop("realm", None)
     return get_user_from_param(user_parameters)

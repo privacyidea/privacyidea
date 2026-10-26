@@ -140,7 +140,7 @@ describe("ContainerTemplateEditPageComponent", () => {
     expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES);
   });
 
-  it("should delete the old template name if name was renamed during edit", async () => {
+  it("saving an existing template never deletes a template", async () => {
     const oldData = { name: "OldName", container_type: "type1", template_options: { tokens: [] }, default: false };
     component.initTemplate.set(oldData);
     component.template.update((t) => ({ ...t, name: "NewName" }));
@@ -148,11 +148,31 @@ describe("ContainerTemplateEditPageComponent", () => {
     jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
     jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(true);
     const deleteSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplate");
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
 
     await component.onAction("save");
 
-    expect(deleteSpy).toHaveBeenCalledWith("OldName");
-    expect(jest.spyOn(router, "navigateByUrl")).toHaveBeenCalled();
+    expect(deleteSpy).not.toHaveBeenCalled();
+    expect(containerTemplateServiceMock.postTemplateEdits).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "OldName" })
+    );
+    expect(navigateSpy).toHaveBeenCalled();
+  });
+
+  it("the template name is read-only for an existing template and editable for a new one", () => {
+    const nameInput = () =>
+      fixture.nativeElement.querySelector('input[aria-label="Template Name"]') as HTMLInputElement;
+    fixture.detectChanges();
+    expect(nameInput().readOnly).toBe(false);
+
+    component.initTemplate.set({
+      name: "OldName",
+      container_type: "generic",
+      template_options: { tokens: [] },
+      default: false
+    });
+    fixture.detectChanges();
+    expect(nameInput().readOnly).toBe(true);
   });
 
   it("should not navigate if saving the template fails", async () => {

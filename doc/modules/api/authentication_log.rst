@@ -8,5 +8,4 @@ Authentication log endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: authentication_log_blueprint
-
    :include-empty-docstring:

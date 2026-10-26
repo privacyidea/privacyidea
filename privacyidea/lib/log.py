@@ -38,6 +38,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_LOGGING_CONFIG = {
     "version": 1,
+    "disable_existing_loggers": False,
     "formatters": {
         "detail": {
             "()": "privacyidea.lib.log.SecureFormatter",
@@ -65,6 +66,7 @@ DEFAULT_LOGGING_CONFIG = {
 
 DOCKER_LOGGING_CONFIG = {
     "version": 1,
+    "disable_existing_loggers": False,
     "formatters": {
         "container": {
             "()": "privacyidea.lib.log.SecureFormatter",

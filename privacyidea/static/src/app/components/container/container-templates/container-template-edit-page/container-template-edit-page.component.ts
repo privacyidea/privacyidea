@@ -27,7 +27,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -58,7 +57,6 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatCardModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltipModule,
     MatFormFieldModule,
     MatListModule,
     MatCheckboxModule,
@@ -163,9 +161,6 @@ export class ContainerTemplateEditPageComponent {
     if (action === "save") {
       const result = await this._saveTemplate();
       if (!result) return;
-      if (this.initTemplate() && this.initTemplate()?.name !== this.template().name) {
-        await this.containerTemplateService.deleteTemplate(this.initTemplate()!.name);
-      }
       this._navigateBack();
     }
   }
@@ -187,7 +182,11 @@ export class ContainerTemplateEditPageComponent {
       ...t,
       template_options: { ...t.template_options, tokens }
     }));
-    return this.containerTemplateService.postTemplateEdits(this.template());
+    // An existing template is saved under its own name, so a changed name can not create a second template
+    const initTemplate = this.initTemplate();
+    return this.containerTemplateService.postTemplateEdits(
+      initTemplate ? { ...this.template(), name: initTemplate.name } : this.template()
+    );
   }
 
   onCancel(): void {

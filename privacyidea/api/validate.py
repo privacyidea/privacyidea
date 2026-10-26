@@ -113,7 +113,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
 from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
-                                                    REMEMBER_DEVICE_REJECTION)
+                                                    RejectionShape, REMEMBER_DEVICE_REJECTION,
+                                                    TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
@@ -127,7 +128,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError, EnrollmentError)
+                                   TokenAdminError, EnrollmentError, ValidateError, ResolverError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -140,7 +141,8 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
+from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
+                                                 require_fido2_registration)
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -154,7 +156,8 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
-from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
+from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
+                                   check_fido2_token_state, record_fido2_login_success)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -216,7 +219,15 @@ def before_request():
     # Check if a policy defines the realm
     realm = get_realm_for_authentication(g, username, realm)
     resolver = request.all_data.get("resolver")
-    request.User = User(username, realm, resolver)
+    try:
+        request.User = User(username, realm, resolver)
+    except ResolverError:
+        if request.blueprint == validate_blueprint.name:
+            # Lowercase like the realm of a User object, which this request could not build
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
+                               realm=realm.lower() if realm else None,
+                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
     request.all_data["realm"] = realm
 
     # Replace the requested user with the user it was resolved to
@@ -226,7 +237,53 @@ def before_request():
         "realm": request.User.realm})
 
 
+def _offline_refill_identity() -> User:
+    """
+    The owner of the token a ``/validate/offlinerefill`` request names, for the conditional-access gate to check.
+
+    Read from the serial alone: the refill hands out the material of whatever token the serial names, so a ``user``
+    parameter naming somebody else must not be what the gate checks. Falls back to an empty user when the serial does
+    not resolve to exactly one owned token, so the source-IP block still applies.
+    """
+    serial = get_optional(request.all_data, "serial")
+    if not serial:
+        return User()
+    try:
+        token = get_one_token(serial=serial, silent_fail=True)
+    except Exception as ex:
+        log.debug(f"Conditional-access pre-check could not resolve the owner of {serial!r}: {ex!r}")
+        return User()
+    return token.user if (token and token.user) else User()
+
+
+def _hide_offline_refill_error() -> bool:
+    """Whether a failed refill is answered with the unspecific error rather than its own."""
+    return Match.user(g, scope=SCOPE.TOKEN, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
+                      user_object=request.User if hasattr(request, "User") else None).any()
+
+
+def _refuse_offline_refill(message: str | None) -> tuple[Response, int]:
+    """
+    Answer a refill conditional access refused the way every failed refill is answered: an error response. A silent
+    rejection is masked like any other failure; a configured message is shown either way, as it is past
+    ``hide_specific_error_message`` on the other endpoints.
+
+    A ``ValidateError`` (401), the code a wrong OTP is answered with, and never a ``ParameterError`` (905): the
+    privacyIDEA Credential Provider reads 905 on a refill as "no longer an offline token" and deletes the
+    WebAuthn/Passkey offline data, which a restriction that lifts again must not cost.
+    """
+    error = ValidateError(message or _("Failed offline token refill"))
+    if not message and _hide_offline_refill_error():
+        return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(error)
+    return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
+
+
+OFFLINE_REFILL_REJECTION = RejectionShape(render=_refuse_offline_refill)
+
+
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+@conditional_access_gate(_offline_refill_identity, shape=OFFLINE_REFILL_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
@@ -267,6 +324,7 @@ def offlinerefill():
     serial = get_required(request.all_data, "serial")
     refilltoken_request = get_required(request.all_data, "refilltoken")
     password = get_required(request.all_data, "pass", allow_empty=True)
+    reason = None
     try:
         tokens = get_tokens(serial=serial)
         if len(tokens) != 1:
@@ -276,44 +334,45 @@ def offlinerefill():
         # check if token is disabled or otherwise not fit for auth
         message_list = []
         if not token.check_all(message_list):
+            reason = token.auth_details.get(AUTH_EVENT_REASON_KEY)
             log.info(f"Failed to offline refill: {message_list}")
             raise ParameterError(_("The token is not valid."))
         token_attachments = list_machine_tokens(serial=serial, application="offline")
         if token_attachments:
             # TODO: Currently we do not distinguish, if a token had more than one offline attachment
-            # check refill token depending on token type
-            refilltoken_stored = None
-            if token.type.lower() == "hotp":
-                refilltoken_stored = token.get_tokeninfo("refilltoken")
-            elif token.type.lower() in ["webauthn", "passkey"]:
-                computer_name = get_computer_name_from_user_agent(request.user_agent.string)
-                if not computer_name:
-                    log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
-                                f"{request.user_agent.string}")
-                    raise ParameterError(_("Machine can not be identified by user agent!"))
-                refilltoken_stored = token.get_tokeninfo("refilltoken_" + computer_name)
-
-            if refilltoken_stored and refilltoken_stored == refilltoken_request:
+            if (token.type.lower() in ["webauthn", "passkey"]
+                    and not get_computer_name_from_user_agent(request.user_agent.string)):
+                reason = AuthEventReason.MACHINE_NOT_IDENTIFIED
+                log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
+                            f"{request.user_agent.string}")
+                raise ParameterError(_("Machine can not be identified by user agent!"))
+            # The refill token of a JSON request can be any JSON value
+            if isinstance(refilltoken_request, str):
                 # We need the options to pass the count and the rounds for the next offline OTP values,
                 # which could have changed in the meantime.
                 options = token_attachments[0].get("options")
-                otps = MachineApplication.get_refill(token, password, options)
-                refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string)
-                response = send_result(True)
-                content = response.json
-                content["auth_items"] = {"offline": [{"refilltoken": refilltoken_new,
-                                                      "response": otps,
-                                                      "serial": serial}]}
-                response.set_data(json.dumps(content))
-                return response
+                try:
+                    refill = MachineApplication.refill(token, password, refilltoken_request, options,
+                                                       request.user_agent.string)
+                except ValidateError:
+                    reason = AuthEventReason.WRONG_OTP
+                    raise
+                if refill is not None:
+                    response = send_result(True)
+                    content = response.json
+                    content["auth_items"] = {"offline": [{"refilltoken": refill.refilltoken,
+                                                          "response": refill.otps,
+                                                          "serial": serial}]}
+                    response.set_data(json.dumps(content))
+                    log_authentication(AuthEventType.OFFLINE_REFILL_SUCCESS, request, serial=serial)
+                    return response
+        reason = AuthEventReason.REFILLTOKEN_MISMATCH if token_attachments else AuthEventReason.NOT_AN_OFFLINE_TOKEN
         raise ParameterError(_("Token is not an offline token or refill token is incorrect"))
 
     except Exception as e:
-        if Match.user(
-                g,
-                scope=SCOPE.TOKEN,
-                action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
-                user_object=request.User if hasattr(request, "User") else None).any():
+        log_authentication(AuthEventType.OFFLINE_REFILL_FAIL, request, serial=serial,
+                           reasons=[reason] if reason else None)
+        if _hide_offline_refill_error():
             return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(e)
         raise
 
@@ -354,7 +413,16 @@ def _conditional_access_identity():
             token = get_fido2_token_by_credential_id(credential_id)
     except Exception as ex:
         log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
-    return token.user if (token and token.user) else request.User
+    if not token:
+        return request.User
+    try:
+        owner = token.user
+    except Exception:
+        # The request is refused with the error, which has to be logged here as the view never runs
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=token.get_serial(),
+                           transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
+    return owner or request.User
 
 
 def _challenge_owner(challenge) -> User:
@@ -453,7 +521,9 @@ def check():
         is supplied.
     :jsonparam otponly: ``1`` to skip the PIN check and only verify
         the OTP value. Used by the management UI; only meaningful
-        with ``serial``.
+        with ``serial``. The token has to be usable (active, within its
+        validity period, below its fail counter), and a wrong value counts
+        as a failed authentication.
     :jsonparam transaction_id: transaction id for the second leg of
         a challenge-response flow.
     :jsonparam state: alias of ``transaction_id`` for legacy callers.
@@ -465,6 +535,19 @@ def check():
     :jsonparam cancel_enrollment: ``1`` together with
         ``transaction_id`` cancels an in-progress
         ``enroll_via_multichallenge`` flow without authenticating.
+
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (FIDO2), then ``serial``, then ``user`` with
+    ``pass``. A request that does not carry everything the selected
+    method needs is malformed and is answered with a 400, without
+    counting as an authentication attempt. A FIDO2 request always
+    needs ``transaction_id`` and the ``Origin`` header, and beyond
+    that either the assertion (``authenticatorData``,
+    ``clientDataJSON`` and ``signature``, or their legacy spellings
+    ``authenticatordata``, ``clientdata`` and ``signaturedata``) or,
+    when it answers an ``enroll_via_multichallenge`` enrollment, the
+    registration (``attestationObject``, ``clientDataJSON``, ``rawId``
+    and ``authenticatorAttachment``).
 
     **Example Validation Request**:
 
@@ -590,6 +673,10 @@ def check():
             # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
             _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
         raise
+    except ResolverError:
+        # A user store that failed after the request was let in, e.g. on a later lookup of the token owner
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_STORE_UNAVAILABLE
+        raise
     finally:
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
         # conditional-access engine react to the classified outcome.
@@ -689,6 +776,18 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     # A request without its transaction_id is malformed, not an authentication attempt, so it is rejected before
     # anything classifies it and leaves no authentication event.
     transaction_id = get_required(request.all_data, "transaction_id")
+    # The same applies to the rest of the request: the parameters the answer is verified with are read in the
+    # token class, after the checks below have classified the request. Requiring them here keeps an incomplete
+    # request a malformed request instead of a failed authentication. Which ones are required follows from the
+    # method the request selected, so the registration data decides that before anything else is read.
+    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+    if attestation_object:
+        require_fido2_registration(request.all_data)
+    else:
+        require_fido2_assertion(request.all_data)
+    # The origin binds the answer to the site it was made for and is taken from the request environment, never
+    # from a parameter, so it is required from there.
+    get_required(request.environ, "HTTP_ORIGIN")
     # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
     # own settling does not apply here: this path resolves and checks the token itself.
     confirm_attempt(transaction_id)
@@ -698,6 +797,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if serial:
         try:
             token = get_one_token(serial=serial)
+            if token.get_type() not in (PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()):
+                # Only a FIDO2 token answers on this path, so any other token counts as not found
+                raise ResourceNotFoundError(_("The requested token could not be found."))
         except ResourceNotFoundError:
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
             context[AUTH_EVENT_SERIALS_KEY] = [serial]
@@ -750,9 +852,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
-    # Handle Enrollment vs Authentication
-    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
-
+    # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
     if attestation_object:
         # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
         # enrollment started at /token/init is completed there.
@@ -764,7 +864,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
                 or token.rollout_state != RolloutState.CLIENTWAIT or not enrollment_challenges):
             log.warning(f"Registration data for token {token.get_serial()} does not answer a pending enrollment.")
             context["details"]["message"] = _("Authentication failed.")
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            # The transaction holds no enrollment challenge of this token
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            _record_context_reason(context, AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token.get_serial())
             context["serial_list"].append(token.get_serial())
             return  # Result remains False
 
@@ -817,28 +920,35 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            context["details"]["message"] = "Token is disabled"
-            # Explicit audit for disabled token
+        token_state = check_fido2_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            context["details"]["message"] = token_state.message
+            # Explicit audit for the unusable token
             g.audit_object.log({
-                "info": log_used_user(user, "Token is disabled"),
+                "info": log_used_user(user, token_state.message),
                 "success": False,
                 "authentication": AUTH_RESPONSE.REJECT,
                 "serial": token.get_serial(),
                 "token_type": context["details"].get("type")
             })
-            # Owned-but-unusable token (disabled) -> NO_USABLE_TOKEN
+            # Owned-but-unusable token (disabled, expired, counters exceeded) -> NO_USABLE_TOKEN
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
-            _record_context_reason(context, AuthEventReason.TOKEN_DISABLED, token.get_serial())
+            _record_context_reason(context, token_state.reason, token.get_serial())
             return
 
         try:
             fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
-        except (ResourceNotFoundError, AuthError):
+        except (ResourceNotFoundError, AuthError) as error:
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure; record it on the
-            # context since check() logs it once in its finally.
-            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            # context since check() logs it once in its finally. No first factor was checked on this path, so it is
+            # a failed answer to a challenge, like for any other token.
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            _record_context_reason(context, AuthEventReason.CHALLENGE_EXPIRED
+                                   if isinstance(error, ChallengeExpiredError)
+                                   else AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token.get_serial())
             context["serial_list"].append(token.get_serial())
             raise
         except PolicyError:
@@ -849,6 +959,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
             raise
         context["result"] = fido_verification_result.success > 0
+        if context["result"]:
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
 
     # Success Handling
     if context["result"]:
@@ -871,7 +985,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     if context["result"]:
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
     elif not attestation_object:
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_ANSWERED_FAIL
+        context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+        _record_context_reason(context, AuthEventReason.CHALLENGE_WRONG_RESPONSE, token.get_serial())
 
 
 def _handle_serial_auth(context: dict, serial: str):
@@ -910,8 +1026,11 @@ def _handle_serial_auth(context: dict, serial: str):
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
-        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
-        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
+        # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
+        # token that can not be used is classified by check_otp.
+        context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None) or (
+            AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
+        context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
         # a message, so without this the row would name no token although the request named exactly one.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
@@ -981,7 +1100,13 @@ def _handle_standard_auth(context: dict):
         # token at all, since there is no single token the response could be attributed
         # to. Take the tokens that were challenged from the transaction instead, so that
         # the failed attempt is logged against the tokens it was made against.
-        context["serial_list"].extend(_challenged_token_serials(transaction_id, context["user"]))
+        challenged_serials = _challenged_token_serials(transaction_id, context["user"])
+        context["serial_list"].extend(challenged_serials)
+        if challenged_serials:
+            # The event handlers take the token of the event from the audit entry. The
+            # response is attributed to none of these tokens, so a handler does not act on
+            # them either.
+            g.audit_serial_unattributed = True
 
 
 def _challenged_token_serials(transaction_id: str, user: User) -> list[str]:
@@ -1036,9 +1161,9 @@ def _finalize_auth_response(context):
                 except Exception as e:
                     log.debug(f"Could not find container for token {serial}: {e}")
 
-            # Client Mode Per User Policy
+            # Client Mode Per User Policy: an opt-in, the last used token type is only stored when the policy is set
             if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                          user_object=user).allowed():
+                          user_object=user).enforced():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
@@ -1369,9 +1494,7 @@ def check_remember_device():
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 # First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
-# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
-# with this endpoint's own kind of nothing rather than changing the field's type.
-@conditional_access_gate(_conditional_access_identity, rejection_value=0)
+@conditional_access_gate(_conditional_access_identity, shape=TRIGGER_CHALLENGE_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)

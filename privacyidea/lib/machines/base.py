@@ -177,7 +177,7 @@ class BaseMachineResolver:
         machine resolver.
 
         :param params:
-        :return: tupple of success and description
+        :return: tuple of success and description
         :rtype: (bool, string)
         """
         return False, "Not Implemented"

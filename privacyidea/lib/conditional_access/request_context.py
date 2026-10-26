@@ -77,6 +77,21 @@ class AuthPrincipal:
     internal_admin: bool = False
 
 
+@dataclass
+class GateCheck:
+    """
+    The conditional-access gate a request passed, kept so it can be run again when a pre-event handler changes who
+    the request is for (see :func:`recheck_conditional_access_gate`).
+
+    :ivar resolve_identity: resolves the identity the gate checks from the request as it stands now
+    :ivar check: runs the gate for an identity, returning or raising what the gate does for a refused request
+    :ivar identity: the identity the gate last checked
+    """
+    resolve_identity: Callable[[], User]
+    check: Callable[[User], Any]
+    identity: User
+
+
 class ConditionalAccessContext:
     """
     The conditional-access work of one request: who is authenticating, and the authentication-log rows it will write.
@@ -114,9 +129,9 @@ class ConditionalAccessContext:
         # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
         # success and the identity itself (see _audit_rejection).
         self.rejection_audit: dict | None = None
-        # The check of the gate this request passed, kept so it can be run again for a user that replaces
-        # request.User after the gate (see recheck_conditional_access_gate).
-        self.gate_check: Callable[[], Any] | None = None
+        # The gate this request passed, kept so it can be run again when a pre-event handler changes who the request
+        # is for (see recheck_conditional_access_gate).
+        self.gate_check: GateCheck | None = None
 
     def claim_message(self, message: str) -> None:
         """
@@ -626,24 +641,33 @@ def claimed_ca_message() -> str | None:
 
 def recheck_conditional_access_gate() -> Any:
     """
-    Run the conditional-access gate this request passed again, because the user it authenticates has changed since.
+    Run the conditional-access gate this request passed again if the identity it checks has changed since.
 
     The gates sit above the pre-policies and the event handlers, so nothing runs for a locked user before the request
-    is refused. A pre-event handler can replace ``request.User`` after that - the RequestMangler does with
-    ``reset_user`` - so the event decorator calls this as soon as a handler has done so, before any later handler or
-    the view acts for the new user. Every user the request acts for is thereby one the gate has checked.
+    is refused. A pre-event handler can change who the request is for after that: the RequestMangler replaces
+    ``request.User`` with ``reset_user``, and can rewrite the ``serial`` or ``credential_id`` an endpoint resolves
+    the token owner from without touching ``request.User`` at all. The event decorator therefore calls this after
+    every pre-event handler, and the identity is resolved again the way the gate resolved it, so a change to either
+    is noticed before any later handler or the view acts for it. Every identity the request acts for is thereby one
+    the gate has checked.
 
-    The decision the first check buffered is dropped: it was about a user this request no longer authenticates, and
-    the row it would be recorded on is the new user's.
+    The decision the first check buffered is dropped: it was about an identity this request no longer acts for, and
+    the row it would be recorded on is the new one's.
 
     :return: what the gate returns for a refused request - the rejection response on ``/validate/*``, while ``/auth``
-        raises instead - or ``None`` when the request may continue or passed no gate
+        raises instead - or ``None`` when the request may continue, passed no gate, or still acts for the identity
+        the gate checked
     """
     context = peek_ca_context()
     if context is None or context.gate_check is None:
         return None
+    gate = context.gate_check
+    identity = gate.resolve_identity()
+    if identity == gate.identity:
+        return None
+    gate.identity = identity
     context.pending_outcomes.clear()
-    return context.gate_check()
+    return gate.check(identity)
 
 
 def peek_ca_context() -> ConditionalAccessContext | None:

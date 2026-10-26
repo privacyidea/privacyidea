@@ -21,12 +21,18 @@ import { TestBed } from "@angular/core/testing";
 import { of, throwError } from "rxjs";
 
 import { PiResponse } from "@app/app.component";
-import { AuthResponse, AuthService } from "@services/auth/auth.service";
+import { AuthResponse, AuthService, MultiChallenge, WebAuthnSignRequest } from "@services/auth/auth.service";
 import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockBase64Service, MockLocalService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { PasskeyCheckParams, ValidateCheckResponse, ValidateService, WebAuthnSignRequest } from "./validate.service";
+import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
+import {
+  mergeWebAuthnSignRequests,
+  PasskeyCheckParams,
+  ValidateCheckResponse,
+  ValidateService
+} from "./validate.service";
 
 interface PasskeyShim {
   isConditionalMediationAvailable?: jest.Mock | (() => Promise<boolean>);
@@ -562,5 +568,62 @@ describe("ValidateService", () => {
         });
       });
     });
+  });
+});
+
+describe("mergeWebAuthnSignRequests", () => {
+  it("should return null if there is no WebAuthn challenge", () => {
+    const hotpChallenge: MultiChallenge = {
+      client_mode: "interactive",
+      message: "please enter otp: ",
+      serial: "OATH00000001",
+      transaction_id: "tx-webauthn",
+      type: "hotp"
+    };
+
+    expect(mergeWebAuthnSignRequests([hotpChallenge], "example.com")).toBeNull();
+  });
+
+  it("should take the rpId from the first entry that fits the host of the page", () => {
+    const challenges = [
+      mockWebAuthnChallenge(
+        "WAN00000001",
+        mockWebAuthnSignRequest("credential-old-domain", { rpId: "old-domain.org" })
+      ),
+      mockWebAuthnChallenge("WAN00000002", mockWebAuthnSignRequest("credential-key-2")),
+      mockWebAuthnChallenge("WAN00000003", mockWebAuthnSignRequest("credential-key-3"))
+    ];
+
+    expect(mergeWebAuthnSignRequests(challenges, "login.example.com")).toEqual({
+      ...mockWebAuthnSignRequest("credential-key-2"),
+      allowCredentials: [
+        ...mockWebAuthnSignRequest("credential-key-2").allowCredentials,
+        ...mockWebAuthnSignRequest("credential-key-3").allowCredentials
+      ]
+    });
+  });
+
+  it("should fall back to the first entry if no rpId fits the host of the page", () => {
+    const challenges = [
+      mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1", { rpId: "other-domain.org" })),
+      mockWebAuthnChallenge("WAN00000002", mockWebAuthnSignRequest("credential-key-2"))
+    ];
+
+    // "notexample.com" ends with "example.com" but is not a subdomain of it
+    expect(mergeWebAuthnSignRequests(challenges, "notexample.com")).toEqual(
+      mockWebAuthnSignRequest("credential-key-1", { rpId: "other-domain.org" })
+    );
+  });
+
+  it("should leave out entries with another challenge", () => {
+    const challenges = [
+      mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1")),
+      mockWebAuthnChallenge(
+        "WAN00000002",
+        mockWebAuthnSignRequest("credential-key-2", { challenge: "other-challenge" })
+      )
+    ];
+
+    expect(mergeWebAuthnSignRequests(challenges, "example.com")).toEqual(mockWebAuthnSignRequest("credential-key-1"));
   });
 });

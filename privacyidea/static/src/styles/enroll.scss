@@ -13,21 +13,36 @@
   border-radius: var(--border-radius);
 }
 
-.inline-warning {
+.inline-warning,
+.inline-success {
   margin-bottom: 16px;
-  background: var(--inline-warning-bg);
+  color: var(--status-ink);
   padding: 8px;
   border-radius: var(--border-radius);
+  // Links and icon buttons take the ink of the fill they sit on, not the page's link and icon colors.
+  --copy-icon-color: var(--status-ink);
+  --mat-icon-button-icon-color: var(--status-ink);
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}
+
+.inline-warning {
+  background: var(--red-fill);
+  outline: 1px solid var(--red-edge);
+  outline-offset: -1px;
 }
 
 .inline-success {
-  margin-bottom: 16px;
-  background: var(--mint-bg);
-  padding: 8px;
-  border-radius: var(--border-radius);
+  background: var(--green-fill);
+  outline: 1px solid var(--green-edge);
+  outline-offset: -1px;
 }
 
-.width-948 {
+// Content column of the token enrollment forms: as wide as the largest enrollment form needs.
+.enroll-content-width {
   max-width: 948px;
   width: 100%;
 }

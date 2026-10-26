@@ -261,6 +261,10 @@ AUTHENTICATING_ENDPOINTS: tuple[str, ...] = (
     "/validate/radiuscheck",
     "/validate/triggerchallenge",
     "/validate/initialize",
+    "/validate/offlinerefill",
+    # Recognition of a remembered device. Not an authentication, but it records the refusals of conditional access
+    # (lock, block, deny) and a replayed device cookie (DEVICE_TOKEN_REUSED).
+    "/validate/remember_device",
     # The out-of-band push answer. The route is /ttype/<ttype>, but push is the only token type that authenticates
     # through it, so the path it is reached under is what an admin selects.
     "/ttype/push",

@@ -18,6 +18,8 @@
  **/
 import { ComponentRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { SqlResolverComponent } from "./sql-resolver.component";
@@ -98,5 +100,57 @@ describe("SqlResolverComponent", () => {
     expect(component.model().poolSize).toBe("5");
     expect(component.model().poolTimeout).toBe("10");
     expect(component.model().poolRecycle).toBe("7200");
+  });
+
+  describe("password hash type", () => {
+    // The keys of hash_type_dict in privacyidea/lib/resolvers/SQLIdResolver.py
+    const backendHashTypes = [
+      "PHPASS",
+      "SHA",
+      "SSHA",
+      "SSHA256",
+      "SSHA512",
+      "OTRS",
+      "SHA256CRYPT",
+      "SHA512CRYPT",
+      "MD5CRYPT"
+    ];
+
+    const getHashSelect = (): MatSelect => fixture.debugElement.query(By.directive(MatSelect))?.componentInstance;
+
+    beforeEach(() => {
+      componentRef.setInput("data", { Editable: "1" });
+      fixture.detectChanges();
+    });
+
+    it("should not show the hash type select for a resolver that is not editable", () => {
+      componentRef.setInput("data", { Editable: "0" });
+      fixture.detectChanges();
+
+      expect(getHashSelect()).toBeUndefined();
+    });
+
+    it("should offer every hash type the backend supports", () => {
+      expect(getHashSelect().options.map((option) => option.value)).toEqual(backendHashTypes);
+    });
+
+    it("should store a selected hash type in the model", () => {
+      const option = getHashSelect().options.find((o) => o.value === "SHA256CRYPT");
+      expect(option).toBeDefined();
+      option?.select();
+      fixture.detectChanges();
+
+      expect(component.model().Password_Hash_Type).toBe("SHA256CRYPT");
+    });
+
+    it("should name every hash type the backend supports in the hint", () => {
+      const hint = fixture.debugElement.query(By.css("mat-hint")).nativeElement.textContent;
+
+      for (const hashType of backendHashTypes) {
+        expect(hint).toMatch(new RegExp(`\\b${hashType}\\b`));
+      }
+      // SHA512 alone is no valid hash type, only SSHA512 and SHA512CRYPT are
+      expect(hint).not.toMatch(/\bSHA512\b/);
+    });
   });
 });

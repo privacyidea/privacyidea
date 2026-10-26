@@ -62,7 +62,7 @@
             >
             <th
               class="dot-column"
-              i18n="@@nav.subscription"
+              i18n="@@common.subscription"
               >Subscription</th
             >
           } @else {
@@ -131,7 +131,9 @@
                       class="status-dot"
                       [class]="usageDot"
                       aria-hidden="true"
-                      >{{ dotGlyph(usageDot) }}</span
+                      >
+                      <mat-icon class="status-glyph">{{ dotGlyph(usageDot) }}</mat-icon>
+                    </span
                     >
                   </span>
                 </td>
@@ -147,7 +149,9 @@
                       class="status-dot"
                       [class]="subscriptionDot"
                       aria-hidden="true"
-                      >{{ dotGlyph(subscriptionDot) }}</span
+                      >
+                      <mat-icon class="status-glyph">{{ dotGlyph(subscriptionDot) }}</mat-icon>
+                    </span
                     >
                   </span>
                 </td>

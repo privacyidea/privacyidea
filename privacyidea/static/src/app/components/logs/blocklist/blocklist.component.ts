@@ -16,10 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass, TitleCasePipe } from "@angular/common";
-import { Component, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, Component, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -30,7 +32,6 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { Sort } from "@angular/material/sort";
-import { MatMenuModule } from "@angular/material/menu";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -54,12 +55,16 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { BlocklistBlockDialogComponent } from "./blocklist-block-dialog/blocklist-block-dialog.component";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-blocklist",
   templateUrl: "./blocklist.component.html",
   styleUrl: "./blocklist.component.scss",
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
@@ -78,8 +83,7 @@ import { concatMap, reduce } from "rxjs/operators";
     RouterLink,
     DatePipe,
     TitleCasePipe,
-    NgClass,
-    MatMenuModule
+    NgClass
   ]
 })
 export class BlocklistComponent {
@@ -122,6 +126,40 @@ export class BlocklistComponent {
     source: () =>
       this.casService.blocklistResource.hasValue() ? this.casService.blocklistResource.value() : undefined,
     computation: () => []
+  });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => {
+    const canReset = this.authService.actionAllowed("blocklist_reset");
+    return [
+      {
+        id: "block",
+        label: $localize`:@@blocklist.blockIp:Block IP`,
+        tone: "secondary",
+        width: "m",
+        icon: "lock",
+        visible: this.authService.actionAllowed("blocklist_set"),
+        run: () => this.blockIp()
+      },
+      {
+        id: "unblock",
+        label: $localize`:@@blocklist.unblock:Unblock`,
+        tone: "secondary",
+        width: "m",
+        icon: "lock_open",
+        visible: canReset,
+        disabled: this.selection().length === 0,
+        run: () => this.removeSelected()
+      },
+      {
+        id: "delete-expired",
+        label: $localize`:@@token.deleteExpired:Delete Expired`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete_sweep",
+        visible: canReset,
+        run: () => this.cleanUpExpired()
+      }
+    ];
   });
 
   readonly filterText = signal("");

@@ -15,7 +15,7 @@ from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolv
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time,
-                                       cache_username, delete_user_cache,
+                                       cache_username, delete_user_cache, create_filter,
                                        EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled)
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
@@ -520,6 +520,26 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         cache_corny = User(realm=self.realm1, resolver=self.resolvername1, uid=corny.uid)
         self.assertEqual(corny.login, cache_corny.login)
 
+        self._delete_realm()
+
+    def test_15_user_from_uid_not_in_cache(self):
+        # A user built from a uid and a resolver (like a token owner) without a cache entry is resolved by the uid.
+        # The resolver is not searched for a user with an empty login name.
+        self._create_realm()
+        delete_user_cache()
+        resolver_class = type(get_resolver_object(self.resolvername1))
+        with patch.object(resolver_class, "getUserId", autospec=True,
+                          side_effect=resolver_class.getUserId) as get_user_id:
+            user = User(realm=self.realm1, resolver=self.resolvername1, uid=self.uid)
+        self.assertEqual(self.username, user.login)
+        self.assertEqual(self.uid, user.uid)
+        searched_logins = [call.args[1] for call in get_user_id.call_args_list]
+        self.assertNotIn("", searched_logins)
+
+        # The resolved user is now in the cache
+        cached_entry = retrieve_latest_entry(create_filter(user_id=self.uid, resolver=self.resolvername1))
+        self.assertEqual(self.username, cached_entry.username)
+        delete_user_cache()
         self._delete_realm()
 
     def test_99_unset_config(self):

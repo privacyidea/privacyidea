@@ -41,6 +41,13 @@ describe("ConditionalAccessActionItemComponent", () => {
     fixture.detectChanges();
   }
 
+  // A new item, as the editor creates one for an action it loads - the unit is picked from the first duration it shows.
+  function createWithAction(action: ConditionalAccessStageAction): void {
+    fixture = TestBed.createComponent(ConditionalAccessActionItemComponent);
+    component = fixture.componentInstance;
+    setAction(action);
+  }
+
   function setRights(rights: string[]): void {
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
     fixture.detectChanges();
@@ -200,8 +207,48 @@ describe("ConditionalAccessActionItemComponent", () => {
 
   describe("duration", () => {
     it("should read a plain-number duration", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 600 });
-      expect(component.durationValue()).toBe("600");
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
+      expect(component.durationValue()).toBe("90");
+    });
+
+    it("should show a stored duration in the coarsest unit it is a whole number of", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 7200 });
+      expect(component.durationUnit()).toBe("hours");
+      expect(component.durationValue()).toBe("2");
+    });
+
+    it("should keep the unit while typing a value a coarser unit divides", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 45 });
+      expect(component.durationUnit()).toBe("seconds");
+      component.onDurationInput("60");
+      setAction({ action_type: "LOCK_USER", action_value: 60 });
+      expect(component.durationUnit()).toBe("seconds");
+      expect(component.durationValue()).toBe("60");
+    });
+
+    it("should pick the unit afresh for another action's duration, even one the current unit divides", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 45 });
+      setAction({ action_type: "BLOCK_IP", action_value: 7200 });
+      expect(component.durationUnit()).toBe("hours");
+      expect(component.durationValue()).toBe("2");
+    });
+
+    it("should show a stored zero in seconds", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 0 });
+      expect(component.durationUnit()).toBe("seconds");
+    });
+
+    it("should keep the unit when the field is cleared", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 7200 });
+      setAction({ action_type: "LOCK_USER", action_value: null });
+      expect(component.durationUnit()).toBe("hours");
+    });
+
+    it("should pick the unit afresh for a duration the current unit does not divide", () => {
+      createWithAction({ action_type: "LOCK_USER", action_value: 7200 });
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
+      expect(component.durationUnit()).toBe("seconds");
+      expect(component.durationValue()).toBe("90");
     });
 
     it("should read a nested duration_seconds", () => {
@@ -210,6 +257,7 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should emit the parsed integer on input and null when cleared", () => {
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
       const spy = jest.spyOn(component.updateAction, "emit");
       component.onDurationInput("45");
       expect(spy).toHaveBeenCalledWith({ action_value: 45 });
@@ -232,12 +280,12 @@ describe("ConditionalAccessActionItemComponent", () => {
     });
 
     it("should keep the entered number and re-scale to seconds on unit change", () => {
-      setAction({ action_type: "LOCK_USER", action_value: 120 });
+      setAction({ action_type: "LOCK_USER", action_value: 90 });
       const spy = jest.spyOn(component.updateAction, "emit");
       component.onDurationUnitChange("minutes");
       expect(component.durationUnit()).toBe("minutes");
-      // "120" kept and re-interpreted as 120 minutes = 7200s.
-      expect(spy).toHaveBeenCalledWith({ action_value: 7200 });
+      // "90" kept and re-interpreted as 90 minutes = 5400s.
+      expect(spy).toHaveBeenCalledWith({ action_value: 5400 });
     });
 
     it("should not emit on unit change when there is no value", () => {
@@ -250,8 +298,8 @@ describe("ConditionalAccessActionItemComponent", () => {
     // A policy written through the API may store the duration as a string; the field must show it rather
     // than looking empty and inviting the admin to overwrite a value that is already there.
     it("should read a numeric-string duration", () => {
-      setAction({ action_type: "LOCK_USER", action_value: "600" });
-      expect(component.durationValue()).toBe("600");
+      setAction({ action_type: "LOCK_USER", action_value: "90" });
+      expect(component.durationValue()).toBe("90");
     });
   });
 

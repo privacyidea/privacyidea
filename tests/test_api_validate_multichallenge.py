@@ -33,7 +33,7 @@ from privacyidea.lib.event import set_event
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, PolicyClass
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
@@ -700,3 +700,41 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("auth")
         sms.delete_token()
         totp.delete_token()
+
+
+class LastUsedTokenTypeWriteTestCase(MyApiTestCase):
+    """The last used token type of a user is only stored when client_mode_per_user is set."""
+    serial = "SPASS_LAST_USED"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        # The tests start on a system without any policy, so also without any authentication policy
+        for policy in PolicyClass().list_policies():
+            delete_policy(policy["name"])
+        self.user = User("cornelius", self.realm1)
+        remove_token(user=self.user)
+        self.user.delete_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN)
+        init_token({"type": "spass", "serial": self.serial, "pin": "pin20"}, user=self.user)
+
+    def tearDown(self) -> None:
+        remove_token(self.serial)
+        self.user.delete_internal_attribute(InternalUserAttributes.LAST_USED_TOKEN)
+        super().tearDown()
+
+    def _login_and_read_last_used(self) -> dict | None:
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "pin20"},
+                                           headers={"User-Agent": "privacyidea-cp/2.0"}):
+            response = self.app.full_dispatch_request()
+            self.assertTrue(response.json["result"]["value"], response.json)
+        return User("cornelius", self.realm1).internal_attributes.get(InternalUserAttributes.LAST_USED_TOKEN)
+
+    def test_01_not_stored_without_any_policy(self):
+        self.assertEqual([], PolicyClass().list_policies(active=True))
+        self.assertFalse(self._login_and_read_last_used())
+
+    def test_02_stored_with_client_mode_per_user(self):
+        set_policy("client_mode_per_user", scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER)
+        self.addCleanup(delete_policy, "client_mode_per_user")
+        self.assertEqual({"privacyidea-cp": "spass"}, self._login_and_read_last_used())

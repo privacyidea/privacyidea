@@ -41,37 +41,16 @@ from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
 from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
-from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.conditional_access_policy import (
-    BlockList,
-    ConditionalAccessPolicy,
-    ConditionalAccessPolicyCondition,
-    ConditionalAccessPolicyCounterType,
-    ConditionalAccessPolicyStage,
-    ConditionalAccessStageAction,
-    UserLockState,
-)
-from .base import MyApiTestCase
+from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicyStage,
+                                                          ConditionalAccessStageAction)
+from .conditional_access_base import ConditionalAccessApiTestCase
 
 
-class ConditionalAccessPolicyApiTestCase(MyApiTestCase):
+class ConditionalAccessPolicyApiTestCase(ConditionalAccessApiTestCase):
 
     def setUp(self):
         super().setUp()
         self.authenticate()
-        self._clear()
-
-    def tearDown(self):
-        self._clear()
-        super().tearDown()
-
-    @staticmethod
-    def _clear() -> None:
-        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
-                      ConditionalAccessPolicyCondition, ConditionalAccessPolicyCounterType, ConditionalAccessPolicy,
-                      AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
 
     def _request(self, path: str, method: str = "GET", json_data: dict | None = None,
                  auth_token: str | None = None) -> TestResponse:

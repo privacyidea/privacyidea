@@ -35,6 +35,7 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ConditionalAccessActionsListComponent } from "./actions-list/conditional-access-actions-list.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // The one tag the server substitutes into a stage's error message.
 const DURATION_TAG = "{duration}";
@@ -56,6 +57,7 @@ const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
   selector: "app-conditional-access-stage-item",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,

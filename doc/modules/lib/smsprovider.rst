@@ -3,7 +3,7 @@ SMS Provider
 
 .. index:: SMS Provider
 
-The following SMS providers are know to privacyIDEA
+The following SMS providers are known to privacyIDEA:
 
 .. toctree::
    :glob:

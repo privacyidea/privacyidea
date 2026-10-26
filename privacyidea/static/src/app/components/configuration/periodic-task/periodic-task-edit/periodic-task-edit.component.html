@@ -236,6 +236,7 @@
           <div class="option-row">
             <mat-checkbox
               (change)="toggleOption(entry[0], entry[1], $event.checked)"
+              [aria-label]="entry[0]"
               [checked]="isOptionSet(entry[0])"
               [disabled]="entry[1].required || !authService.actionAllowed('periodictask_write')"
               [disableRipple]="true"></mat-checkbox>

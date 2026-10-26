@@ -50,8 +50,9 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          get_realms,
-                         delete_realm)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+                         delete_realm,
+                         normalize_realm_name)
+from ..api.lib.prepolicy import prepolicy, realm_membership_access, default_realm_access
 from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
@@ -74,14 +75,14 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 
 @realm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
     Create or reconfigure a realm. The realm is defined as a list of
     resolvers, optionally with a per-resolver priority used to
     disambiguate when the same login name resolves in more than one
     resolver. Resolvers attached to specific nodes are preserved
-    across this call (use :http:post:`/realm/(realm)/node/(nodeid)`
+    across this call (use :http:post:`/realm/(string:realm)/node/(string:nodeid)`
     to manage them).
 
     Requires admin authentication and the policy action :ref:`resolverwrite`.
@@ -129,6 +130,7 @@ def set_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
+    realm = normalize_realm_name(realm)
     param = request.all_data
     resolvers = get_required(param, "resolvers")
     priority = get_priority_from_param(param)
@@ -263,7 +265,7 @@ def get_super_user_realms():
 
 @defaultrealm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
     """
     Set the default realm. The previous default (if any) is cleared
@@ -272,10 +274,12 @@ def set_default_realm_api(realm=None):
     Requires admin authentication and the policy action :ref:`resolverwrite`.
 
     :param realm: path component, the name of the realm to make the
-        default. Lower-cased and stripped before lookup.
+        default. Lower-cased and stripped, with "-" for every space, before
+        lookup, as the name of a realm is stored.
     :reqheader PI-Authorization: authentication token.
     :status 200: database id of the new default realm in
         ``result.value``.
+    :status 400: the realm name is empty.
     :status 404: no realm with the given name exists.
 
     **Example request**:
@@ -302,7 +306,10 @@ def set_default_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
-    realm = realm.lower().strip()
+    realm = normalize_realm_name(realm)
+    if not realm:
+        # An empty name would clear the default realm, which is what DELETE /defaultrealm does
+        raise ParameterError(_("The name of the default realm must not be empty."))
     r = set_default_realm(realm)
     g.audit_object.log({"success": True,
                         "info": realm})
@@ -311,7 +318,7 @@ def set_default_realm_api(realm=None):
 
 @defaultrealm_blueprint.route('', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
     """
     Clear the default realm. The realm definitions themselves are not
@@ -413,15 +420,15 @@ def get_default_realm_api():
 
 @realm_blueprint.route('/<realm>', methods=['DELETE'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
     Delete a realm. The realm can only be deleted if no user from
     this realm is still attached to a token or a container.
 
-    If the deleted realm was the default realm and exactly one realm
-    remains afterwards, that remaining realm is automatically promoted
-    to default.
+    If exactly one realm remains afterwards and no realm is the default
+    realm, because the deleted realm was the default realm or because
+    there was none, the remaining realm becomes the default realm.
 
     Custom user attributes are bound to the realm. If users in this realm have
     custom attributes and ``delete_custom_attributes`` is not set, the deletion
@@ -478,6 +485,7 @@ def delete_realm_api(realm=None):
          "version": "privacyIDEA unknown"
        }
     """
+    realm = normalize_realm_name(realm)
     delete_custom_attributes = is_true(get_optional(request.all_data, "delete_custom_attributes"))
     confirm_ca_policies = is_true(get_optional(request.all_data, "confirm_ca_policies"))
     ret = delete_realm(realm, delete_custom_attributes=delete_custom_attributes,
@@ -494,7 +502,7 @@ def delete_realm_api(realm=None):
 #  the param dict and handle them separately in the corresponding API function.
 @realm_blueprint.route('/<string:realm>/node/<string:nodeid>', methods=['POST'])
 @log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_node_api(realm, nodeid):
     """
     Create or reconfigure the resolver assignment for a realm on a
@@ -559,6 +567,7 @@ def set_realm_node_api(realm, nodeid):
 
     .. versionadded:: 3.10 Node specific realm configuration
     """
+    realm = normalize_realm_name(realm)
     if not check_node_uuid_exists(nodeid):
         log.warning(f"Node with UUID {nodeid} does not exist in the database!")
         raise ParameterError(_("The given node does not exist!"))

@@ -8,19 +8,28 @@ RADIUS plugin
 Installation
 ------------
 
-If you want to install the FreeRADIUS Plugin on Ubuntu 16.04 LTS or 18.04 LTS,
-this can be easily done since there is a ready made package available (see
+If you want to install the FreeRADIUS plugin on Ubuntu,
+this can be easily done since there is a ready-made package available (see
 :ref:`install_ubuntu_freeradius`).
 
-However, it can also be installed on other distributions.
-The FreeRADIUS plugin is a Perl module, that e.g. requires on a Ubuntu/Debian system
-the following packages to be installed:
+The package configures FreeRADIUS for privacyIDEA on every installation and
+upgrade: it removes all sites from ``/etc/freeradius/3.0/sites-enabled`` and
+enables only its own site ``privacyidea``, disables the ``eap`` module and
+enables the module ``perl-privacyidea``. Do not install it on a FreeRADIUS
+server that also serves other sites or EAP clients. With the package, the
+steps in *Setup* below are not needed: its site sets ``Auth-Type := Perl``
+itself.
+
+However, the plugin can also be installed on other distributions.
+The FreeRADIUS plugin is a Perl module that, e.g. on an Ubuntu/Debian system,
+requires the following packages to be installed:
 
 * libconfig-inifiles-perl
 * libdata-dump-perl
 * libtry-tiny-perl
 * libjson-perl
 * liblwp-protocol-https-perl
+* liburi-encode-perl
 
 The module itself may be downloaded at [#rlmPerl]_ and placed at, e.g.,
 ``/usr/share/privacyidea/freeradius/privacyidea_radius.pm``.
@@ -31,11 +40,12 @@ Setup
 Then you need to configure your FreeRADIUS site and the perl module. The
 latest FreeRADIUS plugin uses the ``/validate/check`` REST API of privacyIDEA.
 
-You need to configure the perl module in FreeRADIUS ``modules/perl`` to look
-something like this::
+You need to configure the perl module in FreeRADIUS (on Debian/Ubuntu in
+``/etc/freeradius/3.0/mods-available/perl``, enabled by a link in
+``mods-enabled``) to look something like this::
 
    perl {
-       module = /usr/share/privacyidea/freeradius/privacyidea_radius.pm
+       filename = /usr/share/privacyidea/freeradius/privacyidea_radius.pm
    }
 
 Your freeradius enabled site config should contain something like this::
@@ -49,7 +59,7 @@ Your freeradius enabled site config should contain something like this::
    }
 
 While you define the default authenticate type to be ``Perl`` in the
-``users`` file::
+``users`` file (on Debian/Ubuntu ``/etc/freeradius/3.0/users``)::
 
    DEFAULT Auth-Type := Perl
 
@@ -61,20 +71,28 @@ While you define the default authenticate type to be ``Perl`` in the
 Configuration
 -------------
 
-The RADIUS plugin configuration is read from the file
-``/opt/privacyIDEA/rlm_perl.ini``.
+The plugin looks for its configuration in the following files. If more than one
+of them exists, the last one in this list is used:
 
-Starting with version 2.7 the plugin first tries to read from the following
-locations:
-
-* ``/etc/privacyidea/rlm_perl.ini``
+* ``/etc/privacyidea/rlm_perl.ini`` (installed by the ``privacyidea-radius`` package)
 * ``/etc/freeradius/rlm_perl.ini``
-* ``/opt/privacyIDEA/rlm_perl.ini``.
+* ``/opt/privacyIDEA/rlm_perl.ini``
+
+You can also specify the file with ``configfile`` in the ``config`` section of
+the perl module definition, e.g. to run several module instances with different
+configurations::
+
+   perl privacyIDEA-A {
+       filename = /usr/share/privacyidea/freeradius/privacyidea_radius.pm
+       config {
+           configfile = /etc/privacyidea/rlm_perl-A.ini
+       }
+   }
 
 If no file exists, the default values are::
 
    [Default]
-   URL = https://localhost/validate/check
+   URL = https://127.0.0.1/validate/check
    REALM =
 
 But it can also look like this::
@@ -82,7 +100,6 @@ But it can also look like this::
    [Default]
    URL = https://your.server/validate/check
    REALM = someRealm
-   RESCONF = someResolver
    SSL_CHECK = true
    DEBUG = true
    TIMEOUT = 10
@@ -94,8 +111,8 @@ But it can also look like this::
    group = Class
 
 
-.. note:: The default behaviour is to not check the SSL certificate.
-   So in a productive environment where the privacyIDEA system is located on
+.. note:: The default behavior is to not check the SSL certificate.
+   So in a production environment where the privacyIDEA system is located on
    another server than the RADIUS server, you should set "SSL_CHECK = true".
 
 .. _radius_and_realms:
@@ -113,10 +130,20 @@ A user can authenticate to the FreeRADIUS either with a simple username
 "fred@realm1" or "realm1\\fred".
 
 .. note:: The format of the realms is defined in
-   ``/etc/freeradius/modules/realm`` as "suffix" and "ntdomain". I.e. you could
+   ``/etc/freeradius/3.0/mods-available/realm`` as "suffix" and "ntdomain". I.e. you could
    also change the delimiter.
-   The "suffix" and "ntdomain" is referenced in the ``authorize`` section in
-   ``/etc/freeradius/sites-enabled/privacyidea``.
+   FreeRADIUS only splits the realm if "suffix" or "ntdomain" is called in the
+   ``authorize`` section of the site. The site ``privacyidea`` installed by the
+   ``privacyidea-radius`` package (``/etc/freeradius/3.0/sites-enabled/privacyidea``)
+   does not call them. Add them before ``perl-privacyidea``::
+
+      authorize {
+          suffix
+          ntdomain
+          [...]
+          perl-privacyidea
+          [...]
+      }
 
 The RADIUS server tries to split the realms according to the definition of
 "suffix" or "ntdomain". I.e. a ``User-Name`` "fred@realmRadius" would be
@@ -124,7 +151,7 @@ split
 into ``Stripped-User-Name`` "fred" and ``Realm`` (RADIUS realm) "realmRadius".
 **But only if** FreeRADIUS can identify "realmRadius" as a RADIUS realm. For
 FreeRADIUS to identify this as a REALM you need to add this to the file
-``/etc/freeradius/proxy.conf``::
+``/etc/freeradius/3.0/proxy.conf``::
 
    realm realmRadius {
    }
@@ -147,7 +174,7 @@ then FreeRADIUS will split the ``User-Name`` into the RADIUS attributes
 ``Stripped-User-Name`` and ``Realm`` and the "fred" will be sent as user and
 "realmRadius" as the realm to privacyIDEA.
 
-This way you can directly map RADIUS realms in the RADIUS user name to realm
+This way you can directly map RADIUS realms in the RADIUS user name to realms
 in privacyIDEA.
 
 .. note:: If the ``User-Name`` could be split into the RADIUS attributes
@@ -157,7 +184,7 @@ in privacyIDEA.
    privacyIDEA server.
 
    For a deeper insight take a look at the code
-   https://github.com/privacyidea/FreeRADIUS/blob/master/privacyidea_radius.pm#L276
+   https://github.com/privacyidea/FreeRADIUS/blob/master/privacyidea_radius.pm
 
 .. note:: The ``NAS-IP-Address`` is sent as the *client* parameter to the
    privacyIDEA server. Using :ref:`override_client` you can pass the RADIUS
@@ -165,7 +192,7 @@ in privacyIDEA.
    RADIUS client's IP address.
 
 
-.. note:: You can define a realm in ``/opt/privacyIDEA/rlm_perl.ini``. Such a
+.. note:: You can define a realm in ``rlm_perl.ini``. Such a
    realm definition will override a RADIUS realm in the ``User-Name``.
 
 Mapping privacyIDEA return values to RADIUS Attribute-Value pairs
@@ -188,7 +215,7 @@ If available (see :ref:`policy_no_detail_on_success` and
 :ref:`policy_no_detail_on_fail`) the FreeRADIUS server can receive this
 serial number.
 
-In ``rlm_perl_ini`` use::
+In ``rlm_perl.ini`` use::
 
     [Mapping]
     serial = privacyIDEA-Serial
@@ -207,7 +234,7 @@ If the authorization policy :ref:`policy_add_user_in_response` is configured
 the privacyIDEA response contains an additional tree ``detail->user`` with
 user information.
 
-The FreeRADIUS plugin can also map these user information to RADIUS
+The FreeRADIUS plugin can also map this user information to RADIUS
 Attribute-Value pairs. Certain VPN systems use RADIUS return values to put
 users into certain groups to allow access to special sub networks.
 
@@ -217,8 +244,28 @@ If you want to map such user values you need to add a section in
    [Mapping user]
    a_user_attribute = any_RADIUS_Attribute_even_vendor_specific
 
-This way you can map any user attribute like name, email, realm, group to any
-arbitrary RADIUS attribute.
+This way you can map a single-valued user attribute such as ``email``,
+``givenname`` or a custom user attribute to any arbitrary RADIUS attribute.
+The keys of ``detail->user`` are the user attributes in privacyIDEA; the realm
+is not one of them.
+
+An attribute that the resolver returns as a list, e.g. the group memberships
+from an LDAP resolver that lists them in ``MULTIVALUEATTRIBUTES`` (by default
+only ``mobile`` is a list), can not be mapped with ``[Mapping user]``. Use an
+``[Attribute <RADIUS attribute>]`` section instead. It adds one RADIUS
+attribute for every value that matches ``regex``, built from ``prefix``, the
+first group of ``regex`` and ``suffix``::
+
+   [Attribute Class]
+   dir = user
+   userAttribute = group
+   regex = (.*)
+
+With the policy :ref:`policy_add_resolver_in_response` the response also
+contains ``detail->user-realm`` and ``detail->user-resolver``. Map them in the
+``[Mapping]`` section, e.g. ``user-realm = <RADIUS attribute>``. The example
+``rlm_perl.ini`` of the plugin [#rlmPerl]_ contains further
+``[Attribute ...]`` examples.
 
 You can also address different sections in the privacyIDEA detail response by
 changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
@@ -227,12 +274,12 @@ changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.
 Debugging RADIUS
 ~~~~~~~~~~~~~~~~
 
-If you need to DEBUG the FreeRADIUS go like this.
+If you need to debug FreeRADIUS, proceed like this.
 
-Add "DEBUG = true" to ``/opt/privacyIDEA/rlm_perl.ini``.
-Then stop the FreeRADIUS and run it in debug mode as user root::
+Add "DEBUG = true" to ``rlm_perl.ini``.
+Then stop FreeRADIUS and run it in debug mode as user root::
 
-   /etc/init.d/freeradius stop; freeradius -X
+   systemctl stop freeradius; freeradius -X
 
 Now you can send requests to the RADIUS server like this::
 
@@ -240,9 +287,9 @@ Now you can send requests to the RADIUS server like this::
       127.0.0.1 auth test
 
 Of course you need to replace the IP of your RADIUS server and the RADIUS
-secret "test" with your clients secret.
+secret "test" with your client's secret.
 
 .. rubric:: Footnotes
 
 .. [#netknights_dict] https://github.com/privacyidea/FreeRADIUS/blob/master/dictionary.netknights
-.. [#rlmPerl] https://github.com/privacyidea/freeradius
+.. [#rlmPerl] https://github.com/privacyidea/FreeRADIUS

@@ -85,7 +85,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY, AuthEventReason,
@@ -97,7 +97,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
-from .challenge import get_challenges
+from .challenge import get_challenges, consume_challenge
 from .challenge_types import ChallengeSession
 # Re-exported for backwards compatibility: these live in challenge_types so that
 # models.challenge and lib.cache.redis can import them without a circular import.
@@ -116,7 +116,7 @@ from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .resolver import get_resolver_type
 from .user import (User)
 from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup, TokenCredentialIdHash)
+                      Token, Tokengroup, TokenCredentialIdHash)
 from ..models.token import TOKENINFO_TYPE_SUFFIX
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
@@ -160,6 +160,10 @@ class TokenClass:
     client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # Whether check_challenge_response removes the challenge it accepted. A class that keeps the answered challenge
+    # because has_further_challenge still has to read it sets this to False; check_token_list then consumes the
+    # challenge for it once no further challenge follows.
+    consumes_answered_challenge = True
 
     desc_key_gen = lazy_gettext("Force the key to be generated on the server.")
 
@@ -346,7 +350,9 @@ class TokenClass:
         Set the user attributes (uid, resolvername, resolvertype) of a token.
 
         :param user: a User() object, consisting of loginname and realm
-        :param report: tbdf.
+        :param report: Not used.
+        :param override: If the token already belongs to another user, replace that user instead of raising
+            a TokenAdminError.
         :return: None
         """
         (uid, resolvertype, resolvername) = user.get_user_identifiers()
@@ -554,11 +560,12 @@ class TokenClass:
     @check_token_locked
     def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
         """
-        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints or the
-        token event handler. A key the token class owns is refused, see owned_tokeninfo_keys: its value decides
-        how the token authenticates, so it is maintained by the server and is not free-form metadata.
+        Add a key and a value to the DB tokeninfo on behalf of a request, e.g. the token info endpoints. A key the
+        token class owns is refused, see owned_tokeninfo_keys: its value decides how the token authenticates, so it
+        is maintained by the server and is not free-form metadata.
 
-        Server side code that maintains such a key writes it with write_tokeninfo() instead.
+        Server side code that maintains such a key writes it with write_tokeninfo() instead, and so do the token
+        event handler and the command line tools, which are configured or run by whoever operates the server.
 
         :param key:
         :param value:
@@ -1156,6 +1163,38 @@ class TokenClass:
         self.token.save()
 
     @check_token_locked
+    def advance_otp_count(self, new_count: int) -> bool:
+        """
+        Move the OTP counter forward with a single conditional UPDATE and report whether this call moved it.
+
+        An OTP value may be used once, so the request that advances the counter past it is the only one that may
+        accept it. Of several requests that verify the same value at the same time, this returns True for one of
+        them and False for the others, whose value is then as spent as it is for a later, sequential replay.
+
+        The condition is ``count < new_count`` and not ``count = old``: it also refuses a counter that moves
+        backwards, and it does not refuse a request whose own, higher value is still unused while a lower one was
+        consumed in parallel.
+
+        Callers that check an OTP value against a counter of their own - resync - keep ``set_otp_count``, which
+        writes the value unconditionally.
+
+        :param new_count: the counter value that follows the OTP value this request used
+        :return: True only for the call that advanced the counter
+        """
+        # Read the id before the commit: reading it afterwards reloads the expired token first, and the lost
+        # update stays. The commit ends the transaction that read the counter, so the UPDATE compares with the
+        # current row and MariaDB >= 11.6.2 does not refuse it with 1020.
+        token_id = self.token.id
+        db.session.commit()
+        statement = (update(Token)
+                     .where(Token.id == token_id, Token.count < int(new_count))
+                     .values(count=int(new_count))
+                     .execution_options(synchronize_session=False))
+        advanced = db.session.execute(statement).rowcount == 1
+        db.session.commit()
+        return advanced
+
+    @check_token_locked
     def set_pin(self, pin, encrypt=False):
         """
         set the PIN of a token.
@@ -1223,6 +1262,15 @@ class TokenClass:
 
     @check_token_locked
     def inc_failcount(self):
+        # Serialize on the token row, so every failed attempt is counted: without the lock two requests read the
+        # same failcount and write the same value, and several attempts count as one. Read the id before the
+        # commit (reading it after reloads the expired token before the lock is held) and take the lock with a
+        # plain SELECT: refresh(with_for_update=True) fails on PostgreSQL, because the Token mapper eager-loads
+        # with outer joins. The save() below commits and releases the lock.
+        token_id = self.token.id
+        db.session.commit()
+        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        db.session.refresh(self.token)
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
             if self.token.failcount == self.token.maxfail:
@@ -1316,11 +1364,12 @@ class TokenClass:
 
     def delete_tokeninfo(self, key: str = None):
         """
-        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints or the
-        token event handler. A key the token class owns is refused unless it is declared deletable, and so is
-        deleting the whole token info, because that would remove the owned keys along with the free-form ones.
+        Deletes the token info for the given key on behalf of a request, e.g. the token info endpoints. A key the
+        token class owns is refused unless it is declared deletable, and so is deleting the whole token info,
+        because that would remove the owned keys along with the free-form ones.
 
-        Server side code that maintains such a key removes it with remove_tokeninfo() instead.
+        Server side code that maintains such a key removes it with remove_tokeninfo() instead, and so do the token
+        event handler and the command line tools.
 
         :param key: The key to delete
         :raises PolicyError: If the key may not be deleted, or if no key is given.
@@ -1410,7 +1459,7 @@ class TokenClass:
     @check_token_locked
     def set_count_auth(self, count):
         """
-        Sets the counter for the occurred login attepms
+        Sets the counter for the occurred login attempts
         as key "count_auth" in token info
 
         :param count: a number
@@ -1994,8 +2043,14 @@ class TokenClass:
                     options["challenge"] = challenge.challenge
                     options["data"] = challenge.get_data()
                     if challenge.session == ChallengeSession.ENROLLMENT:
+                        # Claim the challenge before enrolling, so a second request cannot overwrite what this one
+                        # enrolls. An enrollment that rejects its input ends the enrollment either way: the only
+                        # class that can reject it deletes the token before it raises.
+                        if not consume_challenge(challenge):
+                            log.info(f"The enrollment challenge of token {self.token.serial} was used by another "
+                                     f"request.")
+                            break
                         self.enroll_via_validate_2nd_step(passw, options=options)
-                        challenge.delete()
                         # Basically we have a successfully answered challenge
                         otp_counter = 0
                     else:
@@ -2011,8 +2066,12 @@ class TokenClass:
                             otp_counter = -1
                         if otp_counter >= 0:
                             # We found the matching challenge, so lets return the
-                            # successful result and delete the challenge object.
-                            challenge.delete()
+                            # successful result and delete the challenge object. Only the request that removes it
+                            # is accepted; another one that answered it at the same time is not.
+                            if not consume_challenge(challenge):
+                                log.info(f"The challenge {transaction_id} of token {self.token.serial} was used by "
+                                         f"another request.")
+                                otp_counter = -1
                             break
                         else:
                             # increase the received_count

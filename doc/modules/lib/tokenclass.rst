@@ -3,7 +3,7 @@ Token Class
 ...........
 
 The following token types are known to privacyIDEA. All inherit from
-the base :class:`.TokenClass` describe below.
+the base :class:`.TokenClass` described below.
 
 .. toctree::
    :glob:

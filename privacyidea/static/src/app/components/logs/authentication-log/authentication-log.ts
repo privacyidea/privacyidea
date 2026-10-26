@@ -20,28 +20,36 @@ import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { filterMatchTooltip } from "@utils/filter-hint.utils";
 import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
+import { InteractivityChecker } from "@angular/cdk/a11y";
 import {
+  afterNextRender,
   Component,
   computed,
   effect,
   ElementRef,
   inject,
+  Injector,
   linkedSignal,
   signal,
+  viewChild,
   ViewChild,
   WritableSignal
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { provideNativeDateAdapter } from "@angular/material/core";
 import { MatDivider } from "@angular/material/divider";
-import { MatDatepickerModule } from "@angular/material/datepicker";
+import {
+  DateRange,
+  MAT_DATE_RANGE_SELECTION_STRATEGY,
+  MatCalendar,
+  MatDatepickerModule
+} from "@angular/material/datepicker";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { MatSliderModule } from "@angular/material/slider";
 import {
   MatCell,
   MatCellDef,
@@ -65,6 +73,8 @@ import { ReasonCell } from "./cells/reason-cell/reason-cell";
 import { isRecord } from "./reason-detail";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
+import { SortedRangeSelectionStrategy } from "./sorted-range-selection-strategy";
+import { TimeRangeSlider } from "./time-range-slider/time-range-slider";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -85,6 +95,7 @@ import {
   ConditionalAccessPolicyServiceInterface
 } from "@services/conditional-access/conditional-access-policy.service";
 import {
+  AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE,
   AuthenticationLogEntry,
   AuthenticationLogService,
   AuthenticationLogServiceInterface
@@ -94,6 +105,8 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
 // /authenticationlog/eventtypes), and this file only maps each one to a color.
@@ -185,6 +198,13 @@ function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | n
   if (!isRecord(truncated)) return null;
   const serial = truncated["serial"];
   return typeof serial === "string" ? serial.replace(OVERFLOW_MARKER, "") : null;
+}
+
+// What a pick in the action-row date picker changed, as each of its two inputs reports it; an input that did not change
+// leaves its part out.
+interface PickedRangePart {
+  start?: Date | null;
+  end?: Date | null;
 }
 
 // The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
@@ -280,6 +300,9 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     TableStateComponent,
@@ -294,7 +317,6 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatTable,
     MatCellDef,
     NgClass,
-    NgTemplateOutlet,
     MatHeaderRowDef,
     MatHeaderRow,
     MatRowDef,
@@ -315,20 +337,24 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     ConditionalAccessCell,
     InfoCell,
     ReasonCell,
+    TimeRangeSlider,
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
     MatDivider,
+    NgTemplateOutlet,
     MatIcon,
     MatButtonModule,
     MatDatepickerModule,
     MatIconModule,
     MatMenuModule,
-    MatSliderModule,
     MatTooltipModule,
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective
   ],
-  providers: [provideNativeDateAdapter()],
+  providers: [
+    provideNativeDateAdapter(),
+    { provide: MAT_DATE_RANGE_SELECTION_STRATEGY, useClass: SortedRangeSelectionStrategy }
+  ],
   templateUrl: "./authentication-log.html",
   styleUrl: "./authentication-log.scss"
 })
@@ -366,6 +392,8 @@ export class AuthenticationLog {
   protected readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
     inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly injector = inject(Injector);
+  private readonly interactivityChecker = inject(InteractivityChecker);
   sort = this.authenticationLogService.sort;
 
   readonly reasonOptions = computed<string[]>(() => this.authenticationLogService.reasons());
@@ -415,6 +443,7 @@ export class AuthenticationLog {
   readonly rangePickerEnd = computed<Date | null>(() =>
     this.hasTimeFilter() && !this.openEndedWindow() ? new Date(this.windowEndMs()) : null
   );
+  readonly calendarRange = computed(() => new DateRange<Date>(this.rangePickerStart(), this.rangePickerEnd()));
   // Label on the date-range button: the neutral default with no range set, a friendly "Last X" period when the active
   // range ends at ~now and matches a preset span, otherwise "Custom range".
   readonly dateRangeLabel = computed(() => {
@@ -500,28 +529,31 @@ export class AuthenticationLog {
   // Whether the window runs up to "now" (an open upper bound): true for the default or start-only window, false once
   // an end date bounds it; this governs whether the end thumb at its max means open/"now" or a concrete end.
   private readonly openEndedWindow = signal(true);
+  // The parts of the action-row date picker's current pick that its inputs have reported so far (see queuePick).
+  private pendingPick: PickedRangePart | null = null;
   // Thumb positions (0 = window start .. RANGE_SLIDER_STEPS = window end) derive from the active time filter relative
   // to the window, staying writable during a drag and recomputing on the next timestamp or window change.
   readonly rangeStart = linkedSignal(() => this.isoToSliderPos(this.authenticationLogService.timestampFrom(), 0));
   readonly rangeEnd = linkedSignal(() =>
     this.isoToSliderPos(this.authenticationLogService.timestampTo(), RANGE_SLIDER_STEPS)
   );
-  // The range summary shows the window's extent (its min/max), not the dragged thumbs, so it stays a stable reference
-  // for the axis; it drops the time-of-day once the window spans more than a day, and an open window reads "now" at its
-  // max.
-  private summaryFormat(ms: number): string {
-    const format = this.windowEndMs() - this.windowStartMs() > MS_PER_DAY ? "yyyy-MM-dd" : "yyyy-MM-dd HH:mm";
-    return formatDate(ms, format, "en-US");
+  // The moment a slider position stands for, as the summary under the slider and the thumbs' accessible values say it.
+  // Always with the time of day: a step of the track spans hours even in a window of weeks, so a date alone would not
+  // move while the thumb does. The window's right edge reads as whatever it actually ends at - the newest entry on the
+  // page, or a picked end - and says "now" only while no page has loaded and the window still runs to the present. Not
+  // keyed on openEndedWindow: that governs what the end thumb at its maximum commits (no end_time, so later entries are
+  // not excluded), which is a different question from where the track stops.
+  private positionLabel(pos: number): string {
+    if (pos >= RANGE_SLIDER_STEPS && this.windowEndMs() === this.nowAnchorMs()) {
+      return $localize`:@@common.now:now`;
+    }
+    const start = this.windowStartMs();
+    return formatDate(start + (pos / RANGE_SLIDER_STEPS) * (this.windowEndMs() - start), "yyyy-MM-dd HH:mm", "en-US");
   }
 
-  readonly rangeSummaryFrom = computed(() => this.summaryFormat(this.windowStartMs()));
-  // The right edge reads as whatever the window actually ends at - the newest entry on the page, or a picked end -
-  // and says "now" only while no page has loaded and the window still runs to the present. Not keyed on
-  // openEndedWindow: that governs what the end *thumb* at its maximum commits (no end_time, so later entries are not
-  // excluded), which is a different question from where the track stops.
-  readonly rangeSummaryTo = computed(() =>
-    this.windowEndMs() === this.nowAnchorMs() ? $localize`:@@common.now:now` : this.summaryFormat(this.windowEndMs())
-  );
+  // Where the thumbs are, updated while they are dragged, so the summary shows the range a release would apply.
+  readonly rangeSummaryFrom = computed(() => this.positionLabel(this.rangeStart()));
+  readonly rangeSummaryTo = computed(() => this.positionLabel(this.rangeEnd()));
 
   // Activity histogram drawn behind the slider: the loaded entries' timestamps are bucketed across the slider window,
   // with each bar normalized (0..1) to the busiest bucket; it reflects the current page only, an indication of
@@ -579,6 +611,13 @@ export class AuthenticationLog {
     }
   }
 
+  private readonly menuCalendar = viewChild<MatCalendar<Date>>(MatCalendar);
+  private readonly dateRangeTrigger = viewChild("dateRangeTrigger", { read: MatMenuTrigger });
+  private readonly dateRangeTriggerElement = viewChild<string, ElementRef<HTMLElement>>("dateRangeTrigger", {
+    read: ElementRef
+  });
+  private calendarOpenedByKeyboard = false;
+
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
 
@@ -617,12 +656,14 @@ export class AuthenticationLog {
   readonly hasOutcomeValues = computed(() =>
     this.dataSource().data.some((entry) => (entry.conditional_access_outcomes?.length ?? 0) > 0)
   );
-  // The presets, the active page size, and the total number of matching entries - the last one so the selector also
-  // offers "everything on one page", sorted into place among the presets.
+  // The presets, this log's default page size, the active page size, and the total number of matching entries - the
+  // default so it is still offered once another size is picked, the total so the selector also offers "everything on
+  // one page", sorted into place among the presets.
   pageSizeOptions = computed(() =>
     [
       ...new Set([
         ...this.tableUtilsService.pageSizeOptions(),
+        AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE,
         this.authenticationLogService.pageSize(),
         this.totalLength()
       ])
@@ -630,14 +671,6 @@ export class AuthenticationLog {
       .filter((size) => size > 0)
       .sort((a, b) => a - b)
   );
-  noDataText = computed(() =>
-    Object.keys(this.authenticationLogService.filterParams()).length > 0 ||
-    this.authenticationLogService.timestampFrom() ||
-    this.authenticationLogService.timestampTo()
-      ? $localize`:@@authLog.noAuthenticationLogEntries2:No authentication log entries matching the filter.`
-      : $localize`:@@authLog.noAuthenticationLogEntries:No authentication log entries.`
-  );
-
   onPageEvent(event: PageEvent): void {
     this.authenticationLogService.pageSize.set(event.pageSize);
     // mat-paginator emits a 0-based index; the service/API page is 1-based.
@@ -711,7 +744,10 @@ export class AuthenticationLog {
   readonly tableState = new TableState({
     resource: this.authenticationLogService.authenticationLogResource,
     count: () => this.totalLength(),
-    filterActive: () => this.authenticationLogService.authenticationLogFilter().isNotEmpty,
+    filterActive: () =>
+      this.authenticationLogService.authenticationLogFilter().isNotEmpty ||
+      !!this.authenticationLogService.timestampFrom() ||
+      !!this.authenticationLogService.timestampTo(),
     resetFilter: () => this.clearAllFilters()
   });
 
@@ -733,15 +769,75 @@ export class AuthenticationLog {
   // other bound, and clearing a field (null) drops its bound; the picked range also zooms the slider window so the
   // selected span fills the track (e.g. a single day becomes 24 hours).
   onRangeStartDateChange(date: Date | null): void {
-    const fromIso = date ? startOfDayIso(date) : null;
-    const toIso = this.authenticationLogService.timestampTo();
-    this.zoomSliderToRange(fromIso, toIso);
-    this.applyTimeRange(fromIso, toIso);
+    this.applyPickedRange(date ? startOfDayIso(date) : null, this.authenticationLogService.timestampTo());
   }
 
+  // An end picked on or after the active start keeps that start as it is - narrowed on the slider or set by a preset.
+  // One before it swaps the two, as SortedRangeSelectionStrategy does: the picked day starts the range and the active
+  // start's day ends it. Both calendars show the slider window's first day as the start, so neither knows the active
+  // start, which may lie after it.
   onRangeEndDateChange(date: Date | null): void {
     const fromIso = this.authenticationLogService.timestampFrom();
-    const toIso = date ? endOfDayIso(date) : null;
+    if (date && fromIso && new Date(endOfDayIso(date)) < new Date(fromIso)) {
+      this.applyPickedRange(startOfDayIso(date), endOfDayIso(new Date(fromIso)));
+      return;
+    }
+    this.applyPickedRange(fromIso, date ? endOfDayIso(date) : null);
+  }
+
+  // One pick in the action-row picker can change both inputs, each firing its own dateChange - start first. The parts
+  // are gathered and handled together once the pick's events are through, so the end's handling reads the bounds as they
+  // were before the pick.
+  onRangePickerStartChange(date: Date | null): void {
+    this.queuePick({ start: date });
+  }
+
+  onRangePickerEndChange(date: Date | null): void {
+    this.queuePick({ end: date });
+  }
+
+  private queuePick(part: PickedRangePart): void {
+    if (this.pendingPick) {
+      Object.assign(this.pendingPick, part);
+      return;
+    }
+    const pick = { ...part };
+    this.pendingPick = pick;
+    queueMicrotask(() => this.flushPick(pick));
+  }
+
+  // A pick that ends the range from before the slider window's first day, which the inputs hold as the start, moves
+  // both: the strategy hands back the picked day as the start and the window's first day as the end. That picked day is
+  // an end pick, sorted against the active start. A pick that clears the end starts a new range; when it changed only
+  // the end, the picked day is the window's first day, which the start input already holds. A pick after the window's
+  // first day changes the end alone, and a first pick with no range set the start alone.
+  private flushPick(pick: PickedRangePart): void {
+    this.pendingPick = null;
+    const { start, end } = pick;
+    if (end === null) {
+      const day = start === undefined ? this.rangePickerStart() : start;
+      this.applyPickedRange(day ? startOfDayIso(day) : null, null);
+    } else if (end) {
+      this.onRangeEndDateChange(start === undefined ? end : start);
+    } else if (start !== undefined) {
+      this.onRangeStartDateChange(start);
+    }
+  }
+
+  // A day picked on the "More Filter" menu's calendar: with no start yet, or both ends set, it starts a new range;
+  // otherwise it ends the open one, sorted against the active start as onRangeEndDateChange does.
+  onCalendarDateSelected(date: Date | null): void {
+    if (!date) {
+      return;
+    }
+    if (!this.authenticationLogService.timestampFrom() || this.authenticationLogService.timestampTo()) {
+      this.applyPickedRange(startOfDayIso(date), null);
+      return;
+    }
+    this.onRangeEndDateChange(date);
+  }
+
+  private applyPickedRange(fromIso: string | null, toIso: string | null): void {
     this.zoomSliderToRange(fromIso, toIso);
     this.applyTimeRange(fromIso, toIso);
   }
@@ -769,27 +865,87 @@ export class AuthenticationLog {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
   }
 
-  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's
-  // focus. Escape and Tab still reach the menu, so it closes as usual.
+  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's focus.
+  // Escape and Tab still reach the menu (see keepTabInMenu).
   keepSliderKeysInMenu(event: KeyboardEvent): void {
     if (event.key !== "Escape" && event.key !== "Tab") {
       event.stopPropagation();
     }
   }
 
-  // Thumb value indicator: the format tracks the window's zoom - time-of-day for short windows, day for medium, month
-  // for the widest - while the exact from/to is always shown in the summary line.
-  readonly formatSliderThumb = (pos: number): string => {
-    const iso = this.sliderPosToIso(pos, false)!;
-    const windowMs = this.windowEndMs() - this.windowStartMs();
-    if (windowMs <= 3 * MS_PER_DAY) {
-      return formatDate(iso, "HH:mm", "en-US");
+  // The "More Filter" menu closes on any Tab it sees. Tab instead moves on through its items and the slider's thumbs -
+  // all tabbable - and only a Tab past the last or before the first of them closes it.
+  keepTabInMenu(event: KeyboardEvent): void {
+    if (event.key === "Tab" && !this.tabLeaves(event)) {
+      event.stopPropagation();
     }
-    if (windowMs <= 100 * MS_PER_DAY) {
-      return formatDate(iso, "MMM d", "en-US");
+  }
+
+  private tabLeaves(event: KeyboardEvent): boolean {
+    const tabbable = this.tabbableIn(event.currentTarget as HTMLElement);
+    const edge = event.shiftKey ? tabbable[0] : tabbable[tabbable.length - 1];
+    return !edge || edge.contains(event.target as Node);
+  }
+
+  private tabbableIn(container: HTMLElement): HTMLElement[] {
+    return Array.from(container.querySelectorAll<HTMLElement>("*")).filter((el) =>
+      this.interactivityChecker.isTabbable(el)
+    );
+  }
+
+  // The date range submenu's calendar keeps every key but Escape: arrows/Home/End/Page move the active day and Tab
+  // moves through the calendar's controls. Escape closes just the submenu and hands focus back to its "Date range" item.
+  keepCalendarKeysInMenu(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      return;
     }
-    return formatDate(iso, "MMM", "en-US");
-  };
+    event.stopPropagation();
+    if (event.key === "Tab" && this.tabLeaves(event)) {
+      event.preventDefault();
+      this.leaveCalendar(event.shiftKey);
+    }
+  }
+
+  // Tab leaves the calendar as if it sat right after its "Date range" item: Shift+Tab before its first control goes
+  // back to that item, Tab past its last moves on to what follows the item - the slider's start thumb.
+  private leaveCalendar(backwards: boolean): void {
+    const triggerElement = this.dateRangeTriggerElement()?.nativeElement;
+    this.dateRangeTrigger()?.closeMenu();
+    if (!triggerElement?.parentElement) {
+      return;
+    }
+    const menuTabbable = this.tabbableIn(triggerElement.parentElement);
+    const next = backwards ? undefined : menuTabbable[menuTabbable.indexOf(triggerElement) + 1];
+    (next ?? triggerElement).focus();
+  }
+
+  // Material's menu focuses a submenu's first item on a keyboard open; the date range submenu has none, so focus would
+  // stay on its "Date range" item. Enter, Space or Right arrow there move it on to the calendar's active day instead -
+  // once the submenu has opened, or straight away if hover already opened it. A hover alone leaves focus where it was.
+  focusCalendarOnKeyboardOpen(event: KeyboardEvent, trigger: MatMenuTrigger): void {
+    if (!["Enter", " ", "ArrowRight"].includes(event.key)) {
+      return;
+    }
+    if (trigger.menuOpen) {
+      this.focusCalendarAfterRender();
+    } else {
+      this.calendarOpenedByKeyboard = true;
+    }
+  }
+
+  focusCalendarIfOpenedByKeyboard(): void {
+    if (this.calendarOpenedByKeyboard) {
+      this.calendarOpenedByKeyboard = false;
+      this.focusCalendarAfterRender();
+    }
+  }
+
+  private focusCalendarAfterRender(): void {
+    afterNextRender(() => this.menuCalendar()?.focusActiveCell(), { injector: this.injector });
+  }
+
+  // A thumb's accessible value, the same words as the summary under the slider.
+  readonly formatSliderThumb = (pos: number): string => this.positionLabel(pos);
 
   // Single writer of the time filter: sets timestampFrom/To (the source of truth for the API params) and mirrors them
   // into the filter text as start_time/end_time chips; a null bound removes both its chip and its API param.

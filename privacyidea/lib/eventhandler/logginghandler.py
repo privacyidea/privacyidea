@@ -127,9 +127,7 @@ class LoggingEventHandler(BaseEventHandler):
             response = options.get("response")
             tokenowner = self._get_tokenowner(request)
             content = self._get_response_content(response)
-            serial = (request.all_data.get("serial")
-                      or content.get("detail", {}).get("serial")
-                      or g.audit_object.audit_data.get("serial"))
+            serial = self._get_token_serials(request, content, g)
             serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
 
             tags = create_tag_dict(logged_in_user=logged_in_user,
