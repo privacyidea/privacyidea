@@ -213,6 +213,9 @@ policy with scope *authentication* and action ``webauthn_user_verification_requi
 i.e. ``required``, ``preferred`` or ``discouraged``. It is always sent for WebAuthn/Passkey items, so a client that
 receives a credential without it can refuse to verify it offline and send the user to an online authentication
 instead. HOTP items do not contain ``userVerification``.
+In a serial-only validation request, which carries no user, a policy restricted to a user, realm or resolver
+cannot match; the requirement falls back to the policy without such a restriction, or to the default
+``preferred``.
 Because WebAuthn/Passkey token can have their credentials offline on multiple machines, the client has to identify itself via the UserAgent in the headers.
 By default, the UserAgent is checked for the following keys (in order): ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"].
 The key has to be followed by a slash and the machine name, e.g. ``ComputerName/Laptop-1``; the machine name ends at the next blank. The keys are case-sensitive.

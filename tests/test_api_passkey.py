@@ -818,6 +818,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertEqual("none", passkey_registration["attestation"])
 
         # Answer the challenge
+        # The user verification requirement policy set for the user travels with the
+        # offline data that answering the enrollment challenge creates
+        # (see _handle_fido2_auth in privacyidea/api/validate.py).
+        self.set_policy_with_cleanup("user_verification_offline", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
         data = {
             "attestationObject": self.registration_attestation,
             "clientDataJSON": self.registration_client_data,
@@ -871,6 +876,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(public_key, response["pubKey"])
             credential_id = token.token.get_otpkey().getKey().decode("utf-8")
             self.assertEqual(credential_id, response["credentialId"])
+            # The user verification requirement of the policy for the user travels
+            # with the offline data, so the client can enforce it offline.
+            self.assertIn("userVerification", response)
+            self.assertEqual("discouraged", response["userVerification"])
         # The postpolicy's ENROLLMENT_TRIGGERED and the answering LOGIN_SUCCESS share the enrollment transaction_id.
         # The earlier spass LOGIN_SUCCESS carries none, because it is logged before that challenge is created.
         auth_log_entries = assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.LOGIN_SUCCESS],
