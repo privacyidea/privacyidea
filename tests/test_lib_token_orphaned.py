@@ -9,6 +9,7 @@ from unittest import mock
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
+from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.token import get_orphaned_serials, get_tokens, init_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenOwner
@@ -99,11 +100,33 @@ class OrphanedTokenTestCase(MyTestCase):
             with count_ldap_searches() as search_filters:
                 orphaned_serials = get_orphaned_serials(tokens)
 
-        # Five tokens of the LDAP resolver are resolved with one search, and the one of the HTTP resolver
-        # with one lookup. The deleted resolver and the owner without a resolver are not asked at all.
-        self.assertEqual(1, len(search_filters), search_filters)
+        # Five tokens of the LDAP resolver are resolved with one search, plus one single lookup for the deleted
+        # user the search did not find. The deleted resolver and the owner without a resolver are not asked at all.
+        self.assertEqual(2, len(search_filters), search_filters)
+        self.assertIn("(oid=99)", search_filters[1], search_filters)
         self.assertEqual(1, http_get_username.call_count)
         self.assertNotIn("ORPHUNREACHABLE", orphaned_serials)
 
     def test_03_no_tokens(self):
         self.assertSetEqual(set(), get_orphaned_serials([]))
+
+    @ldap3mock.activate
+    def test_04_id_the_batch_can_not_search_for(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        token = init_token({"type": "spass", "serial": "MALFORMEDID"})
+        TokenOwner(token_id=token.token.id, user_id="malformed", resolver="orphanldap",
+                   realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial="MALFORMEDID")
+        trim_user_id = LDAPResolver._trim_user_id
+
+        def failing_trim_user_id(resolver: LDAPResolver, user_id: str) -> str:
+            # Like an objectGUID that is no UUID: the batch skips it, a single lookup raises
+            if user_id == "malformed":
+                raise ValueError("badly formed hexadecimal UUID string")
+            return trim_user_id(resolver, user_id)
+
+        with mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id):
+            for orphaned_on_error in [True, False]:
+                expected = {"MALFORMEDID"} if tokens[0].is_orphaned(orphaned_on_error) else set()
+                self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))

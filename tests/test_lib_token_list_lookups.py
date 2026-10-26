@@ -59,9 +59,9 @@ def count_ldap_searches():
     search_filters = []
     original_search = LDAPResolver._search
 
-    def counting_search(self, search_base, search_filter, attributes):
+    def counting_search(self, search_base, search_filter, attributes, **kwargs):
         search_filters.append(search_filter)
-        return original_search(self, search_base, search_filter, attributes)
+        return original_search(self, search_base, search_filter, attributes, **kwargs)
 
     with mock.patch.object(LDAPResolver, "_search", counting_search):
         yield search_filters

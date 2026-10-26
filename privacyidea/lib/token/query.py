@@ -632,7 +632,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
 
     A token is orphaned in the same cases as ``TokenClass.is_orphaned()`` decides for a single token:
     its first owner belongs to a resolver that no longer exists, does not exist in the user store or
-    has no realm. If the user store can not be asked, ``orphaned_on_error`` decides.
+    has no realm. If the user store can not be asked, ``orphaned_on_error`` decides. An owner the batch
+    lookup does not find is looked up once more on its own.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
     :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
@@ -654,12 +655,27 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
             owners_to_resolve[token_id] = owner
 
     resolved = _resolve_owner_logins(list(owners_to_resolve.values()))
+    login_by_owner = resolved.login_by_owner
+    unresolvable_owners = set(resolved.unresolvable_owners)
+    # A batch lookup answers "" also for an ID it can not search for, like an objectGUID that is no UUID,
+    # where a single lookup raises. Only the single lookup tells a missing user from a lookup error.
+    for owner_key in dict.fromkeys((owner.resolver, owner.user_id) for owner in owners_to_resolve.values()):
+        if owner_key in unresolvable_owners or login_by_owner.get(owner_key):
+            continue
+        resolver_name, user_id = owner_key
+        try:
+            login_by_owner[owner_key] = get_resolver_object(resolver_name).getUsername(user_id)
+        except Exception as user_error:
+            log.error(f"User information can not be retrieved: {user_error!s}")
+            log.debug(traceback.format_exc())
+            unresolvable_owners.add(owner_key)
+
     for token_id, owner in owners_to_resolve.items():
         owner_key = (owner.resolver, owner.user_id)
-        if owner_key in resolved.unresolvable_owners:
+        if owner_key in unresolvable_owners:
             orphaned = orphaned_on_error
         else:
-            orphaned = not resolved.login_by_owner.get(owner_key) or not owner.realm
+            orphaned = not login_by_owner.get(owner_key) or not owner.realm
         if orphaned:
             orphaned_serials.add(token_by_id[token_id].token.serial)
     return orphaned_serials
