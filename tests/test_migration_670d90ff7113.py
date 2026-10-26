@@ -29,14 +29,16 @@ class TestMigration670d90ff7113(MigrationTestBase):
     PARENT_REVISION = "9e8487714b46"
 
     @staticmethod
-    def _lock_row(resolver: str, uid: str, realm: str, user_role: str) -> dict:
+    def _lock_row(resolver: str, uid: str, realm: str, user_role: str, lock_expires_at: datetime | None = None,
+                  lock_cause: str = "POLICY") -> dict:
         return {
             "resolver": resolver,
             "uid": uid,
             "realm": realm,
             "username": uid,
             "user_role": user_role,
-            "lock_cause": "POLICY",
+            "lock_expires_at": lock_expires_at,
+            "lock_cause": lock_cause,
             "locked_at": datetime(2026, 10, 1, 12, 0, 0),
         }
 
@@ -45,6 +47,16 @@ class TestMigration670d90ff7113(MigrationTestBase):
 
     def _lock_keys(self) -> set[tuple]:
         query = text(f"SELECT resolver, {quote_identifier('uid')}, realm FROM user_lock_state")
+        engine = self._engine()
+        try:
+            with engine.connect() as conn:
+                return {tuple(row) for row in conn.execute(query)}
+        finally:
+            engine.dispose()
+
+    def _admin_locks(self) -> set[tuple]:
+        query = text(f"SELECT resolver, {quote_identifier('uid')}, realm, lock_expires_at, lock_cause "
+                     "FROM user_lock_state WHERE user_role = 'admin-internal'")
         engine = self._engine()
         try:
             with engine.connect() as conn:
@@ -94,6 +106,39 @@ class TestMigration670d90ff7113(MigrationTestBase):
 
         assert self._lock_keys() == {("~internal", "admin", "~internal"),
                                      ("~internal", "operator", "~internal"), USER_LOCK}
+
+    @pytest.mark.skipif(is_oracle(), reason="Oracle stores the empty key as NULL, so it holds no local admin lock")
+    def test_upgrade_keeps_the_permanent_one_of_two_locks_of_a_local_admin(self, flask_app) -> None:
+        # Locked again after the update but before this migration, a local admin has a lock under both keys.
+        self._upgrade_to_parent([self._lock_row("", "admin", "", "admin-internal"),
+                                 self._lock_row("~internal", "admin", "~internal", "admin-internal",
+                                                lock_expires_at=datetime(2030, 1, 1))])
+
+        self._upgrade()
+
+        assert self._admin_locks() == {("~internal", "admin", "~internal", None, "POLICY")}
+
+    @pytest.mark.skipif(is_oracle(), reason="Oracle stores the empty key as NULL, so it holds no local admin lock")
+    def test_upgrade_keeps_the_placeholder_lock_when_two_locks_of_a_local_admin_last_equally_long(
+            self, flask_app) -> None:
+        self._upgrade_to_parent([self._lock_row("", "admin", "", "admin-internal"),
+                                 self._lock_row("~internal", "admin", "~internal", "admin-internal",
+                                                lock_cause="MANUAL")])
+
+        self._upgrade()
+
+        assert self._admin_locks() == {("~internal", "admin", "~internal", None, "MANUAL")}
+
+    @pytest.mark.skipif(is_oracle(), reason="Oracle stores the empty key as NULL, so it holds no local admin lock")
+    def test_upgrade_runs_again_after_stopping_once_the_weaker_lock_is_dropped(self, flask_app) -> None:
+        self._upgrade_to_parent([self._lock_row("", "admin", "", "admin-internal"),
+                                 self._lock_row("~internal", "admin", "~internal", "admin-internal",
+                                                lock_expires_at=datetime(2030, 1, 1))])
+
+        self._upgrade_failing_after(r"DELETE FROM user_lock_state")
+        self._upgrade()
+
+        assert self._admin_locks() == {("~internal", "admin", "~internal", None, "POLICY")}
 
     @pytest.mark.skipif(is_oracle(), reason="Oracle cannot store the empty key the downgrade restores")
     def test_downgrade_moves_a_local_admin_lock_back_to_the_empty_key(self, flask_app):
