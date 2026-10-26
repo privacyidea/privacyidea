@@ -152,12 +152,20 @@ export class NewWebhookComponent implements OnDestroy {
     pattern(f.url, /^https?:\/\/.+/i);
     required(f.timeout);
     validate(f.timeout, ({ value }) =>
-      Number(value()) > 0 ? null : { kind: "timeout", message: $localize`The timeout must be a positive number.` }
+      Number(value()) > 0
+        ? null
+        : {
+          kind: "timeout",
+          message: $localize`:@@webhook.timeoutMustBePositive:The timeout must be a positive number.`
+        }
     );
     // Basic auth without a username is the one auth field the server insists on.
     validate(f.username, ({ value }) =>
       this.webhookModel().auth_type === "basic" && !value().trim()
-        ? { kind: "required", message: $localize`Basic authentication needs a username.` }
+        ? {
+          kind: "required",
+          message: $localize`:@@webhook.basicAuthNeedsUsername:Basic authentication needs a username.`
+        }
         : null
     );
     disabled(f.identifier, () => this.isEditMode());

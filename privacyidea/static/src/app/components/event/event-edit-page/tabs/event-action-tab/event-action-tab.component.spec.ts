@@ -176,7 +176,10 @@ describe("EventActionTabComponent", () => {
       expect(Object.keys(last).sort()).toEqual(["data", "replace", "webhook"]);
     });
 
-    it("drops a stored read-only option too, rather than carrying it along", () => {
+    it("passes a stored read-only option through instead of dropping it", () => {
+      // The inline endpoint of a handler the 3.15 upgrade converted. `pi-manage db downgrade`
+      // strips the `webhook` option from every handler, so one that lost its URL on a save here
+      // would come back from a downgrade with no endpoint at all and silently stop posting.
       fixture.componentRef.setInput("action", "post_webhook");
       fixture.componentRef.setInput("options", {
         webhook: "siem",
@@ -187,7 +190,8 @@ describe("EventActionTabComponent", () => {
 
       const emit = component.newOptions.emit as unknown as jest.Mock;
       const last = emit.mock.calls[emit.mock.calls.length - 1][0] as EventActionOptionValues;
-      expect(Object.keys(last).sort()).toEqual(["data", "replace", "webhook"]);
+      expect(last["URL"]).toBe("https://stored.example.com/hook");
+      expect(Object.keys(last).sort()).toEqual(["URL", "data", "replace", "webhook"]);
     });
 
     it("leaves a module that states no order alone", () => {

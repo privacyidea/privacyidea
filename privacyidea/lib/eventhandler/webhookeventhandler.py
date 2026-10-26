@@ -310,9 +310,12 @@ class WebHookHandler(BaseEventHandler):
         :return: True if the endpoint answered with a 2xx status
         """
         try:
-            # The content type is a property of the webhook, and it decides
-            # whether the payload is substituted as JSON or as plain text.
-            content_type = get_webhook(identifier)["content_type"]
+            # Read once and handed to fire_webhook() below: reading a webhook decrypts every
+            # secret column and every secret header, and a handler bound to validate_check fires
+            # on each authentication. The content type is needed here because it decides whether
+            # the payload is substituted as JSON or as plain text.
+            config = get_webhook(identifier)
+            content_type = config["content_type"]
         except ResourceNotFoundError:
             log.warning(f"The webhook {identifier!r} configured in this event handler does not exist.")
             self.run_details = f"webhook {identifier!r} is not configured"
@@ -327,7 +330,7 @@ class WebHookHandler(BaseEventHandler):
         # An empty payload means this event handler contributes none, which
         # lets the webhook's own default_payload apply.
         # fire_webhook() never raises: a dead endpoint is reported, not propagated.
-        result = fire_webhook(identifier, payload=webhook_text or None)
+        result = fire_webhook(identifier, payload=webhook_text or None, config=config)
 
         # What this handler run did, for the audit "info" column: lib.event copies run_details
         # there once the action returns (see EventConfiguration._run_handler). The identifier and

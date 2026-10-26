@@ -293,7 +293,7 @@ export function actionValueError(action: ConditionalAccessStageAction): string |
         value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
       return String(webhook["webhook"] ?? "").trim()
         ? null
-        : $localize`Pick the webhook to fire; without one this action never runs.`;
+        : $localize`:@@conditionalAccess.pickWebhookToFire:Pick the webhook to fire; without one this action never runs.`;
     }
     default:
       // The PERMANENT_* restrictions and the DENY decision never read a value, and the backend rejects

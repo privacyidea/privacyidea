@@ -88,7 +88,7 @@ interface EmailField {
 const SMTP_TEXT_HINT = $localize`:@@conditionalAccess.typeNameListingServers:Type the name: listing the servers needs the smtpserver_read right.`;
 
 // The same fallback for the webhook identifier; /webhook/ requires webhook_read.
-const WEBHOOK_TEXT_HINT = $localize`Type the name: listing the webhooks needs the webhook_read right.`;
+const WEBHOOK_TEXT_HINT = $localize`:@@conditionalAccess.typeNameListingWebhooks:Type the name: listing the webhooks needs the webhook_read right.`;
 
 // Order matters for layout: the three short fields come first to share one wrapping row, then the
 // wide subject/body textareas flow onto their own rows.

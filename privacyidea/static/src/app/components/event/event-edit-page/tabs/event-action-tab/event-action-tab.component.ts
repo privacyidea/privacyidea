@@ -232,9 +232,13 @@ export class EventActionTabComponent {
     for (const key of Object.keys(values)) {
       const value = values[key];
       if (value === null || value === undefined) continue;
-      // A read-only option is never written back. Nobody can set it here, so storing one only
-      // adds a row to the handler definition that nothing put there on purpose.
-      if (definitions[key]?.readonly) continue;
+      // An *empty* read-only option is dropped: nobody can set it here, so a blank row carries no
+      // intent. One that holds a value is passed through, because the save replaces the whole
+      // option set and that value is the inline endpoint of a handler the 3.15 upgrade converted.
+      // The migration promises not to delete it, and that promise is what keeps
+      // `pi-manage db downgrade` safe: the downgrade strips the `webhook` option from every
+      // handler, so one that lost its URL here would come back with no endpoint at all.
+      if (definitions[key]?.readonly && value === "") continue;
       result[key] = value;
     }
     return result;

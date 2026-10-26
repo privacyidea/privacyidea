@@ -239,11 +239,11 @@ def _webhook_to_dict(webhook, censor=False):
         else:
             result[key] = _decrypt_or_empty(result.get(key))
 
-    # Webhook.header_dict (used by get()) already decrypts. Note which headers
-    # are secret so the value can be censored and a round-trip through the API
-    # preserves the 'encrypted' flag.
-    secret_headers = [h.key for h in webhook.headers if h.encrypted]
-    result["secret_headers"] = secret_headers
+    # Webhook.get() already read the headers once and reported which of them are secret - needed
+    # so the value can be censored and a round-trip through the API preserves the 'encrypted'
+    # flag. Asking the relationship again here would be a second SELECT per webhook, because it
+    # is dynamic and cannot be eager-loaded.
+    secret_headers = result["secret_headers"]
     if censor:
         result["headers"] = {
             key: (CENSORED if key in secret_headers and value else value)
@@ -1080,7 +1080,7 @@ def _record_webhook_call(identifier, start, success, error=False):
 
 
 @log_with(log, log_exit=False)
-def fire_webhook(identifier, payload=None):
+def fire_webhook(identifier, payload=None, config=None):
     """
     Send the request described by the webhook ``identifier``.
 
@@ -1101,6 +1101,10 @@ def fire_webhook(identifier, payload=None):
     :param payload: the request body. A str is sent as-is; a dict or list is
         serialised according to the webhook's content type. When None, the
         webhook's ``default_payload`` is used.
+    :param config: the webhook's configuration, when the caller has already read it. Reading it
+        decrypts every secret column and every secret header, so a caller that needed one of its
+        fields beforehand - the WebHook event handler needs the content type to render the payload
+        - would otherwise pay for that twice on every event it fires on.
     :return: a dict with the keys
 
         ``success``
@@ -1114,7 +1118,8 @@ def fire_webhook(identifier, payload=None):
     """
     start = time.monotonic()
     try:
-        config = get_webhook(identifier)
+        if config is None:
+            config = get_webhook(identifier)
     except Exception as ex:
         # An unknown identifier is a configuration error, not a transport
         # error, but it must not propagate either.

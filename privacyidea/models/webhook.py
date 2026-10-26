@@ -128,6 +128,35 @@ class Webhook(MethodsMixin, db.Model):
         db.session.commit()
         return ret
 
+    def decrypted_headers(self):
+        """
+        Return ``(values, secret_keys)`` for this webhook's headers, read in a single pass.
+
+        ``headers`` is a dynamic relationship, so every iteration of it is another SELECT and it
+        cannot be eager-loaded. Callers that need both the values and which of them are secret -
+        the API serialisation does - would otherwise pay two queries per webhook, which is what
+        turned listing them into O(2N+1).
+
+        See :attr:`header_dict` for how an undecryptable value is treated.
+
+        :return: a ``(dict of key -> decrypted value, list of the secret keys)`` tuple
+        """
+        values = {}
+        secret_keys = []
+        for header in self.headers:
+            value = header.value
+            if header.encrypted:
+                secret_keys.append(header.key)
+                if value:
+                    decrypted = decryptPassword(value)
+                    if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+                        log.warning(f"Failed to decrypt the value of header {header.key!r} of "
+                                    f"webhook {self.identifier!r}. Returning an empty value.")
+                        decrypted = ""
+                    value = decrypted
+            values[header.key] = value
+        return values, secret_keys
+
     @property
     def header_dict(self):
         """
@@ -142,24 +171,18 @@ class Webhook(MethodsMixin, db.Model):
         :func:`~privacyidea.lib.webhook._decrypt_or_empty`; an empty credential fails the
         delivery visibly, a wrong one fails it confusingly.
         """
-        res = {}
-        for header in self.headers:
-            value = header.value
-            if header.encrypted and value:
-                decrypted = decryptPassword(value)
-                if decrypted == FAILED_TO_DECRYPT_PASSWORD:
-                    log.warning(f"Failed to decrypt the value of header {header.key!r} of webhook "
-                                f"{self.identifier!r}. Returning an empty value.")
-                    decrypted = ""
-                value = decrypted
-            res[header.key] = value
-        return res
+        return self.decrypted_headers()[0]
 
     def get(self):
         """
         Return the webhook configuration as a dictionary.
-        Mirrors :meth:`SMTPServer.get`.
+        Mirrors :meth:`SMTPServer.get`, plus ``secret_headers``.
+
+        The headers are read once, for both their values and which of them are secret: the
+        relationship is dynamic, so a caller asking for the two separately pays a second SELECT
+        per webhook.
         """
+        header_values, secret_headers = self.decrypted_headers()
         return {
             "id": self.id,
             "identifier": self.identifier,
@@ -179,7 +202,8 @@ class Webhook(MethodsMixin, db.Model):
             "http_proxy": self.http_proxy,
             "https_proxy": self.https_proxy,
             "timeout": self.timeout,
-            "headers": self.header_dict,
+            "headers": header_values,
+            "secret_headers": secret_headers,
         }
 
 
