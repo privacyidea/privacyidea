@@ -39,8 +39,7 @@ from privacyidea.lib.user import User
 from privacyidea.models import db
 from . import smtpmock
 from .api_validate_common import setup_sms_gateway
-from .base import MyApiTestCase, clock_moved_forward
-from .test_api_parallel_requests import results_of, run_in_parallel
+from .base import MyApiTestCase, clock_moved_forward, results_of, run_in_parallel
 
 
 # The type checker treats _TestHost as the test case class, so self.assertEqual, self.app, self.at, etc. resolve; at

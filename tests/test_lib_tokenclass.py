@@ -34,8 +34,7 @@ from privacyidea.models import (Token,
                                 Config,
                                 Challenge, Realm, TokenOwner, db, TokenRealm, Tokengroup, TokenTokengroup, TokenInfo,
                                 TokenContainer, TokenContainerToken)
-from .base import MyTestCase, FakeFlaskG
-from .test_api_parallel_requests import run_in_parallel
+from .base import MyTestCase, FakeFlaskG, run_in_parallel
 
 PWFILE = "tests/testdata/passwords"
 
@@ -1425,6 +1424,7 @@ class LockTokenRowTestCase(MyTestCase):
 
     def test_second_request_gets_the_lock_after_the_commit(self):
         token_id = init_token({"type": "hotp", "serial": "LOCKROW", "otpkey": self.otpkey}).token.id
+        self.addCleanup(remove_token, "LOCKROW")
         first_has_the_lock = threading.Event()
         order = []
 
@@ -1444,4 +1444,3 @@ class LockTokenRowTestCase(MyTestCase):
         results = run_in_parallel(self.app, [first, second])
         self.assertListEqual([None, None], results)
         self.assertListEqual(["first commits", "second has the lock"], order)
-        remove_token("LOCKROW")
