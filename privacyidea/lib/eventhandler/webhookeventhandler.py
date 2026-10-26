@@ -37,9 +37,6 @@ from privacyidea.lib.webhook import (GuardMode, fire_webhook, get_webhook,
 log = logging.getLogger(__name__)
 TIMEOUT = 10
 
-#: Handler definitions already reported as using the deprecated inline shape. The warning belongs
-#: in the log once per definition, not once per event: a WebHook handler on validate_check fires
-#: on every authentication, and a line per request would bury what it is trying to say.
 _INLINE_DEPRECATION_REPORTED = set()
 
 
@@ -209,11 +206,6 @@ class WebHookHandler(BaseEventHandler):
                                    tokentype=tokentype,
                                    tokendescription=tokendescription)
             # Backward-compatible aliases so existing webhook configs keep working.
-            # The old {logged_in_user} was sourced from request.User first
-            # (the authenticating end-user), falling back to g.logged_in_user
-            # (the admin).  create_tag_dict always uses g.logged_in_user for
-            # {admin} and {realm}, so we keep {logged_in_user} as a separate
-            # alias that preserves the old request.User-first behavior.
             tags["realm"] = user.realm if user else ""
             tags["logged_in_user"] = user.login if user else ""
             tags["token_serial"] = tags.get("serial", "")
@@ -238,26 +230,16 @@ class WebHookHandler(BaseEventHandler):
                     return val
 
             document = None
-            # The media type, not the stored string: a webhook may carry parameters
-            # ("application/json; charset=utf-8"), and those name the same type. Comparing the
-            # string would send a JSON document down the plain-text branch below, where its own
-            # braces are read as placeholder syntax and the substitution fails outright.
             if media_type(content_type) == ContentType.JSON:
                 try:
                     document = json.loads(webhook_text)
                 except (ValueError, TypeError) as err:
-                    # Declared as JSON, but not a JSON document. Substituting key by key exists so
-                    # that a tag carrying a quote cannot break the document -- a reason that does
-                    # not apply to a payload which is not one. So it is substituted as plain text
-                    # rather than returned untouched: untouched is what this did before, and in the
-                    # UI it is indistinguishable from replacement being switched off.
                     log.info(f"The payload is not valid JSON ({err}); substituting it as plain "
                              f"text instead.")
 
             if isinstance(document, (dict, list)):
                 webhook_text = json.dumps(replace_recursive(document))
             else:
-                # Plain text: a urlencoded body, or a JSON-typed payload that is not a document.
                 webhook_text = safe_format(webhook_text, tags)
         except (KeyError, AttributeError, IndexError) as err:
             log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
@@ -298,10 +280,6 @@ class WebHookHandler(BaseEventHandler):
         """
         Post to a configured webhook definition.
 
-        The webhook object owns the endpoint -- URL, HTTP method,
-        authentication, headers, TLS, proxy and timeout -- and this handler
-        only contributes the payload.
-
         :param identifier: the name of the webhook definition
         :param webhook_text: the configured payload
         :param replace: whether the placeholders in the payload are substituted
@@ -310,10 +288,6 @@ class WebHookHandler(BaseEventHandler):
         :return: True if the endpoint answered with a 2xx status
         """
         try:
-            # Read once and handed to fire_webhook() below: reading a webhook decrypts every
-            # secret column and every secret header, and a handler bound to validate_check fires
-            # on each authentication. The content type is needed here because it decides whether
-            # the payload is substituted as JSON or as plain text.
             config = get_webhook(identifier)
             content_type = config["content_type"]
         except ResourceNotFoundError:
@@ -324,18 +298,9 @@ class WebHookHandler(BaseEventHandler):
         if replace and webhook_text:
             webhook_text = self._replace_tags(webhook_text, content_type, g, request)
 
-        # Log the identifier, never the URL: it is a property of the webhook
-        # object and may embed a token.
         log.info(f"Posting to the webhook {identifier!r}")
-        # An empty payload means this event handler contributes none, which
-        # lets the webhook's own default_payload apply.
-        # fire_webhook() never raises: a dead endpoint is reported, not propagated.
         result = fire_webhook(identifier, payload=webhook_text or None, config=config)
 
-        # What this handler run did, for the audit "info" column: lib.event copies run_details
-        # there once the action returns (see EventConfiguration._run_handler). The identifier and
-        # what the endpoint answered, never the URL - fire_webhook() has already redacted it out
-        # of the error message for the same reason.
         if result["success"]:
             self.run_details = f"webhook {identifier!r}: HTTP {result['status_code']}"
         else:
@@ -410,22 +375,10 @@ class WebHookHandler(BaseEventHandler):
             log.debug(response)
         except (HTTPError, ConnectionError, RequestException, Timeout) as err:
             log.warning(err)
-            # The inline URL is part of the handler definition, which the audit entry already
-            # carries in its action_detail, so naming it here reveals nothing new. A webhook
-            # object's URL is different - it is not in the definition - which is why the branch
-            # above reports the identifier instead.
+
             self.run_details = f"{webhook_url} failed: {err.__class__.__name__}"
             return False
 
-        # An unfollowed redirect means nothing was delivered, so reporting it as sent would put a
-        # notification in the audit log that never arrived. An endpoint answering 301/302 is
-        # ordinary - an http->https rewrite, a load balancer - so this is the common case, not a
-        # corner one. fire_webhook() draws the same line.
-        #
-        # Deliberately narrower than that: an HTTP *error* status still counts as a run here, the
-        # way this shape has always behaved and the way the documentation describes it. Only the
-        # redirect changes, because only the redirect is a consequence of switching the guard to
-        # enforce - a mode the installation opted into.
         if not follow_redirects and 300 <= response.status_code < 400:
             log.warning(f"The webhook at '{webhook_url}' answered with HTTP "
                         f"{response.status_code} and the outbound request guard ({mode}) does not "

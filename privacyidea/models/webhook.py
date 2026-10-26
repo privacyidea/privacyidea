@@ -43,10 +43,6 @@ class Webhook(MethodsMixin, db.Model):
     """
     __tablename__ = 'webhook'
 
-    # Identity, not a Sequence: it is one id source per column, used by the ORM and by a raw
-    # INSERT alike - which the data migration does. A Sequence is known to the ORM only, so on a
-    # backend with real sequences (MariaDB) a raw INSERT that omits the column finds no default.
-    # Same choice as conditional_access_policies and authentication_log.
     id: Mapped[int] = mapped_column(
         Integer, Identity(always=False), primary_key=True)
     # Human-readable name used to reference this webhook from actions

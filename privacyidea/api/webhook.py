@@ -89,8 +89,6 @@ def _parse_headers(param):
         the same name, or if a rename names the header it renames to
     """
     headers = {}
-    # Every name seen with the secret prefix, whether it was flagged on or off: a
-    # ``secret.header.X=0`` for a header that is not being sent is as meaningless as one set to 1.
     secret_flags = set()
     secret_headers = set()
     renames = {}
@@ -111,8 +109,6 @@ def _parse_headers(param):
             given = True
             headers[key[len(HEADER_PREFIX):]] = value
 
-    # Named as the parameters the client actually sent, not as bare header names: a name can
-    # arrive under either prefix, and "X-Api-Key is orphaned" does not say which line to fix.
     orphaned = sorted(
         [f"{SECRET_HEADER_PREFIX}{name}" for name in secret_flags - set(headers)]
         + [f"{RENAME_HEADER_PREFIX}{name}" for name in set(renames) - set(headers)])
@@ -122,8 +118,6 @@ def _parse_headers(param):
             f"{', '.join(orphaned)}. Sending any '{HEADER_PREFIX}*' parameter replaces the whole "
             f"header set, so send every header you want to keep, each with its own flag.")
 
-    # Renaming a header to the name it already has says nothing; renaming it to a name that is
-    # also being sent as a header of its own would have two rows claim one name.
     conflicting = sorted(new for new, old in renames.items() if new == old or old in headers)
     if conflicting:
         raise ParameterError(
@@ -254,18 +248,10 @@ def set_webhook_api(identifier=None):
     if not headers_given and is_true(get_optional(param, "clear_headers")):
         headers_given = True
 
-    # Booleans and numbers must only be converted when they were actually
-    # sent. Defaulting an absent verify_tls to False would silently turn off
-    # certificate verification on every partial update; None means "keep".
     verify_tls = get_optional(param, "verify_tls")
     if verify_tls is not None:
         verify_tls = is_true(verify_tls)
 
-    # The remaining values are passed through untouched: set_webhook()
-    # validates and normalises them, and it is the single place that knows
-    # the rules (URL scheme, known method/auth type, positive timeout,
-    # auth-type specific requirements). Duplicating them here would let the
-    # two drift apart.
     webhook_id = set_webhook(
         identifier,
         url=get_optional(param, "url"),
@@ -289,7 +275,6 @@ def set_webhook_api(identifier=None):
         header_renames=header_renames if headers_given else None,
     )
 
-    # Log the identifier, never the URL: it may embed a token.
     g.audit_object.log({"success": True, "info": identifier})
     return send_result(webhook_id)
 
@@ -346,9 +331,6 @@ def test_webhook_api(identifier=None):
         response body, truncated) and ``error``.
     :status 404: no webhook with this identifier exists.
     """
-    # Fail with 404 before sending anything if the webhook does not exist.
-    # fire_webhook() deliberately swallows that into a result dict, which is
-    # right for an event handler but unhelpful for an explicit test request.
     get_webhook(identifier)
 
     payload = get_optional(request.all_data, "payload")

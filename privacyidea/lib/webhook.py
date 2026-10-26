@@ -91,9 +91,6 @@ class ContentType:
 #: Keys of the webhook dict whose values are secrets.
 SECRET_KEYS = ("password", "client_key_password")
 
-#: Response bodies are truncated to this many characters before being returned
-#: or logged. A webhook endpoint may answer with an arbitrarily large document
-#: and we must not blow up the audit log or the API response with it.
 MAX_RESPONSE_LENGTH = 1000
 
 
@@ -178,11 +175,6 @@ def _validate(identifier: str, url: str | None, http_method: str | None,
             f"Unsupported HTTP method {http_method!r}. "
             f"Supported methods are: {', '.join(HttpMethod.ALL)}.")
 
-    # Legacy shorthands ('json', 'urlencoded') are deliberately NOT accepted
-    # here. Converting them is the job of the migration for stored data and of
-    # the event handler's tolerant reader for unmigrated inline options; a
-    # first-class webhook always carries a real MIME type. Rejecting them loudly
-    # beats storing 'json' and later sending an invalid Content-Type header.
     content_type = content_type or ContentType.JSON
     if "/" not in content_type:
         raise ParameterError(
@@ -239,10 +231,6 @@ def _webhook_to_dict(webhook, censor=False):
         else:
             result[key] = _decrypt_or_empty(result.get(key))
 
-    # Webhook.get() already read the headers once and reported which of them are secret - needed
-    # so the value can be censored and a round-trip through the API preserves the 'encrypted'
-    # flag. Asking the relationship again here would be a second SELECT per webhook, because it
-    # is dynamic and cannot be eager-loaded.
     secret_headers = result["secret_headers"]
     if censor:
         result["headers"] = {
@@ -255,12 +243,6 @@ def _webhook_to_dict(webhook, censor=False):
 def _apply_renames(webhook, renames):
     """
     Rename stored ``webhookheader`` rows before the set is synchronised.
-
-    A header is addressed by its name everywhere else, so without this a rename is a delete plus a
-    create - and the editor never holds a secret header's value, only the ``__CENSORED__``
-    placeholder, which means "keep what is stored under this name". Under the new name nothing is
-    stored, so the credential would be created empty and the save would still report success. The
-    row itself has a stable identity (``webhookheader.id``), and this is what lets a caller use it.
 
     Applied first, so everything after it finds the row under its new name and the ordinary
     "keep the stored value" path does the rest.
@@ -513,10 +495,6 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
         raise ParameterError(
             f"Cannot create the webhook {identifier!r} without a URL.")
 
-    # For an update, fall back to the stored values so that validation sees the
-    # configuration as it will be *after* the update, not just the new fragments.
-    # Webhook.get() yields plain Python values, which keeps the ORM's Mapped[...]
-    # types out of the validation code below.
     stored = webhook.get() if webhook is not None else {}
 
     def pick(new_value, key):
@@ -536,8 +514,6 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
         headers=pick(headers, "headers"),
     )
 
-    # A censored secret means "keep what is stored", so leave it out of the
-    # update entirely. An empty string clears it; any other value replaces it.
     encrypted_password = None
     if password is not None and not is_censored(password):
         encrypted_password = encryptPassword(password) if password else ""
@@ -547,13 +523,10 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
             encryptPassword(client_key_password) if client_key_password else "")
 
     if webhook is None:
-        # Seed the columns the model would otherwise leave as None; the
-        # optional parameters below may still overwrite them.
         webhook = Webhook(identifier=identifier, url=effective_url,
                           description="", verify_tls=True)
         db.session.add(webhook)
 
-    # Always write the normalised values.
     webhook.url = effective_url
     webhook.http_method = effective_method
     webhook.content_type = effective_content_type
@@ -589,8 +562,6 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     if headers is not None:
         _apply_headers(webhook, headers, secret_headers, renames=header_renames)
     elif header_renames:
-        # A rename without a header set would be a partial update of something that is replaced
-        # wholesale; it describes a state the next write would undo.
         raise ParameterError("Renaming a header requires sending the header set it belongs to.")
 
     db.session.commit()
@@ -674,7 +645,6 @@ def _build_auth_and_cert(config):
     auth_type = config["auth_type"]
 
     if auth_type == AuthType.BASIC:
-        # config["password"] is already decrypted by _webhook_to_dict().
         return (config["username"], config["password"]), None, None
 
     if auth_type == AuthType.MTLS:
@@ -682,13 +652,10 @@ def _build_auth_and_cert(config):
         key = config["client_key"]
         key_password = config["client_key_password"]
         if key_password:
-            # requests' cert= cannot carry a password; handled via SSLContext.
             return None, (certificate, key), key_password
         cert = (certificate, key) if key else certificate
         return None, cert, None
 
-    # AuthType.NONE needs nothing; AuthType.HEADER is carried by the
-    # configured static headers, which are sent for every auth type anyway.
     return None, None, None
 
 
@@ -772,8 +739,6 @@ def _resolve_body(config, payload):
     return payload
 
 
-#: Stands in for the part of a webhook URL that must not reach a log line, an audit entry or an
-#: API response.
 REDACTED = "<redacted>"
 
 
@@ -1137,10 +1102,8 @@ def fire_webhook(identifier, payload=None, config=None):
     session = None
     try:
         mode, rejection = outbound_guard_check(_guard_target(config))
-        # Only ENFORCE withholds a redirect; see the request call below.
         follow_redirects = mode != GuardMode.ENFORCE
         if rejection:
-            # The rejection names the target it judged, so it can carry the URL.
             rejection = _redact_url(rejection, config["url"])
             log.warning(f"Webhook {identifier!r}: outbound request guard "
                         f"({mode}) rejected the target: {rejection}")
@@ -1149,9 +1112,6 @@ def fire_webhook(identifier, payload=None, config=None):
                 return {"success": False, "status_code": None, "response": "",
                         "error": f"blocked by the outbound request guard "
                                  f"({mode}): {rejection}"}
-            # warn mode: the request still goes out. fire_webhook() has no audit
-            # object to write to, so the log line above is the only record of
-            # the rejection; it does not appear in the audit log.
 
         headers = dict(config["headers"] or {})
         body = _resolve_body(config, payload)
@@ -1162,12 +1122,7 @@ def fire_webhook(identifier, payload=None, config=None):
         auth, cert, key_password = _build_auth_and_cert(config)
         verify = _build_verify(config)
         proxies = _build_proxies(config)
-        # requests treats None as "not set" for data, auth, cert and proxies, so
-        # they can all be passed unconditionally.
         if key_password:
-            # Encrypted client key: requests' cert= parameter has no way to pass
-            # the password, so the chain is loaded into an SSLContext instead and
-            # cert= is left unset.
             cert = None
             context = _mtls_ssl_context(config, verify, key_password)
             session = requests.Session()
@@ -1185,11 +1140,6 @@ def fire_webhook(identifier, payload=None, config=None):
             verify=verify,
             proxies=proxies,
             timeout=config["timeout"],
-            # A redirect target was never checked by the guard above, so following one would
-            # defeat it -- but only ENFORCE is meant to change what happens. OFF is byte-for-byte
-            # the behaviour of privacyIDEA 3.14 and older, and WARN is a trial run of ENFORCE that
-            # must not alter delivery either: it follows the redirect and says what ENFORCE would
-            # have done instead (below), which is the whole point of having a mode to try first.
             allow_redirects=follow_redirects,
         )
         # requests.Response.ok is true for anything below 400, so a 3xx counts as a success by
@@ -1201,7 +1151,6 @@ def fire_webhook(identifier, payload=None, config=None):
         success = response.ok and not unfollowed_redirect
         body_text = _truncate(response.text)
 
-        # Never log the URL (it may embed a token) or the headers.
         log.info(f"Webhook {identifier!r} answered with HTTP "
                  f"{response.status_code}")
         log.debug(f"Webhook {identifier!r} response body: {body_text}")
@@ -1210,8 +1159,6 @@ def fire_webhook(identifier, payload=None, config=None):
                         f"outbound request guard ({mode}) does not follow redirects, so nothing was "
                         f"delivered. Configure the webhook with the final URL.")
         elif response.history:
-            # Followed, which only happens in OFF and WARN. Worth a line in WARN, because it is
-            # exactly the delivery that would stop working on ENFORCE.
             log.info(f"Webhook {identifier!r} followed {len(response.history)} redirect(s); the "
                      f"outbound request guard would refuse to in {GuardMode.ENFORCE!r} mode, and "
                      f"the redirect target is never checked against the guard.")
@@ -1230,12 +1177,6 @@ def fire_webhook(identifier, payload=None, config=None):
         return {"success": success, "status_code": response.status_code,
                 "response": body_text, "error": error}
     except Exception as ex:
-        # Deliberately broad: a webhook must never break its caller, so even a
-        # programming error in the TLS setup is downgraded to a logged failure.
-        #
-        # A transport error quotes the URL it failed on, so the message is redacted before it goes
-        # anywhere: this string is logged, returned to the API, and written to the audit log by the
-        # event handler, while the URL it would otherwise carry may embed a token.
         message = _redact_url(f"{ex.__class__.__name__}: {ex}", config["url"])
         log.warning(f"Webhook {identifier!r} could not be delivered: {message}")
         _record_webhook_call(identifier, start, False, error=True)
@@ -1323,8 +1264,6 @@ def import_webhook(data, name=None):
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
-        # Be tolerant about a hand-edited export: an unknown key would
-        # otherwise abort the whole import with a TypeError.
         parameters = {}
         for key, value in res_data.items():
             if key in known_parameters:

@@ -462,10 +462,6 @@ def export_event(name=None):
         return event_cls.events
 
 
-#: Written into the ``description`` of a webhook created while importing a configuration.
-#: Deliberately *not* the marker the e1f2a3b4c5d6 migration uses for its own rows: that marker is
-#: what tells the migration which rows it may adopt when it resumes after a failed run, and a row
-#: this importer created is not one of them.
 IMPORT_MARKER = "pi-import:webhook-from-inline-handler"
 
 
@@ -483,8 +479,6 @@ def _free_webhook_identifier(base, handler_id):
     while candidate in existing:
         description = get_webhook(candidate).get("description") or ""
         if description.startswith(IMPORT_MARKER):
-            # Ours, from an earlier import of this configuration. Reusing it is what makes
-            # importing the same file twice leave one webhook rather than a trail of them.
             return candidate
         suffix += 1
         candidate = f"{base}_{suffix}"
@@ -584,10 +578,6 @@ def import_event(data, name=None, skip_invalid=False):
     for entry in data:
         if name and name != entry.get('name'):
             continue
-        # Worked on as a copy: the caller's data has to survive the import. "condition" is
-        # dropped because it is not used any more, but deleting it from the caller's dict made
-        # a second import of the same data fail with a KeyError - and ``pop`` rather than ``del``
-        # so a hand-edited export without the key imports too.
         res_data = {key: value for key, value in entry.items() if key != "condition"}
         options = res_data.get("options") or {}
         inline_webhook = (res_data.get("handlermodule") == "WebHook"
@@ -608,17 +598,7 @@ def import_event(data, name=None, skip_invalid=False):
         rid = set_event(**res_data)
 
         if inline_webhook:
-            # Converted after the handler is stored, because the identifier is built from the id
-            # set_event() just assigned. The inline options are kept, exactly as the migration
-            # keeps them: the webhook option wins in WebHookHandler.do(), and they stay readable
-            # until the release that removes the inline shape drops them.
             identifier = _convert_inline_webhook_handler(rid, res_data.get("name"), options)
-            # The one option row is written directly rather than through a second set_event().
-            # That call takes the whole definition, and the fields it is not given fall back to
-            # the signature defaults rather than being left alone: action would become "" (the
-            # handler then never fires, do() refuses an action it does not know), position would
-            # become "post", ordering 0, and a definition exported as inactive would come back
-            # enabled.
             db.session.add(EventHandlerOption(
                 eventhandler_id=rid, Key="webhook", Value=identifier,
                 Description="Added by the configuration import: links this WebHook handler to "
