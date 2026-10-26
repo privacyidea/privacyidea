@@ -632,19 +632,23 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
 
     A token is orphaned in the same cases as ``TokenClass.is_orphaned()`` decides for a single token:
     its first owner belongs to a resolver that no longer exists, does not exist in the user store or
-    has no realm. If the user store can not be asked, ``orphaned_on_error`` decides. An owner the batch
-    lookup does not find is looked up once more on its own.
+    has no realm. If the user store can not be asked or the owner can not be read from the database,
+    ``orphaned_on_error`` decides. An owner the batch lookup does not find is looked up once more on
+    its own.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
     :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
     :return: The serials of the orphaned tokens
     """
     token_by_id = {token.token.id: token for token in tokens}
+    unread_token_ids = set()
     owner_by_token_id = {token_id: owners[0]
-                         for token_id, owners in _get_owners_by_token_id(list(token_by_id)).items()}
+                         for token_id, owners in _get_owners_by_token_id(list(token_by_id), unread_token_ids).items()}
     resolvers = get_resolver_list()
 
     orphaned_serials = set()
+    if orphaned_on_error:
+        orphaned_serials.update(token_by_id[token_id].token.serial for token_id in unread_token_ids)
     owners_to_resolve = {}
     for token_id, owner in owner_by_token_id.items():
         if owner.resolver and not resolvers.get(owner.resolver, {}).get("type"):

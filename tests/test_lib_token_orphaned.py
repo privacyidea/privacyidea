@@ -142,3 +142,10 @@ class OrphanedTokenTestCase(MyTestCase):
                 expected = {"ORPHUNREACHABLE"} if tokens[0].is_orphaned(orphaned_on_error) else set()
                 self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    def test_06_owners_can_not_be_read(self) -> None:
+        tokens = get_tokens(serial="ORPHDELETEDUSER")
+        # Not even the owner is known, so like a user store that can not be asked, orphaned_on_error decides
+        with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=Exception("lock wait timeout")):
+            self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
