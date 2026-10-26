@@ -69,8 +69,9 @@ export const routes: Routes = [
     component: PasswordRecoveryRequestComponent,
     canActivate: [loginGuard]
   },
-  // The link in the recovery email opens this route: the login name with the realm, then the recovery code.
-  { path: "reset/:user/:code", title: PAGE_NAMES.passwordReset, component: PasswordRecoveryResetComponent },
+  // The link in the recovery email opens this route: the login name with the realm in the path, the recovery code
+  // in the fragment.
+  { path: "reset/:user", title: PAGE_NAMES.passwordReset, component: PasswordRecoveryResetComponent },
   { path: "", redirectTo: "login", pathMatch: "full" },
   {
     path: "",

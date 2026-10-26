@@ -43,6 +43,7 @@ describe("PasswordRecoveryRequestComponent", () => {
     }).compileComponents();
     configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
     recoverService = TestBed.inject(RecoverService) as unknown as MockRecoverService;
+    configService.config.update((config) => ({ ...config, password_reset: true }));
     fixture = TestBed.createComponent(PasswordRecoveryRequestComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -122,10 +123,24 @@ describe("PasswordRecoveryRequestComponent", () => {
     expect(recoverService.requestRecoveryCode).not.toHaveBeenCalled();
   });
 
-  it("points out that the password reset is not enabled", () => {
-    expect(fixture.nativeElement.textContent).toContain("Resetting the password is not enabled.");
-    configService.config.update((config) => ({ ...config, password_reset: true }));
+  it("points out that the password reset is not enabled once the config is loaded", () => {
+    configService.config.update((config) => ({ ...config, password_reset: false }));
+    component.username.set("alice");
+    component.email.set("alice@example.com");
     fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("Resetting the password is not enabled.");
+    expect(component.isSubmitDisabled()).toBe(true);
+  });
+
+  it("does not claim the password reset is disabled before the config is loaded", () => {
+    configService.config.update((config) => ({ ...config, password_reset: false }));
+    configService.configLoaded.set(false);
+    component.username.set("alice");
+    component.email.set("alice@example.com");
+    fixture.detectChanges();
+
     expect(fixture.nativeElement.textContent).not.toContain("Resetting the password is not enabled.");
+    expect(component.isSubmitDisabled()).toBe(false);
   });
 });

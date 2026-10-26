@@ -72,12 +72,17 @@ export class PasswordRecoveryRequestComponent {
     computation: (realms) => realms[0] ?? ""
   });
 
-  passwordResetEnabled = computed(() => !!this.configService.config()?.password_reset);
+  // The default of the config says "disabled" until the server has answered.
+  passwordResetDisabled = computed(
+    () => this.configService.configLoaded() && !this.configService.config()?.password_reset
+  );
   submitting = signal(false);
   sent = signal(false);
   errorMessage = signal("");
 
-  isSubmitDisabled = computed(() => !this.username() || !this.email() || this.submitting());
+  isSubmitDisabled = computed(
+    () => !this.username() || !this.email() || this.submitting() || this.passwordResetDisabled()
+  );
 
   clearRealmSelection(event: MouseEvent): void {
     event.stopPropagation();

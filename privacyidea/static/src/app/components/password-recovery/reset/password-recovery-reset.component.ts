@@ -16,15 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { Location } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, signal } from "@angular/core";
-import { form, required } from "@angular/forms/signals";
+import { form, FormField, required, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatError, MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { LoginLogoComponent } from "@components/shared/login-logo/login-logo.component";
-import { MaskedInputComponent } from "@components/shared/masked-input/masked-input.component";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RecoverService, RecoverServiceInterface } from "@services/recover/recover.service";
 
@@ -44,33 +45,59 @@ export function splitUserAndRealm(userAndRealm: string): { user: string; realm?:
 @Component({
   selector: "app-password-recovery-reset",
   standalone: true,
-  imports: [LoginLogoComponent, MaskedInputComponent, MatButtonModule, MatIconModule, RouterLink],
+  imports: [
+    FormField,
+    LoginLogoComponent,
+    MatButtonModule,
+    MatError,
+    MatFormField,
+    MatIconModule,
+    MatInput,
+    MatLabel,
+    MatSuffix,
+    RouterLink
+  ],
   templateUrl: "./password-recovery-reset.component.html",
   styleUrl: "../../login/login.component.scss"
 })
 export class PasswordRecoveryResetComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly recoverService: RecoverServiceInterface = inject(RecoverService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly loginPath = ROUTE_PATHS.LOGIN;
 
-  private readonly recoveryCode = this.route.snapshot.paramMap.get("code") ?? "";
+  private readonly recoveryCode = this.route.snapshot.fragment ?? "";
   protected readonly account = splitUserAndRealm(this.route.snapshot.paramMap.get("user") ?? "");
 
   password = signal("");
   repeatPassword = signal("");
   passwordField = form(this.password, (f) => required(f));
-  repeatPasswordField = form(this.repeatPassword, (f) => required(f));
+  repeatPasswordField = form(this.repeatPassword, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value() !== this.password() ? [{ kind: "passwordMismatch" }] : []));
+  });
+  hidePassword = signal(true);
+  protected readonly showPasswordLabel = $localize`:@@login.showPassword:Show password`;
+  protected readonly hidePasswordLabel = $localize`:@@login.hidePassword:Hide password`;
 
   submitting = signal(false);
-  errorMessage = signal("");
+  errorMessage = signal(
+    this.recoveryCode
+      ? ""
+      : $localize`:@@passwordRecovery.incompleteLink:The link is incomplete. Please use the link from the email as it is.`
+  );
 
   passwordMismatch = computed(() => this.repeatPassword() !== "" && this.repeatPassword() !== this.password());
-  mismatchMessage = computed(() =>
-    this.passwordMismatch() ? $localize`:@@passwordRecovery.passwordsDoNotMatch:The passwords do not match.` : ""
+  isSubmitDisabled = computed(
+    () => !this.recoveryCode || !this.password() || this.password() !== this.repeatPassword() || this.submitting()
   );
-  isSubmitDisabled = computed(() => !this.password() || this.password() !== this.repeatPassword() || this.submitting());
+
+  constructor() {
+    // The code is read; keep it out of the address bar, the browser history and the Referer of later requests.
+    this.location.replaceState(this.location.path());
+  }
 
   onSubmit(): void {
     if (this.isSubmitDisabled()) {

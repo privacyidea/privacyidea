@@ -19,6 +19,7 @@
 #
 import logging
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from sqlalchemy import select, delete
 
@@ -45,15 +46,16 @@ This module is tested in tests/test_lib_passwordreset.py
 
 log = logging.getLogger(__name__)
 
-# The previous WebUI routes by hashbang, the current one below its mount point.
-WEBUI_LEGACY_ROUTE_PREFIX = "/#!"
-WEBUI_ROUTE_PREFIX = "/app/v2"
+# The previous WebUI routes by hashbang. The current WebUI routes below its mount point and takes the
+# recovery code from the fragment, which the browser neither sends to the server nor to other sites.
+WEBUI_LEGACY_LINK = "{0!s}/#!/reset/{1!s}@{2!s}/{3!s}"
+WEBUI_LINK = "{0!s}/app/v2/reset/{1!s}@{2!s}#{3!s}"
 
 BODY = """Someone requested to reset the password within privacyIDEA.
 
 To reset your user password please visit the link
 
-{0!s}/reset/{1!s}@{2!s}/{3!s}
+{0!s}
 """
 
 
@@ -87,9 +89,8 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
                                "recovery.identifier.")
 
     # ``base_url`` is expected to be a trusted base URL (see
-    # privacyidea.lib.framework.get_base_url); append the route of the Web UI
-    # that consumes the recovery code.
-    base_url = base_url.rstrip("/") + (WEBUI_LEGACY_ROUTE_PREFIX if legacy_webui else WEBUI_ROUTE_PREFIX)
+    # privacyidea.lib.framework.get_base_url).
+    base_url = base_url.rstrip("/")
     recoverycode = recoverycode or generate_password(size=24)
     hash_code = hash_with_pepper(recoverycode)
     pwreset = PasswordReset(hash_code, username=user.login,
@@ -100,9 +101,9 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
     # send this recoverycode
     r = send_email_identifier(identifier, user_email,
                               "Your password reset",
-                              BODY.format(base_url,
-                                          user.login, user.realm,
-                                          recoverycode))
+                              BODY.format((WEBUI_LEGACY_LINK if legacy_webui else WEBUI_LINK).format(
+                                  base_url, quote(user.login, safe="@"), quote(user.realm, safe=""),
+                                  quote(recoverycode, safe=""))))
     if not r:
         raise PrivacyIDEAError(f"Failed to send email. {r!s}")
     return True

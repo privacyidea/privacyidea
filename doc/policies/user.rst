@@ -393,9 +393,12 @@ The password reset needs
   Recovery* in the system configuration (``recovery.identifier``) and
 * ``PI_BASE_URL`` in ``pi.cfg`` (see :ref:`cfgfile`), which the link in the email is built from.
 
-The link in the email points to the WebUI that is served: ``<PI_BASE_URL>/app/v2/reset/<user>@<realm>/<code>``
+The link in the email points to the WebUI that is served: ``<PI_BASE_URL>/app/v2/reset/<user>@<realm>#<code>``
 for the current WebUI and ``<PI_BASE_URL>/#!/reset/<user>@<realm>/<code>`` for the previous WebUI
-(see :ref:`legacy_webui`). The endpoints of :ref:`rest_recover` can also be used directly.
+(see :ref:`legacy_webui`). The current WebUI takes the recovery code from the fragment of the URL: the browser sends
+the fragment neither to the server nor to other sites, so the code does not show up in access logs or in the
+``Referer`` header, and the page removes it from the address bar. The endpoints of :ref:`rest_recover` can also be
+used directly.
 
 .. versionchanged:: 3.14
    The current WebUI offers the password reset. Before, only the previous WebUI did.

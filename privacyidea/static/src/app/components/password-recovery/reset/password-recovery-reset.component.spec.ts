@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { PlatformLocation } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
@@ -52,7 +53,7 @@ describe("PasswordRecoveryResetComponent", () => {
         provideRouter([]),
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap({ user: "alice@realm1", code: "abc123" }) } }
+          useValue: { snapshot: { paramMap: convertToParamMap({ user: "alice@realm1" }), fragment: "abc123" } }
         },
         { provide: RecoverService, useClass: MockRecoverService },
         { provide: NotificationService, useClass: MockNotificationService }
@@ -67,6 +68,18 @@ describe("PasswordRecoveryResetComponent", () => {
     fixture.detectChanges();
   });
 
+  it("removes the recovery code from the address bar", () => {
+    const platformLocation = TestBed.inject(PlatformLocation);
+    platformLocation.replaceState({}, "", "/app/v2/reset/alice@realm1?foo=bar#abc123");
+    expect(platformLocation.hash).toBe("#abc123");
+
+    TestBed.createComponent(PasswordRecoveryResetComponent);
+
+    expect(platformLocation.hash).toBe("");
+    expect(platformLocation.pathname).toBe("/app/v2/reset/alice@realm1");
+    expect(platformLocation.search).toBe("?foo=bar");
+  });
+
   it("disables the submit button until both passwords are given and equal", () => {
     expect(component.isSubmitDisabled()).toBe(true);
     component.password.set("secret");
@@ -76,7 +89,31 @@ describe("PasswordRecoveryResetComponent", () => {
     expect(component.passwordMismatch()).toBe(true);
     component.repeatPassword.set("secret");
     expect(component.isSubmitDisabled()).toBe(false);
-    expect(component.mismatchMessage()).toBe("");
+    expect(component.passwordMismatch()).toBe(false);
+  });
+
+  it("shows why the passwords are not accepted", () => {
+    component.password.set("secret");
+    component.repeatPassword.set("other");
+    component.repeatPasswordField().markAsTouched();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("The passwords do not match.");
+
+    component.repeatPassword.set("secret");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+  });
+
+  it("asks for the new password in password inputs a password manager recognizes", () => {
+    const inputs: HTMLInputElement[] = Array.from(fixture.nativeElement.querySelectorAll("input"));
+    expect(inputs.map((input) => input.type)).toEqual(["password", "password"]);
+    expect(inputs.map((input) => input.autocomplete)).toEqual(["new-password", "new-password"]);
+
+    component.hidePassword.set(false);
+    fixture.detectChanges();
+    expect(inputs.map((input) => input.type)).toEqual(["text", "text"]);
   });
 
   it("sets the password with the user, realm and code of the link and goes to the login page", () => {
@@ -133,5 +170,33 @@ describe("PasswordRecoveryResetComponent", () => {
 
     expect(component.errorMessage()).toBe("Not allowed");
     expect(component.submitting()).toBe(false);
+  });
+});
+
+describe("PasswordRecoveryResetComponent with a link without code", () => {
+  let component: PasswordRecoveryResetComponent;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PasswordRecoveryResetComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ user: "alice@realm1" }), fragment: null } }
+        },
+        { provide: RecoverService, useClass: MockRecoverService },
+        { provide: NotificationService, useClass: MockNotificationService }
+      ]
+    }).compileComponents();
+    component = TestBed.createComponent(PasswordRecoveryResetComponent).componentInstance;
+  });
+
+  it("explains the problem and does not accept a password", () => {
+    component.password.set("secret");
+    component.repeatPassword.set("secret");
+
+    expect(component.errorMessage()).toContain("The link is incomplete");
+    expect(component.isSubmitDisabled()).toBe(true);
   });
 });
