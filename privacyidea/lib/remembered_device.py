@@ -210,6 +210,10 @@ def has_usable_token(user: "User") -> bool:
     # through the policy evaluators.
     from privacyidea.lib.token import get_tokens
     for token in get_tokens(user=user):
+        # Revocation first, as a login checks it: revoke() also locks the token, and check_reset_failcount() calls
+        # the lock-protected reset() once the clear timeout has passed, which would raise for a revoked token.
+        if token.is_revoked():
+            continue
         token.check_reset_failcount()
         if token.check_all([]):
             return True

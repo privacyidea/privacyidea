@@ -582,3 +582,25 @@ class RememberedDeviceLibTestCase(MyTestCase):
         token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
         self.assertTrue(has_usable_token(user))
         self.assertEqual(0, get_one_token(serial="USABLE_FAIL").token.failcount)
+
+    def test_has_usable_token_skips_a_revoked_token_with_an_expired_fail_counter(self):
+        # A revoked token is locked, so its fail counter is not cleared - it is skipped instead of raising
+        user = User(login="cornelius", realm=self.realm1)
+        remove_token(user=user)
+        init_token({"type": "spass", "pin": "test", "serial": "REVOKED_FAIL"}, user=user)
+        self.addCleanup(remove_token, "REVOKED_FAIL")
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial="REVOKED_FAIL")
+        token.set_maxfail(5)
+        token.set_failcount(5)
+        exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
+        revoke_token("REVOKED_FAIL")
+        self.assertFalse(has_usable_token(user))
+        self.assertEqual(5, get_one_token(serial="REVOKED_FAIL").token.failcount)
+
+        # The user's other, usable token still counts
+        init_token({"type": "spass", "pin": "test", "serial": "USABLE_AFTER_REVOKED"}, user=user)
+        self.addCleanup(remove_token, "USABLE_AFTER_REVOKED")
+        self.assertTrue(has_usable_token(user))
