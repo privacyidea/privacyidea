@@ -16,21 +16,17 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import logging
 
-from sqlalchemy import select
-
-from privacyidea.lib.error import ConflictError
+from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.tokenclass import lock_token_row
-from privacyidea.models import Token, TokenInfo, db
+from privacyidea.models import Token, db
 
 log = logging.getLogger(__name__)
 
 # Token info holding the counter of the OTP value last sent to the user and until when it may be used
 SENT_OTP_VALID_UNTIL = "sent_otp_valid_until"
-# How often a send tries to claim a counter while other requests keep moving it on
-CLAIM_ATTEMPTS = 10
 
 
 class SentOtpValidityMixin:
@@ -42,106 +38,81 @@ class SentOtpValidityMixin:
 
     owned_tokeninfo_keys = frozenset({SENT_OTP_VALID_UNTIL})
 
-    def _claim_otp_count_to_send(self) -> int:
+    @staticmethod
+    def _sent_otp_valid_until(validity: int) -> datetime:
         """
-        Move the OTP counter on by one for a value that is about to be sent and return the counter of that value. The
-        conditional update gives every send a counter of its own and never moves the counter backwards, also when
-        several requests send at the same time.
+        Until when a value sent now may be used. The challenge, the record of the sent value and the response share
+        this time, so OTP PIN plus OTP value and the answer with the transaction_id expire at the same moment.
 
-        :return: The counter of the value to send
-        :raises ConflictError: If other requests kept moving the counter on
+        :param validity: The validity time in seconds
+        :return: The time, in UTC
         """
-        token_id = self.token.id
-        for _ in range(CLAIM_ATTEMPTS):
-            current = db.session.scalar(select(Token.count).where(Token.id == token_id))
-            if self.advance_otp_count(current + 1):
-                return current + 1
-        raise ConflictError(f"Could not claim an OTP counter for token {self.token.serial}.")
+        return datetime.now(timezone.utc) + timedelta(seconds=validity)
 
-    def _record_sent_otp_validity(self, counter: int, valid_until: datetime) -> None:
+    @check_token_locked
+    def _claim_otp_to_send(self, valid_until: datetime | None) -> str:
         """
-        Store until when the sent OTP value at the given counter may be used without a transaction_id. A send that
-        claimed its counter earlier can finish later than another one, so the record of a higher counter is kept.
+        Move the OTP counter on by one for a value that is about to be sent, calculate that value and record until
+        when it may be used without a transaction_id. All of it happens under the lock of the token row, so every
+        send gets a counter of its own and the record belongs to the last value sent, also while other requests send
+        at the same time.
 
-        A send records only a counter it claimed, and the claim moves the token counter there, so the counter of a
-        record of the current key is never above the token counter. Only a re-initialization moves the token counter
-        back: nothing is stored for a counter above the token counter, which was claimed with the replaced key, and a
-        record with a counter above the token counter, which belongs to the replaced key, is replaced.
-
-        :param counter: The counter of the sent value, see _claim_otp_count_to_send()
-        :param valid_until: Until when the value may be used, the expiry of its challenge
+        :param valid_until: Until when the value may be used, the expiry of its challenge. None for a value without a
+            time limit, which leaves the record of an earlier value as it is.
+        :return: The OTP value to send
         """
-        # Serialize on the token row like inc_failcount(), so the comparison and the write are not interleaved with
-        # those of another send. write_tokeninfo() commits and releases the lock.
+        # Serialize on the token row like inc_failcount(): read the id before the commit, reading it afterwards
+        # reloads the expired token before the lock is held
         token_id = self.token.id
         db.session.commit()
         lock_token_row(Token.id == token_id)
-        token_count = db.session.scalar(select(Token.count).where(Token.id == token_id))
-        recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
-                                                                   TokenInfo.Key == SENT_OTP_VALID_UNTIL))
-        if token_count < counter or (recorded and counter < self._recorded_counter(recorded) <= token_count):
-            db.session.commit()
-            return
-        self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{counter} {valid_until.isoformat()}")
+        db.session.refresh(self.token)
+        counter = self.token.count + 1
+        self.token.count = counter
+        otp = self._calc_otp(counter)
+        if valid_until:
+            self.write_tokeninfo(SENT_OTP_VALID_UNTIL, f"{counter} {valid_until.isoformat()}",
+                                 commit_db_session=False)
+        # Stores the counter and the record together and releases the lock
+        db.session.commit()
+        return otp
 
     def _remove_sent_otp_validity(self) -> None:
         """
-        Remove the record of the last sent OTP value, for a value that has no time limit.
+        Remove the record of the last sent OTP value, for a value that has no time limit or after a new key replaced
+        the one the value was sent with.
         """
         self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
 
-    def _remove_sent_otp_validity_of_replaced_key(self) -> None:
+    def check_otp(self, anOtpVal: str, counter: int | None = None, window: int | None = None,
+                  options: dict | None = None) -> int:
         """
-        Remove the record of a value sent with the key the token had before it was re-initialized. A value the new key
-        sent since then keeps its record: its counter is not above the reset token counter, unlike the counter of a
-        value sent with the old key.
-        """
-        # Serialize on the token row like _record_sent_otp_validity(), so a send of the new key is not interleaved
-        token_id = self.token.id
-        db.session.commit()
-        lock_token_row(Token.id == token_id)
-        token_count = db.session.scalar(select(Token.count).where(Token.id == token_id))
-        recorded = db.session.scalar(select(TokenInfo.Value).where(TokenInfo.token_id == token_id,
-                                                                   TokenInfo.Key == SENT_OTP_VALID_UNTIL))
-        recorded_counter = self._recorded_counter(recorded) if recorded else None
-        if recorded_counter is not None and (recorded_counter < 0 or recorded_counter > token_count):
-            # remove_tokeninfo() commits and releases the lock
-            self.remove_tokeninfo(SENT_OTP_VALID_UNTIL)
-        else:
-            db.session.commit()
+        Check the OTP value like the token class does, and refuse a matched value that was sent with a validity time
+        that has passed. With a transaction_id the expiry of the challenge applies instead.
 
-    @staticmethod
-    def _recorded_counter(record: str) -> int:
-        """
-        The counter of a record of a sent OTP value.
-
-        :param record: The record, see _record_sent_otp_validity()
-        :return: The counter, -1 if the record can not be read
-        """
-        try:
-            return int(record.split(" ", 1)[0])
-        except ValueError:
-            return -1
-
-    def _get_sent_otp_record(self, options: dict) -> str | None:
-        """
-        Read the record of the last sent OTP value for a check without a transaction_id. It is read before the OTP
-        check moves the counter on, so that a value another request sends meanwhile does not replace the record the
-        check is decided by. With a transaction_id the expiry of the challenge applies instead.
-
+        :param anOtpVal: The OTP value to check
+        :param counter: The counter to check from, the token counter if None
+        :param window: How many counters to check, the count window of the token if None
         :param options: The request options
-        :return: The record, None if there is none or the request has a transaction_id
+        :return: The counter of the matched value, -1 if the value does not match or is refused
         """
-        if options.get("transaction_id") or options.get("state"):
-            return None
-        return self.get_tokeninfo(SENT_OTP_VALID_UNTIL)
+        options = options or {}
+        # Read before the check moves the counter on, so that a value another request sends meanwhile does not
+        # replace the record the check is decided by
+        with_transaction_id = options.get("transaction_id") or options.get("state")
+        record = None if with_transaction_id else self.get_tokeninfo(SENT_OTP_VALID_UNTIL)
+        matched_counter = super().check_otp(anOtpVal, counter, window, options)
+        if matched_counter >= 0 and record and self._is_sent_otp_expired(matched_counter, record):
+            log.debug(f"The OTP value of token {self.token.serial} was sent longer ago than its validity time.")
+            return -1
+        return matched_counter
 
     def _is_sent_otp_expired(self, counter: int, record: str) -> bool:
         """
         Whether the OTP value at the given counter was sent with a validity time that has passed.
 
         :param counter: The counter of the matched OTP value
-        :param record: The record of the last sent OTP value, see _get_sent_otp_record()
+        :param record: The record of the last sent OTP value, see _claim_otp_to_send()
         :return: True if the value was sent and its validity time has passed, also if the record can not be read
         """
         try:
@@ -152,16 +123,3 @@ class SentOtpValidityMixin:
             log.warning(f"Invalid value '{record}' in the token info {SENT_OTP_VALID_UNTIL} of token "
                         f"{self.token.serial}, the OTP value is refused.")
             return True
-
-    def _refuse_expired_sent_otp(self, counter: int, record: str | None) -> int:
-        """
-        Refuse a matched OTP value that was sent with a validity time that has passed.
-
-        :param counter: The counter of the matched OTP value, or -1
-        :param record: The record read before the OTP check, see _get_sent_otp_record()
-        :return: The counter, or -1 if the value is refused
-        """
-        if counter >= 0 and record and self._is_sent_otp_expired(counter, record):
-            log.debug(f"The OTP value of token {self.token.serial} was sent longer ago than its validity time.")
-            return -1
-        return counter

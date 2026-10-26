@@ -914,7 +914,7 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :param data: Challenge data dict. Pass None or {} for no data.
     :param session: Session string
     :param validitytime: Validity period in seconds (default: 120), used if no expiration is given
-    :param expiration: The time the challenge expires, as naive UTC datetime
+    :param expiration: The time the challenge expires, timezone-aware
     :return: The created Challenge object
     """
     from privacyidea.lib.cache import cache_challenge, redis_feature_enabled

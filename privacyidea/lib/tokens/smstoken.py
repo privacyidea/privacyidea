@@ -46,7 +46,6 @@ The Gateways are defined in the SMSProvider Modules.
 This code is tested in tests/test_lib_tokens_sms
 """
 
-import datetime
 import logging
 import traceback
 from json import loads
@@ -56,7 +55,6 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ConflictError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
@@ -302,7 +300,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         if not verify:
             # The new key resets the counter, the record of a value sent with the old key no longer applies. Removed
             # only once the update succeeded, a failed one keeps the old key and counter.
-            self._remove_sent_otp_validity_of_replaced_key()
+            self._remove_sent_otp_validity()
         return
 
     @log_with(log)
@@ -345,9 +343,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
 
         reply_dict = {'attributes': {'state': transactionid}}
         validity = self._get_sms_timeout()
-        # One time limit for the challenge, the record of the sent value and the response, so OTP PIN plus OTP value
-        # and the answer with the transaction_id expire at the same moment
-        valid_until = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=validity)
+        valid_until = self._sent_otp_valid_until(validity)
 
         if self.is_active() is True:
             # At this point we must not bail out in case of a
@@ -357,10 +353,9 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
                 data = None
                 # Only if this is NOT a multichallenge enrollment, we try to send the sms
                 if options.get("session") != ChallengeSession.ENROLLMENT:
-                    sent_counter = self._claim_otp_count_to_send()
-                    otp = self._calc_otp(sent_counter)
-                    # Before sending: a transport that fails after it delivered the value must not leave it unlimited
-                    self._record_sent_otp_validity(sent_counter, valid_until)
+                    # Recorded before sending: a transport that fails after it delivered the value must not leave it
+                    # unlimited
+                    otp = self._claim_otp_to_send(valid_until)
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
                         message=message_template, options=options, otp=otp)
@@ -373,8 +368,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
                                                 challenge=options.get("challenge"),
                                                 data=data,
                                                 session=options.get("session"),
-                                                validitytime=validity,
-                                                expiration=valid_until.replace(tzinfo=None))
+                                                expiration=valid_until)
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = _("The PIN was correct, but the SMS could not be sent!")
@@ -404,9 +398,7 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
         """
         options = options or {}
 
-        sent_otp_record = self._get_sent_otp_record(options)
-        ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
-        ret = self._refuse_expired_sent_otp(ret, sent_otp_record)
+        ret = super().check_otp(anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             challenge_data = options.get("data", {})
             saved_otp = challenge_data.get("otp") if challenge_data else None
@@ -417,16 +409,9 @@ class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
             # get message template from user specific policies
             message = self._get_sms_text(options)
             # The value is meant for a later login and has no time limit: its counter is above every record
-            try:
-                sent_counter = self._claim_otp_count_to_send()
-            except ConflictError as e:
-                # The authentication succeeded, the next login triggers a new value instead
-                log.warning(f"AutoSMS: no new OTP value sent: {e.message}")
-            else:
-                success, message = self._send_sms(message=message, options=options,
-                                                  otp=self._calc_otp(sent_counter))
-                log.debug(f"AutoSMS: send new SMS: {success!s}")
-                log.debug(f"AutoSMS: {message!r}")
+            success, message = self._send_sms(message=message, options=options, otp=self._claim_otp_to_send(None))
+            log.debug(f"AutoSMS: send new SMS: {success!s}")
+            log.debug(f"AutoSMS: {message!r}")
         return ret
 
     @log_with(log)
