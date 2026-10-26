@@ -465,6 +465,13 @@ def issue_remembered_device(request: Request, response: Response, *args, **kwarg
     # error while storing the device) must not turn that success into an error - the login succeeds without a device.
     try:
         cookie_action = _resolve_persistent_cookie(candidate.user, candidate.token_verified)
+    except PolicyError as exc:
+        # Policies of the same priority that set different remember-device values
+        log.warning(f"Could not issue a remembered device for user {candidate.user.login!r} in realm "
+                    f"{candidate.user.realm!r}, the login succeeds without one: {exc!r}")
+        g.audit_object.add_to_log({"action_detail": f"remembered device not issued: {exc.get_description()}"},
+                                  add_with_comma=True)
+        cookie_action = None
     except Exception as exc:  # noqa: BLE001 - issuance is best-effort, never fatal
         log.warning(f"Could not issue a remembered device for user {candidate.user.login!r} in realm "
                     f"{candidate.user.realm!r}, the login succeeds without one: {exc!r}")

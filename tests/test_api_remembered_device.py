@@ -1,4 +1,5 @@
 import re
+from unittest.mock import patch
 
 from .base import MyApiTestCase
 
@@ -301,6 +302,21 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
         self._check(api_key)
         self.assertIn("remembered device not issued: the user has reached remember_device_max_devices (1) on this "
                       "client", action_detail())
+
+        # Policies of the same priority that set different values name the conflict, not a storage failure
+        set_policy("idle_long", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=7d")
+        set_policy("idle_short", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=4h")
+        try:
+            self._check(api_key)
+        finally:
+            delete_policy("idle_long")
+            delete_policy("idle_short")
+        self.assertIn("remembered device not issued: There are policies with conflicting actions", action_detail())
+        self.assertNotIn("storing it failed", action_detail())
+
+        with patch("privacyidea.api.validate._resolve_persistent_cookie", side_effect=RuntimeError("database gone")):
+            self._check(api_key)
+        self.assertIn("remembered device not issued: storing it failed", action_detail())
 
         remove_token(user=User("hans", self.realm1))
         set_policy("no_token", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
