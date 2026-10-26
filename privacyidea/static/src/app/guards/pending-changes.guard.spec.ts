@@ -19,15 +19,18 @@
 
 import { TestBed } from "@angular/core/testing";
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from "@angular/router";
+import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { isObservable, of } from "rxjs";
 import { pendingChangesGuard } from "./pending-changes.guard";
 
 describe("pendingChangesGuard", () => {
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
+  let authService: MockAuthService;
   const mockRouteSnapshot = new ActivatedRouteSnapshot();
   mockRouteSnapshot.params = { id: "123" };
   const mockRoute = new ActivatedRouteSnapshot();
@@ -39,12 +42,14 @@ describe("pendingChangesGuard", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     });
 
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
   it("should return true if there are no pending changes", (done) => {
@@ -56,6 +61,29 @@ describe("pendingChangesGuard", () => {
       result.subscribe({
         next: (res) => {
           expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+          expect(pendingChangesService.save).not.toHaveBeenCalled();
+          expect(res).toBe(true);
+          done();
+        },
+        error: (err) => done.fail(err)
+      });
+    }
+  });
+
+  it("should return true without opening the dialog once the session has ended", (done) => {
+    pendingChangesService.hasChangesMockValue = true;
+    authService.isAuthenticated.set(false);
+    dialogService.openDialog = jest.fn();
+
+    const result = TestBed.runInInjectionContext(() =>
+      pendingChangesGuard(undefined, mockRoute, mockState, mockNextState)
+    );
+
+    expect(isObservable(result)).toBe(true);
+    if (isObservable(result)) {
+      result.subscribe({
+        next: (res) => {
+          expect(dialogService.openDialog).not.toHaveBeenCalled();
           expect(pendingChangesService.save).not.toHaveBeenCalled();
           expect(res).toBe(true);
           done();

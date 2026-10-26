@@ -19,6 +19,7 @@
 import { inject } from "@angular/core";
 import { CanDeactivateFn } from "@angular/router";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { from, map, of, switchMap } from "rxjs";
@@ -26,8 +27,10 @@ import { from, map, of, switchMap } from "rxjs";
 export const pendingChangesGuard: CanDeactivateFn<unknown> = () => {
   const pendingChangesService = inject(PendingChangesService);
   const dialogService: DialogServiceInterface = inject(DialogService);
+  const authService: AuthServiceInterface = inject(AuthService);
 
-  if (!pendingChangesService.hasChanges) return of(true);
+  // After logout or session timeout there is no session left to save with.
+  if (!authService.isAuthenticated() || !pendingChangesService.hasChanges) return of(true);
 
   return dialogService
     .openDialog({
