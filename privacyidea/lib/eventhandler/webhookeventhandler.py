@@ -130,7 +130,7 @@ class WebHookHandler(BaseEventHandler):
                 "required": False,
                 "readonly": True,
                 "fromWebhook": "url",
-                "description": _("Shows the URL form the webhook configured.")
+                "description": _("Shows the URL from the webhook configured.")
             },
             "content_type": {
                 "order": 3,
