@@ -82,9 +82,8 @@
   owner's resolver is in no realm any more, e.g. because it was deleted, is now listed on every node as well. It was
   only listed on the nodes that serve the realm of its owner.
 
-* **Locks of local administrators get a new key** so that they can be stored on Oracle (#6045). Run the schema update
-  (`pi-manage db upgrade`) right after the update: until then, existing locks of local administrators are not
-  enforced.
+* **Locks of local administrators get a new key** so that they can be stored on Oracle. Run the schema update
+  (`pi-manage db upgrade`) right after the update: until then, existing locks of local administrators are not enforced, and unlocking them does not remove them.
 
 ## Update from 3.13 to 3.14
 

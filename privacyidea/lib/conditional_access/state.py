@@ -29,7 +29,7 @@ both go through one implementation.
 import logging
 from datetime import datetime, timedelta
 
-from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
+from sqlalchemy import and_, case, delete, false, func, or_, select, ColumnElement
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
 from privacyidea.lib.conditional_access.authentication_log import excluded_accounts_condition, match_condition
@@ -65,6 +65,10 @@ SORTABLE_COLUMNS = {
     "lock_cause": UserLockState.lock_cause,
     "locked_at": UserLockState.locked_at,
 }
+
+#: True for a row that reports a resolver and realm. A local database admin's row reports neither (see
+#: :func:`_locked_user_dict`), so sorting and filtering by them go by that, not by the placeholder in its key.
+_REPORTS_RESOLVER_AND_REALM = UserLockState.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)
 
 
 def _delete_and_commit(stmt) -> int:
@@ -309,8 +313,10 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
     The realm/resolver/username *filters* are separate AND clauses from the case-sensitive authorization
     boundary (``visibility_scopes``), so search behaviour never widens the visibility scope.
 
-    :param realms: realm(s) to match (wildcard ``*`` per value); ``None``/empty means no realm filter
-    :param resolvers: resolver(s) to match (wildcard ``*`` per value); ``None``/empty means no resolver filter
+    :param realms: realm(s) to match (wildcard ``*`` per value); ``None``/empty means no realm filter. A local
+        database admin has no realm, so a realm filter never matches their row.
+    :param resolvers: resolver(s) to match (wildcard ``*`` per value); ``None``/empty means no resolver filter,
+        and like the realm filter it never matches a local database admin's row
     :param usernames: login(s) to match (wildcard ``*`` per value); ``None``/empty means no username filter
     :param error_messages: wording to match (wildcard ``*`` per value); ``None``/empty means no message filter.
         Matches the text stored on the row - what those users are actually being shown - so an admin can find
@@ -327,8 +333,11 @@ def _lock_conditions(realms: list[str] | None, resolvers: list[str] | None,
     """
     conditions: list[ColumnElement[bool]] = []
     for column, value in ((UserLockState.realm, realms),
-                          (UserLockState.resolver, resolvers),
-                          (UserLockState.username, usernames),
+                          (UserLockState.resolver, resolvers)):
+        condition = match_condition(column, value, case_insensitive)
+        if condition is not None:
+            conditions.append(and_(_REPORTS_RESOLVER_AND_REALM, condition))
+    for column, value in ((UserLockState.username, usernames),
                           (UserLockState.error_message, error_messages)):
         condition = match_condition(column, value, case_insensitive)
         if condition is not None:
@@ -387,10 +396,14 @@ def list_locked_users_paginate(realms: list[str] | None = None, resolvers: list[
     if order_column is None:
         log.warning(f"Unknown sort column '{sort_column}'. Using 'locked_at' instead.")
         order_column = UserLockState.locked_at
+    order_columns = [order_column]
+    if sort_column in ("realm", "resolver"):
+        # Sorted as the empty value they report, local database admins come before every name.
+        order_columns.insert(0, case((_REPORTS_RESOLVER_AND_REALM, 1), else_=0))
     tiebreak = (UserLockState.resolver, UserLockState.uid, UserLockState.realm)
     direction = (lambda col: col.asc()) if sort_order == "asc" else (lambda col: col.desc())
     stmt = (select(UserLockState).where(*conditions)
-            .order_by(direction(order_column), *[direction(col) for col in tiebreak]))
+            .order_by(*[direction(col) for col in order_columns], *[direction(col) for col in tiebreak]))
     page = max(1, page)
     page_size = max(1, page_size)
     offset = (page - 1) * page_size

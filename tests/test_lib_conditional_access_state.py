@@ -519,6 +519,21 @@ class UserLockStateTestCase(ConditionalAccessTestCase):
         self.assertEqual(2, len(list_locked_users(realms=[self.user.realm, "otherrealm"])))
         self.assertEqual(1, len(list_locked_users(resolvers=["other"])))
 
+    def test_locked_users_sort_and_filter_a_local_admin_by_the_empty_realm_and_resolver_they_report(self) -> None:
+        self._lock_user_for()
+        self._lock_user(None, resolver="~internal", uid="lockadmin", realm="~internal", username="lockadmin",
+                        user_role=AuthLogUserRole.ADMIN_INTERNAL)
+
+        for column in ("realm", "resolver"):
+            ascending = list_locked_users_paginate(sort_column=column, sort_order="asc")["locked_users"]
+            descending = list_locked_users_paginate(sort_column=column, sort_order="desc")["locked_users"]
+            self.assertEqual(["lockadmin", self.user.login], [lock["username"] for lock in ascending])
+            self.assertEqual([self.user.login, "lockadmin"], [lock["username"] for lock in descending])
+        for value in ("~internal", "*intern*", "*"):
+            for locks in (list_locked_users(realms=[value]), list_locked_users(resolvers=[value])):
+                self.assertNotIn("lockadmin", [lock["username"] for lock in locks])
+        self.assertEqual([self.user.login], [lock["username"] for lock in list_locked_users(realms=["*"])])
+
     # --- visibility scoping ---------------------------------------------------
 
     def test_visibility_scope_realm_limits_results(self):
@@ -671,7 +686,7 @@ class UserLockStateTestCase(ConditionalAccessTestCase):
         self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm))
         self.assertListEqual([], list_locked_users())
 
-    def test_user_unlocks_leave_a_local_admins_lock_alone(self):
+    def test_user_unlocks_leave_a_local_admins_lock_alone(self) -> None:
         # The placeholder a local admin's row carries can be passed as a realm and resolver like any other value,
         # but a local admin is unlocked through their own entry points only.
         create_db_admin("lockadmin", password="secret")

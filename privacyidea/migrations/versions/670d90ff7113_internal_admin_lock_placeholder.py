@@ -51,7 +51,7 @@ def _drop_weaker_duplicate_locks(connection) -> None:
                 print(f"Removed a second lock of local admin '{uid}' in favour of the one that lasts longer.")
 
 
-def upgrade():
+def upgrade() -> None:
     connection = op.get_bind()
     try:
         _drop_weaker_duplicate_locks(connection)
@@ -66,7 +66,7 @@ def upgrade():
         raise
 
 
-def downgrade():
+def downgrade() -> None:
     connection = op.get_bind()
     try:
         if connection.dialect.name == 'oracle':
