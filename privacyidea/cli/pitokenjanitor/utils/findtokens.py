@@ -438,7 +438,6 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                 filtered_list.append(token_obj)
 
         if orphaned is not None:
-            # Checked for the whole chunk at once, which asks each resolver once instead of once per token
             orphaned_serials = get_orphaned_serials(filtered_list, orphaned_on_error)
             filtered_list = [token_obj for token_obj in filtered_list
                              if (token_obj.token.serial in orphaned_serials) == orphaned]
