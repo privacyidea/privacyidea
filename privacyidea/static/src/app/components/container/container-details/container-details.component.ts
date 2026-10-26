@@ -324,11 +324,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     source: this.rawUserData,
     computation: (user) => user.user_realm || ""
   });
-  // An editor somewhere on the page is open, so there is something to save or discard.
-  // Deliberately without the not-yet-loaded term of isAnyEditing: a page that has not
-  // loaded (or whose session just ended, which clears the resource the same way) has no
-  // changes to lose, and counting it as changed suspends the logout navigation behind the
-  // save-and-exit dialog while the session is already gone.
+  // Without the not-yet-loaded term of isAnyEditing: a page still loading has nothing to save or discard.
   private readonly isUserEditing = computed(() => {
     return (
       this.containerDetailData().some((element) => element.isEditing()) ||
