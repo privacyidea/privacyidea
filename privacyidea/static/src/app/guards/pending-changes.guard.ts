@@ -30,7 +30,12 @@ export const pendingChangesGuard: CanDeactivateFn<unknown> = () => {
   const authService: AuthServiceInterface = inject(AuthService);
 
   // After logout or session timeout there is no session left to save with.
-  if (!authService.isAuthenticated() || !pendingChangesService.hasChanges) return of(true);
+  if (!authService.isAuthenticated()) {
+    pendingChangesService.clearAllRegistrations();
+    return of(true);
+  }
+
+  if (!pendingChangesService.hasChanges) return of(true);
 
   return dialogService
     .openDialog({

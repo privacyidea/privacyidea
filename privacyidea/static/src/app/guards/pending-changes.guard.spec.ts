@@ -70,7 +70,7 @@ describe("pendingChangesGuard", () => {
     }
   });
 
-  it("should return true without opening the dialog once the session has ended", (done) => {
+  it("should return true and unregister changes without opening the dialog once the session has ended", (done) => {
     pendingChangesService.hasChangesMockValue = true;
     authService.isAuthenticated.set(false);
     dialogService.openDialog = jest.fn();
@@ -84,6 +84,7 @@ describe("pendingChangesGuard", () => {
       result.subscribe({
         next: (res) => {
           expect(dialogService.openDialog).not.toHaveBeenCalled();
+          expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
           expect(pendingChangesService.save).not.toHaveBeenCalled();
           expect(res).toBe(true);
           done();
