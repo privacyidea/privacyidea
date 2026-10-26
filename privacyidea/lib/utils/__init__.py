@@ -541,7 +541,17 @@ def parse_date(date_string):
     return d
 
 
-def _parse_hop_address(hop_ip: str) -> "IPAddress | None":
+def _is_port(port: str) -> bool:
+    """
+    Whether *port* is a TCP port number as a proxy writes it after a hop's address.
+
+    :param port: the text after the address's port colon
+    :return: True for up to five ASCII digits up to 65535
+    """
+    return port.isascii() and port.isdigit() and len(port) <= 5 and int(port) <= 65535
+
+
+def _parse_hop_address(hop_ip: str) -> IPAddress | None:
     """
     Parse one claimed client-IP hop into an :class:`IPAddress`, tolerating the spellings
     that reverse proxies actually write into ``X-Forwarded-For`` and that a bare
@@ -552,12 +562,11 @@ def _parse_hop_address(hop_ip: str) -> "IPAddress | None":
       as ``:junk`` leaves the hop unparsed, so a malformed hop cuts the chain. A bare
       IPv6 address (which contains colons itself) is never mistaken for this form.
     * ``[2001:db8::1]`` and ``[2001:db8::1]:4711`` -- bracketed IPv6 addresses, with
-      or without a port.
-    * ``::ffff:10.0.0.1`` -- an IPv4-mapped IPv6 address, as a dual-stack socket
-      reports the peer of an IPv4 connection. Hops are matched against the configured
-      networks in one family, so the mapped spelling is canonicalized to IPv4 before
-      it is matched; :func:`parse_proxy` canonicalizes entries written in the mapped
-      form the same way.
+      or without a port. A bracketed IPv4 address is not a spelling any proxy writes
+      and is rejected.
+
+    An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) keeps its spelling;
+    :func:`_ip_in_network` matches it against IPv4 networks as well.
 
     Anything that still does not parse is reported as ``None`` rather than raising:
     the caller decides how far the chain is still trustworthy.
@@ -568,44 +577,54 @@ def _parse_hop_address(hop_ip: str) -> "IPAddress | None":
     if not hop_ip:
         return None
     candidate = hop_ip.strip()
-    if candidate.startswith("[") and "]" in candidate:
-        # Bracketed IPv6, with or without a port: "[...]" or "[...]:port". A malformed
-        # suffix such as "]:junk" is left for IPAddress to reject.
-        address, _, port = candidate[1:].partition("]")
-        if not port or re.fullmatch(r":\d{1,5}", port):
+    bracketed = candidate.startswith("[") and "]" in candidate
+    if bracketed:
+        # "[...]" or "[...]:port"; a malformed suffix is left for IPAddress to reject.
+        address, _, suffix = candidate[1:].partition("]")
+        if not suffix or (suffix.startswith(":") and _is_port(suffix[1:])):
             candidate = address
     elif candidate.count(":") == 1 and not candidate.startswith(":"):
-        # "a.b.c.d:port": the only unambiguous IPv4-with-port form. A bare IPv6 address
-        # has either no colon or more than one, and "::" starts a run of zeroes.
-        # The same port check as in the bracket branch: a suffix that is not a valid
-        # port is not a spelling any proxy writes, so the hop is left unparsed - and a
-        # malformed hop cuts the chain instead of being read as the address in it.
+        # "a.b.c.d:port": a bare IPv6 address has no colon or more than one.
         host, _, port = candidate.rpartition(":")
-        if re.fullmatch(r":\d{1,5}", f":{port}"):
+        if _is_port(port):
             candidate = host
     try:
         address = IPAddress(candidate)
     except AddrFormatError:
         return None
-    if address.is_ipv4_mapped():
-        address = address.ipv4()
+    if bracketed and address.version == 4:
+        return None
     return address
 
 
-def _canonical_network(proxynet: IPNetwork) -> IPNetwork:
-    """
-    The network as it is matched against the path to client. An IPv4-mapped IPv6 entry -
-    the spelling a dual-stack listener reports for an IPv4 connection, and on such a
-    listener the only spelling that matched on master - is canonicalized to its IPv4
-    network, so it keeps matching once :func:`_parse_hop_address` canonicalizes the hops
-    the same way (issue #6002).
-    """
-    if proxynet.ip.is_ipv4_mapped() and proxynet.prefixlen >= 96:
-        return IPNetwork(f"{proxynet.ip.ipv4()!s}/{proxynet.prefixlen - 96}")
-    return proxynet
+IPV4_MAPPED_NETWORK = IPNetwork("::ffff:0:0/96")
 
 
-def parse_proxy(proxy_settings):
+def _ip_in_network(address: IPAddress, network: IPNetwork) -> bool:
+    """
+    Whether *network* contains *address* in either of its spellings: an IPv4 address and
+    its IPv4-mapped IPv6 form (``10.0.0.1`` and ``::ffff:10.0.0.1``) are the same host, as
+    a dual-stack listener reports an IPv4 peer in the mapped form.
+
+    The spellings are only translated within the IPv4 address space, i.e. for an IPv4
+    network or a network in the mapped form. Any other IPv6 network is matched literally:
+    ``::/0`` contains ``::ffff:10.0.0.1`` but not ``10.0.0.1``, so it does not admit IPv4
+    peers or clients that were not reported in the mapped form.
+
+    :param address: a hop of the path to client or a client IP
+    :param network: a network of a proxy path or a policy
+    :return: True if the network contains the address in either spelling
+    """
+    if address in network:
+        return True
+    if address.is_ipv4_mapped():
+        return address.ipv4() in network
+    if address.version == 4 and network in IPV4_MAPPED_NETWORK:
+        return address.ipv6(ipv4_compatible=False) in network
+    return False
+
+
+def parse_proxy(proxy_settings: str) -> set[tuple[IPNetwork, ...]]:
     """
     This parses the string of the system settings OverrideAuthorizationClient into a set of "proxy paths",
     which are tuples of IPNetwork objects.
@@ -632,15 +651,11 @@ def parse_proxy(proxy_settings):
         ``(IPNetwork("172.16.0.0/16"), IPNetwork("::/0"))`` - whatever the entry's own
         family, a bare entry may mask as any client IP of either family.
 
-    An entry written as an IPv4-mapped IPv6 network - the spelling a dual-stack listener
-    reports for an IPv4 connection - is canonicalized to its IPv4 network, so
-    ``::ffff:10.0.0.0/120`` is parsed like ``10.0.0.0/24``.
-
     Multiple such settings may be separated by comma.
 
     :param proxy_settings: The OverrideAuthorizationClient config string
-    :type proxy_settings: basestring
     :return: A set of tuples of IPNetwork objects. Each tuple has at least two elements.
+    :raises AddrFormatError: if an entry is not a valid address or network
     """
     proxy_set = set()
     if proxy_settings.strip():
@@ -648,7 +663,7 @@ def parse_proxy(proxy_settings):
         for proxy in proxies_list:
             p_list = proxy.split(">")
             if len(p_list) > 1:
-                proxypath = tuple(_canonical_network(IPNetwork(proxynet.strip())) for proxynet in p_list)
+                proxypath = tuple(IPNetwork(proxynet.strip()) for proxynet in p_list)
                 proxy_set.add(proxypath)
             else:
                 # No mapping client, so we take the whole network. A bare entry is
@@ -656,7 +671,7 @@ def parse_proxy(proxy_settings):
                 # IPv6 clients as well: an IPv6 address is not contained in an IPv4
                 # network, so the entry expands to one proxy path per address family,
                 # whatever the entry's own family.
-                proxynet = _canonical_network(IPNetwork(p_list[0]))
+                proxynet = IPNetwork(p_list[0])
                 proxy_set.add((proxynet, IPNetwork("0.0.0.0/0")))
                 proxy_set.add((proxynet, IPNetwork("::/0")))
 
@@ -718,7 +733,7 @@ def check_proxy_index(path_to_client: "list[IPAddress]", proxy_settings: str) ->
         # Hence, we ignore any additional proxy hops that the client may send, which is what we want.
         for idx, (proxy_path_ip, client_path_ip) in enumerate(zip(proxy_path, path_to_client)):
             # We check if the network in the proxy path contains the IP from path_to_client.
-            if client_path_ip not in proxy_path_ip:
+            if not _ip_in_network(client_path_ip, proxy_path_ip):
                 # If not, the current proxy path does not match and we do not have to keep checking it.
                 log.debug(f"... ignored because {client_path_ip!r} is not in subnet {proxy_path_ip!r}")
                 break
@@ -846,27 +861,21 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     if not request.access_route:
         # No route at all: get_client_ip has always returned None here, and there is nothing to derive from.
         return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
-    # A falsy or unparseable hop is not handed to check_proxy_index() - a malformed X-Forwarded-For
-    # entry or client parameter is attacker-controlled and must not turn the request into a 500. It cuts
-    # the chain there instead of being skipped (see the loop below for why skipping is unsafe).
     # Kept as (hops-index, hop) pairs so the effective hop can be recovered by position: the same
     # (ip, source) can legitimately appear more than once in the chain, and a value-based lookup back into
     # ``hops`` would then return the first match rather than the hop actually chosen.
     addressable = []
     addresses = []
     for i, hop in enumerate(hops):
-        # A falsy or unparseable hop ends the trustworthy chain rather than being
-        # skipped: a skipped hop would shift every later hop one position up, so the
-        # next hop would be checked against the network configured for the skipped
-        # one. The hops after the cut stay in ``chain`` (the record of what was
-        # claimed), they just no longer take part in the mapping.
-        address = _parse_hop_address(hop.ip) if hop.ip else None
+        # An unparseable hop cuts the chain instead of being skipped: skipping would shift the later hops
+        # one position up, onto the networks configured for the skipped one. The hops after the cut stay
+        # recorded in ``chain``, they are just not mapped.
+        address = _parse_hop_address(hop.ip)
         if address is None:
             if i == 0:
-                # Without a parseable peer there is nothing to map from, and index 0
-                # would not survive check_proxy_index() on an empty list.
+                # Without a parseable peer there is nothing to map from.
                 return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
-            log.warning(
+            log.debug(
                 f"Cutting the client IP chain at the unparseable hop "
                 f"{hop.ip[:MAX_IP_CHAIN_HOP_LENGTH]!r}: the "
                 "hops after it are recorded but no longer mapped."
@@ -874,11 +883,6 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
             break
         addresses.append(address)
         addressable.append((i, hop))
-    if not addressable:
-        # Every hop was empty or unparseable (e.g. a garbled X-Forwarded-For): there is nothing left to
-        # map, so this is the same as having no route at all. check_proxy_index() would itself raise on an
-        # empty list.
-        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
     index = check_proxy_index(addresses, proxy_settings)
     effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.
@@ -919,27 +923,33 @@ def get_client_ip(request, proxy_settings):
     return get_client_ip_info(request, proxy_settings).ip
 
 
-def check_ip_in_policy(client_ip, policy):
+def check_ip_in_policy(client_ip: str, policy: list[str]) -> tuple[bool, bool]:
     """
     This checks, if the given client IP is contained in a list like
 
        ["10.0.0.2", "192.168.2.1/24", "!192.168.2.12", "-172.16.200.1"]
 
+    An IPv4 address and its IPv4-mapped IPv6 form match the same entries, see :func:`_ip_in_network`.
+
     :param client_ip: The IP address in question
-    :param policy: A string of single IP addresses, negated IP address and subnets.
+    :param policy: A list of single IP addresses, negated IP addresses and subnets.
     :return: tuple of (found, excluded)
+    :raises AddrFormatError: if the client IP or an entry is not a valid address or network
     """
     client_found = False
     client_excluded = False
     # Remove empty strings from the list
     policy = list(filter(None, policy))
+    if not policy:
+        return client_found, client_excluded
+    address = IPAddress(client_ip)
     for ipdef in policy:
         if ipdef[0] in ['-', '!']:
             # exclude the client?
-            if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
+            if _ip_in_network(address, IPNetwork(ipdef[1:])):
                 log.debug(f"the client {client_ip!s} is excluded by {ipdef!s}")
                 client_excluded = True
-        elif IPAddress(client_ip) in IPNetwork(ipdef):
+        elif _ip_in_network(address, IPNetwork(ipdef)):
             client_found = True
     return client_found, client_excluded
 

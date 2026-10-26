@@ -146,8 +146,8 @@ the policy is evaluated for the RADIUS client. A RADIUS server
 may add the API parameter *client* with a new IP address. An HTTP reverse
 proxy may append the respective client IP to the ``X-Forwarded-For`` HTTP
 header. The *client* parameter is only evaluated for ``/validate/``,
-``/ttype/`` and ``/auth`` requests; the ``X-Forwarded-For`` header for every
-request.
+``/ttype/`` and ``/auth`` requests, and only if it is a string; the
+``X-Forwarded-For`` header for every request.
 
 This field takes a comma separated list of sequences of IP Networks
 mapping to other IP networks.
@@ -165,31 +165,8 @@ this case the policies for the corresponding client in 192.168.x.x apply.
 
    172.16.0.1
 
-The proxy 172.16.0.1 may mask as any arbitrary client IP. This includes IPv6
-client addresses: the entry stands for both address families, so a client
-that the proxy reports as an IPv6 address (written with or without square
-brackets, and with or without a port) is mapped as well.
-
-Reverse proxies append to ``X-Forwarded-For`` what they received from the
-client, and some of them write a hop with its source port
-(``192.0.2.43:51234``), bracket an IPv6 address (``[2001:db8::1]``), or append
-a port to the bracketed form (``[2001:db8::1]:4711``). privacyIDEA accepts
-all of these spellings when it matches the hops against the configured proxy
-networks. An IPv4-mapped IPv6 address, as a dual-stack listener reports the
-peer of an IPv4 connection (``::ffff:10.0.0.1``), is treated as the IPv4
-address it stands for.
-
-A hop that is not a recognizable address in any of these spellings ends the
-chain there: the hops before it are still mapped, but everything after it is
-recorded in the authentication log without being trusted, because a chain
-with a gap in it cannot be matched position by position.
-
-The same applies to the ``client`` request parameter that the ``/ttype``,
-``/validate`` and JWT-auth endpoints accept: only a value that is a string
-and a recognizable address is a hop. A parameter sent with a different JSON
-type (a number, a boolean, an array) is ignored rather than an error, so a
-request cannot fail only because a client-supplied parameter arrived as the
-wrong type.
+The proxy 172.16.0.1 may mask as any arbitrary client IP, IPv4 or IPv6. To
+allow only IPv4 clients, write ``172.16.0.1 > 0.0.0.0/0``.
 
 ::
 
@@ -210,6 +187,16 @@ which may in turn use a ``client`` parameter to mask as any client in the subnet
 A nested entry only applies to requests that passed all listed hops. For requests that only pass the first proxy,
 or that come directly from the second, add separate entries such as ``10.0.0.18 > 10.1.2.0/24`` or
 ``10.1.2.0/24 > 192.168.0.0/16``.
+
+Some reverse proxies write an ``X-Forwarded-For`` hop with its source port (``192.0.2.43:51234``), bracket an
+IPv6 address (``[2001:db8::1]``), or do both (``[2001:db8::1]:4711``). privacyIDEA accepts these spellings when
+it matches the hops against the configured networks. An IPv4-mapped IPv6 address, as a dual-stack listener
+reports the peer of an IPv4 connection (``::ffff:10.0.0.1``), matches the networks that contain the IPv4 address
+it stands for, and the other way round. The address is recorded as it was reported, and the client entries of
+policies match it in either spelling as well.
+
+A hop that is not a valid address in any of these spellings ends the chain: the hops before it are still mapped,
+the hops after it are recorded in the authentication log but not mapped.
 
 .. note:: Every authentication-log entry records not only which client IP was used but how it was arrived
    at: the effective address (``source_ip``), the address the connection actually came from

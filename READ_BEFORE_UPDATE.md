@@ -26,6 +26,10 @@
   token settings *Default Time Shift* of TOTP tokens (`totp.timeShift`), the U2F *AppID* (`u2f.appId`) and
   `webauthn.appid`, which nothing read. Values that are already stored stay in the database and are ignored.
 
+* **A proxy entry without a mapping target now also maps IPv6 clients.** An *Override Authorization Client* entry
+  such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
+  documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
