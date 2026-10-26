@@ -84,6 +84,17 @@ class TestMigration670d90ff7113(MigrationTestBase):
 
         assert self._lock_keys() == {USER_LOCK}
 
+    def test_upgrade_keeps_the_locks_local_admins_got_on_the_placeholder_before_it(self, flask_app) -> None:
+        # The updated code locks local admins on the placeholder before the schema update has run.
+        self._upgrade_to_parent([self._lock_row("~internal", "admin", "~internal", "admin-internal"),
+                                 self._lock_row("~internal", "operator", "~internal", "admin-internal"),
+                                 self._user_lock_row()])
+
+        self._upgrade()
+
+        assert self._lock_keys() == {("~internal", "admin", "~internal"),
+                                     ("~internal", "operator", "~internal"), USER_LOCK}
+
     @pytest.mark.skipif(is_oracle(), reason="Oracle cannot store the empty key the downgrade restores")
     def test_downgrade_moves_a_local_admin_lock_back_to_the_empty_key(self, flask_app):
         self._upgrade_with([self._lock_row("~internal", "admin", "~internal", "admin-internal"), self._user_lock_row()])

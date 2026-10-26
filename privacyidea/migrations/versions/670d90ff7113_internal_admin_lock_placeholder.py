@@ -31,8 +31,11 @@ def _lock_strength(row) -> tuple:
 
 
 def _drop_weaker_duplicate_locks(connection) -> None:
+    # Oracle reserves UID, so the column was created quoted; unquoted it names Oracle's session user id instead.
+    uid_column = connection.dialect.identifier_preparer.quote("uid")
     rows = connection.execute(
-        sa.text("SELECT resolver, uid, realm, lock_expires_at FROM user_lock_state WHERE user_role = :role"),
+        sa.text(f"SELECT resolver, {uid_column}, realm, lock_expires_at FROM user_lock_state "
+                "WHERE user_role = :role"),
         {"role": ADMIN_INTERNAL}).all()
     locks_by_uid = {}
     for row in rows:
@@ -42,7 +45,7 @@ def _drop_weaker_duplicate_locks(connection) -> None:
         for lock in locks:
             if lock is not strongest:
                 connection.execute(
-                    sa.text("DELETE FROM user_lock_state WHERE resolver = :resolver AND uid = :uid "
+                    sa.text(f"DELETE FROM user_lock_state WHERE resolver = :resolver AND {uid_column} = :uid "
                             "AND realm = :realm"),
                     {"resolver": lock.resolver, "uid": lock.uid, "realm": lock.realm})
                 print(f"Removed a second lock of local admin '{uid}' in favour of the one that lasts longer.")
