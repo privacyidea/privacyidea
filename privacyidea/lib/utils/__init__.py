@@ -872,9 +872,6 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
         # recorded in ``chain``, they are just not mapped.
         address = _parse_hop_address(hop.ip)
         if address is None:
-            if i == 0:
-                # Without a parseable peer there is nothing to map from.
-                return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
             log.debug(
                 f"Cutting the client IP chain at the unparseable hop "
                 f"{hop.ip[:MAX_IP_CHAIN_HOP_LENGTH]!r}: the "
@@ -883,6 +880,11 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
             break
         addresses.append(address)
         addressable.append((i, hop))
+    if not addressable:
+        # The first hop is unparseable, or there is no hop at all (an empty REMOTE_ADDR, e.g. a Unix socket,
+        # gives an access_route of [""] but no peer hop): nothing to map from, and check_proxy_index() would
+        # raise on an empty list.
+        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
     index = check_proxy_index(addresses, proxy_settings)
     effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.

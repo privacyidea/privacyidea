@@ -794,6 +794,14 @@ class UtilsTestCase(MyTestCase):
         self.assertIsNone(info.ip)
         self.assertIsNone(info.effective_index)
 
+        # An empty REMOTE_ADDR (e.g. a Unix socket) without X-Forwarded-For: werkzeug's access_route is [""],
+        # so there is a route but not a single hop.
+        r = ClientIpRequestMock(remote_addr="", access_route=[""])
+        info = get_client_ip_info(r, "10.0.0.1")
+        self.assertIsNone(info.ip)
+        self.assertIsNone(info.effective_index)
+        self.assertListEqual([], info.chain)
+
     def test_23h_get_client_ip_info_cap_is_never_exceeded_even_for_the_effective_hop(self):
         # A permissive override can make the effective hop land deep in an attacker-padded chain; the stored
         # chain must still never exceed MAX_IP_CHAIN_HOPS, even at the cost of the effective hop falling
