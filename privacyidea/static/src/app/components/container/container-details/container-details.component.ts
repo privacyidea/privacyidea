@@ -314,13 +314,14 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
     source: this.rawUserData,
     computation: (user) => user.user_realm || ""
   });
+  // Without the not-yet-loaded term of isAnyEditing: a page still loading has nothing to save or discard.
+  private readonly isUserEditing = computed(() => {
+    return this.isEditingUser() || this.isEditingInfo() || this.editRegistry.anyEditing();
+  });
   isAnyEditing = computed(() => {
     return (
       // Block editing until the container details have loaded for the first time.
-      !this.containerDetailResource.hasValue() ||
-      this.isEditingUser() ||
-      this.isEditingInfo() ||
-      this.editRegistry.anyEditing()
+      !this.containerDetailResource.hasValue() || this.isUserEditing()
     );
   });
   cancelContainerEdit(element: EditableElement) {
@@ -393,7 +394,7 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
   @ViewChild(ContainerDetailsInfoComponent) infoChild?: ContainerDetailsInfoComponent;
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(() => this.isAnyEditing());
+    this.pendingChangesService.registerHasChanges(() => this.isUserEditing());
     this.pendingChangesService.registerValidChanges(() => this.canSaveInlineEdits());
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
   }
