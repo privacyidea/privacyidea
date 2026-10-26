@@ -16,6 +16,7 @@ from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
@@ -808,3 +809,20 @@ class OrphanedTokenTestCase(MyTestCase):
 
         self.assertSetEqual({"NOUSERIDNULL", "NOUSERIDEMPTY"}, get_orphaned_serials(tokens, orphaned_on_error=True))
         self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    def test_08_unreachable_user_store_is_asked_per_user(self) -> None:
+        # Five tokens of one user and one of another, all in a user store that can not be reached
+        for i, user_id in enumerate(["1"] * 5 + ["2"]):
+            token = init_token({"type": "spass", "serial": f"DOWNSTORE{i}"})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanhttp",
+                       realmname="orphanhttprealm").save()
+        tokens = get_tokens(serial_wildcard="DOWNSTORE*")
+        self.assertEqual(6, len(tokens), tokens)
+
+        with mock.patch.object(HTTPResolver, "getUsername",
+                               side_effect=ResolverError("user store not reachable")) as http_get_username:
+            orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
+
+        # The failing batch stops at its first user, then each of the two users is asked once on its own
+        self.assertEqual(3, http_get_username.call_count, http_get_username.call_args_list)
+        self.assertSetEqual({f"DOWNSTORE{i}" for i in range(6)}, orphaned_serials)
