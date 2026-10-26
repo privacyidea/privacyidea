@@ -794,3 +794,17 @@ class OrphanedTokenTestCase(MyTestCase):
         with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=Exception("lock wait timeout")):
             self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=True))
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    @ldap3mock.activate
+    def test_07_owner_without_user_id(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        # A broken assignment names no user at all, so it is an error and not a deleted user
+        for serial, user_id in [("NOUSERIDNULL", None), ("NOUSERIDEMPTY", "")]:
+            token = init_token({"type": "spass", "serial": serial})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial_wildcard="NOUSERID*")
+        self.assertEqual(2, len(tokens), tokens)
+
+        self.assertSetEqual({"NOUSERIDNULL", "NOUSERIDEMPTY"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+        self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))

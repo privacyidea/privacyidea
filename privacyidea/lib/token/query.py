@@ -655,6 +655,10 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
             # The resolver of the owner was deleted, so the user can not exist any more. This has to be checked
             # before the lookup, which reports a deleted resolver like one whose user store can not be reached.
             orphaned_serials.add(token_by_id[token_id].token.serial)
+        elif not owner.user_id:
+            # A broken assignment that names no user, not a user that was deleted
+            if orphaned_on_error:
+                orphaned_serials.add(token_by_id[token_id].token.serial)
         else:
             owners_to_resolve[token_id] = owner
 
