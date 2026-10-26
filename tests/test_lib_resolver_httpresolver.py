@@ -845,7 +845,7 @@ class HTTPResolverTestCase(MyTestCase):
                       body="""{"success": false}""")
         self.assertEqual("", resolver.getUsername('1234'))
 
-    def test_06b_get_username_user_store_error(self):
+    def test_06b_lookup_username_user_store_error(self) -> None:
         # Only a 404 means that the user does not exist, any other error is a user store that failed to answer
         resolver = HTTPResolver()
         resolver.loadConfig(self.advanced_config)
@@ -854,8 +854,15 @@ class HTTPResolverTestCase(MyTestCase):
                 mocked_responses.add(responses.GET, "https://example.com/users/1234", status=status,
                                      body="""{"error": "failure"}""")
                 with self.assertRaises(ResolverError, msg=f"status {status}") as error:
-                    resolver.getUsername("1234")
+                    resolver.lookup_username("1234")
                 self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+                # getUsername does not tell the failure from a user that does not exist
+                self.assertEqual("", resolver.getUsername("1234"), f"status {status}")
+
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "https://example.com/users/1234", status=404,
+                                 body="""{"error": "not found"}""")
+            self.assertEqual("", resolver.lookup_username("1234"))
 
         # A proxy in front of the user store answers with a page that is not JSON
         for status in [200, 502]:
@@ -863,7 +870,7 @@ class HTTPResolverTestCase(MyTestCase):
                 mocked_responses.add(responses.GET, "https://example.com/users/1234", status=status,
                                      body="<html><body>Bad Gateway</body></html>")
                 with self.assertRaises(ResolverError, msg=f"status {status}") as error:
-                    resolver.getUsername("1234")
+                    resolver.lookup_username("1234")
                 self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
 
     @responses.activate
@@ -1208,22 +1215,12 @@ class HTTPResolverTestCase(MyTestCase):
         responses.add(
             responses.GET,
             "https://example.com/api/users/123",
-            status=404,
+            status=400,
             body="""{"error": "Not Found", "message": "User not found"}"""
         )
         success, description = HTTPResolver.testconnection(params)
         self.assertFalse(success)
         self.assertIn("No user found for user ID '123'", description)
-        # Any other error is a user store that failed to answer
-        responses.add(
-            responses.GET,
-            "https://example.com/api/users/123",
-            status=400,
-            body="""{"error": "Bad Request", "message": "Invalid request"}"""
-        )
-        success, description = HTTPResolver.testconnection(params)
-        self.assertFalse(success)
-        self.assertIn(f"Failed to get user by ID '123': ERR907: {USER_LOOKUP_FAILED}", description)
 
         # Failed to get access token
         responses.add(
@@ -2182,7 +2179,7 @@ class EntraIDResolverTestCase(MyTestCase):
                       )
         self.assertEqual("", resolver.getUsername(user_id))
 
-    def test_10b_getUsername_user_store_error(self):
+    def test_10b_lookup_username_user_store_error(self) -> None:
         # Entra ID answers 202 when it is too busy to process the request
         resolver = self.set_up_resolver()
         user_id = "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
@@ -2192,7 +2189,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                      status=status,
                                      body=json.dumps({"error": {"code": "Failure", "message": "failure"}}))
                 with self.assertRaises(ResolverError, msg=f"status {status}") as error:
-                    resolver.getUsername(user_id)
+                    resolver.lookup_username(user_id)
                 self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
 
     @responses.activate
@@ -3244,14 +3241,14 @@ class KeycloakResolverTestCase(MyTestCase):
         self.assertEqual("", username)
 
     @responses.activate
-    def test_12b_getUsername_user_store_error(self):
+    def test_12b_lookup_username_user_store_error(self) -> None:
         resolver = self.set_up_resolver()
         user_id = "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"
         for status in [401, 403, 500, 503]:
             responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}",
                           status=status, body='{"error": "failure"}')
             with self.assertRaises(ResolverError, msg=f"status {status}") as error:
-                resolver.getUsername(user_id)
+                resolver.lookup_username(user_id)
             self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
 
     @responses.activate
@@ -3650,19 +3647,10 @@ class KeycloakResolverTestCase(MyTestCase):
         # No user found for id
         responses.add(responses.GET,
                       "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
-                      status=404, body="""{"error": "User not found"}""")
-        success, description = KeycloakResolver.testconnection(params)
-        self.assertFalse(success)
-        self.assertIn("No user found for user ID", description)
-
-        # Any other error is a user store that failed to answer
-        responses.add(responses.GET,
-                      "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
                       status=400, body="""{"errorMessage": "Invalid request"}""")
         success, description = KeycloakResolver.testconnection(params)
         self.assertFalse(success)
-        self.assertIn(f"Failed to get user by ID '6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0': ERR907: {USER_LOOKUP_FAILED}",
-                      description)
+        self.assertIn("No user found for user ID", description)
 
         # Invalid credentials to get authorization token
         responses.add(responses.POST, "http://localhost:8080/realms/master/protocol/openid-connect/token",

@@ -152,6 +152,18 @@ class UserIdResolver:
         """
         return "dummy_user_name"
 
+    def lookup_username(self, user_id: str) -> str:
+        """
+        Returns the username for the given user ID like :py:func:`getUsername`, but raises if the user store could
+        not answer, so that an empty username means that the user does not exist. A resolver whose
+        :py:func:`getUsername` also answers an empty string for a failed request overrides this.
+
+        :param user_id: The ID of the user in the resolver
+        :return: The username or an empty string if the user does not exist
+        :raises ResolverError: if the user store could not answer the request
+        """
+        return self.getUsername(user_id)
+
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user information for a given user object

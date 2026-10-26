@@ -25,6 +25,7 @@ import pytest
 import yaml
 from cryptography.fernet import Fernet
 from dateutil.tz import tzlocal
+from flask import Flask
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
@@ -37,7 +38,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.realm import set_realm, get_realms
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, get_one_token
-from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import db, TokenContainerOwner
 from privacyidea.models.token import TokenOwner
@@ -549,6 +550,31 @@ class TestPiTokenJanitorFind:
         result = runner.invoke(cli, ["find", "--orphaned", "true", "delete"])
         assert result.exit_code == 0, result.output
         assert get_one_token(serial="ORPHANRESOLVER", silent_fail=True) is None
+
+    def test_find_orphaned_in_several_chunks(self, app: Flask, tokens: list[TokenClass],
+                                             orphaned_token: TokenClass) -> None:
+        """
+        Tests that reading the tokens in chunks finds the same orphaned tokens as reading them at once, with
+        orphaned tokens in two chunks and a chunk without one.
+        """
+        second_orphan = init_token(param={"serial": "ORPHAN0002", "type": "hotp"})
+        TokenOwner(token_id=second_orphan.token.id, user_id="999998", resolver="testresolver",
+                   realmname="realm1").save()
+        orphaned_serials = {"ORPHAN0001", "ORPHAN0002"}
+        other_serials = {"HOTP0001", "TOTP0001", "HOTP0002"}
+        runner = app.test_cli_runner()
+
+        for orphaned, found, not_found in [("true", orphaned_serials, other_serials),
+                                           ("false", other_serials, orphaned_serials)]:
+            result_at_once = runner.invoke(cli, ["find", "--orphaned", orphaned, "list"])
+            assert result_at_once.exit_code == 0, result_at_once.output
+            result_chunked = runner.invoke(cli, ["find", "--chunksize", "2", "--orphaned", orphaned, "list"])
+            assert result_chunked.exit_code == 0, result_chunked.output
+            assert sorted(result_at_once.output.splitlines()) == sorted(result_chunked.output.splitlines())
+            for serial in found:
+                assert serial in result_chunked.output
+            for serial in not_found:
+                assert serial not in result_chunked.output
 
     def test_find_tokeninfo_relative_time(self, app, tokens):
         """

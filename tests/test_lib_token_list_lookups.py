@@ -70,7 +70,8 @@ def count_ldap_searches():
     search_filters = []
     original_search = LDAPResolver._search
 
-    def counting_search(self, search_base, search_filter, attributes, **kwargs):
+    def counting_search(self: LDAPResolver, search_base: str, search_filter: str, attributes: list[str],
+                        **kwargs: bool) -> list[dict]:
         search_filters.append(search_filter)
         return original_search(self, search_base, search_filter, attributes, **kwargs)
 
@@ -728,7 +729,7 @@ class OrphanedTokenTestCase(MyTestCase):
         tokens = get_tokens(serial_wildcard=self.serial_wildcard)
         self.assertEqual(9, len(tokens), tokens)
 
-        with mock.patch.object(HTTPResolver, "getUsername", side_effect=Exception("not reachable")):
+        with mock.patch.object(HTTPResolver, "_get_user", side_effect=Exception("not reachable")):
             for orphaned_on_error in [True, False]:
                 expected = {token.token.serial for token in tokens if token.is_orphaned(orphaned_on_error)}
                 self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
@@ -744,7 +745,7 @@ class OrphanedTokenTestCase(MyTestCase):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
         tokens = get_tokens(serial_wildcard=self.serial_wildcard)
 
-        with mock.patch.object(HTTPResolver, "getUsername", return_value="user01") as http_get_username:
+        with mock.patch.object(HTTPResolver, "lookup_username", return_value="user01") as http_lookup_username:
             with count_ldap_searches() as search_filters:
                 orphaned_serials = get_orphaned_serials(tokens)
 
@@ -752,7 +753,7 @@ class OrphanedTokenTestCase(MyTestCase):
         # user the search did not find. The deleted resolver and the owner without a resolver are not asked at all.
         self.assertEqual(2, len(search_filters), search_filters)
         self.assertIn("(oid=99)", search_filters[1], search_filters)
-        self.assertEqual(1, http_get_username.call_count)
+        self.assertEqual(1, http_lookup_username.call_count)
         self.assertNotIn("ORPHUNREACHABLE", orphaned_serials)
 
     def test_03_no_tokens(self) -> None:
@@ -784,10 +785,12 @@ class OrphanedTokenTestCase(MyTestCase):
         # Not "no such user": a user store that fails to answer leaves the decision to orphaned_on_error
         with responses.RequestsMock() as mocked_responses:
             mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=503, body="{}")
-            for orphaned_on_error in [True, False]:
-                expected = {"ORPHUNREACHABLE"} if tokens[0].is_orphaned(orphaned_on_error) else set()
-                self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+            self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=True))
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=404, body="{}")
+            self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=False))
 
     def test_06_owners_can_not_be_read(self) -> None:
         tokens = get_tokens(serial="ORPHDELETEDUSER")
@@ -799,7 +802,6 @@ class OrphanedTokenTestCase(MyTestCase):
     @ldap3mock.activate
     def test_07_owner_without_user_id(self):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
-        # A broken assignment names no user at all, so it is an error and not a deleted user
         for serial, user_id in [("NOUSERIDNULL", None), ("NOUSERIDEMPTY", "")]:
             token = init_token({"type": "spass", "serial": serial})
             TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanldap",
@@ -807,8 +809,11 @@ class OrphanedTokenTestCase(MyTestCase):
         tokens = get_tokens(serial_wildcard="NOUSERID*")
         self.assertEqual(2, len(tokens), tokens)
 
-        self.assertSetEqual({"NOUSERIDNULL", "NOUSERIDEMPTY"}, get_orphaned_serials(tokens, orphaned_on_error=True))
-        self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+        for orphaned_on_error in [True, False]:
+            expected = {token.token.serial for token in tokens if token.is_orphaned(orphaned_on_error)}
+            self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+            # An owner without a user ID has no login name, so it is orphaned whatever orphaned_on_error says
+            self.assertIn("NOUSERIDNULL", get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
 
     def test_08_unreachable_user_store_is_asked_per_user(self) -> None:
         # Five tokens of one user and one of another, all in a user store that can not be reached
@@ -819,10 +824,21 @@ class OrphanedTokenTestCase(MyTestCase):
         tokens = get_tokens(serial_wildcard="DOWNSTORE*")
         self.assertEqual(6, len(tokens), tokens)
 
-        with mock.patch.object(HTTPResolver, "getUsername",
-                               side_effect=ResolverError("user store not reachable")) as http_get_username:
+        with mock.patch.object(HTTPResolver, "lookup_username",
+                               side_effect=ResolverError("user store not reachable")) as http_lookup_username:
             orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
 
-        # The failing batch stops at its first user, then each of the two users is asked once on its own
-        self.assertEqual(3, http_get_username.call_count, http_get_username.call_args_list)
+        # The HTTP resolver has no batch lookup of its own, so each of the two users is asked once on its own
+        self.assertEqual(2, http_lookup_username.call_count, http_lookup_username.call_args_list)
         self.assertSetEqual({f"DOWNSTORE{i}" for i in range(6)}, orphaned_serials)
+
+    def test_09_deleted_user_of_resolver_without_batch_lookup_is_asked_once(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        with mock.patch.object(HTTPResolver, "getUsername", return_value="") as http_get_username:
+            with mock.patch.object(HTTPResolver, "lookup_username", return_value="") as http_lookup_username:
+                orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=False)
+
+        # The HTTP resolver has no batch lookup of its own, so the user is only asked on its own
+        self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
+        self.assertEqual(1, http_lookup_username.call_count, http_lookup_username.call_args_list)
+        self.assertSetEqual({"ORPHUNREACHABLE"}, orphaned_serials)
