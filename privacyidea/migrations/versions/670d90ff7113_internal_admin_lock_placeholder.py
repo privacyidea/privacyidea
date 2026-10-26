@@ -9,7 +9,7 @@ after the update but before this migration has a '~internal' row besides the old
 lasts longer is kept.
 
 Revision ID: 670d90ff7113
-Revises: 35815effd77c
+Revises: 9e8487714b46
 Create Date: 2026-10-02 15:00:00.000000
 
 """
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = '670d90ff7113'
-down_revision = '35815effd77c'
+down_revision = '9e8487714b46'
 branch_labels = None
 depends_on = None
 
