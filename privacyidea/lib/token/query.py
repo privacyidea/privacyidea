@@ -639,7 +639,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     :return: The serials of the orphaned tokens
     """
     token_by_id = {token.token.id: token for token in tokens}
-    owner_by_token_id = _get_owner_by_token_id(list(token_by_id))
+    owner_by_token_id = {token_id: owners[0]
+                         for token_id, owners in _get_owners_by_token_id(list(token_by_id)).items()}
     resolvers = get_resolver_list()
 
     orphaned_serials = set()
