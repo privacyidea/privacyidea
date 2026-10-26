@@ -6,6 +6,8 @@ for a whole chunk of tokens instead of once per token.
 """
 from unittest import mock
 
+import responses
+
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
@@ -128,5 +130,15 @@ class OrphanedTokenTestCase(MyTestCase):
         with mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id):
             for orphaned_on_error in [True, False]:
                 expected = {"MALFORMEDID"} if tokens[0].is_orphaned(orphaned_on_error) else set()
+                self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    def test_05_http_user_store_error(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        # Not "no such user": a user store that fails to answer leaves the decision to orphaned_on_error
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=503, body="{}")
+            for orphaned_on_error in [True, False]:
+                expected = {"ORPHUNREACHABLE"} if tokens[0].is_orphaned(orphaned_on_error) else set()
                 self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
