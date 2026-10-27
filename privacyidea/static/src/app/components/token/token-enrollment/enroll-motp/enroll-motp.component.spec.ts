@@ -27,6 +27,7 @@ import { EnrollTokenBase } from "@components/token/token-enrollment/enroll-token
 import { EnrollMotpComponent } from "./enroll-motp.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { clickCheckbox } from "@testing/enroll-form-dom";
 
 describe("EnrollMotpComponent", () => {
   let component: EnrollMotpComponent;
@@ -220,5 +221,13 @@ describe("EnrollMotpComponent", () => {
       expect((result!.data as MotpEnrollmentData).otpKey).toBe("ABCDEF");
       expect(result!.data.generateOnServer).toBe(false);
     });
+  });
+
+  it("writes a click on the checkbox to the model and enables the OTP key field", async () => {
+    await clickCheckbox(fixture);
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.generateOnServerForm().dirty()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(false);
   });
 });

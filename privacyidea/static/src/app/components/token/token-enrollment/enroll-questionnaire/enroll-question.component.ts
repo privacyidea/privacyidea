@@ -22,11 +22,10 @@ import {
   computed,
   forwardRef,
   inject,
-  input,
   linkedSignal,
-  signal,
   Signal
 } from "@angular/core";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -44,6 +43,13 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
+
+export interface QuestionAnswer {
+  question: string;
+  answer: string;
+}
 
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
@@ -53,7 +59,7 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-question",
   standalone: true,
-  imports: [MatFormField, MatInput, MatLabel, MatError],
+  imports: [FormField, MatFormField, MatInput, MatLabel, MatError],
   templateUrl: "./enroll-question.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
@@ -74,8 +80,6 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
     return cfg && cfg[QUESTION_NUMBER_OF_ANSWERS] ? parseInt(cfg[QUESTION_NUMBER_OF_ANSWERS], 10) : defaultQuestions;
   });
 
-  disabled = input<boolean>(false);
-
   configQuestions = computed(() => {
     if (!this.systemService.systemConfigResource.hasValue()) return [];
     const cfg = this.systemService.systemConfigResource.value()?.result?.value || {};
@@ -84,39 +88,36 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
       .map(([, v]) => ({ question: String(v) }));
   });
 
-  answers = linkedSignal<{ question: string }[], Record<string, string>>({
+  // A list keeps two configured questions with the same text as two separate rows.
+  answers = linkedSignal<{ question: string }[], QuestionAnswer[]>({
     source: this.configQuestions,
     computation: (questions, prev) => {
-      const prevAnswers: Record<string, string> = prev?.value ?? {};
-      const next: Record<string, string> = {};
-      questions.forEach((q) => {
-        next[q.question] = prevAnswers[q.question] ?? "";
-      });
-      return next;
+      const prevAnswers = new Map((prev?.value ?? []).map((row): [string, string] => [row.question, row.answer]));
+      return questions.map((q) => ({ question: q.question, answer: prevAnswers.get(q.question) ?? "" }));
     }
   });
 
-  formTouched = signal<boolean>(false);
+  answeredCount = computed(() => this.answers().filter((row) => row.answer.trim() !== "").length);
 
-  answeredCount = computed(() => Object.values(this.answers()).filter((v) => v.trim() !== "").length);
+  answersForm = form(this.answers, (f) => {
+    validate(f, () => (this.answeredCount() < this.configMinNumberOfAnswers() ? [{ kind: ERR.required }] : []));
+  });
 
-  setAnswer(question: string, value: string): void {
-    this.answers.update((prev) => ({ ...prev, [question]: value }));
-  }
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<QuestionEnrollmentData> | null {
-    if (this.answeredCount() < this.configMinNumberOfAnswers()) {
-      this.formTouched.set(true);
+    if (!this.answersForm().valid()) {
+      void touchAll(this.answersForm);
       return null;
     }
 
     const answers: Record<string, string> = {};
-    this.configQuestions().forEach((q) => {
-      const answer = this.answers()[q.question];
-      if (answer && answer.trim() !== "") {
-        answers[q.question] = answer;
+    for (const row of this.answers()) {
+      if (row.answer.trim() !== "") {
+        answers[row.question] = row.answer;
       }
-    });
+    }
 
     const enrollmentData: QuestionEnrollmentOptions = { ...basicOptions, type: "question", answers };
     return {

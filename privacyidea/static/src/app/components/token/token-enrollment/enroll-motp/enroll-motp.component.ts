@@ -57,6 +57,8 @@ export class EnrollMotpComponent extends EnrollTokenBase<MotpEnrollmentData> {
   motpPin = signal<string>("");
   repeatMotpPin = signal<string>("");
 
+  generateOnServerForm = form(this.generateOnServer);
+
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
     disabled(

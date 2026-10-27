@@ -21,8 +21,7 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@token.testYubikey">Test Yubikey</mat-label>
       <input
-        [value]="testYubiKey()"
-        (input)="testYubiKey.set($event.target.value)"
+        [formField]="testYubiKeyForm"
         i18n-placeholder="@@token.pushYubikeyButton"
         matInput
         placeholder="Push Yubikey button here" />

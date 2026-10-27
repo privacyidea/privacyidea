@@ -17,20 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, signal } from "@angular/core";
+import { applyWhen, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
-import { MatButtonModule } from "@angular/material/button";
-import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { MaskedInputComponent } from "@components/shared/masked-input/masked-input.component";
 import { DialogAction } from "@models/dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
+import { blurErrorStateMatcher, clearField, hasError, touchAll } from "@utils/form-state.utils";
 
 export interface SelectedUserAssignResult {
   username: string;
@@ -41,6 +43,7 @@ export interface SelectedUserAssignResult {
 @Component({
   selector: "app-selected-user-attach-dialog",
   imports: [
+    FormField,
     MatAutocomplete,
     MatAutocompleteTrigger,
     MatError,
@@ -49,11 +52,9 @@ export interface SelectedUserAssignResult {
     MatSelect,
     MatOption,
     MatInput,
-    MatIcon,
-    MatButtonModule,
-    MatSuffix,
     ClearableInputComponent,
-    DialogWrapperComponent
+    DialogWrapperComponent,
+    MaskedInputComponent
   ],
   templateUrl: "./selected-user-attach-dialog.component.html",
   styleUrl: "./selected-user-attach-dialog.component.scss"
@@ -66,15 +67,33 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  pin = signal("");
-  pinRepeat = signal("");
-  hidePin = signal(true);
-  selectedRealm = signal(this.userService.selectedUserRealm());
-  readonly realmInvalid = computed(() => !this.selectedRealm());
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  // The user text is the autocomplete input. A user counts as chosen only through `selectedUser`.
+  readonly model = signal({
+    realm: this.userService.selectedUserRealm(),
+    userText: this.userService.selectionUsernameFilter(),
+    pin: "",
+    pinRepeat: ""
+  });
   selectedUser = signal<UserData | null>(null);
-  readonly userInvalid = computed(() => !this.selectedUser());
-  userFilter = signal(this.userService.selectionFilter());
-  pinsMatch = computed(() => this.pin() === this.pinRepeat());
+  readonly userFocused = signal(false);
+  readonly userErrorMatcher = blurErrorStateMatcher(this.userFocused);
+  readonly form = form(this.model, (f) => {
+    required(f.realm);
+    markRequired(f.userText);
+    validate(f.userText, () => (this.selectedUser() ? [] : [{ kind: ERR.required }]));
+    // The PIN fields only exist when setting a PIN is allowed, so only then can they mismatch.
+    applyWhen(
+      f,
+      () => this.authService.actionAllowed("setpin"),
+      (p) => mustEqual(p.pinRepeat, () => this.model().pin)
+    );
+  });
+  readonly pinMismatchError = computed(() =>
+    hasError(this.form.pinRepeat, ERR.pinMismatch) ? $localize`:@@common.pinsDoNotMatch:PINs do not match` : ""
+  );
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
       label: $localize`:@@token.assignSelected:Assign to Selected Token`,
@@ -82,55 +101,49 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
       type: "confirm",
       className: "input-width-m",
       primary: true,
-      disabled: !this.pinsMatch() || this.realmInvalid() || this.userInvalid()
+      disabled: !this.form().valid()
     }
   ]);
   selectionContainsAssignedToken = computed(() =>
     this.tokenService.tokenSelection.selectedRows().some((token) => token.username && token.username !== "")
   );
-  displayUser = (value: UserData | string | null): string => {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    return value.username;
-  };
 
-  onRealmChange(realm: string): void {
-    this.selectedRealm.set(realm);
-    this.userService.selectedUserRealm.set(realm);
+  onRealmChange(): void {
+    this.userService.selectedUserRealm.set(this.model().realm);
     this.selectedUser.set(null);
-    this.userFilter.set("");
+    clearField(this.form.userText, "");
     this.userService.selectionFilter.set("");
   }
 
   onUserFilterInput(value: string): void {
-    this.userFilter.set(value);
     this.userService.selectionFilter.set(value);
     if (!value) {
       this.selectedUser.set(null);
     }
   }
 
-  onUserSelected(user: UserData): void {
-    this.selectedUser.set(user);
-    this.userFilter.set(user.username);
-    this.userService.selectionFilter.set(user.username);
+  clearUser(): void {
+    clearField(this.form.userText, "");
+    this.onUserFilterInput("");
   }
 
-  togglePinVisibility(): void {
-    this.hidePin.update((prev) => !prev);
+  onUserSelected(username: string): void {
+    const user = this.userService.selectionFilteredUsers().find((candidate) => candidate.username === username);
+    this.selectedUser.set(user ?? null);
+    this.userService.selectionFilter.set(username);
   }
 
   onConfirm(): void {
-    const realm = this.selectedRealm();
     const user = this.selectedUser();
-
-    if (this.pinsMatch() && !!realm && !!user) {
-      this.dialogRef.close({
-        username: user.username,
-        realm,
-        pin: this.pin() || null
-      });
+    if (!this.form().valid() || !user) {
+      void touchAll(this.form);
+      return;
     }
+    this.dialogRef.close({
+      username: user.username,
+      realm: this.model().realm,
+      pin: this.model().pin || null
+    });
   }
 
   onCancel(): void {
