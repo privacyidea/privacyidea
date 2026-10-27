@@ -2864,7 +2864,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqrRegistrationServer" datatype="html">
         <source>TiQR Registration Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>TiQR Kayıt Sunucusu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>TiQR Kayıt Sunucusu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component.html</context>
           <context context-type="linenumber">41</context>
@@ -2936,7 +2936,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqrLogoUrlRequired" datatype="html">
         <source>TiQR Logo URL is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>TiQR Logo URL&apos;si <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>TiQR Logo URL&apos;si <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component.html</context>
           <context context-type="linenumber">103</context>
@@ -3264,7 +3264,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.apiKeyRequired" datatype="html">
         <source>API Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>API Anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>API Anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">55</context>
@@ -3280,7 +3280,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.apiClientIdRequired" datatype="html">
         <source>API Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>API İstemci Kimliği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>API İstemci Kimliği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">69</context>
@@ -3352,7 +3352,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.clientIdRequired" datatype="html">
         <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>İstemci Kimliği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>İstemci Kimliği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component.html</context>
           <context context-type="linenumber">82</context>
@@ -5256,7 +5256,7 @@
       </trans-unit>
       <trans-unit id="caConnector.connectorNameRequired" datatype="html">
         <source>Connector Name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Bağlayıcı Adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Bağlayıcı Adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">84</context>
@@ -5288,7 +5288,7 @@
       </trans-unit>
       <trans-unit id="caConnector.typeRequired" datatype="html">
         <source>Type is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Tür <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Tür <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">112</context>
@@ -5324,7 +5324,7 @@
       </trans-unit>
       <trans-unit id="caConnector.caCertificateRequired" datatype="html">
         <source>CA Certificate is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>CA Sertifikası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>CA Sertifikası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">135</context>
@@ -5340,7 +5340,7 @@
       </trans-unit>
       <trans-unit id="caConnector.caKeyRequired" datatype="html">
         <source>CA Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>CA Anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>CA Anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">153</context>
@@ -5356,7 +5356,7 @@
       </trans-unit>
       <trans-unit id="caConnector.opensslConfigFile" datatype="html">
         <source>OpenSSL Config File is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>OpenSSL Yapılandırma Dosyası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>OpenSSL Yapılandırma Dosyası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">172</context>
@@ -5468,7 +5468,7 @@
       </trans-unit>
       <trans-unit id="caConnector.hostnameRequired" datatype="html">
         <source>Hostname is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Ana bilgisayar adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Ana bilgisayar adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">313</context>
@@ -5484,7 +5484,7 @@
       </trans-unit>
       <trans-unit id="caConnector.portRequired" datatype="html">
         <source>Port is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Bağlantı noktası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Bağlantı noktası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">327</context>
@@ -5556,7 +5556,7 @@
       </trans-unit>
       <trans-unit id="caConnector.domainCaRequired" datatype="html">
         <source>Domain CA is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Etki Alanı CA&apos;sı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Etki Alanı CA&apos;sı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">424</context>
@@ -5628,7 +5628,7 @@
       </trans-unit>
       <trans-unit id="common.identifierRequired" datatype="html">
         <source>Identifier is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Tanımlayıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Tanımlayıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
           <context context-type="linenumber">83</context>
@@ -5684,7 +5684,7 @@
       </trans-unit>
       <trans-unit id="piServer.urlPrivacyideaServer" datatype="html">
         <source>URL of the privacyIDEA Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>privacyIDEA Sunucusunun URL&apos;si <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>privacyIDEA Sunucusunun URL&apos;si <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
           <context context-type="linenumber">113</context>
@@ -5960,7 +5960,7 @@
       </trans-unit>
       <trans-unit id="common.serverRequired" datatype="html">
         <source>Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Sunucu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Sunucu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
           <context context-type="linenumber">112</context>
@@ -6028,7 +6028,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.secretRequired" datatype="html">
         <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Gizli Anahtar <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Gizli Anahtar <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
           <context context-type="linenumber">145</context>
@@ -6260,7 +6260,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.nameRequired" datatype="html">
         <source>Name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Ad <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Ad <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
           <context context-type="linenumber">83</context>
@@ -6280,7 +6280,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.providerModuleRequired" datatype="html">
         <source>Provider Module is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Sağlayıcı Modülü <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Sağlayıcı Modülü <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
           <context context-type="linenumber">106</context>
@@ -6296,7 +6296,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.isRequired" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ param.key }}"/> is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target><x id="INTERPOLATION" equiv-text="{{ param.key }}"/> <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target><x id="INTERPOLATION" equiv-text="{{ param.key }}"/> <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
           <context context-type="linenumber">174</context>
@@ -6388,10 +6388,18 @@
       </trans-unit>
       <trans-unit id="smtpServer.senderEmailRequired" datatype="html">
         <source>Sender email is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Gönderen e-postası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Gönderen e-postası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
           <context context-type="linenumber">145</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="smtpServer.invalidEmailFormat" datatype="html">
+        <source>Invalid email format.</source>
+        <target>Geçersiz e-posta biçimi</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
+          <context context-type="linenumber">148</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.invalidEmailFormat" datatype="html">
@@ -7666,7 +7674,7 @@
       </trans-unit>
       <trans-unit id="policy.policyNameRequired" datatype="html">
         <source>Policy name is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Policy adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Policy adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
           <context context-type="linenumber">22</context>
@@ -7674,7 +7682,7 @@
       </trans-unit>
       <trans-unit id="policy.policyNameMust" datatype="html">
         <source>Policy name must be <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>different<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> from the original.</source>
-        <target>Policy adı orijinalinden <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>farklı<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> olmalıdır.</target>
+        <target>Policy adı orijinalinden <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>farklı<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> olmalıdır</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component.html</context>
           <context context-type="linenumber">26</context>
@@ -8206,7 +8214,7 @@
       </trans-unit>
       <trans-unit id="policy.pleaseEnterValidTime" datatype="html">
         <source>Enter a valid time format.</source>
-        <target>Lütfen geçerli bir zaman biçimi girin.</target>
+        <target state="new">Enter a valid time format.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">47</context>
@@ -8214,7 +8222,7 @@
       </trans-unit>
       <trans-unit id="policy.pleaseEnterValid" datatype="html">
         <source>Enter a valid client format.</source>
-        <target>Lütfen geçerli bir istemci biçimi girin.</target>
+        <target state="new">Enter a valid client format.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">93</context>
@@ -8770,7 +8778,7 @@
       </trans-unit>
       <trans-unit id="token.serialRequired" datatype="html">
         <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Seri <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Seri <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">61</context>
@@ -9754,7 +9762,7 @@
       </trans-unit>
       <trans-unit id="token.serviceIdRequired" datatype="html">
         <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Hizmet Kimliği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Hizmet Kimliği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
           <context context-type="linenumber">51</context>
@@ -9794,7 +9802,7 @@
       </trans-unit>
       <trans-unit id="token.caConnectorRequired" datatype="html">
         <source>CA Connector is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>CA Bağlayıcısı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>CA Bağlayıcısı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">38</context>
@@ -9834,7 +9842,7 @@
       </trans-unit>
       <trans-unit id="token.certificateSigningRequest" datatype="html">
         <source>Certificate Signing Request is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Sertifika İmzalama İsteği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Sertifika İmzalama İsteği <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">80</context>
@@ -9862,7 +9870,7 @@
       </trans-unit>
       <trans-unit id="token.certificateRequired" datatype="html">
         <source>Certificate is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Sertifika <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Sertifika <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">93</context>
@@ -9914,7 +9922,7 @@
       </trans-unit>
       <trans-unit id="token.otpKeyRequired" datatype="html">
         <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>OTP anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>OTP anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">37</context>
@@ -9934,7 +9942,7 @@
       </trans-unit>
       <trans-unit id="token.otpKeyMustLeast16" datatype="html">
         <source>OTP key must be at least 16 characters long.</source>
-        <target>OTP anahtarı en az 16 karakter uzunluğunda olmalıdır.</target>
+        <target>OTP anahtarı en az 16 karakter uzunluğunda olmalıdır</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">40</context>
@@ -9962,7 +9970,7 @@
       </trans-unit>
       <trans-unit id="token.otpLengthRequired" datatype="html">
         <source>OTP length is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>OTP uzunluğu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>OTP uzunluğu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">54</context>
@@ -9998,7 +10006,7 @@
       </trans-unit>
       <trans-unit id="token.hashAlgorithmRequired" datatype="html">
         <source>Hash algorithm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Hash algoritması <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Hash algoritması <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">69</context>
@@ -10034,7 +10042,7 @@
       </trans-unit>
       <trans-unit id="token.timestepRequired" datatype="html">
         <source>Timestep is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Zaman Adımı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Zaman Adımı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">81</context>
@@ -10094,7 +10102,7 @@
       </trans-unit>
       <trans-unit id="token.emailAddressRequired" datatype="html">
         <source>Email Address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>E-posta Adresi <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>E-posta Adresi <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">56</context>
@@ -10110,7 +10118,7 @@
       </trans-unit>
       <trans-unit id="token.separatorRequired" datatype="html">
         <source>Separator is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Ayırıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Ayırıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">28</context>
@@ -10142,7 +10150,7 @@
       </trans-unit>
       <trans-unit id="token.leastOneRealm" datatype="html">
         <source>At least one realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>En az bir realm <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>En az bir realm <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">68</context>
@@ -10162,7 +10170,7 @@
       </trans-unit>
       <trans-unit id="token.otpKeyMustLeast" datatype="html">
         <source>OTP key must be at least 16 characters long.</source>
-        <target>OTP anahtarı en az 16 karakter olmalıdır.</target>
+        <target state="new">OTP key must be at least 16 characters long.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
           <context context-type="linenumber">48</context>
@@ -10214,7 +10222,7 @@
       </trans-unit>
       <trans-unit id="token.secretRequired" datatype="html">
         <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min 16 chars).</source>
-        <target>Gizli anahtar <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (en az 16 karakter).</target>
+        <target>Gizli anahtar <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (en az 16 karakter)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">28</context>
@@ -10246,7 +10254,7 @@
       </trans-unit>
       <trans-unit id="token.passwordRequired" datatype="html">
         <source>Password is required.</source>
-        <target state="new">Parola zorunludur.</target>
+        <target state="new">Password is required.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.ts</context>
           <context context-type="linenumber">87</context>
@@ -10254,7 +10262,7 @@
       </trans-unit>
       <trans-unit id="token.passwordMustLeast" datatype="html">
         <source>Password must be at least 4 characters long.</source>
-        <target>Parola en az 4 karakter uzunluğunda olmalıdır.</target>
+        <target>Parola en az 4 karakter uzunluğunda olmalıdır</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.ts</context>
           <context context-type="linenumber">90</context>
@@ -10418,7 +10426,7 @@
       </trans-unit>
       <trans-unit id="token.radiusServerRequired" datatype="html">
         <source>RADIUS Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>RADIUS Sunucusu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>RADIUS Sunucusu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">56</context>
@@ -10434,7 +10442,7 @@
       </trans-unit>
       <trans-unit id="token.radiusUserRequired" datatype="html">
         <source>RADIUS User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>RADIUS Kullanıcısı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>RADIUS Kullanıcısı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">65</context>
@@ -10450,7 +10458,7 @@
       </trans-unit>
       <trans-unit id="token.remoteServerRequired" datatype="html">
         <source>Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Uzak Sunucu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Uzak Sunucu <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">40</context>
@@ -10466,7 +10474,7 @@
       </trans-unit>
       <trans-unit id="token.remoteSerialRequired" datatype="html">
         <source>Remote Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Uzak Seri <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Uzak Seri <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">48</context>
@@ -10482,7 +10490,7 @@
       </trans-unit>
       <trans-unit id="token.remoteUserRequired" datatype="html">
         <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Uzak Kullanıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Uzak Kullanıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">57</context>
@@ -10506,7 +10514,7 @@
       </trans-unit>
       <trans-unit id="token.remoteResolverRequired" datatype="html">
         <source>Remote Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Uzak Çözücü <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Uzak Çözücü <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">70</context>
@@ -10554,7 +10562,7 @@
       </trans-unit>
       <trans-unit id="token.smsGatewayRequired" datatype="html">
         <source>SMS Gateway is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>SMS Ağ Geçidi <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>SMS Ağ Geçidi <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">55</context>
@@ -10570,7 +10578,7 @@
       </trans-unit>
       <trans-unit id="token.phoneNumberRequired" datatype="html">
         <source>Phone number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Telefon numarası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Telefon numarası <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">65</context>
@@ -10594,7 +10602,7 @@
       </trans-unit>
       <trans-unit id="token.sshPublicKeyRequired" datatype="html">
         <source>SSH public key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>SSH ortak anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>SSH ortak anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
           <context context-type="linenumber">28</context>
@@ -10626,7 +10634,7 @@
       </trans-unit>
       <trans-unit id="token.expectedVasco" datatype="html">
         <source>Expected VASCO Token blob as <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496-character hex string<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Beklenen VASCO Token blob&apos;u <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496 karakterlik onaltılık dizedir<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Beklenen VASCO Token blob&apos;u <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>496 karakterlik onaltılık dizedir<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
           <context context-type="linenumber">30</context>
@@ -10774,7 +10782,7 @@
       </trans-unit>
       <trans-unit id="token.yubikeyIdentifier12" datatype="html">
         <source>Yubikey identifier with 12 digits is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>12 haneli Yubikey tanımlayıcısı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>12 haneli Yubikey tanımlayıcısı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
           <context context-type="linenumber">53</context>
@@ -10798,7 +10806,7 @@
       </trans-unit>
       <trans-unit id="token.otpKeyRequiredMust" datatype="html">
         <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> and must be 32 characters long.</source>
-        <target>OTP anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> ve 32 karakter uzunluğunda olmalıdır.</target>
+        <target>OTP anahtarı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> ve 32 karakter uzunluğunda olmalıdır</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component.html</context>
           <context context-type="linenumber">45</context>
@@ -11430,7 +11438,7 @@
       </trans-unit>
       <trans-unit id="token.otpValueRequired" datatype="html">
         <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>OTP değeri <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>OTP değeri <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">46</context>
@@ -11766,7 +11774,7 @@
       </trans-unit>
       <trans-unit id="token.userRealmRequired" datatype="html">
         <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Kullanıcı Realm&apos;ı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Kullanıcı Realm&apos;ı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">43</context>
@@ -11778,7 +11786,7 @@
       </trans-unit>
       <trans-unit id="token.userRequired" datatype="html">
         <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Kullanıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Kullanıcı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">65</context>
@@ -11826,7 +11834,7 @@
       </trans-unit>
       <trans-unit id="common.pinsDoNotMatch" datatype="html">
         <source>PINs do not match.</source>
-        <target>PIN&apos;ler eşleşmiyor.</target>
+        <target>PIN&apos;ler eşleşmiyor</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.ts</context>
           <context context-type="linenumber">92</context>
@@ -12346,7 +12354,7 @@
       </trans-unit>
       <trans-unit id="user.resolverRequired" datatype="html">
         <source>Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Çözücü <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Çözücü <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-create/user-create.component.html</context>
           <context context-type="linenumber">60</context>
@@ -12354,7 +12362,7 @@
       </trans-unit>
       <trans-unit id="user.usernameRequired" datatype="html">
         <source>Username is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Kullanıcı adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Kullanıcı adı <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>zorunludur<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-create/user-create.component.html</context>
           <context context-type="linenumber">70</context>
