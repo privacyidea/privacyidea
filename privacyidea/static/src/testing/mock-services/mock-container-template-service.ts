@@ -58,6 +58,4 @@ export class MockContainerTemplateService implements ContainerTemplateServiceInt
 
   postTemplateEdits = jest.fn(() => Promise.resolve(true));
   copyTemplate = jest.fn(() => Promise.resolve(true));
-
-  canSaveTemplate = jest.fn((): boolean => true);
 }
