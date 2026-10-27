@@ -478,10 +478,20 @@ class HotpTokenClass(TokenClass):
             if resynced:
                 log.debug(f"Autoresync successful for token {self.token.serial!s}.")
                 self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
+            else:
+                self._drop_pending_autoresync()
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
         return res
+
+    def _drop_pending_autoresync(self) -> None:
+        """
+        Drop the first OTP value of an autoresync that never got its second one. A value in the normal window shows
+        that the token is in sync, and the leftover value would make every later challenge ask to resync the token.
+        """
+        if "otp1c" in self.get_tokeninfo():
+            self.remove_tokeninfo("otp1c")
 
     @log_with(log)
     def check_otp_exist(self, otp: str, window: int = 10, symetric: bool = False, inc_counter: bool = True,

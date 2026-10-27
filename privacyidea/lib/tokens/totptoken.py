@@ -373,6 +373,8 @@ class TotpTokenClass(HotpTokenClass):
             if resynced:
                 log.debug(f"Autoresync successful for token {self.token.serial!s}.")
                 self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
+            else:
+                self._drop_pending_autoresync()
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 

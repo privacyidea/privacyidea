@@ -1188,7 +1188,7 @@ class ValidateAPITestCase(MyApiTestCase):
         self.addCleanup(delete_privacyidea_config, "AutoResync")
         set_policy("mcr_resync", scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE)
         self.addCleanup(delete_policy, "mcr_resync")
-        set_policy("cr_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        set_policy("cr_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp totp")
         self.addCleanup(delete_policy, "cr_hotp")
 
     def _validate_check(self, data: dict) -> dict:
@@ -1264,6 +1264,50 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertTrue(res["result"]["value"], res)
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
         self.assertEqual("Found matching challenge,autoresync successful", audit_entry.get("info"))
+
+    def test_16_autoresync_hotp_value_in_window_drops_the_pending_resync(self):
+        """
+        A value in the normal window after one that started an autoresync shows that the token is in sync, so the
+        next challenge does not ask to resync it.
+        """
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        login = {"user": user.login, "realm": user.realm}
+
+        # counter = 8, is out of sync. The resync challenge it gets is not answered.
+        res = self._validate_check({**login, "pass": "resync399871"})
+        self.assertEqual("To resync your token, please enter the next OTP value", res["detail"]["message"], res)
+        # counter = 0, in the window
+        res = self._validate_check({**login, "pass": "resync755224"})
+        self.assertTrue(res["result"]["value"], res)
+
+        res = self._validate_check({**login, "pass": "resync"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        self.assertEqual(_("please enter otp: "), res["detail"]["multi_challenge"][0]["message"], res)
+
+    def test_16_autoresync_totp_value_in_window_drops_the_pending_resync(self):
+        """
+        A TOTP value of a clock that was off for a moment starts an autoresync. The next value in the normal window
+        shows that the token is in sync, so the next challenge does not ask to resync it.
+        """
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        totp = init_token({"type": "totp", "serial": "resync_totp", "otpkey": self.otpkey, "pin": "clock",
+                           "timeStep": 30}, user)
+        self.addCleanup(remove_token, "resync_totp")
+        login = {"user": user.login, "realm": user.realm}
+        now = time.time()
+
+        # Ten minutes behind is out of the window, but in the sync window. The resync challenge it gets is not
+        # answered.
+        res = self._validate_check({**login, "pass": "clock" + totp.get_otp(time_seconds=now - 600)[2]})
+        self.assertEqual("To resync your token, please enter the next OTP value", res["detail"]["message"], res)
+        res = self._validate_check({**login, "pass": "clock" + totp.get_otp(time_seconds=now)[2]})
+        self.assertTrue(res["result"]["value"], res)
+
+        res = self._validate_check({**login, "pass": "clock"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        self.assertEqual(_("please enter otp: "), res["detail"]["multi_challenge"][0]["message"], res)
 
     def test_16_autoresync_hotp_otponly(self):
         # The audit entry names the requested token, so the audit info does not repeat its serial
