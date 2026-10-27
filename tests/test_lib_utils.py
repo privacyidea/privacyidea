@@ -849,7 +849,7 @@ class UtilsTestCase(MyTestCase):
             ("192.0.2.43:51234", "192.0.2.43"),
             ("192.0.2.43:65535", "192.0.2.43"),
             ("192.0.2.43:00080", "192.0.2.43"),
-            ("[::ffff:192.0.2.43]", "::ffff:192.0.2.43"),
+            ("[::ffff:192.0.2.43]", "192.0.2.43"),
             ("[" + v6_client + "]:65535", v6_client),
             ("fe80::1%eth0", "fe80::1"),
             ("[fe80::1%eth0]:51234", "fe80::1"),
@@ -905,17 +905,17 @@ class UtilsTestCase(MyTestCase):
 
     def test_23l_mapped_ipv6_peer_matches_an_ipv4_proxy_entry(self):
         # On a dual-stack socket an IPv4 connection is reported with an IPv4-mapped IPv6
-        # peer address ("::ffff:10.0.0.1"). Both spellings match the same proxy entries,
-        # while the addresses keep the spelling they arrived in.
+        # peer address ("::ffff:10.0.0.1"). Both spellings match the same proxy entries. The
+        # peer IP keeps the reported spelling, the client IP is the IPv4 address.
         mapped_peer = ClientIpRequestMock(remote_addr="::ffff:10.0.0.1", access_route=["192.0.2.43"])
         info = get_client_ip_info(mapped_peer, "10.0.0.1")
         self.assertEqual("192.0.2.43", info.ip)
         self.assertEqual("X_FORWARDED_FOR", info.source)
         self.assertEqual("::ffff:10.0.0.1", info.peer_ip)
-        # A mapped hop keeps its spelling as the effective address
+        # A mapped hop is the IPv4 address as the effective address
         r = ClientIpRequestMock(remote_addr="::ffff:10.0.0.1", access_route=["::ffff:192.0.2.9"])
         info = get_client_ip_info(r, "10.0.0.1 > 0.0.0.0/0")
-        self.assertEqual("::ffff:192.0.2.9", info.ip)
+        self.assertEqual("192.0.2.9", info.ip)
         self.assertEqual("X_FORWARDED_FOR", info.source)
         # ... and IPv4 policy entries match it, included and excluded
         self.assertTupleEqual((True, True), check_ip_in_policy(info.ip, ["192.0.2.0/24", "!192.0.2.9"]))
@@ -946,24 +946,26 @@ class UtilsTestCase(MyTestCase):
         info = get_client_ip_info(r, "::/0 > 2001:db8::/32")
         self.assertEqual("203.0.113.5", info.ip)
         self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
-        # An IPv4 hop is no client of an IPv6 target, its mapped spelling is
+        # An IPv4 hop is no client of an IPv6 target, its mapped spelling is. The client IP is
+        # then the IPv4 address.
         r = ClientIpRequestMock(access_route=["198.51.100.7"])
         info = get_client_ip_info(r, "10.0.0.1 > ::/0")
         self.assertEqual("10.0.0.1", info.ip)
         self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
         r = ClientIpRequestMock(access_route=["::ffff:198.51.100.7"])
         info = get_client_ip_info(r, "10.0.0.1 > ::/0")
-        self.assertEqual("::ffff:198.51.100.7", info.ip)
+        self.assertEqual("198.51.100.7", info.ip)
         self.assertEqual("X_FORWARDED_FOR", info.source)
 
-    def test_23o_a_mapped_peer_keeps_its_spelling_with_and_without_an_override(self):
+    def test_23o_a_mapped_peer_is_its_ipv4_address_with_and_without_an_override(self):
         r = ClientIpRequestMock(remote_addr="::ffff:10.0.0.1", access_route=["192.0.2.43"])
-        info = get_client_ip_info(r, "")
-        self.assertEqual("::ffff:10.0.0.1", info.ip)
-        self.assertEqual("REMOTE_ADDR", info.source)
-        info = get_client_ip_info(r, "172.16.0.1")
-        self.assertEqual("::ffff:10.0.0.1", info.ip)
-        self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
+        for proxy_settings, source in (("", "REMOTE_ADDR"), ("172.16.0.1", "REMOTE_ADDR_UNMAPPED")):
+            with self.subTest(proxy_settings=proxy_settings):
+                info = get_client_ip_info(r, proxy_settings)
+                self.assertEqual("10.0.0.1", info.ip)
+                self.assertEqual(source, info.source)
+                self.assertEqual("::ffff:10.0.0.1", info.peer_ip)
+                self.assertEqual("::ffff:10.0.0.1", info.chain[0].ip)
 
     def test_23p_a_scoped_peer_gets_the_same_client_ip_with_and_without_an_override(self):
         # The client IP of a link-local peer is read without its zone, so client-restricted policies can match it.

@@ -237,12 +237,14 @@ IPv6 address (``[2001:db8::1]``), or do both (``[2001:db8::1]:4711``). privacyID
 link-local address with a zone (``fe80::1%eth0``), as the operating system reports a link-local peer, is read
 without the zone, also when this setting is empty.
 
-A dual-stack listener reports the peer of an IPv4 connection in the IPv4-mapped form (``::ffff:10.0.0.1``). An
-IPv4 network in this setting, in the client condition of a policy or in the ``client_ip`` condition of an event
-handler also contains the mapped form of its addresses, and a network in the mapped form, such as
-``::ffff:10.0.0.0/104``, also contains the plain IPv4 addresses. Other IPv6 networks only match the form that is
-written: ``::/0`` contains ``::ffff:10.0.0.1``, but not ``10.0.0.1``. The client IP keeps the form in which it
-was reported.
+A dual-stack listener reports the peer of an IPv4 connection in the IPv4-mapped form (``::ffff:10.0.0.1``). This
+form stands for the IPv4 address. The client IP of such a client is ``10.0.0.1``, also when this setting is empty.
+The authentication log keeps the reported form in ``peer_ip`` and ``ip_chain``.
+
+In this setting and in the client conditions of policies and event handlers, an IPv4 network also contains the
+mapped form of its addresses. A network in the mapped form, such as ``::ffff:10.0.0.0/104``, also contains the
+plain IPv4 addresses. Other IPv6 networks only contain the form that is written. For example, ``::/0`` contains
+``::ffff:10.0.0.1``, but not the client IP ``10.0.0.1``.
 
 An entry of the path that is not a valid address in any of these spellings, such as ``unknown``, ends the path at
 its position. The addresses before it can still become the client IP. The addresses after it are recorded in the

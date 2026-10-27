@@ -38,11 +38,14 @@
   privacyIDEA determines the client IP and how to configure your proxies for it is described in
   [Override Authorization Client](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client).
 
-* **IPv4 networks now also contain the IPv4-mapped form of their addresses.** A dual-stack listener may report an
-  IPv4 client as `::ffff:10.0.0.5`. An IPv4 network such as `10.0.0.0/8` in the client condition of a policy, in the
-  `client_ip` condition of an event handler or in *Override Authorization Client* now contains this address, too.
-  Other IPv6 networks, such as `::/0`, contain the mapped form but not `10.0.0.5`. If your audit log shows client IPs
-  starting with `::ffff:`, check your client-restricted policies and event handlers.
+* **The client IP of an IPv4 client is now always its IPv4 address.** A dual-stack listener reports an IPv4 client
+  as `::ffff:10.0.0.5`. privacyIDEA now uses `10.0.0.5` as the client IP, with and without
+  *Override Authorization Client*. The authentication log keeps the reported address in `peer_ip` and `ip_chain`.
+  IPv4 networks in *Override Authorization Client* now also contain the mapped form of a proxy address. Policies and
+  event handler conditions with an IPv6 network such as `::/0` no longer contain these clients. If your audit log
+  shows client IPs that start with `::ffff:`, check these policies and event handlers. IP blocks of addresses that
+  start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
+  start again for these clients.
 
 ## Update from 3.13 to 3.14
 

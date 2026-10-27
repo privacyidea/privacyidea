@@ -568,8 +568,9 @@ def _parse_hop_address(hop_ip: str) -> IPAddress | None:
       link-local peer. The zone names an interface of this host, not a part of the
       address, so it is dropped.
 
-    An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) keeps its spelling;
-    :func:`_ip_in_network` matches it against IPv4 networks as well.
+    An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) keeps its spelling here:
+    :func:`_ip_in_network` matches it against IPv4 networks as well, and
+    :func:`canonical_client_ip` converts it once it is the client IP.
 
     Anything that still does not parse is reported as ``None`` rather than raising:
     the caller decides how far the chain is still trustworthy.
@@ -628,6 +629,18 @@ def _ip_in_network(address: IPAddress, network: IPNetwork) -> bool:
     if address.version == 4 and network in IPV4_MAPPED_NETWORK:
         return address.ipv6(ipv4_compatible=False) in network
     return False
+
+
+def canonical_client_ip(address: IPAddress) -> str:
+    """
+    The spelling of *address* as a client IP. An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) is the IPv4
+    address it stands for (``10.0.0.1``): a dual-stack listener reports an IPv4 peer in the mapped form, but
+    the connection is IPv4. Every other address is rendered by ``netaddr``.
+
+    :param address: the address of a client
+    :return: the client IP as a string
+    """
+    return str(address.ipv4() if address.is_ipv4_mapped() else address)
 
 
 def parse_proxy(proxy_settings: str) -> set[tuple[IPNetwork, ...]]:
@@ -881,9 +894,10 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     if not proxy_settings:
         # No mapping is configured, so the peer is the client. The chain is still recorded. The peer is read like a
         # hop, so it gets the same client IP as through an override: a scoped link-local peer ("fe80::1%eth0")
-        # loses its zone, which netaddr cannot parse. A peer that is not an address at all is kept as it is.
+        # loses its zone, which netaddr cannot parse, and an IPv4-mapped peer is its IPv4 address. A peer that
+        # is not an address at all is kept as it is.
         peer_address = _parse_hop_address(peer)
-        ip = str(peer_address) if peer_address is not None else peer
+        ip = canonical_client_ip(peer_address) if peer_address is not None else peer
         info = ClientIpInfo(ip=ip, peer_ip=peer, source=str(ClientIpSource.REMOTE_ADDR) if peer else None,
                             chain=hops, effective_index=0 if hops else None)
         return _cap_chain(info)
@@ -918,9 +932,9 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.
     source = str(ClientIpSource.REMOTE_ADDR_UNMAPPED) if index == 0 else chosen.source
-    # str(IPAddress(...)) rather than the raw hop, so a non-canonical spelling normalizes exactly as before.
-    return _cap_chain(ClientIpInfo(ip=str(addresses[index]), peer_ip=peer, source=source, chain=hops,
-                                   effective_index=effective_index))
+    # The parsed address rather than the raw hop, so a non-canonical spelling is normalized.
+    return _cap_chain(ClientIpInfo(ip=canonical_client_ip(addresses[index]), peer_ip=peer, source=source,
+                                   chain=hops, effective_index=effective_index))
 
 
 def _cap_chain(info: "ClientIpInfo") -> "ClientIpInfo":

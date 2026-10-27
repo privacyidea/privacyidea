@@ -113,6 +113,11 @@ never-block list is refused with an explanation rather than silently skipped,
 which is the other way round from the engine, see
 :ref:`conditional_access_never_block`.
 
+A block is stored under the client IP that privacyIDEA uses for the address. If you
+block an IPv4-mapped address such as ``::ffff:192.0.2.1``, the block is stored under
+``192.0.2.1``. It applies whether the client is reported as ``192.0.2.1`` or as
+``::ffff:192.0.2.1``, see :ref:`override_client`.
+
 Imposing a restriction has rights of its own, :ref:`policy_user_lock_set` and
 :ref:`policy_blocklist_set`, kept apart from the ``*_reset`` rights.
 
