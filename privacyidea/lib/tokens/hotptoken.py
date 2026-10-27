@@ -593,8 +593,7 @@ class HotpTokenClass(TokenClass):
         # either store the value in the tokeninfo
         # or see if already another value exists.
         if res != -1:
-            # if former is defined
-            if "otp1c" in info:
+            if self.has_pending_autoresync():
                 # check if this is consecutive
                 otp1c = int(info.get("otp1c"))
                 otp2c = res
@@ -602,21 +601,16 @@ class HotpTokenClass(TokenClass):
                 if (otp1c + 1) != otp2c:
                     log.debug(f"Autoresync failed for token {self.token.serial!s}. OTP values too far apart.")
                     res = -1
-                elif "dueDate" not in info:  # pragma: no cover
-                    log.debug(f"Autoresync failed for token {self.token.serial!s}. dueDate is missing.")
-                    res = -1
-                elif int(info.get("dueDate")) <= int(time.time()):
-                    log.debug(f"Autoresync failed for token {self.token.serial!s}. AutoResyncTimeout expired.")
-                    res = -1
-                # A success is recorded by check_otp once the counter is stored
-                if res == -1:
                     self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.FAILED
+                # A success is recorded by check_otp once the counter is stored
 
                 # now clean the resync data
                 self.remove_tokeninfo("dueDate")
                 self.remove_tokeninfo("otp1c")
 
             else:
+                if "otp1c" in info:
+                    log.debug(f"Autoresync of token {self.token.serial!s} expired. This OTP value starts a new one.")
                 log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
                 self.write_tokeninfo("otp1c", res)
                 self.write_tokeninfo("dueDate", int(time.time()) +
