@@ -313,6 +313,21 @@ def cached_username(resolver, resolver_name: str, user_id: str) -> str:
     return login
 
 
+def read_cached_username(resolver_name: str, user_id: str) -> str | None:
+    """
+    Return the login name of ``user_id`` in the given resolver if the cache
+    holds it, without asking the resolver on a miss.
+
+    :param resolver_name: The name of the resolver
+    :param user_id: The ID of the user in the resolver
+    :return: The cached login name, or None if the cache is off or does not hold it
+    """
+    client = _cache_client()
+    if client is None or user_id in (None, ""):
+        return None
+    return _read(client, resolver_name, _LOGIN_KEY.format(_segment(resolver_name), _segment(user_id)))
+
+
 def cached_user_info(resolver, resolver_name: str, user_id: str, attributes: list[str] = None) -> dict:
     """
     Return the attributes of ``user_id`` in the given resolver, from the cache

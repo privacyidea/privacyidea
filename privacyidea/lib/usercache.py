@@ -145,6 +145,23 @@ def retrieve_latest_entry(filter_condition):
     return result
 
 
+def get_cached_usernames(resolver: str, user_ids: list[str]) -> dict[str, str]:
+    """
+    Return the login names the user cache holds for the given users of one resolver, with one query. As in
+    :py:func:`user_init`, expired entries do not count and the latest entry of a user wins.
+
+    :param resolver: The name of the resolver
+    :param user_ids: The IDs of the users in the resolver, few enough for one ``IN`` clause
+    :return: The login name by user ID, for the users the user cache holds
+    """
+    if not is_cache_enabled() or not user_ids:
+        return {}
+    stmt = (select(UserCache.user_id, UserCache.username)
+            .where(create_filter(resolver=resolver), UserCache.user_id.in_(user_ids))
+            .order_by(UserCache.timestamp))
+    return {user_id: username for user_id, username in db.session.execute(stmt)}
+
+
 def create_filter(username=None, used_login=None, resolver=None,
                   user_id=None, expired=False):
     """

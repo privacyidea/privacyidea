@@ -38,7 +38,8 @@ import pytest
 import redis as redis_lib
 
 from privacyidea.lib.cache.user import (_covered_user_info, _segment, _ttl_seconds, cached_user_id, cached_user_info,
-                                        cached_username, flush_user_cache, invalidate_resolver, invalidate_user)
+                                        cached_username, flush_user_cache, invalidate_resolver, invalidate_user,
+                                        read_cached_username)
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.user import User
@@ -196,6 +197,10 @@ class UserCacheUnitTestCase(MyTestCase):
         self.assertEqual(["alice", "alice"], resolver.user_id_calls)
         self.assertEqual(["1000"], resolver.username_calls)
         self.assertEqual([("1000", ["username"])], resolver.user_info_calls)
+
+    def test_07_without_redis_no_username_is_read(self) -> None:
+        with user_cache_in_store(None):
+            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
 
 
 @pytest.mark.skipif(not _TEST_REDIS_URL,
@@ -478,6 +483,15 @@ class UserCacheRedisTestCase(_RealRedisBase):
         index = self._real_client.smembers(f"pi:user:v1:index:{RESOLVER_NAME}")
         # The miss took the dead name out; the refetch put the live one back
         self.assertEqual({key}, index)
+
+    def test_20_a_cached_username_is_read_without_the_resolver(self) -> None:
+        resolver = FakeResolver()
+        with user_cache_in_store(self._real_client):
+            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
+            cached_username(resolver, RESOLVER_NAME, "1000")
+            self.assertEqual("alice", read_cached_username(RESOLVER_NAME, "1000"))
+            self.assertIsNone(read_cached_username(RESOLVER_NAME, ""))
+        self.assertEqual(["1000"], resolver.username_calls)
 
     def test_16_logins_cannot_reach_another_resolvers_keyspace(self):
         # A login built to look like a key separator must stay inside its own

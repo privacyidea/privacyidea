@@ -8,6 +8,7 @@ time. A timing assertion would say the same thing far less reliably, so this cou
 """
 import re
 from contextlib import contextmanager
+from datetime import datetime
 from itertools import product
 
 import mock
@@ -15,6 +16,7 @@ import responses
 from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.realm import delete_realm, set_realm
@@ -27,7 +29,8 @@ from privacyidea.lib.token import query as token_query
 from privacyidea.lib.token.tokengroups import set_tokengroups
 from privacyidea.lib.tokengroup import delete_tokengroup, set_tokengroup
 from privacyidea.lib.user import User
-from privacyidea.models import db, NodeName, Realm, Token, TokenContainerToken, TokenOwner
+from privacyidea.lib.usercache import EXPIRATION_SECONDS, delete_user_cache
+from privacyidea.models import db, NodeName, Realm, Token, TokenContainerToken, TokenOwner, UserCache
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -808,10 +811,13 @@ class OrphanedTokenTestCase(MyTestCase):
         tokens = get_tokens(serial_wildcard="NOUSERID*")
         self.assertEqual(2, len(tokens), tokens)
 
-        # An owner without a user ID has no login name, so it is orphaned whatever orphaned_on_error says
-        for orphaned_on_error in [True, False]:
-            self.assertSetEqual({"NOUSERIDNULL", "NOUSERIDEMPTY"},
-                                get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+        # An owner without a user ID has no login name, so it is orphaned whatever orphaned_on_error says,
+        # without asking the user store
+        with count_ldap_searches() as search_filters:
+            for orphaned_on_error in [True, False]:
+                self.assertSetEqual({"NOUSERIDNULL", "NOUSERIDEMPTY"},
+                                    get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+        self.assertEqual([], search_filters)
 
     def test_08_unreachable_user_store_is_asked_per_user(self) -> None:
         # Five tokens of one user and one of another, all in a user store that can not be reached
@@ -849,3 +855,34 @@ class OrphanedTokenTestCase(MyTestCase):
             with mock.patch.object(LDAPResolver, "getUsername", side_effect=ResolverError("not reachable")):
                 self.assertSetEqual(ldap_serials, get_orphaned_serials(tokens, orphaned_on_error=True))
                 self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+
+    @ldap3mock.activate
+    def test_10_owners_in_the_user_cache_are_not_looked_up(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        UserCache("cachedldapuser", "cachedldapuser", "orphanldap", "99", datetime.now()).save()
+        UserCache("cachedhttpuser", "cachedhttpuser", "orphanhttp", "1", datetime.now()).save()
+        try:
+            with (mock.patch.object(HTTPResolver, "lookup_username",
+                                    side_effect=ResolverError("not reachable")) as http_lookup_username,
+                  count_ldap_searches() as search_filters):
+                orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
+        finally:
+            delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+
+        # As for a User object, a cached user is taken from the cache, even if the user store would not find it
+        # or can not be reached
+        self.assertSetEqual({"ORPHDELETEDRESOLVER", "ORPHNOREALM", "ORPHNORESOLVER"}, orphaned_serials)
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertEqual(0, http_lookup_username.call_count, http_lookup_username.call_args_list)
+
+    def test_11_owners_in_the_redis_user_cache_are_not_looked_up(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        with (mock.patch.object(token_query, "read_cached_username", return_value="cachedhttpuser") as read_cached,
+              mock.patch.object(HTTPResolver, "lookup_username",
+                                side_effect=ResolverError("not reachable")) as http_lookup_username):
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=True))
+        read_cached.assert_called_once_with("orphanhttp", "1")
+        self.assertEqual(0, http_lookup_username.call_count, http_lookup_username.call_args_list)

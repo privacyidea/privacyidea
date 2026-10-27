@@ -19,12 +19,14 @@ from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    PrivacyIDEAError, ResourceNotFoundError, UserError)
+from privacyidea.lib.cache.user import read_cached_username
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_class, get_resolver_list, get_resolver_object
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.usercache import get_cached_usernames
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
 from privacyidea.lib.user import User
@@ -637,6 +639,30 @@ def _uses_default_batch_lookup(resolver_type: str | None) -> bool:
     return resolver_class is not None and resolver_class.get_usernames_batch is UserIdResolver.get_usernames_batch
 
 
+def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
+    """
+    Return the login names the user caches hold for the given owners. As for a ``User`` built from a
+    resolver and a user ID, the user cache in the database answers first and the Redis user cache second.
+
+    :param owners: The token owners
+    :return: The login name keyed by (resolver name, user ID), for the owners a cache holds
+    """
+    user_ids_by_resolver = {}
+    for owner in owners:
+        if owner.resolver and owner.user_id:
+            user_ids_by_resolver.setdefault(owner.resolver, {})[owner.user_id] = None
+    login_by_owner = {}
+    for resolver_name, user_ids in user_ids_by_resolver.items():
+        cached_logins = {}
+        for chunk in _chunked(list(user_ids)):
+            cached_logins.update(get_cached_usernames(resolver_name, chunk))
+        for user_id in user_ids:
+            login = cached_logins.get(user_id) or read_cached_username(resolver_name, user_id)
+            if login:
+                login_by_owner[(resolver_name, user_id)] = login
+    return login_by_owner
+
+
 def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = True) -> set[str]:
     """
     Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
@@ -646,8 +672,9 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
     If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
     read from the database is not orphaned, since it is not known to have an owner at all. An owner the
-    batch lookup does not find is looked up once more on its own, and the owners of a resolver without a
-    batch lookup of its own are only looked up on their own.
+    user cache holds is not looked up in the user store. An owner the batch lookup does not find is looked
+    up once more on its own, and the owners of a resolver without a batch lookup of its own are only looked
+    up on their own.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
     :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
@@ -665,17 +692,20 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
             # The resolver of the owner was deleted, so the user can not exist any more. This has to be checked
             # before the lookup, which reports a deleted resolver like one whose user store can not be reached.
             orphaned_serials.add(token_by_id[token_id].token.serial)
-        elif owner.user_id is None:
+        elif not owner.user_id:
             # The user object of an owner without a user ID has no login name
             orphaned_serials.add(token_by_id[token_id].token.serial)
         else:
             owners_to_resolve[token_id] = owner
 
+    cached_login_by_owner = _get_cached_logins(list(owners_to_resolve.values()))
     # The batch lookup of a resolver without one of its own asks getUsername for each user, which for some
     # resolvers answers "" also for a user store that failed. Their owners are only looked up on their own below.
-    resolved = _resolve_owner_logins([owner for owner in owners_to_resolve.values()
-                                      if not _uses_default_batch_lookup(resolvers.get(owner.resolver, {}).get("type"))])
-    login_by_owner = resolved.login_by_owner
+    resolved = _resolve_owner_logins(
+        [owner for owner in owners_to_resolve.values()
+         if (owner.resolver, owner.user_id) not in cached_login_by_owner
+         and not _uses_default_batch_lookup(resolvers.get(owner.resolver, {}).get("type"))])
+    login_by_owner = resolved.login_by_owner | cached_login_by_owner
     unresolvable_owners = set(resolved.unresolvable_owners)
     # A batch lookup answers "" also for an ID it can not search for, like an objectGUID that is no UUID,
     # where a single lookup raises. Only the single lookup tells a missing user from a lookup error.
