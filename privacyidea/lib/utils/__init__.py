@@ -860,8 +860,12 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     peer = request.remote_addr
     hops = _path_to_client(request)
     if not proxy_settings:
-        # No mapping is configured, so the peer is the client. The chain is still recorded.
-        info = ClientIpInfo(ip=peer, peer_ip=peer, source=str(ClientIpSource.REMOTE_ADDR) if peer else None,
+        # No mapping is configured, so the peer is the client. The chain is still recorded. The peer is read like a
+        # hop, so it gets the same client IP as through an override: a scoped link-local peer ("fe80::1%eth0")
+        # loses its zone, which netaddr cannot parse. A peer that is not an address at all is kept as it is.
+        peer_address = _parse_hop_address(peer)
+        ip = str(peer_address) if peer_address is not None else peer
+        info = ClientIpInfo(ip=ip, peer_ip=peer, source=str(ClientIpSource.REMOTE_ADDR) if peer else None,
                             chain=hops, effective_index=0 if hops else None)
         return _cap_chain(info)
     if not request.access_route:

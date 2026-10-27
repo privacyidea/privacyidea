@@ -235,7 +235,7 @@ header ``X-Forwarded-For: 192.168.0.10, 10.1.2.3``, so the path is 10.0.0.18, 10
 Some reverse proxies write an ``X-Forwarded-For`` entry with its source port (``192.0.2.43:51234``), bracket an
 IPv6 address (``[2001:db8::1]``), or do both (``[2001:db8::1]:4711``). privacyIDEA accepts these spellings. A
 link-local address with a zone (``fe80::1%eth0``), as the operating system reports a link-local peer, is read
-without the zone.
+without the zone, also when this setting is empty.
 
 A dual-stack listener reports the peer of an IPv4 connection in the IPv4-mapped form (``::ffff:10.0.0.1``). An
 IPv4 network in this setting, in the client condition of a policy or in the ``client_ip`` condition of an event

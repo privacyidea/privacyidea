@@ -965,6 +965,24 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("::ffff:10.0.0.1", info.ip)
         self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
 
+    def test_23p_a_scoped_peer_gets_the_same_client_ip_with_and_without_an_override(self):
+        # The client IP of a link-local peer is read without its zone, so client-restricted policies can match it.
+        # The peer IP keeps the address as the operating system reported it.
+        r = ClientIpRequestMock(remote_addr="fe80::1%eth0", access_route=["192.0.2.43"])
+        for proxy_settings, source in (("", "REMOTE_ADDR"), ("172.16.0.1", "REMOTE_ADDR_UNMAPPED")):
+            with self.subTest(proxy_settings=proxy_settings):
+                info = get_client_ip_info(r, proxy_settings)
+                self.assertEqual("fe80::1", info.ip)
+                self.assertEqual(source, info.source)
+                self.assertEqual("fe80::1%eth0", info.peer_ip)
+                self.assertTupleEqual((True, False), check_ip_in_policy(info.ip, ["fe80::/10"]))
+        # Without an override, a peer that is not an address and an empty peer are kept as they are.
+        for remote_addr in ("not-an-ip", ""):
+            with self.subTest(remote_addr=remote_addr):
+                info = get_client_ip_info(ClientIpRequestMock(remote_addr=remote_addr, access_route=[remote_addr]), "")
+                self.assertEqual(remote_addr, info.ip)
+                self.assertEqual(remote_addr, info.peer_ip)
+
     def test_23m_unparseable_hop_cuts_the_chain_instead_of_shifting_it(self):
         # An unparseable hop ends the chain at its position. The hops behind it keep their
         # positions, so none of them is compared with the network configured for the
