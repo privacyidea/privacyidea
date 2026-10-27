@@ -1027,6 +1027,8 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
+        # Read before the check, which deletes a used registration token
+        token_type = get_one_token(serial=serial).get_tokentype()
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
         # token that can not be used is classified by check_otp.
@@ -1034,8 +1036,11 @@ def _handle_serial_auth(context: dict, serial: str):
             AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
-        # a message, so without this the row would name no token although the request named exactly one.
+        # a message, so without this the rows would name no token although the request named exactly one. The audit
+        # entry is logged directly, since serial_list would also update the last authentication on success and a
+        # type in the details would be part of the response.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        g.audit_object.log({"serial": serial, "token_type": token_type})
     context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success

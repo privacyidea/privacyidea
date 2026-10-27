@@ -1177,7 +1177,7 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("mcr_resync")
 
     def test_16_autoresync_hotp_otponly(self):
-        # check_otp does not name the token in its reply, so the audit info does
+        # The audit entry names the requested token, so the audit info does not repeat its serial
         serial = "autosync_otponly"
         token = init_token({"serial": serial, "otpkey": self.otpkey})
         set_privacyidea_config("AutoResync", True)
@@ -1191,9 +1191,12 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code)
             self.assertFalse(res.json.get("result").get("value"))
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail"))
+            # The token type is recorded in the audit log only
+            self.assertNotIn("type", res.json.get("detail"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("", audit_entry.get("serial"))
-        self.assertEqual(f"OTP verification failed., autoresync started for {serial}", audit_entry.get("info"))
+        self.assertEqual(serial, audit_entry.get("serial"))
+        self.assertEqual("hotp", audit_entry.get("token_type"))
+        self.assertEqual("OTP verification failed., autoresync started", audit_entry.get("info"))
 
         # counter = 9, will be autosynced
         with self.app.test_request_context('/validate/check',
@@ -1203,7 +1206,9 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code)
             self.assertTrue(res.json.get("result").get("value"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual(f"autoresync successful for {serial}", audit_entry.get("info"))
+        self.assertEqual(serial, audit_entry.get("serial"))
+        self.assertEqual("hotp", audit_entry.get("token_type"))
+        self.assertEqual("autoresync successful", audit_entry.get("info"))
 
         delete_privacyidea_config("AutoResync")
         remove_token(serial)
