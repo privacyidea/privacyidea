@@ -54,7 +54,7 @@ from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
+from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
@@ -1193,11 +1193,11 @@ class IdResolver(UserIdResolver):
         self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE", "").split(",")]
         self.searchfilter = config.get("LDAPSEARCHFILTER")
         userinfo = config.get("USERINFO", "{}")
-        self.userinfo = yaml.safe_load(userinfo)
+        self.userinfo = parse_config_yaml(userinfo)
         self.userinfo["username"] = self.loginname_attribute[0]
         multivalueattributes = config.get("MULTIVALUEATTRIBUTES") or '["mobile"]'
-        self.multivalueattributes = yaml.safe_load(multivalueattributes)
-        self.map = yaml.safe_load(userinfo)
+        self.multivalueattributes = parse_config_yaml(multivalueattributes)
+        self.map = parse_config_yaml(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
