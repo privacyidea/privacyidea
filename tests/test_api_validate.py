@@ -9,6 +9,7 @@ from base64 import b32encode
 from datetime import timezone
 from urllib.parse import quote
 
+import jwt
 import mock
 import responses
 from cryptography.hazmat.backends import default_backend
@@ -20,8 +21,10 @@ from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import verify_pass_hash
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
@@ -42,7 +45,7 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.subscriptions import _USER_COUNT_KEY
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
-                                   set_pin, get_one_token, unassign_token)
+                                   set_pin, get_one_token, unassign_token, check_serial_pass)
 from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
                                         AUTH_DATE_FORMAT)
@@ -59,12 +62,13 @@ from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Audit, Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
-                                NodeName)
+                                NodeName, AuthenticationLog)
 from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
+from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 
 
 class ValidateAPITestCase(MyApiTestCase):
@@ -3701,6 +3705,172 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
         self.assertTrue(response.json["result"]["value"], response.json)
         # The registration token deletes itself after its one successful use
         self.assertIsNone(get_one_token(serial="OTPONLYREG", silent_fail=True))
+
+
+class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
+    """
+    /validate/check with a serial matches the policies for the owner of the token.
+    """
+    serial = "OWNER1"
+    # RFC 4226 test key, counter 0..2
+    otp_key = "3132333435363738393031323334353637383930"
+    otps = ["755224", "287082", "359152"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_default_realm(self.realm1)
+        self.token = init_token({"type": "hotp", "serial": self.serial, "otpkey": self.otp_key, "pin": "pin"},
+                                user=User("cornelius", self.realm1))
+        self.addCleanup(remove_token, self.serial)
+
+    def _set_policy(self, name: str, **kwargs) -> None:
+        set_policy(name, **kwargs)
+        self.addCleanup(delete_policy, name)
+
+    def _set_last_auth(self, days: int) -> None:
+        last_auth = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+        self.token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.isoformat(timespec="seconds"))
+
+    def _check_serial(self, password: str, headers: dict | None = None, **data):
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": self.serial, "pass": password, **data}, headers=headers):
+            return self.app.full_dispatch_request()
+
+    def test_01_last_auth_policy_of_the_owner_realm(self):
+        self._set_policy("last_auth_realm1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=2d",
+                         realm=self.realm1)
+        self._set_policy("last_auth_realm2", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=10d",
+                         realm=self.realm2)
+        self._set_last_auth(days=3)
+        response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        self.assertIn("It is too long ago", response.json["detail"]["message"], response.json)
+
+        self._set_last_auth(days=1)
+        response = self._check_serial(f"pin{self.otps[1]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+    def test_02_disabled_token_types_of_the_owner_realm(self):
+        self._set_policy("disabled_hotp_realm2", scope=SCOPE.AUTH,
+                         action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp", realm=self.realm2)
+        response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+        self._set_policy("disabled_hotp_realm1", scope=SCOPE.AUTH,
+                         action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp", realm=self.realm1)
+        response = self._check_serial(f"pin{self.otps[1]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        # No challenge for a token of a disabled type either
+        self._set_policy("challenge_response_hotp", scope=SCOPE.AUTH,
+                         action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self.addCleanup(delete_challenges, serial=self.serial)
+        response = self._check_serial("pin")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+
+    def test_03_increase_failcounter_on_challenge_of_the_owner_realm(self):
+        self._set_policy("challenge_response_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self._set_policy("increase_failcounter_realm1", scope=SCOPE.AUTH,
+                         action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE, realm=self.realm1)
+        self.addCleanup(delete_challenges, serial=self.serial)
+        response = self._check_serial("pin")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, response.json["result"]["authentication"], response.json)
+        self.assertEqual(1, get_one_token(serial=self.serial).get_failcount())
+
+    def test_04_challenge_text_of_the_owner_realm(self):
+        self._set_policy("challenge_response_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self._set_policy("challenge_text_realm1", scope=SCOPE.AUTH,
+                         action=f"{PolicyAction.CHALLENGETEXT}=Realm one text", realm=self.realm1)
+        self.addCleanup(delete_challenges, serial=self.serial)
+        response = self._check_serial("pin")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual("Realm one text", response.json["detail"]["message"], response.json)
+
+    def test_05_api_key_of_the_owner_realm(self):
+        self._set_policy("api_key_realm1", scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, realm=self.realm1)
+        log_rows = db.session.query(AuthenticationLog).count()
+        response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertEqual(403, response.status_code, response.json)
+        self.assertEqual("No valid API key was passed.", response.json["result"]["error"]["message"], response.json)
+        # Refused before the authentication, like a request with a user
+        self.assertEqual(log_rows, db.session.query(AuthenticationLog).count())
+
+        api_key = jwt.encode({"role": ROLE.VALIDATE,
+                              "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)},
+                             self.app.secret_key)
+        response = self._check_serial(f"pin{self.otps[0]}", headers={"Authorization": api_key})
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+    def test_06_auth_max_fail_on_the_answer_by_serial(self):
+        self._set_policy("challenge_response_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self._set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        self.addCleanup(delete_challenges, serial=self.serial)
+        self.app_context.g.audit_object.clear()
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "pin"}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, response.json["result"]["authentication"], response.json)
+        transaction_id = response.json["detail"]["transaction_id"]
+
+        response = self._check_serial("000000", transaction_id=transaction_id)
+        self.assertFalse(response.json["result"]["value"], response.json)
+        response = self._check_serial(self.otps[0], transaction_id=transaction_id)
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
+                         response.json)
+        # The refusal is a step of the attempt of the challenge
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED], transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=User("cornelius", self.realm1),
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint="/validate/check", reason=AuthEventReason.AUTH_MAX_FAIL)
+
+    def test_07_auth_max_success_by_serial(self):
+        self._set_policy("max_success", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=1/1m")
+        self.app_context.g.audit_object.clear()
+        response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertTrue(response.json["result"]["value"], response.json)
+        response = self._check_serial(f"pin{self.otps[1]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        self.assertEqual("Only 1 successful authentications per 0:01:00 allowed.",
+                         response.json["detail"]["message"], response.json)
+
+    def test_08_auth_max_fail_with_otponly(self):
+        self._set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        self.app_context.g.audit_object.clear()
+        response = self._check_serial("000000", otponly="1")
+        self.assertFalse(response.json["result"]["value"], response.json)
+        response = self._check_serial(self.otps[0], otponly="1")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
+                         response.json)
+
+    def test_09_push_wait_of_the_owner_realm(self):
+        self._set_policy("push_wait_realm2", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20", realm=self.realm2)
+        with mock.patch("privacyidea.api.validate.check_serial_pass", wraps=check_serial_pass) as check_mock:
+            response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertTrue(response.json["result"]["value"], response.json)
+        self.assertFalse(check_mock.call_args.kwargs["options"][PushAction.WAIT])
+
+        # Different values in two realms are no conflict, only the one of the owner's realm counts
+        self._set_policy("push_wait_realm1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=10", realm=self.realm1)
+        with mock.patch("privacyidea.api.validate.check_serial_pass", wraps=check_serial_pass) as check_mock:
+            response = self._check_serial(f"pin{self.otps[1]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+        self.assertEqual(10, check_mock.call_args.kwargs["options"][PushAction.WAIT])
 
 
 
