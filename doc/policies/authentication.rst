@@ -267,6 +267,7 @@ type: ``bool``
 A new OTP value will be sent via SMS if the user authenticated
 successfully with their SMS token. Thus the user does not
 have to trigger a new SMS when they want to log in again.
+The value sent this way is not limited by the OTP validity time.
 
 .. versionadded:: 2.1
 
@@ -346,7 +347,7 @@ emailautosend
 type: ``bool``
 
 If set, a new OTP Email will be sent, when successfully authenticated with an
-Email Token.
+Email Token. The value sent this way is not limited by the OTP validity time.
 
 .. versionadded:: 2.3
 
