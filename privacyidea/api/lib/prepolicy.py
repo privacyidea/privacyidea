@@ -79,10 +79,12 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               user_is_owner,
                                               UserAttributes,
-                                              get_container_user_attributes)
+                                              get_container_user_attributes,
+                                              get_request_identity)
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
                                       log_authentication)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
+from privacyidea.lib.conditional_access.request_context import confirm_attempt_for_serials
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -2226,7 +2228,12 @@ def api_key_required(request=None, action=None):
         future release. The X-API-Key API clients feature is intended to replace
         them; it does not yet cover this use case.
     """
-    user_object = request.User
+    # Without any such policy the user does not matter. Listed regardless of the conditions, which can not be
+    # evaluated without the user.
+    if not g.policy_object.list_policies(scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, active=True):
+        return True
+    # A request that names only a serial or a credential id is matched for the owner of the token
+    user_object = get_request_identity(request)
 
     # Get the policies
     action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
@@ -2249,8 +2256,7 @@ def api_key_required(request=None, action=None):
 
         role = g.logged_in_user.get("role")
         if role != ROLE.VALIDATE:
-            raise PolicyError("A correct JWT was passed, but it was no API "
-                              "key.")
+            raise PolicyError("A correct JWT was passed, but it was no API key.")
 
     # If everything went fine, we call the original function
     return True
@@ -2351,10 +2357,10 @@ def pushtoken_validate(request, action):
     :param action:
     :return:
     """
-    user_object = request.User
-    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT,
-                         user_object=user_object if user_object else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+    # Without a user only the policies without a user, realm or resolver match, as for the other pre-policies. A
+    # request that names only a serial matches them again for the token owner.
+    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT, user_object=request.User).action_values(
+        unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
         request.all_data[PushAction.WAIT] = int(list(waiting)[0])
     else:
@@ -3295,6 +3301,32 @@ def disabled_token_types(request, action):
     return True
 
 
+def rerun_user_dependent_prepolicies(request: Request, options: dict | None = None) -> None:
+    """
+    Match the pre-policies that depend on the user again, for a request whose user is only known after the
+    pre-policies ran, e.g. the owner of the token named by serial or credential id.
+
+    The pre-policies that rewrite the user (set_realm, mangle) are not run again, nor the ones an endpoint sets up
+    differently (pushtoken_validate, pushtoken_disable_wait).
+
+    :param request: The request object with the user to match the policies for in request.User
+    :param options: A copy of request.all_data taken before, which gets the same changes, including the parameters a
+        pre-policy removes
+    """
+    previous = dict(request.all_data)
+    increase_failcounter_on_challenge(request, None)
+    webauthntoken_request(request, None)
+    webauthntoken_authz(request, None)
+    disabled_token_types(request, None)
+    load_challenge_text(request, None)
+    fido2_auth(request, None)
+    if options is not None:
+        for key in previous.keys() - request.all_data.keys():
+            options.pop(key, None)
+        options.update({key: value for key, value in request.all_data.items()
+                        if key not in previous or previous[key] != value})
+
+
 def auth_timelimit(request, action):
     """
     This decorator retrieves the auth timelimit from the policies and adds it to the request data.
@@ -3339,7 +3371,13 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, reasons=[reason])
+        transaction_id = get_optional(request.all_data, "transaction_id")
+        if transaction_id and not local_admin and user.exist():
+            # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer. A
+            # user who does not exist owns no token, so the challenge is someone else's.
+            confirm_attempt_for_serials(token.token.serial for token in get_tokens(user=user))
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, transaction_id=transaction_id,
+                           reasons=[reason])
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 
