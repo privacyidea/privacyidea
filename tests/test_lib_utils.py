@@ -778,8 +778,9 @@ class UtilsTestCase(MyTestCase):
         for hop in info.chain:
             self.assertLessEqual(len(hop.ip), MAX_IP_CHAIN_HOP_LENGTH)
 
-    def test_23f_get_client_ip_info_ignores_a_malformed_hop_instead_of_raising(self):
-        # X-Forwarded-For is attacker-controlled; a garbled entry must not turn the request into a 500.
+    def test_23f_get_client_ip_info_cuts_the_chain_at_a_malformed_hop_instead_of_raising(self):
+        # A garbled X-Forwarded-For entry must not turn the request into a 500. It ends the chain, and the hops
+        # between it and privacyIDEA are still mapped.
         r = ClientIpRequestMock(access_route=["not-an-ip", "172.16.0.5"])
         info = get_client_ip_info(r, "10.0.0.1>0.0.0.0/0")
         self.assertEqual("172.16.0.5", info.ip)
@@ -820,9 +821,9 @@ class UtilsTestCase(MyTestCase):
         self.assertLessEqual(len(info.chain), MAX_IP_CHAIN_HOPS)
         self.assertEqual(len(path_to_client) - MAX_IP_CHAIN_HOPS, info.dropped_hops)
 
-    def test_23i_get_client_ip_ignores_a_malformed_hop_like_get_client_ip_info(self):
+    def test_23i_get_client_ip_cuts_the_chain_at_a_malformed_hop_like_get_client_ip_info(self):
         # get_client_ip is get_client_ip_info reduced to .ip, so a malformed client parameter or
-        # X-Forwarded-For hop is dropped the same way rather than raising or being trusted.
+        # X-Forwarded-For hop ends the chain the same way rather than raising or being trusted.
         r = ClientIpRequestMock(access_route=["172.16.1.2"], blueprint="validate_blueprint",
                                 all_data={"client": "not-an-ip-address"})
         self.assertEqual("172.16.1.2", get_client_ip(r, "10.0.0.1"))
@@ -965,18 +966,15 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("REMOTE_ADDR_UNMAPPED", info.source)
 
     def test_23m_unparseable_hop_cuts_the_chain_instead_of_shifting_it(self):
-        # A dropped hop must not move the hops behind it one position up: the hop after it
-        # would then be checked against the network configured for the dropped hop, and an
-        # attacker-chosen address beyond the unparseable one could be admitted as if it had
-        # been sent in the dropped hop's place. The chain is cut at the
-        # unparseable hop instead - the hops after it stay recorded, but unmapped.
+        # An unparseable hop ends the chain at its position. The hops behind it keep their
+        # positions, so none of them is compared with the network configured for the
+        # unparseable hop's position. They stay recorded, but unmapped.
         # Origin-first, as in the header: the origin "8.8.8.8" claims it passed a proxy
         # whose XFF hop is unparseable, which in turn sits in front of our trusted proxy.
         r = ClientIpRequestMock(access_route=["8.8.8.8", "not-an-ip", "172.16.0.5"])
-        # With the three-hop path below, the *shifted* reading used to check 8.8.8.8 against
-        # 8.0.0.0/8 - the network meant for the unparseable hop's position - and admit it.
-        # The cut reads the path as ending at "not-an-ip", so the request did not pass the
-        # third hop and the peer itself is the client.
+        # The third network of the path below, 8.0.0.0/8, is the one for the position of
+        # "not-an-ip", and it contains 8.8.8.8. The chain ends at "not-an-ip", so the request
+        # did not pass the third hop and the peer itself is the client.
         with self.assertLogs("privacyidea.lib.utils", level="DEBUG") as logs:
             info = get_client_ip_info(r, "10.0.0.1 > 0.0.0.0/0 > 8.0.0.0/8")
         self.assertEqual("10.0.0.1", info.ip)
@@ -1004,10 +1002,9 @@ class UtilsTestCase(MyTestCase):
 
     def test_23n_a_non_string_client_parameter_is_not_an_ip_hop(self):
         # The ``client`` parameter is untyped request data: a JSON body can carry it as a number or a
-        # boolean. Neither is an address spelling any proxy writes, so neither is a hop. Recording one
-        # anyway made the hop-length cap in _cap_chain raise a TypeError - a client-supplied parameter
-        # 500ing the request, both with and without an override configured.
-        # The parameter is skipped instead, and the request is served as if it had not been sent.
+        # boolean. Neither is an address spelling any proxy writes, so neither is a hop: the parameter is
+        # skipped, both with and without an override configured, and the request is served as if it had
+        # not been sent.
         for client_param in (123, 2130706433, True, 1.5, None, ["10.0.0.1"], {"client": "10.0.0.1"}, ""):
             with self.subTest(client_param=client_param):
                 r = ClientIpRequestMock(access_route=["10.0.0.1"], blueprint="ttype_blueprint",
