@@ -844,6 +844,25 @@ def _path_to_client(request) -> "list[ClientIpHop]":
     return hops
 
 
+def _undetermined_client_ip(peer: str | None, hops: "list[ClientIpHop]") -> "ClientIpInfo":
+    """
+    The :class:`ClientIpInfo` of a request whose client IP cannot be determined although an
+    ``OverrideAuthorizationClient`` is configured: the path to the client does not start with an address.
+
+    Logged as a warning, as it is a matter of the setup rather than of a single client: the first hop is the
+    peer, or, without a peer (e.g. a Unix socket), the entry the nearest proxy added to ``X-Forwarded-For``.
+
+    :param peer: the TCP peer of the request
+    :param hops: the path to the client, peer first
+    :return: a :class:`ClientIpInfo` without a client IP
+    """
+    first_hop = hops[0].ip[:MAX_IP_CHAIN_HOP_LENGTH] if hops else None
+    log.warning(f"Could not determine the client IP although OverrideAuthorizationClient is set: the "
+                f"connection address is {peer!r} and the first address of the path is {first_hop!r}. Check "
+                "that the proxy in front of privacyIDEA adds the client address to X-Forwarded-For.")
+    return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+
+
 def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
     """
     Determine the client IP of *request* **and how it was derived**.
@@ -870,7 +889,7 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
         return _cap_chain(info)
     if not request.access_route:
         # No route at all: get_client_ip has always returned None here, and there is nothing to derive from.
-        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+        return _undetermined_client_ip(peer, hops)
     # Kept as (hops-index, hop) pairs so the effective hop can be recovered by position: the same
     # (ip, source) can legitimately appear more than once in the chain, and a value-based lookup back into
     # ``hops`` would then return the first match rather than the hop actually chosen.
@@ -894,7 +913,7 @@ def get_client_ip_info(request, proxy_settings) -> "ClientIpInfo":
         # The first hop is unparseable, or there is no hop at all (an empty REMOTE_ADDR, e.g. a Unix socket,
         # gives an access_route of [""] but no peer hop): nothing to map from, and check_proxy_index() would
         # raise on an empty list.
-        return _cap_chain(ClientIpInfo(ip=None, peer_ip=peer, source=None, chain=hops))
+        return _undetermined_client_ip(peer, hops)
     index = check_proxy_index(addresses, proxy_settings)
     effective_index, chosen = addressable[index]
     # Index 0 is the peer: an override is configured, but this peer may not map the client any further.

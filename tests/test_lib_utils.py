@@ -983,6 +983,28 @@ class UtilsTestCase(MyTestCase):
                 self.assertEqual(remote_addr, info.ip)
                 self.assertEqual(remote_addr, info.peer_ip)
 
+    def test_23q_an_undetermined_client_ip_is_logged_as_a_warning(self):
+        # With an override, a path that does not start with an address gives no client IP, which is logged as a
+        # warning naming the connection address and the first address of the path.
+        for remote_addr, access_route, first_hop in (("", ["192.0.2.43", "unknown"], "'unknown'"),
+                                                     ("", [""], "None"),
+                                                     ("not-an-ip", ["192.0.2.43"], "'not-an-ip'")):
+            with self.subTest(remote_addr=remote_addr, access_route=access_route):
+                r = ClientIpRequestMock(remote_addr=remote_addr, access_route=access_route)
+                with self.assertLogs("privacyidea.lib.utils", level="WARNING") as logs:
+                    info = get_client_ip_info(r, "10.0.0.1")
+                self.assertIsNone(info.ip)
+                self.assertEqual(1, len(logs.output))
+                self.assertIn("Could not determine the client IP", logs.output[0])
+                self.assertIn(f"the first address of the path is {first_hop}", logs.output[0])
+        # A hop that cannot be read further along the path, or a request without an override, logs no warning.
+        for remote_addr, access_route, proxy_settings in (("10.0.0.1", ["192.0.2.43", "unknown"], "10.0.0.1"),
+                                                          ("", ["unknown"], "")):
+            with self.subTest(remote_addr=remote_addr, proxy_settings=proxy_settings):
+                r = ClientIpRequestMock(remote_addr=remote_addr, access_route=access_route)
+                with self.assertNoLogs("privacyidea.lib.utils", level="WARNING"):
+                    get_client_ip_info(r, proxy_settings)
+
     def test_23m_unparseable_hop_cuts_the_chain_instead_of_shifting_it(self):
         # An unparseable hop ends the chain at its position. The hops behind it keep their
         # positions, so none of them is compared with the network configured for the
