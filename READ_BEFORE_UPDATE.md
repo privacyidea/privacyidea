@@ -99,6 +99,15 @@
   owner's resolver is in no realm any more, e.g. because it was deleted, is now listed on every node as well. It was
   only listed on the nodes that serve the realm of its owner.
 
+* **The OTP validity time of Email and SMS tokens applies to every login with the sent value** — A sent Email or SMS
+  OTP value is refused once its validity time (`email.validtime`, `sms.providerTimeout`) has passed, also when OTP PIN
+  and OTP value are sent together or the OTP value is sent alone (`otponly`), without the `transaction_id`. A refused
+  value counts like a wrong one and increases the failcounter. The validity time starts before the value is sent, so it
+  includes the time the SMTP server or SMS gateway takes. **Check that these validity times leave your users enough
+  time to log in**, in particular with clients that send OTP PIN and OTP value in one request, e.g. RADIUS. Values sent
+  by `emailautosend` or `smsautosend` and values sent to verify an enrollment have no time limit; they stay valid until
+  they are used or a later value is sent or used.
+
 * **More event handlers fail the request when they fail.** The schema update sets *Abort on error* for the existing
   **request mangler** and **response mangler** handlers and for the **Script** handlers that are configured to raise an
   error. With 3.14 it was only set for **Federation** handlers. A request mangler changes the parameters the endpoint

@@ -5,6 +5,7 @@
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from privacyidea.lib import _
@@ -885,7 +886,7 @@ def challenge_text_replace(message: str, user: User | None, token_obj: TokenClas
 
 def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
                      data: dict | None = None, session: str = '',
-                     validitytime: int = 120) -> "Challenge":
+                     validitytime: int = 120, expiration: datetime | None = None) -> "Challenge":
     """
     Create a new challenge and persist it - to Redis if available, to the DB otherwise.
 
@@ -912,7 +913,8 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :param challenge: The challenge string
     :param data: Challenge data dict. Pass None or {} for no data.
     :param session: Session string
-    :param validitytime: Validity period in seconds (default: 120)
+    :param validitytime: Validity period in seconds (default: 120), used if no expiration is given
+    :param expiration: The time the challenge expires, timezone-aware
     :return: The created Challenge object
     """
     from privacyidea.lib.cache import cache_challenge, redis_feature_enabled
@@ -927,7 +929,8 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
                              challenge=challenge,
                              data=challenge_data,
                              session=session if session is not None else '',
-                             validitytime=validitytime)
+                             validitytime=validitytime,
+                             expiration=expiration)
     if redis_feature_enabled("challenges"):
         # Cache only, skip the DB write. Redis TTL handles expiry;
         # challenges are ephemeral by nature.
