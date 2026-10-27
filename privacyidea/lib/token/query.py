@@ -15,11 +15,11 @@ from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql import ColumnElement, Select
 
 from privacyidea.lib import _
+from privacyidea.lib.cache.user import read_cached_username
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
                                    PrivacyIDEAError, ResourceNotFoundError, UserError)
-from privacyidea.lib.cache.user import read_cached_username
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
@@ -654,8 +654,14 @@ def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
     login_by_owner = {}
     for resolver_name, user_ids in user_ids_by_resolver.items():
         cached_logins = {}
-        for chunk in _chunked(list(user_ids)):
-            cached_logins.update(get_cached_usernames(resolver_name, chunk))
+        try:
+            for chunk in _chunked(list(user_ids)):
+                cached_logins.update(get_cached_usernames(resolver_name, chunk))
+        except Exception as cache_error:
+            # A user cache that can not be read only costs the lookups it would have saved
+            log.error(f"The user cache of the resolver {resolver_name!r} can not be read: {cache_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
         for user_id in user_ids:
             login = cached_logins.get(user_id) or read_cached_username(resolver_name, user_id)
             if login:
@@ -668,8 +674,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
     resolver instead of one user store lookup per token.
 
-    A token is orphaned if its first owner belongs to a resolver that no longer exists, does not exist
-    in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
+    A token is orphaned if its first owner has no user ID, belongs to a resolver that no longer exists,
+    does not exist in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
     If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
     read from the database is not orphaned, since it is not known to have an owner at all. An owner the
     user cache holds is not looked up in the user store. An owner the batch lookup does not find is looked

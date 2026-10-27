@@ -27,8 +27,9 @@ caches are not: the ``usercache`` database table only holds the login/ID
 correlation, and the LDAP resolver's own cache is a dictionary in one process.
 
 The user store stays the single source of truth. This is a read-through cache
-with an authoritative origin: a miss is always answered by asking the resolver,
-nothing is ever written here that does not come from a resolver, and dropping
+with an authoritative origin: a miss is always answered by asking the resolver
+(``read_cached_username`` leaves that to its caller, which asks the resolver
+itself), nothing is ever written here that does not come from a resolver, and dropping
 the whole keyspace at any moment costs nothing but a few extra lookups. That is
 what makes it safe to be aggressive about invalidation - see below.
 

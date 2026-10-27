@@ -886,3 +886,12 @@ class OrphanedTokenTestCase(MyTestCase):
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=True))
         read_cached.assert_called_once_with("orphanhttp", "1")
         self.assertEqual(0, http_lookup_username.call_count, http_lookup_username.call_args_list)
+
+    @ldap3mock.activate
+    def test_12_a_user_cache_that_can_not_be_read_is_skipped(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
+                  if token.token.serial in {"ORPHEXISTS0", "ORPHDELETEDUSER"}]
+        with mock.patch.object(token_query, "get_cached_usernames", side_effect=Exception("lock wait timeout")):
+            # The owners are looked up in the user store instead
+            self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=False))

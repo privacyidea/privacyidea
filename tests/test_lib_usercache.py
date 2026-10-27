@@ -546,19 +546,22 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
     def test_16_get_cached_usernames(self) -> None:
         set_privacyidea_config(EXPIRATION_SECONDS, 600)
         delete_user_cache()
-        UserCache("renamed", "renamed", "reso1", "uid1", datetime.now() - timedelta(seconds=10)).save()
-        UserCache("current", "current", "reso1", "uid1", datetime.now()).save()
-        UserCache("expired", "expired", "reso1", "uid2", datetime.now() - timedelta(seconds=700)).save()
-        UserCache("other", "other", "reso2", "uid3", datetime.now()).save()
+        try:
+            UserCache("renamed", "renamed", "reso1", "uid1", datetime.now() - timedelta(seconds=10)).save()
+            UserCache("current", "current", "reso1", "uid1", datetime.now()).save()
+            UserCache("expired", "expired", "reso1", "uid2", datetime.now() - timedelta(seconds=700)).save()
+            UserCache("other", "other", "reso2", "uid3", datetime.now()).save()
 
-        # The latest entry wins, an expired entry and an entry of another resolver do not count
-        self.assertDictEqual({"uid1": "current"}, get_cached_usernames("reso1", ["uid1", "uid2", "uid3", "uid4"]))
-        self.assertDictEqual({}, get_cached_usernames("reso1", []))
+            # The latest entry wins, an expired entry and an entry of another resolver do not count
+            self.assertDictEqual({"uid1": "current"},
+                                 get_cached_usernames("reso1", ["uid1", "uid2", "uid3", "uid4"]))
+            self.assertDictEqual({}, get_cached_usernames("reso1", []))
 
-        set_privacyidea_config(EXPIRATION_SECONDS, 0)
-        self.assertDictEqual({}, get_cached_usernames("reso1", ["uid1"]))
-        set_privacyidea_config(EXPIRATION_SECONDS, 600)
-        delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+            self.assertDictEqual({}, get_cached_usernames("reso1", ["uid1"]))
+        finally:
+            set_privacyidea_config(EXPIRATION_SECONDS, 600)
+            delete_user_cache()
 
     def test_99_unset_config(self):
         # Test early exit!
