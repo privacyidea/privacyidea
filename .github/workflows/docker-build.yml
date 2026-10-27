@@ -71,18 +71,6 @@ jobs:
           COMPOSE_FILE=compose.yaml:compose.external-db.yaml docker compose config --quiet
           PI_IMAGE=privacyidea:ci docker compose -f compose.yaml -f compose.build.yaml config --quiet
 
-      - name: Check that compose.yaml names one release
-        working-directory: deploy/docker
-        run: |
-          # The containers warn when their image is another release than PI_COMPOSE_VERSION, so a release
-          # that changes only one of the two would warn at every start.
-          image="$(docker compose config --format json | jq -r '.services.pi.image')"
-          compose_version="$(docker compose config --format json | jq -r '.services.pi.environment.PI_COMPOSE_VERSION')"
-          if [ "${image##*:}" != "${compose_version}" ]; then
-            echo "compose.yaml pulls ${image}, but its PI_COMPOSE_VERSION is ${compose_version}"
-            exit 1
-          fi
-
       - name: Check helper scripts compile
         run: python3 -m py_compile deploy/docker/cron-runner.py deploy/docker/enckey-canary.py
 

@@ -208,7 +208,6 @@ The bundled `compose.yaml` pre-wires most of these; day to day you mainly edit
 | `PI_BOOTSTRAP_ADMIN` / `PI_BOOTSTRAP_ADMIN_PASSWORD` | *(unset)* | create this admin |
 | `PI_WORKERS` | auto (`2*nproc+1`, cap 4) | gunicorn workers |
 | `PI_STARTUP_DELAY` | `0` | seconds to sleep before startup (rarely needed) |
-| `PI_COMPOSE_VERSION` | set by `compose.yaml` | the release `compose.yaml` belongs to; a warning is logged when the image is another minor version |
 
 **Database & secrets** (read by `DockerConfig`, since `PI_CONFIG_NAME=docker`).
 Every value below also accepts a `<NAME>_FILE` variant that reads the value from
@@ -801,10 +800,7 @@ a new minor version:
    directory*: replace the release's files, keep yours). Its `compose.yaml` runs
    its own release and may need settings the old one did not have, so a patch
    release can change these files too.
-2. Remove `PI_IMAGE` from `.env`, unless you deliberately run another image. If
-   it names another minor version than `compose.yaml`, the containers log
-   `WARNING: this image is privacyIDEA <version>, but compose.yaml belongs to
-   <version>` at every start.
+2. Remove `PI_IMAGE` from `.env`, unless you deliberately run another image.
 3. `make init`, which creates the config files the new release added from their
    templates and leaves yours alone.
 4. `make upgrade`.

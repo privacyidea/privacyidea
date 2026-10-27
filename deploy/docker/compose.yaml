@@ -36,11 +36,10 @@ x-logging: &logging
 # "x-" prefixes an extension field, which Compose ignores as a service — it just
 # holds the anchors.
 x-pi-common: &pi-common
-  # The release this file belongs to; the version is raised here, and in
-  # PI_COMPOSE_VERSION below, before a new release is tagged. Set PI_IMAGE in .env
-  # to run another version, or an image built from this source tree with
-  # compose.build.yaml. Never "latest": pi-init migrates the database to whatever
-  # image it runs.
+  # The release this file belongs to; the version is raised before a new release
+  # is tagged. Set PI_IMAGE in .env to run another version, or an image built from
+  # this source tree with compose.build.yaml. Never "latest": pi-init migrates the
+  # database to whatever image it runs.
   image: ${PI_IMAGE:-harbor.netknights.it/privacyidea/privacyidea:3.14}
   logging: *logging
   # The privacyIDEA processes run as an unprivileged user and need no Linux
@@ -63,9 +62,6 @@ x-pi-common: &pi-common
     # "make init" from privacyidea.env.template.
     - ./privacyidea.env
   environment: &pi-common-env
-    # The release of this file, the same as in the image above. The containers
-    # warn when they run a different privacyIDEA version.
-    PI_COMPOSE_VERSION: "3.14"
     # These are DockerConfig's inputs: the DB connection parts (it builds the URI)
     # and the file-based secrets. All other privacyIDEA config is set as
     # PRIVACYIDEA_<key> in privacyidea.env — kept out of here so this block stays
