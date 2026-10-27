@@ -45,7 +45,7 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.subscriptions import _USER_COUNT_KEY
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
-                                   set_pin, get_one_token, unassign_token)
+                                   set_pin, get_one_token, unassign_token, check_serial_pass)
 from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
                                         AUTH_DATE_FORMAT)
@@ -3856,6 +3856,21 @@ class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
         self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
         self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
                          response.json)
+
+    def test_09_push_wait_of_the_owner_realm(self):
+        self._set_policy("push_wait_realm2", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20", realm=self.realm2)
+        with mock.patch("privacyidea.api.validate.check_serial_pass", wraps=check_serial_pass) as check_mock:
+            response = self._check_serial(f"pin{self.otps[0]}")
+        self.assertTrue(response.json["result"]["value"], response.json)
+        self.assertFalse(check_mock.call_args.kwargs["options"][PushAction.WAIT])
+
+        # Different values in two realms are no conflict, only the one of the owner's realm counts
+        self._set_policy("push_wait_realm1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=10", realm=self.realm1)
+        with mock.patch("privacyidea.api.validate.check_serial_pass", wraps=check_serial_pass) as check_mock:
+            response = self._check_serial(f"pin{self.otps[1]}")
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+        self.assertEqual(10, check_mock.call_args.kwargs["options"][PushAction.WAIT])
 
 
 

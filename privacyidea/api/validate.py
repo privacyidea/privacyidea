@@ -144,6 +144,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
                                                  require_fido2_registration)
 from privacyidea.lib.user import log_used_user, User, split_user
@@ -996,6 +997,9 @@ def _handle_serial_auth(context: dict, serial: str):
             context["user"] = user
             context["options"]["user"] = user
             rerun_user_dependent_prepolicies(request, context["options"])
+            # Not one of the shared pre-policies, since /auth disables the push wait
+            pushtoken_validate(request, None)
+            context["options"][PushAction.WAIT] = request.all_data[PushAction.WAIT]
 
     if user and user.exist():
         # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer

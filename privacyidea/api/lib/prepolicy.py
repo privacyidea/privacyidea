@@ -2356,10 +2356,10 @@ def pushtoken_validate(request, action):
     :param action:
     :return:
     """
-    user_object = request.User
-    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT,
-                         user_object=user_object if user_object else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+    # Without a user only the policies without a user, realm or resolver match, as for the other pre-policies. A
+    # request that names only a serial matches them again for the token owner.
+    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT, user_object=request.User).action_values(
+        unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
         request.all_data[PushAction.WAIT] = int(list(waiting)[0])
     else:
