@@ -1309,6 +1309,62 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
         self.assertEqual(_("please enter otp: "), res["detail"]["multi_challenge"][0]["message"], res)
 
+    def test_16_autoresync_expired_is_not_asked_for(self):
+        """
+        After the AutoResyncTimeout the next OTP value can no longer complete the autoresync, so no challenge asks for
+        it.
+        """
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        login = {"user": user.login, "realm": user.realm}
+
+        # counter = 8, is out of sync
+        res = self._validate_check({**login, "pass": "resync399871"})
+        self.assertEqual("To resync your token, please enter the next OTP value", res["detail"]["message"], res)
+        get_one_token(serial="resync_hotp").write_tokeninfo("dueDate", int(time.time()) - 1)
+
+        res = self._validate_check({**login, "pass": "resync"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        self.assertEqual(_("please enter otp: "), res["detail"]["multi_challenge"][0]["message"], res)
+        res = self._validate_check({**login, "pass": "resync000000"})
+        self.assertFalse(res["result"]["value"], res)
+        self.assertNotIn("multi_challenge", res["detail"], res)
+
+    @smtpmock.activate
+    def test_16_autoresync_email_challenge_asks_for_resync(self):
+        """
+        An email token runs the autoresync of a HOTP token, so its challenge asks for the next OTP value like that of
+        any other token waiting for it, and answering with that value resyncs the token.
+        """
+        smtpmock.setdata(response={"hans@dampf.com": (200, 'OK')})
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        email = init_token({"type": "email", "serial": "resync_email", "otpkey": self.otpkey,
+                            "email": "hans@dampf.com", "pin": "mail"}, user)
+        self.addCleanup(remove_token, "resync_email")
+        email.set_sync_window(10)
+        email.set_count_window(5)
+        email.token.save()
+        login = {"user": user.login, "realm": user.realm}
+
+        resync_message = "To resync your token, please enter the next OTP value"
+
+        # counter = 8, is out of sync
+        res = self._validate_check({**login, "pass": "mail399871"})
+        self.assertFalse(res["result"]["value"], res)
+        self.assertEqual(resync_message, res["detail"]["message"], res)
+
+        res = self._validate_check({**login, "pass": "mail"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        self.assertEqual(resync_message, res["detail"]["multi_challenge"][0]["message"], res)
+        self.assertTrue(smtpmock.get_sent_message())
+
+        # counter = 9, will be autosynced
+        res = self._validate_check({**login, "transaction_id": res["detail"]["transaction_id"], "pass": "520489"})
+        self.assertTrue(res["result"]["value"], res)
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual("Found matching challenge,autoresync successful", audit_entry.get("info"))
+
     def test_16_autoresync_hotp_otponly(self):
         # The audit entry names the requested token, so the audit info does not repeat its serial
         serial = "autosync_otponly"

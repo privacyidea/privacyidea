@@ -398,6 +398,14 @@ class TotpTokenClass(HotpTokenClass):
             self.write_tokeninfo('timeShift', new_shift)
         return res
 
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync. A TOTP token has no AutoResyncTimeout.
+
+        :return: True if the token stored the first OTP value of an autoresync
+        """
+        return "otp1c" in self.get_tokeninfo()
+
     @log_with(log)
     def _autosync(self, hmac2Otp, anOtpVal):
         """

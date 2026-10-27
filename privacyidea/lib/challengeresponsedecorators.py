@@ -187,8 +187,9 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     Policies: A policy defines that the token resync should be allowed this way.
     Note: The general config "autoresync" needs to be set anyway.
 
-    A failed authentication of a token with an otp1c is answered with a challenge for the next OTP value. If the
-    authentication triggered challenges, they are kept and the challenge of such a token asks for the next OTP value.
+    A failed authentication of a token waiting for the next OTP value of an autoresync is answered with a challenge
+    for that value. If the authentication triggered challenges, they are kept and the challenge of such a token asks
+    for the next OTP value.
 
     args are:
     :param tokenobject_list: The list of all the tokens of the user, that will be checked
@@ -205,7 +206,7 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     g = (kwds.get("options") or {}).get("g")
     if reply_dict.get("multi_challenge"):
         _ask_for_resync_in_challenges(reply_dict, args[0], g)
-    # After a failed authentication, we check if the token has an otp1c
+    # After a failed authentication, we check if the token waits for the next OTP value
     elif reply_dict.get("serial"):
         # FIXME: Only works if the one token has a unique PIN
         serial = reply_dict.get("serial")
@@ -231,7 +232,7 @@ def _resync_pending(token: TokenClass, g: Any) -> bool:
     :param g: The request context to match the policy with, None if there is none
     :return: True if the challenge of the token should ask for the next OTP value
     """
-    return bool(token.get_tokeninfo("otp1c") and g and
+    return bool(token.has_pending_autoresync() and g and
                 Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE, token=token).any())
 
 
@@ -244,7 +245,7 @@ def _ask_for_resync_in_challenges(reply_dict: dict, tokens: list[TokenClass], g:
     :param tokens: The tokens that were checked
     :param g: The request context to match the policy with, None if there is none
     """
-    messages = reply_dict.get("messages", [])
+    messages = reply_dict["messages"]
     changed = False
     for challenge in reply_dict["multi_challenge"]:
         token = next((t for t in tokens if t.token.serial == challenge.get("serial")), None)
@@ -253,5 +254,5 @@ def _ask_for_resync_in_challenges(reply_dict: dict, tokens: list[TokenClass], g:
                 messages[messages.index(challenge["message"])] = _resync_message()
             challenge["message"] = _resync_message()
             changed = True
-    if changed and messages:
+    if changed:
         reply_dict["message"] = ", ".join(set(messages))

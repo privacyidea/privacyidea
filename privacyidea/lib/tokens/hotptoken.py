@@ -485,6 +485,16 @@ class HotpTokenClass(TokenClass):
 
         return res
 
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync. After the AutoResyncTimeout the next value
+        can no longer complete it.
+
+        :return: True if the next OTP value can still complete an autoresync of the token
+        """
+        info = self.get_tokeninfo()
+        return "otp1c" in info and "dueDate" in info and int(info["dueDate"]) > int(time.time())
+
     def _drop_pending_autoresync(self) -> None:
         """
         Drop the first OTP value of an autoresync that never got its second one. A value in the normal window shows

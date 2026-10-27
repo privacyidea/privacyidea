@@ -1298,6 +1298,14 @@ class TokenClass:
     def get_sync_window(self):
         return self.token.sync_window
 
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync, so that a challenge can ask for it.
+
+        :return: True if the next OTP value can still complete an autoresync of the token
+        """
+        return False
+
     # hashlib algorithms:
     # http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib
 
