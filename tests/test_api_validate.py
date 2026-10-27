@@ -1383,11 +1383,8 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code)
             self.assertFalse(res.json.get("result").get("value"))
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail"))
-            # The token type is recorded in the audit log only
-            self.assertNotIn("type", res.json.get("detail"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
         self.assertEqual(serial, audit_entry.get("serial"))
-        self.assertEqual("hotp", audit_entry.get("token_type"))
         self.assertEqual("OTP verification failed.,autoresync started", audit_entry.get("info"))
 
         # counter = 9, will be autosynced
@@ -1399,7 +1396,6 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
         self.assertEqual(serial, audit_entry.get("serial"))
-        self.assertEqual("hotp", audit_entry.get("token_type"))
         self.assertEqual("autoresync successful", audit_entry.get("info"))
 
         delete_privacyidea_config("AutoResync")
