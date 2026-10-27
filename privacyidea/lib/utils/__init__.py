@@ -564,6 +564,9 @@ def _parse_hop_address(hop_ip: str) -> IPAddress | None:
     * ``[2001:db8::1]`` and ``[2001:db8::1]:4711`` -- bracketed IPv6 addresses, with
       or without a port. A bracketed IPv4 address is not a spelling any proxy writes
       and is rejected.
+    * ``fe80::1%eth0`` -- a scoped IPv6 address, as the operating system reports a
+      link-local peer. The zone names an interface of this host, not a part of the
+      address, so it is dropped.
 
     An IPv4-mapped IPv6 address (``::ffff:10.0.0.1``) keeps its spelling;
     :func:`_ip_in_network` matches it against IPv4 networks as well.
@@ -588,6 +591,9 @@ def _parse_hop_address(hop_ip: str) -> IPAddress | None:
         host, _, port = candidate.rpartition(":")
         if _is_port(port):
             candidate = host
+    address_part, _, zone = candidate.partition("%")
+    if zone and ":" in address_part:
+        candidate = address_part
     try:
         address = IPAddress(candidate)
     except AddrFormatError:

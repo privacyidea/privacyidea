@@ -850,6 +850,8 @@ class UtilsTestCase(MyTestCase):
             ("192.0.2.43:00080", "192.0.2.43"),
             ("[::ffff:192.0.2.43]", "::ffff:192.0.2.43"),
             ("[" + v6_client + "]:65535", v6_client),
+            ("fe80::1%eth0", "fe80::1"),
+            ("[fe80::1%eth0]:51234", "fe80::1"),
         ):
             with self.subTest(xff=xff):
                 r = ClientIpRequestMock(remote_addr="10.199.1.18", access_route=[xff])
@@ -862,13 +864,22 @@ class UtilsTestCase(MyTestCase):
         r = ClientIpRequestMock(remote_addr="10.199.1.18", access_route=[v6_client])
         self.assertEqual(v6_client, get_client_ip(r, proxy_settings))
 
+        # The operating system reports a link-local peer with its zone. The peer is read without it, so it
+        # matches its network and maps the client.
+        r = ClientIpRequestMock(remote_addr="fe80::1%eth0", access_route=["192.0.2.43"])
+        info = get_client_ip_info(r, "fe80::/10")
+        self.assertEqual("192.0.2.43", info.ip)
+        self.assertEqual("X_FORWARDED_FOR", info.source)
+        self.assertEqual("fe80::1%eth0", info.peer_ip)
+
         # A suffix that is not a valid port is not stripped, in the unbracketed branch
         # exactly as in the bracket branch, and a bracketed IPv4 address is rejected: the
-        # hop stays unparsed and cuts the chain (see test_23m).
+        # hop stays unparsed and cuts the chain (see test_23m). A zone is only dropped
+        # from a non-empty zone of an IPv6 address.
         for bad in ("10.0.0.1:junk", "10.0.0.1:", "10.0.0.1:99999999", "10.0.0.1:65536", "10.0.0.1:99999",
                     "10.0.0.1:\u00b2", "10.0.0.1:000080", "10.0.0.1:" + "9" * 4301, "[" + v6_client + "]:junk",
                     "[" + v6_client + "]:99999", "[" + v6_client + "]:" + "9" * 4301, "[10.0.0.1]",
-                    "[10.0.0.1]:80"):
+                    "[10.0.0.1]:80", "fe80::1%", "10.0.0.1%eth0", "%eth0"):
             with self.subTest(xff=bad[:30]):
                 r = ClientIpRequestMock(remote_addr="10.199.1.18", access_route=[bad])
                 info = get_client_ip_info(r, proxy_settings)
