@@ -1280,6 +1280,9 @@ class ValidateAPITestCase(MyApiTestCase):
         # counter = 0, in the window
         res = self._validate_check({**login, "pass": "resync755224"})
         self.assertTrue(res["result"]["value"], res)
+        token_info = get_one_token(serial="resync_hotp").get_tokeninfo()
+        self.assertNotIn("otp1c", token_info)
+        self.assertNotIn("dueDate", token_info)
 
         res = self._validate_check({**login, "pass": "resync"})
         self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)

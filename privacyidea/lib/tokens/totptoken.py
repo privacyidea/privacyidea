@@ -370,11 +370,7 @@ class TotpTokenClass(HotpTokenClass):
                 # Another request used this OTP value first, so it is as spent as it is for a later replay.
                 log.info(f"The OTP value of token {self.token.serial} was used by another request.")
                 return -1
-            if resynced:
-                log.debug(f"Autoresync successful for token {self.token.serial!s}.")
-                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
-            else:
-                self._drop_pending_autoresync()
+            self._record_otp_match(resynced)
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
