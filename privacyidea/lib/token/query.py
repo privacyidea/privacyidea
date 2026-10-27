@@ -642,12 +642,12 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
     resolver instead of one user store lookup per token.
 
-    A token is orphaned in the same cases as ``TokenClass.is_orphaned()`` decides for a single token:
-    its first owner belongs to a resolver that no longer exists, does not exist in the user store or
-    has no realm. If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner
-    can not be read from the database is not orphaned, since it is not known to have an owner at all.
-    An owner the batch lookup does not find is looked up once more on
-    its own, and the owners of a resolver without a batch lookup of its own are only looked up on their own.
+    A token is orphaned if its first owner belongs to a resolver that no longer exists, does not exist
+    in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
+    If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
+    read from the database is not orphaned, since it is not known to have an owner at all. An owner the
+    batch lookup does not find is looked up once more on its own, and the owners of a resolver without a
+    batch lookup of its own are only looked up on their own.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
     :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
@@ -666,7 +666,7 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
             # before the lookup, which reports a deleted resolver like one whose user store can not be reached.
             orphaned_serials.add(token_by_id[token_id].token.serial)
         elif owner.user_id is None:
-            # Like is_orphaned: the user object of an owner without a user ID has no login name
+            # The user object of an owner without a user ID has no login name
             orphaned_serials.add(token_by_id[token_id].token.serial)
         else:
             owners_to_resolve[token_id] = owner
