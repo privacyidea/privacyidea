@@ -26,19 +26,23 @@
   token settings *Default Time Shift* of TOTP tokens (`totp.timeShift`), the U2F *AppID* (`u2f.appId`) and
   `webauthn.appid`, which nothing read. Values that are already stored stay in the database and are ignored.
 
-* **A proxy entry without a mapping target now also maps IPv6 clients.** An *Override Authorization Client* entry
-  such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
+* **A proxy entry without a mapping target now also maps IPv6 clients.** An
+  [*Override Authorization Client*](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client)
+  entry such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
   documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
 
-* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy chain.** It used to be
-  skipped, which shifted the entries behind it onto the wrong proxy networks. The client IP of such a request is now
-  usually your proxy's address, so configure the proxy to write the client address instead. Entries with a port or
-  in brackets are now read as addresses.
+* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy path.** The entries
+  after it are recorded in the authentication log but never become the client IP. If your proxy writes such a value,
+  the client IP of these requests is the proxy's address, so configure the proxy to write the client address
+  instead. Entries with a port (`192.0.2.43:51234`) or in brackets (`[2001:db8::1]`) are now read as addresses. How
+  privacyIDEA determines the client IP and how to configure your proxies for it is described in
+  [Override Authorization Client](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client).
 
-* **IPv4 clients now match entries in both spellings.** `10.0.0.5` and its IPv4-mapped form `::ffff:10.0.0.5`, which
-  a dual-stack listener may report, match the same entries in policy client conditions, the `client_ip` condition of
-  event handlers and *Override Authorization Client*. If your audit log shows client IPs starting with `::ffff:`,
-  check your client-restricted policies and event handlers: IPv4 entries now apply to these clients.
+* **IPv4 networks now also contain the IPv4-mapped form of their addresses.** A dual-stack listener may report an
+  IPv4 client as `::ffff:10.0.0.5`. An IPv4 network such as `10.0.0.0/8` in the client condition of a policy, in the
+  `client_ip` condition of an event handler or in *Override Authorization Client* now contains this address, too.
+  Other IPv6 networks, such as `::/0`, contain the mapped form but not `10.0.0.5`. If your audit log shows client IPs
+  starting with `::ffff:`, check your client-restricted policies and event handlers.
 
 ## Update from 3.13 to 3.14
 
