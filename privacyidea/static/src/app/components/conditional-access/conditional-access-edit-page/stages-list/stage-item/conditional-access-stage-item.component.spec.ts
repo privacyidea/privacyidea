@@ -165,6 +165,19 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(messages()).toHaveLength(1);
     });
 
+    it("should say what is expected for a fractional threshold", () => {
+      type(thresholdInput(), "1.5");
+      thresholdInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(
+        stageFields[0]
+          .failure_threshold()
+          .errors()
+          .map((error) => error.kind)
+      ).toEqual([CA_ERR.notInteger]);
+      expect(messages()).toEqual(["Enter a whole number of at least 1, or 0 on a stage carrying only DENY."]);
+    });
+
     // A threshold counts failures, so the minimum is 1 unless every action on the stage is a standing
     // DENY verdict, which is what the backend's _validate_threshold_for_actions allows at 0.
     it.each([

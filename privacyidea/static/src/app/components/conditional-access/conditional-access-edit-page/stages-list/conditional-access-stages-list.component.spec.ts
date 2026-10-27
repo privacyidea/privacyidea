@@ -153,5 +153,16 @@ describe("ConditionalAccessStagesListComponent", () => {
       expect(component.stageNumber(stageFields[0])).toBe(2);
       expect(component.stageNumber(stageFields[1])).toBe(1);
     });
+
+    // Tied stages count only the stages below them, so they share the lower number.
+    it.each([
+      ["the same threshold", 5],
+      ["no threshold", null]
+    ])("should give two stages with %s the same number", (_label, threshold) => {
+      stageFields[0].failure_threshold().value.set(threshold);
+      stageFields[1].failure_threshold().value.set(threshold);
+      expect(component.stageNumber(stageFields[0])).toBe(1);
+      expect(component.stageNumber(stageFields[1])).toBe(1);
+    });
   });
 });

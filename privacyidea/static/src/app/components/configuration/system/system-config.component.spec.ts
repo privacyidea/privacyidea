@@ -286,6 +286,18 @@ describe("SystemConfigComponent", () => {
     expect(component.hasConfigWritePermission()).toBe(false);
   });
 
+  it("renders the Save button only with the configwrite right", async () => {
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    await flush();
+    expect(el().querySelector(".action-button-primary")).toBeNull();
+
+    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
+    fixture.componentRef.changeDetectorRef.markForCheck();
+    await flush();
+    expect(el().querySelector(".action-button-primary")).not.toBeNull();
+  });
+
   it("should reload system config when loadSystemConfig is called", () => {
     const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
     component.loadSystemConfig();

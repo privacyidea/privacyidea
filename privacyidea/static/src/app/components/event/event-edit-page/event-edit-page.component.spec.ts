@@ -432,6 +432,15 @@ describe("EventEditPageComponent — edit mode", () => {
       type("");
       expect(save().disabled).toBe(true);
     });
+
+    it("should disable the save button while only the options of the action are invalid", () => {
+      const save = () => fixture.nativeElement.querySelector("button.action-button-primary") as HTMLButtonElement;
+      expect(save().disabled).toBe(false);
+      component.validOptions.set(false);
+      fixture.detectChanges();
+      expect(component.editForm().valid()).toBe(true);
+      expect(save().disabled).toBe(true);
+    });
   });
 
   describe("hasChanges", () => {

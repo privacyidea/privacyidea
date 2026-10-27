@@ -400,5 +400,29 @@ describe("EventActionTabComponent", () => {
       fixture.detectChanges();
       expect(component.selectedOptions()).toEqual({ opt: "preset" });
     });
+
+    it("should keep a stored false or empty value over the default of the option definition", () => {
+      mockEventService.moduleActions = signal({
+        withDefault: {
+          on: { type: "bool", default: true },
+          txt: { type: "str", default: "preset" }
+        } as unknown as EventActions[string]
+      });
+      fixture.componentRef.setInput("action", "withDefault");
+      fixture.componentRef.setInput("options", { on: false, txt: "" });
+      fixture.detectChanges();
+      expect(component.selectedOptions()).toEqual({ on: false, txt: "" });
+    });
+
+    it("should emit an unchecked checkbox as false", () => {
+      const checkbox = control("mat-checkbox input");
+      checkbox.click();
+      fixture.detectChanges();
+      expect(component.newOptions.emit).toHaveBeenLastCalledWith(expect.objectContaining({ flag: true }));
+      checkbox.click();
+      fixture.detectChanges();
+      expect(component.selectedOptions()["flag"]).toBe(false);
+      expect(component.newOptions.emit).toHaveBeenLastCalledWith(expect.objectContaining({ flag: false }));
+    });
   });
 });

@@ -370,6 +370,22 @@ describe("PeriodicTaskEditComponent", () => {
       expect(periodicTaskService.savePeriodicTask).toHaveBeenCalled();
     });
 
+    it("offers 'save and exit' in the dialog only while the task can be saved", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      component.editTask.set({ ...component.editTask(), interval: "" });
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(undefined) });
+      component.onCancel();
+      expect(dialogService.openDialog).toHaveBeenLastCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ saveExitDisabled: true }) })
+      );
+      component.editTask.set({ ...component.editTask(), interval: "*/4 * * * *" });
+      (dialogService.openDialog as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(undefined) });
+      component.onCancel();
+      expect(dialogService.openDialog).toHaveBeenLastCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ saveExitDisabled: false }) })
+      );
+    });
+
     it("is a no-op for 'save-exit' when canSave is false", async () => {
       const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
       component.editTask.set({ ...component.editTask(), interval: "" });
@@ -678,6 +694,25 @@ describe("PeriodicTaskEditComponent", () => {
       fixture.detectChanges();
       expect(component.editTask().options["note"]).toBe("hello");
       expect(component.editTaskForm.options["note"]().dirty()).toBe(true);
+    });
+
+    it("locks the checkbox of a required option even with the write right", async () => {
+      const { fixture, component } = await createComponent({}, [], true);
+      periodicTaskService.moduleOptions.update((modules) => ({
+        ...modules,
+        EventCounter: {
+          ...modules["EventCounter"],
+          note: { name: "note", description: "Free text", type: "str" }
+        }
+      }));
+      component.editTask.update((t) => ({ ...t, taskmodule: "EventCounter" }));
+      component.onTaskModuleChange("EventCounter");
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const checkbox = (name: string) =>
+        fixture.nativeElement.querySelector(`input[aria-label="${name}"]`) as HTMLInputElement;
+      expect(checkbox("note").disabled).toBe(false);
+      expect(checkbox("event_counter").disabled).toBe(true);
     });
   });
 
