@@ -2,7 +2,8 @@
 Data transformation test for migration 35815effd77c
 Remove the policy actions of the u2f token type.
 
-upgrade()   — removes "enrollU2F" and the "u2f_" actions from the action string of every policy
+upgrade()   — removes "enrollU2F" and the "u2f_" actions from the action string of every policy that has other
+              actions too, and keeps a policy whose actions are all u2f actions as it is
 downgrade() — does not add them back
 """
 
@@ -54,19 +55,80 @@ class TestMigration35815effd77c(MigrationTestBase):
         finally:
             engine.dispose()
 
+    def test_upgrade_keeps_a_policy_with_only_u2f_actions(self, flask_app):
+        """A policy whose actions are all u2f actions, also negated or with an empty part, keeps its action string."""
+        only_u2f_actions = {
+            904: "enrollU2F",
+            905: "u2f_facets=example.com example.org",
+            906: "u2f_req=*, -u2f_no_verify_certificate, ",
+        }
+        engine = self._engine()
+        try:
+            self._load_seed_and_upgrade_to_parent(engine)
+            self._insert_rows(engine, "policy", [
+                {"id": 904, "name": "u2f_only_admin", "scope": "admin", "active": True, "priority": 1,
+                 "action": only_u2f_actions[904]},
+                {"id": 905, "name": "u2f_only_authorization", "scope": "authorization", "active": True,
+                 "priority": 1, "action": only_u2f_actions[905]},
+                {"id": 906, "name": "u2f_only_enroll", "scope": "enroll", "active": True, "priority": 1,
+                 "action": only_u2f_actions[906]},
+            ])
+
+            self._upgrade()
+
+            for policy_id, action in only_u2f_actions.items():
+                assert self._action(engine, policy_id) == action
+        finally:
+            engine.dispose()
+
+    def test_policy_with_only_u2f_actions_allows_no_other_action(self, flask_app):
+        """
+        After the upgrade, an admin policy that only allowed u2f enrollment matches none of the actions of this
+        version, so the administrator it names gets no other right.
+        """
+        engine = self._engine()
+        try:
+            self._load_seed_and_upgrade_to_parent(engine)
+            self._insert_rows(engine, "policy", [
+                {"id": 907, "name": "helpdesk_u2f", "scope": "admin", "active": True, "priority": 1,
+                 "action": "enrollU2F", "adminuser": "helpdesk"},
+                {"id": 908, "name": "other_admin", "scope": "admin", "active": True, "priority": 1,
+                 "action": "enrollHOTP", "adminuser": "other"},
+            ])
+
+            self._upgrade()
+        finally:
+            engine.dispose()
+
+        from privacyidea.lib.config import invalidate_config_object
+        from privacyidea.lib.policy import SCOPE, PolicyClass
+        from privacyidea.models import db
+        invalidate_config_object()
+        try:
+            for action in ("policydelete", "configwrite", "enrollHOTP"):
+                matching = PolicyClass().list_policies(scope=SCOPE.ADMIN, action=action, adminuser="helpdesk",
+                                                       active=True)
+                assert matching == [], (action, matching)
+        finally:
+            # End the read transaction, so that the cleanup of the database is not blocked by its table locks
+            db.session.rollback()
+
     def test_downgrade_keeps_the_policies(self, flask_app):
         """The downgrade keeps the policies as they are after the upgrade."""
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
             self._insert_rows(engine, "policy", [
-                {"id": 904, "name": "u2f_only", "scope": "admin", "active": True, "priority": 1,
+                {"id": 909, "name": "u2f_and_hotp", "scope": "admin", "active": True, "priority": 1,
+                 "action": "enrollU2F, enrollHOTP"},
+                {"id": 910, "name": "u2f_only", "scope": "admin", "active": True, "priority": 1,
                  "action": "enrollU2F"},
             ])
             self._upgrade()
 
             self._downgrade()
 
-            assert self._action(engine, 904) in ("", None)
+            assert self._action(engine, 909) == "enrollHOTP"
+            assert self._action(engine, 910) == "enrollU2F"
         finally:
             engine.dispose()
