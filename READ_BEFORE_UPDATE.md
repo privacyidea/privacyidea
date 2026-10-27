@@ -13,6 +13,18 @@
   user with that name is now refused instead of opening a session for the wrong account. The authentication log
   records `LOGIN_NAME_NOT_UNIQUE`. Logins that name the user, password logins and REMOTE_USER are unchanged.
 
+* **Authentication by serial or FIDO2 credential applies the policies of the token owner** — A request to
+  `/validate/check` that names a token instead of a user, by `serial` or by the `credential_id` of a passkey or
+  WebAuthn token, is matched for the owner of the token, like a request that names the user. Policies restricted to a
+  realm, resolver or user apply to these requests as well:
+
+    * By serial: `last_auth`, `disabled_token_types`, `increase_failcounter_on_challenge`, `challenge_text`,
+      `push_wait`, the WebAuthn and passkey settings, `auth_max_fail` and `auth_max_success`. The two limits also
+      apply to the answer to a challenge and to `otponly`.
+    * By FIDO2 credential: `last_auth`, `auth_max_fail` and `auth_max_success`, the limits also for the registration
+      that completes an enrollment via multichallenge. A passkey login at `/auth` without a username matches
+      `last_auth` for the owner as well.
+
 * **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
   returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
   as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
