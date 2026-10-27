@@ -68,8 +68,44 @@ def test_the_column_type_keeps_the_ddl_of_the_wrapped_type():
         assert str(CreateTable(unwrapped).compile(dialect=dialect)) == str(CreateTable(_probe).compile(dialect=dialect))
 
 
-def test_text_column_equals_matches_the_value_literally():
-    compiled = text_column_equals(sa.column("Value", sa.UnicodeText()), "a_b%c/d").compile(dialect=oracle.dialect())
-    assert "LIKE" in str(compiled)
-    assert "ESCAPE '/'" in str(compiled)
-    assert ["a/_b/%c//d"] == list(compiled.params.values())
+def test_text_column_equals_uses_like_on_oracle_only():
+    table = sa.table("tokeninfo", sa.column("Key", sa.Unicode()), sa.column("Value", sa.UnicodeText()))
+    statement = sa.select(table.c.Key).where(table.c.Key == "key", text_column_equals(table.c.Value, "a_b%c/d"))
+    oracle_sql = str(statement.compile(dialect=oracle.dialect()))
+    assert "LIKE :param_1 ESCAPE '/'" in oracle_sql
+    # Oracle has no boolean type, and the condition must not get an appended "= 1"
+    assert "= 1" not in oracle_sql
+    for dialect in (postgresql.dialect(), mysql.dialect(), sqlite.dialect()):
+        sql = str(statement.compile(dialect=dialect))
+        assert "LIKE" not in sql
+        assert sql.count(" = ") == 2
+
+
+def test_text_column_equals_escapes_the_value_on_oracle_only():
+    condition = text_column_equals(sa.column("Value", sa.UnicodeText()), "a_b%c/d")
+    for dialect, expected in ((oracle.dialect(), "a/_b/%c//d"),
+                              (postgresql.dialect(), "a_b%c/d"),
+                              (mysql.dialect(), "a_b%c/d"),
+                              (sqlite.dialect(), "a_b%c/d")):
+        # The compiler lists the one bind parameter under its internal and under its rendered name
+        (bind,) = set(condition.compile(dialect=dialect).binds.values())
+        process = bind.type.dialect_impl(dialect).bind_processor(dialect)
+        assert expected == process(bind.value)
+
+
+def test_text_column_equals_matches_exactly_and_with_case_on_sqlite():
+    # The statement is built again for every value, so this also checks that a cached statement gets the new value
+    engine = sa.create_engine("sqlite://")
+    table = sa.Table("text_probe", sa.MetaData(), sa.Column("value", sa.UnicodeText()))
+    table.metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(table.insert(), [{"value": "ABC"}, {"value": "a_c"}])
+
+        def matches(value: str) -> list[str]:
+            statement = sa.select(table.c.value).where(text_column_equals(table.c.value, value))
+            return connection.execute(statement).scalars().all()
+
+        assert ["ABC"] == matches("ABC")
+        assert [] == matches("abc")
+        assert ["a_c"] == matches("a_c")
+        assert [] == matches("a%")

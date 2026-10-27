@@ -67,6 +67,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
                                    get_tokens_paginated_generator)
+from privacyidea.lib.token.const import LOST_TOKEN_FOR
 from privacyidea.lib.token import log as token_log
 from privacyidea.lib.token import query as token_query
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
@@ -1045,6 +1046,22 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(parser.parse(r.get("end_date")) <= end_date, r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
+
+    def test_33a_lost_token_keeps_the_replacement_of_a_serial_in_other_case(self):
+        # The replacement of "CASELOST" is not one of "caselost", where the database compares with case
+        if db.engine.dialect.name in ("mysql", "mariadb"):
+            self.skipTest("MySQL and MariaDB compare token info values without case")
+        other_replacement = init_token({"serial": "OTHERREPL", "genkey": 1})
+        other_replacement.add_tokeninfo(LOST_TOKEN_FOR, "CASELOST")
+        init_token({"serial": "caselost", "genkey": 1}, user=User(login="cornelius", realm=self.realm1))
+
+        lost_token("caselost")
+        self.assertTrue(get_one_token(serial="OTHERREPL").token.active)
+        self.assertTrue(get_one_token(serial="lostcaselost").token.active)
+
+        remove_token("OTHERREPL")
+        remove_token("caselost")
+        remove_token("lostcaselost")
 
     @log_capture(level=logging.DEBUG)
     def test_34_check_token_list(self, capture):
