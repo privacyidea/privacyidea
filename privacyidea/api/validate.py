@@ -995,7 +995,7 @@ def _handle_serial_auth(context: dict, serial: str):
             request.User = user
             context["user"] = user
             context["options"]["user"] = user
-            context["options"].update(rerun_user_dependent_prepolicies(request))
+            rerun_user_dependent_prepolicies(request, context["options"])
 
     if user and user.exist():
         # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer

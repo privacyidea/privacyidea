@@ -3300,7 +3300,7 @@ def disabled_token_types(request, action):
     return True
 
 
-def rerun_user_dependent_prepolicies(request: Request) -> dict:
+def rerun_user_dependent_prepolicies(request: Request, options: dict | None = None) -> None:
     """
     Match the pre-policies that depend on the user again, for a request whose user is only known after the
     pre-policies ran, e.g. the owner of the token named by serial or credential id.
@@ -3309,7 +3309,8 @@ def rerun_user_dependent_prepolicies(request: Request) -> dict:
     differently (pushtoken_validate, pushtoken_disable_wait).
 
     :param request: The request object with the user to match the policies for in request.User
-    :return: The parameters the pre-policies changed in request.all_data, for a caller that copied them before
+    :param options: A copy of request.all_data taken before, which gets the same changes, including the parameters a
+        pre-policy removes
     """
     previous = dict(request.all_data)
     increase_failcounter_on_challenge(request, None)
@@ -3318,8 +3319,11 @@ def rerun_user_dependent_prepolicies(request: Request) -> dict:
     disabled_token_types(request, None)
     load_challenge_text(request, None)
     fido2_auth(request, None)
-    return {key: value for key, value in request.all_data.items()
-            if key not in previous or previous[key] != value}
+    if options is not None:
+        for key in previous.keys() - request.all_data.keys():
+            options.pop(key, None)
+        options.update({key: value for key, value in request.all_data.items()
+                        if key not in previous or previous[key] != value})
 
 
 def auth_timelimit(request, action):
