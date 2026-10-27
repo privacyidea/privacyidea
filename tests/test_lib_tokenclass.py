@@ -3,6 +3,8 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+import threading
+import time
 from datetime import datetime, timezone, timedelta
 
 import responses
@@ -21,7 +23,7 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.challenge_types import ChallengeSession
 from privacyidea.lib.token import init_token, assign_tokengroup, remove_token, get_one_token
-from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT, lock_token_row)
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
@@ -32,7 +34,7 @@ from privacyidea.models import (Token,
                                 Config,
                                 Challenge, Realm, TokenOwner, db, TokenRealm, Tokengroup, TokenTokengroup, TokenInfo,
                                 TokenContainer, TokenContainerToken)
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, run_in_parallel
 
 PWFILE = "tests/testdata/passwords"
 
@@ -1415,3 +1417,32 @@ class TokenBaseTestCase(MyTestCase):
         removed_user = token.remove_user()
         self.assertEqual(removed_user.login, "cornelius", removed_user)
         self.assertEqual(token.user, None, token.user)
+
+
+class LockTokenRowTestCase(MyTestCase):
+    """
+    The lock of a token row is held until the commit.
+    """
+
+    def test_second_request_gets_the_lock_after_the_commit(self):
+        token_id = init_token({"type": "hotp", "serial": "LOCKROW", "otpkey": self.otpkey}).token.id
+        self.addCleanup(remove_token, "LOCKROW")
+        first_has_the_lock = threading.Event()
+        order = []
+
+        def first() -> None:
+            lock_token_row(Token.id == token_id)
+            first_has_the_lock.set()
+            time.sleep(0.5)
+            order.append("first commits")
+            db.session.commit()
+
+        def second() -> None:
+            first_has_the_lock.wait(5)
+            lock_token_row(Token.id == token_id)
+            order.append("second has the lock")
+            db.session.commit()
+
+        results = run_in_parallel(self.app, [first, second])
+        self.assertListEqual([None, None], results)
+        self.assertListEqual(["first commits", "second has the lock"], order)
