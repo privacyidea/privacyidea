@@ -28,53 +28,58 @@ import {
   TIQR_SERVICE_DISPLAYNAME,
   TIQR_SERVICE_IDENTIFIER
 } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { touchAll } from "@utils/form-state.utils";
+
+const REG_SERVER_PLACEHOLDER = "http://pi.server/ttype/tiqr";
+const LOGO_URL_PLACEHOLDER = "https://pi.server/static/css/privacyIDEA1.png";
+const INFO_URL_PLACEHOLDER = "https://www.privacyidea.org";
 
 describe("TiqrConfigComponent", () => {
   let fixture: ComponentFixture<TiqrConfigComponent>;
   let component: TiqrConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const inputs = () => Array.from(fixture.nativeElement.querySelectorAll("input") as NodeListOf<HTMLInputElement>);
+  const input = (placeholder: string) =>
+    fixture.nativeElement.querySelector(`input[placeholder="${placeholder}"]`) as HTMLInputElement;
+  const type = async (element: HTMLInputElement, value: string) => {
+    element.value = value;
+    element.dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const errors = () =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error") as NodeListOf<HTMLElement>).map((error) =>
+      error.textContent?.trim()
+    );
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(TiqrConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TiqrConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(TiqrConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "http://pi.server/ttype/tiqr";
-    component.updateFormData(TIQR_REG_SERVER, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [TIQR_REG_SERVER]: newValue });
-  });
-
-  it("should preserve existing formData when updating a field", () => {
-    const initialData = {
-      [TIQR_REG_SERVER]: "http://old.server/tiqr",
-      [TIQR_SERVICE_DISPLAYNAME]: "Old Service"
-    };
-    fixture.componentRef.setInput("formData", initialData);
-    fixture.detectChanges();
-
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "http://new.server/tiqr";
-    component.updateFormData(TIQR_REG_SERVER, newValue);
-
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({
-      ...initialData,
-      [TIQR_REG_SERVER]: newValue
-    });
-  });
-
-  it("should display current formData values", () => {
-    const testData = {
+  it("should display the values of the form in the seven inputs", async () => {
+    await create({
       [TIQR_REG_SERVER]: "http://pi.server/ttype/tiqr",
       [TIQR_AUTH_SERVER]: "http://auth.server/tiqr",
       [TIQR_SERVICE_DISPLAYNAME]: "Test Service",
@@ -82,26 +87,106 @@ describe("TiqrConfigComponent", () => {
       [TIQR_LOGO_URL]: "https://pi.server/logo.png",
       [TIQR_INFO_URL]: "https://www.privacyidea.org",
       [TIQR_OCRASUITE]: "OCRA-1:HOTP-SHA1-6:QN10"
-    };
-    fixture.componentRef.setInput("formData", testData);
-    fixture.detectChanges();
+    });
 
-    expect(component.formData()[TIQR_REG_SERVER]).toEqual("http://pi.server/ttype/tiqr");
-    expect(component.formData()[TIQR_AUTH_SERVER]).toEqual("http://auth.server/tiqr");
-    expect(component.formData()[TIQR_SERVICE_DISPLAYNAME]).toEqual("Test Service");
-    expect(component.formData()[TIQR_SERVICE_IDENTIFIER]).toEqual("org.privacyidea");
-    expect(component.formData()[TIQR_LOGO_URL]).toEqual("https://pi.server/logo.png");
-    expect(component.formData()[TIQR_INFO_URL]).toEqual("https://www.privacyidea.org");
-    expect(component.formData()[TIQR_OCRASUITE]).toEqual("OCRA-1:HOTP-SHA1-6:QN10");
+    expect(inputs().map((element) => element.value)).toEqual([
+      "http://pi.server/ttype/tiqr",
+      "http://auth.server/tiqr",
+      "Test Service",
+      "org.privacyidea",
+      "https://pi.server/logo.png",
+      "OCRA-1:HOTP-SHA1-6:QN10",
+      "https://www.privacyidea.org"
+    ]);
   });
 
-  it("should handle empty field values", () => {
-    jest.spyOn(component.formDataChange, "emit");
+  it("writes what is typed into each input to its entry of the form", async () => {
+    await create();
+    const keys = [
+      TIQR_REG_SERVER,
+      TIQR_AUTH_SERVER,
+      TIQR_SERVICE_DISPLAYNAME,
+      TIQR_SERVICE_IDENTIFIER,
+      TIQR_LOGO_URL,
+      TIQR_OCRASUITE,
+      TIQR_INFO_URL
+    ];
 
-    component.updateFormData(TIQR_REG_SERVER, "");
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [TIQR_REG_SERVER]: "" });
+    for (const [index, element] of inputs().entries()) {
+      await type(element, `value ${index}`);
+    }
 
-    component.updateFormData(TIQR_SERVICE_DISPLAYNAME, "");
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [TIQR_SERVICE_DISPLAYNAME]: "" });
+    expect(keys.map((key) => configForm.model().values[key])).toEqual(keys.map((_, index) => `value ${index}`));
+    expect(configForm.form.values[TIQR_OCRASUITE]().dirty()).toBe(true);
+  });
+
+  describe("required entries", () => {
+    it("shows no error while the panel is empty", async () => {
+      await create();
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+
+    it("shows no error before the form is touched", async () => {
+      await create({ [TIQR_OCRASUITE]: "suite" });
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(false);
+    });
+
+    it("shows an error for the registration server and logo URL once another entry is filled", async () => {
+      await create({ [TIQR_OCRASUITE]: "suite" });
+
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual(["TiQR Registration Server is required", "TiQR Logo URL is required"]);
+    });
+
+    it("removes each error once its entry is filled", async () => {
+      await create({ [TIQR_OCRASUITE]: "suite" });
+      await touchAll(configForm.form);
+      await flush();
+
+      await type(input(REG_SERVER_PLACEHOLDER), "http://pi.server/ttype/tiqr");
+      expect(errors()).toEqual(["TiQR Logo URL is required"]);
+      await type(input(LOGO_URL_PLACEHOLDER), "https://pi.server/logo.png");
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+
+    it("does not require the info URL, the backend defaults it", async () => {
+      await create({ [TIQR_REG_SERVER]: "http://pi.server/ttype/tiqr", [TIQR_LOGO_URL]: "https://pi.server/logo.png" });
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(input(INFO_URL_PLACEHOLDER).value).toBe("");
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+  });
+
+  describe("incomplete indicator", () => {
+    const indicator = () => fixture.nativeElement.querySelector(".panel-incomplete") as HTMLElement | null;
+
+    it("appears in the header while a required entry is missing and disappears once it is filled", async () => {
+      await create({ [TIQR_OCRASUITE]: "suite" });
+      expect(indicator()?.textContent).toContain("Incomplete");
+
+      await type(input(REG_SERVER_PLACEHOLDER), "http://pi.server/ttype/tiqr");
+      expect(indicator()).not.toBeNull();
+      await type(input(LOGO_URL_PLACEHOLDER), "https://pi.server/logo.png");
+
+      expect(indicator()).toBeNull();
+    });
+
+    it("is not shown for an empty panel", async () => {
+      await create();
+
+      expect(indicator()).toBeNull();
+    });
   });
 });

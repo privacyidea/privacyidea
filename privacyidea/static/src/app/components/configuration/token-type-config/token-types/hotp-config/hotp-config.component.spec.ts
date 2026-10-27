@@ -21,6 +21,7 @@ import { MatSelect } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { provideRouter } from "@angular/router";
 import { HOTP_HASHLIB } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { HotpConfigComponent } from "./hotp-config.component";
 
 const mockHashLibs = ["sha1", "sha256", "sha512"];
@@ -28,28 +29,44 @@ const mockHashLibs = ["sha1", "sha256", "sha512"];
 describe("HotpConfigComponent", () => {
   let fixture: ComponentFixture<HotpConfigComponent>;
   let component: HotpConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const select = () => fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(HotpConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    fixture.componentRef.setInput("hashLibs", mockHashLibs);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HotpConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(HotpConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    fixture.componentRef.setInput("hashLibs", mockHashLibs);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  afterEach(() => {
+    document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+  });
+
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("emits the raw hashlib key when a labelled option is picked", () => {
-    const emitSpy = jest.spyOn(component.formDataChange, "emit");
-    const select = fixture.debugElement.query(By.directive(MatSelect));
-    select.componentInstance.open();
-    fixture.detectChanges();
+  it("writes the raw hashlib key to the form when a labelled option is picked", async () => {
+    await create();
+    select().open();
+    await flush();
 
     const options = fixture.debugElement.queryAll(By.css("mat-option"));
     expect(options.map((option) => [option.componentInstance.value, option.nativeElement.textContent.trim()])).toEqual([
@@ -59,30 +76,32 @@ describe("HotpConfigComponent", () => {
     ]);
 
     options[1].nativeElement.click();
-    fixture.detectChanges();
+    await flush();
 
-    expect(emitSpy).toHaveBeenCalledWith({ [HOTP_HASHLIB]: "sha256" });
+    expect(configForm.model().values[HOTP_HASHLIB]).toBe("sha256");
+    expect(configForm.form.values[HOTP_HASHLIB]().dirty()).toBe(true);
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "sha256";
-    component.updateFormData(HOTP_HASHLIB, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [HOTP_HASHLIB]: newValue });
+  it("shows the hashlib of the form", async () => {
+    await create({ [HOTP_HASHLIB]: "sha512" });
+    expect(select().value).toBe("sha512");
   });
 
-  it("should preserve existing form data when updating a field", () => {
-    const existingData = { "other.field": "value", [HOTP_HASHLIB]: "sha1" };
-    fixture.componentRef.setInput("formData", existingData);
-    fixture.detectChanges();
+  it("shows a hashlib that is set after the panel was created", async () => {
+    await create();
+    configForm.model.update((model) => ({ ...model, values: { ...model.values, [HOTP_HASHLIB]: "sha256" } }));
+    await flush();
+    expect(select().value).toBe("sha256");
+  });
 
-    jest.spyOn(component.formDataChange, "emit");
-    const newHashlib = "sha256";
-    component.updateFormData(HOTP_HASHLIB, newHashlib);
+  it("clears the hashlib through the form and marks the field dirty", async () => {
+    await create({ [HOTP_HASHLIB]: "sha256" });
+    const clearButton = fixture.debugElement.query(By.css("app-clear-button button"));
 
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({
-      "other.field": "value",
-      [HOTP_HASHLIB]: newHashlib
-    });
+    clearButton.nativeElement.click();
+    await flush();
+
+    expect(configForm.model().values[HOTP_HASHLIB]).toBe("");
+    expect(configForm.form.values[HOTP_HASHLIB]().dirty()).toBe(true);
   });
 });

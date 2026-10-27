@@ -16,9 +16,10 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel>
+<mat-expansion-panel [expanded]="panel.revealed()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@tokenTypeConfig.tiqr">TiQR</mat-panel-title>
+    <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.tiqrTokenOcra"
@@ -31,14 +32,11 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrRegistration">TiQR Registration Server</mat-label>
         <input
-          #regServerInput
-          [value]="formData()[TIQR_REG_SERVER] ?? ''"
-          (input)="updateFormData(TIQR_REG_SERVER, $any($event.target).value)"
+          [formField]="config().values[TIQR_REG_SERVER]"
           matInput
           placeholder="http://pi.server/ttype/tiqr"
-          required
           type="url" />
-        @if (regServerInput.validity.valueMissing) {
+        @if (hasError(config().values[TIQR_REG_SERVER], ERR.required)) {
           <mat-error i18n="@@tokenTypeConfig.tiqrRegistrationServer"
             >TiQR Registration Server is <strong>required</strong></mat-error
           >
@@ -56,8 +54,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrAuthentication">TiQR Authentication Server</mat-label>
         <input
-          [value]="formData()[TIQR_AUTH_SERVER] ?? ''"
-          (input)="updateFormData(TIQR_AUTH_SERVER, $any($event.target).value)"
+          [formField]="config().values[TIQR_AUTH_SERVER]"
           matInput
           type="url" />
         <mat-hint i18n="@@tokenTypeConfig.authenticationServer"
@@ -71,8 +68,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrServiceDisplayname">TiQR Service Displayname</mat-label>
         <input
-          [value]="formData()[TIQR_SERVICE_DISPLAYNAME] ?? ''"
-          (input)="updateFormData(TIQR_SERVICE_DISPLAYNAME, $any($event.target).value)"
+          [formField]="config().values[TIQR_SERVICE_DISPLAYNAME]"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.displayNameYour"
           >This is the display name of your service in the TiQR app.</mat-hint
@@ -86,8 +82,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrServiceIdentifier">TiQR Service Identifier</mat-label>
         <input
-          [value]="formData()[TIQR_SERVICE_IDENTIFIER] ?? ''"
-          (input)="updateFormData(TIQR_SERVICE_IDENTIFIER, $any($event.target).value)"
+          [formField]="config().values[TIQR_SERVICE_IDENTIFIER]"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.serviceIdentifier"
           >This is the service identifier that will be passed to the TiQR app. <br />
@@ -100,14 +95,11 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrLogoUrl">TiQR Logo URL</mat-label>
         <input
-          #logoUrlInput
-          [value]="formData()[TIQR_LOGO_URL] ?? ''"
-          (input)="updateFormData(TIQR_LOGO_URL, $any($event.target).value)"
+          [formField]="config().values[TIQR_LOGO_URL]"
           matInput
           placeholder="https://pi.server/static/css/privacyIDEA1.png"
-          required
           type="url" />
-        @if (logoUrlInput.validity.valueMissing) {
+        @if (hasError(config().values[TIQR_LOGO_URL], ERR.required)) {
           <mat-error i18n="@@tokenTypeConfig.tiqrLogoUrlRequired">TiQR Logo URL is <strong>required</strong></mat-error>
         }
         <mat-hint i18n="@@tokenTypeConfig.urlContainsLogo">The URL that contains the logo of the service.</mat-hint>
@@ -120,8 +112,7 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.ocraSuite">OCRA Suite</mat-label>
         <input
-          [value]="formData()[TIQR_OCRASUITE] ?? ''"
-          (input)="updateFormData(TIQR_OCRASUITE, $any($event.target).value)"
+          [formField]="config().values[TIQR_OCRASUITE]"
           matInput />
         <mat-hint i18n="@@tokenTypeConfig.ocraSuiteUsed"
           >This is the OCRA suite used by the TiQR App. The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10. For more
@@ -139,16 +130,10 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.tiqrInfoUrl">TiQR Info URL</mat-label>
         <input
-          #infoUrlInput
-          [value]="formData()[TIQR_INFO_URL] ?? ''"
-          (input)="updateFormData(TIQR_INFO_URL, $any($event.target).value)"
+          [formField]="config().values[TIQR_INFO_URL]"
           matInput
           placeholder="https://www.privacyidea.org"
-          required
           type="url" />
-        @if (infoUrlInput.validity.valueMissing) {
-          <mat-error i18n="@@tokenTypeConfig.tiqrInfoUrlRequired">TiQR Info URL is <strong>required</strong></mat-error>
-        }
         <mat-hint i18n="@@tokenTypeConfig.websiteIdentity">The website of the identity provider</mat-hint>
       </mat-form-field>
     </div>
