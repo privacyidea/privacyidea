@@ -37,7 +37,7 @@ from privacyidea.lib.policies.conditions import ConditionHandleMissingData, Cond
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, AUTHORIZED
 from privacyidea.lib.radiusserver import add_radius
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
-from privacyidea.lib.conditional_access.authentication_event_types import LOG_AUTORESYNC_KEY
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 from privacyidea.lib.resolver import save_resolver, get_resolver_list, delete_resolver
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.subscriptions import _USER_COUNT_KEY
@@ -1077,7 +1077,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual("wrong otp value", res.json.get("detail").get("message"))
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("wrong otp value, autoresync started", audit_entry.get("info"))
+        self.assertEqual("wrong otp value,autoresync started", audit_entry.get("info"))
 
         # counter = 8 again, is not the next value
         with self.app.test_request_context('/validate/check',
@@ -1089,7 +1089,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(res.json.get("result").get("value"))
             self.assertEqual("wrong otp value", res.json.get("detail").get("message"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("wrong otp value, autoresync failed", audit_entry.get("info"))
+        self.assertEqual("wrong otp value,autoresync failed", audit_entry.get("info"))
 
         # The failed autoresync is reset, counter = 8 starts a new one
         with self.app.test_request_context('/validate/check',
@@ -1113,7 +1113,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual("matching 1 tokens", res.json.get("detail").get("message"))
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("matching 1 tokens, autoresync successful", audit_entry.get("info"))
+        self.assertEqual("matching 1 tokens,autoresync successful", audit_entry.get("info"))
 
         delete_privacyidea_config("AutoResync")
         remove_token(serial)
@@ -1143,7 +1143,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(transaction_id)
             self.assertNotIn(LOG_AUTORESYNC_KEY, detail)
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("To resync your token, please enter the next OTP value, autoresync started",
+        self.assertEqual("To resync your token, please enter the next OTP value,autoresync started",
                          audit_entry.get("info"))
 
         # A false response will fail
@@ -1170,7 +1170,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("Found matching challenge, autoresync successful", audit_entry.get("info"))
+        self.assertEqual("Found matching challenge,autoresync successful", audit_entry.get("info"))
 
         delete_privacyidea_config("AutoResync")
         remove_token(serial)
@@ -1196,7 +1196,7 @@ class ValidateAPITestCase(MyApiTestCase):
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
         self.assertEqual(serial, audit_entry.get("serial"))
         self.assertEqual("hotp", audit_entry.get("token_type"))
-        self.assertEqual("OTP verification failed., autoresync started", audit_entry.get("info"))
+        self.assertEqual("OTP verification failed.,autoresync started", audit_entry.get("info"))
 
         # counter = 9, will be autosynced
         with self.app.test_request_context('/validate/check',
@@ -1231,7 +1231,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertFalse(res.json.get("result").get("value"))
             self.assertNotIn("serial", res.json.get("detail"))
         audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
-        self.assertEqual("wrong otp value, autoresync started for autosync1", audit_entry.get("info"))
+        self.assertEqual("wrong otp value,autoresync started for autosync1", audit_entry.get("info"))
 
         delete_privacyidea_config("AutoResync")
         remove_token("autosync1")

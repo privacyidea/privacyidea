@@ -16,7 +16,7 @@ from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOP
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
-from privacyidea.lib.tokenclass import AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.models import Token, Config, Challenge

@@ -20,8 +20,8 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            NO_FIRST_FACTOR_KEY, reduce_request_events,
                                                                            order_request_reasons, outcome_of,
                                                                            AuthEventOutcome,
-                                                                           SUPPRESS_TERMINAL_EVENT_KEY,
-                                                                           LOG_AUTORESYNC_KEY)
+                                                                           SUPPRESS_TERMINAL_EVENT_KEY)
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, LOG_AUTORESYNC_KEY
 from privacyidea.lib.config import (get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.error import (TokenAdminError, Error)
@@ -35,7 +35,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               reset_all_user_tokens, force_challenge_response)
-from privacyidea.lib.tokenclass import TokenClass, AUTORESYNC_KEY
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, create_tag_dict,
                                    redacted_phone_number, redacted_email)

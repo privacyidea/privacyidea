@@ -61,7 +61,8 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import ClientMode, AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.tokenclass import ClientMode
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,

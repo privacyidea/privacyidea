@@ -34,7 +34,7 @@ from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.tokenclass import ClientMode
-from privacyidea.lib.conditional_access.authentication_event_types import LOG_AUTORESYNC_KEY
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 
 
 log = logging.getLogger(__name__)

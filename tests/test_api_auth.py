@@ -11,7 +11,7 @@ from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_event_types import LOG_AUTORESYNC_KEY
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import ResourceNotFoundError, Error, ResolverError
@@ -24,7 +24,7 @@ from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
-from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
+from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, AUTH_DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
@@ -1779,8 +1779,8 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(401, res.status_code, res.json)
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
         audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
-        self.assertEqual("loginmode=privacyIDEA, autoresync started,"
-                         "Authentication failed.|wrong otp value", audit_entry.get("info"))
+        self.assertEqual("loginmode=privacyIDEA,Authentication failed.|wrong otp value,autoresync started",
+                         audit_entry.get("info"))
 
         # counter = 9, will be autosynced
         with self.app.test_request_context('/auth',
@@ -1792,7 +1792,48 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res.json)
             self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
         audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
-        self.assertEqual("loginmode=privacyIDEA, autoresync successful", audit_entry.get("info"))
+        self.assertEqual("loginmode=privacyIDEA,autoresync successful", audit_entry.get("info"))
+
+    def test_21_autoresync_before_refused_login(self):
+        # The token is resynced, but the last_auth policy refuses the login afterwards
+        self.setUp_user_realms()
+        set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        self.addCleanup(delete_policy, "pi-login")
+        set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
+        self.addCleanup(delete_policy, "lastauth")
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token = init_token({"serial": "AUTORESYNC2", "otpkey": self.otpkey, "pin": "pin"},
+                           User("cornelius", self.realm1))
+        self.addCleanup(remove_token, "AUTORESYNC2")
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        last_auth = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=30)).strftime(
+            AUTH_DATE_FORMAT)
+        token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth)
+
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        # counter = 9, the token is resynced, but the last authentication is too long ago
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
+        self.assertEqual(10, get_one_token(serial="AUTORESYNC2").token.count)
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual(f"loginmode=privacyIDEA,Authentication failed.|The last successful authentication was "
+                         f"{last_auth}. It is too long ago.,autoresync successful", audit_entry.get("info"))
 
 
 class AdminFromUserstore(OverrideConfigTestCase):

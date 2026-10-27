@@ -116,7 +116,7 @@ from privacyidea.api.lib.conditional_access import (conditional_access_gate, con
                                                     RejectionShape, REMEMBER_DEVICE_REJECTION,
                                                     TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
-                                       INTERNAL_OPTION_KEYS)
+                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
@@ -153,7 +153,8 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
-                                                                LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY)
+                                                                LOG_TRANSACTION_ID_KEY)
+from ..lib.autoresync import LOG_AUTORESYNC_KEY
 from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
@@ -1206,7 +1207,7 @@ def _finalize_auth_response(context):
     apply_cookie_action(ret, cookie_action)
 
     audit_entry = {
-        "info": log_used_user(user, ", ".join(filter(None, [details.get("message"), context[LOG_AUTORESYNC_KEY]]))),
+        "info": log_used_user(user, details.get("message")),
         "success": success,
         "authentication": ret.json.get("result", {}).get("authentication", "")
     }
@@ -1218,6 +1219,7 @@ def _finalize_auth_response(context):
     if details.get("type"):
         audit_entry["token_type"] = details.get("type")
     g.audit_object.log(audit_entry)
+    add_autoresync_to_audit(context[LOG_AUTORESYNC_KEY])
 
     return ret
 

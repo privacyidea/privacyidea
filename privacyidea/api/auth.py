@@ -87,13 +87,14 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token,
-                                       pop_auth_event_reason, pop_auth_event_serials)
+                                       pop_auth_event_reason, pop_auth_event_serials, add_autoresync_to_audit)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
-                                                                          LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY)
+                                                                          LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
@@ -766,7 +767,8 @@ def get_auth_token():
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
-            autoresync_info = details.pop(LOG_AUTORESYNC_KEY, None)
+            # LOG_AUTORESYNC_KEY stays in details until the exit that writes the audit info: on a failure that is
+            # auth_error, which appends it after the failure message.
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
@@ -800,8 +802,7 @@ def get_auth_token():
                 "resolver": user.resolver,
                 "serial": serials,
                 "token_type": token_types,
-                "info": log_used_user(user, ", ".join(filter(None, [f"loginmode={details.get('loginmode')}",
-                                                                    autoresync_info])))})
+                "info": log_used_user(user, f"loginmode={details.get('loginmode')}")})
             if role == ROLE.ADMIN:
                 g.audit_object.log({"user": "", "administrator": user.login})
             else:
@@ -831,6 +832,7 @@ def get_auth_token():
                 log_authentication(auth_event_type, request, user=user, serial=log_serials or serials,
                                    transaction_id=details.get("transaction_id"),
                                    reasons=auth_reasons, reason_detail=auth_reason_detail)
+                add_autoresync_to_audit(details.pop(LOG_AUTORESYNC_KEY, None))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -867,6 +869,7 @@ def get_auth_token():
         raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details or {})
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
+        add_autoresync_to_audit(details.pop(LOG_AUTORESYNC_KEY, None))
         request.User = user
 
     # If the HSM is not ready, we need to create the nonce in another way!

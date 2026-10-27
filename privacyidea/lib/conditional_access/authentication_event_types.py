@@ -18,6 +18,8 @@
 import logging
 from enum import Enum
 
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
+
 log = logging.getLogger(__name__)
 
 # Key under which the classified AuthEventType is carried from lib to api layer.
@@ -78,10 +80,6 @@ SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
 # exposing it in the response. push_wait uses it so its LOGIN_SUCCESS row correlates with the trigger and out-of-band
 # answer; the API layer pops it from the response details before sending.
 LOG_TRANSACTION_ID_KEY = "log_transaction_id"
-
-# Key carrying the autoresync outcome of the checked tokens to the audit log without exposing it in the response: a
-# client learning that its OTP value hit the sync window would learn more than "wrong otp value" tells it.
-LOG_AUTORESYNC_KEY = "log_autoresync"
 
 # Every key that travels from the lib layer to the api layer in a dict the response is then built from, and that must
 # never reach the client. The keys a token only ever sets on its own ``auth_details`` (NO_FIRST_FACTOR_KEY,

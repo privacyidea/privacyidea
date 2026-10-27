@@ -20,7 +20,8 @@ from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
-from privacyidea.lib.tokenclass import DATE_FORMAT, AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode

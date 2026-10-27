@@ -42,7 +42,8 @@ from privacyidea.lib.decorators import check_token_locked, check_token_otp_lengt
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP, Match
-from privacyidea.lib.tokenclass import TokenClass, AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 
@@ -370,7 +371,7 @@ class TotpTokenClass(HotpTokenClass):
                 log.info(f"The OTP value of token {self.token.serial} was used by another request.")
                 return -1
             if resynced:
-                log.info(f"Autoresync successful for token {self.token.serial!s}.")
+                log.debug(f"Autoresync successful for token {self.token.serial!s}.")
                 self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
