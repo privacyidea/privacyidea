@@ -25,6 +25,7 @@ from privacyidea.lib.token import (convert_token_objects_to_dicts, get_orphaned_
                                    get_tokens_paginate, init_token, remove_token)
 from privacyidea.lib.token import query as token_query
 from privacyidea.lib.token.tokengroups import set_tokengroups
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokengroup import delete_tokengroup, set_tokengroup
 from privacyidea.lib.user import User
 from privacyidea.models import db, NodeName, Realm, Token, TokenContainerToken, TokenOwner
@@ -787,6 +788,9 @@ class OrphanedTokenTestCase(MyTestCase):
             mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=503, body="{}")
             self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=True))
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+            # The event condition asks is_orphaned, which has to decide like the token janitors
+            self.assertTrue(tokens[0].is_orphaned(orphaned_on_error=True))
+            self.assertFalse(tokens[0].is_orphaned(orphaned_on_error=False))
 
         with responses.RequestsMock() as mocked_responses:
             mocked_responses.add(responses.GET, "http://localhost:8080/get-data", status=404, body="{}")
@@ -794,9 +798,9 @@ class OrphanedTokenTestCase(MyTestCase):
 
     def test_06_owners_can_not_be_read(self) -> None:
         tokens = get_tokens(serial="ORPHDELETEDUSER")
-        # Not even the owner is known, so like a user store that can not be asked, orphaned_on_error decides
+        # The token is not known to have an owner, so it can not be orphaned
         with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=Exception("lock wait timeout")):
-            self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=True))
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
 
     @ldap3mock.activate
@@ -842,3 +846,35 @@ class OrphanedTokenTestCase(MyTestCase):
         self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
         self.assertEqual(1, http_lookup_username.call_count, http_lookup_username.call_args_list)
         self.assertSetEqual({"ORPHUNREACHABLE"}, orphaned_serials)
+
+    def _get_ldap_tokens(self) -> list[TokenClass]:
+        ldap_serials = {"ORPHEXISTS0", "ORPHEXISTS1", "ORPHEXISTS2", "ORPHDELETEDUSER", "ORPHNOREALM"}
+        return [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
+                if token.token.serial in ldap_serials]
+
+    @ldap3mock.activate
+    def test_10_failing_batch_lookup_falls_back_to_single_lookups(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = self._get_ldap_tokens()
+
+        with mock.patch.object(LDAPResolver, "get_usernames_batch",
+                               side_effect=ResolverError("batch search failed")) as ldap_batch:
+            for orphaned_on_error in [True, False]:
+                self.assertSetEqual({"ORPHDELETEDUSER", "ORPHNOREALM"},
+                                    get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+        self.assertEqual(2, ldap_batch.call_count, ldap_batch.call_args_list)
+
+    @ldap3mock.activate
+    def test_11_unreachable_ldap_user_store(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = self._get_ldap_tokens()
+
+        with (mock.patch.object(LDAPResolver, "get_usernames_batch", side_effect=ResolverError("not reachable")),
+              mock.patch.object(LDAPResolver, "getUsername", side_effect=ResolverError("not reachable"))):
+            for orphaned_on_error in [True, False]:
+                expected = {token.token.serial for token in tokens if token.is_orphaned(orphaned_on_error)}
+                self.assertSetEqual(expected, get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+
+            self.assertSetEqual({token.token.serial for token in tokens},
+                                get_orphaned_serials(tokens, orphaned_on_error=True))
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))

@@ -644,8 +644,9 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
 
     A token is orphaned in the same cases as ``TokenClass.is_orphaned()`` decides for a single token:
     its first owner belongs to a resolver that no longer exists, does not exist in the user store or
-    has no realm. If the user store can not be asked or the owner can not be read from the database,
-    ``orphaned_on_error`` decides. An owner the batch lookup does not find is looked up once more on
+    has no realm. If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner
+    can not be read from the database is not orphaned, since it is not known to have an owner at all.
+    An owner the batch lookup does not find is looked up once more on
     its own, and the owners of a resolver without a batch lookup of its own are only looked up on their own.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
@@ -653,14 +654,11 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     :return: The serials of the orphaned tokens
     """
     token_by_id = {token.token.id: token for token in tokens}
-    unread_token_ids = set()
     owner_by_token_id = {token_id: owners[0]
-                         for token_id, owners in _get_owners_by_token_id(list(token_by_id), unread_token_ids).items()}
+                         for token_id, owners in _get_owners_by_token_id(list(token_by_id)).items()}
     resolvers = get_resolver_list()
 
     orphaned_serials = set()
-    if orphaned_on_error:
-        orphaned_serials.update(token_by_id[token_id].token.serial for token_id in unread_token_ids)
     owners_to_resolve = {}
     for token_id, owner in owner_by_token_id.items():
         if owner.resolver and not resolvers.get(owner.resolver, {}).get("type"):
@@ -688,7 +686,7 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
         resolver_name, user_id = owner_key
         try:
             if resolver_name not in resolver_by_name:
-                # A resolver that failed to load is not loaded again, the second call would return it unconfigured
+                # A resolver that failed to load is not loaded again for each of its other owners
                 resolver_by_name[resolver_name] = None
                 resolver_by_name[resolver_name] = get_resolver_object(resolver_name)
             login_by_owner[owner_key] = resolver_by_name[resolver_name].lookup_username(user_id)

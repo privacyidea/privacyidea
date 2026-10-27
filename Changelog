@@ -1,3 +1,17 @@
+Version 3.14.1
+
+  Enhancements:
+  * `find --orphaned` of both token janitors looks up the owners of a whole chunk of tokens with one batch lookup per
+    resolver instead of one user store lookup per token. A search on 10,000 tokens of an LDAP resolver took 14
+    seconds instead of 7 minutes. The janitors ask the user store directly, so a user deleted from it is found as
+    orphaned even while the user cache still holds the user (#1653)
+
+  Fixes:
+  * The token janitors no longer mark the tokens of an HTTP, Keycloak or Entra ID resolver as orphaned when the user
+    store answers with an error instead of 404, e.g. because the credentials of the resolver expired or the user
+    store is overloaded. As for LDAP and SQL, `--orphaned-on-error` decides about these tokens. Before,
+    `find --orphaned true delete` could delete every token of such a user store during an outage (#1653)
+
 Version 3.14, 2026-10-08
 
   Features:
@@ -154,10 +168,6 @@ Version 3.14, 2026-10-08
     token is enrolled. An undefined service ID was accepted and stored, and the token then never matched an
     authentication request (#5611)
   * Updated the pinned dependencies of the backend and of the new WebUI (#5958, #5962)
-  * `find --orphaned` of both token janitors looks up the owners of a whole chunk of tokens with one batch lookup per
-    resolver instead of one user store lookup per token. A search on 10,000 tokens of an LDAP resolver took 14
-    seconds instead of 7 minutes. The janitors ask the user store directly, so a user deleted from it is found as
-    orphaned even while the user cache still holds the user (#1653)
 
   Fixes:
   * The token owner table has an index on its token column. This only matters on SQLite, where listing or
@@ -286,10 +296,6 @@ Version 3.14, 2026-10-08
     outage no longer marks every LDAP token as orphaned, the `update` action of both janitors keeps the counters and
     the token kind, and `privacyidea-diag` censors secrets in its support bundle. Tools that no longer work, as well
     as `reset-privacyidea`, are removed (#6005)
-  * The token janitors no longer mark the tokens of an HTTP, Keycloak or Entra ID resolver as orphaned when the user
-    store answers with an error instead of 404, e.g. because the credentials of the resolver expired or the user
-    store is overloaded. As for LDAP and SQL, `--orphaned-on-error` decides about these tokens. Before,
-    `find --orphaned true delete` could delete every token of such a user store during an outage (#1653)
   * The FIDO2 authentication and registration checks are stricter. `/auth` requires user verification for every
     passkey and for a login without a username, and the WebAuthn authorization policies are applied consistently. A
     client that sends `user` together with a FIDO2 answer has to send the login name of the token owner.
