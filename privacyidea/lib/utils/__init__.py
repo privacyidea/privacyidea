@@ -27,6 +27,7 @@ This module is tested in tests/test_lib_utils.py
 
 import base64
 import binascii
+import functools
 import hashlib
 import html
 import logging
@@ -1375,9 +1376,13 @@ def get_module_class(package_name, class_name, check_method=None):
     return klass
 
 
+@functools.cache
 def get_version_number():
     """
     returns the privacyidea version
+
+    The lookup parses the package metadata, and every API response contains the version. The version of the running
+    code does not change until the process restarts, so the lookup runs once per process.
     """
     version = "unknown"
     try:
