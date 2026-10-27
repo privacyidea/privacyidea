@@ -19,6 +19,7 @@
 import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { applyEach, FieldTree, form } from "@angular/forms/signals";
+import { By } from "@angular/platform-browser";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
@@ -29,6 +30,7 @@ import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
+import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 import { ConditionalAccessActionsListComponent } from "./conditional-access-actions-list.component";
 
 describe("ConditionalAccessActionsListComponent", () => {
@@ -78,6 +80,14 @@ describe("ConditionalAccessActionsListComponent", () => {
   it("should render one item per action", () => {
     expect(items()).toHaveLength(2);
     expect(fixture.nativeElement.querySelector(".ca-actions-list-empty")).toBeNull();
+  });
+
+  // An item finds its own entry among the stage's actions by its place, so its own type stays selectable in its picker.
+  it("should tell every item its place in the stage", () => {
+    const indexes = fixture.debugElement
+      .queryAll(By.directive(ConditionalAccessActionItemComponent))
+      .map((item) => (item.componentInstance as ConditionalAccessActionItemComponent).actionIndex());
+    expect(indexes).toEqual([0, 1]);
   });
 
   it("should say so when there are no actions", () => {

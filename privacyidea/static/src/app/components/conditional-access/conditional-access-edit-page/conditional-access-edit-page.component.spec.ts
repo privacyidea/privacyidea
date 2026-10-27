@@ -54,6 +54,7 @@ import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { AuthEventType } from "@services/conditional-access/conditional-access-policy.service";
 import { ConditionalAccessEditPageComponent } from "./conditional-access-edit-page.component";
+import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
 
 globalThis.IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
@@ -997,6 +998,31 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       typeInStage(thresholdOf(stageItems()[1]), "");
       expect(component.stageThresholdsUnique()).toBe(true);
       expect(component.stagesValid()).toBe(false);
+    });
+
+    // The blockers list repeats each note's sentence, so the notes under the stages heading are checked on their own.
+    it("should show only the duplicate note under the stages heading for stages sharing a threshold", () => {
+      withStages([
+        { failure_threshold: 5, actions: [] },
+        { failure_threshold: 5, actions: [] }
+      ]);
+      expect(stageNotes()).toEqual(["Each stage must have a different failure threshold."]);
+    });
+
+    it("should show only the missing-threshold note under the stages heading for an emptied threshold", () => {
+      typeInStage(thresholdOf(stageItems()[0]), "");
+      expect(stageNotes()).toEqual([
+        "At least one stage is required, and every stage needs a non-negative failure threshold."
+      ]);
+    });
+
+    it("should hand the policy target down to the stages list", () => {
+      const stagesList = () =>
+        fixture.debugElement.query(By.directive(ConditionalAccessStagesListComponent))
+          .componentInstance as ConditionalAccessStagesListComponent;
+      expect(stagesList().target()).toBe("user");
+      helpers.setTarget("source_ip");
+      expect(stagesList().target()).toBe("source_ip");
     });
 
     it("should show the reason at once when an added action no longer allows a threshold of 0", () => {
