@@ -75,9 +75,11 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
 
   protected override resetCreateOptions = () => {
     this.registerResponse.set(null);
-    this.passphrasePrompt.set("");
-    this.passphraseResponse.set("");
-    this.description.set("");
+    this.model.update((model) => ({
+      description: "",
+      registration: { ...model.registration, prompt: "", response: "", repeat: "" }
+    }));
+    this.form().reset();
   };
 
   private readonly http = inject(HttpClient);
