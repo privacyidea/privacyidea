@@ -142,7 +142,7 @@ describe("TiqrConfigComponent", () => {
       await touchAll(configForm.form);
       await flush();
 
-      expect(errors()).toEqual(["TiQR Registration Server is required", "TiQR Logo URL is required"]);
+      expect(errors()).toEqual(["TiQR Registration Server is required.", "TiQR Logo URL is required."]);
     });
 
     it("removes each error once its entry is filled", async () => {
@@ -151,7 +151,7 @@ describe("TiqrConfigComponent", () => {
       await flush();
 
       await type(input(REG_SERVER_PLACEHOLDER), "http://pi.server/ttype/tiqr");
-      expect(errors()).toEqual(["TiQR Logo URL is required"]);
+      expect(errors()).toEqual(["TiQR Logo URL is required."]);
       await type(input(LOGO_URL_PLACEHOLDER), "https://pi.server/logo.png");
 
       expect(errors()).toEqual([]);

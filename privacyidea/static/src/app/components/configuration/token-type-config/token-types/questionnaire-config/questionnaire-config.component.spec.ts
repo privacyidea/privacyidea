@@ -185,7 +185,7 @@ describe("QuestionnaireConfigComponent", () => {
       await touchAll(configForm.form);
       await flush();
 
-      expect(errors()).toEqual(["Question must not be empty."]);
+      expect(errors()).toEqual(["Question is required."]);
     });
 
     it("removes the error once the question is filled", async () => {

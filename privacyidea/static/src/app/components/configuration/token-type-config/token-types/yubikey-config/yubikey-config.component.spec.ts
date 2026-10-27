@@ -126,7 +126,7 @@ describe("YubikeyConfigComponent", () => {
       component.newKeyForm.apiId().markAsTouched();
       await flush();
 
-      expect(errors()).toEqual(["Client ID is required"]);
+      expect(errors()).toEqual(["Client ID is required."]);
       expect(addButton().disabled).toBe(true);
     });
 

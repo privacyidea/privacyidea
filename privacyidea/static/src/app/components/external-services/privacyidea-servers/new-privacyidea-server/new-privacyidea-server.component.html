@@ -80,7 +80,7 @@
               placeholder="myRemotePrivacyIDEAServer" />
           </app-clearable-input>
           @if (hasError(privacyideaForm.identifier, ERR.required)) {
-            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
+            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong>.</mat-error>
           }
           @if (hasError(privacyideaForm.identifier, ERR.pattern)) {
             <mat-error i18n="@@common.identifierContains"
@@ -110,7 +110,7 @@
           </app-clearable-input>
           @if (hasError(privacyideaForm.url, ERR.required)) {
             <mat-error i18n="@@piServer.urlPrivacyideaServer"
-              >URL of the privacyIDEA Server is <strong>required</strong></mat-error
+              >URL of the privacyIDEA Server is <strong>required</strong>.</mat-error
             >
           }
           <mat-hint i18n="@@piServer.pleaseProvide">Please provide the base URL of the privacyIDEA server.</mat-hint>

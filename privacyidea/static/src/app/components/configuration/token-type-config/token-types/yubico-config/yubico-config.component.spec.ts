@@ -106,7 +106,7 @@ describe("YubicoConfigComponent", () => {
       await touchAll(configForm.form);
       await flush();
 
-      expect(errors()).toEqual(["API Key is required"]);
+      expect(errors()).toEqual(["API Key is required."]);
       expect(configForm.form().valid()).toBe(false);
     });
 
@@ -115,7 +115,7 @@ describe("YubicoConfigComponent", () => {
       await touchAll(configForm.form);
       await flush();
 
-      expect(errors()).toEqual(["API Client ID is required"]);
+      expect(errors()).toEqual(["API Client ID is required."]);
     });
 
     it("removes the error once the credentials are filled", async () => {

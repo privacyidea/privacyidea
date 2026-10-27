@@ -312,7 +312,7 @@ describe("SelectedUserAssignDialogComponent", () => {
       fixture.detectChanges();
       expect(component.model().pin).toBe("1234");
       expect(component.model().pinRepeat).toBe("12");
-      expect(component.pinMismatchError()).toBe("PINs do not match");
+      expect(component.pinMismatchError()).toBe("PINs do not match.");
       expect((fixture.nativeElement as HTMLElement).textContent).toContain("PINs do not match");
     });
 
