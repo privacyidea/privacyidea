@@ -526,8 +526,8 @@ def get_request_identity(request: Request) -> User:
         elif credential_id:
             # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
             # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
-            # practice - a passkey is hashed at enrollment, the webauthn second leg carries the user - and not worth
-            # a challenge lookup plus otpkey decrypt on every request.
+            # practice - a passkey is hashed at enrollment, the second request of a WebAuthn login carries the user -
+            # and not worth a challenge lookup plus otpkey decrypt on every request.
             token = get_fido2_token_by_credential_id(credential_id)
     except Exception as ex:
         log.debug(f"Could not resolve the owner of the token named in the request: {ex!r}")
