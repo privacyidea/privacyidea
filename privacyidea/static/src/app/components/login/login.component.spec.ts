@@ -95,6 +95,31 @@ describe("LoginComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  describe("login button", () => {
+    const loginButton = () => fixture.nativeElement.querySelector("button.login-btn") as HTMLButtonElement;
+
+    it.each([
+      ["only the username", "test-user", ""],
+      ["only the password", "", "test-pass"]
+    ])("is disabled while %s is filled in", (_, username, password) => {
+      component.username.set(username);
+      component.password.set(password);
+      fixture.detectChanges();
+
+      expect(component.isLoginButtonDisabled()).toBe(true);
+      expect(loginButton().disabled).toBe(true);
+    });
+
+    it("is enabled once the username and the password are filled in", () => {
+      component.username.set("test-user");
+      component.password.set("test-pass");
+      fixture.detectChanges();
+
+      expect(component.isLoginButtonDisabled()).toBe(false);
+      expect(loginButton().disabled).toBe(false);
+    });
+  });
+
   describe("when already logged in", () => {
     it("does not warn (loginGuard redirects authenticated users away from the login route)", () => {
       authService.isAuthenticated.set(true);
@@ -619,6 +644,60 @@ describe("LoginComponent", () => {
       fixture.detectChanges();
 
       expect(component.realm()).toBe("realmA");
+    });
+
+    describe("bound select", () => {
+      const flush = async () => {
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+      };
+      const pickRealm = async (index: number) => {
+        fixture.debugElement.query(By.css("mat-select")).componentInstance.open();
+        await flush();
+        (document.querySelectorAll("mat-option")[index] as HTMLElement).click();
+        await flush();
+      };
+
+      beforeEach(async () => {
+        configService.config.set({ ...configService.config(), realms: "realm1,realm2" });
+        await flush();
+      });
+
+      it("should show the model value in the select", () => {
+        const select = fixture.debugElement.query(By.css("mat-select")).componentInstance;
+        expect(select.value).toBe("realm1");
+      });
+
+      it("should update the model when a realm is chosen", async () => {
+        await pickRealm(1);
+
+        expect(component.realm()).toBe("realm2");
+      });
+
+      it("should send the chosen realm in the submit payload", async () => {
+        component.username.set("test-user");
+        component.password.set("test-pass");
+        await pickRealm(1);
+
+        component.onSubmit();
+
+        expect(authService.authenticate).toHaveBeenCalledWith({
+          username: "test-user",
+          password: "test-pass",
+          realm: "realm2"
+        });
+      });
+
+      it("should clear the realm when the clear button is clicked", async () => {
+        const clearButton = fixture.debugElement.query(By.css("app-clear-button button"));
+        clearButton.nativeElement.click();
+        await flush();
+
+        expect(component.realm()).toBe("");
+        expect(fixture.debugElement.query(By.css("app-clear-button"))).toBeFalsy();
+        expect(fixture.debugElement.query(By.css("mat-select")).componentInstance.value).toBe("");
+      });
     });
 
     it("should not display realm selection if realms list is empty", () => {

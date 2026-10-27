@@ -98,6 +98,14 @@ describe("SubscriptionComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("hides the file input with the hidden-input class and no style attribute", () => {
+    fixture.detectChanges();
+
+    const fileInput: HTMLInputElement = fixture.nativeElement.querySelector('input[type="file"]');
+    expect(fileInput.classList.contains("hidden-input")).toBe(true);
+    expect(fileInput.hasAttribute("style")).toBe(false);
+  });
+
   it("should render subscriptions", () => {
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(mockSubscriptions));
     fixture.detectChanges();

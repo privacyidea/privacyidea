@@ -20,7 +20,7 @@
 import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -39,7 +39,8 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { ResolverData, ResolverService, ResolverType } from "@services/resolver/resolver.service";
-import { reservedNames } from "@utils/reserved-names.utils";
+import { ERR, identifierName, RESOLVER_RESERVED_NAMES } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { finalize } from "rxjs";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
@@ -52,6 +53,18 @@ import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
 interface ResolverNameModel {
   resolverName: string;
 }
+
+interface ResolverSettingsModel {
+  resolverType: ResolverType;
+  testUsername: string;
+  testUserId: string;
+}
+
+const DEFAULT_RESOLVER_SETTINGS: ResolverSettingsModel = {
+  resolverType: "passwdresolver",
+  testUsername: "",
+  testUserId: ""
+};
 
 @Component({
   selector: "app-user-new-resolver",
@@ -111,21 +124,25 @@ export class UserNewResolverComponent implements OnDestroy {
       this.httpResolver()
     );
   });
-  resolverType = signal<ResolverType>("passwdresolver");
   formData: ResolverData = { fileName: "/etc/passwd" };
-  testUsername = signal<string>("");
-  testUserId = signal<string>("");
   isSaving = signal(false);
   isTesting = signal(false);
   isEditMode = signal(false);
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
+  // Resolver type and the connection test inputs
+  resolverSettingsModel = signal<ResolverSettingsModel>({ ...DEFAULT_RESOLVER_SETTINGS });
+  resolverSettingsForm = form(this.resolverSettingsModel, (f) => {
+    disabled(f.resolverType, () => this.isEditMode());
+  });
+  resolverType = computed(() => this.resolverSettingsModel().resolverType);
+  testUsername = computed(() => this.resolverSettingsModel().testUsername);
+  testUserId = computed(() => this.resolverSettingsModel().testUserId);
   // Resolver name form
   resolverNameModel = signal<ResolverNameModel>({ resolverName: "" });
   resolverNameForm = form(this.resolverNameModel, (f) => {
-    required(f.resolverName);
-    pattern(f.resolverName, /^[a-zA-Z0-9._-]*$/);
-    // POST /resolver/test is the connection test endpoint, and browsers drop "." and ".." from the URL,
-    // so a resolver with one of these names is never saved.
-    reservedNames(f.resolverName, ["test", ".", ".."]);
+    identifierName(f.resolverName, { reserved: RESOLVER_RESERVED_NAMES });
   });
 
   constructor() {
@@ -164,7 +181,7 @@ export class UserNewResolverComponent implements OnDestroy {
         const resolver = resource.result.value[selectedName];
         if (resolver) {
           this.resolverNameModel.set({ resolverName: resolver.resolvername || selectedName });
-          this.resolverType.set(resolver.type);
+          this.resolverSettingsModel.update((m) => ({ ...m, resolverType: resolver.type }));
           this.formData = { ...(resolver.data || {}) };
           this._editInitialized = true;
         }
@@ -213,8 +230,6 @@ export class UserNewResolverComponent implements OnDestroy {
     if (this.isEditMode()) {
       return;
     }
-
-    this.resolverType.set(type);
 
     if (type === "passwdresolver") {
       this.formData = { fileName: "/etc/passwd" };
@@ -411,10 +426,10 @@ export class UserNewResolverComponent implements OnDestroy {
 
   private _resetForm(): void {
     this.resolverNameModel.set({ resolverName: "" });
-    this.resolverType.set("passwdresolver");
+    this.resolverNameForm().reset();
+    this.resolverSettingsModel.set({ ...DEFAULT_RESOLVER_SETTINGS });
+    this.resolverSettingsForm().reset();
     this.formData = { fileName: "/etc/passwd" };
-    this.testUsername.set("");
-    this.testUserId.set("");
   }
 
   private _closeOrReset(): void {

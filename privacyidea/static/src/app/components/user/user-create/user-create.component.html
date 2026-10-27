@@ -47,10 +47,7 @@
   <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@common.resolver">Resolver</mat-label>
-      <mat-select
-        (selectionChange)="resolver.set($event.value)"
-        [value]="resolver()"
-        required>
+      <mat-select [formField]="userForm.resolver">
         @for (option of resolverService.editableResolvers(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
@@ -59,7 +56,7 @@
         <span i18n="@@user.correspondingRealms">Corresponding Realms:</span>
         {{ correspondingRealms().join(", ") }}
       </mat-hint>
-      @if (resolverForm().errors().some(e => e.kind === 'required') && resolverForm().touched()) {
+      @if (hasError(userForm.resolver, ERR.required)) {
         <mat-error i18n="@@user.resolverRequired">Resolver is <strong>required</strong></mat-error>
       }
     </mat-form-field>
@@ -67,9 +64,9 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@common.username">Username</mat-label>
       <input
-        [formField]="usernameForm"
+        [formField]="userForm.username"
         matInput />
-      @if (usernameForm().errors().some(e => e.kind === 'required') && usernameForm().touched()) {
+      @if (hasError(userForm.username, ERR.required)) {
         <mat-error i18n="@@user.usernameRequired">Username is <strong>required</strong></mat-error>
       }
     </mat-form-field>
