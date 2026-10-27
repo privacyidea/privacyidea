@@ -80,7 +80,7 @@ class SipgateSMSProvider(ISMSProvider):
             protocol = proxy.split(":")[0]
             proxies = {protocol: proxy}
 
-        log.debug(f"submitting message {message!r} to {phone!s}")
+        log.debug("submitting a message")
         r = requests.post(URL,
                           data=REQUEST_XML % (phone.strip().strip("+"),
                                               message),

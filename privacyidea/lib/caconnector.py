@@ -33,7 +33,7 @@ from sqlalchemy import func, select
 
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params, fetch_one_resource)
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from .config import (get_caconnector_types,
                      get_caconnector_class_dict)
 from .crypto import encryptPassword, decryptPassword, is_censored, censor_dict
@@ -355,7 +355,7 @@ def export_caconnector(name=None, censor=False):
 @register_import('caconnector')
 def import_caconnector(data, name=None):
     """Import caconnector configuration"""
-    log.debug(f'Import caconnector config: {data!s}')
+    log.debug(f'Import caconnector config: {get_import_names(data, "connectorname")}')
     for res_data in data:
         if name and name != res_data.get('connectorname'):
             continue

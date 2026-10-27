@@ -404,6 +404,27 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(CENSORED, exported["ExpSecret"]["Value"])
         delete_privacyidea_config("ExpSecret")
 
+    def test_12d_import_logs_names_only(self):
+        from privacyidea.lib.config import import_config
+        # The data of an import holds the decrypted secrets, so the log only names the imported entries
+        with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
+            import_config({"ImportedSecret": {"Value": "imported-secret-value", "Type": "password"}})
+        output = "\n".join(captured.output)
+        self.assertIn("Import server config: ['ImportedSecret']", output)
+        self.assertNotIn("imported-secret-value", output)
+        # Reading the entry does not log its value either
+        with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
+            self.assertEqual("imported-secret-value", get_from_config("ImportedSecret"))
+        self.assertNotIn("imported-secret-value", "\n".join(captured.output))
+        delete_privacyidea_config("ImportedSecret")
+
+    def test_12e_get_import_names(self):
+        from privacyidea.lib.utils.export import get_import_names
+        self.assertEqual(["resolver1", "resolver2"], get_import_names({"resolver1": {}, "resolver2": {}}))
+        self.assertEqual(["policy1", None], get_import_names([{"name": "policy1"}, {"action": "enroll"}]))
+        self.assertEqual(["connector1"], get_import_names([{"connectorname": "connector1"}], "connectorname"))
+        self.assertEqual([], get_import_names("not a list"))
+
     def test_13_update_password_entry_without_type(self):
         from privacyidea.lib.crypto import decryptPassword
         set_privacyidea_config("SecretToUpdate", "first", typ="password")
@@ -427,3 +448,45 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("public", stored.Type)
         self.assertEqual("second", stored.Value)
         delete_privacyidea_config("PlainToUpdate")
+
+    def test_15_token_password_settings_are_stored_encrypted(self):
+        from privacyidea.lib.crypto import decryptPassword
+        # These token settings are written without a type, as the token configuration of the WebUI does. Their
+        # token class declares them a password, so they are stored encrypted and read back decrypted.
+        settings = {"yubikey.apiid.client1": "yubikey-api-key",
+                    "yubico.secret": "yubico-api-key",
+                    "radius.secret": "radius-shared-secret",
+                    "email.password": "smtp-password",
+                    "sms.providerConfig": '{"PASSWORD": "gateway-password"}'}
+        for key, value in settings.items():
+            with self.subTest(key=key):
+                set_privacyidea_config(key, value)
+                stored = db.session.query(Config).filter_by(Key=key).one()
+                self.assertEqual("password", stored.Type)
+                self.assertEqual(value, decryptPassword(stored.Value))
+                self.assertEqual(value, get_from_config(key))
+                delete_privacyidea_config(key)
+
+        # The other settings of these token types keep the type they are written with
+        set_privacyidea_config("yubico.id", "client-id")
+        self.assertEqual("", db.session.query(Config).filter_by(Key="yubico.id").one().Type)
+        delete_privacyidea_config("yubico.id")
+
+    def test_16_plain_token_password_setting_is_censored_in_export(self):
+        from privacyidea.lib.config import export_config, is_password_config_entry
+        from privacyidea.lib.crypto import CENSORED
+        # An entry stored in plain text and without a type, before its token class declared it a password
+        Config("yubikey.apiid.client1", "yubikey-api-key", "", "").save()
+        try:
+            self.assertTrue(is_password_config_entry("yubikey.apiid.client1", ""))
+            self.assertEqual("yubikey-api-key", get_from_config("yubikey.apiid.client1"))
+            censored = export_config(censor=True)
+            self.assertEqual(CENSORED, censored["yubikey.apiid.client1"]["Value"])
+            # An uncensored export carries the value as it is stored
+            exported = export_config(name="yubikey.apiid.client1")
+            self.assertEqual("yubikey-api-key", exported["yubikey.apiid.client1"]["Value"])
+        finally:
+            delete_privacyidea_config("yubikey.apiid.client1")
+        self.assertFalse(is_password_config_entry("yubico.id", ""))
+        self.assertFalse(is_password_config_entry("PrependPin", ""))
+        self.assertTrue(is_password_config_entry("PrependPin", "password"))

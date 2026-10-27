@@ -56,7 +56,7 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.log import log_with
+from privacyidea.lib.log import get_key_names, log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     Match, get_action_values_from_options)
@@ -185,6 +185,12 @@ class SmsTokenClass(HotpTokenClass):
     @staticmethod
     def get_class_prefix():
         return "PISM"
+
+    @staticmethod
+    def get_setting_type(key: str) -> str:
+        # The provider configuration holds the credentials of the SMS gateway
+        settings = {"sms.providerConfig": "password"}
+        return settings.get(key, "")
 
     @staticmethod
     def get_class_info(key=None, ret='all'):
@@ -368,8 +374,10 @@ class SmsTokenClass(HotpTokenClass):
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = _("The PIN was correct, but the SMS could not be sent!")
-                log.warning(info + f" ({e!r})")
-                log.debug(f"{traceback.format_exc()!s}")
+                # The type of the error only: the message of an error of the request to the gateway holds the
+                # URL with the phone number, the text and the credentials of the gateway
+                log.warning(f"{info} ({type(e).__name__})")
+                log.debug("".join(traceback.format_tb(e.__traceback__)))
                 return_message = info
                 if is_true(options.get("exception")):
                     raise Exception(info)
@@ -407,10 +415,10 @@ class SmsTokenClass(HotpTokenClass):
             self.inc_otp_counter(ret, reset=False)
             success, message = self._send_sms(message=message, options=options)
             log.debug(f"AutoSMS: send new SMS: {success!s}")
-            log.debug(f"AutoSMS: {message!r}")
         return ret
 
-    @log_with(log)
+    # The result is the message with the OTP
+    @log_with(log, log_exit=False)
     def _send_sms(self, message="<otp>", options=None):
         """
         send sms
@@ -472,14 +480,15 @@ class SmsTokenClass(HotpTokenClass):
                 # now we need the config from the env
                 log.debug(f"loading SMS configuration for class {sms!s}")
                 config = self._get_sms_provider_config()
-                log.debug(f"config: {config!r}")
+                # The configuration holds the credentials of the gateway, so only its keys are logged
+                log.debug(f"config keys: {get_key_names(config)}")
                 sms.load_config(config)
             except Exception as exc:
                 log.error(f"Failed to load sms.providerConfig: {exc!r}")
                 log.debug(f"{traceback.format_exc()!s}")
                 raise Exception(f"Failed to load sms.providerConfig: {exc!r}")
 
-        log.debug(f"submitMessage: {message!r}, to phone {phone!r}")
+        log.debug(f"submitMessage for the token {self.token.serial}")
         ret = sms.submit_message(phone, message)
         return ret, message
 
@@ -499,7 +508,8 @@ class SmsTokenClass(HotpTokenClass):
         return SMSProvider, SMSProviderClass
 
     @staticmethod
-    @log_with(log)
+    # The result holds the credentials of the gateway, also in values a name does not mark, like the URL
+    @log_with(log, log_exit=False)
     def _get_sms_provider_config():
         """
         load the defined sms provider config definition

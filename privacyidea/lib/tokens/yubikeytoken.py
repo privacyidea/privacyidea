@@ -155,6 +155,11 @@ class YubikeyTokenClass(TokenClass):
         return "UBAM"
 
     @staticmethod
+    def get_setting_type(key: str) -> str:
+        # The API keys of the clients that call the validation endpoint
+        return "password" if key.startswith("yubikey.apiid.") else ""
+
+    @staticmethod
     @log_with(log)
     def get_class_info(key=None, ret='all'):
         """

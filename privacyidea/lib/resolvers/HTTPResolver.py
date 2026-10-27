@@ -67,6 +67,10 @@ PASSWORD = "password"
 VERIFY_TLS = "verify_tls"
 TLS_CA_PATH = "tls_ca_path"
 TIMEOUT = "timeout"
+# The requests whose configuration the system documentation lists, in this order. The request for the groups of a
+# user is configured by its "active" flag instead of its endpoint and is listed separately.
+DOCUMENTED_REQUESTS = (CONFIG_GET_USER_BY_ID, CONFIG_GET_USER_BY_NAME, CONFIG_GET_USER_LIST, CONFIG_CREATE_USER,
+                       CONFIG_EDIT_USER, CONFIG_DELETE_USER, CONFIG_AUTHORIZATION, CONFIG_USER_AUTH)
 
 log = logging.getLogger(__name__)
 
@@ -374,6 +378,26 @@ class HTTPResolver(UserIdResolver):
             TIMEOUT: 'int'
         }
         return {typ: descriptor}
+
+    @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        The HTTP resolver is documented by whether it is a basic or an advanced one, the requests that are
+        configured and whether the TLS certificate of the user store API is verified.
+        """
+        documented = super().get_config_for_documentation(config)
+        # A resolver based on this one brings its own requests, which the stored configuration only overrides
+        defaults = cls()
+        effective_config = {**defaults.config, **config}
+        advanced = is_request_configured(effective_config.get(CONFIG_GET_USER_BY_ID))
+        documented["mode"] = "advanced" if advanced else "basic"
+        documented["requests"] = [name.removeprefix("config_") for name in DOCUMENTED_REQUESTS
+                                  if is_request_configured(effective_config.get(name))]
+        user_groups = effective_config.get(CONFIG_GET_USER_GROUPS) or defaults.config_get_user_groups
+        if isinstance(user_groups, dict) and user_groups.get(ACTIVE):
+            documented["requests"].append(CONFIG_GET_USER_GROUPS.removeprefix("config_"))
+        documented["verify_tls"] = is_true(effective_config.get(VERIFY_TLS, True))
+        return documented
 
     def get_config(self) -> dict:
         """

@@ -5053,9 +5053,11 @@ class WebhookTestCase(MyTestCase):
                                       data='This is a test')
             res, _ = self._do_webhook(opts)
             self.assertTrue(res)
-            text = "A webhook is called at 'https://test.com' with data: 'This is a test'"
+            # The log names the server, the data is what is posted
+            text = "A webhook is called at https://test.com"
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
+            self.assertEqual("This is a test", mock_post.call_args.kwargs["data"])
 
             # JSON (no replace → raw string is fine even though it's not valid JSON)
             opts = self._make_options(g, url='https://test.com',
@@ -5065,6 +5067,7 @@ class WebhookTestCase(MyTestCase):
             self.assertTrue(res)
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
+            self.assertEqual("This is a test", mock_post.call_args.kwargs["data"])
 
     def test_03_wrong_action_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
@@ -5107,9 +5110,9 @@ class WebhookTestCase(MyTestCase):
             res, _ = self._do_webhook(opts)
             self.assertTrue(res)
             expected_body = '{"realm1": {"realm1": {"realm1": "This is hans from realm realm1"}}}'
-            mock_log.assert_any_call(
-                f"A webhook is called at 'http://test.com' with data: '{expected_body}'")
+            mock_log.assert_any_call("A webhook is called at http://test.com")
             mock_log.assert_called_with(200)
+            self.assertEqual(expected_body, mock_post.call_args.kwargs["data"])
 
     @patch('requests.post')
     def test_07_replace_function_urlencoded(self, mock_post):
@@ -5123,10 +5126,9 @@ class WebhookTestCase(MyTestCase):
                                       replace=True)
             res, _ = self._do_webhook(opts)
             self.assertTrue(res)
-            mock_log.assert_any_call(
-                "A webhook is called at 'https://test.com' "
-                "with data: 'This is hans from realm realm1'")
+            mock_log.assert_any_call("A webhook is called at https://test.com")
             mock_log.assert_called_with(200)
+            self.assertEqual("This is hans from realm realm1", mock_post.call_args.kwargs["data"])
 
     @patch('requests.post')
     def test_08_replace_function_error(self, mock_post):
@@ -5143,9 +5145,9 @@ class WebhookTestCase(MyTestCase):
                 mock_log.assert_any_call(
                     "Unable to replace placeholder: ('unknown_tag')!"
                     " Please check the webhooks data option.")
-                mock_info.assert_any_call(
-                    f"A webhook is called at 'http://test.com' with data: '{data}'")
+                mock_info.assert_any_call("A webhook is called at http://test.com")
                 mock_info.assert_called_with(200)
+                self.assertEqual(data, mock_post.call_args.kwargs["data"])
 
     @patch('requests.post')
     def test_09_replace_function_typo(self, mock_post):
@@ -5173,9 +5175,9 @@ class WebhookTestCase(MyTestCase):
                 mock_log.assert_any_call(
                     "Unable to replace placeholder: ('token_seril')!"
                     " Please check the webhooks data option.")
-                mock_info.assert_any_call(
-                    f"A webhook is called at 'http://test.com' with data: '{data}'")
+                mock_info.assert_any_call("A webhook is called at http://test.com")
                 mock_info.assert_called_with(200)
+                self.assertEqual(data, mock_post.call_args.kwargs["data"])
 
     @patch('requests.post')
     def test_10_content_type_header_is_set_correctly(self, mock_post):
