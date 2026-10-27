@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, model } from "@angular/core";
+import { Component, inject, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatError, MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import {
   MessageDialogComponent,
   MessageDialogData
@@ -28,10 +29,12 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR, mustEqual } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-set-pin-action",
-  imports: [MatIcon, MatButtonModule, MatFormField, MatLabel, MatInput],
+  imports: [FormField, MatError, MatIcon, MatButtonModule, MatFormField, MatLabel, MatInput],
   templateUrl: "./set-pin-action.component.html",
   styleUrl: "./set-pin-action.component.scss"
 })
@@ -40,12 +43,18 @@ export class SetPinActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  setPinValue = model.required<string>();
-  repeatPinValue = model.required<string>();
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  readonly setPinValue = signal("");
+  readonly repeatPinValue = signal("");
+  readonly setPinForm = form(this.setPinValue);
+  readonly repeatPinForm = form(this.repeatPinValue, (f) => {
+    mustEqual(f, this.setPinValue);
+  });
 
   setPin() {
-    if (this.setPinValue() !== this.repeatPinValue()) {
-      console.error("PINs do not match.");
+    if (!this.repeatPinForm().valid()) {
+      this.repeatPinForm().markAsTouched();
       this.notificationService.warning($localize`:@@common.pinsDoNotMatchError:PINs do not match.`);
       return;
     }
@@ -54,6 +63,8 @@ export class SetPinActionComponent {
         this.notificationService.success($localize`:@@token.pinSetSuccess:PIN set successfully.`);
         this.setPinValue.set("");
         this.repeatPinValue.set("");
+        this.setPinForm().reset();
+        this.repeatPinForm().reset();
       }
     });
   }

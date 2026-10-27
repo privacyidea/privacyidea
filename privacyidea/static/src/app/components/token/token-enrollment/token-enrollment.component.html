@@ -49,10 +49,10 @@
           placeholder="Enter description"
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
-        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.required)) {
           <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         }
-        @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.maxLength)) {
           <mat-error i18n="@@token.descriptionMust"
             >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
           >
@@ -81,18 +81,15 @@
             <h4 i18n="@@token.addTokenContainer">Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
-                (clearButtonClick)="selectedContainer.set(''); trackChange()"
+                (clearButtonClick)="clearContainer()"
                 [showClearButton]="selectedContainer() !== ''">
                 <input
-                  [value]="selectedContainer()"
-                  (input)="selectedContainer.set($any($event.target).value); trackChange()"
+                  [formField]="selectedContainerForm"
                   [matAutocomplete]="containerAuto"
                   matInput />
               </app-clearable-input>
               <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
-              <mat-autocomplete
-                #containerAuto="matAutocomplete"
-                (optionSelected)="selectedContainer.set($event.option.value); trackChange()">
+              <mat-autocomplete #containerAuto="matAutocomplete">
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
@@ -113,8 +110,7 @@
                 <mat-form-field class="date-picker input-width-l">
                   <mat-label i18n="@@token.validityStart">Validity Start Date</mat-label>
                   <input
-                    [value]="selectedStartDate()"
-                    (dateChange)="selectedStartDate.set($event.value); trackChange()"
+                    [formField]="selectedStartDateForm"
                     [matDatepicker]="startPicker"
                     matInput
                     placeholder="2026-01-01" />
@@ -128,19 +124,14 @@
                 <mat-form-field class="time-picker input-width-l">
                   <mat-label i18n="@@token.validityStartTime">Validity Start Time</mat-label>
                   <input
-                    [value]="selectedStartTime()"
-                    (input)="selectedStartTime.set($any($event.target).value); trackChange()"
+                    [formField]="selectedStartTimeForm"
                     matInput
-                    max="23"
-                    min="0"
                     type="time" />
                 </mat-form-field>
 
                 <mat-form-field class="zone-picker input-width-l">
                   <mat-label i18n="@@token.timezone">Timezone</mat-label>
-                  <mat-select
-                    [value]="selectedTimezoneOffset()"
-                    (selectionChange)="selectedTimezoneOffset.set($event.value); trackChange()">
+                  <mat-select [formField]="selectedTimezoneOffsetForm">
                     @for (option of timezoneOptions; track option) {
                       <mat-option [value]="option.value">{{ option.label }}</mat-option>
                     }
@@ -151,8 +142,7 @@
                 <mat-form-field class="date-picker input-width-l">
                   <mat-label i18n="@@token.validityEndDate">Validity End Date</mat-label>
                   <input
-                    [value]="selectedEndDate()"
-                    (dateChange)="selectedEndDate.set($event.value); trackChange()"
+                    [formField]="selectedEndDateForm"
                     [matDatepicker]="endPicker"
                     matInput
                     placeholder="2027-01-01" />
@@ -166,11 +156,8 @@
                 <mat-form-field class="time-picker input-width-l">
                   <mat-label i18n="@@token.validityEndTime">Validity End Time</mat-label>
                   <input
-                    [value]="selectedEndTime()"
-                    (input)="selectedEndTime.set($any($event.target).value); trackChange()"
+                    [formField]="selectedEndTimeForm"
                     matInput
-                    max="23"
-                    min="0"
                     type="time" />
                 </mat-form-field>
               </div>

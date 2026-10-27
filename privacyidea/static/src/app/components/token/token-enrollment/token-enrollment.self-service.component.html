@@ -48,10 +48,10 @@
           placeholder="Enter description"
           rows="3"></textarea>
         <mat-hint align="end">{{ description().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
-        @if (descriptionForm().errors().some(e => e.kind === 'required') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.required)) {
           <mat-error i18n="@@token.descriptionRequired">Description is <strong>required</strong>.</mat-error>
         }
-        @if (descriptionForm().errors().some(e => e.kind === 'maxlength') && descriptionForm().touched()) {
+        @if (hasError(descriptionForm, ERR.maxLength)) {
           <mat-error i18n="@@token.descriptionMust"
             >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
           >
@@ -70,18 +70,15 @@
             <h4 i18n="@@token.addTokenContainer">Add Token to a Container</h4>
             <mat-form-field class="input-width-l">
               <app-clearable-input
-                (clearButtonClick)="selectedContainer.set(''); trackChange()"
+                (clearButtonClick)="clearContainer()"
                 [showClearButton]="selectedContainer() !== ''">
                 <input
-                  [value]="selectedContainer()"
-                  (input)="selectedContainer.set($any($event.target).value); trackChange()"
+                  [formField]="selectedContainerForm"
                   [matAutocomplete]="containerAuto"
                   matInput />
               </app-clearable-input>
               <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
-              <mat-autocomplete
-                #containerAuto="matAutocomplete"
-                (optionSelected)="selectedContainer.set($event.option.value); trackChange()">
+              <mat-autocomplete #containerAuto="matAutocomplete">
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }

@@ -29,6 +29,7 @@ import { EnrollCertificateComponent } from "./enroll-certificate.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService, MockSystemService } from "@testing/mock-services";
 import { SystemService } from "@services/system/system.service";
+import { clearOverlays, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
 
 type CaConnectorResourceValue = PiResponse<CaConnectors> | undefined;
 
@@ -96,6 +97,42 @@ describe("EnrollCertComponent", () => {
     });
   });
 
+  describe("intention toggle", () => {
+    const radios = (): HTMLButtonElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll("app-toggle-group [role=radio]"));
+
+    it("should name the toggle group", () => {
+      const group = fixture.nativeElement.querySelector("app-toggle-group [role=radiogroup]");
+
+      expect(group.getAttribute("aria-label")).toBeTruthy();
+    });
+
+    it("should offer the three intentions and mark the current one", () => {
+      expect(radios()).toHaveLength(3);
+      expect(radios()[0].getAttribute("aria-checked")).toBe("true");
+    });
+
+    it("should update the intention when a toggle is clicked", () => {
+      radios()[2].click();
+      fixture.detectChanges();
+
+      expect(component.intention()).toBe("uploadCert");
+      expect(radios()[2].getAttribute("aria-checked")).toBe("true");
+    });
+
+    it("should keep the intention for a value that is not an intention", () => {
+      component.onIntentionSelected("something-else");
+      component.onIntentionSelected(undefined);
+
+      expect(component.intention()).toBe("generate");
+    });
+
+    it("should accept each intention", () => {
+      component.onIntentionSelected("uploadRequest");
+      expect(component.intention()).toBe("uploadRequest");
+    });
+  });
+
   describe("caConnectorOptions computed", () => {
     it("should return empty array when caConnectorResource has no value", () => {
       expect(component.caConnectorOptions()).toEqual([]);
@@ -138,12 +175,12 @@ describe("EnrollCertComponent", () => {
       expect(component.pemForm().touched()).toBe(true);
     });
 
-    it("should return null and mark caConnectorTouched when generate but caConnector empty", () => {
+    it("should return null and mark the CA connector touched when generate but caConnector empty", () => {
       component.intention.set("generate");
       component.caConnector.set("");
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
-      expect(component.caConnectorTouched()).toBe(true);
+      expect(component.caConnectorForm().touched()).toBe(true);
     });
 
     // The template is optional: the server falls back to the CA default and a freshly
@@ -157,13 +194,13 @@ describe("EnrollCertComponent", () => {
       expect(result!.data.certTemplate).toBe("");
     });
 
-    it("should return null and mark caConnectorTouched when uploadRequest but caConnector empty", () => {
+    it("should return null and mark the CA connector touched when uploadRequest but caConnector empty", () => {
       component.intention.set("uploadRequest");
       component.pem.set("-----BEGIN CERTIFICATE REQUEST-----");
       component.caConnector.set("");
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
-      expect(component.caConnectorTouched()).toBe(true);
+      expect(component.caConnectorForm().touched()).toBe(true);
     });
 
     it("should return enrollment data without pem when intention is generate", () => {
@@ -203,10 +240,68 @@ describe("EnrollCertComponent", () => {
   });
 
   describe("clearTemplateSelection", () => {
-    it("should reset certTemplate to empty string", () => {
+    it("should reset certTemplate to empty string and mark the field dirty", () => {
       component.certTemplate.set("t1");
       component.clearTemplateSelection();
       expect(component.certTemplate()).toBe("");
+      expect(component.certTemplateForm().dirty()).toBe(true);
+    });
+  });
+
+  describe("CA connector and template selects", () => {
+    afterEach(clearOverlays);
+
+    beforeEach(async () => {
+      (systemServiceMock.caConnectorResource as MockHttpResourceRef<CaConnectorResourceValue>).set(
+        MockPiResponse.fromValue([{ connectorname: "conn-1" }, { connectorname: "conn-2" }] as unknown as CaConnectors)
+      );
+      systemServiceMock.caConnectors = signal<CaConnectors>([
+        { connectorname: "conn-1", type: "local", data: {}, templates: { t1: {}, t2: {} } },
+        { connectorname: "conn-2", type: "local", data: {}, templates: {} }
+      ]);
+      await flushFixture(fixture);
+    });
+
+    it("writes the picked CA connector to the model and marks the field dirty", async () => {
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+
+      expect(component.caConnector()).toBe("conn-2");
+      expect(component.caConnectorForm().dirty()).toBe(true);
+    });
+
+    it("writes the picked template to the model", async () => {
+      component.caConnector.set("conn-1");
+      await flushFixture(fixture);
+
+      await pickOption(fixture, matSelectAt(fixture, 1), 1);
+
+      expect(component.certTemplate()).toBe("t2");
+      expect(component.certTemplateForm().dirty()).toBe(true);
+    });
+
+    it("renders the required error of the CA connector once the build was refused", async () => {
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      component.buildEnrollmentArgs(basicOptions);
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("CA Connector is required");
+    });
+
+    it("requires a CA connector only while the intention needs one", () => {
+      expect(component.caConnectorForm().valid()).toBe(false);
+
+      component.intention.set("uploadCert");
+
+      expect(component.caConnectorForm().valid()).toBe(true);
+    });
+
+    it("pushes the disabled input to both selects", async () => {
+      fixture.componentRef.setInput("disabled", true);
+      await flushFixture(fixture);
+
+      expect(component.caConnectorForm().disabled()).toBe(true);
+      expect(component.certTemplateForm().disabled()).toBe(true);
     });
   });
 });

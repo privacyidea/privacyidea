@@ -23,8 +23,7 @@
     subscriptSizing="dynamic">
     <mat-label i18n="@@token.currentOtp">Current OTP</mat-label>
     <input
-      [value]="firstOTPValue()"
-      (input)="firstOTPValue.set($any($event.target).value)"
+      [formField]="firstOTPForm"
       matInput />
   </mat-form-field>
   <mat-form-field
@@ -32,8 +31,7 @@
     subscriptSizing="dynamic">
     <mat-label i18n="@@token.nextOtp">Next OTP</mat-label>
     <input
-      [value]="secondOTPValue()"
-      (input)="secondOTPValue.set($any($event.target).value)"
+      [formField]="secondOTPForm"
       matInput />
   </mat-form-field>
 </div>

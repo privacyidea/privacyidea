@@ -29,18 +29,17 @@
     subscriptSizing="dynamic">
     <mat-label i18n="@@token.pinOtp">PIN and/or OTP</mat-label>
     <input
-      [value]="otpOrPinToTest()"
-      (input)="otpOrPinToTest.set($any($event.target).value)"
-      [type]="hide ? 'password' : 'text'"
+      [formField]="otpOrPinForm"
+      [type]="hide() ? 'password' : 'text'"
       autocomplete="one-time-code"
       matInput />
     <button
-      (click)="hide = !hide"
-      [attr.aria-label]="hide ? showValueLabel : hideValueLabel"
+      (click)="hide.set(!hide())"
+      [attr.aria-label]="hide() ? showValueLabel : hideValueLabel"
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ hide ? "visibility_off" : "visibility" }}</mat-icon>
+      <mat-icon>{{ hide() ? "visibility_off" : "visibility" }}</mat-icon>
     </button>
   </mat-form-field>
 </div>

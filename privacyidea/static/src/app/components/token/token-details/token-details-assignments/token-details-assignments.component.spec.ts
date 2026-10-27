@@ -20,6 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { WritableSignal } from "@angular/core";
+import { FieldTree } from "@angular/forms/signals";
 import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { EditableField } from "@components/shared/details-shared/field-editing/editable-field";
 import { AuthService } from "@services/auth/auth.service";
@@ -38,6 +39,8 @@ interface AssignmentsFieldInternals {
   realmsField: EditableField;
   tokengroupField: EditableField;
   containerField: EditableField;
+  containerInput: WritableSignal<string>;
+  containerForm: FieldTree<string>;
   realmOptions: () => { value: string; label: string; disabled: boolean }[];
   tokengroupSelectOptions: () => { value: string; label: string; disabled: boolean }[];
   tokengroupOptions: WritableSignal<string[]>;
@@ -233,59 +236,157 @@ describe("TokenDetailsAssignmentsComponent", () => {
     expect(internals.tokengroupField.isEditing()).toBe(false);
   });
 
-  it("containerField.toggle() resets selectedContainerSerial when entering edit mode", () => {
-    containerService.selectedContainerSerial.set("preset");
+  describe("container input", () => {
+    const input = (): HTMLInputElement | null => fixture.nativeElement.querySelector(".container-serial-row input");
 
-    internals.containerField.toggle();
+    const openContainerEditing = (): void => {
+      internals.containerField.toggle();
+      fixture.detectChanges();
+    };
 
-    expect(internals.containerField.isEditing()).toBe(true);
-    expect(containerService.selectedContainerSerial()).toBe("");
-  });
+    const type = (value: string): void => {
+      input()!.value = value;
+      input()!.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+    };
 
-  it("containerField.cancel() resets selectedContainerSerial and leaves edit mode", () => {
-    internals.containerField.toggle();
-    containerService.selectedContainerSerial.set("CONT-X");
+    const kinds = (): string[] =>
+      internals
+        .containerForm()
+        .errors()
+        .map((error) => error.kind);
 
-    internals.containerField.cancel();
+    it("containerField.toggle() clears the typed container and the service selection when entering edit mode", () => {
+      containerService.selectedContainerSerial.set("preset");
+      internals.containerInput.set("typed");
 
-    expect(containerService.selectedContainerSerial()).toBe("");
-    expect(internals.containerField.isEditing()).toBe(false);
-  });
+      internals.containerField.toggle();
 
-  it("containerField.commit() adds the token to the trimmed selected container and reloads the token details", async () => {
-    const tokenDetails = mockTokenDetails({ serial: "TOK-3" });
-    fixture.componentRef.setInput("tokenDetails", tokenDetails);
-    fixture.detectChanges();
+      expect(internals.containerField.isEditing()).toBe(true);
+      expect(internals.containerInput()).toBe("");
+      expect(containerService.selectedContainerSerial()).toBe("");
+    });
 
-    internals.containerField.toggle();
-    containerService.selectedContainerSerial.set(" CONT-9 ");
+    it("containerField.cancel() resets the input and the service selection and leaves edit mode", () => {
+      openContainerEditing();
+      type("CONT-X");
+      expect(containerService.selectedContainerSerial()).toBe("CONT-X");
 
-    await internals.containerField.commit();
+      internals.containerField.cancel();
+      fixture.detectChanges();
 
-    expect(containerService.addToken).toHaveBeenCalledWith("TOK-3", "CONT-9");
-    expect(containerService.selectedContainerSerial()).toBe("CONT-9");
-    expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
-    expect(internals.containerField.isEditing()).toBe(false);
-  });
+      expect(internals.containerInput()).toBe("");
+      expect(containerService.selectedContainerSerial()).toBe("");
+      expect(internals.containerField.isEditing()).toBe(false);
+    });
 
-  it("containerField.commit() does not add a token when no container is selected", async () => {
-    internals.containerField.toggle();
-    containerService.selectedContainerSerial.set("   ");
+    it("passes every keystroke to the container service", () => {
+      openContainerEditing();
 
-    await internals.containerField.commit();
+      type("C");
+      expect(containerService.selectedContainerSerial()).toBe("C");
+      type("CO");
+      expect(containerService.selectedContainerSerial()).toBe("CO");
+    });
 
-    expect(containerService.addToken).not.toHaveBeenCalled();
-    expect(containerService.selectedContainerSerial()).toBe("");
-  });
+    it("leaves the service selection alone while not editing", () => {
+      containerService.selectedContainerSerial.set("kept");
 
-  it("containerField.commit() does not add a token when selectedContainerSerial is null", async () => {
-    internals.containerField.toggle();
-    containerService.selectedContainerSerial.set(null as unknown as string);
+      internals.containerInput.set("elsewhere");
+      fixture.detectChanges();
 
-    await internals.containerField.commit();
+      expect(containerService.selectedContainerSerial()).toBe("kept");
+    });
 
-    expect(containerService.addToken).not.toHaveBeenCalled();
-    expect(containerService.selectedContainerSerial()).toBeNull();
+    it("takes the container from the autocomplete options", () => {
+      (containerService.containersForTokenType as WritableSignal<string[]>).set(["CONT-A", "CONT-B"]);
+      openContainerEditing();
+
+      input()!.dispatchEvent(new Event("focusin"));
+      input()!.click();
+      fixture.detectChanges();
+      const option = Array.from(document.querySelectorAll<HTMLElement>("mat-option")).find(
+        (el) => el.textContent?.trim() === "CONT-B"
+      );
+      option!.click();
+      fixture.detectChanges();
+
+      expect(internals.containerInput()).toBe("CONT-B");
+      expect(containerService.selectedContainerSerial()).toBe("CONT-B");
+      expect(input()!.value).toBe("CONT-B");
+    });
+
+    it("clears the input with the clear button", () => {
+      openContainerEditing();
+      type("CONT-1");
+
+      fixture.nativeElement.querySelector(".container-serial-row app-clear-button button").click();
+      fixture.detectChanges();
+
+      expect(internals.containerInput()).toBe("");
+      expect(containerService.selectedContainerSerial()).toBe("");
+      expect(internals.containerForm().dirty()).toBe(true);
+    });
+
+    it("requires a container: an empty or blank input is invalid and Save is disabled", () => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: ["container_add_token"]
+      });
+      openContainerEditing();
+      fixture.componentRef.setInput("isAnyEditingOrRevoked", true);
+      fixture.detectChanges();
+      const saveDisabled = (): boolean =>
+        (fixture.nativeElement.querySelector('button[aria-label="Save"]') as HTMLButtonElement).disabled;
+
+      expect(kinds()).toEqual(["required"]);
+      expect(internals.containerField.valid()).toBe(false);
+      expect(saveDisabled()).toBe(true);
+
+      type("   ");
+      expect(kinds()).toEqual(["required"]);
+      expect(saveDisabled()).toBe(true);
+
+      type("CONT-1");
+      expect(kinds()).toEqual([]);
+      expect(internals.containerField.valid()).toBe(true);
+      expect(saveDisabled()).toBe(false);
+    });
+
+    it("shows the required error once the input was left", () => {
+      openContainerEditing();
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      input()!.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector("mat-error").textContent).toContain("Container serial is required.");
+    });
+
+    it("containerField.commit() adds the token to the trimmed container and reloads the token details", async () => {
+      fixture.componentRef.setInput("tokenDetails", mockTokenDetails({ serial: "TOK-3" }));
+      fixture.detectChanges();
+      openContainerEditing();
+      type(" CONT-9 ");
+
+      await internals.containerField.commit();
+
+      expect(containerService.addToken).toHaveBeenCalledWith("TOK-3", "CONT-9");
+      expect(containerService.selectedContainerSerial()).toBe("CONT-9");
+      expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
+      expect(internals.containerField.isEditing()).toBe(false);
+    });
+
+    it("containerField.commit() adds nothing and keeps editing when no container was entered", async () => {
+      openContainerEditing();
+      type("   ");
+
+      await internals.containerField.commit();
+
+      expect(containerService.addToken).not.toHaveBeenCalled();
+      expect(internals.containerForm().touched()).toBe(true);
+      expect(internals.containerField.isEditing()).toBe(true);
+    });
   });
 
   it("removeContainer() does nothing when the token has no container", () => {

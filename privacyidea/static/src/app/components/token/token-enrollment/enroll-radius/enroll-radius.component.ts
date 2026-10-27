@@ -39,6 +39,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { RADIUS_SERVER } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -81,6 +83,10 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
   radiusServerConfiguration = signal<string>("");
   checkPinLocally = signal<boolean>(false);
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  checkPinLocallyForm = form(this.checkPinLocally);
   radiusServerConfigurationForm = form(this.radiusServerConfiguration, (f) => {
     required(f);
     disabled(f, () => this.disabled());
