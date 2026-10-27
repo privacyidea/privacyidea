@@ -200,13 +200,24 @@ $description-width: 18rem;
   .info-add-row {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    // The fields start on one line even when an error under one of them adds a row to its height.
+    align-items: flex-start;
     gap: 8px;
     margin-left: 16px;
 
     mat-form-field {
       flex: 1 1 auto;
       min-width: 0;
+    }
+
+    // An inline textarea leaves a descender gap that makes its field 1px taller than the key field next to it.
+    textarea {
+      display: block;
+    }
+
+    // The separator spans the height of a field's input, so it stays level with the input texts.
+    > span {
+      min-height: 56px;
     }
   }
 }

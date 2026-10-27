@@ -37,6 +37,7 @@
       mat-icon-button
       color="primary"
       class="flex"
+      [disabled]="element().valid?.() === false"
       (click)="saveEdit()(element())">
       <mat-icon>save</mat-icon>
     </button>

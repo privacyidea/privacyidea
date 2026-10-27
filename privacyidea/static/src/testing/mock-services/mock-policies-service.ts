@@ -21,6 +21,7 @@ import { PiResponse } from "@app/app.component";
 import {
   PolicyActionDetail,
   PolicyActionGroups,
+  policyActionValueIsValid,
   PolicyDetail,
   policyNameCollides,
   PolicyServiceInterface,
@@ -74,7 +75,7 @@ export class MockPolicyService implements PolicyServiceInterface {
   isScopeChangeable = jest.fn().mockReturnValue(true);
   getActionNamesOf = jest.fn().mockReturnValue([]);
   getActionsOf = jest.fn().mockReturnValue({});
-  actionValueIsValid = jest.fn().mockReturnValue(true);
+  actionValueIsValid = jest.fn(policyActionValueIsValid);
   saveNewPolicy = jest.fn().mockResolvedValue(true);
   policyHasConditions = jest.fn().mockReturnValue(true);
   policyHasAdminConditions = jest.fn().mockReturnValue(true);

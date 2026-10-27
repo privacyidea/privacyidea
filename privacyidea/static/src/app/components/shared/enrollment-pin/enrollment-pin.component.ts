@@ -21,10 +21,8 @@ import { FieldTree } from "@angular/forms/signals";
 
 import { MaskedInputComponent } from "../masked-input/masked-input.component";
 
-// TODO: Parent components (e.g. token-enrollment.component.ts) must be updated to pass
-// FieldTree<string> instead of FormControl<string> for setPinControl and repeatPinControl,
-// and to use validate() on the repeatPin field for cross-field pinMismatch validation
-// instead of a FormGroup validator.
+// The parent owns both fields and passes their FieldTrees. Its schema for the repeated PIN reports the
+// `pinMismatch` kind, which this component turns into a message once either field is touched.
 
 @Component({
   selector: "app-enrollment-pin",
