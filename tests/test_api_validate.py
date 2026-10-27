@@ -22,6 +22,7 @@ from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
 from privacyidea.lib.crypto import verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
@@ -62,6 +63,7 @@ from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Audit, Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
 from . import smtpmock, ldap3mock, radiusmock
+from .authlog_utils import assert_authentication_log, clear_authentication_log
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
@@ -1175,6 +1177,93 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_privacyidea_config("AutoResync")
         remove_token(serial)
         delete_policy("mcr_resync")
+
+    def _setup_resync_challenge_token(self, user: User) -> None:
+        hotp = init_token({"serial": "resync_hotp", "otpkey": self.otpkey, "pin": "resync"}, user)
+        self.addCleanup(remove_token, "resync_hotp")
+        hotp.set_sync_window(10)
+        hotp.set_count_window(5)
+        hotp.token.save()
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        set_policy("mcr_resync", scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE)
+        self.addCleanup(delete_policy, "mcr_resync")
+        set_policy("cr_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self.addCleanup(delete_policy, "cr_hotp")
+
+    def _validate_check(self, data: dict) -> dict:
+        with self.app.test_request_context('/validate/check', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json
+
+    @smtpmock.activate
+    def test_16_autoresync_via_multichallenge_keeps_the_triggered_challenges(self):
+        """
+        A PIN that triggers several challenges keeps all of them. The challenge of the token that waits for the next
+        OTP value asks for it, and answering it with that value resyncs the token.
+        """
+        smtpmock.setdata(response={"hans@dampf.com": (200, 'OK')})
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        init_token({"type": "email", "serial": "resync_email", "otpkey": "31323334353637383930313233343536373839AA",
+                    "email": "hans@dampf.com", "pin": "resync"}, user)
+        self.addCleanup(remove_token, "resync_email")
+        login = {"user": user.login, "realm": user.realm}
+
+        # counter = 8, is out of sync. The PIN matches both tokens, so no resync challenge is created.
+        res = self._validate_check({**login, "pass": "resync399871"})
+        self.assertFalse(res["result"]["value"], res)
+        self.assertNotIn("multi_challenge", res["detail"], res)
+
+        clear_authentication_log()
+        res = self._validate_check({**login, "pass": "resync"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        detail = res["detail"]
+        messages = {challenge["serial"]: challenge["message"] for challenge in detail["multi_challenge"]}
+        resync_message = "To resync your token, please enter the next OTP value"
+        email_message = _("Enter the OTP from the Email")
+        self.assertDictEqual({"resync_email": email_message, "resync_hotp": resync_message}, messages)
+        self.assertListEqual([email_message, resync_message], detail["messages"])
+        # The message joins the set of messages, in no fixed order
+        self.assertIn(detail["message"], {f"{email_message}, {resync_message}", f"{resync_message}, {email_message}"})
+        self.assertTrue(smtpmock.get_sent_message())
+        transaction_id = detail["transaction_id"]
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
+
+        # counter = 9, will be autosynced
+        res = self._validate_check({**login, "transaction_id": transaction_id, "pass": "520489"})
+        self.assertTrue(res["result"]["value"], res)
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual("Found matching challenge,autoresync successful", audit_entry.get("info"))
+
+    def test_16_autoresync_via_multichallenge_keeps_the_challenge_of_a_single_token(self):
+        """
+        The challenge a PIN triggers for a single token waiting for the next OTP value asks for that value, and
+        answering it with that value resyncs the token.
+        """
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        login = {"user": user.login, "realm": user.realm}
+
+        # counter = 8, is out of sync. The resync challenge it gets is not answered.
+        res = self._validate_check({**login, "pass": "resync399871"})
+        self.assertTrue(res["detail"]["transaction_id"], res)
+
+        clear_authentication_log()
+        res = self._validate_check({**login, "pass": "resync"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        detail = res["detail"]
+        self.assertEqual(1, len(detail["multi_challenge"]), res)
+        self.assertEqual("To resync your token, please enter the next OTP value",
+                         detail["multi_challenge"][0]["message"])
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=detail["transaction_id"])
+
+        # counter = 9, will be autosynced
+        res = self._validate_check({**login, "transaction_id": detail["transaction_id"], "pass": "520489"})
+        self.assertTrue(res["result"]["value"], res)
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual("Found matching challenge,autoresync successful", audit_entry.get("info"))
 
     def test_16_autoresync_hotp_otponly(self):
         # The audit entry names the requested token, so the audit info does not repeat its serial

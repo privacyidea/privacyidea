@@ -25,6 +25,7 @@ These are the decorator functions for generic challenge response mechanisms:
 Currently the decorator is only tested in tests/test_lib_token.py
 """
 import logging
+from typing import Any
 
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import check_pin, SCOPE
@@ -33,7 +34,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
-from privacyidea.lib.tokenclass import ClientMode
+from privacyidea.lib.tokenclass import ClientMode, TokenClass
 from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 
 
@@ -186,6 +187,9 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     Policies: A policy defines that the token resync should be allowed this way.
     Note: The general config "autoresync" needs to be set anyway.
 
+    A failed authentication of a token with an otp1c is answered with a challenge for the next OTP value. If the
+    authentication triggered challenges, they are kept and the challenge of such a token asks for the next OTP value.
+
     args are:
     :param tokenobject_list: The list of all the tokens of the user, that will be checked
     :param passw: The password presented in the authentication.
@@ -195,22 +199,59 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     :param user: The user_obj
     """
     success, reply_dict = wrapped_function(*args, **kwds)
+    if success:
+        return success, reply_dict
 
-    options = kwds.get("options") or {}
+    g = (kwds.get("options") or {}).get("g")
+    if reply_dict.get("multi_challenge"):
+        _ask_for_resync_in_challenges(reply_dict, args[0], g)
     # After a failed authentication, we check if the token has an otp1c
-    if not success and reply_dict.get("serial"):
+    elif reply_dict.get("serial"):
         # FIXME: Only works if the one token has a unique PIN
         serial = reply_dict.get("serial")
-        g = options.get("g")
         # The tokenlist can contain more than one token. So we get the matching token object
         token = next(t for t in args[0] if t.token.serial == serial)
-        if token and token.get_tokeninfo("otp1c"):
-            # We have an entry for resync
-            if g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE,
-                                 token=token).any():
-                challenge_reply = _create_challenge(token, CHALLENGE_TYPE.RESYNC,
-                                                    _("To resync your token, please enter the next OTP value"))
-                _keep_autoresync_info(reply_dict, challenge_reply)
-                reply_dict = challenge_reply
+        if token and _resync_pending(token, g):
+            challenge_reply = _create_challenge(token, CHALLENGE_TYPE.RESYNC, _resync_message())
+            _keep_autoresync_info(reply_dict, challenge_reply)
+            reply_dict = challenge_reply
 
     return success, reply_dict
+
+
+def _resync_message() -> str:
+    return _("To resync your token, please enter the next OTP value")
+
+
+def _resync_pending(token: TokenClass, g: Any) -> bool:
+    """
+    Check if the token waits for the next OTP value of an autoresync and a policy allows to ask for it.
+
+    :param token: The token to check
+    :param g: The request context to match the policy with, None if there is none
+    :return: True if the challenge of the token should ask for the next OTP value
+    """
+    return bool(token.get_tokeninfo("otp1c") and g and
+                Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE, token=token).any())
+
+
+def _ask_for_resync_in_challenges(reply_dict: dict, tokens: list[TokenClass], g: Any) -> None:
+    """
+    Ask for the next OTP value in the challenges of the tokens that wait for it. Answering their challenge with that
+    value already resyncs the token, so the other challenges of the reply stay.
+
+    :param reply_dict: The reply with the triggered challenges, changed in place
+    :param tokens: The tokens that were checked
+    :param g: The request context to match the policy with, None if there is none
+    """
+    messages = reply_dict.get("messages", [])
+    changed = False
+    for challenge in reply_dict["multi_challenge"]:
+        token = next((t for t in tokens if t.token.serial == challenge.get("serial")), None)
+        if token and _resync_pending(token, g):
+            if challenge.get("message") in messages:
+                messages[messages.index(challenge["message"])] = _resync_message()
+            challenge["message"] = _resync_message()
+            changed = True
+    if changed and messages:
+        reply_dict["message"] = ", ".join(set(messages))
