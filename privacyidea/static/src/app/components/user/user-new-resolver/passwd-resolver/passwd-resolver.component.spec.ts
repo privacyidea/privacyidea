@@ -71,4 +71,42 @@ describe("PasswdResolverComponent", () => {
 
     expect(component.model().fileName).toBe("/etc/passwd");
   });
+
+  describe("edits through the controls", () => {
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    const fileInput = (): HTMLInputElement => fixture.nativeElement.querySelector("input") as HTMLInputElement;
+
+    beforeEach(async () => {
+      componentRef.setInput("data", { fileName: "/etc/passwd" });
+      await flush();
+    });
+
+    it("starts pristine and valid after the data input is applied", () => {
+      expect(component.isDirty()).toBe(false);
+      expect(component.isValid()).toBe(true);
+    });
+
+    it("marks the resolver dirty when the clear button empties the file name", async () => {
+      (fixture.nativeElement.querySelector("app-clearable-input button") as HTMLButtonElement).click();
+      await flush();
+
+      expect(component.model().fileName).toBe("");
+      expect(component.passwdForm.fileName().dirty()).toBe(true);
+      expect(component.isDirty()).toBe(true);
+      expect(component.isValid()).toBe(false);
+    });
+
+    it("shows the required message once the emptied file name is touched", async () => {
+      fileInput().value = "";
+      fileInput().dispatchEvent(new Event("input"));
+      fileInput().dispatchEvent(new Event("blur"));
+      await flush();
+
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("required");
+    });
+  });
 });

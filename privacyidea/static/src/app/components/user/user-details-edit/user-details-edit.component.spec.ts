@@ -73,12 +73,40 @@ describe("UserDetailsEditComponent", () => {
     expect(component["newUserData"]()).toEqual(expected);
   });
 
-  it("should emit updateData and update newUserData on updateAttribute", () => {
-    let emitted: EditUserData | undefined;
-    component.updateData.subscribe((data: EditUserData) => (emitted = data));
-    component.setNewUserData("email", "changed@example.com");
-    expect(component["newUserData"]().email).toBe("changed@example.com");
-    expect(emitted).toEqual(expect.objectContaining({ email: "changed@example.com" }));
+  const type = (attribute: string, value: string) => {
+    const input = fixture.nativeElement.querySelectorAll("input")[component.attributes().indexOf(attribute)];
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+  };
+
+  it("should render one input per attribute, filled from initialUserData", () => {
+    const inputs: HTMLInputElement[] = Array.from(fixture.nativeElement.querySelectorAll("input"));
+    expect(inputs.map((input) => input.value)).toEqual(["test@example.com", "Test", "User"]);
+  });
+
+  it("should emit updateData and update newUserData when an input changes", () => {
+    const emitted: EditUserData[] = [];
+    component.updateData.subscribe((data: EditUserData) => emitted.push(data));
+    type("email", "changed@example.com");
+    expect(component["newUserData"]()["email"]).toBe("changed@example.com");
+    expect(component["userForm"]().dirty()).toBe(true);
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]).toEqual({
+      username: "testuser",
+      email: "changed@example.com",
+      surname: "Test",
+      givenname: "User"
+    });
+  });
+
+  it("should not emit updateData before the user edits a field", () => {
+    const emitted: EditUserData[] = [];
+    component.updateData.subscribe((data: EditUserData) => emitted.push(data));
+    mockResolverService.userAttributes.set(["username", "email", "mobile"]);
+    fixture.detectChanges();
+    expect(emitted).toEqual([]);
+    expect(component["userForm"]().dirty()).toBe(false);
   });
 
   it("should compute attributes without username and userid", () => {
@@ -125,7 +153,7 @@ describe("UserDetailsEditComponent", () => {
       givenname: "User",
       email: "test@example.com"
     });
-    component.setNewUserData("surname", "New-Name");
+    type("surname", "New-Name");
 
     mockResolverService.userAttributes.set(["username", "surname", "givenname", "mobile"]);
     fixture.detectChanges();
@@ -135,5 +163,36 @@ describe("UserDetailsEditComponent", () => {
       givenname: "User",
       mobile: ""
     });
+  });
+
+  it("should keep the typed values when initialUserData changes", () => {
+    type("email", "typed@example.com");
+    fixture.componentRef.setInput("initialUserData", { ...testUserData, email: "reloaded@example.com" });
+    fixture.detectChanges();
+    expect(component["newUserData"]()["email"]).toBe("typed@example.com");
+  });
+
+  it("should re-seed from initialUserData when nothing was typed", () => {
+    fixture.componentRef.setInput("initialUserData", { ...testUserData, email: "reloaded@example.com" });
+    fixture.detectChanges();
+    expect(component["newUserData"]()["email"]).toBe("reloaded@example.com");
+  });
+
+  it("should start with empty values and no username without initialUserData", () => {
+    fixture = TestBed.createComponent(UserDetailsEditComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput("resolver", "testresolver");
+    fixture.detectChanges();
+    expect(component["newUserData"]()).toEqual({ username: "", email: "", surname: "", givenname: "" });
+  });
+
+  it("should bind an input for an attribute that appears after the first render", () => {
+    const emitted: EditUserData[] = [];
+    component.updateData.subscribe((data: EditUserData) => emitted.push(data));
+    mockResolverService.userAttributes.set(["username", "email", "mobile"]);
+    fixture.detectChanges();
+    type("mobile", "12345");
+    expect(component["newUserData"]()["mobile"]).toBe("12345");
+    expect(emitted.at(-1)).toEqual({ username: "testuser", email: "test@example.com", mobile: "12345" });
   });
 });

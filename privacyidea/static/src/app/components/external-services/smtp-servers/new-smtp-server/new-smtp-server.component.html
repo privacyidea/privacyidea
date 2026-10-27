@@ -71,7 +71,7 @@
           class="input-width-l margin-bottom-32">
           <mat-label i18n="@@common.identifier">Identifier</mat-label>
           <app-clearable-input
-            (clearButtonClick)="smtpModel.update(m => ({...m, identifier: ''}))"
+            (clearButtonClick)="clearField(smtpForm.identifier, '')"
             [showClearButton]="!isEditMode() && !!smtpModel().identifier">
             <input
               [formField]="smtpForm.identifier"
@@ -81,16 +81,16 @@
           <mat-hint i18n="@@smtpServer.uniqueIdentifying"
             >The unique identifying name of the SMTP server definition.</mat-hint
           >
-          @if (smtpForm.identifier().errors().some(e => e.kind === 'required')) {
+          @if (hasError(smtpForm.identifier, ERR.required)) {
             <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
           }
-          @if (smtpForm.identifier().errors().some(e => e.kind === 'pattern')) {
+          @if (hasError(smtpForm.identifier, ERR.pattern)) {
             <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
               and hyphens are allowed.</mat-error
             >
           }
-          @if (smtpForm.identifier().errors().some(e => e.kind === 'reservedName')) {
+          @if (hasError(smtpForm.identifier, ERR.reservedName)) {
             <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ smtpForm.identifier().value() }}".</mat-error>
           }
         </mat-form-field>
@@ -101,14 +101,14 @@
             class="input-width-l">
             <mat-label i18n="@@common.ipFqdn">IP or FQDN</mat-label>
             <app-clearable-input
-              (clearButtonClick)="smtpModel.update(m => ({...m, server: ''}))"
+              (clearButtonClick)="clearField(smtpForm.server, '')"
               [showClearButton]="!!smtpModel().server">
               <input
                 [formField]="smtpForm.server"
                 matInput
                 placeholder="smtp://mail.example.com" />
             </app-clearable-input>
-            @if (smtpForm.server().errors().some(e => e.kind === 'required')) {
+            @if (hasError(smtpForm.server, ERR.required)) {
               <mat-error i18n="@@common.serverRequired">Server is <strong>required</strong></mat-error>
             }
           </mat-form-field>
@@ -122,6 +122,9 @@
               matInput
               placeholder="25"
               type="number" />
+            @if (hasError(smtpForm.port, ERR.parse)) {
+              <mat-error i18n="@@smtpServer.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
+            }
           </mat-form-field>
         </div>
 
@@ -131,17 +134,17 @@
             class="input-width-l">
             <mat-label i18n="@@smtpServer.senderEmail">Sender Email</mat-label>
             <app-clearable-input
-              (clearButtonClick)="smtpModel.update(m => ({...m, sender: ''}))"
+              (clearButtonClick)="clearField(smtpForm.sender, '')"
               [showClearButton]="!!smtpModel().sender">
               <input
                 [formField]="smtpForm.sender"
                 matInput
                 placeholder="privacyidea@example.com" />
             </app-clearable-input>
-            @if (smtpForm.sender().errors().some(e => e.kind === 'required')) {
+            @if (hasError(smtpForm.sender, ERR.required)) {
               <mat-error i18n="@@smtpServer.senderEmailRequired">Sender email is <strong>required</strong></mat-error>
             }
-            @if (smtpForm.sender().errors().some(e => e.kind === 'email')) {
+            @if (hasError(smtpForm.sender, 'email')) {
               <mat-error i18n="@@smtpServer.invalidEmailFormat">Invalid email format</mat-error>
             }
           </mat-form-field>
@@ -155,6 +158,9 @@
               matInput
               placeholder="10"
               type="number" />
+            @if (hasError(smtpForm.timeout, ERR.parse)) {
+              <mat-error i18n="@@smtpServer.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
+            }
           </mat-form-field>
         </div>
 
@@ -164,7 +170,7 @@
             class="input-width-l margin-bottom-16">
             <mat-label i18n="@@common.username">Username</mat-label>
             <app-clearable-input
-              (clearButtonClick)="smtpModel.update(m => ({...m, username: ''}))"
+              (clearButtonClick)="clearField(smtpForm.username, '')"
               [showClearButton]="!!smtpModel().username">
               <input
                 [formField]="smtpForm.username"
@@ -179,7 +185,7 @@
             class="input-width-l margin-bottom-16">
             <mat-label i18n="@@common.password">Password</mat-label>
             <app-clearable-input
-              (clearButtonClick)="smtpModel.update(m => ({...m, password: ''}))"
+              (clearButtonClick)="clearField(smtpForm.password, '')"
               [showClearButton]="!!smtpModel().password">
               <input
                 [formField]="smtpForm.password"
@@ -195,7 +201,7 @@
           class="input-width-xl">
           <mat-label i18n="@@common.description">Description</mat-label>
           <app-clearable-input
-            (clearButtonClick)="smtpModel.update(m => ({...m, description: ''}))"
+            (clearButtonClick)="clearField(smtpForm.description, '')"
             [showClearButton]="!!smtpModel().description">
             <textarea
               [formField]="smtpForm.description"
@@ -208,15 +214,13 @@
         <div class="checkbox-group">
           @if (showTLS()) {
             <mat-checkbox
-              [checked]="smtpModel().tls"
-              (change)="smtpModel.update(m => ({...m, tls: $event.checked}))"
+              [formField]="smtpForm.tls"
               i18n="@@smtpServer.useStarttls"
               >Use StartTLS</mat-checkbox
             >
           }
           <mat-checkbox
-            [checked]="smtpModel().enqueue_job"
-            (change)="smtpModel.update(m => ({...m, enqueue_job: $event.checked}))"
+            [formField]="smtpForm.enqueue_job"
             i18n="@@smtpServer.sendMailFromJob"
             >Send mail from job queue</mat-checkbox
           >
@@ -239,7 +243,7 @@
               class="input-width-l">
               <mat-label i18n="@@smtpServer.certificate">Certificate</mat-label>
               <app-clearable-input
-                (clearButtonClick)="smtpModel.update(m => ({...m, certificate: ''}))"
+                (clearButtonClick)="clearField(smtpForm.certificate, '')"
                 [showClearButton]="!!smtpModel().certificate">
                 <input
                   [formField]="smtpForm.certificate"
@@ -252,14 +256,12 @@
 
           <div class="checkbox-group">
             <mat-checkbox
-              [checked]="smtpModel().smime"
-              (change)="smtpModel.update(m => ({...m, smime: $event.checked}))"
+              [formField]="smtpForm.smime"
               i18n="@@smtpServer.sMimeSigning"
               >S/MIME signing</mat-checkbox
             >
             <mat-checkbox
-              [checked]="smtpModel().dont_send_on_error"
-              (change)="smtpModel.update(m => ({...m, dont_send_on_error: $event.checked}))"
+              [formField]="smtpForm.dont_send_on_error"
               i18n="@@smtpServer.donTSendSigning"
               >Don't send on signing error</mat-checkbox
             >
@@ -271,7 +273,7 @@
               class="input-width-l">
               <mat-label i18n="@@smtpServer.privateKey">Private Key</mat-label>
               <app-clearable-input
-                (clearButtonClick)="smtpModel.update(m => ({...m, private_key: ''}))"
+                (clearButtonClick)="clearField(smtpForm.private_key, '')"
                 [showClearButton]="!!smtpModel().private_key">
                 <input
                   [formField]="smtpForm.private_key"
@@ -286,7 +288,7 @@
               class="input-width-l">
               <mat-label i18n="@@common.passwordPrivate">Password for the Private Key</mat-label>
               <app-clearable-input
-                (clearButtonClick)="smtpModel.update(m => ({...m, private_key_password: ''}))"
+                (clearButtonClick)="clearField(smtpForm.private_key_password, '')"
                 [showClearButton]="!!smtpModel().private_key_password">
                 <input
                   [formField]="smtpForm.private_key_password"
@@ -305,15 +307,15 @@
           class="input-width-l margin-top-16">
           <mat-label i18n="@@smtpServer.recipientTesting">Recipient for Testing</mat-label>
           <app-clearable-input
-            (clearButtonClick)="smtpModel.update(m => ({...m, recipient: ''}))"
-            [showClearButton]="!!smtpModel().recipient">
+            (clearButtonClick)="clearField(recipientForm.recipient, '')"
+            [showClearButton]="!!recipientModel().recipient">
             <input
-              [formField]="smtpForm.recipient"
+              [formField]="recipientForm.recipient"
               matInput />
           </app-clearable-input>
           <button
             (click)="test()"
-            [disabled]="isTesting()"
+            [disabled]="isTesting() || !smtpForm().valid()"
             class="margin-right-16"
             i18n-matTooltip="@@smtpServer.sendTestEmail"
             mat-icon-button

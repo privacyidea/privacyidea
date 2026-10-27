@@ -109,6 +109,60 @@ describe("NewServiceIdComponent", () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
+  it("posts the name and the description exactly as typed, a blank description included", async () => {
+    component.serviceIdModel.set({ servicename: "test", description: "   " });
+
+    await component.save();
+
+    expect(serviceIdServiceMock.postServiceId).toHaveBeenCalledWith({ servicename: "test", description: "   " });
+  });
+
+  describe("identifier field", () => {
+    const identifierInput = () => fixture.nativeElement.querySelector("input") as HTMLInputElement;
+    const type = async (value: string) => {
+      identifierInput().value = value;
+      identifierInput().dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it("reports required, then the invalid characters, once the field is touched", async () => {
+      await type("bad name");
+      expect(
+        component.serviceIdForm
+          .servicename()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["pattern"]);
+      identifierInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain("invalid characters");
+
+      await type("");
+      identifierInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(
+        component.serviceIdForm
+          .servicename()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["required"]);
+      expect(fixture.nativeElement.textContent).toContain("is required");
+    });
+
+    it("marks the form dirty when the clear button empties the field", async () => {
+      await type("name");
+      component.serviceIdForm().reset();
+      expect(component.hasChanges).toBe(false);
+      const clear = identifierInput().closest("app-clearable-input")!.querySelector("button") as HTMLButtonElement;
+      clear.click();
+      fixture.detectChanges();
+      expect(component.serviceIdModel().servicename).toBe("");
+      expect(component.hasChanges).toBe(true);
+    });
+  });
+
   describe("onCancel", () => {
     let mockSaveExitDialogRef: Partial<MatDialogRef<SaveAndExitDialogComponent, SaveAndExitDialogResult>> & {
       afterClosed: jest.Mock;
@@ -277,5 +331,45 @@ describe("NewServiceIdComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("NewServiceIdComponent edit mode", () => {
+  let component: NewServiceIdComponent;
+  let fixture: ComponentFixture<NewServiceIdComponent>;
+  let serviceIdServiceMock: MockServiceIdService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [NewServiceIdComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ name: "existing-service" })) }
+        },
+        { provide: ServiceIdService, useClass: MockServiceIdService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService }
+      ]
+    }).compileComponents();
+
+    serviceIdServiceMock = TestBed.inject(ServiceIdService) as unknown as MockServiceIdService;
+    serviceIdServiceMock.serviceIds.set([{ servicename: "existing-service", description: "existing" }]);
+    jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+
+    fixture = TestBed.createComponent(NewServiceIdComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it("loads the service ID and disables its name", () => {
+    expect(component.isEditMode()).toBe(true);
+    expect(component.serviceIdModel()).toEqual({ servicename: "existing-service", description: "existing" });
+    expect(component.serviceIdForm.servicename().disabled()).toBe(true);
+    const nameInput = fixture.nativeElement.querySelector("app-clearable-input input") as HTMLInputElement;
+    expect(nameInput.disabled).toBe(true);
   });
 });

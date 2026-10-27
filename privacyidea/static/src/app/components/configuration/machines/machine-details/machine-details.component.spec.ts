@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -130,15 +132,134 @@ describe("MachineDetailsComponent", () => {
     expect(machineServiceMock.deleteTokenById).toHaveBeenCalledWith("S1", "ssh", "10");
   });
 
-  it("should attach token", () => {
-    component.newTokenSerial.set("S2");
-    component.selectedApplication.set("ssh");
-    component.attachToken();
-    expect(machineServiceMock.postAssignMachineToToken).toHaveBeenCalledWith({
-      serial: "S2",
-      application: "ssh",
-      machineid: 1,
-      resolver: "res1"
+  describe("attach block", () => {
+    let tokenServiceMock: MockTokenService;
+    let el: HTMLElement;
+
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    const serialInput = () => el.querySelector<HTMLInputElement>("input[matInput]")!;
+    const attachButton = () => el.querySelector<HTMLButtonElement>("button.action-button-primary")!;
+    const errorKinds = (field: typeof component.attachForm.serial) =>
+      field()
+        .errors()
+        .map((e) => e.kind);
+
+    beforeEach(() => {
+      tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
+      tokenServiceMock.tokenOptions.set(["S1", "S2", "T3"]);
+      el = fixture.nativeElement;
+    });
+
+    afterEach(() => {
+      document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+    });
+
+    it("starts invalid with both fields required and an empty application", () => {
+      expect(component.attachModel()).toEqual({ serial: "", application: "" });
+      expect(component.attachForm().valid()).toBe(false);
+      expect(errorKinds(component.attachForm.serial)).toEqual(["required"]);
+      expect(errorKinds(component.attachForm.application)).toEqual(["required"]);
+      expect(attachButton().disabled).toBe(true);
+    });
+
+    it("enables the button once serial and application are set", async () => {
+      component.attachForm.serial().value.set("S2");
+      expect(attachButton().disabled).toBe(true);
+      component.attachForm.application().value.set("ssh");
+      await flush();
+      expect(component.attachForm().valid()).toBe(true);
+      expect(attachButton().disabled).toBe(false);
+    });
+
+    it("writes typed text to the model and mirrors it into selectedToken", async () => {
+      await flush();
+      const input = serialInput();
+      input.value = "S1";
+      input.dispatchEvent(new Event("input"));
+      await flush();
+      expect(component.attachModel().serial).toBe("S1");
+      expect(component.attachForm.serial().dirty()).toBe(true);
+      expect(tokenServiceMock.selectedToken()).toBe("S1");
+    });
+
+    it("mirrors a programmatic serial change into selectedToken", async () => {
+      component.attachModel.update((m) => ({ ...m, serial: "T3" }));
+      await flush();
+      expect(tokenServiceMock.selectedToken()).toBe("T3");
+    });
+
+    it("writes the picked autocomplete option to the field", async () => {
+      await flush();
+      const input = serialInput();
+      input.focus();
+      input.dispatchEvent(new Event("focusin"));
+      input.value = "S";
+      input.dispatchEvent(new Event("input"));
+      await flush();
+      const options = Array.from(document.querySelectorAll<HTMLElement>("mat-option"));
+      expect(options.map((o) => o.textContent?.trim())).toEqual(["S1", "S2"]);
+      options[1].click();
+      await flush();
+      expect(component.attachModel().serial).toBe("S2");
+      expect(component.attachForm.serial().valid()).toBe(true);
+      expect(tokenServiceMock.selectedToken()).toBe("S2");
+    });
+
+    it("writes the picked application to the model", async () => {
+      await flush();
+      const selects = fixture.debugElement.queryAll(By.directive(MatSelect));
+      const select = selects[selects.length - 1].componentInstance as MatSelect;
+      select.open();
+      await flush();
+      document.querySelector<HTMLElement>("mat-option")!.click();
+      await flush();
+      expect(component.attachModel().application).toBe("ssh");
+      expect(component.attachForm.application().dirty()).toBe(true);
+    });
+
+    it("should attach token", () => {
+      component.attachModel.set({ serial: "S2", application: "ssh" });
+      component.attachToken();
+      expect(machineServiceMock.postAssignMachineToToken).toHaveBeenCalledWith({
+        serial: "S2",
+        application: "ssh",
+        machineid: 1,
+        resolver: "res1"
+      });
+    });
+
+    it("does not attach while the form is invalid", () => {
+      component.attachModel.set({ serial: "S2", application: "" });
+      component.attachToken();
+      component.attachModel.set({ serial: "", application: "ssh" });
+      component.attachToken();
+      expect(machineServiceMock.postAssignMachineToToken).not.toHaveBeenCalled();
+    });
+
+    it("does not attach without machine data", () => {
+      component.data.set(undefined);
+      component.attachModel.set({ serial: "S2", application: "ssh" });
+      component.attachToken();
+      expect(machineServiceMock.postAssignMachineToToken).not.toHaveBeenCalled();
+    });
+
+    it("resets the form, clears selectedToken and reloads the tokens after attaching", async () => {
+      component.attachForm.serial().value.set("S2");
+      component.attachForm.application().value.set("ssh");
+      component.attachForm.serial().markAsTouched();
+      await flush();
+      machineServiceMock.getMachineTokens.mockClear();
+      component.attachToken();
+      await flush();
+      expect(component.attachModel()).toEqual({ serial: "", application: "" });
+      expect(component.attachForm().touched()).toBe(false);
+      expect(component.attachForm().dirty()).toBe(false);
+      expect(tokenServiceMock.selectedToken()).toBe("");
+      expect(machineServiceMock.getMachineTokens).toHaveBeenCalledTimes(1);
     });
   });
 

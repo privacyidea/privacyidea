@@ -26,6 +26,8 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { BindType, LdapPreset, LDAPResolverData, ResolverService } from "@services/resolver/resolver.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 interface LdapFormModel {
@@ -40,11 +42,11 @@ interface LdapFormModel {
   BINDPW: string;
   KEYTABFILE: string;
   BINDDN: string;
-  TIMEOUT: number;
-  CACHE_TIMEOUT: number;
-  SIZELIMIT: number;
-  SERVERPOOL_ROUNDS: number;
-  SERVERPOOL_SKIP: number;
+  TIMEOUT: number | null;
+  CACHE_TIMEOUT: number | null;
+  SIZELIMIT: number | null;
+  SERVERPOOL_ROUNDS: number | null;
+  SERVERPOOL_SKIP: number | null;
   SERVERPOOL_PERSISTENT: boolean;
   EDITABLE: boolean;
   OBJECT_CLASSES: string;
@@ -90,7 +92,7 @@ export class LdapResolverComponent {
       loginName: "uid",
       searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
       userInfo:
-        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "entryUUID"
     },
     {
@@ -98,10 +100,13 @@ export class LdapResolverComponent {
       loginName: "sAMAccountName",
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
       userInfo:
-        "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "objectGUID"
     }
   ];
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
   data = input<Partial<LDAPResolverData>>({});
   isEditMode = computed(() => !!this.resolverService.selectedResolverName());
 
@@ -146,6 +151,11 @@ export class LdapResolverComponent {
     required(f.LOGINNAMEATTRIBUTE);
     required(f.LDAPSEARCHFILTER);
     required(f.USERINFO);
+    required(f.TIMEOUT);
+    required(f.SIZELIMIT);
+    disabled(f.START_TLS, () => this.startTlsDisabled());
+    disabled(f.TLS_VERSION, () => this.tlsVersionDisabled());
+    disabled(f.TLS_VERIFY, () => this.tlsVerifyDisabled());
     disabled(f.TLS_CA_FILE, () => this.tlsCaFileDisabled());
   });
 
@@ -216,13 +226,10 @@ export class LdapResolverComponent {
   }
 
   applyLdapPreset(preset: LdapPreset): void {
-    this.model.update((m) => ({
-      ...m,
-      LOGINNAMEATTRIBUTE: preset.loginName,
-      LDAPSEARCHFILTER: preset.searchFilter,
-      USERINFO: preset.userInfo,
-      UIDTYPE: preset.uidType,
-      MULTIVALUEATTRIBUTES: ""
-    }));
+    clearField(this.ldapForm.LOGINNAMEATTRIBUTE, preset.loginName);
+    clearField(this.ldapForm.LDAPSEARCHFILTER, preset.searchFilter);
+    clearField(this.ldapForm.USERINFO, preset.userInfo);
+    clearField(this.ldapForm.UIDTYPE, preset.uidType);
+    clearField(this.ldapForm.MULTIVALUEATTRIBUTES, "");
   }
 }

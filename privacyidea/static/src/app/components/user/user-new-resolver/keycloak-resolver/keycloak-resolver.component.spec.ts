@@ -57,7 +57,7 @@ describe("KeycloakResolverComponent", () => {
     componentRef.setInput("data", defaultData);
     fixture.detectChanges();
     expect(component.model().base_url).toBe("http://localhost:8080");
-    expect(component.configAuthModel().endpoint).toBe("/realms/{realm}/protocol/openid-connect/token");
+    expect(component.model().config_authorization.endpoint).toBe("/realms/{realm}/protocol/openid-connect/token");
   });
 
   it("should enable group fields when active is true in data", () => {
@@ -72,10 +72,10 @@ describe("KeycloakResolverComponent", () => {
     componentRef.setInput("data", data);
     fixture.detectChanges();
 
-    expect(component.userGroupsModel().active).toBe(true);
-    expect(component.userGroupsModel().user_groups_attribute).toBe("name");
-    expect(component.userGroupsModel().endpoint).toBe("/groups");
-    expect(component.userGroupsModel().method).toBe("GET");
+    expect(component.model().config_get_user_groups.active).toBe(true);
+    expect(component.model().config_get_user_groups.user_groups_attribute).toBe("name");
+    expect(component.model().config_get_user_groups.endpoint).toBe("/groups");
+    expect(component.model().config_get_user_groups.method).toBe("GET");
   });
 
   it("should disable group fields when active is false in data", () => {
@@ -88,6 +88,15 @@ describe("KeycloakResolverComponent", () => {
     componentRef.setInput("data", data);
     fixture.detectChanges();
 
-    expect(component.userGroupsModel().active).toBe(false);
+    expect(component.model().config_get_user_groups.active).toBe(false);
+  });
+
+  it("requires the base URL in its advanced mode and no Entra ID fields", () => {
+    componentRef.setInput("type", "keycloakresolver");
+    fixture.detectChanges();
+    expect(component.isValid()).toBe(false);
+
+    component.model.update((m) => ({ ...m, base_url: "http://localhost:8080" }));
+    expect(component.isValid()).toBe(true);
   });
 });

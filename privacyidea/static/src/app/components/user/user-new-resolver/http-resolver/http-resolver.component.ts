@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, input, linkedSignal, signal, untracked } from "@angular/core";
-import { form, FormField } from "@angular/forms/signals";
+import { applyWhen, disabled, form, FormField, required } from "@angular/forms/signals";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -44,10 +44,16 @@ import {
   KeycloakResolverData,
   ResolverService
 } from "@services/resolver/resolver.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { HttpConfigComponent, HttpConfigModel } from "./http-config/http-config.component";
-import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute/http-groups-attribute.component";
+import {
+  HttpGroupsAttributeComponent,
+  UserGroupsModel,
+  userGroupsRules
+} from "./http-groups-attribute/http-groups-attribute.component";
 
 export interface AttributeMappingRow {
   privacyideaAttr: string | null;
@@ -91,7 +97,7 @@ export interface HttpResolverModel {
   Editable: boolean;
   verify_tls: boolean;
   tls_ca_path: string;
-  timeout: number;
+  timeout: number | null;
   // Auth fields (non-entraid)
   username: string;
   password: string;
@@ -245,21 +251,54 @@ export class HttpResolverComponent {
 
   model = signal<HttpResolverModel>(emptyHttpModel());
 
-  httpForm = form(this.model, () => {
-    // Validators applied conditionally in template, but form-level validation
-    // is handled via isValid() which checks required fields based on mode
-  });
-
-  // Expose nested sub-signals for sub-components
-  configAuthorizationModel = computed(() => {
-    const currentModel = this.model();
-    return {
-      get: () => currentModel.config_authorization,
-      update: (fn: (config: HttpConfigModel) => HttpConfigModel) => {
-        this.model.update((model) => ({ ...model, config_authorization: fn(model.config_authorization) }));
+  /**
+   * The rules follow the mode: a basic resolver is one request, an advanced one a base URL with an optional request
+   * per operation. Fields of the other mode are not rendered, so their rules do not apply.
+   */
+  httpForm = form(this.model, (f) => {
+    userGroupsRules(f.config_get_user_groups);
+    disabled(f.tls_ca_path, (ctx) => !ctx.valueOf(f.verify_tls));
+    applyWhen(
+      f,
+      () => this.basicSettings(),
+      (basic) => {
+        requiredNonBlank(basic.endpoint);
+        required(basic.method);
+        requiredNonBlank(basic.requestMapping);
+        requiredNonBlank(basic.headers);
+        requiredNonBlank(basic.responseMapping);
+        applyWhen(
+          basic,
+          (ctx) => ctx.value().hasSpecialErrorHandler,
+          (special) => requiredNonBlank(special.errorResponse)
+        );
       }
-    };
+    );
+    applyWhen(
+      f,
+      () => !this.basicSettings(),
+      (advanced) => {
+        requiredNonBlank(advanced.base_url);
+        required(advanced.timeout);
+        applyWhen(
+          advanced,
+          () => this.type() === "entraidresolver",
+          (entra) => {
+            requiredNonBlank(entra.tenant);
+            requiredNonBlank(entra.client_id);
+            applyWhen(
+              entra,
+              (ctx) => ctx.value().client_credential_type === "secret",
+              (secret) => requiredNonBlank(secret.client_secret)
+            );
+          }
+        );
+      }
+    );
   });
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     effect(() => {
@@ -304,64 +343,9 @@ export class HttpResolverComponent {
         this.model.update((m) => ({ ...m, responseMapping: "" }));
       }
     });
-
-    // Sync sub-component models to main model when they change
-    effect(() => {
-      const auth = this.configAuthModel();
-      this.model.update((m) => ({ ...m, config_authorization: auth }));
-    });
-    effect(() => {
-      const userAuth = this.configUserAuthModel();
-      this.model.update((m) => ({ ...m, config_user_auth: userAuth }));
-    });
-    effect(() => {
-      const list = this.configGetUserListModel();
-      this.model.update((m) => ({ ...m, config_get_user_list: list }));
-    });
-    effect(() => {
-      const byId = this.configGetUserByIdModel();
-      this.model.update((m) => ({ ...m, config_get_user_by_id: byId }));
-    });
-    effect(() => {
-      const byName = this.configGetUserByNameModel();
-      this.model.update((m) => ({ ...m, config_get_user_by_name: byName }));
-    });
-    effect(() => {
-      const create = this.configCreateUserModel();
-      this.model.update((m) => ({ ...m, config_create_user: create }));
-    });
-    effect(() => {
-      const edit = this.configEditUserModel();
-      this.model.update((m) => ({ ...m, config_edit_user: edit }));
-    });
-    effect(() => {
-      const del = this.configDeleteUserModel();
-      this.model.update((m) => ({ ...m, config_delete_user: del }));
-    });
-    effect(() => {
-      const groups = this.userGroupsModel();
-      this.model.update((m) => ({ ...m, config_get_user_groups: groups }));
-    });
   }
 
-  isValid = () => {
-    const currentModel = this.model();
-    const basic = this.basicSettings();
-    if (!basic && this.isAdvanced) {
-      return !!currentModel.base_url;
-    }
-    if (basic) {
-      return (
-        !!currentModel.endpoint &&
-        !!currentModel.method &&
-        !!currentModel.requestMapping &&
-        !!currentModel.headers &&
-        !!currentModel.responseMapping &&
-        (!currentModel.hasSpecialErrorHandler || !!currentModel.errorResponse)
-      );
-    }
-    return !!currentModel.base_url;
-  };
+  isValid = () => this.httpForm().valid();
   isDirty = () => this.httpForm().dirty();
   /**
    * The value posted to the server, by mode: a basic resolver consists of one request, so an empty object removes
@@ -425,16 +409,6 @@ export class HttpResolverComponent {
         : "{userid} {username} {password}";
     return $localize`:@@resolver.possibleTags:Possible tags: ${tags}:TAGS:`;
   });
-  // Signals derived from model for reactive sub-component inputs
-  configAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configUserAuthModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configGetUserListModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configGetUserByIdModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configGetUserByNameModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configCreateUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configEditUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  configDeleteUserModel = signal<HttpConfigModel>({ ...EMPTY_HTTP_CONFIG });
-  userGroupsModel = signal<UserGroupsModel>({ ...EMPTY_USER_GROUPS });
   protected basicSettings = linkedSignal<boolean>(() => {
     if (this.isAdvanced) {
       return false;
@@ -562,46 +536,22 @@ export class HttpResolverComponent {
       this.syncMappingToData();
     }
 
-    if (Object.keys(updates).length > 0) {
-      this.model.update((m) => ({ ...m, ...updates }));
-    }
-
-    const userGroupsCfg = data.config_get_user_groups;
-    if (userGroupsCfg) {
-      this.userGroupsModel.update((g) => ({ ...g, ...this.sanitizeConfig(userGroupsCfg) }));
-    }
-    const authCfg = data.config_authorization;
-    if (authCfg) {
-      this.configAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(authCfg) }));
-    }
-    const userAuthCfg = data.config_user_auth;
-    if (userAuthCfg && typeof userAuthCfg !== "string") {
-      this.configUserAuthModel.update((c) => ({ ...c, ...this.sanitizeConfig(userAuthCfg) }));
-    }
-    const listCfg = data.config_get_user_list;
-    if (listCfg) {
-      this.configGetUserListModel.update((c) => ({ ...c, ...this.sanitizeConfig(listCfg) }));
-    }
-    const byIdCfg = data.config_get_user_by_id;
-    if (byIdCfg) {
-      this.configGetUserByIdModel.update((c) => ({ ...c, ...this.sanitizeConfig(byIdCfg) }));
-    }
-    const byNameCfg = data.config_get_user_by_name;
-    if (byNameCfg) {
-      this.configGetUserByNameModel.update((c) => ({ ...c, ...this.sanitizeConfig(byNameCfg) }));
-    }
-    const createCfg = data.config_create_user;
-    if (createCfg) {
-      this.configCreateUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(createCfg) }));
-    }
-    const editCfg = data.config_edit_user;
-    if (editCfg) {
-      this.configEditUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(editCfg) }));
-    }
-    const deleteCfg = data.config_delete_user;
-    if (deleteCfg) {
-      this.configDeleteUserModel.update((c) => ({ ...c, ...this.sanitizeConfig(deleteCfg) }));
-    }
+    this.model.update((m) => {
+      const next = { ...m, ...updates };
+      for (const key of REQUEST_CONFIG_KEYS) {
+        const config = data[key];
+        if (config && typeof config !== "string") {
+          next[key] = { ...m[key], ...this.sanitizeConfig(config) };
+        }
+      }
+      if (data.config_get_user_groups) {
+        next.config_get_user_groups = {
+          ...m.config_get_user_groups,
+          ...this.sanitizeConfig(data.config_get_user_groups)
+        };
+      }
+      return next;
+    });
 
     this.httpForm().reset();
   }
@@ -641,6 +591,7 @@ export class HttpResolverComponent {
     return value != null ? String(value) : "";
   }
 
+  /** Writes the mapping through its field, so an edited mapping marks the form dirty. */
   private syncMappingToData(): void {
     const map: Record<string, string> = {};
 
@@ -652,6 +603,6 @@ export class HttpResolverComponent {
       }
     }
 
-    this.model.update((m) => ({ ...m, attribute_mapping: map }));
+    clearField(this.httpForm.attribute_mapping, map);
   }
 }

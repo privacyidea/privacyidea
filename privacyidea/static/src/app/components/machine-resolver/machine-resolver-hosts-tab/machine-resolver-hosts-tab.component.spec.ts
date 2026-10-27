@@ -18,12 +18,29 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { HostsMachineResolverData } from "@services/machine-resolver/machine-resolver.service";
+import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverHostsTabComponent } from "./machine-resolver-hosts-tab.component";
 
 describe("MachineResolverHostsTabComponent", () => {
   let component: MachineResolverHostsTabComponent;
   let fixture: ComponentFixture<MachineResolverHostsTabComponent>;
+  let emitted: MachineResolverData[];
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const filenameInput = () => fixture.nativeElement.querySelector("input") as HTMLInputElement;
+  const type = async (value: string) => {
+    filenameInput().value = value;
+    filenameInput().dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const setData = async (data: MachineResolverData) => {
+    fixture.componentRef.setInput("machineResolverData", data);
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -32,71 +49,98 @@ describe("MachineResolverHostsTabComponent", () => {
 
     fixture = TestBed.createComponent(MachineResolverHostsTabComponent);
     component = fixture.componentInstance;
+    emitted = [];
+    component.newData.subscribe((data) => emitted.push(data));
     fixture.componentRef.setInput("canEdit", true);
     fixture.componentRef.setInput("machineResolverData", { type: "hosts", filename: "testFileName", resolver: "test" });
-    fixture.detectChanges();
+    await flush();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit validator on init", () => {
-    jest.spyOn(component.newValidator, "emit");
-    component.ngOnInit();
-    expect(component.newValidator.emit).toHaveBeenCalled();
+  it("shows the filename of the data and emits nothing on init", () => {
+    expect(filenameInput().value).toBe("testFileName");
+    expect(component.model().filename).toBe("testFileName");
+    expect(emitted).toEqual([]);
   });
 
-  it("should check validity", () => {
-    const validData: HostsMachineResolverData = {
-      type: "hosts",
-      filename: "testFileName",
-      resolver: "test"
-    };
-    const invalidData1 = { type: "ldap" } as unknown as HostsMachineResolverData;
-    const invalidData2: HostsMachineResolverData = {
-      type: "hosts",
-      filename: " ",
-      resolver: ""
-    };
-    expect(component.isValid(validData)).toBeTruthy();
-    expect(component.isValid(invalidData1)).toBeFalsy();
-    expect(component.isValid(invalidData2)).toBeFalsy();
+  it("re-seeds the form when the data changes and still emits nothing", async () => {
+    await setData({ type: "hosts", filename: "/etc/other", resolver: "test" } as HostsMachineResolverData);
+    expect(filenameInput().value).toBe("/etc/other");
+    expect(emitted).toEqual([]);
   });
 
-  it("should update data with patch only", () => {
-    jest.spyOn(component.newData, "emit");
-    const initialData: HostsMachineResolverData = {
-      type: "hosts",
-      filename: "initial",
-      resolver: ""
-    };
-    fixture.componentRef.setInput("machineResolverData", initialData);
-    const patch = { filename: "updated" };
-    component.updateData(patch);
-    expect(component.newData.emit).toHaveBeenCalledWith({ ...initialData, ...patch, type: "hosts" });
+  describe("validity", () => {
+    it("is valid with a filename", () => {
+      expect(component.isValid()).toBe(true);
+    });
+
+    it.each(["", " ", "  \t"])("is invalid for the filename %p", async (value) => {
+      await type(value);
+      expect(component.isValid()).toBe(false);
+      expect(
+        component.hostsForm
+          .filename()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["required"]);
+    });
+
+    it("is invalid when the data holds no filename", async () => {
+      await setData({ type: "hosts", resolver: "test" });
+      expect(component.isValid()).toBe(false);
+    });
+
+    it("is valid while the form is disabled, even without a filename", async () => {
+      fixture.componentRef.setInput("canEdit", false);
+      await setData({ type: "hosts", resolver: "test" });
+      expect(filenameInput().disabled).toBe(true);
+      expect(component.isValid()).toBe(true);
+    });
+
+    it("renders the required message only after the field is touched", async () => {
+      await type("");
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+      await component.touchAll();
+      await flush();
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("required");
+    });
   });
 
-  it("should update data with patch and remove", () => {
-    jest.spyOn(component.newData, "emit");
-    const initialData: HostsMachineResolverData = {
-      type: "hosts",
-      filename: "initial",
-      resolver: "resolver"
-    };
-    fixture.componentRef.setInput("machineResolverData", initialData);
-    const patch = { filename: "updated" };
-    component.updateData({ patch, remove: ["resolver"] });
-    const expectedData: Partial<HostsMachineResolverData> = { type: "hosts", filename: "updated" };
-    expect(component.newData.emit).toHaveBeenCalledWith(expectedData);
-  });
+  describe("emitted data", () => {
+    it("emits the typed filename merged into the data of the input", async () => {
+      await type("/etc/hosts");
+      expect(emitted).toEqual([{ type: "hosts", filename: "/etc/hosts", resolver: "test" }]);
+    });
 
-  it("should update data with remove only", () => {
-    jest.spyOn(component.newData, "emit");
-    const initialData: HostsMachineResolverData = { type: "hosts", filename: "initial", resolver: "name" };
-    fixture.componentRef.setInput("machineResolverData", initialData);
-    component.updateData({ remove: ["resolver"] });
-    const expectedData: Partial<HostsMachineResolverData> = { type: "hosts", filename: "initial" };
-    expect(component.newData.emit).toHaveBeenCalledWith(expectedData);
+    it("emits an emptied filename that the data held", async () => {
+      await type("");
+      expect(emitted).toEqual([{ type: "hosts", filename: "", resolver: "test" }]);
+    });
+
+    it("keeps the filename absent while the data held none and the field is empty", async () => {
+      await setData({ type: "hosts", resolver: "test" });
+      await type("a");
+      expect(emitted).toEqual([{ type: "hosts", filename: "a", resolver: "test" }]);
+      await setData({ type: "hosts", resolver: "test" });
+      await type("");
+      expect(emitted).toHaveLength(1);
+    });
+
+    it("emits once per edit when the parent feeds the emitted data back", async () => {
+      await type("/first");
+      await setData(emitted[0]);
+      expect(emitted).toHaveLength(1);
+      await type("/second");
+      expect(emitted).toHaveLength(2);
+      expect(emitted[1]).toEqual({ type: "hosts", filename: "/second", resolver: "test" });
+    });
+
+    it("marks the typed field dirty", async () => {
+      await type("/etc/hosts");
+      expect(component.hostsForm.filename().dirty()).toBe(true);
+    });
   });
 });
