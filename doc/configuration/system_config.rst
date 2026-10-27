@@ -136,21 +136,54 @@ cache expire. For more information read :ref:`usercache`.
 Override Authorization Client
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This setting is important with client specific
-policies (see :ref:`policies`) and RADIUS servers or other proxies. In
-case of RADIUS the authenticating client
-for the privacyIDEA system will always be the RADIUS server, which issues
-the authentication request. But you can allow the RADIUS server IP to
-send another client information (in this case the RADIUS client) so that
-the policy is evaluated for the RADIUS client. A RADIUS server
-may add the API parameter *client* with a new IP address. An HTTP reverse
-proxy may append the respective client IP to the ``X-Forwarded-For`` HTTP
-header. The *client* parameter is only evaluated for ``/validate/``,
-``/ttype/`` and ``/auth`` requests, and only if it is a string; the
-``X-Forwarded-For`` header for every request.
+privacyIDEA uses the client IP of a request in the client condition of policies (see :ref:`client_policies`), in
+the ``client_ip`` condition of event handlers (see :ref:`handlerconditions`), in conditional access (see
+:ref:`conditional_access_policies`) and in the authentication log. By default, the client IP is the address the
+connection comes from. Behind a reverse proxy or a load balancer, this is the proxy's address for every request.
+A RADIUS server always connects with its own address, whichever RADIUS client sent the request.
+
+This setting lets privacyIDEA take the client IP from what such a proxy reports instead. An HTTP reverse proxy adds
+the address it received the request from to the ``X-Forwarded-For`` HTTP header. A RADIUS server or another
+application plugin may send the address of its client in the API parameter *client*. The *client* parameter is only
+evaluated for ``/validate/``, ``/ttype/`` and ``/auth`` requests, and only if it is a string; the
+``X-Forwarded-For`` header for every request. Other headers, such as ``Forwarded`` or ``X-Real-IP``, are ignored.
 
 This field takes a comma separated list of sequences of IP Networks
 mapping to other IP networks.
+
+**How the client IP is determined**
+
+privacyIDEA builds the path of a request from itself towards the client:
+
+#. the address the connection comes from,
+#. the entries of the ``X-Forwarded-For`` header from right to left. Every proxy appends the address it received the
+   request from, so the rightmost entry was written by the proxy closest to privacyIDEA, and the leftmost entry
+   names the original client,
+#. the *client* parameter, if the endpoint evaluates it.
+
+Each entry of this setting is compared with this path position by position: its first network with the address the
+connection comes from, its second network with the next address of the path, and so on. An entry applies if each of
+its networks contains the address at its position. The address at the entry's last position is then the client IP.
+If several entries apply, the one that reaches furthest along the path wins. If no entry applies, the client IP is
+the address the connection comes from.
+
+An entry never looks further along the path than it has networks. Entries that a client writes into the
+``X-Forwarded-For`` header it sends end up on the far side of the entry that its proxy appends, so they are ignored.
+
+.. warning:: Every network of an entry except the last one is trusted to report the next address of the path. A
+   host in such a network can pick its client IP from the entry's last network, with the ``X-Forwarded-For``
+   header or the *client* parameter, and with it which policies apply to its requests and which conditional-access
+   blocks hit it. List only your proxies and RADIUS servers, as narrowly as possible, and no network that end users
+   connect from.
+
+   For the same reason, a listed proxy must add the address it received the request from to the header. A proxy or
+   load balancer that passes the header on unchanged lets the client write the address that privacyIDEA takes from
+   it. With nginx, ``proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`` appends the address. Apache
+   appends it by default when it forwards a request with ``ProxyPass``.
+
+privacyIDEA does not check this setting when you save it. If an entry is not a valid address or network,
+privacyIDEA writes an error to the log for every request and ignores the whole setting: the client IP is then always
+the address the connection comes from.
 
 **Examples**
 
@@ -188,15 +221,33 @@ A nested entry only applies to requests that passed all listed hops. For request
 or that come directly from the second, add separate entries such as ``10.0.0.18 > 10.1.2.0/24`` or
 ``10.1.2.0/24 > 192.168.0.0/16``.
 
-Some reverse proxies write an ``X-Forwarded-For`` hop with its source port (``192.0.2.43:51234``), bracket an
-IPv6 address (``[2001:db8::1]``), or do both (``[2001:db8::1]:4711``). privacyIDEA accepts these spellings when
-it matches the hops against the configured networks. An IPv4-mapped IPv6 address, as a dual-stack listener
-reports the peer of an IPv4 connection (``::ffff:10.0.0.1``), matches the networks that contain the IPv4 address
-it stands for, and the other way round. The address is recorded as it was reported, and the client entries of
-policies match it in either spelling as well.
+For example, a client 192.168.0.10 sends a request to a reverse proxy at 10.1.2.3, which forwards it to a second
+proxy at 10.0.0.18, which forwards it to privacyIDEA. privacyIDEA receives the connection from 10.0.0.18 with the
+header ``X-Forwarded-For: 192.168.0.10, 10.1.2.3``, so the path is 10.0.0.18, 10.1.2.3, 192.168.0.10.
 
-A hop that is not a valid address in any of these spellings ends the chain: the hops before it are still mapped,
-the hops after it are recorded in the authentication log but not mapped.
+* With ``10.0.0.18 > 10.1.2.0/24 > 192.168.0.0/16``, the client IP is 192.168.0.10.
+* With ``10.0.0.18``, the client IP is 10.1.2.3: the entry has two positions, and the second one is the first proxy.
+* With ``10.0.0.18 > 192.168.0.0/16``, the client IP is 10.0.0.18: 10.1.2.3 is not in 192.168.0.0/16, so the entry
+  does not apply.
+
+**Address spellings**
+
+Some reverse proxies write an ``X-Forwarded-For`` entry with its source port (``192.0.2.43:51234``), bracket an
+IPv6 address (``[2001:db8::1]``), or do both (``[2001:db8::1]:4711``). privacyIDEA accepts these spellings. A
+link-local address with a zone (``fe80::1%eth0``), as the operating system reports a link-local peer, is read
+without the zone.
+
+A dual-stack listener reports the peer of an IPv4 connection in the IPv4-mapped form (``::ffff:10.0.0.1``). An
+IPv4 network in this setting, in the client condition of a policy or in the ``client_ip`` condition of an event
+handler also contains the mapped form of its addresses, and a network in the mapped form, such as
+``::ffff:10.0.0.0/104``, also contains the plain IPv4 addresses. Other IPv6 networks only match the form that is
+written: ``::/0`` contains ``::ffff:10.0.0.1``, but not ``10.0.0.1``. The client IP keeps the form in which it
+was reported.
+
+An entry of the path that is not a valid address in any of these spellings, such as ``unknown``, ends the path at
+its position. The addresses before it can still become the client IP. The addresses after it are recorded in the
+authentication log, but never become the client IP. If the proxy closest to privacyIDEA writes such a value, the
+client IP is the address of that proxy.
 
 .. note:: Every authentication-log entry records not only which client IP was used but how it was arrived
    at: the effective address (``source_ip``), the address the connection actually came from
@@ -208,7 +259,9 @@ the hops after it are recorded in the authentication log but not mapped.
 
    ``source_ip_source`` distinguishes ``REMOTE_ADDR`` (no mapping is configured) from
    ``REMOTE_ADDR_UNMAPPED`` (a mapping is configured, but this peer may not map the client any further),
-   which is what makes a misconfigured proxy path visible in the log rather than silent.
+   which is what makes a misconfigured proxy path visible in the log rather than silent. ``X_FORWARDED_FOR`` and
+   ``CLIENT_PARAM`` mean that the client IP was taken from the header or the *client* parameter. To check your
+   entries, send a request through your proxies and compare these fields with what you expect.
 
 
 SMTP server for password recovery
