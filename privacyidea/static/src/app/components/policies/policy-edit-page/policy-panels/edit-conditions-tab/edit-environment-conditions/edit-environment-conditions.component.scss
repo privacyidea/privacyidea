@@ -35,6 +35,14 @@
   gap: 16px;
 }
 
+// The stored value under the display name of a dropdown entry. It keeps the option's text colour, which turns
+// on-primary on hover, so it is set apart by size rather than a muted colour.
+.user-agent-option-value {
+  display: block;
+  font-size: var(--mat-sys-body-small-size);
+  line-height: var(--mat-sys-body-small-line-height);
+}
+
 .remove-user-agent-btn {
   align-items: center;
   display: flex;
