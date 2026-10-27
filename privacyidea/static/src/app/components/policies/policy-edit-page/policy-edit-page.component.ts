@@ -124,13 +124,15 @@ export class PolicyEditPageComponent implements OnDestroy {
     );
   });
   readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.editedPolicy()));
+  /**
+   * The panel reports whether name, priority, scope and the added actions satisfy their rules, the name collision
+   * included. A policy that checks all resolvers of a user needs a resolver.
+   */
   readonly canSave = computed(
     () =>
       this.savingName() === null &&
       this.isPolicyEdited() &&
-      !!this.editedPolicy().name?.trim() &&
-      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
-      !this.nameTaken() &&
+      !!this.panel()?.valid() &&
       !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output, viewChildren } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
@@ -41,6 +41,11 @@ export class AddedActionsListComponent {
   readonly actionFilter = input<string>("");
 
   private policyService = inject(PolicyService);
+
+  private readonly rows = viewChildren(PolicyActionItemEditComponent);
+
+  /** False while a row on display holds a value that does not suit its action. */
+  readonly valid = computed(() => this.rows().every((row) => row.valid()));
 
   readonly filteredActions = computed(() => {
     const filter = this.actionFilter().trim();

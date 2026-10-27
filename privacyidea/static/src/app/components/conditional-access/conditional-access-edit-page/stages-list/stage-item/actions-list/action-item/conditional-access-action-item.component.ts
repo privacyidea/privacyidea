@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, inject, input, linkedSignal, output } from "@angular/core";
+import { FieldTree } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -31,8 +32,8 @@ import {
   DurationUnit,
   largestWholeDurationUnit
 } from "@utils/duration-unit.utils";
+import { CA_ERR } from "@services/conditional-access/conditional-access-policy-form";
 import {
-  actionValueError,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyServiceInterface,
   ConditionalAccessActionType,
@@ -176,18 +177,23 @@ export class ConditionalAccessActionItemComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
 
-  readonly action = input.required<ConditionalAccessStageAction>();
+  // The fields of this action in the policy form. The rules that judge it (allowed for the target, in conflict with
+  // another action, a value it can act on) live in the form and show here as its errors.
+  readonly action = input.required<FieldTree<ConditionalAccessStageAction>>();
   // The whole stage's action list plus this action's place in it, so the picker can grey out the types
   // another action already occupies and this action can say why it collides with one of them.
   readonly siblingActions = input<ConditionalAccessStageAction[]>([]);
   readonly actionIndex = input<number>(0);
   readonly target = input<ConditionalAccessTarget>("user");
-  readonly updateAction = output<Partial<ConditionalAccessStageAction>>();
   readonly removeAction = output<void>();
 
   readonly emailPlaceholders = EMAIL_PLACEHOLDERS;
 
-  readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.action().action_type] ?? "");
+  // The action as stored; its edits go through patch(), which writes the same model the form rules read.
+  protected readonly current = computed(() => this.action()().value());
+  private readonly errors = computed(() => this.action()().errors());
+
+  readonly actionDescription = computed<string>(() => ACTION_DESCRIPTIONS[this.current().action_type] ?? "");
 
   // Whether the configured SMTP servers can be listed for the identifier field: /smtpserver/ requires
   // smtpserver_read, so without it the list is never fetched (see SmtpService); the email actions stay
@@ -200,18 +206,16 @@ export class ConditionalAccessActionItemComponent {
   // being dropped on the next save.
   readonly allowedActionTypes = computed<ConditionalAccessActionType[]>(() => {
     const allowed = this.policyService.actionsForTarget(this.target());
-    const current = this.action().action_type;
+    const current = this.current().action_type;
     return allowed.includes(current) ? allowed : [...allowed, current];
   });
 
-  // Whether the selected action is valid for the current target. Changing the
-  // target can leave a stale, now-incompatible action (e.g. LOCK_USER after
-  // switching to source_ip); flag it so it's fixed before the backend 400s. While
-  // the allowed list is still loading (empty) we cannot judge, so treat as valid.
-  readonly isActionAllowedForTarget = computed<boolean>(() => {
-    const allowed = this.policyService.actionsForTarget(this.target());
-    return allowed.length === 0 || allowed.includes(this.action().action_type);
-  });
+  // Whether the selected action is valid for the current target. Changing the target can leave a stale,
+  // now-incompatible action (e.g. LOCK_USER after switching to source_ip); it is flagged so it's fixed before the
+  // backend 400s. While the allowed list is still loading the form cannot judge and lets the action pass.
+  readonly isActionAllowedForTarget = computed<boolean>(
+    () => !this.errors().some((error) => error.kind === CA_ERR.stageActionNotAllowed)
+  );
 
   // The types this action may not switch to: taken by another action on the same stage, or mutually
   // exclusive with one. This action's own index is excluded, so its current type is never disabled.
@@ -219,29 +223,17 @@ export class ConditionalAccessActionItemComponent {
     this.policyService.unavailableActionTypes(this.siblingActions(), this.target(), this.actionIndex())
   );
 
-  // Why this action collides with an earlier one on the same stage, or null when it does not. The backend
-  // rejects both shapes (_validate_stage_action_combination), so it is flagged here rather than left to the
-  // save - mirroring isActionAllowedForTarget.
-  readonly actionConflict = computed<"duplicate" | "exclusive" | null>(() =>
-    this.policyService.actionConflict(this.siblingActions(), this.actionIndex(), this.target())
+  // Why this action collides with an earlier one on the same stage, or empty when it does not. The backend rejects both
+  // shapes (_validate_stage_action_combination), so it is flagged here rather than left to the save.
+  readonly conflictMessage = computed<string>(
+    () => this.errors().find((error) => error.kind === CA_ERR.stageActionConflict)?.message ?? ""
   );
-
-  readonly conflictMessage = computed<string>(() => {
-    switch (this.actionConflict()) {
-      case "duplicate":
-        return $localize`:@@conditionalAccess.actionAlreadyStageOnly:This action is already on this stage. Only the email actions may be added more than once.`;
-      case "exclusive":
-        return $localize`:@@conditionalAccess.actionContradictsAnotherAction:This action contradicts another action on this stage. Remove one of them.`;
-      default:
-        return "";
-    }
-  });
 
   // Effective checkbox state; when the action carries no explicit value, the display mirrors the
   // server's action-aware default, where the standing DENY verdict re-triggers and the
   // lock/email/block effects fire once at the threshold.
   readonly retriggerChecked = computed<boolean>(() => {
-    const action = this.action();
+    const action = this.current();
     if (action.retrigger_above_threshold != null) {
       return action.retrigger_above_threshold;
     }
@@ -249,16 +241,18 @@ export class ConditionalAccessActionItemComponent {
   });
 
   readonly valueMode = computed<ActionValueMode>(() =>
-    ConditionalAccessActionItemComponent.modeFor(this.action().action_type)
+    ConditionalAccessActionItemComponent.modeFor(this.current().action_type)
   );
 
   // What is missing from this action's value, or null when the backend would accept it. Shown next to the
   // field so the admin fixes it here rather than reading a 400 after saving; the edit page gates Save on the
   // same rule (see actionValuesValid).
-  readonly actionValueError = computed<string | null>(() => actionValueError(this.action()));
+  readonly actionValueError = computed<string | null>(
+    () => this.errors().find((error) => error.kind === CA_ERR.stageActionValue)?.message ?? null
+  );
 
   readonly emailFields = computed<EmailField[]>(() => {
-    const isAdmin = this.action().action_type === "EMAIL_ADMIN";
+    const isAdmin = this.current().action_type === "EMAIL_ADMIN";
     const fields = EMAIL_FIELDS.filter((field) => isAdmin || !field.onlyAdmin);
     if (this.smtpServersListable()) {
       return fields;
@@ -309,7 +303,7 @@ export class ConditionalAccessActionItemComponent {
   }
 
   private emailValue(): Record<string, unknown> {
-    const value = this.action().action_value;
+    const value = this.current().action_value;
     return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
   }
 
@@ -333,7 +327,7 @@ export class ConditionalAccessActionItemComponent {
   // not just the bare number this editor writes, so a duration set through the API renders in the field
   // instead of looking empty.
   private durationSeconds(): number | null {
-    return parseActionDurationSeconds(this.action().action_value);
+    return parseActionDurationSeconds(this.current().action_value);
   }
 
   // Display value in the currently selected unit.
@@ -353,20 +347,24 @@ export class ConditionalAccessActionItemComponent {
     return String(value);
   }
 
+  private patch(partial: Partial<ConditionalAccessStageAction>): void {
+    this.action()().value.update((action) => ({ ...action, ...partial }));
+  }
+
   onActionTypeChange(actionType: ConditionalAccessActionType): void {
     // A value shaped for the previous mode is meaningless in a different one, so it resets when the
     // mode changes (e.g. switching an email object to a duration).
     if (ConditionalAccessActionItemComponent.modeFor(actionType) !== this.valueMode()) {
-      this.updateAction.emit({ action_type: actionType, action_value: null });
+      this.patch({ action_type: actionType, action_value: null });
     } else {
-      this.updateAction.emit({ action_type: actionType });
+      this.patch({ action_type: actionType });
     }
   }
 
   onDurationInput(text: string): void {
     const trimmed = text.trim();
     if (!trimmed) {
-      this.updateAction.emit({ action_value: null });
+      this.patch({ action_value: null });
       return;
     }
     const parsed = parseInt(trimmed, 10);
@@ -387,7 +385,7 @@ export class ConditionalAccessActionItemComponent {
 
   private emitDuration(seconds: number | null): void {
     this.emittedDurationSeconds = seconds;
-    this.updateAction.emit({ action_value: seconds });
+    this.patch({ action_value: seconds });
   }
 
   onEmailFieldInput(key: string, value: string): void {
@@ -399,11 +397,11 @@ export class ConditionalAccessActionItemComponent {
     } else {
       next[key] = value;
     }
-    this.updateAction.emit({ action_value: Object.keys(next).length > 0 ? next : null });
+    this.patch({ action_value: Object.keys(next).length > 0 ? next : null });
   }
 
   onRetriggerChange(checked: boolean): void {
-    this.updateAction.emit({ retrigger_above_threshold: checked });
+    this.patch({ retrigger_above_threshold: checked });
   }
 
   onRemoveAction(): void {
