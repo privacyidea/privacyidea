@@ -28,6 +28,12 @@ Possible Options
 Options can be passed to the script. Your script has to take care of the
 parsing of these parameters.
 
+background
+..........
+
+This option is required. With ``wait`` privacyIDEA waits for the script to complete, which can block the
+request. With ``background`` the script runs in the background and the HTTP request returns early.
+
 logged_in_role
 ..............
 
@@ -41,18 +47,28 @@ The script will be called with the parameter::
 logged_in_user
 ..............
 
-Add the logged in user. If
-there is no logged in user, *none* will be passed.
+Add the logged in user. If there is no logged in user (e.g. on
+``/validate/check``), ``none@none`` will be passed. For an internal
+administrator the realm part is empty (``admin@``).
 
 The script will be called with the parameter::
 
    --logged_in_user <username>@<realm>
 
+raise_error
+...........
+
+Only available if **background** is set to ``wait``. If the script can not be started or fails with an error
+code, an exception is raised in the HTTP request.
+
 realm
 .....
 
-Add ``--realm <realm>`` as script parameter. If no realm is given, *none*
-will be passed.
+Add ``--realm <realm>`` of the user the request is about as script parameter:
+the realm of the user the request names; on the token endpoints, for a token
+given only by its serial, the realm of the token owner; for a logged in user, the
+realm of this user. If the request has no user (e.g. ``/validate/check`` with
+only a serial), *none* will be passed.
 
 serial
 ......
@@ -69,10 +85,20 @@ to the database should be made available to the script or the running request.
 user
 ....
 
-Add ``--user <username>`` as script parameter. If no username is given,
-*none* will be passed.
+Add ``--user <username>`` of the user the request is about as script
+parameter: the user the request names; on the token endpoints, for a token given
+only by its serial, the owner of the token; for a logged in user, this user. If
+the request has no user (e.g. ``/validate/check`` with only a serial), *none*
+will be passed.
 
 .. note:: The script handler only runs scripts from its script directory and only
    passes the parameters above. To call a tool like :ref:`get_unused_tokens`, which
    expects its own command and arguments, put a small wrapper script into the script
    directory that ignores the parameters and calls the tool.
+
+Code
+~~~~
+
+.. automodule:: privacyidea.lib.eventhandler.scripthandler
+   :members:
+   :undoc-members:

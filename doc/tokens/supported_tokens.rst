@@ -40,14 +40,14 @@ compatible and frequently used with the software.
       - ePass, BioPass, iePass
       - ePass K9, ePass K40, BioPass K26/K27, iePass K44, AllinPass FIDO2
     * - **Nitrokey**
-      - Nitrokey 3, FIDO2
-      - Nitrokey 3A NFC, Nitrokey 3C NFC, Nitrokey FIDO2
+      - Nitrokey 3, Passkey
+      - Nitrokey 3A NFC, Nitrokey 3C NFC, Nitrokey Passkey
     * - **Swissbit**
       - iShield Series
       - various models
     * - **SoloKeys**
-      - Solo V2, Solo Tap
-      - Solo V2, Solo Tap USB-A/USB-C, Somu
+      - Solo 2
+      - Solo 2A+ NFC, Solo 2C+ NFC
     * - **Token2**
       - T2F2, PIN+
       - T2F2 NFC, T2F2 USB-C, Token2 PIN+
@@ -59,9 +59,10 @@ compatible and frequently used with the software.
       - Thetis FIDO2 Security Key, Thetis Pro FIDO2
 
 .. note::
-   While privacyIDEA supports the standard CTAP2 protocol used by most FIDO2 devices,
-   specific "manage" features (such as resident credential management or bio-enrollment)
-   depend on the specific device firmware capabilities.
+   privacyIDEA acts as the WebAuthn relying party; the browser or the operating system
+   talks CTAP2 to the device. Device management functions such as resident credential
+   management or fingerprint enrollment are not part of privacyIDEA; they depend on the
+   device firmware and are done with the tools of the vendor or the operating system.
 
 Classic Hardware Tokens
 =======================
@@ -73,21 +74,6 @@ The following classic hardware tokens (OTP, HOTP, TOTP) are also known to work w
     :ref:`hotp_token` and :ref:`yubico_token` Cloud.
     You can initialize the YubiKey yourself, so that the secret key is not known
     to the vendor. The process is described in :ref:`yubikey_enrollment_tools`.
-
-**eToken Pass**
-    The eToken Pass is a push button token by SafeNet. It can be
-    initialized with a special hardware device. Or you get a seed file, that you
-    need to import to privacyIDEA.
-    The eToken Pass can run as :ref:`hotp_token` or :ref:`totp_token` token.
-
-**eToken NG OTP**
-    The eToken NG OTP is a push button token by SafeNet. As it
-    has a USB connector, you can initialize the token via the USB connector. Thus
-    the hardware vendor does not know the secret key.
-
-**DaPlug**
-    The DaPlug token is similar to the YubiKey and can be initialized
-    via the USB connector. The secret key is not known to the hardware vendor.
 
 **Smartdisplayer OTP Card**
     This is a push button card. It features an eInk
@@ -115,15 +101,14 @@ Smartphone Apps
     It can be used for :ref:`hotp_token`, :ref:`totp_token` and :ref:`push_token`.
 
 **Google Authenticator**
-    The Google Authenticator is working well in :ref:`hotp_token`
-    and :ref:`totp_token` mode. If you choose "Generate OTP Key on the Server"
+    The Google Authenticator works well in :ref:`hotp_token`
+    and :ref:`totp_token` mode. If you check *Generate the OTP key on the server and show a QR code to scan*
     during enrollment, you can scan a QR Code with the Google Authenticator.
     See :ref:`first_steps_token` to learn how to do this.
 
 **FreeOTP**
     privacyIDEA is known to work well with the FreeOTP App. The
-    FreeOTP App is a :ref:`totp_token` token. So if you scan the QR Code of an
-    HOTP token, the OTP will not validate.
+    FreeOTP App works in :ref:`hotp_token` and :ref:`totp_token` mode.
 
 **mOTP**
-    Several mOTP Apps like "Potato", "Token2" or "DroidOTP" are supported.
+    mOTP apps like "Token2" are supported.

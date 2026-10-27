@@ -24,7 +24,6 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.utils";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
@@ -54,7 +53,6 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormFieldModule,
     MatInputModule,

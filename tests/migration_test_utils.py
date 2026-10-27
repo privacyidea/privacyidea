@@ -8,11 +8,16 @@ required and how to write one.
 import functools
 import os
 import pathlib
+import re
+from typing import Any
 
 import pytest
 from alembic import command
 from alembic.config import Config as AlembicConfig
-from sqlalchemy import create_engine, inspect as sa_inspect, text
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine, event, inspect as sa_inspect, text
+from sqlalchemy.engine import Connection, Engine, ExecutionContext
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
 DB_URL = os.environ.get("TEST_DATABASE_URL", "")
@@ -195,6 +200,32 @@ def load_seed(seed_revision: str = START_REVISION, db_url: str = DB_URL) -> None
         engine.dispose()
 
 
+def set_stamp_before(engine: Engine, revision: str) -> None:
+    """
+    Set the revision stamp back to what it was before *revision* ran, without undoing anything the migration did.
+
+    The next upgrade then runs the migration again on top of its own result, as on an installation on which the stamp
+    was set back by hand. *revision* is replaced by those of its parents that no other stamped head already descends
+    from.
+    """
+    script = ScriptDirectory.from_config(get_alembic_cfg())
+    with engine.begin() as conn:
+        heads = set(MigrationContext.configure(conn).get_current_heads())
+        heads.discard(revision)
+        parents = script.get_revision(revision).down_revision
+        for parent in parents if isinstance(parents, tuple) else (parents,):
+            if not any(parent in {ancestor.revision for ancestor in script.iterate_revisions(head, "base")}
+                       for head in heads):
+                heads.add(parent)
+        conn.execute(text("DELETE FROM alembic_version"))
+        for head in heads:
+            conn.execute(text("INSERT INTO alembic_version (version_num) VALUES (:head)"), {"head": head})
+
+
+class InjectedFailure(Exception):
+    """Raised by :meth:`MigrationTestBase._upgrade_failing_after` to stop a migration midway."""
+
+
 class MigrationTestBase:
     """
     Base class for per-migration data-transformation tests.
@@ -254,6 +285,41 @@ class MigrationTestBase:
     def _downgrade(self, target: str | None = None) -> None:
         """Run alembic downgrade to *target* (defaults to PARENT_REVISION)."""
         command.downgrade(get_alembic_cfg(), target or self.PARENT_REVISION)
+
+    def _upgrade_failing_after(self, statement_pattern: str) -> None:
+        """
+        Run the upgrade to REVISION, but stop it with :class:`InjectedFailure` right after the first statement that
+        matches the regular expression *statement_pattern* (case-insensitive) has been executed.
+
+        Every statement commits on its own (see migrations/env.py), so this leaves the database in the state of an
+        installation on which the migration failed at that point. Follow it with :meth:`_upgrade` to check that the
+        migration can run again from there.
+        """
+        from privacyidea.models import db
+
+        pattern = re.compile(statement_pattern, re.IGNORECASE)
+        matched_statements = []
+
+        def fail_after_matching_statement(connection: Connection, cursor: Any, statement: str, parameters: Any,
+                                          context: ExecutionContext, executemany: bool) -> None:
+            if not matched_statements and pattern.search(statement):
+                matched_statements.append(statement)
+                raise InjectedFailure(statement)
+
+        event.listen(db.engine, "after_cursor_execute", fail_after_matching_statement)
+        try:
+            with pytest.raises(InjectedFailure):
+                self._upgrade()
+        finally:
+            event.remove(db.engine, "after_cursor_execute", fail_after_matching_statement)
+
+    def _set_stamp_back_to_parent(self) -> None:
+        """Set the stamp back from REVISION to its parent, keeping what the migration did (see set_stamp_before)."""
+        engine = self._engine()
+        try:
+            set_stamp_before(engine, self.REVISION)
+        finally:
+            engine.dispose()
 
     def _load_seed_and_upgrade_to_parent(self, engine) -> None:
         """

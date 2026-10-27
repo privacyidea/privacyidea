@@ -83,6 +83,7 @@ import { TokengroupService, TokengroupServiceInterface } from "@services/tokengr
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { from } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 const PROFILE_TEXT_BREAKPOINT = 1701;
 
@@ -91,7 +92,7 @@ const ONE_HOUR_MS = 3_600_000;
 
 @Component({
   selector: "app-user-utils-panel",
-  imports: [MatIcon, MatIconButton, MatTooltip, NgClass, DatePipe, RouterLink],
+  imports: [TooltipAriaLabelDirective, MatIcon, MatIconButton, MatTooltip, NgClass, DatePipe, RouterLink],
   templateUrl: "./user-utils-panel.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })

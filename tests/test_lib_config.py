@@ -4,7 +4,11 @@ This test file tests the lib.config
 The lib.config only depends on the database model.
 """
 import importlib
+import time
+from datetime import timedelta
 from unittest import mock
+
+from sqlalchemy import select
 
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
@@ -22,7 +26,7 @@ from privacyidea.lib.config import (get_resolver_list,
                                     get_token_classes, get_token_prefix,
                                     get_machine_resolver_class_dict,
                                     get_privacyidea_node, get_privacyidea_nodes,
-                                    this, get_config_object, invalidate_config_object,
+                                    this, get_config_object, invalidate_config_object, get_shared_config_object,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators,
                                     check_node_uuid_exists)
@@ -30,6 +34,7 @@ from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.models import Config, save_config_timestamp, db, NodeName
+from privacyidea.models.config import PRIVACYIDEA_TIMESTAMP
 from .base import MyTestCase
 
 
@@ -277,6 +282,64 @@ class ConfigTestCase(MyTestCase):
         invalidate_config_object()
         # ... and the new config object knows!
         self.assertEqual(get_from_config("some_key", "default"), "some_value")
+
+    @staticmethod
+    def _write_config_value_in_database(key: str, value: str, timestamp: str | None = None) -> None:
+        """
+        Change a config value directly in the database, the way another node does it. With a timestamp, the
+        configuration timestamp in the database is set to it as well.
+        """
+        db.session.scalars(select(Config).filter_by(Key=key)).one().Value = value
+        if timestamp is not None:
+            db.session.scalars(select(Config).filter_by(Key=PRIVACYIDEA_TIMESTAMP)).one().Value = timestamp
+        db.session.commit()
+
+    def test_09b_reload_on_a_change_by_a_node_with_a_clock_behind(self):
+        # A change is picked up when the database timestamp differs from the one read with the loaded
+        # configuration, also when the other node's clock is behind the clock of this node
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+
+        self._write_config_value_in_database("reload_key", "v2", timestamp=str(time.time() - 10))
+        invalidate_config_object()
+        self.assertEqual("v2", get_from_config("reload_key"))
+
+    def test_09c_no_reload_while_the_database_timestamp_is_unchanged(self):
+        # As long as the configuration timestamp in the database is unchanged, the loaded configuration is used,
+        # also within the second of the last change
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+
+        self._write_config_value_in_database("reload_key", "v2")
+        invalidate_config_object()
+        self.assertEqual("v1", get_from_config("reload_key"))
+
+    def test_09d_database_timestamp_is_checked_once_per_interval(self):
+        # With PI_CHECK_RELOAD_CONFIG, the database timestamp is checked at most once per interval. A check that
+        # finds no change starts a new interval, and the first check after the interval picks up a change.
+        set_privacyidea_config(key="reload_key", value="v1")
+        self.addCleanup(delete_privacyidea_config, "reload_key")
+        self.assertEqual("v1", get_from_config("reload_key"))
+        shared_config = get_shared_config_object()
+
+        with mock.patch.dict(self.app.config, {"PI_CHECK_RELOAD_CONFIG": 60}):
+            # The last reload and the last check are longer ago than the interval, the configuration is unchanged
+            shared_config.timestamp -= timedelta(seconds=120)
+            shared_config.last_check_time -= timedelta(seconds=120)
+            invalidate_config_object()
+            self.assertEqual("v1", get_from_config("reload_key"))
+
+            # A change within the interval after that check is not seen yet
+            self._write_config_value_in_database("reload_key", "v2", timestamp=str(time.time()))
+            invalidate_config_object()
+            self.assertEqual("v1", get_from_config("reload_key"))
+
+            # The first check after the interval picks it up
+            shared_config.last_check_time -= timedelta(seconds=61)
+            invalidate_config_object()
+            self.assertEqual("v2", get_from_config("reload_key"))
 
     def test_10_enrollable_tokentypes(self):
         # Execute the function twice to ensure the cache works

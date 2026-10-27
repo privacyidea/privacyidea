@@ -1,31 +1,34 @@
-
 .. _install_centos:
 
-CentOS Installation
--------------------
+.. _install_rhel:
 
-Step-by-Step installation on CentOS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+RHEL Installation
+-----------------
 
-.. index:: CentOS, Red Hat, RHEL
+Step-by-step installation on RHEL
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In this chapter we describe a way to install privacyIDEA on CentOS 7 based on the
-installation via :ref:`pip_install`. It follows the
-approach used in the enterprise packages (See `RPM Repository`_).
+.. index:: RHEL, Red Hat, Rocky Linux, AlmaLinux, CentOS
+
+In this chapter we describe a way to install privacyIDEA on Red Hat Enterprise Linux (RHEL) 8, 9 and 10 and on
+its rebuilds like Rocky Linux and AlmaLinux, based on the installation via :ref:`pip_install`. It follows the
+approach used in the enterprise packages (see `RPM Repository`_).
+
+privacyIDEA needs Python 3.10 or newer. RHEL 10 ships Python 3.12 as its system Python. On RHEL 8 and 9 the
+``python3.11`` packages from the AppStream repository are used instead of the system Python.
 
 .. _centos_setup_services:
 
 Setting up the required services
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this guide we use Python 2.7 even though its end-of-life draws closer.
-CentOS 7 will support Python 2 until the end of its support frame.
-Basically the steps for using privacyIDEA with Python 3 are the same but several
-other packages need to be installed [#py3]_.
+First the necessary packages need to be installed. On RHEL 8 and 9::
 
-First the necessary packages need to be installed::
+    $ dnf install mariadb-server httpd mod_ssl python3.11 python3.11-mod_wsgi policycoreutils-python-utils
 
-    $ yum install mariadb-server httpd mod_wsgi mod_ssl python-virtualenv policycoreutils-python
+On RHEL 10::
+
+    $ dnf install mariadb-server httpd mod_ssl python3 python3-mod_wsgi policycoreutils-python-utils
 
 Now enable and configure the services::
 
@@ -39,11 +42,8 @@ Setup the database for the privacyIDEA server::
     $ echo 'create user "pi"@"localhost" identified by "<dbsecret>";' | mysql -u root -p
     $ echo 'grant all privileges on pi.* to "pi"@"localhost";' | mysql -u root -p
 
-If this should be a pinned installation (i.e. with all the package pinned to
-the versions with which we are developing/testing), some more packages need to
-be installed for building these packages::
-
-    $ yum install gcc postgresql-devel
+The :ref:`optional features <pip_extras>` build native extensions. If you want to install one of them, install
+the system packages listed there as well.
 
 Create the necessary directories::
 
@@ -64,11 +64,15 @@ server::
 
     $ su - privacyidea
 
-Create the virtual environment::
+Create the virtual environment. On RHEL 8 and 9 use ``python3.11``::
 
-    $ virtualenv /opt/privacyidea
+    $ python3.11 -m venv /opt/privacyidea
 
-activate it::
+On RHEL 10 use the system Python::
+
+    $ python3 -m venv /opt/privacyidea
+
+Activate it::
 
     $ . /opt/privacyidea/bin/activate
 
@@ -76,18 +80,17 @@ and install/update some prerequisites::
 
     (privacyidea)$ pip install -U pip setuptools
 
-If this should be a pinned installation (that is the environment we use to build and test),
-we need to install some pinned dependencies first. They should match the version of the targeted
-privacyIDEA. You can get the latest version tag from the `GitHub release page <https://github
-.com/privacyidea/privacyidea/releases>`_ or the `PyPI package history <https://pypi
-.org/project/privacyIDEA/#history>`_ (e.g. "3.3.1")::
+For a pinned installation (that is the environment we use to build and test), install the pinned dependencies
+first. They must match the version of privacyIDEA you install. You can get the latest version from the
+`GitHub release page <https://github.com/privacyidea/privacyidea/releases>`_ or the
+`PyPI package history <https://pypi.org/project/privacyIDEA/#history>`_::
 
-        (privacyidea)$ export PI_VERSION=3.11.3
-        (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/requirements.txt
+    (privacyidea)$ export PI_VERSION=<version>
+    (privacyidea)$ pip install -r https://raw.githubusercontent.com/privacyidea/privacyidea/v${PI_VERSION}/requirements.txt
 
-Then just install the targeted privacyIDEA version with::
+Replace ``<version>`` with the privacyIDEA version you want to install. Then install this version with::
 
-        (privacyidea)$ pip install privacyidea==${PI_VERSION}
+    (privacyidea)$ pip install privacyidea==${PI_VERSION}
 
 .. _centos_setup_pi:
 
@@ -102,9 +105,10 @@ In order to setup privacyIDEA a configuration file must be added in
     SUPERUSER_REALM = ['super']
     # Your database
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://pi:<dbsecret>@localhost/pi'
-    # This is used to encrypt the auth_token
+    # Signs the JWTs issued by /auth (changing it invalidates all issued JWTs)
     #SECRET_KEY = 't0p s3cr3t'
-    # This is used to encrypt the admin passwords
+    # Pepper for the hashes of the local admin passwords, the password reset
+    # codes and the API key secrets (changing it invalidates all of them)
     #PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
     PI_ENCFILE = '/etc/privacyidea/enckey'
@@ -150,7 +154,7 @@ An administrative account is needed to configure and maintain privacyIDEA:
 
 Setting up the Apache webserver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Now We need to set up apache to forward requests to privacyIDEA, so the next
+Now we need to set up Apache to forward requests to privacyIDEA, so the next
 steps are executed as the ``root``-user again.
 
 First the SELinux settings must be adjusted in order to allow the
@@ -168,6 +172,15 @@ the ldap ports::
 
     $ setsebool -P httpd_can_connect_ldap 1
 
+If privacyIDEA has to reach further services, enable the matching booleans as
+well: ``httpd_can_sendmail`` for SMTP servers, and ``httpd_can_network_connect``
+for all other outgoing connections, e.g. HTTP SMS gateways, push notifications,
+HTTP-based user stores (HTTP, Keycloak, Entra ID), RADIUS servers, other
+privacyIDEA servers, the Microsoft CA connector and Redis::
+
+    $ setsebool -P httpd_can_sendmail 1
+    $ setsebool -P httpd_can_network_connect 1
+
 If something does not seem right, check for "``denied``" entries in
 ``/var/log/audit/audit.log``
 
@@ -175,9 +188,17 @@ Some LDAP-resolver could be listening on a different port.
 In this case SELinux has to be configured accordingly.
 Please check the SELinux audit.log to see if SELinux might block any connection.
 
-For testing purposes we use a self-signed certificate which should already have
-been created. In production environments this should be replaced by a certificate
-from a trusted authority.
+For testing purposes we use a self-signed certificate. In production environments this should be replaced by a
+certificate from a trusted authority. The Apache configuration below expects it in
+``/etc/pki/tls/certs/localhost.crt`` with the key in ``/etc/pki/tls/private/localhost.key``. RHEL 8 can create
+this pair with ``/usr/libexec/httpd-ssl-gencerts``. On RHEL 9 and 10, create it yourself if it does not exist
+(replace ``<fqdn>`` with the host name of the server)::
+
+    $ openssl req -x509 -newkey rsa:3072 -sha256 -nodes -days 3650 \
+        -keyout /etc/pki/tls/private/localhost.key -out /etc/pki/tls/certs/localhost.crt \
+        -subj "/CN=<fqdn>" -addext "subjectAltName=DNS:<fqdn>"
+    $ chmod 600 /etc/pki/tls/private/localhost.key
+    $ restorecon /etc/pki/tls/private/localhost.key /etc/pki/tls/certs/localhost.crt
 
 To correctly load the apache config file for privacyIDEA we need to disable some
 configuration first::
@@ -187,7 +208,7 @@ configuration first::
     $ mv welcome.conf welcome.conf.inactive
     $ curl -o privacyidea.conf https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyidea.conf
 
-In order to avoid recreation of the configuration files during update You can
+In order to avoid recreation of the configuration files during an update, you can
 create empty dummy files for ``ssl.conf`` and ``welcome.conf``.
 
 And we need a corresponding ``wsgi``-script file in ``/etc/privacyidea/``::
@@ -195,7 +216,7 @@ And we need a corresponding ``wsgi``-script file in ``/etc/privacyidea/``::
     $ cd /etc/privacyidea
     $ curl -O https://raw.githubusercontent.com/NetKnights-GmbH/centos7/master/SOURCES/privacyideaapp.wsgi
 
-If `firewalld` is running (:code:`$ firewall-cmd --state`) You need to open the https
+If ``firewalld`` is running (:code:`$ firewall-cmd --state`) you need to open the https
 port to allow connections::
 
     $ firewall-cmd --permanent --add-service=https
@@ -203,23 +224,29 @@ port to allow connections::
 
 After a restart of the apache webserver (:code:`$ systemctl restart httpd`)
 everything should be up and running.
-You can log in with Your admin user at ``https://<privacyidea server>`` and start
+You can log in with your admin user at ``https://<privacyidea server>`` and start
 enrolling tokens.
+
+This installation does not schedule any jobs. Set up the cron jobs described in
+:ref:`cleanup_jobs` (the example for an installation from PyPI there uses the
+paths and the user of this installation), otherwise periodic tasks do not run
+and several database tables grow without limit.
+
+Now you may proceed to :ref:`first_steps`.
 
 .. _rpm_installation:
 
 RPM Repository
 ~~~~~~~~~~~~~~
 
-.. index:: RPM, YUM
+.. index:: RPM, DNF
 
 For customers with a valid service level agreement [#SLA]_ with NetKnights
-there is an RPM repository,
-that can be used to easily install and update privacyIDEA on CentOS 7 / RHEL 7.
+there is an RPM repository
+that can be used to easily install and update privacyIDEA on RHEL 8, 9 and 10 and their rebuilds.
 For more information see [#RPMInstallation]_.
 
 .. rubric:: Footnotes
 
-.. [#py3] https://stackoverflow.com/questions/42004986/how-to-install-mod-wgsi-for-apache-2-4-with-python3-5-on-centos-7
-.. [#SLA] https://netknights.it/en/leistungen/service-level-agreements/
+.. [#SLA] https://netknights.it/en/services/support/
 .. [#RPMInstallation] https://netknights.it/en/additional-service-privacyidea-support-customers-centos-7-repository/

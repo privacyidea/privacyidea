@@ -20,11 +20,12 @@ import { Component, input, output } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-clear-button",
   templateUrl: "./clear-button.component.html",
-  imports: [MatIcon, MatIconButton, MatTooltip],
+  imports: [TooltipAriaLabelDirective, MatIcon, MatIconButton, MatTooltip],
   styleUrls: ["./clear-button.component.scss"]
 })
 export class ClearButtonComponent {

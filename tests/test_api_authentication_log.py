@@ -510,6 +510,7 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         self.assertListEqual(sorted(AUTHENTICATING_ENDPOINTS), value)
         self.assertIn("/validate/check", value)
         self.assertIn("/auth", value)
+        self.assertIn("/validate/remember_device", value)
 
     def test_endpoints_denied_without_action(self):
         set_policy("authlog_other", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)

@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { DatePipe } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, untracked, ViewChild, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -26,7 +28,6 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ApiClientIssuedKeyBannerComponent } from "@components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component";
@@ -45,11 +46,15 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-api-clients",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
@@ -68,8 +73,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     DatePipe,
     TableStateComponent,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
-    MatMenuModule
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./api-clients.component.html",
   styleUrl: "./api-clients.component.scss"
@@ -120,6 +124,30 @@ export class ApiClientsComponent {
     keyGetter: (client) => client.id,
     visibleRows: renderedRows(this.apiClientDataSource)
   });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@apiClient.createApiClient:Create API Client`,
+      tone: "primary",
+      width: "l",
+      icon: "vpn_key",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("api_client_add"),
+      run: () => this.onCreateNewApiClient()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      visible: this.authService.actionAllowed("api_client_delete"),
+      disabled: !this.selector.hasSelection(),
+      run: () => this.deleteSelected()
+    }
+  ]);
 
   clientTypeLabel(clientType: string): string {
     return this.integrationsService.labelFor(clientType);

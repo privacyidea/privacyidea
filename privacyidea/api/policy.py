@@ -520,8 +520,9 @@ def check_policy_api():
     res = {}
     param = getLowerParams(request.all_data)
 
-    user = get_required(param, "user")
-    realm = get_required(param, "realm")
+    # An empty user or realm checks the policies that apply without one
+    user = get_required(param, "user", allow_empty=True)
+    realm = get_required(param, "realm", allow_empty=True)
     scope = get_required(param, "scope")
     action = get_required(param, "action")
     client = get_optional(param, "client")

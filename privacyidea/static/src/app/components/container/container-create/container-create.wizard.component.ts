@@ -30,6 +30,7 @@ import { ContainerRegistrationCompletedDialogWizardComponent } from "@components
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { environment } from "@env/environment";
 import {
+  ContainerCreateData,
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface
@@ -39,10 +40,21 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { map } from "rxjs";
 import { ContainerCreateComponent } from "./container-create.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-create-wizard",
-  imports: [MatButton, MatIcon, MatIconButton, AsyncPipe, ScrollToTopDirective, MatTooltip, NgClass, TitleCasePipe],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatButton,
+    MatIcon,
+    MatIconButton,
+    AsyncPipe,
+    ScrollToTopDirective,
+    MatTooltip,
+    NgClass,
+    TitleCasePipe
+  ],
   templateUrl: "./container-create.wizard.component.html",
   styleUrl: "./container-create.component.scss"
 })
@@ -90,6 +102,15 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     })
     .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
+  /**
+   * The wizard creates the container from the template of the container_wizard_template policy, which the server
+   * loads by its name.
+   */
+  protected override templateCreateData(): Pick<ContainerCreateData, "name" | "template" | "template_name"> {
+    const templateName = this.authService.containerWizard().template;
+    return templateName ? { template_name: templateName } : {};
+  }
+
   protected override onCreationSuccess(serial: string) {
     this.containerSerial.set(serial);
     this.openRegistrationDialog({
@@ -97,17 +118,23 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     } as unknown as PiResponse<ContainerRegisterData>);
   }
 
-  protected override openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+  protected override openRegistrationDialog(response: PiResponse<ContainerRegisterData>, serial?: string) {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     });
 
-    this.dialogService.openDialog({
+    const dialogRef = this.dialogService.openDialog({
       component: ContainerCreatedDialogWizardComponent,
       data: this.dialogData
     });
+
+    if (serial) {
+      // The registration of the container opens the registration completed dialog, as on the create page
+      this.containerService.startPolling(serial);
+      dialogRef.afterClosed().subscribe(() => this.containerService.stopPolling());
+    }
   }
 
   protected override openRegistrationCompletedDialog(serial: string) {

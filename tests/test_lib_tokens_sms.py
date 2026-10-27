@@ -9,6 +9,7 @@ from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.config import set_privacyidea_config, set_prepend_pin
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -602,6 +603,17 @@ class SMSTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token("PISM_DYN_TEST1")
+
+    def test_25_enroll_with_empty_phone(self):
+        # An empty phone number is accepted, e.g. for a user whose user store entry has no mobile number. A missing
+        # one is refused.
+        token = init_token(param={"serial": "PISM_EMPTY1", "type": "sms", "genkey": 1, "phone": ""})
+        self.assertEqual("", token.get_tokeninfo("phone"))
+        remove_token("PISM_EMPTY1")
+
+        with self.assertRaises(ParameterError):
+            init_token(param={"serial": "PISM_EMPTY2", "type": "sms", "genkey": 1})
+        self.assertEqual([], get_tokens(serial="PISM_EMPTY2"))
 
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

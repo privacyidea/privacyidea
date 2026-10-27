@@ -47,11 +47,13 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-machine-details",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     CommonModule,
     MatFormFieldModule,
     MatInputModule,

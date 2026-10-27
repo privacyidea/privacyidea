@@ -195,7 +195,9 @@ def _truncate(column: str, value: Any, separator: str | None = None) -> _Truncat
     """
     if value is None:
         return _TruncatedValue(None, None)
-    value = str(value)
+    # PostgreSQL refuses text containing NUL, and a refused insert would leave the request uncounted. Replaced rather
+    # than removed, so a login name with a NUL is not counted as the same name without it.
+    value = str(value).replace("\x00", "\ufffd")
     max_length = authentication_log_column_length[column]
     if len(value) <= max_length:
         return _TruncatedValue(value, None)

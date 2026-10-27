@@ -28,7 +28,7 @@ detailed enrollment information.
 For a description of the TiQR protocol see
 
 * https://www.usenix.org/legacy/events/lisa11/tech/full_papers/Rijswijk.pdf
-* https://github.com/SURFnet/tiqr/wiki/Protocol-documentation.
+* https://github.com/Tiqr/tiqr/wiki/Protocol-documentation.
 * https://tiqr.org
 
 The TiQR token is based on the OCRA algorithm. It lets you authenticate
@@ -90,7 +90,7 @@ import logging
 from privacyidea.lib.token import get_one_token, create_challenge
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.tokens.ocra import OCRASuite
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, consume_challenge
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.tokens.ocratoken import OcraTokenClass
@@ -463,10 +463,9 @@ class TiqrTokenClass(OcraTokenClass):
                 if challengeobject.is_valid():
                     _, status = challengeobject.get_otp_status()
                     if status is True:
-                        # create a positive response
-                        otp_counter = 1
-                        # delete the challenge
-                        challengeobject.delete()
+                        # create a positive response, but only for the request that removes the challenge:
+                        # another request that polls the same transaction at the same time is not accepted.
+                        otp_counter = 1 if consume_challenge(challengeobject) else -1
                         break
 
         return otp_counter

@@ -17,37 +17,74 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, ViewChild } from "@angular/core";
+import { HttpErrorResponse } from "@angular/common/http";
+import { Component, computed, inject, input } from "@angular/core";
 
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { lastValueFrom } from "rxjs";
-import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
+import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
 
 @Component({
   selector: "app-policies-table-actions",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, MatMenuModule, OverflowNavDirective],
-  templateUrl: "./policies-table-actions.component.html",
-  styleUrl: "./policies-table-actions.component.scss"
+  imports: [TableActionsComponent],
+  templateUrl: "./policies-table-actions.component.html"
 })
-export class PoliciesTableActionsComponent {
-  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
+export class PoliciesTableActionsComponent extends TableActionsHost {
   readonly policySelection = input.required<PolicyDetail[]>();
   readonly selectedPolicyNames = computed(() => this.policySelection().map((policy) => policy.name));
 
   readonly dialogService = inject(DialogService);
   readonly authService = inject(AuthService);
   readonly policyService = inject(PolicyService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly router = inject(Router);
+
+  protected readonly actions = computed<TableAction[]>(() => {
+    const noSelection = this.policySelection().length < 1;
+    return [
+      {
+        id: "create",
+        label: $localize`:@@policy.createPolicy:Create Policy`,
+        tone: "primary",
+        width: "l",
+        icon: "gavel",
+        iconClass: "padding-right-4",
+        badge: true,
+        spacedBadge: true,
+        visible: this.authService.actionAllowed("policywrite"),
+        run: () => this.createNewPolicy()
+      },
+      {
+        id: "delete",
+        label: $localize`:@@common.delete:Delete`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete_sweep",
+        visible: this.authService.actionAllowed("policydelete"),
+        disabled: noSelection,
+        run: () => this.deleteSelectedPolicies()
+      },
+      {
+        id: "copy",
+        label: $localize`:@@common.copy:Copy`,
+        tone: "secondary",
+        width: "m",
+        icon: "content_copy",
+        visible: this.authService.actionAllowed("policywrite"),
+        disabled: noSelection,
+        run: () => this.copySelectedPolicies()
+      }
+    ];
+  });
 
   createNewPolicy(): void {
     this.router.navigateByUrl(ROUTE_PATHS.POLICIES_NEW);
@@ -88,8 +125,24 @@ export class PoliciesTableActionsComponent {
       );
 
       if (newName) {
-        this.policyService.copyPolicy(name, newName);
+        // Not awaited: the next dialog opens while the request runs, and the copy is listed right away.
+        this.copyPolicy(name, newName);
       }
     }
+  }
+
+  private async copyPolicy(name: string, newName: string): Promise<void> {
+    let message: string;
+    try {
+      const response = await this.policyService.copyPolicy(name, newName);
+      if (response?.result?.status) return;
+      message = response?.result?.error?.message ?? "";
+    } catch (error) {
+      message = (error as HttpErrorResponse)?.error?.result?.error?.message ?? "";
+    }
+    const detail = message ? `: ${message}` : "";
+    this.notificationService.error(
+      $localize`:@@policy.copyingPolicyFailed:Copying the policy to ${newName}:NAME: failed${detail}:DETAIL:`
+    );
   }
 }

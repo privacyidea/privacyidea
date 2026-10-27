@@ -22,7 +22,7 @@ __doc__ = """This is the event handler module that can mangle the JSON response.
 We can add or delete key or even subtrees in the JSON response of a request.
 
 The key is identified by a JSON Pointer
-(see https://tools.ietf.org/html/rfc6901)
+(see https://www.rfc-editor.org/rfc/rfc6901)
 """
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.utils import is_true
@@ -48,11 +48,14 @@ class ResponseManglerEventHandler(BaseEventHandler):
 
     It also returns a list of allowed action and conditions
 
-    It returns an identifier, which can be used in the eventhandlig definitions
+    It returns an identifier, which can be used in the event handling definitions
     """
 
     identifier = "ResponseMangler"
     description = "This event handler can mangle the JSON response."
+    # The client receives the mangled response. Continuing without the handler would send the data the handler was
+    # configured to remove or change.
+    default_abort_on_error = True
 
     @property
     def allowed_positions(cls):
@@ -139,6 +142,8 @@ class ResponseManglerEventHandler(BaseEventHandler):
                     del (content[comp[0]][comp[1]][comp[2]])
                 else:
                     log.warning(f"JSON pointer length of {len(comp)!s} not supported.")
+                    self.run_details = f"A JSON pointer of length {len(comp)} is not supported."
+                    ret = False
                 options.get("response").data = json.dumps(content)
             except KeyError:
                 log.warning(f"Can not delete response JSON Pointer {json_pointer!s}.")
@@ -150,6 +155,8 @@ class ResponseManglerEventHandler(BaseEventHandler):
                     value = is_true(value)
             except ValueError:
                 log.warning("Failed to convert value")
+                self.run_details = f"The value can not be converted to {type}."
+                ret = False
 
             if len(comp) == 1:
                 content[comp[0]] = value
@@ -162,6 +169,8 @@ class ResponseManglerEventHandler(BaseEventHandler):
                 content[comp[0]][comp[1]][comp[2]] = value
             else:
                 log.warning(f"JSON pointer of length {len(comp)!s} not supported.")
+                self.run_details = f"A JSON pointer of length {len(comp)} is not supported."
+                ret = False
             options.get("response").data = json.dumps(content)
 
         return ret

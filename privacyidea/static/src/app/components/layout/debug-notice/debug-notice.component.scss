@@ -27,8 +27,8 @@ $corner-size-stacked: 132px;
   // Centred on the square, so the band's centre line runs across its diagonal.
   top: 24%;
   left: 24%;
-  background-color: light-dark(var(--yellow-dark), var(--yellow-light-active));
-  color: white;
+  background-color: var(--yellow-fill);
+  color: var(--status-ink);
   width: $band-width;
   padding: 4px 0;
   transform: translate(-50%, -50%) rotate(-45deg);
@@ -63,6 +63,5 @@ $corner-size-stacked: 132px;
 }
 
 .debug-ribbon-text-passwords {
-  background-color: var(--red-dark);
-  color: #fff;
+  background-color: var(--red-fill);
 }

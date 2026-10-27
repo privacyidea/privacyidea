@@ -19,7 +19,8 @@ from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.error import HandlerAbortError
-from privacyidea.lib.event import event, set_event, EventConfiguration
+from privacyidea.lib.event import event, set_event, delete_event, EventConfiguration
+from privacyidea.lib.token import init_token, get_one_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import audit_column_length
 from .base import MyTestCase, FakeFlaskG
@@ -412,6 +413,36 @@ class EventDecoratorExceptionHandlingTestCase(MyTestCase):
                             f"Expected success=False in audit log calls: {mock_audit_obj.log.call_args_list}")
             mock_audit_obj.finalize_log.assert_called()
 
+    def test_token_handler_tokeninfo_failure_is_audited(self):
+        """A token info action of the token handler that can not be carried out is audited as a failure of the
+        handler, while the request itself succeeds."""
+        init_token({"serial": "TEST01", "type": "hotp", "genkey": 1})
+        self.g.client_ip = "127.0.0.1"
+        get_one_token(serial="TEST01").write_tokeninfo("note", "some text")
+        try:
+            for name, action, options, expected_info in [
+                    ("set_type_suffix", "set tokeninfo", {"key": "note.type", "value": "password"},
+                     "set_type_suffix (Can not set the token info 'note.type' of token TEST01: The token info key "
+                     "'note.type' uses the reserved '.type' suffix.)"),
+                    ("increase_text", "increase tokeninfo", {"key": "note", "increment": "1"},
+                     "increase_text (Can not increase the token info 'note' of token TEST01, the value or the "
+                     "increment is not an integer.)")]:
+                self._add_event(name, position="post", handlermodule="Token", action=action, options=options)
+                api_fn = self._make_decorated_fn()
+
+                with patch("privacyidea.lib.event.getAudit") as mock_get_audit:
+                    mock_audit_obj = MagicMock()
+                    mock_get_audit.return_value = mock_audit_obj
+                    result = api_fn()
+
+                self.assertIn(b"true", result.data)
+                logged = [call_args[0][0] for call_args in mock_audit_obj.log.call_args_list if call_args[0]]
+                self.assertIn({"success": False}, logged, logged)
+                self.assertIn(expected_info, [entry.get("info") for entry in logged], logged)
+                delete_event(self._event_ids.pop())
+        finally:
+            remove_token("TEST01")
+
 
 class ScriptHandlerAbortErrorTestCase(MyTestCase):
     """Test that ScriptEventHandler raises HandlerAbortError (not ServerError)."""
@@ -473,9 +504,10 @@ class ScriptHandlerAbortErrorTestCase(MyTestCase):
         self.assertIn("Failed to start script", str(cm.exception))
 
     def test_script_handler_popen_failure_without_raise_error(self):
-        """When Popen itself raises but raise_error=False, exception is swallowed."""
+        """When Popen itself raises but raise_error=False, the request is not aborted, but the run is reported as
+        failed."""
         handler = self.ScriptEventHandler()
         options = self._options_with(raise_error=False)
-        # Should NOT raise - exception is swallowed
         result = handler.do("nonexistent_script.sh", options=options)
-        self.assertTrue(result)
+        self.assertFalse(result)
+        self.assertIn("Failed to start the script", handler.run_details)

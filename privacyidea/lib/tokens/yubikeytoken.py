@@ -52,6 +52,7 @@ This code is tested in tests/test_lib_tokens_yubikey.py
 
 import logging
 
+from privacyidea.lib.crypto import safe_compare
 from privacyidea.lib.error import EnrollmentError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
@@ -130,7 +131,8 @@ def yubico_check_api_signature(data, api_key, signature=None):
     """
     if not signature:
         signature = data.get('h')
-    return signature == yubico_api_signature(data, api_key)
+    expected_signature = yubico_api_signature(data, api_key)
+    return isinstance(signature, str) and safe_compare(signature, expected_signature)
 
 
 class YubikeyTokenClass(TokenClass):
@@ -271,9 +273,11 @@ class YubikeyTokenClass(TokenClass):
         :type options: dict or None
 
         :return: the counter state or an error code (< 0):
-        -1 if the OTP is old (counter < stored counter)
-        -2 if the private_uid sent in the OTP is wrong (different from the one stored with the token)
-        -3 if the CRC verification fails
+
+            * -1 if the OTP is old (counter < stored counter)
+            * -2 if the private_uid sent in the OTP is wrong (different from the one stored with the token)
+            * -3 if the CRC verification fails
+
         :rtype: int
 
         """
@@ -350,8 +354,12 @@ class YubikeyTokenClass(TokenClass):
         log.debug(f'compare counter to database counter: {self.token.count!r}')
         if count_int >= self.token.count:
             res = count_int
-            # on success we save the used counter
-            self.inc_otp_counter(res)
+            # on success we save the used counter. The failcounter reset that inc_otp_counter would do is done by
+            # check_token_list on success.
+            if not self.advance_otp_count(res + 1):
+                # Another request used this OTP value first, so it is as spent as it is for a later replay.
+                log.info(f"The OTP value of token {self.token.serial} was used by another request.")
+                return -1
 
         return res
 

@@ -58,6 +58,8 @@ import { MockUserSettingsService } from "@testing/mock-services/mock-user-settin
 interface NavigationComponentPrivate {
   getFilteredNavItems: () => NavItem[];
   calculateVisibleItems: (navEl: HTMLElement) => void;
+  itemWidths: Map<string, number>;
+  moreButtonWidth: number;
 }
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
@@ -237,6 +239,111 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     // Should still calculate 2 visible items because it remembers the width of 'container'
     expect(component.visibleNavCount()).toBe(2);
+  });
+
+  describe("overflow stability (no flip-flop)", () => {
+    const sections = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    let priv: NavigationComponentPrivate;
+
+    const navWithWidth = (width: number): HTMLElement => {
+      const navEl = document.createElement("div");
+      Object.defineProperty(navEl, "clientWidth", { value: width, configurable: true });
+      return navEl;
+    };
+
+    beforeEach(() => {
+      priv = component as unknown as NavigationComponentPrivate;
+      jest.spyOn(priv, "getFilteredNavItems").mockReturnValue(sections.map((section) => ({ section }) as NavItem));
+      priv.itemWidths = new Map(sections.map((section) => [section, 100]));
+      priv.moreButtonWidth = 110;
+      component.visibleNavCount.set(sections.length);
+    });
+
+    const run = (width: number): number => {
+      priv.calculateVisibleItems(navWithWidth(width));
+      return component.visibleNavCount();
+    };
+
+    it("is idempotent at every container width", () => {
+      for (let width = 0; width <= 1000; width++) {
+        const first = run(width);
+        for (let i = 0; i < 3; i++) {
+          expect(run(width)).toBe(first);
+        }
+      }
+    });
+
+    it("never grows while shrinking and never shrinks while growing", () => {
+      let previous = run(1000);
+      for (let width = 1000; width >= 0; width--) {
+        const count = run(width);
+        expect(count).toBeLessThanOrEqual(previous);
+        previous = count;
+      }
+      for (let width = 0; width <= 1000; width++) {
+        const count = run(width);
+        expect(count).toBeGreaterThanOrEqual(previous);
+        previous = count;
+      }
+    });
+
+    it("needs more room to unfold an item than to fold it", () => {
+      const foldWidth = new Map<number, number>();
+      let previous = run(1000);
+      for (let width = 1000; width >= 0; width--) {
+        const count = run(width);
+        if (count < previous) foldWidth.set(count, width);
+        previous = count;
+      }
+      for (let width = 0; width <= 1000; width++) {
+        const count = run(width);
+        if (count > previous) {
+          // Items 1..count are shown from here on; folding back to count - 1 happened at foldWidth.
+          expect(width).toBeGreaterThanOrEqual((foldWidth.get(previous) ?? -1) + 16);
+        }
+        previous = count;
+      }
+    });
+
+    it("does not flip-flop when the width jitters around a fold threshold", () => {
+      let width = 1000;
+      while (run(width) === sections.length) width--;
+      const counts = new Set<number>();
+      for (let i = 0; i < 20; i++) {
+        counts.add(run(width + (i % 2) * 6));
+      }
+      expect(counts.size).toBe(1);
+    });
+
+    it("gives the same result whether or not the More button is rendered", () => {
+      const withMore = navWithWidth(500);
+      const moreItem = document.createElement("div");
+      moreItem.className = "nav-item";
+      const moreBtn = document.createElement("button");
+      moreBtn.className = "more-button";
+      moreItem.appendChild(moreBtn);
+      Object.defineProperty(moreItem, "offsetWidth", { value: 110, configurable: true });
+      withMore.appendChild(moreItem);
+
+      priv.calculateVisibleItems(withMore);
+      const rendered = component.visibleNavCount();
+      component.visibleNavCount.set(sections.length);
+      priv.calculateVisibleItems(navWithWidth(500));
+      expect(component.visibleNavCount()).toBe(rendered);
+    });
+
+    it("keeps the stored width of an item while it is hovered", () => {
+      const navEl = navWithWidth(500);
+      const item = document.createElement("div");
+      item.className = "nav-item";
+      item.setAttribute("data-section", "a");
+      Object.defineProperty(item, "offsetWidth", { value: 140, configurable: true });
+      jest.spyOn(item, "matches").mockReturnValue(true);
+      navEl.appendChild(item);
+
+      priv.calculateVisibleItems(navEl);
+      expect(priv.itemWidths.get("a")).toBe(100);
+    });
   });
 
   describe("customLogo and versionPrefix", () => {

@@ -25,10 +25,20 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
 import { LanguageSwitcherComponent } from "@components/shared/language-switcher/language-switcher.component";
 import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-user-utils-panel-self-service",
-  imports: [MatIcon, MatIconButton, MatTooltip, LanguageSwitcherComponent, ThemeSwitcherComponent, NgClass, DatePipe],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatIcon,
+    MatIconButton,
+    MatTooltip,
+    LanguageSwitcherComponent,
+    ThemeSwitcherComponent,
+    NgClass,
+    DatePipe
+  ],
   templateUrl: "./user-utils-panel.self-service.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })

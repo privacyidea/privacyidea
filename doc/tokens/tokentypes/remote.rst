@@ -15,7 +15,7 @@ When forwarding the authentication request, you can
 * change the realm
 * change the serial number
 
-and mangle the password.
+and check the PIN locally, so that only the remaining part of the password is forwarded (see *Check the PIN locally*).
 
 The serial number of the token, that was used on the other privacyIDEA server, is stored in the tokeninfo
 of the remote token object in the key ``last_matching_remote_serial``. This serial number can then be used in
@@ -32,7 +32,7 @@ If checked, the PIN of the token will be checked on the local server. If the
 PIN matches only the remaining part of the issued password will be sent to
 the remote privacyIDEA server.
 
-**Remote Server ID**
+**Remote Server**
 
 The other privacyIDEA server, to which the authentication request will be forwarded.
 You need to configure the privacyIDEA Server at :ref:`privacyideaserver_config`.
@@ -65,5 +65,5 @@ will be issued for this resolver.
 
 .. note:: You can use *Remote Serial* to forward the request to a central
    privacyIDEA server, that only knows tokens but has no knowledge of users.
-   Or you can use *Remote Serial* to forward the request to an existing to on
+   Or you can use *Remote Serial* to forward the request to an existing token on
    *localhost* thus adding a second user to the same token.

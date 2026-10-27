@@ -12,5 +12,4 @@ You can read more about policies at :ref:`policies`.
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: policy_blueprint
-
    :include-empty-docstring:

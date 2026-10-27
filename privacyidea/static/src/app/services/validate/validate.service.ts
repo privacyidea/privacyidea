@@ -19,7 +19,13 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  AuthResponse,
+  AuthService,
+  AuthServiceInterface,
+  MultiChallenge,
+  WebAuthnSignRequest
+} from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { from, map, Observable, switchMap, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
@@ -54,18 +60,33 @@ export interface ValidateCheckDetail {
 
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
-export interface WebAuthnSignRequestCredential {
-  id: string;
-  type?: PublicKeyCredentialType;
-  transports?: AuthenticatorTransport[];
-}
-
-export interface WebAuthnSignRequest {
-  challenge: string;
-  allowCredentials: WebAuthnSignRequestCredential[];
-  rpId: string;
-  userVerification: UserVerificationRequirement;
-  timeout?: number;
+/**
+ * Each WebAuthn token of the user gets its own entry in multi_challenge. The browser can only be asked once, so the
+ * allowed credentials of the entries are combined into one sign request; otherwise only the first token could be used.
+ * Only entries with the same rpId and challenge can be combined. Each token keeps the rpId it was enrolled with, and
+ * the browser rejects the whole request if its rpId does not fit the host of the page, so the first entry whose rpId
+ * fits the host decides. If none fits, the first entry decides.
+ */
+export function mergeWebAuthnSignRequests(
+  challenges: MultiChallenge[],
+  hostname: string = window.location.hostname
+): WebAuthnSignRequest | null {
+  const signRequests = challenges
+    .filter((challenge) => challenge.type === "webauthn")
+    .map((challenge) => challenge.attributes?.webAuthnSignRequest)
+    .filter((signRequest) => signRequest !== undefined);
+  if (!signRequests.length) {
+    return null;
+  }
+  const fitsHostname = (rpId: string) => hostname === rpId || hostname.endsWith(`.${rpId}`);
+  const selectedSignRequest = signRequests.find((signRequest) => fitsHostname(signRequest.rpId)) ?? signRequests[0];
+  const allowCredentials = signRequests
+    .filter(
+      (signRequest) =>
+        signRequest.rpId === selectedSignRequest.rpId && signRequest.challenge === selectedSignRequest.challenge
+    )
+    .flatMap((signRequest) => signRequest.allowCredentials);
+  return { ...selectedSignRequest, allowCredentials };
 }
 
 export interface PasskeyInitDetail {

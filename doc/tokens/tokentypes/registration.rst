@@ -7,16 +7,17 @@ Registration
 
 The registration token can be used to create a registration code for a user.
 This registration code can be sent via postal mail to the user, so that the
-user can use this registration code as a second factor to login to a portal.
+user can use this registration code as a second factor to log in to a portal.
 
-After a one single use, the registration code is deleted and can not be used
+After a single use, the registration code is deleted and can not be used
 a second time.
 
 The length and the contents of the registration code can be configured using the
-:ref:`enrollment_policies` *registrationcode_length* and *registrationcode_contents*.
+:ref:`enrollment_policies` ``registration.length`` and ``registration.contents``.
 
-.. note:: The registration code can only be enrolled via the API to provide
-   automated smooth workflow to your needs.
+.. note:: Administrators can enroll a registration code in the WebUI or through
+   the API, e.g. to build an automated workflow. Users can not enroll it in the
+   WebUI.
 
 For a more detailed insight see the code documentation
 :ref:`code_registration_token`.

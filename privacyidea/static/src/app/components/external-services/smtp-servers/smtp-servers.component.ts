@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
@@ -49,15 +49,15 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-smtp",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -107,6 +107,28 @@ export class SmtpServersComponent {
     keyGetter: (server) => server.identifier,
     visibleRows: renderedRows(this.smtpDataSource)
   });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createSmtpServer:Create SMTP Server`,
+      tone: "primary",
+      width: "l",
+      icon: "email",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      run: () => this.onCreateNewServer()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      run: () => this.deleteSelected()
+    }
+  ]);
 
   onCreateNewServer(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW);

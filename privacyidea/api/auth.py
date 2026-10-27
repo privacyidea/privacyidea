@@ -64,6 +64,7 @@ import copy
 import logging
 import threading
 import traceback
+from dataclasses import dataclass
 from datetime import (datetime, timezone)
 from functools import wraps
 from typing import NoReturn
@@ -96,25 +97,47 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError, ResolverError
 from privacyidea.lib.event import event, EventConfiguration
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge
+from privacyidea.lib.fido2.challenge import (verify_fido2_challenge, has_unbound_challenge,
+                                             ChallengeExpiredError, check_fido2_token_state,
+                                             record_fido2_login_success)
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthntoken import require_fido2_assertion
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.user import User, split_user, log_used_user
+from privacyidea.lib.user import User, split_user, log_used_user, get_user_from_param
 from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
 
 log = logging.getLogger(__name__)
 
 jwtauth = Blueprint('jwtauth', __name__)
+
+
+@dataclass
+class FailedUserLookup:
+    """
+    The user of a login that the user store failed to look up in ``before_request``: the user the request names, or
+    the owner of the passkey a login without a username is made with. The login goes on, so that a local admin of
+    the same name can still log in, and every refusal of it is logged as ``USER_STORE_UNAVAILABLE`` with what is
+    known about the user.
+
+    :ivar login_name: The login name the request names, None for a login without a username
+    :ivar realm: The realm of the named login, None for a login without a username
+    :ivar serial: The passkey of a login without a username. None for a named login, as the authentication log would
+        take the token owner as the user of the row, who is not necessarily the user named.
+    """
+    login_name: str | None = None
+    realm: str | None = None
+    serial: str | None = None
 
 
 @jwtauth.before_request
@@ -153,7 +176,7 @@ def before_request():
                         "action_detail": "",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
-    g.resolved_user = {"is_local_admin": False}
+    g.resolved_user = {"is_local_admin": False, "failed_user_lookup": None}
 
     request.User = User()
     username = request.all_data.get("username")
@@ -178,13 +201,20 @@ def before_request():
                 request.User = User(login_name, realm)
             except Exception as e:
                 request.User = None
+                g.resolved_user["failed_user_lookup"] = FailedUserLookup(login_name, realm.lower())
                 log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
                 log.debug(f"{traceback.format_exc()!s}")
     elif credential_id:
         # Get user for passkey and webauthn login
         token = get_fido2_token_by_credential_id(credential_id)
         if token:
-            request.User = token.user
+            try:
+                request.User = token.user
+            except Exception as e:
+                # Refused in the view, after the conditional access gate, without looking the owner up again
+                request.User = None
+                g.resolved_user["failed_user_lookup"] = FailedUserLookup(serial=token.get_serial())
+                log.warning(f"Problem resolving the owner of the token {token.get_serial()}: {e!s}")
 
 
 def _refuse_disabled_login(login_disabled_policies: list[str], user: User, serial: str | None = None,
@@ -192,15 +222,72 @@ def _refuse_disabled_login(login_disabled_policies: list[str], user: User, seria
     """
     Refuse a WebUI login that a ``login_mode=disable`` policy disables. A user who does not exist gets the same
     response as one who does, only the authentication log tells them apart: ``USER_UNKNOWN`` instead of
-    ``NOT_AUTHORIZED``.
+    ``NOT_AUTHORIZED``, or ``USER_STORE_UNAVAILABLE`` if the user store failed to look the user up.
 
+    :param login_disabled_policies: The names of the policies that disable the login
+    :param user: The user who tries to log in
+    :param serial: The serial of the token the login was made with, if any
+    :param transaction_id: The transaction the login answered, if any
     :raises PolicyError: always
     """
-    event_type = AuthEventType.NOT_AUTHORIZED if user.exist() else AuthEventType.USER_UNKNOWN
+    failed_lookup = g.resolved_user.get("failed_user_lookup")
+    username = None
+    realm = None
+    if user.exist():
+        event_type = AuthEventType.NOT_AUTHORIZED
+    elif failed_lookup:
+        event_type = AuthEventType.USER_STORE_UNAVAILABLE
+        username = failed_lookup.login_name
+        realm = failed_lookup.realm
+    else:
+        event_type = AuthEventType.USER_UNKNOWN
     log_authentication(event_type, request, user=user, serial=serial, transaction_id=transaction_id,
-                       reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
+                       username=username, realm=realm, reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
                        reason_detail=build_reason_detail(policies=login_disabled_policies))
     raise PolicyError(_("The login for this user is disabled."))
+
+
+def _realm_parameter_fits_remote_user(remote_user: str) -> bool:
+    """
+    Whether the realm parameter the client sent is empty or names the realm of REMOTE_USER (the default realm if
+    REMOTE_USER contains none). The REMOTE_USER login is only for the account REMOTE_USER names; a realm parameter
+    for another realm does not move it there.
+    """
+    realm_parameter = get_optional(g.request_data, "realm")
+    if not realm_parameter:
+        return True
+    remote_user_realm = split_user(remote_user)[1] or get_default_realm()
+    return realm_parameter.lower() == (remote_user_realm or "").lower()
+
+
+def _owner_is_session_user(token: TokenClass, owner: User) -> bool:
+    """
+    Whether a session built from the owner's login name and realm - which is all the JWT carries - would act as
+    the owner themselves.
+
+    A usernameless passkey login identifies its user by resolver and user id, while every later request of the
+    session resolves the login name through the realm's resolver order. The two part company when the same login
+    name exists in a resolver the order finds first, and the session then acts as that other user.
+    """
+    try:
+        # The same lookup `before_after.resolve_logged_in_user` makes for a role-user request, which takes the
+        # login name and the realm out of the JWT and leaves the resolver to the realm's resolver order.
+        session_user = get_user_from_param({"user": owner.login, "realm": owner.realm})
+    except ResolverError:
+        # A user store that cannot be asked is not an ambiguous login name. The failure belongs to whoever reports
+        # a failing store, so it passes through instead of being classified here.
+        raise
+    except Exception as error:
+        log.warning(f"The login name {owner.login} of the owner of {token.get_serial()} could not be resolved in "
+                    f"realm {owner.realm}: {error!s}")
+        return False
+    if ((session_user.resolver or "").lower() == (owner.resolver or "").lower()
+            and str(session_user.uid) == str(owner.uid)):
+        return True
+    log.warning(f"The login name {owner.login} of the owner of {token.get_serial()} (resolver {owner.resolver}) "
+                f"resolves to resolver {session_user.resolver} in realm {owner.realm}; the passkey login is "
+                f"refused.")
+    return False
 
 
 @jwtauth.route('', methods=['POST'])
@@ -260,12 +347,23 @@ def get_auth_token():
         flow).
     :jsonparam realm: optional realm to scope the user lookup; defaults
         to the realm in ``username@realm`` syntax, otherwise the
-        default realm.
+        default realm. With a REMOTE_USER login it must be empty or the
+        realm of REMOTE_USER.
     :jsonparam credential_id: FIDO2 credential id (required for passkey
         flow).
     :jsonparam transaction_id: transaction id from a prior
         :http:post:`/validate/initialize` (required for passkey and
         for the second leg of a challenge-response flow).
+
+    The request selects the method it is answered with, in this order:
+    ``credential_id`` (passkey), then ``username`` with ``password``.
+    A request that does not carry everything the selected method needs
+    is malformed and is answered with a 400, without counting as an
+    authentication attempt. A passkey request needs ``transaction_id``,
+    the ``Origin`` header and the assertion itself:
+    ``authenticatorData``, ``clientDataJSON`` and ``signature``, or
+    their legacy spellings ``authenticatordata``, ``clientdata`` and
+    ``signaturedata``.
 
     :status 200: success — the JWT is in ``result.value.token``;
         or first leg of a challenge-response — ``result.value`` is
@@ -304,8 +402,8 @@ def get_auth_token():
              "username": "admin",
              "realm": "",
              "log_level": 30,
-             "rights": ["enrollHOTP", "enrollTOTP", ...],
-             "menus": ["tokens", "users", ...],
+             "rights": ["enrollHOTP", "enrollTOTP"],
+             "menus": ["tokens", "users"],
              "auth": true
            }
          },
@@ -340,6 +438,13 @@ def get_auth_token():
         # A passkey request without its transaction_id is malformed, not an authentication attempt: nothing was
         # checked, so the parameter error is not logged as an authentication event.
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # The same applies to the parameters the assertion is verified with: they are read in the token class,
+        # after the checks below have classified the request, so an incomplete request would be logged as a
+        # failed authentication. Requiring them here keeps it the malformed request it is.
+        require_fido2_assertion(request.all_data)
+        # The origin binds the answer to the site it was made for and is taken from the request environment,
+        # never from a parameter, so it is required from there.
+        get_required(request.environ, "HTTP_ORIGIN")
         # The passkey branch is the only one that consumes the transaction it was given, so it is where the
         # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
         # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
@@ -357,6 +462,14 @@ def get_auth_token():
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+        failed_lookup = g.resolved_user.get("failed_user_lookup")
+        if failed_lookup:
+            # Without the user store, neither the token owner nor whether the token belongs to the named user is known
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=failed_lookup.serial,
+                               transaction_id=transaction_id, username=failed_lookup.login_name,
+                               realm=failed_lookup.realm)
+            raise AuthError(_("Authentication failure using passkey."),
+                            id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         # The WebAuthn second factor sends the username along; it may only be answered with a token of that user.
         # A passkey login without a username authenticates the token owner.
         if username and not token_belongs_to_user(token, user):
@@ -366,20 +479,22 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        if not token.is_active():
-            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-            g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
+        token_state = check_fido2_token_state(token)
+        if not token_state.usable:
+            log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
+                      f"{token_state.message}")
+            g.audit_object.log({"info": log_used_user(user, token_state.message),
                                 "success": False,
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
                                 "token_type": token.get_type()})
-            # The user owns this passkey but it is disabled -> NO_USABLE_TOKEN
+            # The user owns this passkey but it may not authenticate -> NO_USABLE_TOKEN
             log_authentication(AuthEventType.NO_USABLE_TOKEN, request, user=token.user,
                                transaction_id=transaction_id,
-                               reasons=[AuthEventReason.TOKEN_DISABLED],
+                               reasons=[token_state.reason],
                                reason_detail=build_reason_detail(
-                                   reasons={token.get_serial(): AuthEventReason.TOKEN_DISABLED}))
-            return send_result(False, rid=2, details={"message": "Token is disabled"})
+                                   reasons={token.get_serial(): token_state.reason}))
+            return send_result(False, rid=2, details={"message": token_state.message})
 
         if not token.user:
             log_authentication(AuthEventType.USER_UNKNOWN, request, transaction_id=transaction_id)
@@ -425,10 +540,14 @@ def get_auth_token():
         try:
             passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data,
                                                           minimum_user_verification=minimum_user_verification)
-        except (ResourceNotFoundError, AuthError):
+        except (ResourceNotFoundError, AuthError) as error:
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure response, so log
-            # the failed attempt here.
-            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
+            # the failed attempt here. No first factor was checked, so it is a failed answer to a challenge.
+            reason = (AuthEventReason.CHALLENGE_EXPIRED if isinstance(error, ChallengeExpiredError)
+                      else AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION)
+            log_authentication(AuthEventType.CHALLENGE_ANSWERED_FAIL, request, user=token.user,
+                               serial=token.get_serial(), transaction_id=transaction_id, reasons=[reason],
+                               reason_detail=build_reason_detail(reasons={token.get_serial(): reason}))
             raise
         except PolicyError:
             # An authorization policy does not allow this authenticator. The refusal counts as a failed login.
@@ -438,6 +557,17 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise
         if passkey_login_result.success > 0:
+            if not username and not _owner_is_session_user(token, login_user):
+                # The session would act as another user of the realm with the same login name, so the login is
+                # refused rather than issuing a JWT that does not name its owner. A login that named the user
+                # cannot get here: token_belongs_to_user already compared the owner above.
+                g.audit_object.log({"user": login_user.login, "realm": login_user.realm,
+                                    "resolver": login_user.resolver,
+                                    "authentication": AUTH_RESPONSE.REJECT,
+                                    "serial": token.get_serial(), "token_type": token.get_type()})
+                log_authentication(AuthEventType.LOGIN_NAME_NOT_UNIQUE, request, user=login_user,
+                                   serial=token.get_serial(), transaction_id=transaction_id)
+                raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             user = login_user
             login_name = user.login
             realm = user.realm
@@ -446,12 +576,18 @@ def get_auth_token():
             auth_event_type = AuthEventType.LOGIN_SUCCESS
             # Record the passkey serial for the authentication log
             serials = token.get_serial()
+            # This path never reaches check_token_list, so the authentication is counted here, as it is
+            # for every other token type.
+            record_fido2_login_success(token)
             # Passkey login bypasses check_token_list, so the reset_all_user_tokens
             # policy is applied explicitly here (mirrors the /validate FIDO2 path).
             if reset_all_user_tokens_active(g, user):
                 reset_token_failcounters(get_tokens(user=user))
         else:
-            log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
+            reason = AuthEventReason.CHALLENGE_WRONG_RESPONSE
+            log_authentication(AuthEventType.CHALLENGE_ANSWERED_FAIL, request, user=token.user,
+                               serial=token.get_serial(), transaction_id=transaction_id, reasons=[reason],
+                               reason_detail=build_reason_detail(reasons={token.get_serial(): reason}))
             raise AuthError(_("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
@@ -513,7 +649,8 @@ def get_auth_token():
             "info": log_used_user(user)
         })
     # Check if the remote user is allowed
-    elif (request.remote_user == username) and is_remote_user_allowed(request) != REMOTE_USER.DISABLE:
+    elif (request.remote_user == username and _realm_parameter_fits_remote_user(request.remote_user)
+          and is_remote_user_allowed(request) != REMOTE_USER.DISABLE):
         # Authenticated by the Web Server
         # Check if the username exists
         # 1. in local admins
@@ -525,6 +662,8 @@ def get_auth_token():
             role = ROLE.ADMIN
             admin_auth = True
             internal_admin = True
+            # A local administrator is in no realm, as with the password login
+            realm = ""
             g.audit_object.log({"success": True, "user": "", "administrator": username, "info": "internal admin"})
             user = User()
         else:
@@ -596,6 +735,14 @@ def get_auth_token():
                     policy_names = sorted({name for names in login_mode_values.values() for name in names})
                     raise PolicyError(f"There are policies with conflicting actions: {policy_names!r}")
                 login_mode = next(iter(login_mode_values), LOGINMODE.USERSTORE)
+            failed_lookup = g.resolved_user.get("failed_user_lookup")
+            if failed_lookup:
+                # The credentials can not be checked without the user, and a passOnNoUser policy would take the empty
+                # user for one that does not exist and accept the login
+                log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=failed_lookup.login_name,
+                                   realm=failed_lookup.realm,
+                                   transaction_id=get_optional(request.all_data, "transaction_id"))
+                raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 # Never copy internal keys
@@ -685,6 +832,12 @@ def get_auth_token():
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
+    log_realm = None
+    failed_lookup = g.resolved_user.get("failed_user_lookup")
+    if failed_lookup and not admin_auth and not user_auth:
+        # Without the user, the credential check failed only because the user store did not answer
+        auth_event_type = AuthEventType.USER_STORE_UNAVAILABLE
+        log_realm = failed_lookup.realm
     if auth_event_type is None and not terminal_event_suppressed:
         # When nothing classified the request: a success defaults to LOGIN_SUCCESS, and an unclassified failure logs
         # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure
@@ -698,6 +851,7 @@ def get_auth_token():
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,
+                       realm=log_realm,
                        internal_admin=internal_admin,
                        reasons=auth_reasons, reason_detail=auth_reason_detail)
 

@@ -131,7 +131,8 @@ def guarded_write(description: str, session: Session | None = None,
 
     Note the caller must not hold a flushed-but-uncommitted write on ``db.session`` when this runs: on SQLite, which
     locks the whole database for writing, the commit then waits out the driver's lock timeout and fails (see
-    ``GuardedWriteTestCase.test_07``). Reads on ``db.session`` are harmless.
+    ``GuardedWriteTestCase.test_write_lock_on_the_request_session_is_a_contained_failure``).
+    Reads on ``db.session`` are harmless.
 
     :param description: what is being written, as a noun phrase for the log message, e.g.
         ``f"the user lock state for {user!r}"``

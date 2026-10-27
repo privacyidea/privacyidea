@@ -159,7 +159,7 @@ from its template:
   services to run (`COMPOSE_FILE`, `COMPOSE_PROFILES`), `PI_IMAGE`,
   `BOOTSTRAP_ADMIN`, `PI_WORKERS`, and the network between Caddy and `pi`.
 - **`privacyidea.env`** — privacyIDEA application config keys, prefixed with
-  `PRIVACYIDEA_`, applied to all three roles (e.g. `SQLALCHEMY_POOL_RECYCLE`,
+  `PRIVACYIDEA_`, applied to all three roles (e.g. `SQLALCHEMY_ENGINE_OPTIONS`,
   languages, and **`PRIVACYIDEA_PI_BASE_URL`** — set that to your public URL, or
   password recovery is disabled and notification links are blank). See
   https://privacyidea.readthedocs.io/en/latest/installation/system/inifile.html
@@ -225,6 +225,11 @@ a file (that's how the Docker secrets are wired):
 | `PI_SECRET_KEY` (`_FILE`) | Flask secret key — alias of `SECRET_KEY` (`_FILE`), which wins if both are set |
 | `PI_REDIS_URL` (`_FILE`) | optional Redis cache URL |
 | `PI_AUDIT_KEY_PUBLIC`, `PI_AUDIT_KEY_PRIVATE` | signed-audit key paths (auto-detect `/run/secrets/audit_key_*`) |
+
+`DockerConfig` also sets `PI_ENGINE_REGISTRY_CLASS = "shared"`: every gunicorn
+worker keeps one connection pool for the audit log and one for each SQL resolver,
+instead of connecting to the database anew for every request.
+`PI_AUDIT_POOL_SIZE` (default 20) limits the audit pool of a worker.
 
 **Maintenance** (`cron-runner.py`, on the `pi-cron` service). All default enabled;
 set to `false`/`0`/`no` to disable:

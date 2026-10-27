@@ -19,8 +19,14 @@ This migration:
   characters again: the code before this revision cannot read their encrypted
   data, and most of it does not fit.
 
-The migration is idempotent: SMS gateway option values that are already in
-encrypted format (contain a colon separating IV:ciphertext hex) are skipped.
+The migration can run again on a database on which it already ran, completely
+or in part: every statement commits on its own (see migrations/env.py), so a
+run that failed midway leaves its first steps behind, and a revision stamp set
+back by hand leaves all of them. Each schema change is therefore only made
+when reflection shows that it is still missing, and SMS gateway option values
+that are already in encrypted format (contain a colon separating
+IV:ciphertext hex) are skipped. Encrypted flags that are already set stay set,
+also those of options an administrator marked as secret.
 
 Revision ID: a1b2c3d4e5f6
 Revises: d4f5a6b7c8e9
@@ -64,6 +70,11 @@ def _looks_encrypted(value):
         return False
 
 
+def _get_columns(table_name: str) -> dict[str, dict]:
+    """Return the reflected columns of the table, keyed by their lower-case name."""
+    return {column["name"].lower(): column for column in sa.inspect(op.get_bind()).get_columns(table_name)}
+
+
 def _replace_challenge_data_column(new_type: sa.types.TypeEngine) -> None:
     """
     Replace challenge.data by an empty column of the given type, for Oracle, which cannot convert between VARCHAR2
@@ -80,7 +91,14 @@ def upgrade():
     # --- 0a. Remove the length limit of challenge.data to accommodate encrypted values ---
     log.info("Changing challenge.data to a text column...")
     if op.get_bind().dialect.name == "oracle":
-        _replace_challenge_data_column(sa.Text())
+        data_column = _get_columns('challenge').get('data')
+        if data_column is None:
+            # A previous run dropped the old column and failed before it added the new one
+            op.add_column('challenge', sa.Column('data', sa.Text(), nullable=True))
+        elif isinstance(data_column["type"], sa.Text):
+            log.info("challenge.data already is a text column.")
+        else:
+            _replace_challenge_data_column(sa.Text())
     else:
         with op.batch_alter_table('challenge', schema=None) as batch_op:
             batch_op.alter_column('data',
@@ -89,10 +107,13 @@ def upgrade():
                                   existing_nullable=True)
 
     # --- 0b. Add Encrypted boolean column to smsgatewayoption ---
-    log.info("Adding Encrypted column to smsgatewayoption table...")
-    with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('Encrypted', sa.Boolean(),
-                                      server_default='0', nullable=False))
+    if 'encrypted' in _get_columns('smsgatewayoption'):
+        log.info("The smsgatewayoption table already has the Encrypted column.")
+    else:
+        log.info("Adding Encrypted column to smsgatewayoption table...")
+        with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
+            batch_op.add_column(sa.Column('Encrypted', sa.Boolean(),
+                                          server_default='0', nullable=False))
 
     conn = op.get_bind()
 

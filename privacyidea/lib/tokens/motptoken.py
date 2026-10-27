@@ -77,7 +77,7 @@ class MotpTokenClass(TokenClass):
         :param ret: default return value, if nothing is found
         :type ret: user defined
         :return: subsection if key exists or user defined
-        :rtype : dict or string
+        :rtype: dict or string
         """
 
         res = {'type': 'motp',
@@ -241,7 +241,10 @@ class MotpTokenClass(TokenClass):
 
         if res != -1:
             # on success, we have to save the last attempt
-            self.set_otp_count(res)
+            if not self.advance_otp_count(res):
+                # Another request used this OTP value first, so it is as spent as it is for a later replay.
+                log.info(f"The OTP value of token {self.token.serial} was used by another request.")
+                return -1
 
         return res
 

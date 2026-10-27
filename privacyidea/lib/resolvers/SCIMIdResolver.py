@@ -217,7 +217,7 @@ class IdResolver (UserIdResolver):
 
         Keys in the dict are
          * Authserver
-         * Resouceserver
+         * Resourceserver
          * Client
          * Secret
          * Mapping

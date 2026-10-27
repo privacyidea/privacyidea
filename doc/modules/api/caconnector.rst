@@ -8,5 +8,4 @@ CA Connector endpoints
 .. autoflask:: privacyidea.app:create_app(silent=True)
    :endpoints:
    :blueprints: caconnector_blueprint
-
    :include-empty-docstring:

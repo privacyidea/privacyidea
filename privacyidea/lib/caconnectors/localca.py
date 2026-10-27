@@ -36,18 +36,16 @@ import datetime
 from pathlib import Path
 import shlex
 import re
+import secrets
 import logging
 import os
 import traceback
 
 log = logging.getLogger(__name__)
 
-CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
-          "-extensions {extension} -days {days} -in {csrfile} -out {" \
-          "certificate} -batch"
-CA_SIGN_SPKAC = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
-                "-extensions {extension} -days {days} -spkac {spkacfile} -out " \
-                "{certificate} -batch"
+# The part of the signing command the administrator configures. The request and certificate files are appended as
+# separate arguments, so a value taken from a request is never parsed as command-line syntax.
+CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} -extensions {extension} -days {days}"
 
 CA_REVOKE = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
             "-revoke {certificate} -crl_reason {reason}"
@@ -318,19 +316,31 @@ class LocalCAConnector(BaseCAConnector):
         self.templates = self.get_templates()
 
     @staticmethod
-    def _filename_from_x509(x509_name: x509.Name, file_extension="pem"):
+    def _file_stem(subject_text: str) -> str:
         """
-        return a filename from the subject from a x509 object
+        A server-chosen name for the request and certificate files of a signing request: a readable part taken from
+        the subject, which only keeps characters that are safe in a file name, and a random part, so the file can not
+        be confused with another file of the directory.
 
-        :param x509_name: The X509Name object
-        :type x509_name: X509Name object
-        :param file_extension:
-        :type file_extension: str
-        :return: filename
-        :rtype: str
+        :param subject_text: the subject of the request
+        :return: the file name without extension
         """
-        filename = "_".join([to_unicode(name_attribute.value) for name_attribute in x509_name])
-        return ".".join([filename, file_extension])
+        readable = re.sub(r"[^A-Za-z0-9._@-]", "_", subject_text).lstrip(".-")[:64]
+        random_part = secrets.token_hex(8)
+        return f"{readable}_{random_part}" if readable else random_part
+
+    @staticmethod
+    def _path_in_directory(directory: str, filename: str) -> str:
+        """
+        The path of *filename* in *directory*, which has to stay inside the directory.
+
+        :raises CAError: if the path leaves the directory
+        """
+        path = os.path.join(directory, filename)
+        real_directory = os.path.realpath(directory)
+        if os.path.commonpath([os.path.realpath(path), real_directory]) != real_directory:
+            raise CAError("The certificate request can not be stored.")
+        return path
 
     def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
@@ -382,51 +392,41 @@ class LocalCAConnector(BaseCAConnector):
 
         if template_name:
             t_data = self.templates.get(template_name)
+            if t_data is None:
+                raise CAError(f"The certificate template {template_name!r} does not exist.")
             extension = t_data.get("extensions", extension)
             days = t_data.get("days", days)
 
-        # Determine filename from the CN of the request
+        # The file names are chosen by the server, with a readable part from the subject of the request
         if spkac:
-            common_name = re.search("CN=(.*)", csr).group(0).split("=")[1]
-            csr_filename = common_name + ".txt"
-            certificate_filename = common_name + ".der"
+            common_name = re.search(r"CN=([^\n=]*)", csr)
+            file_stem = self._file_stem(common_name.group(1) if common_name else "")
+            csr_path = self._path_in_directory(csrdir, file_stem + ".txt")
+            certificate_path = self._path_in_directory(certificatedir, file_stem + ".der")
         else:
             csr_obj = x509.load_pem_x509_csr(csr.encode())
-            csr_filename = self._filename_from_x509(csr_obj.subject, file_extension="req")
-            certificate_filename = self._filename_from_x509(csr_obj.subject, file_extension="pem")
-        csr_filename = csr_filename.replace(" ", "_")
-        certificate_filename = certificate_filename.replace(" ", "_")
+            file_stem = self._file_stem("_".join(to_unicode(name_attribute.value)
+                                                 for name_attribute in csr_obj.subject))
+            csr_path = self._path_in_directory(csrdir, file_stem + ".req")
+            certificate_path = self._path_in_directory(certificatedir, file_stem + ".pem")
         # dump the file
-        csr_filename = to_unicode(csr_filename.encode('ascii', 'ignore'))
-        with open(os.path.join(csrdir, csr_filename), "w") as f:
+        with open(csr_path, "x") as f:
             f.write(csr)
 
         # TODO: use the template name to set the days and the extension!
-        if spkac:
-            cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
-                                       days=days, config=config,
-                                       extension=extension,
-                                       spkacfile=os.path.join(csrdir, csr_filename),
-                                       certificate=os.path.join(certificatedir,
-                                                                certificate_filename))
-        else:
-            cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
-                                 days=days, config=config, extension=extension,
-                                 csrfile=os.path.join(csrdir, csr_filename),
-                                 certificate=os.path.join(certificatedir,
-                                                          certificate_filename))
-        # run the command
-        args = shlex.split(cmd)
-        # the command is configured by the administrator: CA key, CA cert, number of days, the config file
+        cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert, days=days, config=config, extension=extension)
+        # the command is configured by the administrator: CA key, CA cert, number of days, the config file. The files
+        # of the request are separate arguments.
+        args = shlex.split(cmd) + ["-spkac" if spkac else "-in", csr_path, "-out", certificate_path, "-batch"]
         p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
         result, error = p.communicate()
         if p.returncode != 0:  # pragma: no cover
             # Some error occurred
             log.warning(f"An error occurred during signing of the certificate: {error}")
-            log.debug(f"Command that lead to the error: {cmd}")
+            log.debug(f"Command that lead to the error: {args}")
             raise CAError("An error occurred during signing of the certificate")
 
-        with open(os.path.join(certificatedir, certificate_filename), "rb") as f:
+        with open(certificate_path, "rb") as f:
             certificate = f.read()
 
         # We return the cert_obj.
@@ -498,7 +498,7 @@ class LocalCAConnector(BaseCAConnector):
         Create and Publish the CRL.
 
         :param publish: Whether the CRL should be published at its CDPs
-        :param check_validity: Onle create a new CRL, if the old one is about to
+        :param check_validity: Only create a new CRL, if the old one is about to
             expire. Therefore, the overlap period and the remaining runtime of
             the CRL is checked. If the remaining runtime is smaller than the
             overlap period, we recreate the CRL.

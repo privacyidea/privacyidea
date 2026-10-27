@@ -8,3 +8,4 @@ User Notification Event Handler
 .. autoclass:: privacyidea.lib.eventhandler.usernotification.UserNotificationEventHandler
    :members:
    :undoc-members:
+   :no-index:

@@ -79,6 +79,19 @@ describe("PolicyTemplatePickerComponent", () => {
     expect(component.isExpanded()).toBe(false);
   });
 
+  it("leaves out boolean actions that the template sets to false", () => {
+    templatesMock.setTemplate({
+      name: "helpdesk",
+      scope: "admin",
+      action: { enable: true, policywrite: false, importtokens: false }
+    });
+    const emitSpy = jest.spyOn(component.templateApplied, "emit");
+
+    component.selectTemplate("helpdesk");
+
+    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({ action: { enable: true } }));
+  });
+
   it("falls back to priority 1 when the current priority is 0", () => {
     templatesMock.setTemplate({ name: "tpl", scope: "admin" });
     fixture.componentRef.setInput("currentPriority", 0);

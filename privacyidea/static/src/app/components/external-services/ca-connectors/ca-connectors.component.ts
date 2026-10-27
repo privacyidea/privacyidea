@@ -17,10 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -33,7 +34,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -53,15 +53,15 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-ca-connectors",
   standalone: true,
   imports: [
+    TableActionsComponent,
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,
@@ -112,6 +112,28 @@ export class CaConnectorsComponent {
     keyGetter: (connector) => connector.connectorname,
     visibleRows: renderedRows(this.caConnectorDataSource)
   });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createCaConnector:Create CA Connector`,
+      tone: "primary",
+      width: "l",
+      icon: "assured_workload",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      run: () => this.openEditDialog()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      run: () => this.deleteSelected()
+    }
+  ]);
 
   openEditDialog(connector?: CaConnector): void {
     if (connector) {

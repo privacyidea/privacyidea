@@ -193,6 +193,21 @@ class AppTestCase(unittest.TestCase):
                            partial=True)
             ], logger.handlers)
 
+    def test_06_logging_keeps_existing_loggers(self):
+        # Loggers of other packages exist before the app is created, e.g. those of the WSGI server
+        # or of Sphinx when it builds the API documentation. Configuring the logging must not mute them.
+        existing_logger = logging.getLogger("other_package.module")
+        existing_logger.disabled = False
+        with isolated_config_file():
+            create_app(config_name="testing", silent=True)
+        self.assertFalse(existing_logger.disabled)
+
+        class Config(TestingConfig):
+            PI_LOGCONFIG = "tests/testdata/logging.cfg"
+        with mock.patch.dict("privacyidea.config.config", {"testing": Config}):
+            create_app(config_name="testing", silent=True)
+        self.assertFalse(existing_logger.disabled)
+
 
 class HashConfigTestCase(unittest.TestCase):
     """
@@ -366,3 +381,11 @@ class DockerConfigDatabaseUriTestCase(unittest.TestCase):
     def test_02_url_safe_password_is_kept_as_is(self):
         uri = self._docker_database_uri({"PI_DB_USER": "pi", "PI_DB_PASSWORD": "Ab0-_x", "PI_DB_PORT": "3307"})
         self.assertEqual("mysql+pymysql://pi:Ab0-_x@db.example.org:3307/pi", uri)
+
+
+class DockerConfigEngineRegistryTestCase(unittest.TestCase):
+
+    def test_01_shared_engine_registry(self):
+        # The Docker image keeps one database engine with a connection pool per process for the audit log and the
+        # SQL resolvers
+        self.assertEqual("shared", config["docker"].PI_ENGINE_REGISTRY_CLASS)

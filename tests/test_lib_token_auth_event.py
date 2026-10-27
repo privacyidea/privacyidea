@@ -23,7 +23,8 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            REQUEST_EVENT_PRECEDENCE,
                                                                            reduce_request_events,
                                                                            AuthEventOutcome, EVENT_TYPE_OUTCOME,
-                                                                           outcome_of)
+                                                                           outcome_of, TRACKABLE_EVENT_TYPES,
+                                                                           NON_REPRESENTATIVE_EVENT_TYPES)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy)
 from privacyidea.lib.token import (get_tokens, init_token,
@@ -210,10 +211,16 @@ class EventTypeOutcomeTestCase(MyTestCase):
         self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.MFA_FAIL))
         self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.USER_UNKNOWN))
 
-    def test_03_exactly_one_success_event(self):
-        # A sanity check on the taxonomy: LOGIN_SUCCESS is the only success outcome.
+    def test_03_success_events(self):
+        # A sanity check on the taxonomy: a completed login and an accepted offline refill are the only successes.
         success = [event for event, outcome in EVENT_TYPE_OUTCOME.items() if outcome == AuthEventOutcome.SUCCESS]
-        self.assertEqual([AuthEventType.LOGIN_SUCCESS], success)
+        self.assertListEqual([AuthEventType.LOGIN_SUCCESS, AuthEventType.OFFLINE_REFILL_SUCCESS], success)
+
+    def test_04_user_store_unavailable_is_logged_but_not_counted(self):
+        # The user did nothing wrong, so no policy may count it, but it is the outcome of the attempt
+        self.assertEqual(AuthEventOutcome.FAILURE, outcome_of(AuthEventType.USER_STORE_UNAVAILABLE))
+        self.assertNotIn(AuthEventType.USER_STORE_UNAVAILABLE, TRACKABLE_EVENT_TYPES)
+        self.assertNotIn(AuthEventType.USER_STORE_UNAVAILABLE, NON_REPRESENTATIVE_EVENT_TYPES)
 
 
 class ReasonOrderTestCase(MyTestCase):

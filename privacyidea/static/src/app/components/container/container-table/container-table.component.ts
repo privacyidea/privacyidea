@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
@@ -70,6 +71,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { withUser } from "@utils/filter.utils";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -89,6 +92,10 @@ const columnsKeyMap = [
   selector: "app-container-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
+    ScrollFocusableDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
@@ -122,10 +129,6 @@ const columnsKeyMap = [
 export class ContainerTableComponent implements OnDestroy {
   protected selectRowLabel(serial: string): string {
     return $localize`:@@container.selectContainerNamed:Select container ${serial}:SERIAL:`;
-  }
-
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
   }
 
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);

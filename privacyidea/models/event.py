@@ -79,7 +79,7 @@ class EventHandler(MethodsMixin, db.Model):
         Return the serialized eventhandler object including the options
 
         :return: complete dict
-        :rytpe: dict
+        :rtype: dict
         """
         d = {"active": self.active,
              "name": self.name,

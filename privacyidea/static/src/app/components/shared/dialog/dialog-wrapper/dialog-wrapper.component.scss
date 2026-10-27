@@ -1,5 +1,11 @@
+@use "@angular/material" as mat;
+
 .pi-dialog {
-  --mat-dialog-content-padding: 0 16px 8px 16px;
+  @include mat.dialog-overrides(
+    (
+      content-padding: 0 16px 8px 16px
+    )
+  );
 
   // The panel shrink-wraps its content, so the width cap has to live in here. Without it a single
   // long line of text stretches the dialog across the viewport (#5841).
@@ -18,10 +24,18 @@
     padding: 16px;
   }
 
+  // mat-dialog-title names the dialog for assistive technology; its own look (padding, 24px type) is not the one this
+  // header has, so it is set back to a plain heading.
   .pi-dialog-header h3 {
     display: flex;
     align-items: center;
-    margin-bottom: 0;
+    margin: 8px 8px 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: 1.17em;
+    font-weight: 700;
+    line-height: normal;
+    letter-spacing: normal;
   }
 
   .pi-dialog-footer {

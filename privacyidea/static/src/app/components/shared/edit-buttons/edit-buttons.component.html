@@ -23,6 +23,8 @@
     (isEditingInfo() && element().keyMap.key === "info");
   @if (!shouldHideEdit()) {
     <button
+      aria-label="Edit"
+      i18n-aria-label="@@common.edit"
       mat-icon-button
       class="flex"
       (click)="toggleEdit()(element())">
@@ -30,6 +32,8 @@
     </button>
   } @else if (elementIsEditing) {
     <button
+      aria-label="Save"
+      i18n-aria-label="@@common.save"
       mat-icon-button
       color="primary"
       class="flex"
@@ -37,6 +41,8 @@
       <mat-icon>save</mat-icon>
     </button>
     <button
+      aria-label="Cancel"
+      i18n-aria-label="@@common.cancel"
       mat-icon-button
       class="red flex"
       (click)="cancelEdit()(element())">

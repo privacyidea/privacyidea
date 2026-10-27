@@ -19,7 +19,7 @@
 # pi-cron keeps a small pool open; the default of 151 suits a single node.
 #max_connections = 151
 
-# Seconds an idle connection stays open. Keep it above SQLALCHEMY_POOL_RECYCLE in
-# privacyidea.env, so that privacyIDEA refreshes its pooled connections before
-# the server closes them.
+# Seconds an idle connection stays open. Keep it above pool_recycle in
+# PRIVACYIDEA_SQLALCHEMY_ENGINE_OPTIONS (privacyidea.env), so that privacyIDEA
+# refreshes its pooled connections before the server closes them.
 #wait_timeout = 28800

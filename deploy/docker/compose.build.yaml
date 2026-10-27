@@ -20,7 +20,6 @@ x-pi-build: &pi-build
   build:
     context: "../../"
     dockerfile: ./deploy/docker/Dockerfile
-    network: host
     args:
       GIT_VERSION: ${GIT_VERSION:-}
 

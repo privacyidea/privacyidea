@@ -17,13 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
+import {
+  afterNextRender,
+  afterRenderEffect,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  OnDestroy,
+  signal,
+  viewChild
+} from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -63,19 +77,25 @@ export class PolicyEditPageComponent implements OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   readonly mode = signal<"create" | "edit">("create");
 
   readonly activeTab = signal<PolicyTab>("actions");
   readonly actionFilter = signal<string>("");
 
-  private readonly stickyHeader = viewChild(StickyHeaderDirective);
+  private readonly stickyHeader = viewChild.required<ElementRef<HTMLElement>>("stickyHeader");
+  private readonly panel = viewChild<PolicyPanelEditComponent>("panel");
+  private readonly panelElement = viewChild("panel", { read: ElementRef<HTMLElement> });
+  private readonly templatePicker = viewChild("templatePicker", { read: ElementRef<HTMLElement> });
+  private readonly headerSearch = viewChild.required(PolicyActionSearchComponent);
+  private readonly searchReached = signal(false);
 
   /**
-   * The search field is only shown in the header once that header is pinned; the rest of the time
-   * the actions tab renders it above the panels it filters.
+   * The search field moves into the header once the header touches its top edge, so it is never
+   * partly covered; until then the actions tab shows it above the panels it filters.
    */
-  readonly searchInHeader = computed(() => this.activeTab() === "actions" && !!this.stickyHeader()?.isSticky());
+  readonly searchInHeader = computed(() => this.activeTab() === "actions" && this.searchReached());
 
   readonly policy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
@@ -83,9 +103,28 @@ export class PolicyEditPageComponent implements OnDestroy {
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   readonly isDirty = this.isPolicyEdited;
+
+  /**
+   * The name being saved, from the save click until the save fails or the page is left. The service lists the
+   * saved policy under that name right away, which must not count as a collision.
+   */
+  protected readonly savingName = signal<string | null>(null);
+
+  /** Another policy already carries the entered name; the policy being edited does not collide with itself. */
+  readonly nameTaken = computed(() => {
+    const name = this.editedPolicy().name;
+    return (
+      name !== this.savingName() &&
+      this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
+    );
+  });
   readonly canSave = computed(
     () =>
-      this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name)
+      this.savingName() === null &&
+      this.isPolicyEdited() &&
+      !!this.editedPolicy().name?.trim() &&
+      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
+      !this.nameTaken()
   );
   readonly title = computed(() =>
     this.mode() === "edit"
@@ -117,9 +156,40 @@ export class PolicyEditPageComponent implements OnDestroy {
       }
     });
 
+    // Layout shifts move the field without a scroll event, and a recreated action tab brings a new
+    // anchor. Observing it fires once right away, so a returning tab is checked on arrival.
+    afterRenderEffect((onCleanup) => {
+      const elements = [
+        this.stickyHeader().nativeElement,
+        this.templatePicker()?.nativeElement,
+        this.panelElement()?.nativeElement,
+        this.panel()?.searchAnchor()
+      ];
+      const observer = new ResizeObserver(() => this.updateSearchReached());
+      elements.forEach((element) => element && observer.observe(element));
+      onCleanup(() => observer.disconnect());
+    });
+
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(() => this.canSave());
     this.pendingChangesService.registerSave(() => this.onSave());
+  }
+
+  updateSearchReached(): void {
+    const anchor = this.panel()?.searchAnchor();
+    const headerBottom = this.stickyHeader().nativeElement.getBoundingClientRect().bottom;
+    const reached = !!anchor && anchor.getBoundingClientRect().top <= headerBottom;
+    if (reached === this.searchReached()) return;
+
+    const focus = this.visibleSearch()?.focusState();
+    this.searchReached.set(reached);
+    if (focus) {
+      afterNextRender(() => this.visibleSearch()?.takeFocus(focus), { injector: this.injector });
+    }
+  }
+
+  private visibleSearch(): PolicyActionSearchComponent | undefined {
+    return this.searchInHeader() ? this.headerSearch() : this.panel()?.searchField();
   }
 
   ngOnDestroy(): void {
@@ -136,17 +206,59 @@ export class PolicyEditPageComponent implements OnDestroy {
   }
 
   async onSave(): Promise<boolean> {
-    const success =
-      this.mode() === "create"
-        ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
-        : await this.policyService.savePolicyEdits(this.policy().name, {
-            ...this.policy(),
-            ...this.policyEdits()
-          });
+    // A second save while one is running is a no-op, not a collision with the policy that is being saved.
+    if (this.savingName() !== null) {
+      return false;
+    }
+    // The pending-changes dialog enables its save button on the state from when it opened, so a collision that
+    // the policy list revealed since then is caught here.
+    if (this.nameTaken()) {
+      this.notificationService.error($localize`:@@policy.nameAlreadyExists:A policy with this name already exists.`);
+      return false;
+    }
+    this.savingName.set(this.editedPolicy().name);
+    let success = false;
+    try {
+      success =
+        this.mode() === "create"
+          ? await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() })
+          : await this.policyService.savePolicyEdits(this.policy().name, {
+              ...this.policy(),
+              ...this.policyEdits()
+            });
+    } finally {
+      if (!success) {
+        this.savingName.set(null);
+      }
+    }
     if (success) {
       this._navigateBack();
     }
     return success;
+  }
+
+  /**
+   * Creates a new policy from the form as it currently is, edits not yet saved included, and leaves the policy being
+   * edited as it is stored.
+   */
+  async onCopy(): Promise<void> {
+    if (this.savingName() !== null) {
+      return;
+    }
+    const newName = await this.dialogService.openDialogAsync({
+      component: CopyPolicyDialogComponent,
+      data: this.policy().name
+    });
+    if (!newName || this.savingName() !== null) {
+      return;
+    }
+    this.savingName.set(newName);
+    const created = await this.policyService.saveNewPolicy({ ...this.editedPolicy(), name: newName });
+    if (created) {
+      this._navigateBack();
+    } else {
+      this.savingName.set(null);
+    }
   }
 
   onCancel(): void {

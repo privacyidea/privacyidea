@@ -203,7 +203,7 @@ class ISMSProvider:
         """
         Load the configuration dictionary
 
-        :param config_dict: The conifugration of the SMS provider
+        :param config_dict: The configuration of the SMS provider
         :type config_dict: dict
         :return: None
         """

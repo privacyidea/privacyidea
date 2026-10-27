@@ -56,7 +56,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.radiusserver import get_radius, get_temporary_radius_server
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, consume_challenge
 from privacyidea.lib.token import create_challenge
 from privacyidea.lib.policydecorators import challenge_response_allowed
 
@@ -169,7 +169,7 @@ class RadiusTokenClass(RemoteTokenClass):
         TokenClass.update(self, param)
         val = get_optional(param, "radius.local_checkpin") or 0
         self.write_tokeninfo("radius.local_checkpin", val)
-        val = get_required(param, "radius.user")
+        val = get_required(param, "radius.user", allow_empty=True)
         self.write_tokeninfo("radius.user", val)
         self.write_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
@@ -183,7 +183,7 @@ class RadiusTokenClass(RemoteTokenClass):
 
         communication with RADIUS server: yes
         modification of options: The communication with the RADIUS server can
-            change the options, radius_state, radius_result, radius_message
+        change the options, radius_state, radius_result, radius_message
 
         :param passw: password, which might be pin or pin+otp
         :type passw: string
@@ -229,8 +229,7 @@ class RadiusTokenClass(RemoteTokenClass):
                  bool, if submit was successful
                  message is submitted to the user
                  data is preserved in the challenge
-                 reply_dict - additional attributes, which are displayed in the
-                    output
+                 reply_dict - additional attributes, which are displayed in the output
         """
         if options is None:
             options = {}
@@ -333,17 +332,21 @@ class RadiusTokenClass(RemoteTokenClass):
                     radius_response = self._check_radius(passw, options=options, radius_state=state)
                     if radius_response == AccessAccept:
                         # We found the matching challenge,
-                        # and the RADIUS server returned AccessAccept
-                        challengeobject.delete()
-                        otp_counter = 1
+                        # and the RADIUS server returned AccessAccept. Only the request that removes the
+                        # challenge is accepted.
+                        otp_counter = 1 if consume_challenge(challengeobject) else -1
                         break
                     elif radius_response == AccessChallenge:
                         # The response was valid but triggered a new challenge
                         # Note: The second challenge currently does not work correctly
                         # see https://github.com/privacyidea/privacyidea/issues/1792
-                        challengeobject.delete()
-                        _, _, transaction_id, _ = self.create_challenge(options=options)
-                        options["transaction_id"] = transaction_id
+                        # Only the request that removes the answered challenge continues the conversation, so
+                        # one answer buys one follow-up challenge and not one per request.
+                        if consume_challenge(challengeobject):
+                            _, _, transaction_id, _ = self.create_challenge(options=options)
+                            options["transaction_id"] = transaction_id
+                        else:
+                            log.info(f"The challenge of token {self.token.serial} was used by another request.")
                         otp_counter = -1
                         break
                     else:
@@ -451,6 +454,25 @@ class RadiusTokenClass(RemoteTokenClass):
         else:
             return -1
 
+    def _radius_user(self, options: dict) -> str:
+        """
+        The user name the RADIUS request is sent for: the RADIUS user of the token, or, if that is empty, the user who
+        is authenticating. A token that is used without naming the user, e.g. by its serial, falls back to its owner.
+
+        :param options: The options of the authentication, which carry the authenticating user
+        :return: The user name, empty if the token has neither a RADIUS user nor an owner and no user authenticates
+        """
+        radius_user = self.get_tokeninfo("radius.user")
+        if radius_user:
+            return radius_user
+        user = options.get("user")
+        login = user if isinstance(user, str) else getattr(user, "login", "")
+        if not login and self.user:
+            login = self.user.login
+        if not login:
+            log.warning(f"The RADIUS token {self.token.serial} has no RADIUS user and no user is authenticating.")
+        return login or ""
+
     @log_with(log, hide_args=[1])
     @check_token_locked
     def _check_radius(self, otpval, options=None, radius_state=None):
@@ -469,7 +491,7 @@ class RadiusTokenClass(RemoteTokenClass):
             options = {}
 
         radius_identifier = self.get_tokeninfo("radius.identifier")
-        radius_user = self.get_tokeninfo("radius.user")
+        radius_user = self._radius_user(options)
         system_radius_settings = self.get_tokeninfo("radius.system_settings")
         system_radius_dictfile = get_from_config("radius.dictfile",
                                                  default="/etc/privacyidea/dictionary")
@@ -499,7 +521,6 @@ class RadiusTokenClass(RemoteTokenClass):
                 dictionary=system_radius_dictfile
             )
 
-        # here we also need to check for radius.user
         log.debug(f"checking OTP len:{len(otpval)!s} on radius server: "
                   f"{radius_server_object.config.server!s}, user: {radius_user!r}")
 

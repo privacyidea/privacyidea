@@ -3,7 +3,7 @@
 Add an administrator
 --------------------
 
-PrivacyIDEA does not come with a pre-defined administrator user.
+privacyIDEA does not come with a pre-defined administrator user.
 If you just installed privacyIDEA, you need to create a new one
 by running::
 

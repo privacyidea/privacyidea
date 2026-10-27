@@ -55,6 +55,11 @@ if [[ ! -r $PICFG ]];then
 fi
 
 OS=$(grep "^ID=" /etc/os-release | sed -e 's/^ID=//g' | tr -d '"')
+OS_LIKE=$(grep "^ID_LIKE=" /etc/os-release | sed -e 's/^ID_LIKE=//g' | tr -d '"')
+# Rebuilds of RHEL (Rocky Linux, AlmaLinux, ...) are handled like RHEL
+if [[ "${OS}" != "centos" && " ${OS_LIKE} " == *" rhel "* ]]; then
+	OS="rhel"
+fi
 diag_info=$(mktemp -d -t pi_diag_XXXXXXXXXX)
 tempfile="${diag_info}/system.config"
 pi_config="${diag_info}/privacyidea.config"
@@ -314,7 +319,7 @@ system_status() {
 centos_auditlog() {
 	if [[ "$(getenforce)" == "Enforcing" ]]; then
 		log
-		log "SECTION: centOS Auditlog"
+		log "SECTION: SELinux denials"
 		log "========================"
 		grep "denied" /var/log/audit/audit.log  >> "$tempfile"
 	fi
@@ -389,7 +394,7 @@ pi_config
 server_config
 FreeRADIUS_config
 system_status
-if [[ "${OS}" == "centos" ]]; then
+if [[ "${OS}" == "centos" || "${OS}" == "rhel" ]]; then
 	centos_auditlog
 fi
 apache_log

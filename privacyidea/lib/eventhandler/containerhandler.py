@@ -362,9 +362,7 @@ class ContainerEventHandler(BaseEventHandler):
                         container.add_user(user)
 
                 if handler_options.get("token"):
-                    token_serial = request.all_data.get("serial") or \
-                                   content.get("detail", {}).get("serial") or \
-                                   g.audit_object.audit_data.get("serial")
+                    token_serial = self._get_token_serials(request, content, g)
                     if token_serial:
                         add_token_to_container(new_serial, token_serial)
                     else:

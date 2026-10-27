@@ -1,4 +1,4 @@
-Version 3.14, 2026-09-30
+Version 3.14, 2026-10-08
 
   Features:
   * API clients can authenticate with an API key in the `X-API-Key` header, which gives an integration a stable,
@@ -170,6 +170,9 @@ Version 3.14, 2026-09-30
     or for every user (`*`), not by policies that name users, exclude them or match them with a regular expression
     (#6015)
   * Editing an inactive policy no longer activates it, because the `active` parameter is now honoured (#5411)
+  * Updating an existing policy with `POST /policy/<name>` keeps the stored value of every field the request leaves
+    out, e.g. `active`, `priority`, `description`, `check_all_resolvers` and `user_case_insensitive`, instead of
+    resetting it (#6040)
   * A realm administrator with the `userlist` right sees the users of all realms granted to them, instead of only the
     first realm of the first matching policy (#5421). Each realm of a request is checked on its own, so several
     realms, given as a list or comma-separated, list no realm the administrator is not granted, and a realm excluded
