@@ -57,7 +57,9 @@
       </button>
     </div>
   </div>
-  <app-container-template-edit
-    [(template)]="template"
-    [nameEditable]="isNewTemplate()"></app-container-template-edit>
+  @if (templateReady()) {
+    <app-container-template-edit
+      [(template)]="template"
+      [nameEditable]="isNewTemplate()"></app-container-template-edit>
+  }
 </div>

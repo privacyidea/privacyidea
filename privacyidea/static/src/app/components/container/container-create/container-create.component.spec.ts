@@ -22,11 +22,13 @@ import { of, throwError } from "rxjs";
 import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
+import { By } from "@angular/platform-browser";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "@app/mappers/token-api-payload/token-api-payload-mapper-registry";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { ContainerRegistrationCompletedDialogComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 import { AuthService } from "@services/auth/auth.service";
@@ -74,11 +76,6 @@ interface ComponentPrivates {
   ) => EnrollTokenArguments;
   registerContainer: (serial: string, regenerate?: boolean) => void;
   openRegistrationDialog: (response: PiResponse<ContainerRegisterData>, serial: string) => void;
-  registrationConfigComponent: {
-    userStorePassphrase: ReturnType<typeof signal<boolean>>;
-    passphraseResponse: ReturnType<typeof signal<string>>;
-    passphrasePrompt: ReturnType<typeof signal<string>>;
-  };
   registerResponse: ReturnType<typeof signal<PiResponse<ContainerRegisterData> | null>>;
 }
 
@@ -328,6 +325,23 @@ describe("ContainerCreateComponent", () => {
     );
   });
 
+  it("sends the name and the content of a selected template that holds a single token", () => {
+    containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+    const template = {
+      container_type: "generic",
+      default: false,
+      name: "single-token",
+      template_options: { tokens: [{ type: "hotp" }] as TokenEnrollmentPayload[] }
+    };
+    component.selectedTemplate.set(template);
+
+    component.createContainer();
+
+    expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "generic", name: "single-token", template })
+    );
+  });
+
   it("shows snack if createContainer returns no serial", () => {
     containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
     (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(
@@ -352,13 +366,21 @@ describe("ContainerCreateComponent", () => {
     expect(regSpy).toHaveBeenCalledWith("C-001");
   });
 
-  it("registerContainer: sets containerSerial signal before opening dialog", () => {
-    (component as unknown as ComponentPrivates).registrationConfigComponent = {
-      userStorePassphrase: signal(false),
-      passphraseResponse: signal(""),
-      passphrasePrompt: signal("")
-    };
+  it("creates a smartphone without registering it when the register right is missing", () => {
+    authService.actionAllowed.mockImplementation((action: string) => action !== "container_register");
+    containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+    fixture.detectChanges();
+    const regSpy = jest.spyOn(component as unknown as ComponentPrivates, "registerContainer");
 
+    component.createContainer();
+
+    expect(component.generateQRCode()).toBe(false);
+    expect(containerServiceMock.createContainer).toHaveBeenCalledWith(expect.objectContaining({ type: "smartphone" }));
+    expect(regSpy).not.toHaveBeenCalled();
+    expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/containers/details/C-001"));
+  });
+
+  it("registerContainer: sets containerSerial signal before opening dialog", () => {
     let serialAtDialogOpen = "";
     jest.spyOn(component as unknown as ComponentPrivates, "openRegistrationDialog").mockImplementation(() => {
       serialAtDialogOpen = containerServiceMock.containerSerial();
@@ -372,12 +394,6 @@ describe("ContainerCreateComponent", () => {
   it("registerContainer: stores response, opens dialog, and starts polling", () => {
     const pollSpy = jest.spyOn(containerServiceMock, "startPolling");
     const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
-
-    (component as unknown as ComponentPrivates).registrationConfigComponent = {
-      userStorePassphrase: signal(false),
-      passphraseResponse: signal(""),
-      passphrasePrompt: signal("")
-    };
 
     (component as unknown as ComponentPrivates).registerContainer("C-001");
     fixture.detectChanges();
@@ -410,12 +426,6 @@ describe("ContainerCreateComponent", () => {
 
   it("closing enrollment dialog manually stops polling", () => {
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
-
-    (component as unknown as ComponentPrivates).registrationConfigComponent = {
-      userStorePassphrase: signal(false),
-      passphraseResponse: signal(""),
-      passphrasePrompt: signal("")
-    };
 
     (component as unknown as ComponentPrivates).registerContainer("C-001");
     fixture.detectChanges();
@@ -528,6 +538,179 @@ describe("ContainerCreateComponent", () => {
     expect(registerSpy).not.toHaveBeenCalled();
   });
 
+  describe("stale registration validity", () => {
+    const createButton = () =>
+      fixture.nativeElement.querySelector(".enroll-button-container button.action-button-primary") as HTMLButtonElement;
+    const settle = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it("enables Create again after switching from an invalid smartphone registration to another type", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      await settle();
+      const config = fixture.debugElement.query(By.directive(ContainerRegistrationConfigComponent));
+      expect(config).not.toBeNull();
+      expect(component.generateQRCode()).toBe(true);
+      const prompt = config.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+      prompt.value = "Enter passphrase";
+      prompt.dispatchEvent(new Event("input"));
+      await settle();
+      expect(createButton().disabled).toBe(true);
+
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      await settle();
+
+      expect(fixture.debugElement.query(By.directive(ContainerRegistrationConfigComponent))).toBeNull();
+      expect(component.model().registration.prompt).toBe("");
+      expect(createButton().disabled).toBe(false);
+    });
+
+    it("keeps Create enabled for an invalid registration while no QR code is generated", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      await settle();
+      component.generateQRCode.set(false);
+      component.model.update((model) => ({ ...model, registration: { ...model.registration, prompt: "Prompt" } }));
+      await settle();
+
+      expect(component.form().valid()).toBe(true);
+      expect(createButton().disabled).toBe(false);
+    });
+
+    it("disables Create for an invalid registration while a QR code is generated", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      await settle();
+      component.model.update((model) => ({ ...model, registration: { ...model.registration, prompt: "Prompt" } }));
+      await settle();
+
+      expect(component.form().valid()).toBe(false);
+      expect(createButton().disabled).toBe(true);
+    });
+  });
+
+  describe("create options", () => {
+    const typeDescription = async (text: string) => {
+      const textarea = fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+      textarea.value = text;
+      textarea.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    it("takes the typed description into the created container", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      fixture.detectChanges();
+      await typeDescription("typed description");
+
+      component.createContainer();
+
+      expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
+        expect.objectContaining({ description: "typed description" })
+      );
+    });
+
+    it("limits the description to the maximum description length of the token service", () => {
+      component.model.update((model) => ({ ...model, description: "x".repeat(81) }));
+      expect(
+        component.form
+          .description()
+          .errors()
+          .map((error) => error.kind)
+      ).toEqual(["maxLength"]);
+      expect(component.form().valid()).toBe(false);
+      component.model.update((model) => ({ ...model, description: "x".repeat(80) }));
+      expect(component.form().valid()).toBe(true);
+    });
+
+    it("clears the entered options and the dirty state when the container type changes", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      fixture.detectChanges();
+      await typeDescription("typed description");
+      component.model.update((model) => ({
+        ...model,
+        registration: { prompt: "Prompt", response: "a", repeat: "a", store: false }
+      }));
+      expect(component.form().dirty()).toBe(true);
+
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(component.model()).toEqual({
+        description: "",
+        registration: { prompt: "", response: "", repeat: "", store: false }
+      });
+      expect(component.form().dirty()).toBe(false);
+    });
+
+    it("does not create a container and touches the fields while the form is invalid", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      component.model.update((model) => ({ ...model, description: "x".repeat(81) }));
+
+      component.createContainer();
+
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+      expect(component.form.description().touched()).toBe(true);
+    });
+
+    it("does not create a container while the user assignment is invalid", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      fixture.detectChanges();
+      Object.defineProperty(component.userAssignmentComponent, "valid", { value: () => false });
+
+      component.createContainer();
+
+      expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
+    });
+
+    it("allows the user store passphrase once a user is selected", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      userService.selectionUsernameFilter.set("");
+      fixture.detectChanges();
+      expect(component.form.registration.store().disabled()).toBe(true);
+
+      userService.selectionUsernameFilter.set("testuser");
+      expect(component.form.registration.store().disabled()).toBe(false);
+    });
+
+    it("registers with the passphrase settings of the form", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      fixture.detectChanges();
+      component.model.update((model) => ({
+        ...model,
+        registration: { prompt: "Prompt", response: "secret", repeat: "secret", store: false }
+      }));
+
+      component.createContainer();
+
+      expect(containerServiceMock.registerContainer).toHaveBeenCalledWith({
+        container_serial: "C-001",
+        passphrase_user: false,
+        passphrase_response: "secret",
+        passphrase_prompt: "Prompt"
+      });
+    });
+
+    it("registers with the user store passphrase", () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      fixture.detectChanges();
+      component.model.update((model) => ({
+        ...model,
+        registration: { prompt: "Prompt", response: "", repeat: "", store: true }
+      }));
+
+      component.createContainer();
+
+      expect(containerServiceMock.registerContainer).toHaveBeenCalledWith({
+        container_serial: "C-001",
+        passphrase_user: true,
+        passphrase_response: "",
+        passphrase_prompt: "Prompt"
+      });
+    });
+  });
+
   describe("registerHasChanges", () => {
     let hasChangesFn: () => boolean;
 
@@ -539,9 +722,16 @@ describe("ContainerCreateComponent", () => {
       expect(hasChangesFn()).toBe(false);
     });
 
-    it("returns true when description is set", () => {
-      component.description.set("my description");
+    it("returns true when the description is typed", () => {
+      const textarea = fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+      textarea.value = "my description";
+      textarea.dispatchEvent(new Event("input"));
       expect(hasChangesFn()).toBe(true);
+    });
+
+    it("returns false when the description is only set in the model", () => {
+      component.model.update((model) => ({ ...model, description: "my description" }));
+      expect(hasChangesFn()).toBe(false);
     });
 
     it("returns true when a template is selected", () => {
@@ -566,11 +756,10 @@ describe("ContainerCreateComponent", () => {
       expect(pendingChangesService.registerSave).toHaveBeenCalled();
     });
 
-    it("validChanges reflects component.validInput", () => {
+    it("validChanges reflects the validity of the form", () => {
       const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
-      component.validInput = true;
       expect(fn()).toBe(true);
-      component.validInput = false;
+      component.model.update((model) => ({ ...model, description: "x".repeat(81) }));
       expect(fn()).toBe(false);
     });
 
@@ -582,9 +771,9 @@ describe("ContainerCreateComponent", () => {
       expect(containerServiceMock.createContainer).not.toHaveBeenCalled();
     });
 
-    it("save returns false when validInput is false", async () => {
+    it("save returns false when the form is invalid", async () => {
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
-      component.validInput = false;
+      component.model.update((model) => ({ ...model, description: "x".repeat(81) }));
       const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
       const result = await fn();
       expect(result).toBe(false);
@@ -593,17 +782,17 @@ describe("ContainerCreateComponent", () => {
 
     it("save creates container and returns true on success", async () => {
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
-      component.validInput = true;
-      component.description.set("desc");
+      component.model.update((model) => ({ ...model, description: "desc" }));
       const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
       const result = await fn();
       expect(result).toBe(true);
-      expect(containerServiceMock.createContainer).toHaveBeenCalled();
+      expect(containerServiceMock.createContainer).toHaveBeenCalledWith(
+        expect.objectContaining({ description: "desc" })
+      );
     });
 
     it("save forces empty user when onlyAddToRealm is enabled", async () => {
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
-      component.validInput = true;
       component.userAssignmentComponent.userFilter.set("someuser");
       component.userAssignmentComponent.onlyAddToRealm.set(true);
 
@@ -621,7 +810,6 @@ describe("ContainerCreateComponent", () => {
 
     it("save returns false when createContainer throws", async () => {
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
-      component.validInput = true;
       (containerServiceMock.createContainer as jest.Mock).mockReturnValueOnce(throwError(() => new Error("fail")));
       const fn = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
       const result = await fn();
@@ -643,6 +831,25 @@ describe("ContainerCreateComponent", () => {
     beforeEach(() => {
       wizardFixture = TestBed.createComponent(ContainerCreateWizardComponent);
       wizardComponent = wizardFixture.componentInstance;
+    });
+
+    it("resets the description and the passphrase entries but keeps the user store flag when the type changes", async () => {
+      containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
+      wizardFixture.detectChanges();
+      wizardComponent.model.set({
+        description: "desc",
+        registration: { prompt: "Prompt", response: "a", repeat: "a", store: true }
+      });
+
+      containerServiceMock.selectedContainerType.set({ containerType: "smartphone", description: "", token_types: [] });
+      wizardFixture.detectChanges();
+      await wizardFixture.whenStable();
+
+      expect(wizardComponent.model()).toEqual({
+        description: "",
+        registration: { prompt: "", response: "", repeat: "", store: true }
+      });
+      expect(wizardComponent.form().dirty()).toBe(false);
     });
 
     it("show loaded templates if not empty", async () => {
@@ -719,12 +926,6 @@ describe("ContainerCreateComponent", () => {
     });
 
     it("wizard registerContainer sets containerSerial before openRegistrationDialog is called", () => {
-      (wizardComponent as unknown as ComponentPrivates).registrationConfigComponent = {
-        userStorePassphrase: signal(false),
-        passphraseResponse: signal(""),
-        passphrasePrompt: signal("")
-      };
-
       let serialAtDialogOpen = "";
       jest.spyOn(wizardComponent as unknown as ComponentPrivates, "openRegistrationDialog").mockImplementation(() => {
         serialAtDialogOpen = containerServiceMock.containerSerial();

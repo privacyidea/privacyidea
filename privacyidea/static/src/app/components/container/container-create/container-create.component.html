@@ -50,7 +50,7 @@
       <div class="enroll-button-container margin-left-auto">
         <button
           (click)="createContainer()"
-          [disabled]="!validInput"
+          [disabled]="!formValid()"
           class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
@@ -74,24 +74,16 @@
       [containerService]="containerService"
       [tokenService]="tokenService"
       [authService]="authService"
-      [description]="description()"
-      (descriptionChange)="description.set($event)"
+      [descriptionField]="form.description"
+      [registration]="form.registration"
       [selectedTemplate]="selectedTemplate()"
       (selectedTemplateChange)="selectedTemplate.set($event)"
       [templateOptions]="templateOptions()"
       [availableTokenTypes]="availableTokenTypes()"
       [generateQRCode]="generateQRCode()"
       (generateQRCodeChange)="generateQRCode.set($event)"
-      [passphrasePrompt]="passphrasePrompt()"
-      (passphrasePromptChange)="passphrasePrompt.set($event)"
-      [passphraseResponse]="passphraseResponse()"
-      (passphraseResponseChange)="passphraseResponse.set($event)"
-      [userStorePassphrase]="userStorePassphrase()"
-      (userStorePassphraseChange)="userStorePassphrase.set($event)"
       [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone'"
-      [containerHasOwner]="isUserSelected()"
       [templateFieldClass]="'input-width-l'"
-      (validInputChange)="onValidInputChange($event)"
       (clearTemplate)="clearTemplateSelection()"
       (templateChange)="onTemplateChange($event)">
       @if (showUserAssignment()) {
