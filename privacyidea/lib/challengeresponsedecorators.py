@@ -34,6 +34,7 @@ from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.tokenclass import ClientMode
+from privacyidea.lib.conditional_access.authentication_event_types import LOG_AUTORESYNC_KEY
 
 
 log = logging.getLogger(__name__)
@@ -68,6 +69,17 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     reply_dict["transaction_ids"] = [db_challenge.transaction_id]
 
     return reply_dict
+
+
+def _keep_autoresync_info(reply_dict: dict, challenge_reply: dict) -> None:
+    """
+    Carry the audit-only autoresync outcome of the authentication over to the challenge replacing its reply.
+
+    :param reply_dict: The reply of the authentication
+    :param challenge_reply: The reply of the challenge, changed in place
+    """
+    if LOG_AUTORESYNC_KEY in reply_dict:
+        challenge_reply[LOG_AUTORESYNC_KEY] = reply_dict[LOG_AUTORESYNC_KEY]
 
 
 def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
@@ -158,8 +170,9 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
         # The tokenlist can contain more than one token. So we get the matching token object
         token = next(t for t in args[0] if t.token.serial == serial)
         if g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE, token=token).any():
-            reply_dict = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET, _("Please enter a new PIN"))
-            return False, reply_dict
+            challenge_reply = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET, _("Please enter a new PIN"))
+            _keep_autoresync_info(reply_dict, challenge_reply)
+            return False, challenge_reply
 
     return success, reply_dict
 
@@ -195,7 +208,9 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
             # We have an entry for resync
             if g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.RESYNC_VIA_MULTICHALLENGE,
                                  token=token).any():
-                reply_dict = _create_challenge(token, CHALLENGE_TYPE.RESYNC,
-                                               _("To resync your token, please enter the next OTP value"))
+                challenge_reply = _create_challenge(token, CHALLENGE_TYPE.RESYNC,
+                                                    _("To resync your token, please enter the next OTP value"))
+                _keep_autoresync_info(reply_dict, challenge_reply)
+                reply_dict = challenge_reply
 
     return success, reply_dict

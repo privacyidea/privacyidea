@@ -42,7 +42,7 @@ from privacyidea.lib.decorators import check_token_locked, check_token_otp_lengt
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP, Match
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 
@@ -443,15 +443,18 @@ class TotpTokenClass(HotpTokenClass):
                     shift = otp2c - counter
                     info["timeShift"] = shift
                     self.set_tokeninfo(info)
+                self.auth_details[AUTORESYNC_KEY] = (AutoResyncResult.FAILED if res == -1
+                                                     else AutoResyncResult.SUCCESSFUL)
 
                 # now clean the resync data
                 del info["otp1c"]
                 self.set_tokeninfo(info)
 
             else:
-                log.debug(f"setting otp1c: {res!s}")
+                log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
                 info["otp1c"] = res
                 self.set_tokeninfo(info)
+                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.STARTED
                 res = -1
 
         return res

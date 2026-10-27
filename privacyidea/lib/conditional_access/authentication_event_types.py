@@ -79,13 +79,17 @@ SUPPRESS_TERMINAL_EVENT_KEY = "suppress_terminal_authentication_event"
 # answer; the API layer pops it from the response details before sending.
 LOG_TRANSACTION_ID_KEY = "log_transaction_id"
 
+# Key carrying the autoresync outcome of the checked tokens to the audit log without exposing it in the response: a
+# client learning that its OTP value hit the sync window would learn more than "wrong otp value" tells it.
+LOG_AUTORESYNC_KEY = "log_autoresync"
+
 # Every key that travels from the lib layer to the api layer in a dict the response is then built from, and that must
 # never reach the client. The keys a token only ever sets on its own ``auth_details`` (NO_FIRST_FACTOR_KEY,
 # CHALLENGE_LAPSED_KEY, SUPPRESS_TERMINAL_EVENT_KEY) are deliberately not here: that dict is the token layer's own
 # state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
 #: The classification keys stripped at the lib/api boundary, so none of them can reach a client.
 INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
-                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY})
+                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY})
 
 
 def strip_internal_classification(details):

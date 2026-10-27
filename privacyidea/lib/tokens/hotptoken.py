@@ -61,7 +61,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import ClientMode
+from privacyidea.lib.tokenclass import ClientMode, AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
@@ -574,27 +574,33 @@ class HotpTokenClass(TokenClass):
                 otp2c = res
 
                 if (otp1c + 1) != otp2c:
+                    log.debug(f"Autoresync failed for token {self.token.serial!s}. OTP values too far apart.")
                     res = -1
-
-                if "dueDate" in info:
-                    dueDate = int(info.get("dueDate"))
-                    now = int(time.time())
-                    if dueDate <= now:
-                        res = -1
+                elif "dueDate" not in info:  # pragma: no cover
+                    log.debug(f"Autoresync failed for token {self.token.serial!s}. dueDate is missing.")
+                    res = -1
+                elif int(info.get("dueDate")) <= int(time.time()):
+                    log.debug(f"Autoresync failed for token {self.token.serial!s}. AutoResyncTimeout expired.")
+                    res = -1
                 else:
-                    # if by any reason the dueDate is missing!
-                    res = -1  # pragma: no cover
+                    log.debug(f"Autoresync successful for token {self.token.serial!s}.")
+                self.auth_details[AUTORESYNC_KEY] = (AutoResyncResult.FAILED if res == -1
+                                                     else AutoResyncResult.SUCCESSFUL)
 
                 # now clean the resync data
                 self.remove_tokeninfo("dueDate")
                 self.remove_tokeninfo("otp1c")
 
             else:
+                log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
                 self.write_tokeninfo("otp1c", res)
                 self.write_tokeninfo("dueDate", int(time.time()) +
                                    self.get_sync_timeout())
+                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.STARTED
 
                 res = -1
+        else:
+            log.debug(f"The OTP value of token {self.token.serial!s} is not in the sync window.")
 
         return res
 

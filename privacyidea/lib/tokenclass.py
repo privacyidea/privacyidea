@@ -127,6 +127,9 @@ FAILCOUNTER_CLEAR_TIMEOUT = "failcounter_clear_timeout"
 TWOSTEP_DEFAULT_CLIENTSIZE = 8
 TWOSTEP_DEFAULT_DIFFICULTY = 10000
 
+# Key set on token.auth_details when the OTP value was checked by the autoresync, holding an AutoResyncResult
+AUTORESYNC_KEY = "autoresync"
+
 log = logging.getLogger(__name__)
 
 
@@ -150,6 +153,13 @@ class ClientMode:
     INTERACTIVE = 'interactive'
     POLL = 'poll'
     WEBAUTHN = 'webauthn'
+
+
+class AutoResyncResult:
+    # The OTP value is in the sync window and is stored to wait for the next one
+    STARTED = 'started'
+    SUCCESSFUL = 'successful'
+    FAILED = 'failed'
 
 
 class TokenClass:

@@ -153,7 +153,7 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
-                                                                LOG_TRANSACTION_ID_KEY)
+                                                                LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY)
 from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
@@ -647,6 +647,8 @@ def check():
         # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
         # a failure was made against belong on the authentication-log row alone.
         AUTH_EVENT_SERIALS_KEY: [],
+        # Audit-only, never part of the response (see LOG_AUTORESYNC_KEY)
+        LOG_AUTORESYNC_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -1034,6 +1036,7 @@ def _handle_serial_auth(context: dict, serial: str):
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
         # a message, so without this the row would name no token although the request named exactly one.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success
     context["details"] = details
@@ -1089,6 +1092,7 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -1197,7 +1201,7 @@ def _finalize_auth_response(context):
     apply_cookie_action(ret, cookie_action)
 
     audit_entry = {
-        "info": log_used_user(user, details.get("message")),
+        "info": log_used_user(user, ", ".join(filter(None, [details.get("message"), context[LOG_AUTORESYNC_KEY]]))),
         "success": success,
         "authentication": ret.json.get("result", {}).get("authentication", "")
     }

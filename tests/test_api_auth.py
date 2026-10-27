@@ -11,7 +11,8 @@ from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.config import set_privacyidea_config, SYSCONF
+from privacyidea.lib.conditional_access.authentication_event_types import LOG_AUTORESYNC_KEY
+from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config, SYSCONF
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import ResourceNotFoundError, Error, ResolverError
 from privacyidea.lib.resolvers.UserIdResolver import USER_LOOKUP_FAILED
@@ -1755,6 +1756,43 @@ class AuthApiTestCase(MyApiTestCase):
 
         Audit.query.delete()
         db.session.commit()
+
+    def test_20_autoresync_in_audit_log(self):
+        self.setUp_user_realms()
+        set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        self.addCleanup(delete_policy, "pi-login")
+        set_privacyidea_config("AutoResync", True)
+        self.addCleanup(delete_privacyidea_config, "AutoResync")
+        token = init_token({"serial": "AUTORESYNC1", "otpkey": self.otpkey, "pin": "pin"},
+                           User("cornelius", self.realm1))
+        self.addCleanup(remove_token, "AUTORESYNC1")
+        token.set_sync_window(10)
+        token.set_count_window(5)
+
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual("loginmode=privacyIDEA, autoresync started,"
+                         "Authentication failed.|wrong otp value", audit_entry.get("info"))
+
+        # counter = 9, will be autosynced
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "realm": self.realm1,
+                                                 "password": "pin520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail") or {}, res.json)
+        audit_entry = self.find_most_recent_audit_entry(action='POST /auth')
+        self.assertEqual("loginmode=privacyIDEA, autoresync successful", audit_entry.get("info"))
 
 
 class AdminFromUserstore(OverrideConfigTestCase):

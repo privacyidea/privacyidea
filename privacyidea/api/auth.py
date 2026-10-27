@@ -93,7 +93,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
-                                                                          LOG_TRANSACTION_ID_KEY)
+                                                                          LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY)
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
@@ -766,6 +766,7 @@ def get_auth_token():
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
+            autoresync_info = details.pop(LOG_AUTORESYNC_KEY, None)
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
@@ -799,7 +800,8 @@ def get_auth_token():
                 "resolver": user.resolver,
                 "serial": serials,
                 "token_type": token_types,
-                "info": log_used_user(user, f"loginmode={details.get('loginmode')}")})
+                "info": log_used_user(user, ", ".join(filter(None, [f"loginmode={details.get('loginmode')}",
+                                                                    autoresync_info])))})
             if role == ROLE.ADMIN:
                 g.audit_object.log({"user": "", "administrator": user.login})
             else:
