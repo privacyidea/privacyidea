@@ -14,6 +14,10 @@ to the REST API :ref:`rest_validate` and are checked
 using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
+The policies are matched for the user who authenticates. A request to
+``/validate/check`` that names only the serial of a token is matched for the
+owner of the token.
+
 The following actions are available in the scope
 *authentication*:
 
