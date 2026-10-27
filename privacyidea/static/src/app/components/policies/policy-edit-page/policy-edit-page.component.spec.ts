@@ -18,7 +18,7 @@
  **/
 
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, input, output, Provider, signal } from "@angular/core";
+import { Component, computed, input, output, Provider, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -59,6 +59,12 @@ class MockPanel {
   actionFilterChange = output<string>();
   searchAnchor = signal<HTMLElement | undefined>(undefined);
   searchField = signal<Partial<PolicyActionSearchComponent> | undefined>(undefined);
+  /** Stands for the rules of the name, priority and scope fields. */
+  fieldsValid = signal(true);
+  /** Stands for the values of the added actions. */
+  actionsValid = signal(true);
+  /** A name collision of the page invalidates the name field of the real panel. */
+  valid = computed(() => this.fieldsValid() && this.actionsValid() && !this.nameTaken());
 }
 
 function createTestBed(paramName: string | null, extraProviders: Provider[] = []) {
@@ -127,19 +133,70 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.editedPolicy().priority).toBe(99);
   });
 
+  it("is dirty after the panel reports a chip list change", () => {
+    expect(component.isDirty()).toBe(false);
+    mockPanel().policyEdit.emit({ adminuser: ["admin2"] });
+    expect(component.isDirty()).toBe(true);
+    expect(component.editedPolicy().adminuser).toEqual(["admin2"]);
+  });
+
   it("canSave returns false if no edits", () => {
     expect(component.canSave()).toBe(false);
   });
 
-  it("canSave returns false if name is missing", () => {
+  it("canSave returns false while the panel reports an invalid name, priority or scope", () => {
     component.addPolicyEdit({ name: "" });
+    mockPanel().fieldsValid.set(false);
+
+    expect(mockPanel().valid()).toBe(false);
     expect(component.canSave()).toBe(false);
   });
 
-  it("canSave returns true if edits and name present", () => {
-    // TODO: Not only name, but also scope and at least one action should be required
+  it("canSave returns true if edits are made and the panel reports valid fields", () => {
     component.addPolicyEdit({ name: "ValidName" });
     expect(component.canSave()).toBe(true);
+  });
+
+  it("canSave follows the validity that the panel reports", () => {
+    component.addPolicyEdit({ name: "ValidName" });
+
+    mockPanel().fieldsValid.set(false);
+    expect(component.canSave()).toBe(false);
+
+    mockPanel().fieldsValid.set(true);
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("canSave follows the validity of the added actions that the panel reports", () => {
+    component.addPolicyEdit({ name: "ValidName" });
+
+    mockPanel().actionsValid.set(false);
+    expect(component.canSave()).toBe(false);
+
+    mockPanel().actionsValid.set(true);
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("registers the validity of the added actions with the pending changes, so that leaving the page cannot save it", () => {
+    component.addPolicyEdit({ name: "ValidName" });
+    mockPanel().actionsValid.set(false);
+
+    const registered = (TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService)
+      .registerValidChanges.mock.calls[0][0] as () => boolean;
+    expect(registered()).toBe(false);
+  });
+
+  it("disables the save button while the panel reports invalid fields", () => {
+    const saveButton = () =>
+      fixture.debugElement.query(By.css(".sticky-controls .action-button-primary")).nativeElement as HTMLButtonElement;
+    component.addPolicyEdit({ name: "ValidName" });
+    fixture.detectChanges();
+    expect(saveButton().disabled).toBe(false);
+
+    mockPanel().fieldsValid.set(false);
+    fixture.detectChanges();
+
+    expect(saveButton().disabled).toBe(true);
   });
 
   const mockPanel = (): MockPanel => fixture.debugElement.query(By.directive(MockPanel)).componentInstance;
@@ -161,12 +218,14 @@ describe("PolicyEditPageComponent – create mode", () => {
     it("reports a collision with an existing policy and blocks saving", () => {
       component.addPolicyEdit({ name: "helpdesk" });
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
     it("ignores the case of the name, which MySQL and MariaDB do as well", () => {
       component.addPolicyEdit({ name: "Helpdesk" });
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
@@ -179,6 +238,7 @@ describe("PolicyEditPageComponent – create mode", () => {
     it("reports the collision for a name that was applied by a template", () => {
       component.addPolicyEdit({ name: "admin", scope: "admin" });
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
@@ -196,6 +256,7 @@ describe("PolicyEditPageComponent – create mode", () => {
       const pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
       component.addPolicyEdit({ name: "helpdesk" });
       expect(pendingChangesService.registerValidChanges).toHaveBeenCalledWith(expect.any(Function));
+      fixture.detectChanges();
       const hasValidChanges = pendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;
       expect(hasValidChanges()).toBe(false);
     });
@@ -226,6 +287,7 @@ describe("PolicyEditPageComponent – create mode", () => {
       component.addPolicyEdit({ name: "helpdesk" });
 
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
 
       finishSave(false);
@@ -242,6 +304,7 @@ describe("PolicyEditPageComponent – create mode", () => {
       await component.onSave();
 
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
@@ -255,6 +318,7 @@ describe("PolicyEditPageComponent – create mode", () => {
       await expect(component.onSave()).rejects.toThrow("boom");
 
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
@@ -548,12 +612,14 @@ describe("PolicyEditPageComponent – edit mode", () => {
     it("reports a collision when renaming to the name of another policy and blocks saving", () => {
       component.addPolicyEdit({ name: "helpdesk" });
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
     it("registers the colliding rename as invalid with the pending changes, so that leaving the page cannot save it", () => {
       component.addPolicyEdit({ name: "helpdesk", description: "changed" });
       const pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      fixture.detectChanges();
       const hasValidChanges = pendingChangesService.registerValidChanges.mock.calls[0][0] as () => boolean;
       expect(hasValidChanges()).toBe(false);
     });
@@ -582,6 +648,7 @@ describe("PolicyEditPageComponent – edit mode", () => {
     it("reports a collision when renaming to a case variant of the name of another policy", () => {
       component.addPolicyEdit({ name: "HelpDesk" });
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 
@@ -595,6 +662,7 @@ describe("PolicyEditPageComponent – edit mode", () => {
       await component.onSave();
 
       expect(component.nameTaken()).toBe(true);
+      fixture.detectChanges();
       expect(component.canSave()).toBe(false);
     });
 

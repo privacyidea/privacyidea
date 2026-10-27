@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { ApiClientService } from "@services/api-client/api-client.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -124,7 +126,8 @@ describe("ApiClientRememberedDevicesComponent", () => {
 
   it("should reload with the selected realm and reset to the first page", async () => {
     component.pageIndex.set(2);
-    component.onRealmFilterChange("realm1");
+    component.realmFilterForm().controlValue.set("realm1");
+    expect(component.realmFilter()).toBe("realm1");
     expect(component.pageIndex()).toBe(0);
     await fixture.whenStable();
     expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
@@ -132,6 +135,32 @@ describe("ApiClientRememberedDevicesComponent", () => {
       pageSize: 50,
       realm: "realm1"
     });
+  });
+
+  it("should write the realm picked in the select to the filter and reset the page", async () => {
+    const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+    component.pageIndex.set(2);
+
+    select.open();
+    await settle();
+    // Option 0 is "All realms"; option 2 is realm2.
+    (document.querySelectorAll("mat-option")[2] as HTMLElement).click();
+    await settle();
+
+    expect(component.realmFilter()).toBe("realm2");
+    expect(component.realmFilterForm().dirty()).toBe(true);
+    expect(component.pageIndex()).toBe(0);
+    expect(apiClientServiceMock.getRememberedDevices).toHaveBeenCalledWith("client1", {
+      page: 1,
+      pageSize: 50,
+      realm: "realm2"
+    });
+  });
+
+  it("should keep the page when the paginator moves and the realm filter is unchanged", async () => {
+    component.onPage({ pageIndex: 1, pageSize: 10, length: 20 });
+    await settle();
+    expect(component.pageIndex()).toBe(1);
   });
 
   it("should reset the page and realm filter when the viewed client changes", async () => {

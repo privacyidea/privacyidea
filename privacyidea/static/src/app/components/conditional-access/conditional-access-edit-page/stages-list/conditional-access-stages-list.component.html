@@ -17,20 +17,19 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="ca-stages-list gap-16">
-  @if (stages().length === 0) {
+  @if (stages()().value().length === 0) {
     <p
       class="ca-stages-list-empty"
       i18n="@@conditionalAccess.noStagesDefinedYet"
       >No stages defined yet. A policy needs at least one stage to take effect.</p
     >
   }
-  @for (stage of stages(); track $index) {
+  @for (stage of stages(); track stage; let index = $index) {
     <app-conditional-access-stage-item
       [stage]="stage"
       [stageNumber]="stageNumber(stage)"
       [target]="target()"
-      (updateStage)="onUpdateStage($index, $event)"
-      (removeStage)="onRemoveStage($index)" />
+      (removeStage)="onRemoveStage(index)" />
   }
   <div class="ca-add-button-row">
     <button

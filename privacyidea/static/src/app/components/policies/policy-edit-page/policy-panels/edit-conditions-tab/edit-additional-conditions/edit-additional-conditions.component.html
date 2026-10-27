@@ -94,26 +94,30 @@
           appearance="outline"
           class="margin-bottom-16">
           <mat-label i18n="@@policy.section">Section</mat-label>
-          <mat-select
-            [value]="conditionSection()"
-            (selectionChange)="conditionSection.set($event.value)">
+          <mat-select [formField]="conditionForm.section">
             @for (option of SECTION_OPTIONS; track option.key) {
               <mat-option [value]="option.key">{{ option.label }}</mat-option>
             }
           </mat-select>
+          @if (hasError(conditionForm.section, ERR.required)) {
+            <mat-error i18n="@@policy.conditionSectionRequired">Section is <strong>required</strong>.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field
           appearance="outline"
           class="margin-bottom-16">
           <mat-label i18n="@@policy.ifDataMissing">If Data Missing</mat-label>
-          <mat-select
-            [value]="conditionHandleMissingData()"
-            (selectionChange)="conditionHandleMissingData.set($event.value)">
+          <mat-select [formField]="conditionForm.handleMissingData">
             @for (opt of HANDLE_MISSING_DATA_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
           </mat-select>
+          @if (hasError(conditionForm.handleMissingData, ERR.required)) {
+            <mat-error i18n="@@policy.conditionMissingDataRequired"
+              >If Data Missing is <strong>required</strong>.</mat-error
+            >
+          }
         </mat-form-field>
       </div>
       <div class="form-row">
@@ -121,26 +125,18 @@
           appearance="outline"
           class="margin-bottom-16">
           <mat-label i18n="@@common.key">Key</mat-label>
-          @if (availableKeys().length > 0) {
-            <input
-              type="text"
-              matInput
-              [value]="conditionKey()"
-              (input)="conditionKey.set($any($event.target).value)"
-              [matAutocomplete]="auto" />
-            <mat-autocomplete
-              #auto="matAutocomplete"
-              (optionSelected)="conditionKey.set($event.option.value)">
-              @for (key of availableKeys(); track key) {
-                <mat-option [value]="key">{{ key }}</mat-option>
-              }
-            </mat-autocomplete>
-          } @else {
-            <input
-              type="text"
-              matInput
-              [value]="conditionKey()"
-              (input)="conditionKey.set($any($event.target).value)" />
+          <input
+            type="text"
+            matInput
+            [formField]="conditionForm.key"
+            [matAutocomplete]="auto" />
+          <mat-autocomplete #auto="matAutocomplete">
+            @for (key of availableKeys(); track key) {
+              <mat-option [value]="key">{{ key }}</mat-option>
+            }
+          </mat-autocomplete>
+          @if (hasError(conditionForm.key, ERR.required)) {
+            <mat-error i18n="@@policy.conditionKeyRequired">Key is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
 
@@ -148,13 +144,14 @@
           appearance="outline"
           class="margin-bottom-16">
           <mat-label i18n="@@policy.comparator">Comparator</mat-label>
-          <mat-select
-            [value]="conditionComparator()"
-            (selectionChange)="conditionComparator.set($event.value)">
+          <mat-select [formField]="conditionForm.comparator">
             @for (opt of COMPARATOR_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
           </mat-select>
+          @if (hasError(conditionForm.comparator, ERR.required)) {
+            <mat-error i18n="@@policy.conditionComparatorRequired">Comparator is <strong>required</strong>.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field
@@ -163,8 +160,7 @@
           <mat-label i18n="@@common.value">Value</mat-label>
           <input
             matInput
-            [value]="conditionValue()"
-            (input)="conditionValue.set($any($event.target).value)" />
+            [formField]="conditionForm.value" />
         </mat-form-field>
       </div>
 
@@ -179,6 +175,7 @@
         <button
           mat-stroked-button
           class="action-button-primary button-width-m"
+          [disabled]="!canSaveCondition()"
           (click)="saveCondition()">
           @if (editIndex() !== null) {
             <span i18n="@@policy.updateCondition">Update Condition</span>

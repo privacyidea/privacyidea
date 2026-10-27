@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output, signal, ViewChild } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, output, untracked, ViewChild } from "@angular/core";
 
-import { form, FormField, validate } from "@angular/forms/signals";
+import { form, FormField } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -38,13 +38,13 @@ import { ResolverService, ResolverServiceInterface } from "@services/resolver/re
   imports: [
     FormField,
     MatIconModule,
-    MatInputModule,
     MatAutocompleteModule,
     MatSelectModule,
     MatButtonModule,
     MatExpansionModule,
     MultiSelectOnlyComponent,
-    MatCheckboxModule
+    MatCheckboxModule,
+    ChipListInputComponent
   ],
   templateUrl: "./edit-user-conditions.component.html",
   styleUrl: "./edit-user-conditions.component.scss"
@@ -60,15 +60,13 @@ export class EditUserConditionsComponent {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  readonly userSignal = signal("");
-  readonly userField = form(this.userSignal, (f) => {
-    validate(f, (ctx) => (/[,]/.test(ctx.value()) ? [{ kind: "includesComma" }] : []));
-  });
-
   readonly selectedRealms = computed(() => this.policy().realm || []);
   readonly selectedResolvers = computed(() => this.policy().resolver || []);
   readonly selectedUsers = computed(() => this.policy().user || []);
   readonly userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
+  /** The state of the checkbox. It follows the policy and hands its own changes to the policy as edits. */
+  readonly caseInsensitive = linkedSignal(() => this.userCaseInsensitive());
+  readonly caseInsensitiveField = form(this.caseInsensitive);
 
   readonly isAllRealmsSelected = computed(
     () => this.selectedRealms().length === this.realmService.realmOptions().length
@@ -113,6 +111,15 @@ export class EditUserConditionsComponent {
       : ""
   );
 
+  constructor() {
+    effect(() => {
+      const caseInsensitive = this.caseInsensitive();
+      if (caseInsensitive !== untracked(this.userCaseInsensitive)) {
+        this.emitEdits({ user_case_insensitive: caseInsensitive });
+      }
+    });
+  }
+
   emitEdits(edits: Partial<PolicyDetail>) {
     this.policyEdit.emit(edits);
   }
@@ -135,24 +142,7 @@ export class EditUserConditionsComponent {
     setTimeout(() => this.resolverSelect?.close());
   }
 
-  addUser(user: string) {
-    const trimmed = user?.trim();
-    if (this.userField().errors().length > 0 || !trimmed) return;
-    if (!this.selectedUsers().includes(trimmed)) {
-      this.emitEdits({ user: [...this.selectedUsers(), trimmed] });
-      this.userSignal.set("");
-    }
-  }
-
-  removeUser(user: string) {
-    this.emitEdits({ user: this.selectedUsers().filter((u) => u !== user) });
-  }
-
   clearUsers() {
     this.emitEdits({ user: [] });
-  }
-
-  toggleUserCaseInsensitive() {
-    this.emitEdits({ user_case_insensitive: !this.userCaseInsensitive() });
   }
 }
