@@ -892,6 +892,9 @@ class OrphanedTokenTestCase(MyTestCase):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
         tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
                   if token.token.serial in {"ORPHEXISTS0", "ORPHDELETEDUSER"}]
-        with mock.patch.object(token_query, "get_cached_usernames", side_effect=Exception("lock wait timeout")):
+        with (mock.patch.object(token_query, "get_cached_usernames", side_effect=Exception("lock wait timeout")),
+              mock.patch.object(db.session, "rollback", wraps=db.session.rollback) as rollback):
             # The owners are looked up in the user store instead
             self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=False))
+        # A failed query leaves the session unusable until it is rolled back
+        rollback.assert_called_once_with()
