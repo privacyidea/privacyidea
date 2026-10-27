@@ -2412,6 +2412,21 @@ def indexedsecret_force_attribute(request, action):
     return True
 
 
+@functools.lru_cache(maxsize=2)
+def _get_webauthn_policy_actions(scope: str) -> frozenset[str]:
+    """
+    Return the names of the WebAuthn policy actions of the given scope and of the authorization scope.
+
+    The names come from the token class only, so they are built once per scope and process. The class info translates
+    all of its descriptions on every call, which costs more than the policy checks that use the names.
+
+    :param scope: SCOPE.AUTH or SCOPE.ENROLL
+    :return: The action names
+    """
+    policy_info = WebAuthnTokenClass.get_class_info('policy')
+    return frozenset(policy_info.get(scope)) | frozenset(policy_info.get(SCOPE.AUTHZ))
+
+
 def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
@@ -2477,8 +2492,7 @@ def webauthntoken_request(request, action):
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
     if scope:
-        actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
-        actions.update(WebAuthnTokenClass.get_class_info('policy').get(SCOPE.AUTHZ))
+        actions = _get_webauthn_policy_actions(scope)
         if FIDO2PolicyAction.TIMEOUT in actions:
             timeout_policies = Match \
                 .user(g,
