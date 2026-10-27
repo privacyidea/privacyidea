@@ -82,7 +82,7 @@
           >The unique identifying name of the RADIUS server definition.</mat-hint
         >
         @if (hasError(radiusForm.identifier, ERR.required)) {
-          <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
+          <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong>.</mat-error>
         }
         @if (hasError(radiusForm.identifier, ERR.pattern)) {
           <mat-error i18n="@@common.identifierContains"
@@ -109,7 +109,7 @@
               placeholder="1.2.3.4" />
           </app-clearable-input>
           @if (hasError(radiusForm.server, ERR.required)) {
-            <mat-error i18n="@@common.serverRequired">Server is <strong>required</strong></mat-error>
+            <mat-error i18n="@@common.serverRequired">Server is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
 
@@ -142,7 +142,7 @@
               type="password" />
           </app-clearable-input>
           @if (hasError(radiusForm.secret, ERR.required)) {
-            <mat-error i18n="@@radiusServer.secretRequired">Secret is <strong>required</strong></mat-error>
+            <mat-error i18n="@@radiusServer.secretRequired">Secret is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
 

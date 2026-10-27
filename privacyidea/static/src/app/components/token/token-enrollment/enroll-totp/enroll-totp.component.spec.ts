@@ -351,7 +351,7 @@ describe("EnrollTotpComponent", () => {
       await flushFixture(fixture);
 
       expect(fixture.nativeElement.textContent).toContain("OTP key is required");
-      expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters");
+      expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters long.");
     });
 
     it("accepts a typed OTP key of at least 16 characters", async () => {

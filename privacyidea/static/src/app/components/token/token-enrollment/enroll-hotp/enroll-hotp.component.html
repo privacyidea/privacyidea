@@ -42,10 +42,10 @@
             matInput
             placeholder="Enter OTP key" />
           @if (hasError(otpKeyForm, ERR.required)) {
-            <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong></mat-error>
+            <mat-error i18n="@@token.otpKeyRequired">OTP key is <strong>required</strong>.</mat-error>
           }
           @if (hasError(otpKeyForm, ERR.minLength)) {
-            <mat-error i18n="@@token.otpKeyMustLeast">OTP key must be at least 16 characters</mat-error>
+            <mat-error i18n="@@token.otpKeyMustLeast">OTP key must be at least 16 characters long.</mat-error>
           }
         </mat-form-field>
       }
@@ -58,7 +58,7 @@
           }
         </mat-select>
         @if (hasError(otpLengthForm, ERR.required)) {
-          <mat-error i18n="@@token.otpLengthRequired">OTP length is <strong>required</strong></mat-error>
+          <mat-error i18n="@@token.otpLengthRequired">OTP length is <strong>required</strong>.</mat-error>
         }
         <mat-hint i18n="@@token.someAuthenticatorApps"
           >Some Authenticator Apps only support an OTP length of 6.</mat-hint
@@ -73,7 +73,7 @@
           }
         </mat-select>
         @if (hasError(hashAlgorithmForm, ERR.required)) {
-          <mat-error i18n="@@token.hashAlgorithmRequired">Hash algorithm is <strong>required</strong></mat-error>
+          <mat-error i18n="@@token.hashAlgorithmRequired">Hash algorithm is <strong>required</strong>.</mat-error>
         }
         <mat-hint i18n="@@token.someAuthenticator">Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
       </mat-form-field>

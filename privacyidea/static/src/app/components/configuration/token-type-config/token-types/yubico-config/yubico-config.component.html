@@ -52,7 +52,7 @@
           i18n-placeholder="@@tokenTypeConfig.apiKey"
           placeholder="API Key" />
         @if (hasError(config().values[YUBICO_SECRET], ERR.required)) {
-          <mat-error i18n="@@tokenTypeConfig.apiKeyRequired">API Key is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.apiKeyRequired">API Key is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -66,7 +66,7 @@
           i18n-placeholder="@@tokenTypeConfig.clientIdPlaceholderLong"
           placeholder="The client ID" />
         @if (hasError(config().values[YUBICO_ID], ERR.required)) {
-          <mat-error i18n="@@tokenTypeConfig.apiClientIdRequired">API Client ID is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.apiClientIdRequired">API Client ID is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     </div>

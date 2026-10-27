@@ -159,7 +159,7 @@ describe("UserCreateComponent", () => {
     const errors = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-error")).map((e) =>
       e.textContent?.trim()
     );
-    expect(errors).toEqual(["Resolver is required", "Username is required"]);
+    expect(errors).toEqual(["Resolver is required.", "Username is required."]);
   });
 
   it("should mark form invalid if username is empty", () => {

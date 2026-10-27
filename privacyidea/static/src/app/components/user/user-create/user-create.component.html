@@ -57,7 +57,7 @@
         {{ correspondingRealms().join(", ") }}
       </mat-hint>
       @if (hasError(userForm.resolver, ERR.required)) {
-        <mat-error i18n="@@user.resolverRequired">Resolver is <strong>required</strong></mat-error>
+        <mat-error i18n="@@user.resolverRequired">Resolver is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
 
@@ -67,7 +67,7 @@
         [formField]="userForm.username"
         matInput />
       @if (hasError(userForm.username, ERR.required)) {
-        <mat-error i18n="@@user.usernameRequired">Username is <strong>required</strong></mat-error>
+        <mat-error i18n="@@user.usernameRequired">Username is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
   </div>
