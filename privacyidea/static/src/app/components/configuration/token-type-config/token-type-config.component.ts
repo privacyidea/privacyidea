@@ -23,14 +23,17 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   linkedSignal,
   OnDestroy,
   OnInit,
   signal,
+  untracked,
   ViewChild
 } from "@angular/core";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import { form } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatAccordion, MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
@@ -53,6 +56,16 @@ import {
   ApiKeyData,
   YubikeyConfigComponent
 } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
+import {
+  isOmittedWhenEmpty,
+  isQuestionKey,
+  systemConfigDiffers,
+  toSystemConfig,
+  toTokenTypeConfigModel,
+  TokenTypeConfigModel,
+  tokenTypeConfigSchema,
+  withoutEmptyDefaulted
+} from "@components/configuration/token-type-config/token-type-config.form";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";
 import { environment } from "@env/environment";
@@ -62,6 +75,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { touchAll } from "@utils/form-state.utils";
 import { forkJoin, lastValueFrom } from "rxjs";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
@@ -119,27 +133,43 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     }
   }
 
-  formData = linkedSignal<Record<string, string>, Record<string, string>>({
+  formData = linkedSignal<Record<string, string>, TokenTypeConfigModel>({
     source: () => this.systemService.systemConfig(),
-    computation: (config) => this.reconcileQuestions({ ...config }, true)
-  });
-
-  onFormDataChange(data: Record<string, string | number | boolean | undefined>): void {
-    const normalized: Record<string, string> = {};
-    for (const [key, value] of Object.entries(data)) {
-      if (value === undefined) continue;
-      normalized[key] = typeof value === "boolean" ? (value ? "True" : "False") : String(value);
+    computation: (config) => {
+      const model = toTokenTypeConfigModel(config);
+      return { ...model, values: this.reconcileQuestions(model.values, true) };
     }
-    const prevRequired = parseInt(this.formData()[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
-    const newRequired = parseInt(normalized[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
-    const reconciled = this.reconcileQuestions(normalized, newRequired < prevRequired);
+  });
+  readonly configForm = form(this.formData, tokenTypeConfigSchema);
+
+  private requiredAnswers: number | null = null;
+
+  constructor() {
+    effect(() => {
+      const values = this.formData().values;
+      untracked(() => this.syncQuestionSlots(values));
+    });
+  }
+
+  /** Adds or trims the empty question slots so they match the configured number of answers. */
+  private syncQuestionSlots(values: Record<string, string>): void {
+    const newRequired = parseInt(values[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
+    const prevRequired = this.requiredAnswers ?? newRequired;
+    this.requiredAnswers = newRequired;
+    const reconciled = this.reconcileQuestions(values, newRequired < prevRequired);
+    if (!systemConfigDiffers(reconciled, values)) return;
+
     const backend = this.systemService.systemConfig() ?? {};
     Object.keys(backend).forEach((key) => {
-      if (key.startsWith("question.question.") && !(key in reconciled)) {
+      if (isQuestionKey(key) && !(key in reconciled)) {
         this.pendingDeletes.update((set) => new Set(set).add(key));
       }
     });
-    this.formData.set(reconciled);
+    this.updateValues(() => reconciled);
+  }
+
+  private updateValues(change: (values: Record<string, string>) => Record<string, string>): void {
+    this.formData.update((model) => ({ ...model, values: change(model.values) }));
   }
 
   pendingDeletes = linkedSignal<Record<string, string>, Set<string>>({
@@ -148,22 +178,9 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   });
 
   hasChanges = computed(() => {
-    const current = this.formData();
     const original = this.systemConfig();
-    const deletes = this.pendingDeletes();
-
-    if (deletes.size > 0) return true;
-
-    const currentKeys = Object.keys(current);
-    const originalKeys = Object.keys(original);
-
-    if (currentKeys.length !== originalKeys.length) return true;
-
-    for (const key of currentKeys) {
-      if (current[key] !== original[key]) return true;
-    }
-
-    return false;
+    if (this.pendingDeletes().size > 0) return true;
+    return systemConfigDiffers(toSystemConfig(this.formData(), original), withoutEmptyDefaulted(original));
   });
 
   systemConfig = this.systemService.systemConfig;
@@ -183,19 +200,13 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   expandedPanel: string | null = null;
 
-  get questionKeys() {
-    return Object.keys(this.formData()).filter((k) => k.startsWith("question.question."));
-  }
-
-  get hasEmptyQuestions() {
-    return this.questionKeys.some((k) => !(this.formData()[k] ?? "").trim());
-  }
+  questionKeys = computed(() => Object.keys(this.formData().values).filter(isQuestionKey));
 
   private reconcileQuestions(data: Record<string, string>, allowTrim = false): Record<string, string> {
     const result: Record<string, string> = { ...data };
     const required = parseInt(result[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;
 
-    const questionKeys = Object.keys(result).filter((k) => k.startsWith("question.question."));
+    const questionKeys = Object.keys(result).filter(isQuestionKey);
     const emptyKeys = questionKeys.filter((k) => !(result[k] ?? "").trim());
     const filledCount = questionKeys.length - emptyKeys.length;
     const targetEmpty = Math.max(0, required - filledCount);
@@ -227,13 +238,12 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     return `question.question.${max + 1}`;
   }
 
-  get yubikeyApiIds() {
-    return Object.keys(this.formData()).filter((k) => k.startsWith("yubikey.apiid."));
-  }
+  yubikeyApiIds = computed(() => Object.keys(this.formData().values).filter((k) => k.startsWith("yubikey.apiid.")));
 
   ngOnInit() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
     this.pendingChangesService.registerSave(() => this.savePromise());
+    this.pendingChangesService.registerValidChanges(() => this.configForm().valid());
 
     // allow opening a specific panel via URL fragment, e.g. /configuration/token-types#yubico
     this.route.fragment.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((fragment) => {
@@ -254,15 +264,15 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   addQuestion() {
-    this.formData.update((f) => ({ ...f, [this.nextQuestionKey(f)]: "" }));
+    this.updateValues((values) => ({ ...values, [this.nextQuestionKey(values)]: "" }));
   }
 
   deleteQuestion(key: string) {
     const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
-    this.formData.update((f) => {
-      const next = { ...f };
+    this.updateValues((values) => {
+      const next = { ...values };
       delete next[key];
       return this.reconcileQuestions(next);
     });
@@ -281,8 +291,8 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     const existedInitially = Object.hasOwn(this.systemService.systemConfig() ?? {}, key);
 
     // Remove from local form data so it disappears from the list immediately
-    this.formData.update((f) => {
-      const next = { ...f };
+    this.updateValues((values) => {
+      const next = { ...values };
       delete next[key];
       return next;
     });
@@ -302,11 +312,6 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     const apiKey = apiKeyData.apiKey;
     const generateKey = apiKeyData.generateKey;
 
-    if (!apiId) {
-      this.notificationService.warning($localize`:@@tokenTypeConfig.pleaseEnterClient:Please enter a Client ID.`);
-      return;
-    }
-
     if (generateKey) {
       try {
         const response = await lastValueFrom(
@@ -316,19 +321,13 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         );
         const generatedKey = response?.result?.value;
         if (generatedKey) {
-          this.formData.update((f) => ({
-            ...f,
-            [`yubikey.apiid.${apiId}`]: generatedKey
-          }));
+          this.updateValues((values) => ({ ...values, [`yubikey.apiid.${apiId}`]: generatedKey }));
         }
       } catch {
         this.notificationService.error($localize`:@@tokenTypeConfig.failedGenerate:Failed to generate API key.`);
       }
     } else {
-      this.formData.update((f) => ({
-        ...f,
-        [`yubikey.apiid.${apiId}`]: apiKey
-      }));
+      this.updateValues((values) => ({ ...values, [`yubikey.apiid.${apiId}`]: apiKey }));
     }
   }
 
@@ -337,23 +336,18 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   }
 
   async savePromise(): Promise<boolean> {
-    // Empty question slots are UI scaffolding for the user to fill in; they must
-    // never be persisted. Strip them from the payload, and make sure any backend
-    // question that is now empty or removed gets deleted rather than written back
-    // as an empty string (which would resurrect a deleted question or save a blank
-    // one when saving bypasses the disabled button, e.g. via the unsaved-changes guard).
-    const payload: Record<string, string> = {};
-    for (const [key, value] of Object.entries(this.formData())) {
-      if (key.startsWith("question.question.") && !(value ?? "").trim()) {
-        continue;
-      }
-      payload[key] = value;
+    // The unsaved-changes guard saves without the disabled button, so the form is checked here as well.
+    if (!(await touchAll(this.configForm))) {
+      return false;
     }
 
     const backend = this.systemService.systemConfig() ?? {};
+    const payload = toSystemConfig(this.formData(), backend);
+    // A question that is no longer in the form, and an emptied entry the backend defaults, are deleted in the
+    // backend, not written back.
     const deletes = new Set(this.pendingDeletes());
     Object.keys(backend).forEach((key) => {
-      if (key.startsWith("question.question.") && !(key in payload)) {
+      if ((isQuestionKey(key) || isOmittedWhenEmpty(key)) && !(key in payload)) {
         deletes.add(key);
       }
     });
@@ -374,6 +368,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
         );
         this.pendingDeletes.set(new Set());
         this.systemService.systemConfigResource.reload();
+        this.configForm().reset();
         return true;
       } else {
         this.notificationService.error(
@@ -389,12 +384,5 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   ngOnDestroy() {
     this.pendingChangesService.clearAllRegistrations();
-  }
-
-  onCheckboxChange(key: string, event: { checked: boolean }) {
-    this.formData.update((f) => ({
-      ...f,
-      [key]: event.checked ? "True" : "False"
-    }));
   }
 }
