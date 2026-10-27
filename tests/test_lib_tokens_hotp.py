@@ -581,6 +581,16 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(r == 10, r)
         self.assertEqual(token.token.count, 11)
 
+        # Another request stores the resynced counter first, so this one records no resync
+        token.token.count = 0
+        r = token.check_otp("399871")
+        self.assertEqual(-1, r)
+        token.auth_details.clear()
+        with mock.patch.object(HotpTokenClass, "advance_otp_count", return_value=False):
+            r = token.check_otp("520489")
+        self.assertEqual(-1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
+
         # Autosync with a gap in the next otp value will fail
         token.token.count = 0
         # Just try some bullshit config value

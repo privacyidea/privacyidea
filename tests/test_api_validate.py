@@ -1176,6 +1176,38 @@ class ValidateAPITestCase(MyApiTestCase):
         remove_token(serial)
         delete_policy("mcr_resync")
 
+    def test_16_autoresync_hotp_otponly(self):
+        # check_otp does not name the token in its reply, so the audit info does
+        serial = "autosync_otponly"
+        token = init_token({"serial": serial, "otpkey": self.otpkey})
+        set_privacyidea_config("AutoResync", True)
+        token.set_sync_window(10)
+        token.set_count_window(5)
+        # counter = 8, is out of sync
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial, "otponly": "1", "pass": "399871"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertFalse(res.json.get("result").get("value"))
+            self.assertNotIn(LOG_AUTORESYNC_KEY, res.json.get("detail"))
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual("", audit_entry.get("serial"))
+        self.assertEqual(f"OTP verification failed., autoresync started for {serial}", audit_entry.get("info"))
+
+        # counter = 9, will be autosynced
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": serial, "otponly": "1", "pass": "520489"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertTrue(res.json.get("result").get("value"))
+        audit_entry = self.find_most_recent_audit_entry(action='* /validate/check')
+        self.assertEqual(f"autoresync successful for {serial}", audit_entry.get("info"))
+
+        delete_privacyidea_config("AutoResync")
+        remove_token(serial)
+
     def test_16_autoresync_hotp_several_tokens(self):
         # Two tokens with the same PIN: the response names neither, so the audit info names the resynced token
         token = init_token({"serial": "autosync1", "otpkey": self.otpkey, "pin": "async"},

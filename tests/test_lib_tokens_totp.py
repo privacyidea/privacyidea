@@ -632,6 +632,18 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertTrue(r == -1, r)
         self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
 
+        # Another request stores the resynced counter first, so this one records no resync
+        token.token.count = 47251640
+        r = token.check_otp("705493", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertEqual(-1, r)
+        token.auth_details.clear()
+        with mock.patch.object(TotpTokenClass, "advance_otp_count", return_value=False):
+            r = token.check_otp("589836", window=30,
+                                options={"initTime": 47251645 * 30})
+        self.assertEqual(-1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
+
         # TOTP has no dueDate / AutoResyncTimeout
 
         # No _autosync

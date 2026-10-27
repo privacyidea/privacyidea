@@ -461,8 +461,10 @@ class HotpTokenClass(TokenClass):
                            self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal, window)
 
+        resynced = False
         if res == -1:
             res = self._autosync(hmac2Otp, anOtpVal)
+            resynced = res != -1
         if res != -1:
             # on success, we save the counter
             if counter_from_token:
@@ -472,6 +474,9 @@ class HotpTokenClass(TokenClass):
                     return -1
             else:
                 self.set_otp_count(res + 1)
+            if resynced:
+                log.debug(f"Autoresync successful for token {self.token.serial!s}.")
+                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
@@ -582,10 +587,9 @@ class HotpTokenClass(TokenClass):
                 elif int(info.get("dueDate")) <= int(time.time()):
                     log.debug(f"Autoresync failed for token {self.token.serial!s}. AutoResyncTimeout expired.")
                     res = -1
-                else:
-                    log.debug(f"Autoresync successful for token {self.token.serial!s}.")
-                self.auth_details[AUTORESYNC_KEY] = (AutoResyncResult.FAILED if res == -1
-                                                     else AutoResyncResult.SUCCESSFUL)
+                # A success is recorded by check_otp once the counter is stored
+                if res == -1:
+                    self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.FAILED
 
                 # now clean the resync data
                 self.remove_tokeninfo("dueDate")
