@@ -80,7 +80,7 @@ from privacyidea.lib.user import User
 from privacyidea.models import NodeName, Token, db
 from privacyidea.models.token import TokenOwner
 
-from .base import PWFILE2, MyApiTestCase
+from .base import PWFILE2, MyApiTestCase, clock_moved_forward
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import CERTIFICATE, REQUEST
 
@@ -3573,6 +3573,8 @@ class APITokenTestCase(MyApiTestCase):
         smtp_inst.sendmail.return_value = {"user@example.com": (200, 'OK')}
 
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(PolicyAction.VERIFY_ENROLLMENT))
+        # The verification is not bound to the validity time of the sent value
+        set_privacyidea_config("email.validtime", 1)
         set_policy("email_challenge_text", scope=SCOPE.AUTH,
                    action=f"email_{PolicyAction.CHALLENGETEXT}=ENTER EMAIL TOKEN")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollEMAIL"])
@@ -3597,13 +3599,14 @@ class APITokenTestCase(MyApiTestCase):
             # Check the token rollout state
             self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
-        # Now run the second step: verify enrollment and test again
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "type": "email",
-                                                 "verify": self.valid_otp_values[1]},
-                                           headers={'Authorization': self.at}):
+        # Now run the second step after the validity time: verify enrollment and test again
+        with (clock_moved_forward(2),
+              self.app.test_request_context('/token/init',
+                                            method='POST',
+                                            data={"serial": serial,
+                                                  "type": "email",
+                                                  "verify": self.valid_otp_values[1]},
+                                            headers={'Authorization': self.at})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -3616,6 +3619,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("email_challenge_text")
         remove_token(serial=serial)
+        delete_privacyidea_config("email.validtime")
         delete_policy("enroll")
 
     @mock.patch("privacyidea.lib.smsprovider.HttpSMSProvider.requests",
@@ -3636,6 +3640,8 @@ class APITokenTestCase(MyApiTestCase):
                      "phone": "{phone}"})
 
         set_privacyidea_config("sms.identifier", smsgw_id)
+        # The verification is not bound to the validity time of the sent value
+        set_privacyidea_config("sms.providerTimeout", 1)
         set_policy("verify_toks1", scope=SCOPE.ENROLL,
                    action="{0!s}=sms".format(PolicyAction.VERIFY_ENROLLMENT))
         sms_text = "YOUR SMS TOKEN: {otp}"
@@ -3668,13 +3674,14 @@ class APITokenTestCase(MyApiTestCase):
             # Check the token rollout state
             self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
-        # Now run the second step: verify enrollment and test again
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "type": "sms",
-                                                 "verify": self.valid_otp_values[1]},
-                                           headers={'Authorization': self.at}):
+        # Now run the second step after the validity time: verify enrollment and test again
+        with (clock_moved_forward(2),
+              self.app.test_request_context('/token/init',
+                                            method='POST',
+                                            data={"serial": serial,
+                                                  "type": "sms",
+                                                  "verify": self.valid_otp_values[1]},
+                                            headers={'Authorization': self.at})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -3687,6 +3694,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("smstext")
         delete_smsgateway(smsgw_id)
+        delete_privacyidea_config("sms.providerTimeout")
         delete_policy("enroll")
 
     def test_43_init_verify_index_token(self):

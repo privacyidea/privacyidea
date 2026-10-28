@@ -630,7 +630,7 @@ class ValidateCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseG
 
     def test_the_audit_entry_names_the_identity_the_gate_decided_on(self):
         # A serial-only request carries no user parameter, so before_request logs nobody; the gate resolves the
-        # token owner to decide (see _conditional_access_identity) and the entry has to name the one it refused,
+        # token owner to decide (see get_request_identity) and the entry has to name the one it refused,
         # or the rejection is unattributable.
         self._lock_user(utc_now() + timedelta(seconds=600))
         with self.app.test_request_context('/validate/check', method='POST',
