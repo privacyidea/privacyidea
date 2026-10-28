@@ -298,13 +298,15 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_15_delete_container_by_id(self):
         # Fail
         self.assertRaises(ParameterError, delete_container_by_id, None)
-        self.assertRaises(ResourceNotFoundError, delete_container_by_id, 11)
 
         # Success
         container = find_container_by_serial(self.yubikey_serial)
         container_id = container._db_container.id
         result = delete_container_by_id(container_id)
         self.assertEqual(container_id, result)
+
+        # Fail: the container is already deleted
+        self.assertRaises(ResourceNotFoundError, delete_container_by_id, container_id)
 
     def test_16_delete_container_by_serial(self):
         # Fail
