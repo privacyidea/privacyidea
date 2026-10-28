@@ -217,6 +217,14 @@
   Administrators with such a policy see fewer token info entries and audit columns in these lists. Policies without
   realm, resolver and user work as before.
 
+* **Policies that name users apply to tokens and containers in more than one realm.** Such a policy matches the
+  owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
+  matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
+  The user still matches only together with the realm of the user. Admin policies of this kind allow their actions
+  on more tokens and containers. The `change_pin_first_use` and `change_pin_every` policies of this kind apply to
+  more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
+  case-insensitive names.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
