@@ -698,7 +698,10 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     :param request: the request object
     :param response: the response object
     """
-    if _shaped_rule(request) not in POST_AUTHENTICATION_RULES or not response.is_json:
+    # Every error response on these routes has a 4xx or 5xx status (see get_auth_error_status_code), so the body of
+    # any other response is not parsed at all.
+    if (_shaped_rule(request) not in POST_AUTHENTICATION_RULES or response.status_code < 400
+            or not response.is_json):
         return
     result = response.json.get("result") or {}
     if result.get("status") is not False:
