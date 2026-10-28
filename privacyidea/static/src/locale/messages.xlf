@@ -3117,7 +3117,7 @@
           <context context-type="linenumber">434</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="tokenTypeConfig.clientIdRequired" datatype="html">
+      <trans-unit id="common.clientIdRequired" datatype="html">
         <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component.html</context>
@@ -5913,7 +5913,7 @@
           <context context-type="linenumber">73</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="radiusServer.secretRequired" datatype="html">
+      <trans-unit id="common.secretRequired" datatype="html">
         <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
@@ -21265,7 +21265,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.mustLeast" datatype="html">
-        <source>Time window must be at least 1.</source>
+        <source>Must be at least 1.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">237</context>
@@ -22704,7 +22704,7 @@
           <context context-type="linenumber">406</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="conditionalAccess.timeWindowMustWholeNumber" datatype="html">
+      <trans-unit id="common.enterWholeNumber" datatype="html">
         <source>Enter a whole number.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>

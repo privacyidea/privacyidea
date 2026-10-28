@@ -3350,7 +3350,7 @@
           <context context-type="linenumber">434</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="tokenTypeConfig.clientIdRequired" datatype="html">
+      <trans-unit id="common.clientIdRequired" datatype="html">
         <source>Client ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>El Client ID es <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obligatorio<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
@@ -6026,7 +6026,7 @@
           <context context-type="linenumber">73</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="radiusServer.secretRequired" datatype="html">
+      <trans-unit id="common.secretRequired" datatype="html">
         <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <target>El secreto es <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>obligatorio<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
@@ -20507,8 +20507,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.mustLeast" datatype="html">
-        <source>Time window must be at least 1.</source>
-        <target state="new">Time window must be at least 1.</target>
+        <source>Must be at least 1.</source>
+        <target state="new">Must be at least 1.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">237</context>
@@ -25150,7 +25150,7 @@
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="conditionalAccess.timeWindowMustWholeNumber" datatype="html">
+      <trans-unit id="common.enterWholeNumber" datatype="html">
         <source>Enter a whole number.</source>
         <target state="new">Enter a whole number.</target>
         <context-group purpose="location">
