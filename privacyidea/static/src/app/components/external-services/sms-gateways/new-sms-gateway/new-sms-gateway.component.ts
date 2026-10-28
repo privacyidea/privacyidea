@@ -111,6 +111,8 @@ export class NewSmsGatewayComponent implements OnDestroy {
   isEditMode = signal(false);
 
   smsModel = signal<SmsFormModel>(emptySmsForm());
+  /** The form values as loaded, so a field typed back to its loaded value does not count as a change. */
+  private initialSmsModel: SmsFormModel = emptySmsForm();
   private initialCustomOptions: Record<string, string> = {};
   private initialCustomHeaders: Record<string, string> = {};
 
@@ -220,6 +222,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
       description: this.data?.description || "",
       parameters: this.parameterValues(module)
     });
+    this.initialSmsModel = { ...this.smsModel(), parameters: { ...this.smsModel().parameters } };
     this.initialCustomOptions = {};
     this.initialCustomHeaders = {};
     this.initialOptionSecrets = {};
@@ -254,7 +257,8 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
   get hasChanges(): boolean {
     return (
-      this.smsForm().dirty() ||
+      // A value set by the component is not a change; a typed value is one until it equals the loaded value again.
+      (this.smsForm().dirty() && !this.smsModelEqual(this.smsModel(), this.initialSmsModel)) ||
       !this.recordsEqual(this.customOptions, this.initialCustomOptions) ||
       !this.recordsEqual(this.customHeaders, this.initialCustomHeaders) ||
       !this.recordsEqual(this.optionSecrets, this.initialOptionSecrets) ||
@@ -266,6 +270,15 @@ export class NewSmsGatewayComponent implements OnDestroy {
 
   private isDraftFilled(draft: DraftRowModel): boolean {
     return !!draft.key || !!draft.value || draft.secret;
+  }
+
+  private smsModelEqual(a: SmsFormModel, b: SmsFormModel): boolean {
+    return (
+      a.name === b.name &&
+      a.providermodule === b.providermodule &&
+      a.description === b.description &&
+      this.recordsEqual(a.parameters, b.parameters)
+    );
   }
 
   private recordsEqual<T extends object>(a: T, b: T): boolean {
@@ -305,6 +318,10 @@ export class NewSmsGatewayComponent implements OnDestroy {
       ...m,
       parameters: this.parameterValues(module, keepTyped ? m.parameters : undefined)
     }));
+    this.initialSmsModel = {
+      ...this.initialSmsModel,
+      parameters: this.parameterValues(module, keepTyped ? this.initialSmsModel.parameters : undefined)
+    };
     if (keepTyped) {
       return;
     }
