@@ -234,11 +234,11 @@
           @if (hasError(policyForm.time_window_value, ERR.parse)) {
             <mat-error i18n="@@conditionalAccess.timeWindowNotNumber">Enter a valid number.</mat-error>
           } @else if (hasError(policyForm.time_window_value, CA_ERR.notInteger)) {
-            <mat-error i18n="@@conditionalAccess.timeWindowMustWholeNumber">Enter a whole number.</mat-error>
+            <mat-error i18n="@@common.enterWholeNumber">Enter a whole number.</mat-error>
           } @else if (hasError(policyForm.time_window_value, ERR.required)) {
             <mat-error i18n="@@conditionalAccess.timeWindowRequired">Time window is required.</mat-error>
           } @else if (hasError(policyForm.time_window_value, ERR.min)) {
-            <mat-error i18n="@@conditionalAccess.mustLeast">Time window must be at least 1.</mat-error>
+            <mat-error i18n="@@conditionalAccess.mustLeast">Must be at least 1.</mat-error>
           }
         </mat-form-field>
 
@@ -303,7 +303,7 @@
           } @else if (hasError(policyForm.priority, ERR.required)) {
             <mat-error i18n="@@conditionalAccess.priorityRequired">Priority is required.</mat-error>
           } @else if (hasError(policyForm.priority, CA_ERR.notInteger)) {
-            <mat-error i18n="@@conditionalAccess.priorityMustWholeNumber">Enter a whole number.</mat-error>
+            <mat-error i18n="@@common.enterWholeNumber">Enter a whole number.</mat-error>
           } @else if (hasError(policyForm.priority, ERR.min)) {
             <mat-error i18n="@@conditionalAccess.priorityMin">Priority must be at least 1.</mat-error>
           } @else if (hasError(policyForm.priority, CA_ERR.priorityTaken)) {
