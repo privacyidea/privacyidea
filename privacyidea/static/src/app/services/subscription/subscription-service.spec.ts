@@ -107,4 +107,79 @@ describe("SubscriptionService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({ result: { error: { message: "bad" } } }, { status: 500, statusText: "Server Error" });
   });
+
+  describe("expired subscription warning", () => {
+    let authService: MockAuthService;
+    const statusUrl = environment.proxyUrl + "/subscriptions/status";
+    const serverRow = (subscription: string) => ({
+      result: { status: true, value: [{ application: "privacyidea", is_server: true, subscription }] }
+    });
+
+    beforeEach(() => {
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    });
+
+    const setStatus = (status: number) =>
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: status });
+
+    const upload = () => service.uploadSubscriptionFile(new File(["abc"], "subs.txt")).subscribe();
+
+    it.each([
+      ["valid", 3],
+      ["expiring", 3],
+      ["none", 0]
+    ])("replaces the status 2 after an upload when the server subscription is %s", (state, expected) => {
+      setStatus(2);
+      upload();
+      httpMock.expectOne(environment.proxyUrl + "/subscriptions/").flush({ result: { status: true, value: true } });
+
+      httpMock.expectOne(statusUrl).flush(serverRow(state));
+
+      expect(authService.updateSubscriptionStatus).toHaveBeenCalledWith(expected);
+      expect(authService.subscriptionStatus()).toBe(expected);
+    });
+
+    it.each(["expired", "exceeded"])("keeps the status 2 when the server subscription is still %s", (state) => {
+      setStatus(2);
+      upload();
+      httpMock.expectOne(environment.proxyUrl + "/subscriptions/").flush({ result: { status: true, value: true } });
+
+      httpMock.expectOne(statusUrl).flush(serverRow(state));
+
+      expect(authService.updateSubscriptionStatus).not.toHaveBeenCalled();
+      expect(authService.subscriptionStatus()).toBe(2);
+    });
+
+    it("replaces the status 2 after a delete", () => {
+      setStatus(2);
+      service.deleteSubscription("privacyidea").subscribe();
+      httpMock
+        .expectOne(environment.proxyUrl + "/subscriptions/privacyidea")
+        .flush({ result: { status: true, value: true } });
+
+      httpMock.expectOne(statusUrl).flush(serverRow("none"));
+
+      expect(authService.subscriptionStatus()).toBe(0);
+    });
+
+    it.each([0, 1, 3])("does not ask the server when the status is %i", (status) => {
+      setStatus(status);
+      upload();
+      httpMock.expectOne(environment.proxyUrl + "/subscriptions/").flush({ result: { status: true, value: true } });
+
+      httpMock.expectNone(statusUrl);
+    });
+
+    it("keeps the status 2 when the status request fails", () => {
+      const consoleError = jest.spyOn(console, "error").mockImplementation(() => undefined);
+      setStatus(2);
+      upload();
+      httpMock.expectOne(environment.proxyUrl + "/subscriptions/").flush({ result: { status: true, value: true } });
+
+      httpMock.expectOne(statusUrl).flush({}, { status: 500, statusText: "Server Error" });
+
+      expect(authService.subscriptionStatus()).toBe(2);
+      consoleError.mockRestore();
+    });
+  });
 });
