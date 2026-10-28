@@ -701,7 +701,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
 
   it("should render the time window messages once the field is touched", () => {
     typeInto(fixture, "Time window", "0");
-    expect(renderedErrors()).toContain("Time window must be at least 1.");
+    expect(renderedErrors()).toContain("Must be at least 1.");
     typeInto(fixture, "Time window", "1.5");
     expect(renderedErrors()).toContain("Enter a whole number.");
     typeInto(fixture, "Time window", "");
