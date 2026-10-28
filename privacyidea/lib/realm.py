@@ -377,8 +377,9 @@ def set_realm(realm, resolvers=None):
         db_resolver = db.session.scalar(resolver_stmt)
         if db_resolver:
             try:
+                # An export of an Oracle installation can name "no node" as None
                 new_resolver_realm = ResolverRealm(db_resolver.id, db_realm.id,
-                                                   node_uuid=str(reso.get('node', '')),
+                                                   node_uuid=str(reso.get('node') or ''),
                                                    priority=reso.get('priority'))
                 db.session.add(new_resolver_realm)
                 added.append(reso_name)

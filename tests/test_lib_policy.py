@@ -39,7 +39,7 @@ from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, NodeName
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from .base import MyTestCase, FakeFlaskG, FakeAudit, stored_empty_string
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
@@ -256,7 +256,7 @@ class PolicyTestCase(MyTestCase):
                    description="")
         policy = get_policies(name="keep_values")[0]
         expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False,
-                    "priority": 3, "description": ""}
+                    "priority": 3, "description": stored_empty_string()}
         self.assertEqual(expected, {key: policy.get(key) for key in expected})
         delete_policy("keep_values")
 
@@ -464,7 +464,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("172.16.0.3, 172.16.0.4/24", policy.client)
         # Set empty string removes client
         set_policy(name="pol1", scope=SCOPE.CONTAINER, client="")
-        self.assertEqual("", policy.client)
+        self.assert_empty_string(policy.client)
 
     def test_08_user_policies(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, user="*")
@@ -509,7 +509,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("admin, root, user1", policy.user)
         # Set empty string removes adminuser
         set_policy(name="pol2", scope=SCOPE.AUTHZ, user="")
-        self.assertEqual("", policy.user)
+        self.assert_empty_string(policy.user)
 
     def test_08a_adminuser_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, adminuser="*", user="")
@@ -554,7 +554,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("admin, root, user1", policy.adminuser)
         # Set empty string removes adminuser
         set_policy(name="pol2", scope=SCOPE.ADMIN, adminuser="", user="*")
-        self.assertEqual("", policy.adminuser)
+        self.assert_empty_string(policy.adminuser)
 
     def test_09_realm_resolver_policy(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, realm=self.realm1)
@@ -616,8 +616,8 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(self.realm1, policy.realm)
         # Set empty string removes realm and resolver
         set_policy(name="pol2", scope=SCOPE.AUTHZ, realm="", resolver="")
-        self.assertEqual("", policy.resolver)
-        self.assertEqual("", policy.realm)
+        self.assert_empty_string(policy.resolver)
+        self.assert_empty_string(policy.realm)
 
     def test_10_action_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, action=f"enrollHOTP, {PolicyAction.ENABLE}, {PolicyAction.DISABLE}")
@@ -859,7 +859,7 @@ class PolicyTestCase(MyTestCase):
         # Update with empty list removes adminrealm
         set_policy(name="tokenEnroll", scope=SCOPE.ADMIN, adminrealm="", action="enrollYUBIKEY")
         policy = Policy.query.filter_by(name="tokenEnroll").first()
-        self.assertEqual("", policy.adminrealm)
+        self.assert_empty_string(policy.adminrealm)
 
         delete_policy("tokenEnroll")
 
@@ -959,7 +959,7 @@ class PolicyTestCase(MyTestCase):
         # set empty string removes time
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="")
         policy = Policy.query.filter_by(name="test").first()
-        self.assertEqual("", policy.time)
+        self.assert_empty_string(policy.time)
 
         # Set invalid times raises Error
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.AUTHZ,
@@ -1729,7 +1729,7 @@ class PolicyTestCase(MyTestCase):
         # Pass empty string to remove pinode parameter
         set_policy("import_node1", scope=SCOPE.ADMIN, action=PolicyAction.IMPORT,
                    adminuser="import_admin, delete_admin", pinode="")
-        self.assertEqual("", policy.pinode)
+        self.assert_empty_string(policy.pinode)
 
         delete_policy("import_node1")
         delete_policy("delete_node2")

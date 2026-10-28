@@ -30,7 +30,7 @@ from sqlalchemy import delete, select
 
 from privacyidea.models import InternalUserAttribute, NodeName, TokenOwner, db
 from . import ldap3mock
-from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures
+from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures, stored_empty_string
 from .test_lib_resolver import LDAPDirectory_small
 from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
@@ -1565,8 +1565,8 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                                side_effect=RuntimeError("resolver unreachable")):
             # Default orphaned_on_error=False: errored row is skipped (not reported).
             orphans = set(find_orphaned_internal_attributes())
-            self.assertIn(("", self.resolvername1, None), orphans)        # branch 1a
-            self.assertIn(("uid-X", "", None), orphans)                   # branch 1b
+            self.assertIn((stored_empty_string(), self.resolvername1, None), orphans)    # branch 1a
+            self.assertIn(("uid-X", stored_empty_string(), None), orphans)               # branch 1b
             self.assertIn(("uid-Y", "never-existed", None), orphans)      # branch 2
             self.assertNotIn(("uid-Z", self.resolvername1, live_user.realm_id), orphans)
 

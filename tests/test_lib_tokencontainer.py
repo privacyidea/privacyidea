@@ -521,7 +521,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Pass no value sets empty value
         add_container_info(container_serial, "key", None)
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual("", container_info["key"])
+        self.assert_empty_string(container_info["key"])
 
         # Try to modify internal info raises exception
         container = find_container_by_serial(container_serial)
@@ -561,7 +561,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = set_container_info(container_serial, {"key": None})
         self.assertTrue(res["key"])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual("", container_info["key"])
+        self.assert_empty_string(container_info["key"])
 
         # Try to set internal info
         container = find_container_by_serial(container_serial)
@@ -618,7 +618,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set empty description
         set_container_description(container_serial, description="")
-        self.assertEqual("", container.description)
+        self.assert_empty_string(container.description)
 
         # Set description
         set_container_description(container_serial, description="new description")
@@ -626,7 +626,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set None description
         set_container_description(container_serial, description=None)
-        self.assertEqual("", container.description)
+        self.assert_empty_string(container.description)
 
     def test_26_set_states(self):
         # Arrange
@@ -1287,7 +1287,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assert
         self.assertEqual("generic", container_dict["type"])
         self.assertEqual(container_serial, container_dict["serial"])
-        self.assertEqual("", container_dict["description"])
+        self.assert_empty_string(container_dict["description"])
         self.assertIsNone(container_dict["last_authentication"])
         self.assertIsNone(container_dict["last_synchronization"])
         self.assertListEqual(["active"], container_dict["states"])
@@ -1314,7 +1314,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assert
         self.assertEqual("generic", container_dict["type"])
         self.assertEqual(container_serial, container_dict["serial"])
-        self.assertEqual("", container_dict["description"])
+        self.assert_empty_string(container_dict["description"])
         self.assertIsNone(container_dict["last_authentication"])
         self.assertIsNone(container_dict["last_synchronization"])
         self.assertListEqual(["active"], container_dict["states"])
@@ -2885,6 +2885,23 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertEqual(['spass', 'spass'], token_result["additional"])
 
         template.delete()
+
+    def test_21a_compare_container_with_template_without_options(self):
+        # A template created without options has no tokens to compare
+        create_container_template(container_type="generic", template_name="no_options", options={})
+        template = get_template_obj("no_options")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        token = init_token({"type": "spass"})
+        container.add_token(token)
+
+        result = compare_template_with_container(template, container)
+        self.assertEqual([], result["tokens"]["missing"])
+        self.assertEqual(["spass"], result["tokens"]["additional"])
+
+        template.delete()
+        delete_container_by_serial(container_serial)
+        remove_token(token.get_serial())
 
     def test_22_get_template_options_as_dict(self):
         # create template

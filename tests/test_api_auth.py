@@ -541,7 +541,7 @@ class AuthApiTestCase(MyApiTestCase):
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
-        self.assertEqual("", aentry['policies'], aentry)
+        self.assert_empty_string(aentry['policies'], aentry)
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
