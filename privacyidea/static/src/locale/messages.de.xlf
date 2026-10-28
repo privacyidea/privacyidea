@@ -11757,7 +11757,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.someTokenAlready" datatype="html">
-        <source>Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment.</source>
+        <source>Some tokens are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment.</source>
         <target>Einige Token sind bereits einem Benutzer zugewiesen. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Das Zuweisen eines Tokens zu einem Benutzer entfernt die vorherige Zuweisung.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
@@ -20816,7 +20816,7 @@
       </trans-unit>
       <trans-unit id="conditionalAccess.conditionNamesValueNo" datatype="html">
         <source>A condition names a value that no longer exists: <x id="PH" equiv-text="this.staleConditionValues() .flatMap((stale) =&gt; stale.values) .join(&quot;, &quot;)"/>.</source>
-        <target state="new">Eine Bedingung nennt einen Wert, der nicht mehr existiert: <x id="PH" equiv-text="this.staleConditionValues().join(&quot;, &quot;)"/>.</target>
+        <target>Eine Bedingung nennt einen Wert, der nicht mehr existiert: <x id="PH" equiv-text="this.staleConditionValues() .flatMap((stale) =&gt; stale.values) .join(&quot;, &quot;)"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.ts</context>
           <context context-type="linenumber">415</context>

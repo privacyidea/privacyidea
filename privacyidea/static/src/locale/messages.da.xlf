@@ -14385,8 +14385,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.someTokenAlready" datatype="html">
-        <source>Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment.</source>
-        <target state="new">Some token are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment.</target>
+        <source>Some tokens are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment.</source>
+        <target state="new">Some tokens are already assigned to a user. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Assigning a token to a user will remove the previous assignment.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">28</context>
