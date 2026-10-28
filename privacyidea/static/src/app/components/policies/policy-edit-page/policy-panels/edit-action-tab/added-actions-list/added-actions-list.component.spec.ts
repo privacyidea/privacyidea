@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, input, output, signal } from "@angular/core";
+import { Component, forwardRef, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { PolicyActionDrafts } from "../policy-action-drafts";
 import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 import { AddedActionsListComponent } from "./added-actions-list.component";
 
@@ -34,7 +35,6 @@ import { AddedActionsListComponent } from "./added-actions-list.component";
   ]
 })
 class MockPolicyActionItemEditComponent {
-  valid = signal(true);
   action = input.required<{ name: string; value: string | number }>();
   actionDetail = input.required<PolicyActionDetail | null>();
   highlight = input<string>("");
@@ -55,7 +55,7 @@ describe("AddedActionsListComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddedActionsListComponent],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }, PolicyActionDrafts]
     })
       .overrideComponent(AddedActionsListComponent, {
         set: {
@@ -107,43 +107,23 @@ describe("AddedActionsListComponent", () => {
     expect(component.filteredActions()).toEqual(mockActions);
   });
 
-  describe("valid", () => {
-    const rows = () =>
-      fixture.debugElement
-        .queryAll(By.directive(MockPolicyActionItemEditComponent))
-        .map((row) => row.componentInstance as MockPolicyActionItemEditComponent);
+  describe("invalid values kept in the drafts", () => {
+    const drafts = () => TestBed.inject(PolicyActionDrafts);
 
-    it("is true while every row is valid", () => {
-      expect(component.valid()).toBe(true);
-    });
-
-    it("is false while one row holds an invalid value", () => {
-      rows()[1].valid.set(false);
-
-      expect(component.valid()).toBe(false);
-    });
-
-    it("is true again once the row is corrected", () => {
-      rows()[1].valid.set(false);
-      rows()[1].valid.set(true);
-
-      expect(component.valid()).toBe(true);
-    });
-
-    it("ignores a row that the search filter does not show", () => {
-      rows()[1].valid.set(false);
-
+    it("keeps an action with an invalid value in the list while the filter does not match it", () => {
+      drafts().set("action2", "");
       fixture.componentRef.setInput("actionFilter", "action1");
       fixture.detectChanges();
 
-      expect(component.valid()).toBe(true);
+      expect(component.filteredActions().map((action) => action.name)).toEqual(["action1", "action2"]);
     });
 
-    it("is true without rows", () => {
-      fixture.componentRef.setInput("actions", []);
-      fixture.detectChanges();
+    it("forgets the invalid value of a removed action", () => {
+      drafts().set("action2", "");
 
-      expect(component.valid()).toBe(true);
+      component.removeActionFromSelectedPolicy("action2");
+
+      expect(drafts().has("action2")).toBe(false);
     });
   });
 

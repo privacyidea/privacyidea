@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, forwardRef, input, output, signal } from "@angular/core";
+import { Component, forwardRef, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
@@ -33,7 +33,6 @@ import { EditActionTabComponent } from "./edit-action-tab.component";
   providers: [{ provide: AddedActionsListComponent, useExisting: forwardRef(() => MockAddedActionsListComponent) }]
 })
 class MockAddedActionsListComponent {
-  valid = signal(true);
   isEditMode = input.required<boolean>();
   actions = input.required<{ name: string; value: string | boolean }[]>();
   actionFilter = input<string>("");
@@ -99,29 +98,6 @@ describe("EditActionTabComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
-  });
-
-  describe("valid", () => {
-    const list = () =>
-      fixture.debugElement.query(By.directive(MockAddedActionsListComponent))
-        .componentInstance as MockAddedActionsListComponent;
-
-    it("is true while the added actions are valid", () => {
-      expect(component.valid()).toBe(true);
-    });
-
-    it("is false while the added actions report an invalid value", () => {
-      list().valid.set(false);
-
-      expect(component.valid()).toBe(false);
-    });
-
-    it("is true when there are no added actions to judge", () => {
-      fixture.componentRef.setInput("policy", { ...mockPolicy, action: {} });
-      fixture.detectChanges();
-
-      expect(component.valid()).toBe(true);
-    });
   });
 
   it("should transform policy actions into an array for children", () => {

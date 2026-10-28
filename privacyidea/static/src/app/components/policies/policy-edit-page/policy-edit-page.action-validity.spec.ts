@@ -143,6 +143,59 @@ describe("PolicyEditPageComponent – added action validity", () => {
     expect(fixture.nativeElement.querySelector(".policy-action-item mat-error")).toBeNull();
   });
 
+  it("keeps the emptied number and the blocked save when another field changes afterwards", async () => {
+    await typeNumber("");
+
+    component.addPolicyEdit({ description: "limits per user" });
+    await settle();
+
+    expect(numberInput().value).toBe("");
+    expect(component.canSave()).toBe(false);
+  });
+
+  it("keeps the emptied number and the blocked save while the conditions tab is open", async () => {
+    component.addPolicyEdit({ description: "limits per user" });
+    await settle();
+    await typeNumber("");
+
+    component.activeTab.set("conditions");
+    await settle();
+    expect(numberInput()).toBeNull();
+    expect(component.canSave()).toBe(false);
+
+    component.activeTab.set("actions");
+    await settle();
+    expect(numberInput().value).toBe("");
+    expect(fixture.nativeElement.querySelector(".policy-action-item mat-error")?.textContent?.trim()).toBe(
+      "Value is required."
+    );
+    expect(component.canSave()).toBe(false);
+  });
+
+  it("keeps showing the emptied number and blocking the save while the action filter matches nothing", async () => {
+    component.addPolicyEdit({ description: "limits per user" });
+    await settle();
+    await typeNumber("");
+
+    component.actionFilter.set("no such action");
+    await settle();
+
+    expect(numberInput().value).toBe("");
+    expect(component.canSave()).toBe(false);
+  });
+
+  it("forgets the emptied number of a removed action", async () => {
+    component.addPolicyEdit({ description: "limits per user" });
+    await settle();
+    await typeNumber("");
+
+    component.addPolicyEdit({ action: {} });
+    await settle();
+
+    expect(numberInput()).toBeNull();
+    expect(component.canSave()).toBe(true);
+  });
+
   it("never puts an emptied number into the saved payload, neither as an empty text nor as 0", async () => {
     component.addPolicyEdit({ description: "limits per user" });
     await settle();
