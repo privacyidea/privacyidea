@@ -701,7 +701,8 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
-        self.assertTrue(r)
+        # The value of the RFC belongs to the 32 byte seed: the 20 byte seed gives another OTP value
+        self.assertEqual(-1, r)
 
         # sha256 with a 32 byte seed
         serial = "sha256"
@@ -715,7 +716,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
-        self.assertTrue(r)
+        self.assertEqual(0x00000000023523ED, r)
 
         # sha512 with a 20 byte seed
         serial = "sha512"
@@ -729,7 +730,8 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("99943326", options={"initTime": 1111111111})
-        self.assertTrue(r)
+        # The value of the RFC belongs to the 64 byte seed
+        self.assertEqual(-1, r)
 
         # sha512 with a 64byte seed
         serial = "sha512b"
@@ -744,7 +746,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("93441116", options={"initTime": 1234567890})
-        self.assertTrue(r)
+        self.assertEqual(0x000000000273EF07, r)
 
     def test_26_get_setting_type(self):
         r = TotpTokenClass.get_setting_type("totp.hashlib")
