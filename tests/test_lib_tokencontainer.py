@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import mock
 from sqlalchemy import select
 
-from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import (delete_container_by_id, find_container_by_id, find_container_by_serial,
                                        init_container, get_all_containers, _gen_serial, find_container_for_token,
@@ -2326,9 +2326,12 @@ class TokenContainerSynchronization(MyTestCase):
         owner_in_realm2 = User("cornelius", self.realm2)
         container_serial = init_container({"type": "smartphone", "user": "cornelius",
                                            "realm": self.realm1})["container_serial"]
+        # Also deletes the challenges of the container
+        self.addCleanup(delete_container_by_serial, container_serial)
         # franzi of the second resolver of realm1 has the user id of the owner cornelius of the first resolver
         set_realm(self.realm1, [{"name": self.resolvername1, "priority": 1},
                                 {"name": self.resolvername3, "priority": 2}])
+        self.addCleanup(set_realm, self.realm1, [{"name": self.resolvername1}])
         user_of_another_resolver = User("franzi", self.realm1)
         self.assertEqual(User("cornelius", self.realm1, self.resolvername1).uid, user_of_another_resolver.uid)
 
@@ -2381,10 +2384,6 @@ class TokenContainerSynchronization(MyTestCase):
         with mock.patch("privacyidea.lib.container.delete_challenges", return_value=mock.Mock(removed=0)):
             result = check_container_challenge(challenge.transaction_id, owner)
         self.assertDictEqual({"success": False, "details": {}}, result)
-
-        delete_challenges(transaction_id=challenge.transaction_id)
-        delete_container_by_serial(container_serial)
-        set_realm(self.realm1, [{"name": self.resolvername1}])
 
     def test_99_container_without_challenge_response_raises(self):
         # A container type that implements no challenge-response protocol can not authenticate an anonymous

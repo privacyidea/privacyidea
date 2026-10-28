@@ -13,7 +13,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import delete_from_cache, _hash_password
 from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import (set_policy, delete_policy,
+from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     PolicyClass, SCOPE,
                                     ACTIONVALUE)
 from privacyidea.lib.policydecorators import (auth_otppin,
@@ -28,6 +28,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -811,6 +812,7 @@ class LibPolicyTestCase(MyTestCase):
         # Clean up
         remove_token(pin1)
         remove_token(pin2)
+        delete_policy("reset_all")
 
     @radiusmock.activate
     def test_16_passthru_assign(self):
@@ -1385,7 +1387,6 @@ class LibPolicyTestCase(MyTestCase):
 
     def test_23_reset_all_user_tokens_only_after_a_success(self):
         self.setUp_user_realms()
-        set_policy("reset_all", scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS)
         user = User(login="cornelius", realm=self.realm1)
         token = init_token({"serial": "RESETALL1", "pin": "pin1", "type": "spass"}, user=user)
         registration_token = init_token({"serial": "RESETALLREG", "type": "registration"}, user=user)
@@ -1403,6 +1404,10 @@ class LibPolicyTestCase(MyTestCase):
             return token.token.failcount, registration_token.token.failcount
 
         try:
+            # Without the policy, a success resets nothing
+            self.assertTupleEqual((2, 2), failcounts_after(result=True, allow_reset_all_tokens=True))
+
+            set_policy("reset_all", scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS)
             # A failed authentication resets nothing
             self.assertTupleEqual((2, 2), failcounts_after(result=False, allow_reset_all_tokens=True))
             # Neither does a success of a check that does not allow it, like the four-eyes check of a realm
@@ -1412,7 +1417,7 @@ class LibPolicyTestCase(MyTestCase):
         finally:
             remove_token("RESETALL1")
             remove_token("RESETALLREG")
-            delete_policy("reset_all")
+            delete_policies(["reset_all"])
 
     def test_24_a_refused_authentication_does_not_renew_last_auth(self):
         self.setUp_user_realms()
@@ -1429,9 +1434,11 @@ class LibPolicyTestCase(MyTestCase):
 
         try:
             token = get_tokens(serial=serial)[0]
-            token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.utcnow() - datetime.timedelta(days=2))
+            last_auth = (datetime.datetime.now(datetime.timezone.utc) - timedelta(days=2)).strftime(AUTH_DATE_FORMAT)
+            token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth)
             self.assertFalse(auth_lastauth(authenticated, user, "secretpin", {"g": g})[0])
-            # The refused authentication is not the last successful one, so the next one is refused as well
+            # The refused authentication keeps the date of the last successful one, so the next one is refused as well
+            self.assertEqual(last_auth, get_tokens(serial=serial)[0].get_tokeninfo(PolicyAction.LASTAUTH))
             self.assertFalse(auth_lastauth(authenticated, user, "secretpin", {"g": g})[0])
         finally:
             remove_token(serial)

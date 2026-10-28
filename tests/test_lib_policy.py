@@ -285,32 +285,34 @@ class PolicyTestCase(MyTestCase):
 
         # Priority
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, priority=0)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, priority=0)
         self.assertEqual("Priority must be at least 1", exception.exception.message)
 
         # Invalid client ip
         with self.assertRaises(PrivacyIDEAError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, client="10.1.2.3.4")
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, client="10.1.2.3.4")
         self.assertEqual("Invalid client definition!", exception.exception.message)
 
         # Invalid realm
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, realm="invalid_realm")
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm="invalid_realm")
         self.assert_undefined_values("User-realms", {"invalid_realm"}, exception.exception.message)
+
+        # set_policy takes any admin realm: the API checks it against the admin realms of the app configuration
 
         # Invalid resolver
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, resolver="invalid_resolver")
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, resolver="invalid_resolver")
         self.assert_undefined_values("Resolvers", {"invalid_resolver"}, exception.exception.message)
 
         # Invalid node
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, pinode="invalid_node")
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode="invalid_node")
         self.assert_undefined_values("Privacyidea nodes", {"invalid_node"}, exception.exception.message)
 
         # Invalid time
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, time="Monday: 12-18")
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, time="Monday: 12-18")
         self.assertEqual("Invalid time format 'Monday: 12-18'!", exception.exception.message)
 
     def test_04_delete_policy(self):
