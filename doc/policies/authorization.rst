@@ -228,7 +228,9 @@ type: ``bool``
    clients are stored, individually revocable and rotatable — but it does not
    yet cover this ``/validate`` gating use case.
 
-This policy is checked *before* the user is validated.
+This policy is checked *before* the user is validated. A request to
+``/validate/check`` that names only the serial of a token or a FIDO2 credential
+is matched for the owner of the token.
 
 You can create an API key that needs to be passed to use the validate API.
 If an API key is required, but no key is passed, the authentication request
@@ -267,7 +269,8 @@ performed the authentication request is refused, and the OTP value stays valid.
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
 
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
@@ -300,7 +303,8 @@ failed authentications were performed the authentication request is refused, and
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.
@@ -327,6 +331,10 @@ if the token was not successfully used for 12 hours, 123 days or 2 years.
 The date of the last successful authentication is stored in the ``tokeninfo``
 field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
 passkey authentications).
+
+The policy is matched for the user who authenticates. A request that names only
+the serial of the token, or a FIDO2 credential, is matched for the owner of the
+token.
 
 .. versionadded:: 2.8
 

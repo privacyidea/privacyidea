@@ -181,7 +181,7 @@
                 } @else if (column.key === "client_label") {
                 <app-multi-select-filter
                   [label]="column.label"
-                  [options]="clientLabelOptions"
+                  [options]="clientLabelOptions()"
                   [valueSuffix]="'*'"
                   [allowCustom]="true"
                   [selected]="selectedFilterValues('client_label')"

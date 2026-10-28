@@ -10,7 +10,7 @@ from testfixtures import log_capture, LogCapture
 from privacyidea.api.lib.utils import verify_auth_token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import ResourceNotFoundError, Error, ResolverError
@@ -25,10 +25,11 @@ from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
 from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import Audit, Realm, NodeName, db
-from . import ldap3mock
+from . import ldap3mock, smtpmock
 from .base import MyApiTestCase, OverrideConfigTestCase, PWFILE as PASSWORDS_FILE, PWFILE2 as PASSWD_FILE
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
@@ -540,7 +541,7 @@ class AuthApiTestCase(MyApiTestCase):
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
-        self.assertEqual("", aentry['policies'], aentry)
+        self.assert_empty_string(aentry['policies'], aentry)
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
@@ -1756,6 +1757,43 @@ class AuthApiTestCase(MyApiTestCase):
         Audit.query.delete()
         db.session.commit()
 
+    @smtpmock.activate
+    def test_20_the_policies_of_the_users_realm_apply_to_the_challenge(self):
+        # The WebUI login hands the user to the token, so the email subject comes from the policy of the user's realm,
+        # not from the policy of another realm
+        smtpmock.setdata(response={"hans@dampf.com": (200, "OK")})
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serial = "AUTHMAIL"
+        init_token({"type": "email", "serial": serial, "otpkey": self.otpkey, "email": "hans@dampf.com",
+                    "pin": "mailpin"}, user=User("cornelius", self.realm1))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("subject_realm2", scope=SCOPE.AUTH, realm=self.realm2,
+                   action=f"{EMAILACTION.EMAILSUBJECT}=Subject of realm2")
+        try:
+            for subject_realm1, expected_subject in ((None, "Your OTP"), ("Subject of realm1", "Subject of realm1")):
+                with self.subTest(subject_realm1=subject_realm1):
+                    if subject_realm1:
+                        set_policy("subject_realm1", scope=SCOPE.AUTH, realm=self.realm1,
+                                   action=f"{EMAILACTION.EMAILSUBJECT}={subject_realm1}")
+                    with self.app.test_request_context('/auth', method='POST',
+                                                       data={"username": "cornelius", "realm": self.realm1,
+                                                             "password": "mailpin"}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertListEqual([serial], [challenge["serial"]
+                                                    for challenge in res.json["detail"]["multi_challenge"]])
+                    subjects = [line for line in smtpmock.get_sent_message().splitlines()
+                                if line.startswith("Subject:")]
+                    self.assertListEqual([f"Subject: {expected_subject}"], subjects)
+        finally:
+            for name in ("piLogin", "subject_realm1", "subject_realm2"):
+                try:
+                    delete_policy(name)
+                except ResourceNotFoundError:
+                    pass
+            remove_token(serial)
+
 
 class AdminFromUserstore(OverrideConfigTestCase):
     class Config(TestingConfig):
@@ -2126,6 +2164,33 @@ class DuplicateUserApiTestCase(MyApiTestCase):
         delete_policy("pi_login")
         delete_policy("otp_pin")
         delete_policy("disabled_token_types")
+
+    def test_05a_challenge_text(self):
+        set_policy("pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("challenge_response", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp,{PolicyAction.OTPPIN}=userstore")
+        set_policy("challenge_text", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGETEXT}=Realm one text",
+                   realm=self.realm1)
+        _, failed = set_realm(self.realm2, [{"name": self.resolvername1}])
+        self.assertListEqual([], failed)
+        self.addCleanup(delete_realm, self.realm2)
+        set_policy("challenge_text_realm2", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGETEXT}=Realm two text",
+                   realm=self.realm2)
+        for name in ["pi_login", "challenge_response", "challenge_text", "challenge_text_realm2"]:
+            self.addCleanup(delete_policy, name)
+        hotp = init_token({"type": "hotp"}, user=User(self.testadmin, self.realm1))
+        self.addCleanup(remove_token, hotp.get_serial())
+        self.addCleanup(delete_challenges, serial=hotp.get_serial())
+
+        # The user with the name of the local admin gets the challenge text of the user's realm
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "testadmin",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+            self.assertEqual("Realm one text", res.json["detail"]["message"], res.json)
 
     def test_06_jwt_validity(self):
         # generic policy applies to both
