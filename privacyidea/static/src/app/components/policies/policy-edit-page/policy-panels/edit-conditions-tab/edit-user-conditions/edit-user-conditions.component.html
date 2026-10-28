@@ -43,26 +43,18 @@
     (selectionChange)="selectResolver($event)">
   </app-multi-select-only>
 
-  <div class="user-list-wrapper">
-    <div class="user-list">
-      @for (user of selectedUsers(); track user) {
-        <div class="user-chip-edit">
-          <span>{{ user }}</span>
-          <button
-            mat-icon-button
-            (click)="removeUser(user)"
-            class="remove-user-btn">
-            <mat-icon class="remove-user-icon">close</mat-icon>
-          </button>
-        </div>
-      }
-    </div>
-
-    @if (selectedUsers().length > 0) {
-      <div class="user-buttons-container">
+  <app-chip-list-input
+    fieldClass="input-width-xl"
+    label="Add User"
+    i18n-label="@@policy.addUser"
+    gridLabel="Users"
+    i18n-gridLabel="@@policy.usersGrid"
+    [values]="selectedUsers()"
+    (valuesChange)="emitEdits({ user: $event })">
+    <ng-container chipListExtras>
+      @if (selectedUsers().length > 0) {
         <mat-checkbox
-          [checked]="userCaseInsensitive()"
-          (change)="toggleUserCaseInsensitive()"
+          [formField]="caseInsensitiveField"
           color="primary">
           <span i18n="@@policy.caseInsensitive">Case insensitive</span>
         </mat-checkbox>
@@ -74,29 +66,7 @@
           <mat-icon>clear_all</mat-icon>
           <span i18n="@@policy.clearUsers">Clear users</span>
         </button>
-      </div>
-    }
-  </div>
-
-  <div class="user-input-container">
-    <mat-form-field
-      subscriptSizing="dynamic"
-      class="input-width-l"
-      appearance="outline">
-      <mat-label i18n="@@policy.addUser">Add User</mat-label>
-      <input
-        matInput
-        [formField]="userField"
-        (keyup.enter)="addUser(userSignal())" />
-      @if (userField().errors().some(e => e.kind === 'includesComma')) {
-        <mat-error i18n="@@policy.userMustNotContain">User must not contain commas.</mat-error>
       }
-    </mat-form-field>
-    <button
-      mat-icon-button
-      [disabled]="!userSignal().trim() || userField().errors().length > 0"
-      (click)="addUser(userSignal())">
-      <mat-icon>add</mat-icon>
-    </button>
-  </div>
+    </ng-container>
+  </app-chip-list-input>
 </div>

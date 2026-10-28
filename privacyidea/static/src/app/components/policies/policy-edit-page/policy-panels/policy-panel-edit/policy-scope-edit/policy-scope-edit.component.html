@@ -42,5 +42,8 @@
         >
       }
     </mat-select>
+    @if (!scope()) {
+      <mat-hint i18n="@@policy.scopeRequiredHint">Choose a scope to save.</mat-hint>
+    }
   </mat-form-field>
 </div>

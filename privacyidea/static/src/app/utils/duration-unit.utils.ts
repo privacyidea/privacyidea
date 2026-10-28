@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { disabled, required, SchemaPath, validate } from "@angular/forms/signals";
+
 // A duration is always stored in seconds; the unit only changes how it is entered and displayed.
 export type DurationUnit = "seconds" | "minutes" | "hours";
 
@@ -42,4 +44,48 @@ export function largestWholeDurationUnit(seconds: number): DurationUnit {
     return "minutes";
   }
   return "seconds";
+}
+
+// Error kind of a duration that is a number but not a whole number greater than zero.
+export const POSITIVE_INTEGER_ERROR = "positiveInteger";
+
+// Whether `value` is a whole number greater than zero, the only kind of duration the backend accepts.
+export function isPositiveWholeNumber(value: number | null): value is number {
+  return value !== null && Number.isInteger(value) && value > 0;
+}
+
+// The entered duration in seconds, or null when it is not a positive whole number.
+export function durationToSeconds(value: number | null, unit: DurationUnit): number | null {
+  return isPositiveWholeNumber(value) ? value * DURATION_UNIT_FACTORS[unit] : null;
+}
+
+// Whether a lock or block expires after a duration or stays until an administrator lifts it.
+export type DurationMode = "permanent" | "timed";
+
+// The state of the permanent/timed duration controls. The unit applies to the entered number.
+export interface DurationFormModel {
+  mode: DurationMode;
+  durationInput: number | null;
+  durationUnit: DurationUnit;
+}
+
+// The seconds a lock or block lasts: null while it is permanent or when the entered duration is not valid.
+export function selectedDurationSeconds(model: DurationFormModel): number | null {
+  return model.mode === "permanent" ? null : durationToSeconds(model.durationInput, model.durationUnit);
+}
+
+// The rules of the permanent/timed duration controls shared by the user lock and the blocklist block dialog.
+// Both controls are disabled while the mode is permanent, so they stay in the layout without blocking the form.
+// A timed duration is required and has to be a positive whole number.
+export function durationRules(
+  mode: SchemaPath<DurationMode>,
+  durationInput: SchemaPath<number | null>,
+  durationUnit: SchemaPath<DurationUnit>
+): void {
+  disabled(durationInput, ({ valueOf }) => valueOf(mode) === "permanent");
+  disabled(durationUnit, ({ valueOf }) => valueOf(mode) === "permanent");
+  required(durationInput);
+  validate(durationInput, ({ value }) =>
+    value() === null || isPositiveWholeNumber(value()) ? [] : [{ kind: POSITIVE_INTEGER_ERROR }]
+  );
 }

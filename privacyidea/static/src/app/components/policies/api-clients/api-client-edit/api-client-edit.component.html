@@ -83,17 +83,14 @@
           class="input-width-l">
           <mat-label i18n="@@apiClient.displayName">Display name</mat-label>
           <app-clearable-input
-            (clearButtonClick)="apiClientModel.update(m => ({...m, display_name: ''}))"
+            (clearButtonClick)="clearField(apiClientForm.display_name, '')"
             [showClearButton]="!!apiClientModel().display_name">
             <input
               [formField]="apiClientForm.display_name"
               matInput
               placeholder="My Windows Credential Provider" />
           </app-clearable-input>
-          @if (
-            apiClientForm.display_name().errors().some(e => e.kind === 'required') &&
-            apiClientForm.display_name().touched()
-          ) {
+          @if (hasError(apiClientForm.display_name, ERR.required)) {
             <mat-error i18n="@@apiClient.displayNameRequired">Display name is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
@@ -108,8 +105,7 @@
             class="input-width-l">
             <mat-label i18n="@@apiClient.clientType">Client type</mat-label>
             <input
-              [value]="integrationsService.labelFor(apiClientModel().client_type)"
-              disabled
+              [formField]="clientTypeLabelForm.label"
               matInput />
           </mat-form-field>
         } @else {
@@ -125,10 +121,7 @@
             <mat-hint i18n="@@apiClient.clientTypeHint"
               >The kind of integration this client represents. This cannot be changed later.</mat-hint
             >
-            @if (
-              apiClientForm.client_type().errors().some(e => e.kind === 'required') &&
-              apiClientForm.client_type().touched()
-            ) {
+            @if (hasError(apiClientForm.client_type, ERR.required)) {
               <mat-error i18n="@@apiClient.clientTypeRequired">Client type is <strong>required</strong>.</mat-error>
             }
           </mat-form-field>

@@ -1,7 +1,5 @@
-// Width is decided by the caller via an .input-width-* class on the host
-// element (e.g. <app-policy-name-edit class="input-width-l">), so the field
-// stays context-free and reusable. The host fills that width; the form field
-// fills the host.
+// The host takes the width its parent gives it (the policy row flexes it), so the
+// field stays context-free and reusable. The form field fills the host.
 :host {
   display: block;
 }

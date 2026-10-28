@@ -46,7 +46,7 @@
         [matTooltip]="enrollBlockedReason() ?? ''"
         [matTooltipDisabled]="!enrollBlockedReason()">
         <button
-          [disabled]="formInvalid() || !tokenService.selectedTokenType()"
+          [disabled]="formInvalid()"
           class="action-button-primary button-width-m"
           mat-stroked-button
           type="submit">

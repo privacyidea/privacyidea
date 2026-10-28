@@ -367,6 +367,57 @@ mat-datepicker-toggle .mdc-icon-button.mat-mdc-icon-button {
   }
 }
 
+// --- Toggle group ------------------------------------------------------------------------------------------------
+
+// The toggles of an app-toggle-group share the group's width evenly, so selecting one never moves its neighbours: the
+// basis is 0, which keeps the bolder checked label from claiming extra width, and min-width 0 lets a long label shrink
+// below its content width instead of widening its toggle. A label that does not fit is clipped with an ellipsis (the
+// component shows the full text as a tooltip). Where the check mark is hidden, the bold checked label is the selection
+// cue besides colour. The groups of other components keep their content-based sizing, so nothing here is global.
+.app-toggle-group {
+  display: block;
+  // The host sizes to its container, not to the sum of its nowrap labels, so a long label is clipped instead of
+  // widening the column or panel that holds the group.
+  contain: inline-size;
+  // The toggle height plus the group's 1px top and bottom border is 33px, the height of the selector-button rows
+  // (policy actions, event conditions, container templates, certificate enrollment) next to the form fields.
+  @include mat.button-toggle-overrides(
+    (
+      height: 31px
+    )
+  );
+
+  .mat-button-toggle-group {
+    display: flex;
+    width: 100%;
+  }
+
+  .mat-button-toggle {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  // The button is a block, so the clipped label box does not sit on the baseline of an inline line box, which would
+  // add a strut below it and make the toggle taller than the height token.
+  .mat-button-toggle-button {
+    display: block;
+  }
+
+  // The label keeps the 4px side padding of the buttons these toggles replace (Material's 12px would clip a long
+  // option such as privacyidea.lib.utils.emailvalidation in the policy action column).
+  .mat-button-toggle .mat-button-toggle-label-content {
+    display: block;
+    overflow: hidden;
+    padding-inline: 4px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mat-button-toggle-checked .mat-button-toggle-label-content {
+    font-weight: 600;
+  }
+}
+
 .tab-list {
   .mdc-list {
     padding-top: 0;
@@ -389,6 +440,22 @@ mat-chip.mat-mdc-chip {
     .mdc-evolution-chip__action--presentational {
       cursor: pointer;
     }
+  }
+}
+
+// A long entry in a chip list input clips with an ellipsis instead of widening the grid; its title carries the full text.
+.chip-list-input mat-chip-row {
+  max-width: 100%;
+
+  .mdc-evolution-chip__cell--primary,
+  .mdc-evolution-chip__action--primary {
+    min-width: 0;
+  }
+
+  .mat-mdc-chip-action-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

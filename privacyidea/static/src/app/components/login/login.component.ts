@@ -57,6 +57,7 @@ import {
   ValidateService,
   ValidateServiceInterface
 } from "@services/validate/validate.service";
+import { clearField } from "@utils/form-state.utils";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
@@ -145,6 +146,8 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       }
     }
   });
+
+  realmField = form(this.realm);
 
   passkeyLoginEnabled = computed(() => {
     const loginMode = this.configService.config()?.passkey_login;
@@ -273,7 +276,7 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   clearRealmSelection(event: MouseEvent) {
     event.stopPropagation();
-    this.realm.set("");
+    clearField(this.realmField, "");
   }
 
   private startPushPolling(): void {

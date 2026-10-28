@@ -18,7 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { MatSelect, MatSelectChange } from "@angular/material/select";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { EditEnvironmentConditionsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component";
 import { ClientsDict, ClientsService } from "@services/clients/clients.service";
 import { IntegrationsService } from "@services/integrations/integrations.service";
@@ -90,15 +92,61 @@ describe("EditEnvironmentConditionsComponent", () => {
     expect(component.clientField().valid()).toBe(true);
   });
 
-  it("should emit edits when adding a user agent", () => {
-    const spy = jest.spyOn(component.policyEdit, "emit");
-    component.addUserAgentSignal.set("NewAgent");
-    component.addUserAgent();
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user_agents: ["PAM", "NewAgent"]
-      })
-    );
+  describe("user agent chips", () => {
+    const chipList = () => fixture.debugElement.query(By.directive(ChipListInputComponent));
+    const chipTexts = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll(".mat-mdc-chip-action-label")).map((row) =>
+        row.textContent!.trim()
+      );
+
+    it("should emit only the user agents when an entry is added", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      chipList().triggerEventHandler("valuesChange", ["PAM", "NewAgent"]);
+      expect(spy).toHaveBeenCalledWith({ user_agents: ["PAM", "NewAgent"] });
+    });
+
+    it("should emit only the user agents when an entry is removed", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      chipList().triggerEventHandler("valuesChange", []);
+      expect(spy).toHaveBeenCalledWith({ user_agents: [] });
+    });
+
+    it("should show the raw value of a custom user agent that has no preset label", () => {
+      fixture.componentRef.setInput("policy", { name: "test-policy", user_agents: ["MyCustomAgent"] });
+      fixture.detectChanges();
+      expect(chipTexts()).toEqual(["MyCustomAgent"]);
+    });
+
+    it("should show the label and stored value of a preset user agent", () => {
+      const displayFor = jest.spyOn(TestBed.inject(IntegrationsService), "displayForPolicyValue");
+      displayFor.mockImplementation((value: string) => (value === "PAM" ? "PAM Module (PAM)" : value));
+      fixture.componentRef.setInput("policy", { name: "test-policy", user_agents: ["PAM"] });
+      fixture.detectChanges();
+      expect(chipTexts()).toEqual(["PAM Module (PAM)"]);
+    });
+
+    it("should offer the clear button only while user agents exist", () => {
+      const clearButton = () => (fixture.nativeElement as HTMLElement).querySelectorAll(".chip-list-extras button");
+      expect(clearButton()).toHaveLength(1);
+      fixture.componentRef.setInput("policy", { name: "test-policy", user_agents: [] });
+      fixture.detectChanges();
+      expect(clearButton()).toHaveLength(0);
+    });
+
+    it("should space the preset select from the chip field below it", () => {
+      const root = fixture.nativeElement as HTMLElement;
+      const select = root.querySelector(".user-agent-select")!;
+      expect(select.querySelector("mat-select")).not.toBeNull();
+      expect(select.compareDocumentPosition(root.querySelector("app-chip-list-input")!)).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING
+      );
+    });
+
+    it("should clear the user agents", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.clearUserAgents();
+      expect(spy).toHaveBeenCalledWith({ user_agents: [] });
+    });
   });
 
   it("should show a selected preset with its label and stored value, and a custom value as it is", () => {

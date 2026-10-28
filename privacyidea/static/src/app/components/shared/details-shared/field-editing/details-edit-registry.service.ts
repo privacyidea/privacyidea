@@ -26,6 +26,8 @@ import { computed, Injectable, Signal, signal } from "@angular/core";
  */
 export interface DetailFieldHandle {
   readonly isEditing: Signal<boolean>;
+  /** False while the field is editing a value that must not be saved. Absent means saveable. */
+  readonly valid?: Signal<boolean>;
   save(): void | Promise<void>;
   cancel(): void;
 }
@@ -35,6 +37,9 @@ export class DetailsEditRegistry {
   private readonly fields = signal<readonly DetailFieldHandle[]>([]);
 
   readonly anyEditing = computed(() => this.fields().some((field) => field.isEditing()));
+
+  /** True while a field that is being edited holds a value that must not be saved. */
+  readonly anyInvalid = computed(() => this.fields().some((field) => field.isEditing() && field.valid?.() === false));
 
   register(field: DetailFieldHandle): void {
     this.fields.update((list) => (list.includes(field) ? list : [...list, field]));

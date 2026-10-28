@@ -16,40 +16,54 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
-
+import { Component, input } from "@angular/core";
+import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import {
+  panelCompleteness,
+  SMS_KEYS,
+  TokenTypeConfigForm
+} from "@components/configuration/token-type-config/token-type-config.form";
+import { PanelIncompleteComponent } from "@components/configuration/token-type-config/token-types/panel-incomplete/panel-incomplete.component";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-sms-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
+  imports: [
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    RouterLink,
+    ClearButtonComponent,
+    FormField,
+    PanelIncompleteComponent
+  ],
   templateUrl: "./sms-config.component.html"
 })
 export class SmsConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly SMS_GATEWAY = SMS_GATEWAY;
   protected readonly SMS_PROVIDER_TIMEOUT = SMS_PROVIDER_TIMEOUT;
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
 
-  formData = input.required<Record<string, string | number | undefined>>();
-  formDataChange = output<Record<string, string | number | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
+  protected readonly panel = panelCompleteness(this.config, () => SMS_KEYS);
   smsGateways = input.required<string[]>();
   smsGatewaysListable = input.required<boolean>();
   expanded = input<boolean>(false);
 
-  updateFormData(fieldName: string, value: string | number): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
-
-  clearField(fieldName: string): void {
-    this.updateFormData(fieldName, "");
+  clearValue(field: FieldTree<string>): void {
+    clearField(field, "");
   }
 }

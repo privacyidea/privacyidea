@@ -83,4 +83,21 @@ describe("DetailsEditRegistry", () => {
     registry.unregister(a.handle);
     expect(registry.anyEditing()).toBe(false);
   });
+
+  it("anyInvalid is true only for a handle that is editing an invalid value", () => {
+    const isEditing = signal(false);
+    const valid = signal(false);
+    const handle: DetailFieldHandle = { isEditing, valid, save: jest.fn(), cancel: jest.fn() };
+    const withoutChannel = makeHandle(true);
+    registry.register(withoutChannel.handle);
+    registry.register(handle);
+
+    expect(registry.anyInvalid()).toBe(false);
+
+    isEditing.set(true);
+    expect(registry.anyInvalid()).toBe(true);
+
+    valid.set(true);
+    expect(registry.anyInvalid()).toBe(false);
+  });
 });

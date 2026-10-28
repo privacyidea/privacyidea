@@ -26,6 +26,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { TokenService } from "@services/token/token.service";
 import { MockLocalService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { hasError } from "@utils/form-state.utils";
 import { of } from "rxjs";
 import { SetPinActionComponent } from "./set-pin-action.component";
 
@@ -53,7 +54,16 @@ describe("SetPinActionComponent", () => {
     warning: jest.fn()
   };
 
+  const pinInputs = (): HTMLInputElement[] => Array.from(fixture.nativeElement.querySelectorAll("input[matInput]"));
+  const typeInto = (input: HTMLInputElement, value: string) => {
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+  };
+  const setPinButton = (): HTMLButtonElement => fixture.nativeElement.querySelector(".set-pin-buttons button");
+
   beforeEach(async () => {
+    jest.clearAllMocks();
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [SetPinActionComponent],
@@ -71,8 +81,9 @@ describe("SetPinActionComponent", () => {
 
     fixture = TestBed.createComponent(SetPinActionComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("setPinValue", "1234");
-    fixture.componentRef.setInput("repeatPinValue", "1234");
+    (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
+    component.setPinValue.set("1234");
+    component.repeatPinValue.set("1234");
     fixture.detectChanges();
   });
 
@@ -86,11 +97,46 @@ describe("SetPinActionComponent", () => {
     expect(notificationServiceStub.success).toHaveBeenCalledWith("PIN set successfully.");
   });
 
+  it("setPin() clears both PINs and the field state after success", () => {
+    component.repeatPinForm().markAsTouched();
+    component.setPin();
+    expect(component.setPinValue()).toBe("");
+    expect(component.repeatPinValue()).toBe("");
+    expect(component.repeatPinForm().touched()).toBe(false);
+  });
+
   it("setPin() should raise error if pins does not match", () => {
     component.repeatPinValue.set("4321");
     component.setPin();
     expect(tokenServiceStub.setPin).not.toHaveBeenCalled();
     expect(notificationServiceStub.warning).toHaveBeenCalledWith("PINs do not match.");
+    expect(component.repeatPinForm().touched()).toBe(true);
+  });
+
+  it("typing into the PIN fields updates the models", () => {
+    const [pin, repeat] = pinInputs();
+    typeInto(pin, "9876");
+    typeInto(repeat, "9876");
+    expect(component.setPinValue()).toBe("9876");
+    expect(component.repeatPinValue()).toBe("9876");
+    expect(component.repeatPinForm().valid()).toBe(true);
+    expect(setPinButton().disabled).toBe(false);
+  });
+
+  it("a differing repeat reports pinMismatch, shows the error and disables the button", () => {
+    const [, repeat] = pinInputs();
+    typeInto(repeat, "4321");
+    repeat.dispatchEvent(new Event("blur"));
+    fixture.detectChanges();
+    expect(hasError(component.repeatPinForm, "pinMismatch")).toBe(true);
+    expect(setPinButton().disabled).toBe(true);
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("PINs do not match.");
+  });
+
+  it("changing the PIN re-evaluates the repeat", () => {
+    expect(component.repeatPinForm().valid()).toBe(true);
+    component.setPinValue.set("other");
+    expect(component.repeatPinForm().valid()).toBe(false);
   });
 
   it("setRandomPin()", () => {

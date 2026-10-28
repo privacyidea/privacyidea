@@ -153,4 +153,128 @@ describe("SqlResolverComponent", () => {
       expect(hint).not.toMatch(/\bSHA512\b/);
     });
   });
+
+  describe("edits through the controls", () => {
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    const checkboxInput = (): HTMLInputElement =>
+      fixture.nativeElement.querySelector("mat-checkbox input") as HTMLInputElement;
+    const clearButtonOf = (input: HTMLInputElement) =>
+      input.closest("app-clearable-input")!.querySelector("button") as HTMLButtonElement;
+    const numberInput = (index: number): HTMLInputElement =>
+      fixture.nativeElement.querySelectorAll("input[type='number']")[index];
+    const type = async (input: HTMLInputElement, value: string) => {
+      input.value = value;
+      input.dispatchEvent(new Event("input"));
+      input.dispatchEvent(new Event("blur"));
+      await flush();
+    };
+    const filled = { Driver: "mysql", Server: "localhost", Table: "users", Limit: 100, Map: "{}" };
+
+    beforeEach(async () => {
+      componentRef.setInput("data", filled);
+      await flush();
+    });
+
+    it("starts pristine and valid after the data input is applied", () => {
+      expect(component.isDirty()).toBe(false);
+      expect(component.isValid()).toBe(true);
+    });
+
+    it("the Editable checkbox writes the model and marks the resolver dirty", async () => {
+      checkboxInput().click();
+      await flush();
+
+      expect(component.model().Editable).toBe(true);
+      expect(component.sqlForm.Editable().dirty()).toBe(true);
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("the hash type select writes the model and marks the resolver dirty", async () => {
+      componentRef.setInput("data", { ...filled, Editable: "1" });
+      await flush();
+      expect(component.isDirty()).toBe(false);
+
+      const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+      select.options.find((o) => o.value === "SSHA")!.select();
+      await flush();
+
+      expect(component.model().Password_Hash_Type).toBe("SSHA");
+      expect(component.sqlForm.Password_Hash_Type().dirty()).toBe(true);
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("shows a model change in the checkbox without marking the resolver dirty", async () => {
+      component.model.update((m) => ({ ...m, Editable: true }));
+      await flush();
+
+      expect(checkboxInput().checked).toBe(true);
+      expect(component.isDirty()).toBe(false);
+    });
+
+    it("marks the resolver dirty when a clear button empties a field", async () => {
+      const driver = fixture.nativeElement.querySelector("input.mat-mdc-input-element") as HTMLInputElement;
+
+      clearButtonOf(driver).click();
+      await flush();
+
+      expect(component.model().Driver).toBe("");
+      expect(component.sqlForm.Driver().dirty()).toBe(true);
+      expect(component.isDirty()).toBe(true);
+      expect(component.isValid()).toBe(false);
+    });
+
+    it("marks the resolver dirty when a preset is applied", () => {
+      component.applySqlPreset(component.sqlPresets[0]);
+
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("requires the limit and shows the message once it is emptied", async () => {
+      await type(numberInput(0), "");
+
+      expect(component.model().Limit).toBe("");
+      expect(
+        component.sqlForm
+          .Limit()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["required"]);
+      expect(component.isValid()).toBe(false);
+      expect(numberInput(0).closest("mat-form-field")!.querySelector("mat-error")?.textContent).toContain("required");
+    });
+
+    it.each([
+      [0, "Limit"],
+      [1, "poolSize"],
+      [2, "poolTimeout"],
+      [3, "poolRecycle"]
+    ] as const)(
+      "number input %s (%s) shows a parse message for text the browser cannot parse",
+      async (index, field) => {
+        jest.spyOn(numberInput(index), "validity", "get").mockReturnValue({ badInput: true } as ValidityState);
+        await type(numberInput(index), "");
+
+        expect(
+          component.sqlForm[field]()
+            .errors()
+            .map((e) => e.kind)
+        ).toContain("parse");
+        expect(component.isValid()).toBe(false);
+        expect(numberInput(index).closest("mat-form-field")!.querySelector("mat-error")?.textContent).toContain(
+          "valid number"
+        );
+      }
+    );
+
+    it("accepts an emptied pool size", async () => {
+      await type(numberInput(1), "");
+
+      expect(component.model().poolSize).toBe("");
+      expect(component.isValid()).toBe(true);
+    });
+  });
 });

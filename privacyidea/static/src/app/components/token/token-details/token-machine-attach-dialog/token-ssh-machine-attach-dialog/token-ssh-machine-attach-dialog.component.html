@@ -49,9 +49,7 @@
     appearance="fill"
     class="input-width-l">
     <mat-label i18n="@@common.serviceId">Service ID</mat-label>
-    <mat-select
-      [value]="selectedServiceIdValue()"
-      (selectionChange)="selectedServiceIdValue.set($event.value)">
+    <mat-select [formField]="selectedServiceIdForm">
       @for (serviceId of availableServiceIds(); track serviceId) {
         <mat-option [value]="serviceId">{{ serviceId }}</mat-option>
       }
@@ -69,11 +67,8 @@
       matInput
       type="text"
       [matAutocomplete]="userAuto"
-      [value]="selectedUserValue()"
-      (input)="selectedUserValue.set($any($event.target).value)" />
-    <mat-autocomplete
-      #userAuto="matAutocomplete"
-      (optionSelected)="selectedUserValue.set($event.option.value)">
+      [formField]="selectedUserForm" />
+    <mat-autocomplete #userAuto="matAutocomplete">
       @for (user of filteredUsers(); track user) {
         <mat-option [value]="user">{{ user }}</mat-option>
       }

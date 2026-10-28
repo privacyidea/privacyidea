@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
+import { form, FormField } from "@angular/forms/signals";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
@@ -27,7 +27,7 @@ import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-selection",
-  imports: [FormsModule, MatChipsModule, MatExpansionModule, MatIcon, ClearableInputComponent],
+  imports: [FormField, MatChipsModule, MatExpansionModule, MatIcon, ClearableInputComponent],
   templateUrl: "./event-selection.component.html",
   styleUrl: "./event-selection.component.scss"
 })
@@ -37,10 +37,9 @@ export class EventSelectionComponent {
   newEvents = output<string[]>();
 
   selectedEvents = signal<string[]>([]);
-  touched = signal(false);
-  invalid = computed(() => this.selectedEvents().length === 0);
-  showError = computed(() => this.touched() && this.invalid());
-  searchTerm = signal("");
+  searchModel = signal({ search: "" });
+  searchForm = form(this.searchModel);
+  searchTerm = computed(() => this.searchModel().search);
   remainingEvents = linkedSignal({
     source: () => ({
       available: this.eventService.availableEvents(),
@@ -59,8 +58,8 @@ export class EventSelectionComponent {
     });
   }
 
-  markTouched(): void {
-    this.touched.set(true);
+  clearSearch(): void {
+    this.searchModel.set({ search: "" });
   }
 
   removeEvent(event: string): void {
@@ -70,7 +69,6 @@ export class EventSelectionComponent {
       const updated = [...current.slice(0, index), ...current.slice(index + 1)];
       this.selectedEvents.set(updated);
       this.newEvents.emit(updated);
-      this.markTouched();
     }
   }
 

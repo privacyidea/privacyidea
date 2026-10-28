@@ -16,8 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { applyEach, FieldTree, form } from "@angular/forms/signals";
 import { AuthService } from "@services/auth/auth.service";
+import {
+  CA_ERR,
+  ConditionalAccessStageFormModel,
+  stageSchema,
+  toStageFormModel
+} from "@services/conditional-access/conditional-access-policy-form";
 import {
   ConditionalAccessActionType,
   ConditionalAccessPolicyService,
@@ -30,16 +38,44 @@ import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
+import { ERR } from "@utils/form-rules.utils";
 import { ConditionalAccessStageItemComponent } from "./conditional-access-stage-item.component";
+
+// jsdom has no validity.badInput; a number input that holds text the browser cannot parse is simulated.
+const rejectInputAsNumber = (input: HTMLInputElement): void => {
+  Object.defineProperty(input, "validity", { configurable: true, get: () => ({ badInput: true }) });
+};
 
 describe("ConditionalAccessStageItemComponent", () => {
   let component: ConditionalAccessStageItemComponent;
   let fixture: ComponentFixture<ConditionalAccessStageItemComponent>;
+  let model: WritableSignal<{ stages: ConditionalAccessStageFormModel[] }>;
+  let stageFields: FieldTree<ConditionalAccessStageFormModel[]>;
 
   const stage: ConditionalAccessPolicyStage = {
     failure_threshold: 5,
     actions: [{ action_type: "LOCK_USER", action_value: 600 }]
   };
+
+  // Puts a stage in the form the item is bound to, the way the policy form holds it; the stage is the one above
+  // unless overridden.
+  const withStage = (override: Partial<ConditionalAccessPolicyStage>) => {
+    model.set({ stages: [toStageFormModel({ ...stage, ...override })] });
+    fixture.componentRef.setInput("stage", stageFields[0]);
+    fixture.detectChanges();
+  };
+  const stored = () => model().stages[0];
+  const thresholdInput = (): HTMLInputElement =>
+    fixture.nativeElement.querySelector("input[type=number]") as HTMLInputElement;
+  const type = (input: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+  };
+  const messages = () =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-error")).map((error) =>
+      error.textContent?.trim()
+    );
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -51,8 +87,10 @@ describe("ConditionalAccessStageItemComponent", () => {
       ]
     }).compileComponents();
 
+    model = signal({ stages: [toStageFormModel(stage)] });
+    stageFields = TestBed.runInInjectionContext(() => form(model, (p) => applyEach(p.stages, stageSchema))).stages;
     fixture = TestBed.createComponent(ConditionalAccessStageItemComponent);
-    fixture.componentRef.setInput("stage", stage);
+    fixture.componentRef.setInput("stage", stageFields[0]);
     fixture.componentRef.setInput("stageNumber", 1);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -62,81 +100,98 @@ describe("ConditionalAccessStageItemComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit updateStage for a valid failure_threshold", () => {
-    const spy = jest.spyOn(component.updateStage, "emit");
-    component.onFailureThresholdInput("10");
-    expect(spy).toHaveBeenCalledWith({ failure_threshold: 10 });
-  });
+  describe("failure threshold", () => {
+    it("should write a typed threshold to the stage", () => {
+      type(thresholdInput(), "10");
+      expect(stored().failure_threshold).toBe(10);
+    });
 
-  it("should emit updateStage for a threshold of 0 (an always-matching DENY stage)", () => {
-    const spy = jest.spyOn(component.updateStage, "emit");
-    component.onFailureThresholdInput("0");
-    expect(spy).toHaveBeenCalledWith({ failure_threshold: 0 });
-  });
+    it("should accept a threshold of 0 for an always-matching DENY stage", () => {
+      withStage({ actions: [{ action_type: "DENY", action_value: null }] });
+      type(thresholdInput(), "0");
+      expect(stored().failure_threshold).toBe(0);
+      expect(stageFields[0].failure_threshold().errors()).toEqual([]);
+    });
 
-  // A threshold counts failures, so the minimum is 1 unless every action on the stage is a standing
-  // DENY verdict, which is what the backend's _validate_threshold_for_actions allows at 0.
-  it.each([
-    ["only DENY", [{ action_type: "DENY", action_value: null }], true],
-    ["only DENY", [{ action_type: "DENY", action_value: null }], true],
-    ["a counting action", [{ action_type: "LOCK_USER", action_value: 60 }], false],
-    [
-      "a decision plus a counting action",
+    it("should hold an emptied threshold as missing and say it is required once left", () => {
+      type(thresholdInput(), "");
+      thresholdInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(stored().failure_threshold).toBeNull();
+      expect(messages()).toEqual(["Failure threshold is required."]);
+    });
+
+    it("should say what is expected for text the browser cannot read as a number", () => {
+      rejectInputAsNumber(thresholdInput());
+      type(thresholdInput(), "abc");
+      thresholdInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(
+        stageFields[0]
+          .failure_threshold()
+          .errors()
+          .map((error) => error.kind)
+      ).toContain(ERR.parse);
+      expect(messages()).toEqual(["Enter a whole number of at least 1, or 0 on a stage carrying only DENY."]);
+    });
+
+    it("should reject a negative threshold", () => {
+      type(thresholdInput(), "-1");
+      thresholdInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(
+        stageFields[0]
+          .failure_threshold()
+          .errors()
+          .map((error) => error.kind)
+      ).toEqual([ERR.min]);
+      expect(messages()).toHaveLength(1);
+    });
+
+    // A threshold counts failures, so the minimum is 1 unless every action on the stage is a standing
+    // DENY verdict, which is what the backend's _validate_threshold_for_actions allows at 0.
+    it.each([
+      ["only DENY", [{ action_type: "DENY", action_value: null }], true],
+      ["a counting action", [{ action_type: "LOCK_USER", action_value: 60 }], false],
       [
-        { action_type: "DENY", action_value: null },
-        { action_type: "LOCK_USER", action_value: 60 }
+        "a decision plus a counting action",
+        [
+          { action_type: "DENY", action_value: null },
+          { action_type: "LOCK_USER", action_value: 60 }
+        ],
+        false
       ],
-      false
-    ],
-    ["no actions at all", [], false]
-  ])("should %s a zero threshold with %s", (_label, actions, allowed) => {
-    fixture.componentRef.setInput("stage", { failure_threshold: 5, actions });
-    fixture.detectChanges();
-    expect(component.zeroThresholdAllowed()).toBe(allowed);
-    expect(component.minThreshold()).toBe(allowed ? 0 : 1);
-  });
-
-  it("should flag a stage already sitting at 0 once an action stops allowing it", () => {
-    fixture.componentRef.setInput("stage", {
-      failure_threshold: 0,
-      actions: [{ action_type: "DENY", action_value: null }]
+      ["no actions at all", [], false]
+    ])("should hint at a zero threshold only for a stage with %s", (_label, actions, allowed) => {
+      withStage({ failure_threshold: 5, actions: actions as ConditionalAccessStageAction[] });
+      expect(component.zeroThresholdHint()).toBe(allowed);
+      expect(fixture.nativeElement.querySelector("mat-hint").textContent).toContain(
+        allowed ? "0 means always" : "At least 1"
+      );
     });
-    fixture.detectChanges();
-    expect(component.zeroThresholdInvalid()).toBe(false);
 
-    // Adding a lock to the same stage leaves the threshold at 0, which no longer holds.
-    fixture.componentRef.setInput("stage", {
-      failure_threshold: 0,
-      actions: [
-        { action_type: "DENY", action_value: null },
-        { action_type: "LOCK_USER", action_value: 60 }
-      ]
+    it("should flag a stage already sitting at 0 once an action stops allowing it", () => {
+      withStage({ failure_threshold: 0, actions: [{ action_type: "DENY", action_value: null }] });
+      expect(stageFields[0].failure_threshold().errors()).toEqual([]);
+      expect(messages()).toEqual([]);
+
+      // Adding a lock to the same stage leaves the threshold at 0, which no longer holds. The threshold was never
+      // focused, and the reason shows anyway.
+      stageFields[0].actions().value.update((actions) => [...actions, { action_type: "LOCK_USER", action_value: 60 }]);
+      fixture.detectChanges();
+      expect(
+        stageFields[0]
+          .failure_threshold()
+          .errors()
+          .map((error) => error.kind)
+      ).toEqual([CA_ERR.stageThreshold]);
+      expect(messages()).toEqual(['A threshold of 0 means "always" and needs a stage carrying only DENY.']);
     });
-    fixture.detectChanges();
-    expect(component.zeroThresholdInvalid()).toBe(true);
-  });
 
-  it("should not flag a threshold of 1 or more whatever the actions are", () => {
-    fixture.componentRef.setInput("stage", {
-      failure_threshold: 5,
-      actions: [{ action_type: "LOCK_USER", action_value: 60 }]
+    it("should not flag a threshold of 1 or more whatever the actions are", () => {
+      withStage({ failure_threshold: 5, actions: [{ action_type: "LOCK_USER", action_value: 60 }] });
+      expect(stageFields[0].failure_threshold().errors()).toEqual([]);
     });
-    fixture.detectChanges();
-    expect(component.zeroThresholdInvalid()).toBe(false);
-  });
-
-  it("should not emit for an invalid failure_threshold", () => {
-    const spy = jest.spyOn(component.updateStage, "emit");
-    component.onFailureThresholdInput("-1");
-    expect(spy).not.toHaveBeenCalled();
-    component.onFailureThresholdInput("abc");
-    expect(spy).not.toHaveBeenCalled();
-  });
-
-  it("should emit updateStage when actions change", () => {
-    const spy = jest.spyOn(component.updateStage, "emit");
-    component.onActionsChange([]);
-    expect(spy).toHaveBeenCalledWith({ actions: [] });
   });
 
   it("should emit removeStage", () => {
@@ -145,20 +200,52 @@ describe("ConditionalAccessStageItemComponent", () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it("should emit a trimmed name, or null when blank", () => {
-    const spy = jest.spyOn(component.updateStage, "emit");
-    component.onNameInput("  Warn user  ");
-    expect(spy).toHaveBeenCalledWith({ name: "Warn user" });
-    component.onNameInput("   ");
-    expect(spy).toHaveBeenCalledWith({ name: null });
-  });
+  describe("name", () => {
+    const nameInput = (): HTMLInputElement =>
+      fixture.nativeElement.querySelector(".ca-stage-name-field input") as HTMLInputElement;
 
-  it("should toggle name editing", () => {
-    expect(component.editingName()).toBe(false);
-    component.startEditingName();
-    expect(component.editingName()).toBe(true);
-    component.stopEditingName();
-    expect(component.editingName()).toBe(false);
+    it("should write the name as typed and show it stripped as the title", () => {
+      type(nameInput(), "  Warn user  ");
+      expect(stored().name).toBe("  Warn user  ");
+      expect(component.stageName()).toBe("Warn user");
+    });
+
+    it("should treat a name of spaces as no name", () => {
+      type(nameInput(), "   ");
+      expect(component.stageName()).toBe("");
+    });
+
+    it("should keep a saved stage's name as text until it is edited", () => {
+      withStage({ id: 3, name: "Warn user" });
+      expect(fixture.nativeElement.querySelector(".ca-stage-title-name").textContent.trim()).toBe("Warn user");
+      expect(nameInput()).toBeNull();
+
+      fixture.nativeElement.querySelector(".ca-stage-name-action").click();
+      fixture.detectChanges();
+      expect(nameInput().value).toBe("Warn user");
+    });
+
+    it("should name a saved stage without a name as unnamed", () => {
+      withStage({ id: 3 });
+      expect(fixture.nativeElement.querySelector(".ca-stage-title-name--empty")).toBeTruthy();
+    });
+
+    it("should stop editing the name on Enter", () => {
+      withStage({ id: 3, name: "Warn user" });
+      component.startEditingName();
+      fixture.detectChanges();
+      nameInput().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+      fixture.detectChanges();
+      expect(component.editingName()).toBe(false);
+    });
+
+    it("should toggle name editing", () => {
+      expect(component.editingName()).toBe(false);
+      component.startEditingName();
+      expect(component.editingName()).toBe(true);
+      component.stopEditingName();
+      expect(component.editingName()).toBe(false);
+    });
   });
 
   describe("error message", () => {
@@ -183,8 +270,7 @@ describe("ConditionalAccessStageItemComponent", () => {
 
     let policyService: MockConditionalAccessPolicyService;
 
-    const withStage = (override: Partial<ConditionalAccessPolicyStage>) =>
-      fixture.componentRef.setInput("stage", { ...stage, ...override });
+    const textarea = () => fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
 
     const withTarget = (target: ConditionalAccessTarget) => fixture.componentRef.setInput("target", target);
 
@@ -194,14 +280,14 @@ describe("ConditionalAccessStageItemComponent", () => {
       policyService.reportingActionsByTarget.set(REPORTING_BY_TARGET);
     });
 
-    it("should emit the error_message exactly as typed", () => {
+    it("should write the error_message exactly as typed", () => {
       // Not trimmed here: the field is bound back to this value, so trimming would delete a space the
       // admin has just typed. validate_error_message strips it, and treats a blank message as none.
-      const spy = jest.spyOn(component.updateStage, "emit");
-      component.onErrorMessageInput("  Locked.  ");
-      expect(spy).toHaveBeenCalledWith({ error_message: "  Locked.  " });
-      component.onErrorMessageInput("   ");
-      expect(spy).toHaveBeenCalledWith({ error_message: "   " });
+      withStage({ error_message: "" });
+      type(textarea(), "  Locked.  ");
+      expect(stored().error_message).toBe("  Locked.  ");
+      type(textarea(), "   ");
+      expect(stored().error_message).toBe("   ");
     });
 
     it("should be unticked for a stage with no message and ticked for one that has it", () => {
@@ -215,16 +301,10 @@ describe("ConditionalAccessStageItemComponent", () => {
       // Clearing the textarea leaves an empty message, not an absent one, so the field does not disable
       // itself out from under the admin the moment they select-all-and-delete.
       withStage({ error_message: "Locked." });
-      component.onErrorMessageInput("");
-      withStage({ error_message: "" });
+      type(textarea(), "");
+      expect(stored().error_message).toBe("");
       expect(component.hasCustomErrorMessage()).toBe(true);
-    });
-
-    it("should emit an empty message rather than null while the field is being cleared", () => {
-      withStage({ error_message: "Locked." });
-      const spy = jest.spyOn(component.updateStage, "emit");
-      component.onErrorMessageInput("");
-      expect(spy).toHaveBeenCalledWith({ error_message: "" });
+      expect(textarea().disabled).toBe(false);
     });
 
     it("should count the stage as having no wording only when the field is absent entirely", () => {
@@ -237,26 +317,41 @@ describe("ConditionalAccessStageItemComponent", () => {
     it("should render the message field always, disabled until the box is ticked", () => {
       // Always present, so ticking the box does not change the stage's shape on screen - only whether the
       // field can be typed into. mat-form-field has no disabled input, so this has to sit on the control.
-      // withStage only sets the input; the other tests read computeds, so this one has to render as well.
-      const render = (override: Partial<ConditionalAccessPolicyStage>) => {
-        withStage(override);
-        fixture.detectChanges();
-      };
-      const textarea = () => fixture.nativeElement.querySelector("textarea");
-
-      render({ error_message: null });
+      withStage({ error_message: null });
       expect(textarea()).toBeTruthy();
       expect(textarea().disabled).toBe(true);
 
-      render({ error_message: "Locked." });
+      withStage({ error_message: "Locked." });
       expect(textarea().disabled).toBe(false);
+    });
+
+    it("should limit the message to the length the backend stores", () => {
+      withStage({ error_message: "x".repeat(500) });
+      expect(textarea().getAttribute("maxlength")).toBe("500");
+      expect(fixture.nativeElement.textContent).toContain("500/500");
     });
 
     it("should fill in the suggestion when switched on", () => {
       withStage({ error_message: null, actions: [{ action_type: "LOCK_USER", action_value: null }] });
-      const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(true);
-      expect(spy).toHaveBeenCalledWith({ error_message: "Locked. Try again in about {duration}." });
+      expect(stored().error_message).toBe("Locked. Try again in about {duration}.");
+    });
+
+    it("should switch the message on and off from the checkbox", () => {
+      withStage({ error_message: null, actions: [{ action_type: "LOCK_USER", action_value: null }] });
+      const checkbox = () => fixture.nativeElement.querySelector("mat-checkbox input") as HTMLInputElement;
+
+      checkbox().click();
+      fixture.detectChanges();
+      expect(stored().has_error_message).toBe(true);
+      expect(stored().error_message).toBe("Locked. Try again in about {duration}.");
+      expect(textarea().disabled).toBe(false);
+
+      checkbox().click();
+      fixture.detectChanges();
+      expect(stored().has_error_message).toBe(false);
+      expect(stored().error_message).toBe("");
+      expect(textarea().disabled).toBe(true);
     });
 
     it("should leave out the timed half of a redundant pair", () => {
@@ -318,39 +413,40 @@ describe("ConditionalAccessStageItemComponent", () => {
 
     it("should clear the message when switched off", () => {
       withStage({ error_message: "Mine." });
-      const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(false);
-      expect(spy).toHaveBeenCalledWith({ error_message: null });
-      // The checkbox follows the stage, so it unticks once the parent has applied that emit - this
-      // component keeps no copy of the answer that could disagree with the data.
-      withStage({ error_message: null });
-      expect(component.hasCustomErrorMessage()).toBe(false);
+      expect(stored().error_message).toBe("");
     });
 
     it("should not carry a message across the stage it was written for", () => {
-      // The stages list tracks by $index, so removing a stage rebinds this component to the next one.
-      // Nothing about the message is held here, so switching on offers that stage's own suggestion -
-      // never text belonging to the stage that was removed.
+      // Nothing about the message is held here, so switching on offers the suggestion for the stage the item is
+      // bound to - never text belonging to a stage that was written before.
       withStage({ error_message: "Mine." });
       component.toggleErrorMessage(false);
       withStage({ error_message: null, actions: [{ action_type: "LOCK_USER", action_value: null }] });
-      const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(true);
-      expect(spy).toHaveBeenCalledWith({ error_message: "Locked. Try again in about {duration}." });
+      expect(stored().error_message).toBe("Locked. Try again in about {duration}.");
     });
 
     it("should switch on with an empty field when the stage has nothing to suggest", () => {
       withStage({ error_message: null, actions: [] });
-      const spy = jest.spyOn(component.updateStage, "emit");
       component.toggleErrorMessage(true);
-      expect(spy).toHaveBeenCalledWith({ error_message: "" });
+      expect(stored().error_message).toBe("");
     });
 
     it("should replace the message with the suggestion on reset", () => {
       withStage({ error_message: "Stale wording.", actions: [{ action_type: "DENY", action_value: null }] });
-      const spy = jest.spyOn(component.updateStage, "emit");
       component.resetErrorMessageToSuggestion();
-      expect(spy).toHaveBeenCalledWith({ error_message: "Access has been denied." });
+      expect(stored().error_message).toBe("Access has been denied.");
+    });
+
+    it("should reset the message from the button", () => {
+      withStage({ error_message: "Stale wording.", actions: [{ action_type: "DENY", action_value: null }] });
+      const button = fixture.nativeElement.querySelector(".ca-stage-error-message-row button") as HTMLButtonElement;
+      expect(button.disabled).toBe(false);
+      button.click();
+      fixture.detectChanges();
+      expect(stored().error_message).toBe("Access has been denied.");
+      expect(button.disabled).toBe(true);
     });
 
     it("should not offer a reset when the message already matches the suggestion", () => {
@@ -375,15 +471,10 @@ describe("ConditionalAccessStageItemComponent", () => {
       withStage({ error_message: "Mine.", actions: [{ action_type: "LOCK_USER", action_value: null }] });
       expect(component.suggestedErrorMessage()).toBe("Locked. Try again in about {duration}.");
 
-      const spy = jest.spyOn(component.updateStage, "emit");
       const actions: ConditionalAccessStageAction[] = [{ action_type: "PERMANENT_LOCK_USER", action_value: null }];
-      component.onActionsChange(actions);
-      // Only the actions travel: an error_message key here would mean the wording was regenerated.
-      expect(spy).toHaveBeenCalledWith({ actions });
-
-      withStage({ error_message: "Mine.", actions });
+      stageFields[0].actions().value.set(actions);
       expect(component.suggestedErrorMessage()).toBe("Your account has been locked.");
-      expect(component.stage().error_message).toBe("Mine.");
+      expect(stored().error_message).toBe("Mine.");
       expect(component.canResetErrorMessage()).toBe(true);
     });
 

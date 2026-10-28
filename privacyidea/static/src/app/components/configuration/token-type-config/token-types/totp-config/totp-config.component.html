@@ -16,9 +16,10 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel>
+<mat-expansion-panel [expanded]="panel.revealed()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@tokenTypeConfig.totp">TOTP</mat-panel-title>
+    <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.totpTokenTime"
@@ -42,16 +43,14 @@
         appearance="fill"
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeStep">Default Time Step</mat-label>
-        <mat-select
-          [value]="formData()[TOTP_TIME_STEP]"
-          (valueChange)="updateFormData(TOTP_TIME_STEP, $event)">
+        <mat-select [formField]="config().values[TOTP_TIME_STEP]">
           @for (step of totpSteps(); track step) {
             <mat-option [value]="step">{{ step }}</mat-option>
           }
         </mat-select>
         <app-clear-button
           matSuffix
-          (clearButtonClick)="clearField(TOTP_TIME_STEP); $event.stopPropagation()"></app-clear-button>
+          (clearButtonClick)="clearValue(config().values[TOTP_TIME_STEP]); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
 
       <mat-form-field
@@ -59,11 +58,13 @@
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeWindow">Default Time Window</mat-label>
         <input
-          [value]="formData()[TOTP_TIME_WINDOW] ?? ''"
-          (input)="updateFormData(TOTP_TIME_WINDOW, $any($event.target).valueAsNumber)"
+          [formField]="config().values[TOTP_TIME_WINDOW]"
           matInput
           placeholder="180"
           type="number" />
+        @if (hasError(config().values[TOTP_TIME_WINDOW], ERR.parse)) {
+          <mat-error i18n="@@tokenTypeConfig.invalidNumber">Enter a valid number.</mat-error>
+        }
       </mat-form-field>
     </div>
 
@@ -72,16 +73,14 @@
         appearance="fill"
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultHashlib">Default Hashlib</mat-label>
-        <mat-select
-          [value]="formData()[TOTP_HASHLIB]"
-          (valueChange)="updateFormData(TOTP_HASHLIB, $event)">
+        <mat-select [formField]="config().values[TOTP_HASHLIB]">
           @for (hashlib of hashLibOptions(); track hashlib.value) {
             <mat-option [value]="hashlib.value">{{ hashlib.label }}</mat-option>
           }
         </mat-select>
         <app-clear-button
           matSuffix
-          (clearButtonClick)="clearField(TOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
+          (clearButtonClick)="clearValue(config().values[TOTP_HASHLIB]); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
 
       <mat-form-field
@@ -89,11 +88,13 @@
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeShift">Default Time Shift</mat-label>
         <input
-          [value]="formData()[TOTP_TIME_SHIFT] ?? ''"
-          (input)="updateFormData(TOTP_TIME_SHIFT, $any($event.target).valueAsNumber)"
+          [formField]="config().values[TOTP_TIME_SHIFT]"
           matInput
           placeholder="0"
           type="number" />
+        @if (hasError(config().values[TOTP_TIME_SHIFT], ERR.parse)) {
+          <mat-error i18n="@@tokenTypeConfig.invalidNumber">Enter a valid number.</mat-error>
+        }
       </mat-form-field>
     </div>
   </div>

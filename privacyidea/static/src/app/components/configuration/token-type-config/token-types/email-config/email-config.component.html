@@ -18,9 +18,10 @@
 -->
 <mat-expansion-panel
   id="email"
-  [expanded]="expanded()">
+  [expanded]="expanded() || panel.revealed()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@tokenTypeConfig.eMail">E-Mail</mat-panel-title>
+    <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.eMailTokenChallenge"
@@ -34,9 +35,7 @@
         class="input-width-l responsive-margin-bottom-1090">
         <mat-label i18n="@@tokenTypeConfig.smtpServerConfiguration">SMTP Server Configuration</mat-label>
         @if (smtpServersListable()) {
-          <mat-select
-            [value]="formData()[EMAIL_SMTP_SERVER_KEY]"
-            (valueChange)="updateFormData(EMAIL_SMTP_SERVER_KEY, $event)">
+          <mat-select [formField]="config().values[EMAIL_SMTP_SERVER_KEY]">
             @for (server of smtpServers(); track server) {
               <mat-option [value]="server">{{ server }}</mat-option>
             }
@@ -44,12 +43,11 @@
         } @else {
           <input
             matInput
-            [value]="formData()[EMAIL_SMTP_SERVER_KEY] ?? ''"
-            (input)="updateFormData(EMAIL_SMTP_SERVER_KEY, $event.target.value)" />
+            [formField]="config().values[EMAIL_SMTP_SERVER_KEY]" />
         }
         <app-clear-button
           matSuffix
-          (clearButtonClick)="clearField(EMAIL_SMTP_SERVER_KEY); $event.stopPropagation()"></app-clear-button>
+          (clearButtonClick)="clearValue(config().values[EMAIL_SMTP_SERVER_KEY]); $event.stopPropagation()"></app-clear-button>
         @if (smtpServersListable()) {
           <mat-hint i18n="@@tokenTypeConfig.selectPredefinedSmtp"
             >Select a predefined
@@ -71,10 +69,12 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.otpValidityTime">OTP Validity Time</mat-label>
         <input
-          [value]="formData()[EMAIL_VALIDITY_TIME_KEY] ?? ''"
-          (input)="updateFormData(EMAIL_VALIDITY_TIME_KEY, $any($event.target).valueAsNumber)"
+          [formField]="config().values[EMAIL_VALIDITY_TIME_KEY]"
           matInput
           type="number" />
+        @if (hasError(config().values[EMAIL_VALIDITY_TIME_KEY], ERR.parse)) {
+          <mat-error i18n="@@tokenTypeConfig.invalidNumber">Enter a valid number.</mat-error>
+        }
         <mat-hint i18n="@@tokenTypeConfig.timeSecondsWhich"
           >The time in seconds for which the sent OTP value is valid for authentication.</mat-hint
         >

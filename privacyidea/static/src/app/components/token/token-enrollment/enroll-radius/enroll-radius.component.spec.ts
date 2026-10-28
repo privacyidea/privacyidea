@@ -25,6 +25,8 @@ import { TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService, MockContentService } from "@testing/mock-services";
 import { EnrollRadiusComponent } from "./enroll-radius.component";
 import { ContentService } from "@services/content/content.service";
+import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 describe("EnrollRadiusComponent", () => {
   let component: EnrollRadiusComponent;
@@ -49,5 +51,37 @@ describe("EnrollRadiusComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the checkbox to the model and marks the field dirty", async () => {
+      expect(component.checkPinLocallyForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture);
+
+      expect(component.checkPinLocally()).toBe(true);
+      expect(component.checkPinLocallyForm().dirty()).toBe(true);
+    });
+
+    it("writes the picked RADIUS server to the model", async () => {
+      (TestBed.inject(SystemService) as unknown as MockSystemService).radiusServers.set(["radius-a", "radius-b"]);
+      await flushFixture(fixture);
+
+      await pickOption(fixture, matSelectAt(fixture), 1);
+
+      expect(component.radiusServerConfiguration()).toBe("radius-b");
+      expect(component.radiusServerConfigurationForm().dirty()).toBe(true);
+    });
+
+    it("renders the required error of the server select once the build was refused", async () => {
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      expect(component.buildEnrollmentArgs({ type: "radius" } as TokenEnrollmentData)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("RADIUS Server is required");
+    });
   });
 });
