@@ -265,14 +265,15 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_ip_attempt(ip, "s2", [AuthEventType.PASSWORD_FAIL])
         self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
-    def test_count_ip_attempts_a_log_only_outcome_represents_its_attempt_uncounted(self):
-        # Unlike a client signal, a log-only outcome is what the attempt reached: it represents the attempt, so the
-        # challenge before it is not counted, and no policy can track the outcome itself.
+    def test_count_ip_attempts_a_post_authentication_fail_represents_its_attempt(self):
+        # Unlike a client signal, an error after the authentication is what the attempt reached: it represents the
+        # attempt, so a policy tracking it counts the attempt, and one tracking the challenge before it does not.
         ip = "10.1.0.10"
         self._seed_ip_attempt(ip, "p1", [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.POST_AUTHENTICATION_FAIL])
         self._seed_ip_attempt(ip, "p2", [AuthEventType.CHALLENGE_TRIGGERED])
         self.assertEqual(1, count_ip_attempts(ip, [AuthEventType.CHALLENGE_TRIGGERED], 300))
-        self.assertNotIn(AuthEventType.POST_AUTHENTICATION_FAIL, TRACKABLE_EVENT_TYPES)
+        self.assertEqual(1, count_ip_attempts(ip, [AuthEventType.POST_AUTHENTICATION_FAIL], 300))
+        self.assertIn(AuthEventType.POST_AUTHENTICATION_FAIL, TRACKABLE_EVENT_TYPES)
 
     def test_count_ip_attempts_login_success_supersedes_failure_in_attempt(self):
         # A LOGIN_SUCCESS is terminal for its attempt (fetched even though untracked), so a failed row in the same

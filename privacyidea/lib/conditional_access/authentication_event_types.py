@@ -183,7 +183,7 @@ class AuthEventType(str, Enum):
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
     # The request was classified as a success or a pending challenge, but still ended in an error response, e.g.
     # raised by a post-policy. An error after a failed authentication keeps the failure's own type. The error message
-    # is recorded in the other info. Only for the log, see LOG_ONLY_EVENT_TYPES.
+    # is recorded in the other info.
     POST_AUTHENTICATION_FAIL = "POST_AUTHENTICATION_FAIL"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
@@ -498,21 +498,13 @@ SERVER_FAILURE_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
 #: have in common is that neither is an outcome the attempt reached.
 NON_REPRESENTATIVE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
-#: Event types that are an outcome an attempt reached, but are written for the log only and are not offered to the
-#: conditional-access policies. Unlike the conditional-access rejections and the client signals they still represent
-#: their attempt, so an attempt that ends in one is classified by it - and, being untracked, counted by no policy.
-LOG_ONLY_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
-    AuthEventType.POST_AUTHENTICATION_FAIL,
-})
-
 #: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, the
-#: signals about the request's client, the server failures and the log-only outcomes. The first two are no outcome an
-#: authentication attempt reached, which is also why neither may represent one - see
-#: :data:`NON_REPRESENTATIVE_EVENT_TYPES`. A server failure or a log-only outcome is the outcome of its attempt and
-#: represents it, which is why the two sets answer different questions: one what a policy may count, the other what
-#: may stand for an attempt.
+#: signals about the request's client, and the server failures. The first two are no outcome an authentication attempt
+#: reached, which is also why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`. A server failure
+#: is the outcome of its attempt and represents it, which is why the two sets answer different questions: one what a
+#: policy may count, the other what may stand for an attempt.
 UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = (CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
-                                                     | SERVER_FAILURE_EVENT_TYPES | LOG_ONLY_EVENT_TYPES)
+                                                     | SERVER_FAILURE_EVENT_TYPES)
 
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own

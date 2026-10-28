@@ -162,7 +162,10 @@ Failure
      the authentication succeeded or triggered a challenge, but the request was still answered with an error, for
      example raised by a policy that is evaluated after the authentication. If the authentication failed, the entry
      keeps the type of that failure instead, and records the error message as well if the error was not the failure's
-     own response. The error message is recorded in the other info as ``error``. A conditional access policy cannot count it.
+     own response. The error message is recorded in the other info as ``error``. The ready-made failure rate limits
+     leave it out: the authentication itself succeeded, and the error mostly comes from the configuration, e.g.
+     conflicting policies, rather than from the user or an attack. Counting it would lock users out who give correct
+     credentials. A wrong credential is still counted, since a failed authentication keeps its own type.
    ``DEVICE_TOKEN_REUSED``
      a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
      device series, and every other remembered device of this user, is revoked.
@@ -182,8 +185,7 @@ policy's *deny* action refused this single request).
 
 These entries record that the refusal happened, and can be filtered and sorted
 like any other, so an administrator can see how often a lock or block took
-effect. They, ``SUSPENDED_API_KEY_USED``, ``USER_STORE_UNAVAILABLE`` and
-``POST_AUTHENTICATION_FAIL`` are,
+effect. They, ``SUSPENDED_API_KEY_USED`` and ``USER_STORE_UNAVAILABLE`` are,
 however, the only types a conditional access policy cannot count.
 
 .. _authentication_log_reasons:
