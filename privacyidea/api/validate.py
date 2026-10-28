@@ -1521,7 +1521,8 @@ def check_remember_device():
     period or not yet enrolled, or is excluded by the token restrictions of the
     ``disabled_token_types``, ``tokentype``, ``serial`` or ``tokeninfo`` policies.
     The cookie is then left untouched, so the device is recognised again once a
-    token is usable.
+    token is usable. The same holds while ``remember_device_idle_timeout``
+    policies of the same priority set different values.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1589,43 +1590,53 @@ def check_remember_device():
         # a token of the user is usable, like after a refusal by conditional access.
         info = token_refusal
     else:
-        idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
-        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout)
-        if result.status == RememberStatus.RECOGNIZED:
-            recognised = True
-            cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
-            info = "remembered device recognised"
-        elif result.status == RememberStatus.GRACE:
-            # Tolerated concurrent/duplicate request: recognised, but do not
-            # rotate (the client keeps the cookie it already has).
-            recognised = True
-            info = "remembered device recognised again within the grace window, cookie not rotated"
-        elif result.status == RememberStatus.FOREIGN:
-            # The cookie is live but belongs to a different user on this same
-            # client (a shared browser). Not recognised, but leave the cookie
-            # alone - clearing it would wipe the rightful user's remembered device
-            # off the shared browser just because someone else logged in.
-            info = "device not recognised: the cookie belongs to another user of this client"
-        elif result.status == RememberStatus.THEFT:
-            # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
-            # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
-            # authentication event, so conditional access can lock the account, block the source IP or notify as
-            # configured - and only then escalate. The order matters: handle_device_theft commits, so a lock wait
-            # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
-            # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
-            # replayed series, is handle_device_theft's to state.
-            log.warning(f"Persistent device cookie reuse detected for client {g.get('client_id')!r}; "
-                        f"series invalidated and all remembered devices of this user revoked.")
-            g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
-                                      add_with_comma=True)
-            log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
-                               other_info={"client_id": g.get("client_id")})
-            handle_device_theft(identity)
-            cookie_action = CookieAction("clear")
-            info = "device not recognised: cookie reuse detected, all remembered devices of the user revoked"
-        else:  # miss: the cookie is dead (unknown, expired or idle) - clear it
-            cookie_action = CookieAction("clear")
-            info = "device not recognised: the cookie is unknown, expired or idle and is cleared"
+        try:
+            idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
+        except PolicyError as exc:
+            # Policies of the same priority that set different idle timeouts. The cookie is neither consumed nor
+            # cleared, so the device is recognised again once the policies agree.
+            log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                        f"{exc.get_description()}. The device is kept and recognised again once the policies "
+                        f"agree.")
+            info = f"device not recognised: {exc.get_description()}"
+        else:
+            result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"),
+                                                    idle_timeout)
+            if result.status == RememberStatus.RECOGNIZED:
+                recognised = True
+                cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
+                info = "remembered device recognised"
+            elif result.status == RememberStatus.GRACE:
+                # Tolerated concurrent/duplicate request: recognised, but do not
+                # rotate (the client keeps the cookie it already has).
+                recognised = True
+                info = "remembered device recognised again within the grace window, cookie not rotated"
+            elif result.status == RememberStatus.FOREIGN:
+                # The cookie is live but belongs to a different user on this same
+                # client (a shared browser). Not recognised, but leave the cookie
+                # alone - clearing it would wipe the rightful user's remembered device
+                # off the shared browser just because someone else logged in.
+                info = "device not recognised: the cookie belongs to another user of this client"
+            elif result.status == RememberStatus.THEFT:
+                # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
+                # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
+                # authentication event, so conditional access can lock the account, block the source IP or notify as
+                # configured - and only then escalate. The order matters: handle_device_theft commits, so a lock wait
+                # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
+                # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
+                # replayed series, is handle_device_theft's to state.
+                log.warning(f"Persistent device cookie reuse detected for client {g.get('client_id')!r}; "
+                            f"series invalidated and all remembered devices of this user revoked.")
+                g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
+                                          add_with_comma=True)
+                log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
+                                   other_info={"client_id": g.get("client_id")})
+                handle_device_theft(identity)
+                cookie_action = CookieAction("clear")
+                info = "device not recognised: cookie reuse detected, all remembered devices of the user revoked"
+            else:  # miss: the cookie is dead (unknown, expired or idle) - clear it
+                cookie_action = CookieAction("clear")
+                info = "device not recognised: the cookie is unknown, expired or idle and is cleared"
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it

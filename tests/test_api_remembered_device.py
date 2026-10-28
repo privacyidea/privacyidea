@@ -588,6 +588,33 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         finally:
             delete_policy("remember_idle")
 
+    def test_11b_conflicting_idle_timeouts_keep_the_device(self):
+        # Idle timeout policies of the same priority with different values answer "not recognised" instead of an
+        # error. The audit and the log name the conflict, and the cookie is neither rotated nor cleared.
+        client, api_key = create_client("idle conflict client", "privacyidea-cp")
+        device, cookie = create_remembered_device(self.identity, client.id)
+        stored_series_id = device.series_id
+        set_policy("idle_week", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=7d",
+                   priority=1)
+        set_policy("idle_hours", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=4h",
+                   priority=1)
+        try:
+            with self.assertLogs("privacyidea.api.validate", level="WARNING") as logs:
+                res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        finally:
+            delete_policy("idle_week")
+            delete_policy("idle_hours")
+        self.assertEqual([], self._cookie_headers(res))
+        self.assertEqual(1, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+        info = self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"]
+        self.assertTrue(info.startswith("device not recognised: There are policies with conflicting actions"), info)
+        self.assertIn("idle_week", info)
+        self.assertIn("idle_hours", info)
+        self.assertTrue(any("idle_week" in line and "is kept" in line for line in logs.output), logs.output)
+
+        res = self._recognise(api_key=api_key, cookie=cookie)
+        self.assertEqual(1, len(self._cookie_headers(res)))
+
     def test_12_device_needs_a_usable_token(self):
         # While no token of the user could be used for a login, the device is not recognised. The cookie is neither
         # rotated nor cleared, so the device is recognised again once a token is usable.
