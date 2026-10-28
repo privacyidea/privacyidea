@@ -1210,7 +1210,7 @@ class UtilsTestCase(MyTestCase):
 
     def test_41_version_number_is_looked_up_once(self):
         # The process keeps the version of its first lookup, also when the installed package changes later.
-        get_version_number.cache_clear()
+        privacyidea_utils._get_installed_version.cache_clear()
         try:
             with mock.patch.object(privacyidea_utils.metadata, "version", return_value="3.14.1") as version_lookup:
                 self.assertEqual("3.14.1", get_version_number())
@@ -1219,7 +1219,21 @@ class UtilsTestCase(MyTestCase):
                 self.assertEqual("privacyIDEA 3.14.1", get_version())
             version_lookup.assert_called_once_with("privacyidea")
         finally:
-            get_version_number.cache_clear()
+            privacyidea_utils._get_installed_version.cache_clear()
+
+    def test_42_failed_version_lookup_is_not_kept(self):
+        # A failed lookup gives "unknown", and the next call looks up the version again.
+        privacyidea_utils._get_installed_version.cache_clear()
+        try:
+            with mock.patch.object(privacyidea_utils.metadata, "version",
+                                   side_effect=[privacyidea_utils.metadata.PackageNotFoundError("privacyidea"),
+                                                "3.14.1"]) as version_lookup:
+                self.assertEqual("unknown", get_version_number())
+                self.assertEqual("3.14.1", get_version_number())
+                self.assertEqual("3.14.1", get_version_number())
+            self.assertEqual(2, version_lookup.call_count)
+        finally:
+            privacyidea_utils._get_installed_version.cache_clear()
 
 
 class ModuleAllowlistTestCase(MyTestCase):
