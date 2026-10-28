@@ -154,7 +154,10 @@ Failure
      required enrollment policy is missing, or the registration data from the
      authenticator was rejected. The ready-made failure rate limits leave it out.
    ``NOT_AUTHORIZED``
-     an authorization policy or the server configuration refused the authentication.
+     an authorization policy or the server configuration refused the authentication. A policy that refuses the token
+     used, like :ref:`tokentype <tokentype_policy>`, may also refuse an authentication that failed, e.g. with a wrong
+     OTP. The request is then answered with the policy's refusal, so it is recorded as ``NOT_AUTHORIZED`` as well. What
+     was found about the token, e.g. ``WRONG_OTP``, is still shown in the details.
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.

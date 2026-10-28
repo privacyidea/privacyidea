@@ -317,6 +317,13 @@ def _reject_not_authorized(request: Request, reason: AuthEventReason, policies: 
     NOT_AUTHORIZED row here would bury that reason and hand the conditional-access counters an attempt the lock itself
     produced.
 
+    The staged event is replaced even when it records a failed authentication, e.g. a wrong OTP for a token whose
+    type the tokentype policy does not allow: the request is answered with the policy's refusal rather than with the
+    failure, and the log records what the client received. The per-token findings, e.g. the wrong OTP, stay in the
+    reason detail. :func:`~privacyidea.api.before_after.record_post_authentication_failure` keeps a failure's type
+    instead, because the error it handles is unexpected and says nothing about the request, while this refusal is a
+    deliberate decision about it.
+
     Classifying and raising are one step, so the event is marked as answered by this very error (see
     ``rejected_by_post_policy``) only when that error is the response.
 
