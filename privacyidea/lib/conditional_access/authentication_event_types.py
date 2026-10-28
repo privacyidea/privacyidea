@@ -18,6 +18,8 @@
 import logging
 from enum import Enum
 
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
+
 log = logging.getLogger(__name__)
 
 # Key under which the classified AuthEventType is carried from lib to api layer.
@@ -85,7 +87,7 @@ LOG_TRANSACTION_ID_KEY = "log_transaction_id"
 # state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
 #: The classification keys stripped at the lib/api boundary, so none of them can reach a client.
 INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
-                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY})
+                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY, LOG_AUTORESYNC_KEY})
 
 
 def strip_internal_classification(details):

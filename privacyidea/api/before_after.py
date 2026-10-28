@@ -86,9 +86,10 @@ from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError, ResolverError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventOutcome, AuthEventType,
                                                                            outcome_of)
-from privacyidea.api.lib.utils import log_authentication
+from privacyidea.api.lib.utils import log_authentication, add_autoresync_to_audit
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -802,6 +803,8 @@ def auth_error(error):
         # client-facing response (hide_specific_error_message) is applied
         # centrally in mask_authentication_error_response (see after_request).
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
+        if getattr(error, "details", None):
+            add_autoresync_to_audit(error.details.pop(LOG_AUTORESYNC_KEY, None))
 
     return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)
 
