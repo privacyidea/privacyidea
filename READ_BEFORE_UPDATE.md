@@ -209,8 +209,9 @@
 * **An authentication answered with an error is audited as a failure** — An authentication that succeeds or
   triggers a challenge but is then answered with an error, e.g. because a policy refuses it, is now recorded in the
   audit log with `success` false and `authentication` `REJECT`. The authentication that starts an enrollment via
-  multichallenge is recorded as a challenge. The `auth_max_success` and `auth_max_fail` policies count these requests
-  accordingly: as a failed authentication, and the enrollment start not as a successful one.
+  multichallenge is recorded as a challenge. The `auth_max_success` and `auth_max_fail` policies, which count the
+  requests to `/validate/check` and `/auth`, count these requests accordingly: as a failed authentication, and the
+  enrollment start not as a successful one.
 
 ## Update from 3.13 to 3.14
 
