@@ -117,12 +117,12 @@ describe("EditEnvironmentConditionsComponent", () => {
       expect(chipTexts()).toEqual(["MyCustomAgent"]);
     });
 
-    it("should show the label of a preset user agent", () => {
-      const labelFor = jest.spyOn(TestBed.inject(IntegrationsService), "labelForPolicyValue");
-      labelFor.mockImplementation((value: string) => (value === "PAM" ? "PAM Module" : value));
+    it("should show the label and stored value of a preset user agent", () => {
+      const displayFor = jest.spyOn(TestBed.inject(IntegrationsService), "displayForPolicyValue");
+      displayFor.mockImplementation((value: string) => (value === "PAM" ? "PAM Module (PAM)" : value));
       fixture.componentRef.setInput("policy", { name: "test-policy", user_agents: ["PAM"] });
       fixture.detectChanges();
-      expect(chipTexts()).toEqual(["PAM Module"]);
+      expect(chipTexts()).toEqual(["PAM Module (PAM)"]);
     });
 
     it("should offer the clear button only while user agents exist", () => {
@@ -147,6 +147,11 @@ describe("EditEnvironmentConditionsComponent", () => {
       component.clearUserAgents();
       expect(spy).toHaveBeenCalledWith({ user_agents: [] });
     });
+  });
+
+  it("should show a selected preset with its label and stored value, and a custom value as it is", () => {
+    expect(component.getUserAgentDisplay("privacyIDEA-Shibboleth")).toBe("Shibboleth (privacyIDEA-Shibboleth)");
+    expect(component.getUserAgentDisplay("Shibboleth")).toBe("Shibboleth");
   });
 
   it("should clear valid time control", () => {

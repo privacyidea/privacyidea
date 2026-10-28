@@ -165,7 +165,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
       label: integration.label
     }))
   );
-  getUserAgentLabel = (identifier: string): string => this.integrationsService.labelForPolicyValue(identifier);
+  getUserAgentDisplay = (userAgent: string): string => this.integrationsService.displayForPolicyValue(userAgent);
 
   readonly availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   readonly selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
