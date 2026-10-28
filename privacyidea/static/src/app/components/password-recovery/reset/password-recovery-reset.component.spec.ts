@@ -171,6 +171,19 @@ describe("PasswordRecoveryResetComponent", () => {
     expect(component.errorMessage()).toBe("Not allowed");
     expect(component.submitting()).toBe(false);
   });
+
+  it("shows the generic message when the server sends no message", () => {
+    recoverService.resetPassword.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 }))
+    );
+    component.password.set("secret");
+    component.repeatPassword.set("secret");
+
+    component.onSubmit();
+
+    expect(component.errorMessage()).toBe("The password could not be changed.");
+    expect(component.submitting()).toBe(false);
+  });
 });
 
 describe("PasswordRecoveryResetComponent with a link without code", () => {

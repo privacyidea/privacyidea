@@ -125,7 +125,6 @@ export class PasswordRecoveryResetComponent {
           this.submitting.set(false);
           this.errorMessage.set(
             err.error?.result?.error?.message ||
-              err.message ||
               $localize`:@@passwordRecovery.resetFailed:The password could not be changed.`
           );
         }
