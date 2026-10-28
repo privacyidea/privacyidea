@@ -54,7 +54,7 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
                                            hide_container_info, force_server_generate_key, verify_enrollment,
-                                           rerun_user_dependent_prepolicies, _get_webauthn_policy_actions)
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
@@ -971,17 +971,3 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # The parameters the pre-policies set reach the copy as well
         self.assertEqual(ORIGIN, options["HTTP_ORIGIN"])
         self.assertEqual(request.all_data[FIDO2PolicyAction.TIMEOUT], options[FIDO2PolicyAction.TIMEOUT])
-
-    def test_29h_webauthn_request_action_names(self):
-        # The action names of the authentication and the enrollment scope include those of the authorization scope.
-        # The class info keeps the actions of each scope apart.
-        policy_info = WebAuthnTokenClass.get_class_info('policy')
-        authorization_actions = set(policy_info[SCOPE.AUTHZ])
-        for scope in (SCOPE.AUTH, SCOPE.ENROLL):
-            action_names = _get_webauthn_policy_actions(scope)
-            self.assertIsInstance(action_names, frozenset)
-            self.assertEqual(set(policy_info[scope]) | authorization_actions, action_names)
-            self.assertIn(FIDO2PolicyAction.TIMEOUT, action_names)
-            self.assertIn(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, action_names)
-        self.assertNotIn(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                         WebAuthnTokenClass.get_class_info('policy')[SCOPE.AUTH])

@@ -2412,21 +2412,6 @@ def indexedsecret_force_attribute(request, action):
     return True
 
 
-@functools.lru_cache(maxsize=2)
-def _get_webauthn_policy_actions(scope: str) -> frozenset[str]:
-    """
-    Return the names of the WebAuthn policy actions of the given scope and of the authorization scope.
-
-    The names come from the token class only, so they are built once per scope and process. The class info translates
-    all of its descriptions on every call, which costs more than the policy checks that use the names.
-
-    :param scope: SCOPE.AUTH or SCOPE.ENROLL
-    :return: The action names
-    """
-    policy_info = WebAuthnTokenClass.get_class_info('policy')
-    return frozenset(policy_info.get(scope)) | frozenset(policy_info.get(SCOPE.AUTHZ))
-
-
 def webauthntoken_request(request, action):
     """
     This is a WebAuthn token specific wrapper for all endpoints using WebAuthn tokens.
@@ -2492,58 +2477,42 @@ def webauthntoken_request(request, action):
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
     if scope:
-        actions = _get_webauthn_policy_actions(scope)
-        if FIDO2PolicyAction.TIMEOUT in actions:
-            timeout_policies = Match \
-                .user(g,
-                      scope=scope,
-                      action=FIDO2PolicyAction.TIMEOUT,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=True)
-            timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
+        user_object = request.User if hasattr(request, 'User') else None
+        timeout_policies = Match.user(g, scope=scope, action=FIDO2PolicyAction.TIMEOUT,
+                                      user_object=user_object).action_values(unique=True)
+        timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
 
-            request.all_data[FIDO2PolicyAction.TIMEOUT] \
-                = timeout * 1000
+        request.all_data[FIDO2PolicyAction.TIMEOUT] = timeout * 1000
 
-        if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in actions:
-            user_verification_requirement_policies = Match \
-                .user(g,
-                      scope=scope,
-                      action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=True)
-            user_verification_requirement = list(user_verification_requirement_policies)[0] \
-                if user_verification_requirement_policies \
-                else DEFAULT_USER_VERIFICATION_REQUIREMENT
-            if user_verification_requirement not in USER_VERIFICATION_LEVELS:
-                raise PolicyError(
-                    "{!s} must be one of {!s}"
-                    .format(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                            ", ".join(USER_VERIFICATION_LEVELS)))
+        user_verification_requirement_policies = Match.user(
+            g, scope=scope, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+            user_object=user_object).action_values(unique=True)
+        user_verification_requirement = (list(user_verification_requirement_policies)[0]
+                                         if user_verification_requirement_policies
+                                         else DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+            raise PolicyError(
+                "{!s} must be one of {!s}"
+                .format(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+                        ", ".join(USER_VERIFICATION_LEVELS)))
 
-            request.all_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] \
-                = user_verification_requirement
+        request.all_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
 
-        if FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST in actions:
-            allowed_aaguids_pols = Match \
-                .user(g,
-                      scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
-                      action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=False,
-                               allow_white_space_in_action=True)
-            allowed_aaguids = set(
-                aaguid
-                for allowed_aaguid_pol in allowed_aaguids_pols
-                for aaguid in allowed_aaguid_pol.split()
-            )
+        allowed_aaguids_pols = Match.user(
+            g, scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
+            action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+            user_object=user_object).action_values(unique=False, allow_white_space_in_action=True)
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
 
-            if allowed_aaguids:
-                request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] \
-                    = list(allowed_aaguids)
-            elif scope == SCOPE.AUTH:
-                # Only a policy restricts the authenticators that may authenticate
-                request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
+        if allowed_aaguids:
+            request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] = list(allowed_aaguids)
+        elif scope == SCOPE.AUTH:
+            # Only a policy restricts the authenticators that may authenticate
+            request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
 
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
 
