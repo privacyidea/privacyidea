@@ -203,12 +203,8 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
-* **For Oracle operators: empty strings in `user_lock_state` and `metric_aggregate`** — Oracle stores an empty string
-  as NULL, which these tables cannot hold in all places. On Oracle, the columns `resolver` and `realm` of
-  `user_lock_state` and `labels_key` and `node` of `metric_aggregate` store the character `chr(0)` instead of an empty
-  string, and privacyIDEA reads it back as an empty string. Scripts or reporting tools that read these tables directly
-  see `chr(0)` there, e.g. in the lock of a local database administrator or in a metric without labels. Other
-  databases are not affected.
+* **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
+  describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
 ## Update from 3.13 to 3.14
 
