@@ -62,7 +62,8 @@
                 tabindex="0"
                 [matTooltip]="device.client_type ?? ''"
                 (click)="goToClient(device)"
-                (keydown.enter)="goToClient(device)">
+                (keydown.enter)="goToClient(device)"
+                (keydown.space)="$event.preventDefault(); goToClient(device)">
                 {{ device.client_name || device.client_id }}
               </a>
             } @else {

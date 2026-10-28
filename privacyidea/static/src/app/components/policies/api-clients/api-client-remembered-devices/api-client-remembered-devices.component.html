@@ -81,7 +81,8 @@
                 role="button"
                 tabindex="0"
                 (click)="goToUser(device)"
-                (keydown.enter)="goToUser(device)">
+                (keydown.enter)="goToUser(device)"
+                (keydown.space)="$event.preventDefault(); goToUser(device)">
                 {{ device.user }}@{{ device.realm }}
               </a>
             } @else {
