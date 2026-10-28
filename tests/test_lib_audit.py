@@ -738,6 +738,16 @@ class AuditTestCase(MyTestCase):
             audit._truncate_data()
             self.assertEqual(500, len(audit.audit_data.get("serial")))
 
+    def test_17_add_to_log(self):
+        self.Audit.log({"info": "first"})
+        self.Audit.add_to_log({"info": "second"}, add_with_comma=True)
+        self.assertEqual("first,second", self.Audit.audit_data.get("info"))
+        # A value logged as None counts as no value
+        self.Audit.log({"info": None})
+        self.Audit.add_to_log({"info": "only"}, add_with_comma=True)
+        self.assertEqual("only", self.Audit.audit_data.get("info"))
+        self.Audit.audit_data = {}
+
 
 class AuditEngineOptionsTestCase(unittest.TestCase):
     """
