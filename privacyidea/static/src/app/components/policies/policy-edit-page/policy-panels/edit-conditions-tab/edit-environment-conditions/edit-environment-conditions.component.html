@@ -104,7 +104,7 @@
     <div class="user-agent-list">
       @for (userAgent of selectedUserAgents(); track $index) {
         <div class="user-agent-chip-edit">
-          <span>{{ getUserAgentLabel(userAgent) }}</span>
+          <span>{{ getUserAgentDisplay(userAgent) }}</span>
           <button
             mat-icon-button
             (click)="removeUserAgent(userAgent)"
@@ -139,7 +139,12 @@
         (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
         panelClass="auto-width-dropdown">
         @for (ua of availableUserAgentPresets(); track ua.key) {
-          <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
+          <mat-option [value]="ua.key">
+            {{ ua.label }}
+            @if (ua.key !== ua.label) {
+              <span class="user-agent-option-value">{{ ua.key }}</span>
+            }
+          </mat-option>
         }
 
         @if (availableUserAgentPresets().length === 0) {

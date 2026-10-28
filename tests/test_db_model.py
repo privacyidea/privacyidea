@@ -402,7 +402,7 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(p2.active, p2.active)
 
         # update
-        self.assertTrue(p.user == "", p.user)
+        self.assert_empty_string(p.user)
         p.user = "cornelius"
         p.resolver = "*"
         p.client = "0.0.0.0"
@@ -803,7 +803,7 @@ class ResolverRealmTestCase(MyTestCase):
                       realm_name="realm1").save()
 
         self.assertIn(res.id, [x.resolver.id for x in re1.resolver_list])
-        self.assertEqual(re1.resolver_list[0].node_uuid, "", re1.resolver_list[0])
+        self.assert_empty_string(re1.resolver_list[0].node_uuid, re1.resolver_list[0])
         re1.delete()
 
         re2 = Realm("realm2")

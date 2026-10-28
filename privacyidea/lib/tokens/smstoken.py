@@ -46,7 +46,6 @@ The Gateways are defined in the SMSProvider Modules.
 This code is tested in tests/test_lib_tokens_sms
 """
 
-import datetime
 import logging
 import traceback
 from json import loads
@@ -65,6 +64,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      get_smsgateway)
 from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
+from privacyidea.lib.tokens.sent_otp_validity import SentOtpValidityMixin
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.lib.token import create_challenge
 
@@ -81,7 +81,7 @@ class SMSAction:
     GATEWAYS = "sms_gateways"
 
 
-class SmsTokenClass(HotpTokenClass):
+class SmsTokenClass(SentOtpValidityMixin, HotpTokenClass):
     """
     The SMS token sends an SMS containing an OTP via some kind of
     gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
@@ -291,13 +291,16 @@ class SmsTokenClass(HotpTokenClass):
                 phone = get_required(param, "phone", allow_empty=True)
                 self.write_tokeninfo("phone", phone)
                 self.remove_tokeninfo(self.DYNAMIC_PHONE_KEY)
-
             # in case of the sms token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
             if "genkey" not in param and "otpkey" not in param:
                 param['genkey'] = 1
 
         HotpTokenClass.update(self, param, reset_failcount)
+        if not verify:
+            # The new key resets the counter, the record of a value sent with the old key no longer applies. Removed
+            # only once the update succeeded, a failed one keeps the old key and counter.
+            self._remove_sent_otp_validity()
         return
 
     @log_with(log)
@@ -340,10 +343,9 @@ class SmsTokenClass(HotpTokenClass):
 
         reply_dict = {'attributes': {'state': transactionid}}
         validity = self._get_sms_timeout()
+        valid_until = self._sent_otp_valid_until(validity)
 
         if self.is_active() is True:
-            counter = self.get_otp_count()
-            log.debug(f"counter={counter!r}")
             # At this point we must not bail out in case of a
             # Gateway error, since checkPIN is successful. A bailout
             # would cancel the checking of the other tokens
@@ -351,20 +353,22 @@ class SmsTokenClass(HotpTokenClass):
                 data = None
                 # Only if this is NOT a multichallenge enrollment, we try to send the sms
                 if options.get("session") != ChallengeSession.ENROLLMENT:
-                    self.inc_otp_counter(counter, reset=False)
+                    # Recorded before sending: a transport that fails after it delivered the value must not leave it
+                    # unlimited
+                    otp = self._claim_otp_to_send(valid_until)
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
-                        message=message_template, options=options)
+                        message=message_template, options=options, otp=otp)
 
                     # Create the challenge in the database
                     if is_true(get_from_config("sms.concurrent_challenges")):
-                        data = {"otp": self.get_otp()[2]}
+                        data = {"otp": otp}
                 db_challenge = create_challenge(self.token.serial,
                                                 transaction_id=transactionid,
                                                 challenge=options.get("challenge"),
                                                 data=data,
                                                 session=options.get("session"),
-                                                validitytime=validity)
+                                                expiration=valid_until)
                 transactionid = transactionid or db_challenge.transaction_id
             except Exception as e:
                 info = _("The PIN was correct, but the SMS could not be sent!")
@@ -374,7 +378,7 @@ class SmsTokenClass(HotpTokenClass):
                 if is_true(options.get("exception")):
                     raise Exception(info)
 
-        expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=validity)
+        expiry_date = valid_until.astimezone().replace(tzinfo=None)
         reply_dict['attributes']['valid_until'] = f"{expiry_date!s}"
 
         return success, return_message, transactionid, reply_dict
@@ -394,7 +398,7 @@ class SmsTokenClass(HotpTokenClass):
         """
         options = options or {}
 
-        ret = HotpTokenClass.check_otp(self, anOtpVal, counter, window, options)
+        ret = super().check_otp(anOtpVal, counter, window, options)
         if ret < 0 and is_true(get_from_config("sms.concurrent_challenges")):
             challenge_data = options.get("data", {})
             saved_otp = challenge_data.get("otp") if challenge_data else None
@@ -404,25 +408,22 @@ class SmsTokenClass(HotpTokenClass):
         if ret >= 0 and self._get_auto_sms(options):
             # get message template from user specific policies
             message = self._get_sms_text(options)
-            self.inc_otp_counter(ret, reset=False)
-            success, message = self._send_sms(message=message, options=options)
+            # The value is meant for a later login and has no time limit: its counter is above every record
+            success, message = self._send_sms(message=message, options=options, otp=self._claim_otp_to_send(None))
             log.debug(f"AutoSMS: send new SMS: {success!s}")
             log.debug(f"AutoSMS: {message!r}")
         return ret
 
     @log_with(log)
-    def _send_sms(self, message="<otp>", options=None):
+    def _send_sms(self, message: str = "<otp>", options: dict | None = None, *, otp: str) -> tuple[bool, str]:
         """
         send sms
 
         :param message: the sms submit message - could contain placeholders
             like <otp> or <serial>
-        :type message: string
         :param options: Additional options from the request
-        :type options: dict
-
-        :return: submitted message
-        :rtype: string
+        :param otp: the OTP value to send
+        :return: whether the SMS was sent, and the submitted message
         """
         if is_true(self.get_tokeninfo(self.DYNAMIC_PHONE_KEY)):
             phone = self.user.get_user_phone("mobile")
@@ -433,7 +434,6 @@ class SmsTokenClass(HotpTokenClass):
             phone = self.get_tokeninfo("phone")
         if not phone:  # pragma: no cover
             log.warning(f"Token {self.token.serial!s} does not have a phone number!")
-        otp = self.get_otp()[2]
         serial = self.get_serial()
         User = options.get("user")
 
@@ -587,6 +587,8 @@ class SmsTokenClass(HotpTokenClass):
         # TODO: how should we handle errors when sending the SMS?
         #  Currently we just return the message without checking the result
         _res, msg, _tid, _rdict = self.create_challenge(options=options)
+        # The enrollment can be verified later on, so the value has no time limit
+        self._remove_sent_otp_validity()
         return {"message": msg}
 
     @classmethod
