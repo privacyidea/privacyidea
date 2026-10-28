@@ -63,7 +63,7 @@ from privacyidea.lib import lazy_gettext
 USER_LOOKUP_FAILED = lazy_gettext("The user could not be looked up in the user store.")
 
 
-@functools.lru_cache(maxsize=64)
+@functools.lru_cache(maxsize=1024)
 def _parse_yaml_text(text: str) -> Any:
     return yaml.safe_load(text)
 

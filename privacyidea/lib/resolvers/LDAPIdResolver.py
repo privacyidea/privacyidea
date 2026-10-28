@@ -26,6 +26,7 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import binascii
+import copy
 import datetime
 import functools
 import hashlib
@@ -1192,12 +1193,12 @@ class IdResolver(UserIdResolver):
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE", "").split(",")]
         self.searchfilter = config.get("LDAPSEARCHFILTER")
-        userinfo = config.get("USERINFO", "{}")
-        self.userinfo = parse_config_yaml(userinfo)
+        self.map = parse_config_yaml(config.get("USERINFO", "{}"))
+        # Only the user info gets the login name attribute, the map keeps the configured one
+        self.userinfo = copy.copy(self.map)
         self.userinfo["username"] = self.loginname_attribute[0]
         multivalueattributes = config.get("MULTIVALUEATTRIBUTES") or '["mobile"]'
         self.multivalueattributes = parse_config_yaml(multivalueattributes)
-        self.map = parse_config_yaml(userinfo)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
