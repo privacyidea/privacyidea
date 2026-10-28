@@ -1488,7 +1488,7 @@ issued and the recognition endpoint returns ``401``.
 The cookie holds only a rotating ``series_id:counter`` token (never the API key)
 and is later checked at :http:post:`/validate/remember_device`, which reports
 whether the device is recognized so the calling client can decide to skip the
-second factor. A device is only recognized while the user has a token that could
+second factor. A device is only recognized while the user has a token that can
 be used for a login, see :ref:`api_clients_recognizing_device`. Recognition is
 **not** an authentication and does not by itself grant access.
 
@@ -1521,11 +1521,11 @@ type: ``string``
 
 How long a "remember this device" cookie stays valid after it is issued, like
 ``30d``, ``8h`` or ``90m`` (``s``, ``m``, ``h``, ``d`` and ``y`` are allowed). A
-number without a unit counts as days; a policy with another value is not saved.
+number without a unit counts as days. A policy with another value is not saved.
 If unset, the default is 30 days. Because
 it is a policy value, it can be scoped per realm or user with the usual
-conditions - for example a shorter lifetime for administrators than for regular
-users. The lifetime is fixed when the cookie is issued; recognition rotates the
+conditions, for example a shorter lifetime for administrators than for regular
+users. The lifetime is fixed when the cookie is issued. Recognition rotates the
 token but does not extend the expiry, so after this time the user logs in with
 the second factor again. Changing the policy applies to the devices issued
 afterwards. To also forget a device that is not recognized for a while, set
@@ -1551,7 +1551,7 @@ days. If unset, a device stays recognized until its validity ends.
 The idle timeout counts from the last recognition at
 :http:post:`/validate/remember_device`, or from the issuance for a device that
 was never recognized. A login with the second factor at
-:http:post:`/validate/check` does not reset it; if the client opts in again
+:http:post:`/validate/check` does not reset it. If the client opts in again
 there, it gets a new device with its own validity.
 
 Together with :ref:`policy_remember_device_validity`, a remembered device ends at

@@ -94,8 +94,8 @@ On a successful :http:post:`/validate/check` where the client sends
 ``request_persistent_cookie=1``, privacyIDEA issues a cookie when a token of the
 user verified the request, the client is identified, the policy allows it and
 the authenticating user is resolvable. A login that a policy accepts without a
-token - :ref:`passonnotoken`, :ref:`passonnouser`,
-:ref:`passthru_policy` or the :ref:`policy_auth_cache` - gets no cookie. The
+token gets no cookie, for example through :ref:`passonnotoken`,
+:ref:`passonnouser`, :ref:`passthru_policy` or the :ref:`policy_auth_cache`. The
 cookie is ``HttpOnly`` + ``Secure`` + ``SameSite=Strict``, carries both a
 relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
 ``Max-Age``), and holds only a
@@ -140,14 +140,23 @@ the policy, exactly as at ``/validate/check``; with nothing configured the
    key, and that can learn the same thing from ``/validate/check``.
 
 A remembered device stands in for the second factor, so it is only recognized
-while the user still has a token that could be used for a login: one that is
-active and not revoked, within its validity period, fully enrolled, and whose
-fail counter and authentication counters are not exceeded. These are the checks
-a login applies, so a user whose tokens were all disabled, revoked, removed or
-locked gets "not recognized" from a remembered device as well. As with conditional
-access, the cookie is neither rotated nor cleared and the device is kept, so it is
-recognized again once a token of the user is usable. To end the devices for good,
-revoke them (see below).
+while the user still has a token that can be used for a login. Such a token
+passes the checks that a login applies to it:
+
+* It is active and not revoked, within its validity period and fully enrolled.
+  Neither its fail counter nor its authentication counters are exceeded.
+* The token restrictions of the policies allow it. These are
+  :ref:`policy_disabled_token_types` in the authentication scope and
+  :ref:`tokentype_policy`, :ref:`serial_policy` and :ref:`policy_tokeninfo` in
+  the authorization scope.
+
+A user whose tokens are all disabled, revoked, removed, locked or excluded by
+these policies gets "not recognized" from a remembered device as well. As with
+conditional access, the cookie is neither rotated nor cleared and the device is
+kept, so it is recognized again once a token of the user is usable. The same
+holds while :ref:`policy_remember_device_idle_timeout` policies of the same
+priority set different values. To end the devices for good, revoke them (see
+below).
 
 On a miss the answer is simply "not recognized". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
