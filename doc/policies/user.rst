@@ -400,9 +400,6 @@ the fragment neither to the server nor to other sites, so the code does not show
 ``Referer`` header, and the page removes it from the address bar. The endpoints of :ref:`rest_recover` can also be
 used directly.
 
-.. versionchanged:: 3.14
-   The current WebUI offers the password reset. Before, only the previous WebUI did.
-
 .. versionadded:: 2.10
 
 .. _user_policy_2step:
