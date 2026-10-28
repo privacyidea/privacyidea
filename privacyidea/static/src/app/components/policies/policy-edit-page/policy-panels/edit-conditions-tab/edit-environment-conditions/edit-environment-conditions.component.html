@@ -136,7 +136,7 @@
     gridLabel="User agents"
     i18n-gridLabel="@@policy.userAgentsGrid"
     [values]="selectedUserAgents()"
-    [chipLabel]="getUserAgentLabel"
+    [chipLabel]="getUserAgentDisplay"
     (valuesChange)="emitEdits({ user_agents: $event })">
     <ng-container chipListExtras>
       @if (selectedUserAgents().length > 0) {
