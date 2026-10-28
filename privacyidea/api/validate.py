@@ -159,7 +159,7 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
-                                                      confirm_attempt_for_serials)
+                                                      confirm_attempt_for_serials, get_ca_context)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
                                    check_fido2_token_state, record_fido2_login_success)
@@ -587,7 +587,9 @@ def check():
     """
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
-        return _handle_enrollment_cancellation(request.all_data)
+        response = _handle_enrollment_cancellation(request.all_data)
+        get_ca_context().answered_by_view = True
+        return response
 
     # This dictionary carries state across the extracted helper functions
     # to avoid changing the functional signatures of the underlying libraries yet.
@@ -638,6 +640,7 @@ def check():
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
+    get_ca_context().answered_by_view = True
     return response
 
 
@@ -1650,7 +1653,7 @@ def trigger_challenge():
         "info": log_used_user(user, f"triggered {triggered_challenges!s} challenges"),
         "serial": ",".join(challenge_serials),
     })
-
+    get_ca_context().answered_by_view = True
     return r
 
 
