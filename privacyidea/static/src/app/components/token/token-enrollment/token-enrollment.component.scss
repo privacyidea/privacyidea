@@ -5,3 +5,9 @@
   display: grid;
   min-width: calc(616px + 2 * 16px);
 }
+
+// As wide as the widest token type needs (.enroll-content-width, the content margin and the padding), so the card keeps
+// its width when the type changes; narrower only when the page has no room.
+.token-enrollment-fixed-width {
+  width: calc(948px + 16px + 2 * 16px);
+}
