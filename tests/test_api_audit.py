@@ -352,6 +352,9 @@ class APIAuditTestCase(MyApiTestCase):
               resolver="resolver1", realm=self.realm2b).save()
         Audit(action="enroll", success=1, user="selfservice", administrator=None,
               resolver="resolver1", realm=self.realm2b).save()
+        # A user of the same name in another resolver of the realm is someone else
+        Audit(action="enroll", success=1, user="selfservice", administrator=None,
+              resolver="otherresolver", realm=self.realm1a).save()
 
         # set policy: normal users in realm1a are allowed to view audit log
         set_policy("audit01", scope=SCOPE.USER, action=PolicyAction.AUDIT, realm=self.realm1a)
@@ -451,9 +454,12 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             json_response = res.json
             self.assertTrue(json_response.get("result").get("status"), res)
-            # The normal user can not fetch audit entries, that do not belong to him!
-            count = json_response.get("result").get("value").get("count")
-            self.assertGreaterEqual(count, 0)
+            # The normal user can not fetch audit entries, that do not belong to him: the realm of the request is
+            # replaced by the own one
+            auditdata = json_response.get("result").get("value").get("auditdata")
+            self.assertTrue(auditdata, json_response)
+            self.assertSetEqual({(self.realm1a, "resolver1")},
+                                {(entry.get("realm"), entry.get("resolver")) for entry in auditdata})
 
         # delete policy
         delete_policy("audit01")

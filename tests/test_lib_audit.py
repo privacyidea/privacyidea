@@ -143,7 +143,7 @@ class AuditTestCase(MyTestCase):
         # also contains the own auth audit entry
         self.assertEqual(1, len(admin_audits))
         self.assertEqual("local_admin", admin_audits[0].get("administrator"))
-        self.assertEqual("", admin_audits[0].get("realm"))
+        self.assert_empty_string(admin_audits[0].get("realm"))
 
         # Get audit entries for external admin who is allowed to only see realm1
         audit_log = self.Audit.search({}, admin_params={"admin": "external_admin", "admin_realm": "admin_realm",
@@ -156,6 +156,32 @@ class AuditTestCase(MyTestCase):
         self.assertEqual(1, len(admin_audits))
         self.assertEqual("external_admin", admin_audits[0].get("administrator"))
         self.assertEqual("admin_realm", admin_audits[0].get("realm"))
+
+    def test_02b_own_entries_of_an_admin_need_the_admin_realm(self):
+        # An admin is named by login name and admin realm: an admin of the same name in another admin realm is
+        # someone else
+        self.Audit.log({"action": "GET /auth", "administrator": "helpdesk", "realm": "admins"})
+        self.Audit.finalize_log()
+        self.Audit.log({"action": "GET /auth", "administrator": "helpdesk", "realm": "other_admins"})
+        self.Audit.finalize_log()
+        self.Audit.log({"action": "enroll", "realm": "realm1"})
+        self.Audit.finalize_log()
+        self.Audit.log({"action": "enroll", "realm": "realm2"})
+        self.Audit.finalize_log()
+
+        audit_log = self.Audit.search({}, admin_params={"admin": "helpdesk", "admin_realm": "admins",
+                                                        "allowed_audit_realms": ["realm1"]})
+        self.assertCountEqual([("GET /auth", "admins"), ("enroll", "realm1")],
+                              [(audit.get("action"), audit.get("realm")) for audit in audit_log.auditdata])
+
+    def test_02c_success_filter(self):
+        self.Audit.log({"action": "enroll", "success": True})
+        self.Audit.finalize_log()
+        self.Audit.log({"action": "enroll", "success": False})
+        self.Audit.finalize_log()
+        for value, expected in (("true", 1), ("1", 1), ("false", 0), ("0", 0)):
+            audit_log = self.Audit.search({"success": value})
+            self.assertEqual([expected], [audit.get("success") for audit in audit_log.auditdata], value)
 
     def log_entries_with_log_levels(self) -> list[int]:
         for action, log_level in [("action1", "INFO"), ("action2", "WARNING"), ("action3", "INFO")]:

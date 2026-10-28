@@ -225,6 +225,9 @@
   more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
   case-insensitive names.
 
+* **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
+  describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

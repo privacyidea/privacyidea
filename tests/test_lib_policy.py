@@ -3,6 +3,7 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import ast
 import json
 import pathlib
 import re
@@ -38,7 +39,7 @@ from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, NodeName
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from .base import MyTestCase, FakeFlaskG, FakeAudit, stored_empty_string
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
@@ -74,6 +75,12 @@ class PolicyTestCase(MyTestCase):
     """
     Test the policies on a database level
     """
+
+    def assert_undefined_values(self, kind: str, values: set[str], message: str) -> None:
+        # The undefined values are listed in no particular order
+        prefix = f"Undefined {kind}: "
+        self.assertTrue(message.startswith(prefix) and message.endswith("!"), message)
+        self.assertSetEqual(values, set(ast.literal_eval(message[len(prefix):-1])), message)
 
     def setUp(self):
         self.setUp_user_realms()
@@ -249,7 +256,7 @@ class PolicyTestCase(MyTestCase):
                    description="")
         policy = get_policies(name="keep_values")[0]
         expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False,
-                    "priority": 3, "description": ""}
+                    "priority": 3, "description": stored_empty_string()}
         self.assertEqual(expected, {key: policy.get(key) for key in expected})
         delete_policy("keep_values")
 
@@ -269,48 +276,44 @@ class PolicyTestCase(MyTestCase):
         # Scope is None, but actions are defined
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", action=PolicyAction.ENABLE)
-            self.assertEqual("Scope is required to set action values!", exception.exception.message)
+        self.assertEqual("Scope is required to set action values!", exception.exception.message)
 
         # Invalid actions
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action="invalid_action")
-            self.assertEqual(f"The following actions are not valid for scope '{SCOPE.ADMIN}': ['invalid_action']",
-                             exception.exception.message)
+        self.assertEqual("Invalid actions ['invalid_action']!", exception.exception.message)
 
         # Priority
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, priority=0)
-            self.assertEqual("Priority must be at least 1", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, priority=0)
+        self.assertEqual("Priority must be at least 1", exception.exception.message)
 
         # Invalid client ip
         with self.assertRaises(PrivacyIDEAError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, client="10.1.2.3.4")
-            self.assertEqual("Invalid client definition!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, client="10.1.2.3.4")
+        self.assertEqual("Invalid client definition!", exception.exception.message)
 
         # Invalid realm
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, realm="invalid_realm")
-            self.assertEqual("Invalid Realms ['invalid_realm']!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm="invalid_realm")
+        self.assert_undefined_values("User-realms", {"invalid_realm"}, exception.exception.message)
 
-        # Invalid adminrealm
-        with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, adminrealm="invalid_realm")
-            self.assertEqual("Invalid Adminrealms ['invalid_realm']!", exception.exception.message)
+        # set_policy takes any admin realm: the API checks it against the admin realms of the app configuration
 
         # Invalid resolver
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, resolver="invalid_resolver")
-            self.assertEqual("Undefined resolvers ['invalid_resolver']!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, resolver="invalid_resolver")
+        self.assert_undefined_values("Resolvers", {"invalid_resolver"}, exception.exception.message)
 
         # Invalid node
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, pinode="invalid_node")
-            self.assertEqual("Undefined nodes ['invalid_node']!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode="invalid_node")
+        self.assert_undefined_values("Privacyidea nodes", {"invalid_node"}, exception.exception.message)
 
         # Invalid time
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, time="Monday: 12-18")
-            self.assertEqual("Invalid time format!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, time="Monday: 12-18")
+        self.assertEqual("Invalid time format 'Monday: 12-18'!", exception.exception.message)
 
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
@@ -461,7 +464,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("172.16.0.3, 172.16.0.4/24", policy.client)
         # Set empty string removes client
         set_policy(name="pol1", scope=SCOPE.CONTAINER, client="")
-        self.assertEqual("", policy.client)
+        self.assert_empty_string(policy.client)
 
     def test_08_user_policies(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, user="*")
@@ -506,7 +509,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("admin, root, user1", policy.user)
         # Set empty string removes adminuser
         set_policy(name="pol2", scope=SCOPE.AUTHZ, user="")
-        self.assertEqual("", policy.user)
+        self.assert_empty_string(policy.user)
 
     def test_08a_adminuser_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, adminuser="*", user="")
@@ -551,7 +554,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("admin, root, user1", policy.adminuser)
         # Set empty string removes adminuser
         set_policy(name="pol2", scope=SCOPE.ADMIN, adminuser="", user="*")
-        self.assertEqual("", policy.adminuser)
+        self.assert_empty_string(policy.adminuser)
 
     def test_09_realm_resolver_policy(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, realm=self.realm1)
@@ -613,8 +616,8 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(self.realm1, policy.realm)
         # Set empty string removes realm and resolver
         set_policy(name="pol2", scope=SCOPE.AUTHZ, realm="", resolver="")
-        self.assertEqual("", policy.resolver)
-        self.assertEqual("", policy.realm)
+        self.assert_empty_string(policy.resolver)
+        self.assert_empty_string(policy.realm)
 
     def test_10_action_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, action=f"enrollHOTP, {PolicyAction.ENABLE}, {PolicyAction.DISABLE}")
@@ -856,7 +859,7 @@ class PolicyTestCase(MyTestCase):
         # Update with empty list removes adminrealm
         set_policy(name="tokenEnroll", scope=SCOPE.ADMIN, adminrealm="", action="enrollYUBIKEY")
         policy = Policy.query.filter_by(name="tokenEnroll").first()
-        self.assertEqual("", policy.adminrealm)
+        self.assert_empty_string(policy.adminrealm)
 
         delete_policy("tokenEnroll")
 
@@ -956,7 +959,7 @@ class PolicyTestCase(MyTestCase):
         # set empty string removes time
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="")
         policy = Policy.query.filter_by(name="test").first()
-        self.assertEqual("", policy.time)
+        self.assert_empty_string(policy.time)
 
         # Set invalid times raises Error
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.AUTHZ,
@@ -1726,7 +1729,7 @@ class PolicyTestCase(MyTestCase):
         # Pass empty string to remove pinode parameter
         set_policy("import_node1", scope=SCOPE.ADMIN, action=PolicyAction.IMPORT,
                    adminuser="import_admin, delete_admin", pinode="")
-        self.assertEqual("", policy.pinode)
+        self.assert_empty_string(policy.pinode)
 
         delete_policy("import_node1")
         delete_policy("delete_node2")
@@ -2618,13 +2621,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Realm
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=[self.realm2, "undefined_realm", self.realm1, "invalid"])
-            self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, undefined_realm,{self.realm1} ,invalid")
-            self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, -undefined_realm,{self.realm1} ,!invalid")
-            self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
 
         delete_policy("test")
 
@@ -2650,14 +2653,14 @@ class PolicyTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=[self.resolvername1, "undefined_resolver", self.resolvername3, "invalid"])
-            self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"undefined_resolver,{self.resolvername1}, invalid")
-            self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=f"*, -undefined_resolver,{self.resolvername1}, !invalid")
-            self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
 
         delete_policy("test")
 
@@ -2687,13 +2690,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "undefined_node", node_name2, "invalid"])
-            self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
-            self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
-            self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
 
         db.session.delete(node1)
         db.session.delete(node2)
@@ -2922,36 +2925,36 @@ class PolicyConditionClassTestCase(MyTestCase):
         # Invalid section
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", True)
-            self.assertIn("Unknown section", exception.exception.message)
+        self.assertIn("Unknown section", exception.exception.message)
 
         # Invalid key
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES, ".*@example.com",
                                  True)
-            self.assertEqual("Key must be a non-empty string. Got '[\"email\"]' of type 'list' instead.",
-                             exception.exception.message)
+        self.assertEqual("Key must be a non-empty string. Got '['email']' of type '<class 'list'>' instead.",
+                         exception.exception.message)
 
         # Invalid comparator
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", "random", ".*@example.com", True)
-            self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
+        self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
 
         # Invalid value
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, True)
-            self.assertIn("Value must be a non-empty string.", exception.exception.message)
+        self.assertIn("Value must be a non-empty string.", exception.exception.message)
 
         # Invalid active
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
                                  "True")
-            self.assertIn("Active must be a boolean.", exception.exception.message)
+        self.assertIn("Active must be a boolean.", exception.exception.message)
 
         # Invalid handle_missing_data
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  "random")
-            self.assertIn("Unknown handle missing data value", exception.exception.message)
+        self.assertIn("Unknown handle missing data value", exception.exception.message)
 
     def test_03_allow_invalid_parameters(self):
         """
@@ -2969,14 +2972,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Unknown section", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Unknown section", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  pass_if_inactive=True)
-            self.assertIn("Unknown section", exception.exception.message)
+        self.assertIn("Unknown section", exception.exception.message)
 
         # --- Invalid key ---
         # inactive condition
@@ -2990,16 +2993,16 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Key must be a non-empty string", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Key must be a non-empty string", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES, ".*@example.com",
                                  True,
                                  pass_if_inactive=True)
-            self.assertEqual("Key must be a non-empty string. Got '[\"email\"]' of type 'list' instead.",
-                             exception.exception.message)
+        self.assertEqual("Key must be a non-empty string. Got '['email']' of type '<class 'list'>' instead.",
+                         exception.exception.message)
 
         # --- Invalid comparator ---
         # inactive condition
@@ -3011,14 +3014,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Unknown comparator", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Unknown comparator", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", "random", ".*@example.com", True,
                                  pass_if_inactive=True)
-            self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
+        self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
 
         # --- Invalid value ---
         # inactive condition
@@ -3032,19 +3035,19 @@ class PolicyConditionClassTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, True,
                                  pass_if_inactive=True)
-            self.assertIn("Value must be a non-empty string.", exception.exception.message)
+        self.assertIn("Value must be a non-empty string.", exception.exception.message)
 
         # Invalid active always raises error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
                                  "True",
                                  pass_if_inactive=True)
-            self.assertIn("Active must be a boolean.", exception.exception.message)
+        self.assertIn("Active must be a boolean.", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
                                  "False",
                                  pass_if_inactive=True)
-            self.assertIn("Active must be a boolean.", exception.exception.message)
+        self.assertIn("Active must be a boolean.", exception.exception.message)
 
         # --- Invalid handle_missing_data ---
         # inactive condition
@@ -3057,14 +3060,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Unknown handle missing data", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Unknown handle missing data", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  "random", True)
-            self.assertIn("Unknown handle missing data value", exception.exception.message)
+        self.assertIn("Unknown handle missing data value", exception.exception.message)
 
     def test_04_get_user_data(self):
         self.setUp_user_realms()
@@ -3459,7 +3462,7 @@ class ConditionHandleMissingDataTestCase(MyTestCase):
         # invalid value
         with self.assertRaises(ParameterError) as exception:
             ConditionHandleMissingData.get_from_value("invalid_value")
-            self.assertIn("Unknown handle missing data value", exception.exception.message)
+        self.assertIn("Unknown handle missing data value", exception.exception.message)
 
     def test_03_get_selection_dict(self):
         # Check that all enum values are included in the selection dict
@@ -3734,6 +3737,106 @@ class PolicyMatchTestCase(MyTestCase):
         self.assertFalse(admin_match("privacyIDEA-WebUI").allowed())
 
         delete_policy("only-cp")
+
+    @staticmethod
+    def fake_g(logged_in_user: dict | None = None) -> FakeFlaskG:
+        g = FakeFlaskG()
+        g.client_ip = "127.0.0.1"
+        g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
+        g.policy_object = PolicyClass()
+        if logged_in_user:
+            g.logged_in_user = logged_in_user
+        return g
+
+    def test_08_admin_policies_match_the_admin_realm(self):
+        # A policy for the administrators of one realm applies neither to the administrators of another realm nor to
+        # the local administrators
+        set_policy(name="realm1admins", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, adminrealm=self.realm1)
+        try:
+            for admin_realm, expected in ((self.realm1, {"realm1admins"}), (self.realm2, set()), ("", set())):
+                g = self.fake_g({"username": "helpdesk", "realm": admin_realm, "role": ROLE.ADMIN})
+                self.check_names(Match.admin(g, PolicyAction.DISABLE).policies(), expected)
+                self.check_names(Match.admin_or_user(g, PolicyAction.DISABLE, None).policies(), expected)
+        finally:
+            delete_policy("realm1admins")
+
+    def test_09_a_policy_for_every_realm_matches_the_realms_of_a_token(self):
+        token = init_token({"type": "hotp", "genkey": 1}, tokenrealms=[self.realm1])
+        try:
+            # pol2 is defined for every realm, pol2a for realm2 only
+            self.check_names(Match.token(self.fake_g(), SCOPE.AUTHZ, PolicyAction.TOKENTYPE, token).policies(),
+                             {"pol2"})
+        finally:
+            token.delete_token()
+
+    def test_10_check_all_resolvers_leaves_out_an_excluded_resolver(self):
+        # realm1 has resolver1 only
+        set_policy(name="every_resolver", scope=SCOPE.USER, action=PolicyAction.DELETE, realm=self.realm1,
+                   resolver="*", check_all_resolvers=True)
+        set_policy(name="resolver1_excluded", scope=SCOPE.USER, action=PolicyAction.DELETE, realm=self.realm1,
+                   resolver=f"*, !{self.resolvername1}", check_all_resolvers=True)
+        try:
+            policies = Match.user(self.fake_g(), SCOPE.USER, PolicyAction.DELETE,
+                                  User("cornelius", self.realm1)).policies()
+            self.check_names(policies, {"every_resolver"})
+        finally:
+            delete_policies(["every_resolver", "resolver1_excluded"])
+
+    def test_11_a_scope_with_only_inactive_policies_allows_every_action(self):
+        delete_all_policies()
+        set_policy(name="inactive", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, active=False)
+        g = self.fake_g({"username": "admin", "realm": "", "role": ROLE.ADMIN})
+        try:
+            self.assertTrue(Match.admin(g, PolicyAction.ENABLE).allowed())
+            enable_policy("inactive")
+            self.assertFalse(Match.admin(g, PolicyAction.ENABLE).allowed())
+        finally:
+            delete_policy("inactive")
+
+    def test_12_a_request_without_user_agent_matches_only_policies_without_one(self):
+        set_policy(name="webui_only", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=SPASS",
+                   user_agents="privacyIDEA-WebUI")
+        try:
+            g = self.fake_g()
+            self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.TOKENTYPE).policies(), {"pol2", "pol2a"})
+            g.user_agent = "privacyIDEA-WebUI"
+            self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.TOKENTYPE).policies(),
+                             {"pol2", "pol2a", "webui_only"})
+        finally:
+            delete_policy("webui_only")
+
+    def test_13_conditions_do_not_see_the_password_of_the_request(self):
+        for name, key in (("pass_condition", "pass"), ("password_condition", "password"),
+                          ("user_condition", "user")):
+            value = "cornelius" if key == "user" else "secret"
+            set_policy(name=name, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS,
+                       conditions=[(ConditionSection.REQUEST_DATA, key, PrimaryComparators.EQUALS, value, True,
+                                    ConditionHandleMissingData.IS_FALSE.value)])
+        try:
+            g = self.fake_g()
+            g.request_data = {"user": "cornelius", "pass": "secret", "password": "secret"}
+            self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.NODETAILSUCCESS).policies(),
+                             {"user_condition"})
+            # The request data itself keeps the password
+            self.assertEqual("secret", g.request_data["pass"])
+        finally:
+            delete_policies(["pass_condition", "password_condition", "user_condition"])
+
+    def test_14_admin_policies_see_the_token_of_the_request(self):
+        token = init_token({"type": "hotp", "genkey": 1})
+        set_policy(name="hotp_only", scope=SCOPE.ADMIN, action=PolicyAction.DELETE,
+                   conditions=[(ConditionSection.TOKEN, "tokentype", PrimaryComparators.EQUALS, "hotp", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        try:
+            g = self.fake_g({"username": "admin", "realm": "", "role": ROLE.ADMIN})
+            g.serial = token.get_serial()
+            self.check_names(Match.admin(g, PolicyAction.DELETE).policies(), {"hotp_only"})
+            g.serial = None
+            self.check_names(Match.admin(g, PolicyAction.DELETE).policies(), set())
+        finally:
+            delete_policy("hotp_only")
+            token.delete_token()
 
     @classmethod
     def tearDownClass(cls):
