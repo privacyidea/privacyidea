@@ -30,6 +30,7 @@ import {
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTabsModule } from "@angular/material/tabs";
 import { By } from "@angular/platform-browser";
+import { PolicyActionDrafts } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/policy-action-drafts";
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
 import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -93,7 +94,6 @@ class MockDescComp {
   providers: [{ provide: EditActionTabComponent, useExisting: forwardRef(() => MockActionTab) }]
 })
 class MockActionTab {
-  valid = signal(true);
   searchAnchor = viewChild.required<ElementRef<HTMLElement>>("searchAnchor");
   searchField = signal({} as PolicyActionSearchComponent);
   policy = input.required<PolicyDetail>();
@@ -433,6 +433,7 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
     const nameField = () => fixture.debugElement.query(By.directive(MockNameComp)).componentInstance as MockNameComp;
     const priorityField = () =>
       fixture.debugElement.query(By.directive(MockPrioComp)).componentInstance as MockPrioComp;
+    const drafts = () => fixture.debugElement.injector.get(PolicyActionDrafts);
 
     it("should be true while name, priority and scope are valid", () => {
       expect(component.valid()).toBe(true);
@@ -457,18 +458,24 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
     });
 
     it("should be false while an added action holds an invalid value", () => {
-      const actionTab = fixture.debugElement.query(By.directive(MockActionTab)).componentInstance as MockActionTab;
+      component.addPolicyEdit({ action: { max_token_per_user: "5" } });
 
-      actionTab.valid.set(false);
+      drafts().set("max_token_per_user", "");
 
       expect(component.valid()).toBe(false);
     });
 
     it("should be true again once the invalid action value is corrected", () => {
-      const actionTab = fixture.debugElement.query(By.directive(MockActionTab)).componentInstance as MockActionTab;
-      actionTab.valid.set(false);
+      component.addPolicyEdit({ action: { max_token_per_user: "5" } });
+      drafts().set("max_token_per_user", "");
 
-      actionTab.valid.set(true);
+      drafts().clear("max_token_per_user");
+
+      expect(component.valid()).toBe(true);
+    });
+
+    it("should ignore an invalid value of an action that is no longer in the policy", () => {
+      drafts().set("max_token_per_user", "");
 
       expect(component.valid()).toBe(true);
     });

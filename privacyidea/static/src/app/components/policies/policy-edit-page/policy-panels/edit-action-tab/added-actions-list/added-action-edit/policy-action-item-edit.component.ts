@@ -40,6 +40,7 @@ import {
 } from "@utils/value-label.utils";
 import { ERR } from "@utils/form-rules.utils";
 import { actionValueRule } from "../../action-value.rule";
+import { PolicyActionDrafts } from "../../policy-action-drafts";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -73,11 +74,25 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
   /** Names the value controls after the action they belong to. */
   readonly valueLabel = computed(() => this.action().name);
 
-  // The value being edited, seeded from the action and re-seeded when the action's value changes. A number without
-  // options is seeded as text, so the model of the native inputs stays a string.
-  readonly valueModel = linkedSignal<string | number | boolean>(() => {
-    const value = this.action().value;
-    return typeof value === "number" && !this.actionDetail()?.value ? String(value) : value;
+  private readonly drafts = inject(PolicyActionDrafts, { optional: true });
+
+  // The value being edited, seeded from the action and re-seeded only when the action's value or detail changes, not
+  // when the parent hands in a new object for the same action. A row created anew starts with the invalid value kept
+  // for its action. A number without options is seeded as text, so the model of the native inputs stays a string.
+  readonly valueModel = linkedSignal<
+    { action: { name: string; value: T }; detail: PolicyActionDetail<T> | null },
+    string | number | boolean
+  >({
+    source: () => ({ action: this.action(), detail: this.actionDetail() }),
+    computation: ({ action, detail }, previous) => {
+      if (previous) {
+        if (previous.source.action.value === action.value && previous.source.detail === detail) return previous.value;
+      } else {
+        const draft = untracked(() => this.drafts?.get(action.name));
+        if (draft !== undefined) return draft;
+      }
+      return typeof action.value === "number" && !detail?.value ? String(action.value) : action.value;
+    }
   });
 
   // Holds the one rule every kind of control shares: the value must suit the action's type.
@@ -126,11 +141,18 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
 
   constructor() {
     // Emits what the user changed. A value that equals the action's own value is the seed or the parent's echo of an
-    // earlier emit, so it is not emitted again. An invalid value is never emitted: the policy keeps the last valid one.
+    // earlier emit, so it is not emitted again. An invalid value is never emitted: the policy keeps the last valid one,
+    // and the value is kept in the drafts until it is corrected.
     effect(() => {
       const value = this.valueModel();
-      if (!this.valid()) return;
+      const valid = this.valid();
       untracked(() => {
+        const name = this.action().name;
+        if (!valid) {
+          this.drafts?.set(name, value);
+          return;
+        }
+        this.drafts?.clear(name);
         if (String(value) !== String(this.action().value)) {
           this.updateAction.emit(value as T);
         }

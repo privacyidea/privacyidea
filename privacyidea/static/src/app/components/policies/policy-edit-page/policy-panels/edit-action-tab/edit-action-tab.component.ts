@@ -57,11 +57,6 @@ export class EditActionTabComponent {
   /** Top of the tab content, where the search field sits; the page compares it with its header. */
   readonly searchAnchor = viewChild.required<ElementRef<HTMLElement>>("searchAnchor");
   readonly searchField = viewChild.required(PolicyActionSearchComponent);
-  private readonly addedActions = viewChild(AddedActionsListComponent);
-
-  /** False while an added action holds a value that does not suit it; such a value never reaches the policy. */
-  readonly valid = computed(() => this.addedActions()?.valid() ?? true);
-
   readonly selectedAction: WritableSignal<{ name: string; value: string | boolean } | null> = linkedSignal({
     source: () => ({
       scope: this.policy().scope

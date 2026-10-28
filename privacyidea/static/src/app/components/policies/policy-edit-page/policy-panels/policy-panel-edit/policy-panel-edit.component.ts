@@ -21,6 +21,7 @@ import { Component, computed, inject, input, linkedSignal, model, output, viewCh
 import { MatTabsModule } from "@angular/material/tabs";
 
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
+import { PolicyActionDrafts } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/policy-action-drafts";
 import { EditConditionsTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
@@ -44,10 +45,12 @@ export type PolicyTab = "actions" | "conditions";
     PolicyScopeEditComponent
   ],
   templateUrl: "./policy-panel-edit.component.html",
-  styleUrl: "./policy-panel-edit.component.scss"
+  styleUrl: "./policy-panel-edit.component.scss",
+  providers: [PolicyActionDrafts]
 })
 export class PolicyPanelEditComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly actionDrafts = inject(PolicyActionDrafts);
 
   /**
    * Initial policy data from parent.
@@ -99,16 +102,19 @@ export class PolicyPanelEditComponent {
    */
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   /**
-   * True while the name and the priority satisfy their rules, a scope is chosen and every added action holds a
-   * value that suits it. The backend rejects a priority below 1, and a policy without a scope cannot be saved.
+   * True while the name and the priority satisfy their rules, a scope is chosen and no added action holds a value
+   * that does not suit it. The backend rejects a priority below 1, and a policy without a scope cannot be saved. The
+   * invalid action values come from the drafts, so they count while the conditions tab is open or a filter hides them.
    */
-  readonly valid = computed(
-    () =>
+  readonly valid = computed(() => {
+    const actions = this.editedPolicy().action ?? {};
+    return (
       !!this.nameEdit()?.valid() &&
       !!this.priorityEdit()?.valid() &&
       !!this.editedPolicy().scope &&
-      (this.actionTab()?.valid() ?? true)
-  );
+      !this.actionDrafts.names().some((name) => name in actions)
+    );
+  });
   readonly policyHasActions = computed(() => Object.keys(this.editedPolicy().action ?? {}).length > 0);
 
   public setActiveTab(tab: PolicyTab): void {
