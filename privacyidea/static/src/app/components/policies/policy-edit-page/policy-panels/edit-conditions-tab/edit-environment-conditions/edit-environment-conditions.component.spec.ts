@@ -118,7 +118,7 @@ describe("EditEnvironmentConditionsComponent", () => {
     });
 
     it("should show the label of a preset user agent", () => {
-      const labelFor = jest.spyOn(TestBed.inject(IntegrationsService), "labelForPolicyValue");
+      const labelFor = jest.spyOn(TestBed.inject(IntegrationsService), "displayForPolicyValue");
       labelFor.mockImplementation((value: string) => (value === "PAM" ? "PAM Module" : value));
       fixture.componentRef.setInput("policy", { name: "test-policy", user_agents: ["PAM"] });
       fixture.detectChanges();
