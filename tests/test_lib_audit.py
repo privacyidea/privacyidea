@@ -143,7 +143,7 @@ class AuditTestCase(MyTestCase):
         # also contains the own auth audit entry
         self.assertEqual(1, len(admin_audits))
         self.assertEqual("local_admin", admin_audits[0].get("administrator"))
-        self.assertEqual("", admin_audits[0].get("realm"))
+        self.assert_empty_string(admin_audits[0].get("realm"))
 
         # Get audit entries for external admin who is allowed to only see realm1
         audit_log = self.Audit.search({}, admin_params={"admin": "external_admin", "admin_realm": "admin_realm",

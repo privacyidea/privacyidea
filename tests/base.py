@@ -128,6 +128,13 @@ def skip_unless_admin_lookup_folds_case(testcase):
                           "reached under a second spelling")
 
 
+def stored_empty_string() -> str | None:
+    """
+    What an empty string written to the database reads back as: ``''``, except on Oracle, which stores it as NULL.
+    """
+    return None if db.engine.dialect.name == "oracle" else ""
+
+
 class FakeFlaskG(object):
     policy_object = None
     logged_in_user = {}
@@ -536,6 +543,12 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+    def assert_empty_string(self, value: str | None, msg: str | None = None) -> None:
+        """
+        Assert that *value* is an empty string read from the database, which on Oracle is None.
+        """
+        self.assertEqual(stored_empty_string(), value, msg)
 
     def find_most_recent_audit_entry(self, **filter_data):
         """

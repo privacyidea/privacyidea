@@ -270,7 +270,8 @@ class Token(MethodsMixin, db.Model):
         :return: hashed pin with current pin_seed
         :rtype: str
         """
-        seed_str = self._fix_spaces(self.pin_seed)
+        # Oracle stores an empty seed as NULL
+        seed_str = self._fix_spaces(self.pin_seed) or ""
         seed = binascii.unhexlify(seed_str)
         hashed_pin = hash(pin, seed)
         log.debug("Calculated the PIN hash with the legacy hash format.")
