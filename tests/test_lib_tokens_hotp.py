@@ -644,12 +644,12 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(token.is_challenge_request("test"))
 
     def test_25_sha256_token(self):
-        # taken from https://tools.ietf.org/html/rfc6238#appendix-B
+        # taken from https://tools.ietf.org/html/rfc6238#appendix-B, whose SHA256 values belong to the 32 byte seed
         serial = "sha25T"
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890123456789012"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -658,11 +658,11 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = HotpTokenClass(db_token)
         r = token.check_otp("46119246")
-        self.assertTrue(r)
+        self.assertEqual(1, r)
         # 00000000023523ED | 67062674 | SHA256 |
         token.set_otp_count(0x00000000023523ED - 1)
         token.save()
-        token.check_otp("67062674")
+        self.assertEqual(0x00000000023523ED, token.check_otp("67062674"))
 
     def test_26_is_previous_otp(self):
         # check if the OTP was used previously
