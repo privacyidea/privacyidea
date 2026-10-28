@@ -50,6 +50,7 @@ from privacyidea.lib.utils import parse_timedelta
 from privacyidea.models import Client, RememberedDevice, Realm, db
 
 if TYPE_CHECKING:
+    from privacyidea.lib.tokenclass import TokenClass
     from privacyidea.lib.user import User
 from privacyidea.models.utils import utc_now, utc_isoformat
 
@@ -194,22 +195,23 @@ def user_identity(user: "User | None") -> UserIdentity | None:
     return UserIdentity(resolver, user_id, user.realm_id)
 
 
-def has_usable_token(user: "User") -> bool:
+def usable_tokens(user: "User") -> list["TokenClass"]:
     """
-    Whether at least one token of the user could be used to log in right now, by the checks a login applies to each
-    token (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not), neither
-    its fail counter nor its authentication counters are exceeded, it is within its validity period and it is fully
+    The tokens of the user that could be used to log in right now, by the checks a login applies to each token
+    (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not), neither its
+    fail counter nor its authentication counters are exceeded, it is within its validity period and it is fully
     enrolled. Like a login, this first clears a fail counter whose clear timeout has passed.
 
     A remembered device stands in for the second factor, so it is recognised only while the user has a token to
-    present one with.
+    present one with. The token restrictions of the policies are the caller's to apply.
 
     :param user: the user the device is bound to
-    :return: True if at least one token of the user is usable
+    :return: the usable tokens of the user
     """
     # Imported lazily: privacyidea.lib.token pulls in a large part of the library, and this module is imported early
     # through the policy evaluators.
     from privacyidea.lib.token import get_tokens
+    tokens = []
     for token in get_tokens(user=user):
         # Revocation first, as a login checks it: revoke() also locks the token, and check_reset_failcount() calls
         # the lock-protected reset() once the clear timeout has passed, which would raise for a revoked token.
@@ -217,8 +219,8 @@ def has_usable_token(user: "User") -> bool:
             continue
         token.check_reset_failcount()
         if token.check_all([]):
-            return True
-    return False
+            tokens.append(token)
+    return tokens
 
 
 def create_remembered_device(identity: UserIdentity, client_id: str, ip_address: str | None = None,

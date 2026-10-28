@@ -99,7 +99,7 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
 from privacyidea.api.lib.postpolicy import (postpolicy,
                                             check_tokentype, check_serial,
-                                            check_tokeninfo,
+                                            check_tokeninfo, serial_allowed, tokeninfo_mismatch,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
@@ -123,7 +123,7 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft, has_usable_token, parse_device_duration,
+                                               handle_device_theft, parse_device_duration, usable_tokens,
                                                remove_idle_devices)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
@@ -141,7 +141,7 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
+from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
@@ -1383,6 +1383,64 @@ def _remember_device_duration(user: User, action: str) -> timedelta | None:
     return parse_device_duration(list(values)[0])
 
 
+def _token_refusal(user: User) -> str | None:
+    """
+    Why a remembered device of *user* is not recognised because of the user's tokens, as the audit info, or ``None``
+    if a login could use one of them. A token has to pass the checks a login applies to it (see
+    :func:`~privacyidea.lib.remembered_device.usable_tokens`) and the token restrictions of the policies (see
+    :func:`_policies_refusing_tokens`).
+    """
+    tokens = usable_tokens(user)
+    if not tokens:
+        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: none of the "
+                 f"user's tokens is usable (disabled, revoked, fail or authentication counter exceeded, outside its "
+                 f"validity period or not yet enrolled). The device is kept and recognised again once a token of "
+                 f"the user is usable.")
+        return "device not recognised: the user has no usable token"
+    refusing_policies = _policies_refusing_tokens(user, tokens)
+    if refusing_policies:
+        policy_names = ", ".join(refusing_policies)
+        log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: the "
+                    f"policies {policy_names} allow none of the user's tokens for a login (disabled_token_types, "
+                    f"tokentype, serial or tokeninfo). The device is kept and recognised again once a policy allows "
+                    f"a token of the user.")
+        return f"device not recognised: the policies {policy_names} allow none of the user's tokens"
+    return None
+
+
+def _policies_refusing_tokens(user: User, tokens: list[TokenClass]) -> list[str]:
+    """
+    The names of the policies whose token restrictions leave none of *tokens* usable for a login of *user*, or an
+    empty list if a login could use one of them. These are the restrictions a login applies to the token it is made
+    with, matched as a login matches them: the auth policy ``disabled_token_types`` and the authz policies
+    ``tokentype``, ``serial`` and ``tokeninfo``. A recognition has no such token, so it needs one of the user's tokens
+    to pass them all.
+
+    :param user: the user the device is bound to
+    :param tokens: the usable tokens of the user, at least one
+    """
+    disabled_types = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.DISABLED_TOKEN_TYPES,
+                                user_object=user).action_values(unique=False)
+    allowed_types = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.TOKENTYPE,
+                               user_object=user).action_values(unique=False)
+    allowed_serials = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.SERIAL).action_values(unique=False)
+    tokeninfo_policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.TOKENINFO).action_values(
+        unique=False, allow_white_space_in_action=True)
+    refusing = set()
+    for token in tokens:
+        if token.type in disabled_types:
+            refusing.update(disabled_types[token.type])
+        elif allowed_types and token.type not in allowed_types:
+            refusing.update(name for names in allowed_types.values() for name in names)
+        elif not serial_allowed(token.get_serial(), allowed_serials):
+            refusing.update(name for names in allowed_serials.values() for name in names)
+        elif tokeninfo_mismatch(token, tokeninfo_policy):
+            refusing.update(name for names in tokeninfo_policy.values() for name in names)
+        else:
+            return []
+    return sorted(refusing)
+
+
 @validate_blueprint.route('/capabilities', methods=['GET'])
 def get_capabilities():
     """
@@ -1458,10 +1516,12 @@ def check_remember_device():
     reports); otherwise the answer is always ``false`` and a presented cookie is
     left untouched. A device that was not recognised for the
     ``remember_device_idle_timeout`` is removed and its cookie cleared. A device is
-    also not recognised while none of the user's tokens could be used for a login
-    (disabled, revoked, a counter exceeded, outside its validity period or not yet
-    enrolled); the cookie is then left untouched, so the device is recognised again
-    once a token is usable.
+    also not recognised while none of the user's tokens could be used for a login:
+    every token is disabled, revoked, has a counter exceeded, is outside its validity
+    period or not yet enrolled, or is excluded by the token restrictions of the
+    ``disabled_token_types``, ``tokentype``, ``serial`` or ``tokeninfo`` policies.
+    The cookie is then left untouched, so the device is recognised again once a
+    token is usable.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1523,15 +1583,11 @@ def check_remember_device():
         info = "device not recognised: the user does not resolve"
     elif not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         info = "device not recognised: no remember_device policy applies to the user"
-    elif not has_usable_token(user):
+    elif token_refusal := _token_refusal(user):
         # The device stands in for the second factor, and the user has no token left to present one with - a full
         # login would fail as well. The cookie is neither consumed nor cleared, so the device is recognised again once
         # a token of the user is usable, like after a refusal by conditional access.
-        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: none of the "
-                 f"user's tokens is usable (disabled, revoked, fail or authentication counter exceeded, outside its "
-                 f"validity period or not yet enrolled). The device is kept and recognised again once a token of "
-                 f"the user is usable.")
-        info = "device not recognised: the user has no usable token"
+        info = token_refusal
     else:
         idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
         result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout)

@@ -51,6 +51,7 @@ import json
 import logging
 import re
 import traceback
+from collections.abc import Collection
 from urllib.parse import quote
 
 from flask import g, current_app, Request
@@ -73,7 +74,7 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
-from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokenclass import ChallengeSession, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
@@ -349,18 +350,45 @@ def check_serial(request, response):
     # get the serials from a policy definition
     allowed_serials = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.SERIAL).action_values(unique=False)
 
-    # If we can compare a serial and if we do serial matching!
-    if serial and allowed_serials:
-        serial_matches = False
-        for allowed_serial in allowed_serials:
-            if re.search(allowed_serial, serial):
-                serial_matches = True
-                break
-        if serial_matches is False:
-            g.audit_object.log({"action_detail": "Serial is not allowed for "
-                                                 "authentication!"})
-            raise PolicyError("Serial is not allowed for authentication!")
+    if serial and not serial_allowed(serial, allowed_serials):
+        g.audit_object.log({"action_detail": "Serial is not allowed for "
+                                             "authentication!"})
+        raise PolicyError("Serial is not allowed for authentication!")
     return response
+
+
+def serial_allowed(serial: str, allowed_serials: Collection[str]) -> bool:
+    """
+    Whether the serial matches one of the regular expressions of the authz ``serial`` policies. Without such a
+    policy, every serial is allowed.
+
+    :param serial: the serial of the token
+    :param allowed_serials: the values of the matching ``serial`` policies
+    """
+    return not allowed_serials or any(re.search(allowed_serial, serial) for allowed_serial in allowed_serials)
+
+
+def tokeninfo_mismatch(token: TokenClass, tokeninfo_policy: Collection[str]) -> tuple[str, str, str] | None:
+    """
+    The first value of the authz ``tokeninfo`` policies (``key/<regexp>/``) that the tokeninfo of the token does not
+    match. A value of another form is logged and skipped.
+
+    :param token: the token to check
+    :param tokeninfo_policy: the values of the matching ``tokeninfo`` policies
+    :return: the key, the regular expression and the token's value of the first value it does not match, or None if
+        it matches all of them
+    """
+    for tokeninfo_pol in tokeninfo_policy:
+        try:
+            key, regex, _r = tokeninfo_pol.split("/")
+        except ValueError:
+            log.warning(f"Invalid tokeninfo policy: {tokeninfo_pol!s}")
+            continue
+        value = token.get_tokeninfo(key, "")
+        if not re.search(regex, value):
+            return key, regex, value
+        log.debug(f"Regular expression {regex!s} matches the tokeninfo field {key!s}.")
+    return None
 
 
 def check_tokeninfo(request, response):
@@ -383,21 +411,13 @@ def check_tokeninfo(request, response):
         if tokeninfo_policy:
             tokens = get_tokens(serial=serial)
             if len(tokens) == 1:
-                token = tokens[0]
-                for tokeninfo_pol in tokeninfo_policy:
-                    try:
-                        key, regex, _r = tokeninfo_pol.split("/")
-                        value = token.get_tokeninfo(key, "")
-                        if re.search(regex, value):
-                            log.debug(f"Regular expression {regex!s} "
-                                      f"matches the tokeninfo field {key!s}.")
-                        else:
-                            log.info(f"Tokeninfo field {key!s} with contents {value!s} "
-                                     f"does not match {regex!s}")
-                            raise PolicyError(f"Tokeninfo field {key!s} with contents does not"
-                                              " match regular expression.")
-                    except ValueError:
-                        log.warning(f"Invalid tokeninfo policy: {tokeninfo_pol!s}")
+                mismatch = tokeninfo_mismatch(tokens[0], tokeninfo_policy)
+                if mismatch:
+                    key, regex, value = mismatch
+                    log.info(f"Tokeninfo field {key!s} with contents {value!s} "
+                             f"does not match {regex!s}")
+                    raise PolicyError(f"Tokeninfo field {key!s} with contents does not"
+                                      " match regular expression.")
 
     return response
 

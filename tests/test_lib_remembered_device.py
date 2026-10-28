@@ -8,7 +8,7 @@ from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          create_remembered_device, consume_remember_device_cookie,
                                          get_valid_device, user_identity, UserIdentity, rotate_device,
                                          cleanup_expired_remembered_devices, count_user_devices,
-                                         hash_series_id, has_usable_token, parse_device_duration,
+                                         hash_series_id, usable_tokens, parse_device_duration,
                                          remove_idle_devices,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.error import ParameterError
@@ -530,44 +530,44 @@ class RememberedDeviceLibTestCase(MyTestCase):
             with self.assertRaises(ParameterError):
                 set_policy("duration_check", scope=SCOPE.AUTH, action=action)
 
-    def test_has_usable_token(self):
+    def test_usable_tokens(self):
         # The checks a login applies to each token decide whether the user still has a usable token
         user = User(login="cornelius", realm=self.realm1)
         remove_token(user=user)
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
 
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_1"}, user=user)
         self.addCleanup(remove_token, "USABLE_1")
-        self.assertTrue(has_usable_token(user))
+        self.assertTrue(usable_tokens(user))
 
         enable_token("USABLE_1", False)
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
         enable_token("USABLE_1", True)
 
         token = get_one_token(serial="USABLE_1")
         token.set_validity_period_end("2020-01-01T00:00+0000")
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
         token.set_validity_period_end("")
-        self.assertTrue(has_usable_token(user))
+        self.assertTrue(usable_tokens(user))
 
         token.token.rollout_state = RolloutState.CLIENTWAIT
         token.token.save()
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
         token.token.rollout_state = ""
         token.token.save()
 
         token.token.failcount = token.token.maxfail
         token.token.save()
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
 
-        # A second, usable token is enough
+        # Only the usable one of the user's tokens is returned
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_2"}, user=user)
         self.addCleanup(remove_token, "USABLE_2")
-        self.assertTrue(has_usable_token(user))
+        self.assertEqual(["USABLE_2"], [usable.get_serial() for usable in usable_tokens(user)])
         revoke_token("USABLE_2")
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
 
-    def test_has_usable_token_clears_an_expired_fail_counter(self):
+    def test_usable_tokens_clears_an_expired_fail_counter(self):
         # Like a login, the check first clears a fail counter whose clear timeout has passed
         user = User(login="cornelius", realm=self.realm1)
         remove_token(user=user)
@@ -580,10 +580,10 @@ class RememberedDeviceLibTestCase(MyTestCase):
         token.set_failcount(5)
         exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
         token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
-        self.assertTrue(has_usable_token(user))
+        self.assertTrue(usable_tokens(user))
         self.assertEqual(0, get_one_token(serial="USABLE_FAIL").token.failcount)
 
-    def test_has_usable_token_skips_a_revoked_token_with_an_expired_fail_counter(self):
+    def test_usable_tokens_skip_a_revoked_token_with_an_expired_fail_counter(self):
         # A revoked token is locked, so its fail counter is not cleared - it is skipped instead of raising
         user = User(login="cornelius", realm=self.realm1)
         remove_token(user=user)
@@ -597,10 +597,10 @@ class RememberedDeviceLibTestCase(MyTestCase):
         exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
         token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
         revoke_token("REVOKED_FAIL")
-        self.assertFalse(has_usable_token(user))
+        self.assertFalse(usable_tokens(user))
         self.assertEqual(5, get_one_token(serial="REVOKED_FAIL").token.failcount)
 
         # The user's other, usable token still counts
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_AFTER_REVOKED"}, user=user)
         self.addCleanup(remove_token, "USABLE_AFTER_REVOKED")
-        self.assertTrue(has_usable_token(user))
+        self.assertEqual(["USABLE_AFTER_REVOKED"], [usable.get_serial() for usable in usable_tokens(user)])

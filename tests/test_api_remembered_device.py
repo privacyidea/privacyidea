@@ -607,6 +607,54 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         self.assertEqual(1, len(self._cookie_headers(res)))
         self.assertEqual(2, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
 
+    def test_12b_device_needs_a_token_the_policies_allow(self):
+        # The token restrictions a login applies decide as well: while they allow none of the user's tokens, the
+        # device is not recognised, the audit and the log name the policies, and the cookie is neither rotated nor
+        # cleared. One allowed token of the user is enough.
+        client, api_key = create_client("token policy client", "privacyidea-cp")
+        device, cookie = create_remembered_device(self.identity, client.id)
+        stored_series_id = device.series_id
+
+        def recognise_with(scope: str, action: str, expect_value: bool) -> None:
+            nonlocal cookie
+            set_policy("token_restriction", scope=scope, action=action)
+            try:
+                if expect_value:
+                    with self.assertNoLogs("privacyidea.api.validate", level="WARNING"):
+                        res = self._recognise(api_key=api_key, cookie=cookie, expect_value=True)
+                else:
+                    with self.assertLogs("privacyidea.api.validate", level="WARNING") as logs:
+                        res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+            finally:
+                delete_policy("token_restriction")
+            if expect_value:
+                cookie = self._cookie_headers(res)[0].split(";", 1)[0].split("=", 1)[1]
+                return
+            self.assertEqual([], self._cookie_headers(res), action)
+            self.assertEqual("device not recognised: the policies token_restriction allow none of the user's tokens",
+                             self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"], action)
+            self.assertTrue(any("the policies token_restriction allow none of the user's tokens" in line
+                                for line in logs.output), logs.output)
+
+        for scope, action in ((SCOPE.AUTH, f"{PolicyAction.DISABLED_TOKEN_TYPES}=spass"),
+                              (SCOPE.AUTHZ, f"{PolicyAction.TOKENTYPE}=hotp"),
+                              (SCOPE.AUTHZ, f"{PolicyAction.SERIAL}=^HOTP"),
+                              (SCOPE.AUTHZ, f"{PolicyAction.TOKENINFO}=recognise/^yes$/")):
+            recognise_with(scope, action, expect_value=False)
+        self.assertEqual(1, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+
+        for scope, action in ((SCOPE.AUTH, f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp"),
+                              (SCOPE.AUTHZ, f"{PolicyAction.TOKENTYPE}=spass"),
+                              (SCOPE.AUTHZ, f"{PolicyAction.SERIAL}=^SPASS_")):
+            recognise_with(scope, action, expect_value=True)
+
+        # A second token the policy allows is enough
+        init_token({"type": "hotp", "otpkey": "3132333435363738393031323334353637383930", "serial": "HOTP_RECOGNISE"},
+                   user=User(login="cornelius", realm=self.realm1))
+        self.addCleanup(remove_token, "HOTP_RECOGNISE")
+        recognise_with(SCOPE.AUTHZ, f"{PolicyAction.TOKENTYPE}=hotp", expect_value=True)
+        self.assertEqual(5, RememberedDevice.query.filter_by(series_id=stored_series_id).first().counter)
+
     def test_13_audit_names_the_reason(self):
         # The audit entry of a recognition says why a device was not recognised
         client, api_key = create_client("audit reason client", "privacyidea-cp")
