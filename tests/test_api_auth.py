@@ -26,10 +26,11 @@ from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
 from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, AUTH_DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import Audit, Realm, NodeName, db
-from . import ldap3mock
+from . import ldap3mock, smtpmock
 from .base import MyApiTestCase, OverrideConfigTestCase, PWFILE as PASSWORDS_FILE, PWFILE2 as PASSWD_FILE
 
 PWFILE = "tests/testdata/passwd-duplicate-name"
@@ -541,7 +542,7 @@ class AuthApiTestCase(MyApiTestCase):
         aentry = self.find_most_recent_audit_entry(action='POST /auth')
         self.assertEqual(aentry['action'], 'POST /auth', aentry)
         self.assertEqual(aentry['success'], 0, aentry)
-        self.assertEqual("", aentry['policies'], aentry)
+        self.assert_empty_string(aentry['policies'], aentry)
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
@@ -1757,7 +1758,44 @@ class AuthApiTestCase(MyApiTestCase):
         Audit.query.delete()
         db.session.commit()
 
-    def test_20_autoresync_in_audit_log(self):
+    @smtpmock.activate
+    def test_20_the_policies_of_the_users_realm_apply_to_the_challenge(self):
+        # The WebUI login hands the user to the token, so the email subject comes from the policy of the user's realm,
+        # not from the policy of another realm
+        smtpmock.setdata(response={"hans@dampf.com": (200, "OK")})
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serial = "AUTHMAIL"
+        init_token({"type": "email", "serial": serial, "otpkey": self.otpkey, "email": "hans@dampf.com",
+                    "pin": "mailpin"}, user=User("cornelius", self.realm1))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("subject_realm2", scope=SCOPE.AUTH, realm=self.realm2,
+                   action=f"{EMAILACTION.EMAILSUBJECT}=Subject of realm2")
+        try:
+            for subject_realm1, expected_subject in ((None, "Your OTP"), ("Subject of realm1", "Subject of realm1")):
+                with self.subTest(subject_realm1=subject_realm1):
+                    if subject_realm1:
+                        set_policy("subject_realm1", scope=SCOPE.AUTH, realm=self.realm1,
+                                   action=f"{EMAILACTION.EMAILSUBJECT}={subject_realm1}")
+                    with self.app.test_request_context('/auth', method='POST',
+                                                       data={"username": "cornelius", "realm": self.realm1,
+                                                             "password": "mailpin"}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertListEqual([serial], [challenge["serial"]
+                                                    for challenge in res.json["detail"]["multi_challenge"]])
+                    subjects = [line for line in smtpmock.get_sent_message().splitlines()
+                                if line.startswith("Subject:")]
+                    self.assertListEqual([f"Subject: {expected_subject}"], subjects)
+        finally:
+            for name in ("piLogin", "subject_realm1", "subject_realm2"):
+                try:
+                    delete_policy(name)
+                except ResourceNotFoundError:
+                    pass
+            remove_token(serial)
+
+    def test_21_autoresync_in_audit_log(self):
         self.setUp_user_realms()
         set_policy("pi-login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
         self.addCleanup(delete_policy, "pi-login")

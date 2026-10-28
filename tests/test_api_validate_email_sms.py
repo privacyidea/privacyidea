@@ -119,13 +119,14 @@ class SentOtpValidityTests(_TestHost):
     def test_autosend_value_has_no_time_limit(self):
         # Autosend sends the next value after a successful login, for the next login whenever that is
         serial = self._enroll()
-        set_privacyidea_config(self.validity_key, 1)
+        # Long enough for the first value, which is checked without moving the clock
+        set_privacyidea_config(self.validity_key, 120)
         set_policy("validity_autosend", scope=SCOPE.AUTH, action=self.autosend_action)
         self.policies.append("validity_autosend")
         transaction_id, otp = self._trigger(serial)
         self.assertTrue(self._check({"pass": otp, "transaction_id": transaction_id}))
         autosent_otp = get_one_token(serial=serial).get_otp()[2]
-        with clock_moved_forward(2):
+        with clock_moved_forward(121):
             self.assertTrue(self._check({"pass": self.pin + autosent_otp}))
 
     def test_record_without_timezone_is_refused(self):

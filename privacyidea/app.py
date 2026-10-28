@@ -25,7 +25,6 @@
 #
 import atexit
 import datetime
-import json
 import logging
 import logging.config
 import os
@@ -598,13 +597,6 @@ def create_app(config_name="development",
             init_hsm()
 
     _setup_node_configuration(app)
-
-    # SQLAlchemy Oracle dialect does not (yet) support JSON serializers
-    with app.app_context():
-        engine = db.session.get_bind()
-        if engine.name == "oracle":
-            engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
-            engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)

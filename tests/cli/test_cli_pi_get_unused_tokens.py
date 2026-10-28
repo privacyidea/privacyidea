@@ -25,6 +25,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import get_one_token, get_tokens, init_token
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT, TokenClass
 from .base import CliTestCase
+from ..base import stored_empty_string
 
 OTPKEY = "3132333435363738393031323334353637383930"
 
@@ -147,8 +148,8 @@ class PIGetUnusedTokensTestCase(CliTestCase):
         self.assertEqual(0, result.exit_code, result.output)
         self.assertIn("Setting description for token OLD0001: unused for a while", result.output, result)
         self.assertEqual("unused for a while", get_one_token(serial="OLD0001").token.description)
-        self.assertEqual("", get_one_token(serial="NEW0001").token.description)
-        self.assertEqual("", get_one_token(serial="UNUSED0001").token.description)
+        self.assertEqual(stored_empty_string(), get_one_token(serial="NEW0001").token.description)
+        self.assertEqual(stored_empty_string(), get_one_token(serial="UNUSED0001").token.description)
 
     def test_08_mark_sets_tokeninfo_on_tokens_last_used_before_age(self):
         self.create_old_new_and_unused_token()
