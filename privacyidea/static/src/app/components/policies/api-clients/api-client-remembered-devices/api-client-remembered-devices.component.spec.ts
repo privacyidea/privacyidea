@@ -38,6 +38,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
 
   const device1 = {
     device_id: "dev1",
+    client_id: "client1",
     resolver: "res1",
     user_id: "u1",
     realm: "realm1",
@@ -50,6 +51,7 @@ describe("ApiClientRememberedDevicesComponent", () => {
   };
   const device2 = {
     device_id: "dev2",
+    client_id: "client1",
     resolver: "res1",
     user_id: "u2",
     realm: "realm2",
