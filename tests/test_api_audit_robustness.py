@@ -160,7 +160,7 @@ class AuditRobustnessTestCase(MyApiTestCase):
                                   "pass": "123456"})
             audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
             self.assertEqual("selfservice", audit_entry.get("user"), audit_entry)
-            self.assertEqual("", audit_entry.get("serial"), audit_entry)
+            self.assert_empty_string(audit_entry.get("serial"), audit_entry)
         finally:
             delete_policy("robust_cr")
             remove_token("OWNER001")
