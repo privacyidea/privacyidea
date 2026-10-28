@@ -106,7 +106,9 @@ INTERNAL_OPTION_KEYS = frozenset({
 NO_UNQUOTE_USER_AGENTS = {
     'privacyidea-cp': None,
     'privacyidea-ldap-proxy': None,
-    'simplesamlphp': None
+    'simplesamlphp': None,
+    'pam': None,
+    'privacyidea-pam': None
 }
 
 SESSION_KEY_LENGTH = 32
