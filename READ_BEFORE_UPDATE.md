@@ -203,6 +203,9 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
+  describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
+
 * **An authentication answered with an error is audited as a failure** — An authentication that succeeds or
   triggers a challenge but is then answered with an error, e.g. because a policy refuses it, is now recorded in the
   audit log with `success` false and `authentication` `REJECT`. The authentication that starts an enrollment via
