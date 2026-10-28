@@ -21,7 +21,7 @@
 // routed; the admin and the self-service routes share these.
 export const PAGE_NAMES = {
   login: $localize`:@@pageTitle.login:Login`,
-  passwordRecovery: $localize`:@@pageTitle.passwordRecovery:Reset password`,
+  passwordRecovery: $localize`:@@pageTitle.passwordRecovery:Reset Password`,
   passwordReset: $localize`:@@pageTitle.passwordReset:Set new password`,
   dashboard: $localize`:@@common.dashboard:Dashboard`,
   settings: $localize`:@@pageTitle.settings:UI settings`,

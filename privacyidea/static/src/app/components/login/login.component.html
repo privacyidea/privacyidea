@@ -34,7 +34,7 @@
           class="margin-top-0 margin-bottom-32"
           i18n="@@login.youAuthenticated">You are authenticated by the web server as user
           <strong>{{ remoteUser() }}</strong>. You may log in as this user to privacyIDEA without any further
-                                          credentials.
+          credentials.
         </p>
 
         <button
@@ -88,21 +88,9 @@
         </div>
 
         @if (realms().length > 0) {
-          <mat-form-field>
-            <mat-label i18n="@@common.realm">Realm</mat-label>
-            <mat-select
-              (selectionChange)="realm.set($event.value)"
-              [value]="realm()">
-              @for (realmOption of realms(); track realmOption) {
-                <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
-              }
-            </mat-select>
-            @if (realm() !== "") {
-              <app-clear-button
-                (clearButtonClick)="clearRealmSelection($event)"
-                matSuffix></app-clear-button>
-            }
-          </mat-form-field>
+          <app-realm-select
+            [(realm)]="realm"
+            [realms]="realms()" />
         }
 
         @if (!showOtpField()) {
@@ -145,7 +133,7 @@
             <a
               [routerLink]="passwordRecoveryPath"
               class="password-reset-link margin-top-16"
-              i18n="@@login.resetPassword">Reset password
+              i18n="@@login.resetPassword">Reset Password
             </a>
           </div>
         }

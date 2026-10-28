@@ -189,23 +189,22 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         # host (which is "localhost" here)
         self.app.config["PI_BASE_URL"] = "https://pi.example.com"
         try:
-            with mock.patch("privacyidea.api.recover.is_new_webui_served", return_value=False), \
-                    self.app.test_request_context('/recover',
-                                                  method='POST',
-                                                  data={"user": "corneliusReg",
-                                                        "realm": "register",
-                                                        "email":
-                                                            "cornelius@privacyidea.org"}):
-                res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 200, res.data)
-                data = res.json
-                self.assertEqual(data.get("result").get("value"), True)
-                # The emailed link host is the configured PI_BASE_URL, not the
-                # request host (which is "localhost" here).
-                body = message_from_string(
-                    smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
-                self.assertIn("https://pi.example.com/#!/reset/corneliusReg@register/", body)
-                self.assertNotIn("localhost", body)
+            with mock.patch("privacyidea.api.recover.is_new_webui_served", return_value=False):
+                with self.app.test_request_context('/recover',
+                                                   method='POST',
+                                                   data={"user": "corneliusReg",
+                                                         "realm": "register",
+                                                         "email": "cornelius@privacyidea.org"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res.data)
+                    data = res.json
+                    self.assertEqual(data.get("result").get("value"), True)
+                    # The emailed link host is the configured PI_BASE_URL, not the
+                    # request host (which is "localhost" here).
+                    body = message_from_string(
+                        smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+                    self.assertIn("https://pi.example.com/#!/reset/corneliusReg@register/", body)
+                    self.assertNotIn("localhost", body)
         finally:
             self.app.config.pop("PI_BASE_URL", None)
 

@@ -20,13 +20,12 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
 import { form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
-import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
-import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { LoginLogoComponent } from "@components/shared/login-logo/login-logo.component";
+import { parseRealms, RealmSelectComponent, realmParam } from "@components/shared/realm-select/realm-select.component";
 import { ConfigService } from "@services/config/config.service";
 import { RecoverService, RecoverServiceInterface } from "@services/recover/recover.service";
 
@@ -42,14 +41,11 @@ import { RecoverService, RecoverServiceInterface } from "@services/recover/recov
     MatIconModule,
     MatInput,
     MatLabel,
-    MatOption,
-    MatSelect,
-    MatSuffix,
-    ClearButtonComponent,
+    RealmSelectComponent,
     RouterLink
   ],
   templateUrl: "./password-recovery-request.component.html",
-  styleUrl: "../../login/login.component.scss"
+  styleUrl: "./password-recovery-request.component.scss"
 })
 export class PasswordRecoveryRequestComponent {
   private readonly configService = inject(ConfigService);
@@ -61,12 +57,7 @@ export class PasswordRecoveryRequestComponent {
   usernameField = form(this.username, (f) => required(f));
   emailField = form(this.email, (f) => required(f));
 
-  realms = computed(() =>
-    (this.configService.config()?.realms || "")
-      .split(",")
-      .map((r: string) => r.trim())
-      .filter((r: string) => r)
-  );
+  realms = computed(() => parseRealms(this.configService.config()?.realms));
   realm = linkedSignal({
     source: this.realms,
     computation: (realms) => realms[0] ?? ""
@@ -84,20 +75,15 @@ export class PasswordRecoveryRequestComponent {
     () => !this.username() || !this.email() || this.submitting() || this.passwordResetDisabled()
   );
 
-  clearRealmSelection(event: MouseEvent): void {
-    event.stopPropagation();
-    this.realm.set("");
-  }
-
   onSubmit(): void {
     if (this.isSubmitDisabled()) {
       return;
     }
     this.errorMessage.set("");
     this.submitting.set(true);
-    const realm = this.realm();
+    const realm = realmParam(this.realm());
     this.recoverService
-      .requestRecoveryCode({ user: this.username(), email: this.email(), ...(realm && realm !== "-" && { realm }) })
+      .requestRecoveryCode({ user: this.username(), email: this.email(), ...(realm && { realm }) })
       .subscribe({
         next: () => {
           this.submitting.set(false);
@@ -107,7 +93,6 @@ export class PasswordRecoveryRequestComponent {
           this.submitting.set(false);
           this.errorMessage.set(
             err.error?.result?.error?.message ||
-              err.message ||
               $localize`:@@passwordRecovery.requestFailed:The recovery email could not be sent.`
           );
         }

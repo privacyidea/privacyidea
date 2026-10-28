@@ -58,7 +58,7 @@ export function splitUserAndRealm(userAndRealm: string): { user: string; realm?:
     RouterLink
   ],
   templateUrl: "./password-recovery-reset.component.html",
-  styleUrl: "../../login/login.component.scss"
+  styleUrl: "./password-recovery-reset.component.scss"
 })
 export class PasswordRecoveryResetComponent {
   private readonly route = inject(ActivatedRoute);

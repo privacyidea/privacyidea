@@ -379,7 +379,7 @@ If the user is located in an editable user store, this policy can define, if
 the user is allowed to perform a password reset. During the password reset an
 email with a link to reset the password is sent to the user.
 
-If the policy is active, the login page of the WebUI shows a *Reset password* link. It opens a
+If the policy is active, the login page of the WebUI shows a *Reset Password* link. It opens a
 page that asks for the username, the realm (if the ``realm_dropdown`` WebUI policy
 is configured) and the email address stored for the user. The server sends an email with a link
 that is valid for one hour. The link opens a page of the WebUI where the user enters the new
