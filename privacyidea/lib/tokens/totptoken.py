@@ -42,6 +42,7 @@ from privacyidea.lib.decorators import check_token_locked, check_token_otp_lengt
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP, Match
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
@@ -357,9 +358,11 @@ class TotpTokenClass(HotpTokenClass):
             res = -1
             return res
 
+        resynced = False
         if -1 == res:
             # _autosync: test if two consecutive otps have been provided
             res = self._autosync(hmac2Otp, anOtpVal)
+            resynced = res != -1
 
         if res != -1:
             # on success, we have to save the last attempt
@@ -367,6 +370,9 @@ class TotpTokenClass(HotpTokenClass):
                 # Another request used this OTP value first, so it is as spent as it is for a later replay.
                 log.info(f"The OTP value of token {self.token.serial} was used by another request.")
                 return -1
+            if resynced:
+                log.debug(f"Autoresync successful for token {self.token.serial!s}.")
+                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
@@ -436,22 +442,25 @@ class TotpTokenClass(HotpTokenClass):
                     log.debug(f"Autoresync failed for token {self.token.serial!s}. Previous OTP values used.")
                     res = -1
                 else:
-                    log.info(f"Autoresync successful for token {self.token.serial!s}.")
                     server_time = time.time()
                     counter = self._time2counter(server_time, self.timestep)
 
                     shift = otp2c - counter
                     info["timeShift"] = shift
                     self.set_tokeninfo(info)
+                # A success is recorded by check_otp once the counter is stored
+                if res == -1:
+                    self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.FAILED
 
                 # now clean the resync data
                 del info["otp1c"]
                 self.set_tokeninfo(info)
 
             else:
-                log.debug(f"setting otp1c: {res!s}")
+                log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
                 info["otp1c"] = res
                 self.set_tokeninfo(info)
+                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.STARTED
                 res = -1
 
         return res

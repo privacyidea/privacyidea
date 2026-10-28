@@ -118,7 +118,7 @@ from privacyidea.api.lib.conditional_access import (conditional_access_gate, con
                                                     RejectionShape, REMEMBER_DEVICE_REJECTION,
                                                     TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
-                                       INTERNAL_OPTION_KEYS)
+                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
@@ -158,6 +158,7 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
+from ..lib.autoresync import LOG_AUTORESYNC_KEY
 from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
                                                       confirm_attempt_for_serials)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -604,6 +605,8 @@ def check():
         # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
         # a failure was made against belong on the authentication-log row alone.
         AUTH_EVENT_SERIALS_KEY: [],
+        # Audit-only, never part of the response (see LOG_AUTORESYNC_KEY)
+        LOG_AUTORESYNC_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -1015,6 +1018,8 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
+        # Read before the check, which deletes a used registration token
+        token_type = get_one_token(serial=serial).get_tokentype()
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
         # token that can not be used is classified by check_otp.
@@ -1022,8 +1027,12 @@ def _handle_serial_auth(context: dict, serial: str):
             AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
-        # a message, so without this the row would name no token although the request named exactly one.
+        # a message, so without this the rows would name no token although the request named exactly one. The audit
+        # entry is logged directly, since serial_list would also update the last authentication on success and a
+        # type in the details would be part of the response.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        g.audit_object.log({"serial": serial, "token_type": token_type})
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success
     context["details"] = details
@@ -1079,6 +1088,7 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -1199,6 +1209,7 @@ def _finalize_auth_response(context):
     if details.get("type"):
         audit_entry["token_type"] = details.get("type")
     g.audit_object.log(audit_entry)
+    add_autoresync_to_audit(context[LOG_AUTORESYNC_KEY])
 
     return ret
 
