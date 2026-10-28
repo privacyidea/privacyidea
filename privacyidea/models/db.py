@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING
+import json
+from typing import TYPE_CHECKING, Any
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, Sequence, event, inspect, text, types as sqltypes
@@ -217,14 +218,32 @@ def compile_json_oracle(type_, compiler, **kw):  # pragma: no cover
     return "CLOB"
 
 
+def serialize_json_for_oracle(value: Any) -> str:
+    """
+    Serialize the value of a JSON column for the CLOB it is stored in on Oracle, keeping non-ASCII characters as
+    they are.
+    """
+    return json.dumps(value, ensure_ascii=False)
+
+
+def deserialize_json_from_oracle(value: Any) -> Any:
+    """
+    Deserialize the value of a JSON column read from Oracle. python-oracledb already decodes a column with an
+    ``IS JSON`` check constraint (``radiusserver.options``), so only text is parsed and a decoded value is returned
+    as it is.
+    """
+    if isinstance(value, (str, bytes)):
+        return json.loads(value)
+    return value
+
+
 # The hook above only settles the column type. SQLAlchemy's Oracle dialect implements
 # no generic JSON support at all, so unlike every JSON-capable dialect it never sets
 # the _json_serializer/_json_deserializer attributes that sqlalchemy.types.JSON reads
 # when binding and fetching a value — writing to a JSON column raises
 # "AttributeError: 'OracleDialect_oracledb' object has no attribute _json_serializer".
-# Providing them as None selects the type's own json.dumps/json.loads fallback, which
-# is exactly what the CLOB column needs. Guarded so a future SQLAlchemy that does
-# support JSON on Oracle keeps its own implementation.
+# Set on the class, they apply to every Oracle engine. Guarded so a future SQLAlchemy
+# that does support JSON on Oracle keeps its own implementation.
 if not hasattr(OracleDialect, "_json_serializer"):
-    OracleDialect._json_serializer = None
-    OracleDialect._json_deserializer = None
+    OracleDialect._json_serializer = staticmethod(serialize_json_for_oracle)
+    OracleDialect._json_deserializer = staticmethod(deserialize_json_from_oracle)
