@@ -251,13 +251,14 @@ describe("NewSmsGatewayComponent", () => {
     });
 
     it("clears the name through the clear button and keeps the form dirty", async () => {
-      component.smsModel.update((m) => ({ ...m, name: "gw" }));
-      await flush(fixture);
-      expect(component.hasChanges).toBe(false);
+      await typeInto(fixture, "Name", "gw");
+      expect(component.hasChanges).toBe(true);
       clearButtonOf(fixture, "Name").click();
       await flush(fixture);
       expect(component.smsModel().name).toBe("");
-      expect(component.hasChanges).toBe(true);
+      expect(component.smsForm.name().dirty()).toBe(true);
+      // Back to the empty name of a new gateway, with nothing else filled in.
+      expect(component.hasChanges).toBe(false);
     });
 
     it("selects the provider module through the select and marks the form dirty", async () => {
@@ -1011,6 +1012,32 @@ describe("NewSmsGatewayComponent", () => {
     it("shows the stored parameter values in the inputs", () => {
       expect(controlOf(fixture, "required_p").value).toBe("stored-required");
       expect(controlOf(fixture, "optional_p").value).toBe("stored-optional");
+    });
+
+    it("counts a description typed back to its stored value as unchanged", async () => {
+      await typeInto(fixture, "Description", "changed");
+      expect(component.hasChanges).toBe(true);
+
+      await typeInto(fixture, "Description", "stored");
+      expect(component.hasChanges).toBe(false);
+    });
+
+    it("counts a parameter typed back to its stored value as unchanged", async () => {
+      await typeInto(fixture, "optional_p", "changed");
+      expect(component.hasChanges).toBe(true);
+
+      await typeInto(fixture, "optional_p", "stored-optional");
+      expect(component.hasChanges).toBe(false);
+    });
+
+    it("re-initializes the form when the gateway list reloads after an edit was typed back", async () => {
+      await typeInto(fixture, "Description", "changed");
+      await typeInto(fixture, "Description", "stored");
+
+      smsGatewayServiceMock.smsGateways.set([{ ...existingGateway, description: "reloaded" }]);
+      await flush(fixture);
+
+      expect(component.smsModel().description).toBe("reloaded");
     });
 
     it("blocks saving when a required parameter is emptied and reports it", async () => {
