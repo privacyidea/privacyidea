@@ -47,6 +47,9 @@ from typing import TYPE_CHECKING, Any
 import segno
 import sqlalchemy
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import Grouping
+from sqlalchemy.sql.operators import OperatorType
 from sqlalchemy.sql.visitors import InternalTraversal
 from sqlalchemy.types import TypeDecorator
 from dateutil.parser import parse as parse_date_string
@@ -1164,6 +1167,18 @@ class _TextColumnEquals(sqlalchemy.ColumnElement):
     def __init__(self, column: sqlalchemy.ColumnElement, value: str):
         self.column = column
         self.value = sqlalchemy.bindparam(None, value, type_=_OracleLikePattern(column.type), unique=True)
+
+    @property
+    def _from_objects(self) -> list[sqlalchemy.FromClause]:
+        # The table of the column joins the FROM list, also when no other part of the statement names it
+        return self.column._from_objects
+
+    def self_group(self, against: OperatorType | None = None) -> sqlalchemy.ColumnElement:
+        # Both forms are a comparison, like "a = b": inside an operator of the same or a higher precedence, for
+        # example "== false()", the condition needs parentheses
+        if operators.is_precedent(operators.eq, against):
+            return Grouping(self)
+        return self
 
 
 @compiles(_TextColumnEquals)

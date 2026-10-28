@@ -81,6 +81,26 @@ def test_text_column_equals_uses_like_on_oracle_only():
         assert sql.count(" = ") == 2
 
 
+def test_text_column_equals_adds_the_table_of_the_column_to_the_from_list():
+    token = sa.table("token", sa.column("id", sa.Integer()))
+    tokeninfo = sa.table("tokeninfo", sa.column("Value", sa.UnicodeText()))
+    # No other part of the statement names the table tokeninfo
+    statement = sa.select(token.c.id).where(text_column_equals(tokeninfo.c.Value, "x"))
+    for dialect in (oracle.dialect(), postgresql.dialect(), mysql.dialect(), sqlite.dialect()):
+        assert "FROM token, tokeninfo " in " ".join(str(statement.compile(dialect=dialect)).split())
+
+
+def test_text_column_equals_gets_parentheses_inside_a_comparison():
+    table = sa.table("tokeninfo", sa.column("Value", sa.UnicodeText()))
+    condition = text_column_equals(table.c.Value, "x")
+    for dialect in (oracle.dialect(), postgresql.dialect(), mysql.dialect(), sqlite.dialect()):
+        condition_sql = str(condition.compile(dialect=dialect))
+        where_sql = str(sa.select(table.c.Value).where(condition).compile(dialect=dialect))
+        assert where_sql.endswith(f"WHERE {condition_sql}")
+        compared_sql = str(sa.select(table.c.Value).where(condition == sa.false()).compile(dialect=dialect))
+        assert f"WHERE ({condition_sql}) = " in compared_sql
+
+
 def test_text_column_equals_escapes_the_value_on_oracle_only():
     condition = text_column_equals(sa.column("Value", sa.UnicodeText()), "a_b%c/d")
     for dialect, expected in ((oracle.dialect(), "a/_b/%c//d"),
@@ -109,3 +129,6 @@ def test_text_column_equals_matches_exactly_and_with_case_on_sqlite():
         assert [] == matches("abc")
         assert ["a_c"] == matches("a_c")
         assert [] == matches("a%")
+        # The condition is the only part of the statement that names the table
+        count = sa.select(sa.func.count()).where(text_column_equals(table.c.value, "ABC"))
+        assert 1 == connection.execute(count).scalar()
