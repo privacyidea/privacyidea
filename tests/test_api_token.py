@@ -6676,3 +6676,15 @@ class HideTokeninfoPerTokenTestCase(MyApiTestCase):
                 # policy applies to it by its realm
                 self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
 
+    def test_04_policy_for_the_owner_of_a_token_in_more_than_one_realm(self):
+        set_realms("HIDEOWN", [self.realm1, self.realm3])
+        # A policy for cornelius without a realm applies to the token of cornelius in every realm of the token. A
+        # policy for cornelius of realm3 does not apply to the token of cornelius of realm1, although the token is in
+        # realm3 as well.
+        for policy_realm, expected in (("", {"HIDEOWN": False, "HIDEUNASSIGNED": True, "HIDEREALM3": True}),
+                                       (self.realm3, {"HIDEOWN": True, "HIDEUNASSIGNED": True, "HIDEREALM3": True})):
+            with self.subTest(policy_realm=policy_realm):
+                set_policy("admin_hide", scope=SCOPE.ADMIN, realm=policy_realm, user="cornelius",
+                           action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo")
+                self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
+
