@@ -1,7 +1,9 @@
 from unittest.mock import patch
 
 import privacyidea.lib.remembered_device as remembered_device_module
+from .api_lib_policy_common import SSHKEY
 from .base import MyTestCase
+from .test_lib_tokens_certificate import CERT
 
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
@@ -15,6 +17,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, get_policies, set_policy
 from privacyidea.lib.realm import set_realm
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.token import enable_token, get_one_token, init_token, remove_token, revoke_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, FAILCOUNTER_EXCEEDED, RolloutState
@@ -604,3 +607,23 @@ class RememberedDeviceLibTestCase(MyTestCase):
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_AFTER_REVOKED"}, user=user)
         self.addCleanup(remove_token, "USABLE_AFTER_REVOKED")
         self.assertEqual(["USABLE_AFTER_REVOKED"], [usable.get_serial() for usable in usable_tokens(user)])
+
+    def test_usable_tokens_skip_tokens_that_cannot_log_in(self):
+        # An SSH key or a certificate cannot verify a login, and an application-specific password is not used by a
+        # login without a service_id - none of them counts
+        user = User(login="cornelius", realm=self.realm1)
+        remove_token(user=user)
+        init_token({"type": "sshkey", "sshkey": SSHKEY, "serial": "NO_LOGIN_SSH"}, user=user)
+        self.addCleanup(remove_token, "NO_LOGIN_SSH")
+        init_token({"type": "certificate", "certificate": CERT, "serial": "NO_LOGIN_CERT"}, user=user)
+        self.addCleanup(remove_token, "NO_LOGIN_CERT")
+        set_serviceid("remembered_device_service")
+        self.addCleanup(delete_serviceid, "remembered_device_service")
+        init_token({"type": "applspec", "service_id": "remembered_device_service", "otpkey": "applspec1234",
+                    "serial": "NO_LOGIN_APPLSPEC"}, user=user)
+        self.addCleanup(remove_token, "NO_LOGIN_APPLSPEC")
+        self.assertEqual([], usable_tokens(user))
+
+        init_token({"type": "spass", "pin": "test", "serial": "LOGIN_SPASS"}, user=user)
+        self.addCleanup(remove_token, "LOGIN_SPASS")
+        self.assertEqual(["LOGIN_SPASS"], [usable.get_serial() for usable in usable_tokens(user)])

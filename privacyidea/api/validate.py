@@ -1384,16 +1384,22 @@ def _token_refusal(user: User) -> str | None:
     if not tokens:
         log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: none of the "
                  f"user's tokens is usable (disabled, revoked, fail or authentication counter exceeded, outside its "
-                 f"validity period or not yet enrolled). The device is kept and recognised again once a token of "
-                 f"the user is usable.")
+                 f"validity period, not yet enrolled or of a type that cannot verify a login). The device is kept "
+                 f"and recognised again once a token of the user is usable.")
         return "device not recognised: the user has no usable token"
-    refusing_policies = _policies_refusing_tokens(user, tokens)
+    try:
+        refusing_policies = _policies_refusing_tokens(user, tokens)
+    except PolicyError as exc:
+        # last_auth policies of the same priority that set different values, which refuse a login as well
+        log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                    f"{exc.get_description()}. The device is kept and recognised again once the policies agree.")
+        return f"device not recognised: {exc.get_description()}"
     if refusing_policies:
         policy_names = ", ".join(refusing_policies)
         log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: the "
                     f"policies {policy_names} allow none of the user's tokens for a login (disabled_token_types, "
-                    f"tokentype, serial or tokeninfo). The device is kept and recognised again once a policy allows "
-                    f"a token of the user.")
+                    f"tokentype, serial, tokeninfo or last_auth). The device is kept and recognised again once a "
+                    f"policy allows a token of the user.")
         return f"device not recognised: the policies {policy_names} allow none of the user's tokens"
     return None
 
@@ -1403,11 +1409,13 @@ def _policies_refusing_tokens(user: User, tokens: list[TokenClass]) -> list[str]
     The names of the policies whose token restrictions leave none of *tokens* usable for a login of *user*, or an
     empty list if a login could use one of them. These are the restrictions a login applies to the token it is made
     with, matched as a login matches them: the auth policy ``disabled_token_types`` and the authz policies
-    ``tokentype``, ``serial`` and ``tokeninfo``. A recognition has no such token, so it needs one of the user's tokens
-    to pass them all.
+    ``tokentype``, ``serial``, ``tokeninfo`` and ``last_auth``. A recognition has no such token, so it needs one of the
+    user's tokens to pass them all. A recognition does not update the ``last_auth`` of a token, so ``last_auth`` ends
+    the recognition of a device once the last login with each of the user's tokens is too long ago.
 
     :param user: the user the device is bound to
     :param tokens: the usable tokens of the user, at least one
+    :raises PolicyError: if ``last_auth`` policies of the same priority set different values
     """
     disabled_types = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.DISABLED_TOKEN_TYPES,
                                 user_object=user).action_values(unique=False)
@@ -1416,6 +1424,8 @@ def _policies_refusing_tokens(user: User, tokens: list[TokenClass]) -> list[str]
     allowed_serials = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.SERIAL).action_values(unique=False)
     tokeninfo_policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.TOKENINFO).action_values(
         unique=False, allow_white_space_in_action=True)
+    last_auth = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH,
+                           user_object=user).action_values(unique=True, write_to_audit_log=False)
     refusing = set()
     for token in tokens:
         if token.type in disabled_types:
@@ -1426,6 +1436,8 @@ def _policies_refusing_tokens(user: User, tokens: list[TokenClass]) -> list[str]
             refusing.update(name for names in allowed_serials.values() for name in names)
         elif tokeninfo_mismatch(token, tokeninfo_policy):
             refusing.update(name for names in tokeninfo_policy.values() for name in names)
+        elif last_auth and not token.check_last_auth_newer(next(iter(last_auth))):
+            refusing.update(next(iter(last_auth.values())))
         else:
             return []
     return sorted(refusing)
@@ -1505,14 +1517,16 @@ def check_remember_device():
     ``remember_device`` policy allows it (the same gate ``/validate/capabilities``
     reports); otherwise the answer is always ``false`` and a presented cookie is
     left untouched. A device that was not recognised for the
-    ``remember_device_idle_timeout`` is removed and its cookie cleared. A device is
-    also not recognised while none of the user's tokens could be used for a login:
-    every token is disabled, revoked, has a counter exceeded, is outside its validity
-    period or not yet enrolled, or is excluded by the token restrictions of the
-    ``disabled_token_types``, ``tokentype``, ``serial`` or ``tokeninfo`` policies.
-    The cookie is then left untouched, so the device is recognised again once a
-    token is usable. The same holds while ``remember_device_idle_timeout``
-    policies of the same priority set different values.
+    ``remember_device_idle_timeout`` is removed and its cookie cleared. A live
+    device is also not recognised while none of the user's tokens could be used for
+    a login: every token is disabled, revoked, has a counter exceeded, is outside its
+    validity period, not yet enrolled or of a type that cannot verify a login, or is
+    excluded by the ``disabled_token_types``, ``tokentype``, ``serial``,
+    ``tokeninfo`` or ``last_auth`` policies. The cookie is then left untouched, so
+    the device is recognised again once a token is usable. The same holds while
+    ``remember_device_idle_timeout`` policies of the same priority set different
+    values. These checks come after the cookie is looked up, so a theft, a dead
+    cookie or an idle device is handled whatever the user's tokens are.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1574,11 +1588,6 @@ def check_remember_device():
         info = "device not recognised: the user does not resolve"
     elif not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         info = "device not recognised: no remember_device policy applies to the user"
-    elif token_refusal := _token_refusal(user):
-        # The device stands in for the second factor, and the user has no token left to present one with - a full
-        # login would fail as well. The cookie is neither consumed nor cleared, so the device is recognised again once
-        # a token of the user is usable, like after a refusal by conditional access.
-        info = token_refusal
     else:
         try:
             idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
@@ -1591,11 +1600,16 @@ def check_remember_device():
             info = f"device not recognised: {exc.get_description()}"
         else:
             result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"),
-                                                    idle_timeout)
+                                                    idle_timeout, check_refusal=lambda: _token_refusal(user))
             if result.status == RememberStatus.RECOGNIZED:
                 recognised = True
                 cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
                 info = "remembered device recognised"
+            elif result.status == RememberStatus.REFUSED:
+                # The device stands in for the second factor, and the user has no token left to present one with - a
+                # full login would fail as well. The cookie is neither consumed nor cleared, so the device is
+                # recognised again once a token of the user is usable, like after a refusal by conditional access.
+                info = result.refusal
             elif result.status == RememberStatus.GRACE:
                 # Tolerated concurrent/duplicate request: recognised, but do not
                 # rotate (the client keeps the cookie it already has).

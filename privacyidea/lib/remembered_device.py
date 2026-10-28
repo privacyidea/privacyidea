@@ -35,6 +35,7 @@ import hashlib
 import logging
 import re
 import secrets
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from typing import NamedTuple, TYPE_CHECKING
 
@@ -200,7 +201,9 @@ def usable_tokens(user: "User") -> list["TokenClass"]:
     The tokens of the user that could be used to log in right now, by the checks a login applies to each token
     (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not), neither its
     fail counter nor its authentication counters are exceeded, it is within its validity period and it is fully
-    enrolled. Like a login, this first clears a fail counter whose clear timeout has passed.
+    enrolled. Like a login, this first clears a fail counter whose clear timeout has passed. A token type that cannot
+    verify a login (see :attr:`~privacyidea.lib.tokenclass.TokenClass.verifies_login`) does not count, and neither does
+    a token that excludes itself from a login without a ``service_id``, like an application-specific password.
 
     A remembered device stands in for the second factor, so it is recognised only while the user has a token to
     present one with. The token restrictions of the policies are the caller's to apply.
@@ -213,9 +216,14 @@ def usable_tokens(user: "User") -> list["TokenClass"]:
     from privacyidea.lib.token import get_tokens
     tokens = []
     for token in get_tokens(user=user):
+        if not token.verifies_login:
+            continue
         # Revocation first, as a login checks it: revoke() also locks the token, and check_reset_failcount() calls
         # the lock-protected reset() once the clear timeout has passed, which would raise for a revoked token.
         if token.is_revoked():
+            continue
+        # A recognition carries no service_id, so a token that a login without one does not use does not count
+        if not token.use_for_authentication({}):
             continue
         token.check_reset_failcount()
         if token.check_all([]):
@@ -451,6 +459,9 @@ class RememberStatus(str, enum.Enum):
       should clear it.
     * ``THEFT`` - replay detected; the series has already been invalidated and
       the caller must clear the cookie.
+    * ``REFUSED`` - the device is live, but the caller's ``check_refusal`` refused
+      its recognition, and ``refusal`` says why. The device is neither rotated nor
+      deleted, and the caller must not clear the cookie.
 
     Inherits from ``str`` so members compare equal to their plain string value
     (e.g. ``RememberStatus.RECOGNIZED == "recognized"``).
@@ -460,6 +471,7 @@ class RememberStatus(str, enum.Enum):
     FOREIGN = "foreign"
     MISS = "miss"
     THEFT = "theft"
+    REFUSED = "refused"
 
 
 class ConsumeResult(NamedTuple):
@@ -470,11 +482,13 @@ class ConsumeResult(NamedTuple):
     status: RememberStatus
     cookie_value: str | None
     expires_at: datetime | None
+    refusal: str | None = None
 
 
 def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: UserIdentity,
                                    client_ip: str | None = None,
-                                   idle_timeout: timedelta | None = None) -> ConsumeResult:
+                                   idle_timeout: timedelta | None = None,
+                                   check_refusal: Callable[[], str | None] | None = None) -> ConsumeResult:
     """
     Consume a presented remember-device cookie: validate it (see
     :func:`get_valid_device`) and rotate it on a fresh use. This is the single
@@ -494,6 +508,10 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
     :param client_ip: the source IP of the request (bounds the grace window)
     :param idle_timeout: if given, a device not used for longer than this is no
         longer recognised (see :func:`get_valid_device`)
+    :param check_refusal: if given, called once the cookie belongs to a live device of
+        this user, before the device is rotated. It returns why the device is not
+        recognised, or ``None``. A theft, a dead cookie or an idle device is
+        therefore handled before it, whatever it returns.
     :return: a :class:`ConsumeResult`. Theft is reported as ``status ==
         "theft"`` (the series has already been invalidated) rather than raised,
         so the caller can answer "not recognised" uniformly.
@@ -514,6 +532,8 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
             if other and not (other.expires_at and other.expires_at < utc_now()):
                 return ConsumeResult(RememberStatus.FOREIGN, None, None)
         return ConsumeResult(RememberStatus.MISS, None, None)
+    if check_refusal and (refusal := check_refusal()):
+        return ConsumeResult(RememberStatus.REFUSED, None, None, refusal)
     if result.is_grace:
         return ConsumeResult(RememberStatus.GRACE, None, None)
     rotated = rotate_device(result.device, client_ip)

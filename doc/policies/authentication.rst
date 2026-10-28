@@ -1510,10 +1510,12 @@ again, the devices are recognized again until they expire. To end them, revoke
 them, see :ref:`api_clients_revoking_devices`.
 
 A recognized device is not a use of a token: a login in which the client skips
-the second factor does not update the ``last_auth`` of the user's tokens. With a
-:ref:`policy_last_auth` policy, keep :ref:`policy_remember_device_validity`
-shorter than its time frame, or the next login with the token after a period of
-remembered logins is refused.
+the second factor does not update the ``last_auth`` of the user's tokens. A
+device is only recognized while a :ref:`policy_last_auth` policy allows at least
+one token of the user. With such a policy, keep
+:ref:`policy_remember_device_validity` shorter than its time frame. Otherwise,
+after a period of remembered logins, the policy refuses the next login with the
+token and the recognition of the device.
 
 .. versionadded:: 3.14
 
