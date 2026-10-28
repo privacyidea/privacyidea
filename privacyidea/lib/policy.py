@@ -3431,18 +3431,16 @@ def get_policy_action_menus(scope: str) -> MappingProxyType:
     """
     Return the WebUI main menus of every policy action in the scope, in the order of the policy definitions.
 
-    The action names and their menus come from the code and the token classes only, so they are built once per scope
-    and process. The full policy definitions are not cached: they also hold database entries like the SMTP servers,
-    and descriptions in the language of the request.
+    The action names and their menus come from the code, the token classes and the token types that pi.cfg allows to
+    enroll (PI_ENABLE_TOKEN_TYPE_ENROLLMENT). These change only when the process restarts, so the menus are built once
+    per scope and process. The full policy definitions are not cached: they also hold database entries like the SMTP
+    servers, and descriptions in the language of the request.
 
     :param scope: SCOPE.ADMIN or SCOPE.USER
     :return: A read-only mapping from the action name to a tuple of main menus
     """
-    from privacyidea.lib.token import get_dynamic_policy_definitions
-    definitions = get_static_policy_definitions(scope)
-    definitions.update(get_dynamic_policy_definitions(scope))
     return MappingProxyType({action: tuple(definition.get("mainmenu", []))
-                             for action, definition in definitions.items()})
+                             for action, definition in _action_definitions_for_scope(scope).items()})
 
 
 def get_action_values_from_options(scope, action, options):

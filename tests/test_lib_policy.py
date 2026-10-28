@@ -22,6 +22,7 @@ from privacyidea.lib.policies.conditions import (PolicyConditionClass, Condition
 from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     import_policies, export_policies,
                                     get_static_policy_definitions, get_policy_action_menus,
+                                    _action_definitions_for_scope,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError, MAIN_MENU,
                                     delete_all_policies,
@@ -1085,8 +1086,7 @@ class PolicyTestCase(MyTestCase):
         for scope, logged_in_user in ((SCOPE.ADMIN, {"username": "admin", "role": SCOPE.ADMIN}),
                                       (SCOPE.USER, {"username": "cornelius", "realm": self.realm1,
                                                     "role": SCOPE.USER})):
-            definitions = get_static_policy_definitions(scope)
-            definitions.update(get_dynamic_policy_definitions(scope))
+            definitions = _action_definitions_for_scope(scope)
             action_menus = get_policy_action_menus(scope)
             # The map has the actions of the policy definitions in their order, with their main menus
             self.assertEqual(list(definitions), list(action_menus))
