@@ -22,7 +22,8 @@ from privacyidea.lib.policies.conditions import (PolicyConditionClass, Condition
                                                  ConditionHandleMissingData)
 from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     import_policies, export_policies,
-                                    get_static_policy_definitions,
+                                    get_static_policy_definitions, get_policy_action_menus,
+                                    _action_definitions_for_scope,
                                     PolicyClass, SCOPE, enable_policy,
                                     PolicyError, MAIN_MENU,
                                     delete_all_policies,
@@ -1082,6 +1083,29 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(MAIN_MENU.MACHINES in menus)
 
         delete_all_policies()
+
+    def test_19b_policy_action_menus(self):
+        delete_all_policies()
+        policy_class = PolicyClass()
+        for scope, logged_in_user in ((SCOPE.ADMIN, {"username": "admin", "role": SCOPE.ADMIN}),
+                                      (SCOPE.USER, {"username": "cornelius", "realm": self.realm1,
+                                                    "role": SCOPE.USER})):
+            definitions = _action_definitions_for_scope(scope)
+            action_menus = get_policy_action_menus(scope)
+            # The map has the actions of the policy definitions in their order, with their main menus
+            self.assertEqual(list(definitions), list(action_menus))
+            for action, definition in definitions.items():
+                self.assertEqual(tuple(definition.get("mainmenu", [])), action_menus[action], action)
+            with self.assertRaises(TypeError):
+                action_menus["new_action"] = (MAIN_MENU.CONFIG,)
+
+            # Without policies in the scope, the rights are all actions in the order of the policy definitions,
+            # and the menus are those of all actions
+            self.assertEqual(list(definitions),
+                             policy_class.ui_get_rights(scope, logged_in_user.get("realm"),
+                                                        logged_in_user["username"]))
+            expected_menus = {menu for definition in definitions.values() for menu in definition.get("mainmenu", [])}
+            self.assertEqual(expected_menus, set(policy_class.ui_get_main_menus(logged_in_user)))
 
     def test_20_search_values(self):
         P = PolicyClass()

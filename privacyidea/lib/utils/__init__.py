@@ -27,6 +27,7 @@ This module is tested in tests/test_lib_utils.py
 
 import base64
 import binascii
+import functools
 import hashlib
 import html
 import logging
@@ -1455,13 +1456,22 @@ def get_module_class(package_name, class_name, check_method=None):
     return klass
 
 
+@functools.cache
+def _get_installed_version() -> str:
+    return metadata.version("privacyidea")
+
+
 def get_version_number():
     """
     returns the privacyidea version
+
+    The lookup parses the package metadata, and every API response contains the version. The version of the running
+    code does not change until the process restarts, so the lookup runs once per process. A failed lookup runs again on
+    the next call.
     """
     version = "unknown"
     try:
-        version = metadata.version("privacyidea")
+        version = _get_installed_version()
     except metadata.PackageNotFoundError as e:
         log.info(f"We are not able to determine the privacyidea version number: {e}")
     return version
