@@ -20,6 +20,7 @@ from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.user import (User)
@@ -570,14 +571,26 @@ class HOTPTokenTestCase(MyTestCase):
         # counter = 8, is out of sync
         r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 9, will be autosynced.
         r = token.check_otp("520489")
         self.assertTrue(r == 9, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 10, has also to authenticate! The counter of the token is
         #  set.
         r = token.check_otp("403154")
         self.assertTrue(r == 10, r)
         self.assertEqual(token.token.count, 11)
+
+        # Another request stores the resynced counter first, so this one records no resync
+        token.token.count = 0
+        r = token.check_otp("399871")
+        self.assertEqual(-1, r)
+        token.auth_details.clear()
+        with mock.patch.object(HotpTokenClass, "advance_otp_count", return_value=False):
+            r = token.check_otp("520489")
+        self.assertEqual(-1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
         # Autosync with a gap in the next otp value will fail
         token.token.count = 0
@@ -586,9 +599,11 @@ class HOTPTokenTestCase(MyTestCase):
         # counter = 7, is out of sync
         r = token.check_otp("162583")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 9, will NOT _autosync
         r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
 
         # Autosync fails, if dueDate is over
         token.token.count = 0
@@ -599,16 +614,19 @@ class HOTPTokenTestCase(MyTestCase):
         # counter = 9, is the next value, but duedate is over.
         r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)
         token.token.count = 0
+        token.auth_details.clear()
         # counter = 8, is out of sync
         r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, will not be autosynced
         r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -644,12 +662,12 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(token.is_challenge_request("test"))
 
     def test_25_sha256_token(self):
-        # taken from https://tools.ietf.org/html/rfc6238#appendix-B
+        # taken from https://tools.ietf.org/html/rfc6238#appendix-B, whose SHA256 values belong to the 32 byte seed
         serial = "sha25T"
         db_token = Token(serial, tokentype="hotp")
         db_token.save()
         token = HotpTokenClass(db_token)
-        token.set_otpkey(binascii.hexlify(b"12345678901234567890"))
+        token.set_otpkey(binascii.hexlify(b"12345678901234567890123456789012"))
         token.set_hashlib("sha256")
         token.set_otplen(8)
         token.save()
@@ -658,11 +676,11 @@ class HOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = HotpTokenClass(db_token)
         r = token.check_otp("46119246")
-        self.assertTrue(r)
+        self.assertEqual(1, r)
         # 00000000023523ED | 67062674 | SHA256 |
         token.set_otp_count(0x00000000023523ED - 1)
         token.save()
-        token.check_otp("67062674")
+        self.assertEqual(0x00000000023523ED, token.check_otp("67062674"))
 
     def test_26_is_previous_otp(self):
         # check if the OTP was used previously

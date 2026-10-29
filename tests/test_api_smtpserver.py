@@ -351,7 +351,7 @@ class SMTPServerTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
         assert res.status_code == 200
-        assert "" == stored().description
+        self.assert_empty_string(stored().description)
         assert "cornelius" == stored().username
 
     def _listed_definition(self, identifier: str) -> dict:
