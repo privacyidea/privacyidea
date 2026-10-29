@@ -333,6 +333,13 @@ def _serve_locale(locale: str) -> Response | None:
     return send_html(content)
 
 
+def is_new_webui_served() -> bool:
+    """
+    Whether the configured static folder holds the compiled WebUI. Without it the previous WebUI is rendered.
+    """
+    return os.path.isfile(os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, "en", "index.html"))
+
+
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application() -> Response:
     if current_app.config.get("PI_UI_DEACTIVATED"):
@@ -346,8 +353,7 @@ def single_page_application() -> Response:
         dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, url_locale)
         if os.path.isfile(os.path.join(dist, "index.html")):
             return redirect(f"{request.script_root}/app/v2/{url_locale}/")
-    en_dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, "en")
-    if os.path.isfile(os.path.join(en_dist, "index.html")):
+    if is_new_webui_served():
         return redirect(f"{request.script_root}/app/v2/")
     # Fallback to the classic AngularJS UI: no new-UI build exists, so render the
     # legacy index template from the server.
