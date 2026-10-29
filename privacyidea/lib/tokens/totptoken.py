@@ -370,9 +370,7 @@ class TotpTokenClass(HotpTokenClass):
                 # Another request used this OTP value first, so it is as spent as it is for a later replay.
                 log.info(f"The OTP value of token {self.token.serial} was used by another request.")
                 return -1
-            if resynced:
-                log.debug(f"Autoresync successful for token {self.token.serial!s}.")
-                self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.SUCCESSFUL
+            self._record_otp_match(resynced)
             # We could also store it temporarily
             # self.auth_details["matched_otp_counter"] = res
 
@@ -395,6 +393,14 @@ class TotpTokenClass(HotpTokenClass):
             log.debug(f"the counter {res!r} matched. New shift: {new_shift!r}")
             self.write_tokeninfo('timeShift', new_shift)
         return res
+
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync. A TOTP token has no AutoResyncTimeout.
+
+        :return: True if the token stored the first OTP value of an autoresync
+        """
+        return "otp1c" in self.get_tokeninfo()
 
     @log_with(log)
     def _autosync(self, hmac2Otp, anOtpVal):
