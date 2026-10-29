@@ -172,6 +172,61 @@ describe("LdapResolverComponent", () => {
     });
   });
 
+  describe("recursive group search", () => {
+    const userSearch = {
+      LDAPURI: "ldap://directory.example.org",
+      LDAPBASE: "dc=example,dc=org",
+      LOGINNAMEATTRIBUTE: "uid",
+      LDAPSEARCHFILTER: "(objectClass=person)",
+      USERINFO: "{ \"email\": \"mail\" }"
+    };
+    const groupSearch = {
+      group_search_filter: "(&(objectClass=group)(member={distinguishedName}))",
+      group_name_attribute: "cn",
+      group_attribute_mapping_key: "memberships"
+    };
+
+    it("should stay valid with empty group fields while the recursive search is off", () => {
+      componentRef.setInput("data", { ...userSearch, recursive_group_search: false });
+      fixture.detectChanges();
+
+      expect(component.isValid()).toBe(true);
+    });
+
+    it("should be valid when the recursive search is on and all group fields are filled", () => {
+      componentRef.setInput("data", { ...userSearch, ...groupSearch, recursive_group_search: true });
+      fixture.detectChanges();
+
+      expect(component.isValid()).toBe(true);
+    });
+
+    it.each(Object.keys(groupSearch))(
+      "should be invalid when the recursive search is on and %s is empty",
+      (emptyField) => {
+        componentRef.setInput("data", {
+          ...userSearch,
+          ...groupSearch,
+          [emptyField]: "",
+          recursive_group_search: true
+        });
+        fixture.detectChanges();
+
+        expect(component.isValid()).toBe(false);
+      }
+    );
+
+    it("should show an error under an empty group field once it was touched", () => {
+      componentRef.setInput("data", { ...userSearch, ...groupSearch, group_name_attribute: "", recursive_group_search: true });
+      fixture.detectChanges();
+
+      const input: HTMLInputElement = fixture.nativeElement.querySelector("input[placeholder='distinguishedName']");
+      input.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain("Required when the recursive search is enabled.");
+    });
+  });
+
   it("should apply LDAP presets", () => {
     const preset = component.ldapPresets[0];
     component.applyLdapPreset(preset);

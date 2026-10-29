@@ -149,6 +149,9 @@ export class LdapResolverComponent {
     required(f.LDAPSEARCHFILTER);
     required(f.USERINFO);
     disabled(f.TLS_CA_FILE, () => this.tlsCaFileDisabled());
+    required(f.group_search_filter, { when: () => this.model().recursive_group_search });
+    required(f.group_name_attribute, { when: () => this.model().recursive_group_search });
+    required(f.group_attribute_mapping_key, { when: () => this.model().recursive_group_search });
   });
 
   constructor() {

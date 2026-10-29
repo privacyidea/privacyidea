@@ -287,6 +287,10 @@ Active Directory only returns the direct group memberships of a user. If you are
 in all group memberships, you can use this option. The resolver will then perform another search to retrieve all groups
 of the user, according to the defined search filter.
 
+With the recursive search enabled, *Search Filter for User Groups*, *Group Name Attribute*
+and *User Info Key* are required in the WebUI. If one of them is missing (e.g. in a resolver
+created through the API), the recursive search is skipped with only an info entry in the log.
+
 **Base DN of User Groups**
 
 Define the groups container base DN. If your groups are located under the same base DN as defined in ``Base DN`` for
@@ -320,10 +324,6 @@ e.g., ``distinguishedName``.
 **User Info Key**
 
 The key to store the groups in the user info (attribute mapping key).
-
-*Search Filter for User Groups*, *Group Name Attribute* and *User Info Key* are all required. If one of them is empty,
-the recursive search is not performed, without an error (only an info entry in the log). The WebUIs do not mark them
-as required.
 
 No anonymous referral chasing
 """""""""""""""""""""""""""""

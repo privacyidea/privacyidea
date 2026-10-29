@@ -456,6 +456,9 @@
               placeholder="(&(sAMAccountName=*)(objectCategory=group)
               (member:1.2.840.113556.1.4.1941:=cn={distinguishedName},{base_dn}))" />
           </app-clearable-input>
+          @if (ldapForm.group_search_filter().errors().some(e => e.kind === 'required') && ldapForm.group_search_filter().touched()) {
+            <mat-error i18n="@@resolver.requiredForRecursiveSearch">Required when the recursive search is enabled.</mat-error>
+          }
         </mat-form-field>
 
         <div class="flex-row gap-16 margin-bottom-32">
@@ -472,6 +475,9 @@
                 matInput
                 placeholder="distinguishedName" />
             </app-clearable-input>
+            @if (ldapForm.group_name_attribute().errors().some(e => e.kind === 'required') && ldapForm.group_name_attribute().touched()) {
+              <mat-error i18n="@@resolver.requiredForRecursiveSearch">Required when the recursive search is enabled.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field class="input-width-l">
@@ -487,6 +493,9 @@
                 matInput
                 placeholder="groups" />
             </app-clearable-input>
+            @if (ldapForm.group_attribute_mapping_key().errors().some(e => e.kind === 'required') && ldapForm.group_attribute_mapping_key().touched()) {
+              <mat-error i18n="@@resolver.requiredForRecursiveSearch">Required when the recursive search is enabled.</mat-error>
+            }
           </mat-form-field>
         </div>
       }
