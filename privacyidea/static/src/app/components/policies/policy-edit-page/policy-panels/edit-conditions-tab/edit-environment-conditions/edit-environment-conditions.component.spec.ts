@@ -111,6 +111,35 @@ describe("EditEnvironmentConditionsComponent", () => {
     expect(component.validTimeSignal()).toBe("");
   });
 
+  describe("valid time validation", () => {
+    it.each([
+      "Mon-Fri: 9-18",
+      "Mon-Fri: 09:00-17:30",
+      "Mon - Fri : 09:00- 17:30",
+      "Sat-Sun:10:00-15:00, Mon - Fri : 09:00- 17:30",
+      "Tue: 9-15:1",
+      "tue: 0-23:59",
+      "Wed: 12-12"
+    ])("accepts the time range %p the server accepts", (value) => {
+      component.validTimeSignal.set(value);
+      expect(component.validTimeField().valid()).toBe(true);
+    });
+
+    it.each([
+      "Mon-Fri",
+      "Mon-Fri: 9",
+      "Mon-Xyz: 9-18",
+      "Mon-Fri: 24-24",
+      "Mon-Fri: 9:60-18",
+      "Mon-Fri: 22-6",
+      "Mon-Fri: 9-18,",
+      "Mon-Fri: 9-18Tue: 9-18"
+    ])("rejects the time range %p the server rejects", (value) => {
+      component.validTimeSignal.set(value);
+      expect(component.validTimeField().valid()).toBe(false);
+    });
+  });
+
   describe("knownClients", () => {
     it("aggregates clients across applications, dedupes apps, and sorts by IP", () => {
       clientsMock.setClients({
