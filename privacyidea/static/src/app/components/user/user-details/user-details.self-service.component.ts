@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { Router } from "@angular/router";
@@ -29,6 +29,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { CustomAttributeDraft } from "@components/user/user-custom-attributes/custom-attribute-draft";
 import { UserCustomAttributesComponent } from "@components/user/user-custom-attributes/user-custom-attributes.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { firstValueFrom } from "rxjs";
@@ -50,12 +51,29 @@ import { firstValueFrom } from "rxjs";
   templateUrl: "./user-details.self-service.component.html",
   styleUrl: "./user-details.component.scss"
 })
-export class UserDetailsSelfServiceComponent {
+export class UserDetailsSelfServiceComponent implements OnInit, OnDestroy {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly pendingChangesService = inject(PendingChangesService);
   readonly attributeDraft = new CustomAttributeDraft();
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
+    this.pendingChangesService.registerValidChanges(() => {
+      if (this.editMode()) return true;
+      return this.attributeDraft.hasValidChanges();
+    });
+    this.pendingChangesService.registerSave(() => {
+      if (this.editMode()) return this.saveEdit();
+      return this.attributeDraft.save();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
 
   expandedKeys = signal<Set<string>>(new Set<string>());
 
@@ -107,6 +125,7 @@ export class UserDetailsSelfServiceComponent {
   canEdit = computed(() => this.authService.actionAllowed("updateuser") && !!this.userData()?.editable);
   editMode = signal(false);
   editedUserData = signal<EditUserData>({ username: "" });
+  editIsDirty = computed(() => Object.keys(this.changedFields()).length > 0);
 
   detailsEntries = computed(() => {
     const data: Record<string, unknown> = this.userData() ?? {};
@@ -155,8 +174,26 @@ export class UserDetailsSelfServiceComponent {
     this.editedUserData.set(data);
   }
 
+  // Only changed fields are sent: an unchanged multi-value attribute would otherwise replace its values with one
+  // joined string.
+  private readonly changedFields = computed(() => {
+    if (!this.editMode()) return {};
+    const original = (this.userData() ?? {}) as Record<string, unknown>;
+    const changed: Record<string, unknown> = {};
+    for (const [field, value] of Object.entries(this.editedUserData())) {
+      if (field !== "username" && this.str(value) !== this.str(original[field])) {
+        changed[field] = value;
+      }
+    }
+    return changed;
+  });
+
   async saveEdit(): Promise<boolean> {
-    const data = { ...this.editedUserData(), username: this.userData().username };
+    if (!this.editIsDirty()) {
+      this.editMode.set(false);
+      return true;
+    }
+    const data: EditUserData = { ...this.changedFields(), username: this.userData().username };
     const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
     if (success) {
       this.userService.userResource.reload();
