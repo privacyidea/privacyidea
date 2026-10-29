@@ -248,6 +248,17 @@
             type="number" />
           <mat-hint i18n="@@resolver.inSeconds">In seconds.</mat-hint>
         </mat-form-field>
+
+        <mat-form-field class="input-width-s">
+          <mat-label i18n="@@resolver.serverPoolStrategy">Server Pool Strategy</mat-label>
+          <mat-select
+            (selectionChange)="model.update(m => ({ ...m, SERVERPOOL_STRATEGY: $event.value }))"
+            [value]="model().SERVERPOOL_STRATEGY">
+            <mat-option value="ROUND_ROBIN">ROUND_ROBIN</mat-option>
+            <mat-option value="FIRST">FIRST</mat-option>
+            <mat-option value="RANDOM">RANDOM</mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
     </div>
 

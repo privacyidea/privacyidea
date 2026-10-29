@@ -89,8 +89,7 @@ The ``Server URI`` can contain a comma separated list of servers.
 The servers are used to create a server pool [#serverpool]_. By default the
 servers are used round robin; with the parameter ``SERVERPOOL_STRATEGY`` the
 strategy can be set to ``FIRST`` (the first reachable server of the list) or
-``RANDOM``. The previous WebUI offers this setting, the current WebUI does not
-(use the API).
+``RANDOM``.
 
 **Example**::
 

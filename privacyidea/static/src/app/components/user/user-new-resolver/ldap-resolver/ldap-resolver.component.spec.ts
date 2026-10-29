@@ -145,6 +145,33 @@ describe("LdapResolverComponent", () => {
     expect(passwordInput.getAttribute("autocomplete")).toBe("new-password");
   });
 
+  describe("server pool strategy", () => {
+    it("should send ROUND_ROBIN by default", () => {
+      expect(component.getValue().SERVERPOOL_STRATEGY).toBe("ROUND_ROBIN");
+    });
+
+    it("should load the strategy from data input", () => {
+      componentRef.setInput("data", { SERVERPOOL_STRATEGY: "FIRST" });
+      fixture.detectChanges();
+
+      expect(component.getValue().SERVERPOOL_STRATEGY).toBe("FIRST");
+    });
+
+    it("should offer every strategy the server supports and store the selected one", () => {
+      const formFields: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll("mat-form-field"));
+      const strategyField = formFields.find((field) => field.textContent?.includes("Server Pool Strategy"));
+      strategyField!.querySelector<HTMLElement>(".mat-mdc-select-trigger")!.click();
+      fixture.detectChanges();
+
+      const options = Array.from(document.querySelectorAll<HTMLElement>("mat-option"));
+      expect(options.map((option) => option.textContent?.trim())).toEqual(["ROUND_ROBIN", "FIRST", "RANDOM"]);
+
+      options[2].click();
+      fixture.detectChanges();
+      expect(component.getValue().SERVERPOOL_STRATEGY).toBe("RANDOM");
+    });
+  });
+
   it("should apply LDAP presets", () => {
     const preset = component.ldapPresets[0];
     component.applyLdapPreset(preset);
