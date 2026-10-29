@@ -1070,6 +1070,35 @@ def is_true(value):
     return value in [1, "1", True, "True", "true", "TRUE"]
 
 
+def validate_path_identifier(identifier: str, kind: str) -> None:
+    """
+    Reject an identifier that could be stored but never addressed by the API again.
+
+    The REST API addresses most resources by their identifier in a single path segment
+    (e.g. ``/smtpserver/<identifier>``). A WSGI server percent-decodes ``PATH_INFO`` before
+    routing, so a ``/`` in the name can not be escaped on the way in and the route no longer
+    matches. The same goes for ``.`` and ``..``, which path normalisation removes, and for
+    control characters, which have no business in a URL at all.
+
+    The restriction is deliberately narrow: spaces, dots, ``#``, ``?`` and non-ASCII letters
+    all survive the round trip once the client encodes them.
+
+    :param identifier: the identifier to check
+    :param kind: the kind of resource, used in the error message (e.g. "SMTP server")
+    :raises ParameterError: if the identifier could not be addressed by the API
+    """
+    for character in ("/", "\\"):
+        if character in identifier:
+            raise ParameterError(f"The {kind} identifier must not contain {character!r}: the API addresses "
+                                 f"it by its name in the URL path, where such a name can not be reached.")
+    if any(ord(character) < 32 or ord(character) == 127 for character in identifier):
+        raise ParameterError(f"The {kind} identifier must not contain control characters: the API "
+                             f"addresses it by its name in the URL path.")
+    if identifier in (".", ".."):
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API addresses it by "
+                             f"its name in the URL path, where it would be removed as a path segment.")
+
+
 def int_to_hex(serial):
     """
     Converts a string with an integer to a hexstring.

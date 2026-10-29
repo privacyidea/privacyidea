@@ -6,7 +6,7 @@ from testfixtures import LogCapture
 import pyrad
 
 from .base import MyTestCase
-from privacyidea.lib.error import ConfigAdminError, PrivacyIDEAError
+from privacyidea.lib.error import ConfigAdminError, ParameterError, PrivacyIDEAError
 from privacyidea.lib.radiusserver import (add_radius, delete_radius,
                                           get_radiusservers, get_radius,
                                           test_radius)
@@ -198,3 +198,9 @@ class RADIUSServerTestCase(MyTestCase):
         self.assertIn("legacyrad", servers)
         self.assertEqual("legacysecret", servers["legacyrad"]["secret"])
         delete_radius("legacyrad")
+
+    def test_identifier_not_addressable_in_url(self):
+        from privacyidea.lib.radiusserver import list_radiusservers
+        with self.assertRaises(ParameterError):
+            add_radius("team/radius", "1.2.3.4", "testing123", dictionary=DICT_FILE)
+        self.assertNotIn("team/radius", list_radiusservers())

@@ -33,7 +33,7 @@ from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
-from privacyidea.lib.utils import fetch_one_resource, to_unicode
+from privacyidea.lib.utils import fetch_one_resource, to_unicode, validate_path_identifier
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMTPServer as SMTPServerDB, db
 
@@ -350,6 +350,7 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     :type server: basestring
     :return: The Id of the database object
     """
+    validate_path_identifier(identifier, "SMTP server")
 
     # The CENSORED placeholder (what the API returned for the password) means
     # "keep the stored password unchanged" -> leave encrypted_password = None so
