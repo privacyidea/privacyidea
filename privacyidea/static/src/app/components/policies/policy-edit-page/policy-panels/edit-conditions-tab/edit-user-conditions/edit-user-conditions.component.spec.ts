@@ -18,12 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyService } from "@services/policies/policies.service";
 import { RealmService } from "@services/realm/realm.service";
-import { ResolverService } from "@services/resolver/resolver.service";
 import { MockRealmService } from "@testing/mock-services";
-import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
-import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EditUserConditionsComponent } from "./edit-user-conditions.component";
 
 describe("EditUserConditionsComponent", () => {
@@ -33,11 +29,7 @@ describe("EditUserConditionsComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditUserConditionsComponent],
-      providers: [
-        { provide: PolicyService, useClass: MockPolicyService },
-        { provide: RealmService, useClass: MockRealmService },
-        { provide: ResolverService, useClass: MockResolverService }
-      ]
+      providers: [{ provide: RealmService, useClass: MockRealmService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditUserConditionsComponent);
