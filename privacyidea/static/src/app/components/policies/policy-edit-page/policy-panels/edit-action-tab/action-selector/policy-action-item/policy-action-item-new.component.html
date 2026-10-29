@@ -26,6 +26,12 @@
         class="detail-description"
         [innerHTML]="description | highlight: highlight() : true"></span>
     }
+    @if (valueHasComma()) {
+      <span
+        class="detail-error"
+        role="alert"
+        i18n="@@policy.actionValueComma">Commas are not allowed in action values. Write a literal comma as \,</span>
+    }
   </div>
 
   <div class="detail-input">

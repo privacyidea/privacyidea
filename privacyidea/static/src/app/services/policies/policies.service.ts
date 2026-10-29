@@ -60,6 +60,14 @@ export function policyActionMatchesFilter(
 }
 
 /**
+ * The server stores all actions of a policy as one comma-joined string and splits it at every comma not
+ * preceded by a backslash, so such a comma in a value would turn the rest of the value into separate actions.
+ */
+export function hasUnescapedComma(value: unknown): boolean {
+  return typeof value === "string" && /(?<!\\),/.test(value);
+}
+
+/**
  * Whether `name` collides with one of `policies`, ignoring case. `ownName` is the current name of the policy
  * being edited: it never collides with itself, and neither does a name that is left unchanged. A missing name
  * (e.g. from a policy template without one) collides with nothing.
@@ -608,6 +616,7 @@ export class PolicyService implements PolicyServiceInterface {
     if (actionType === "bool" && typeof value === "boolean") return true;
     if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
     if (typeof value !== "string") return false;
+    if (hasUnescapedComma(value)) return false;
 
     if (actionType === "bool") {
       return value.toLowerCase() === "true" || value.toLowerCase() === "false";

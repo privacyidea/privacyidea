@@ -29,7 +29,12 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
-import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  hasUnescapedComma,
+  PolicyActionDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "@services/policies/policies.service";
 import {
   labeledOptions,
   POLICY_VOCABULARY_ACTIONS,
@@ -75,6 +80,8 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
     if (actionDetail === null || actionValue === undefined) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
+
+  readonly valueHasComma = computed(() => hasUnescapedComma(this.action()?.value));
 
   private readonly labelOptions = computed<ValueLabelOptions>(() => ({
     vocabulary: POLICY_VOCABULARY_ACTIONS.has(this.action().name)
