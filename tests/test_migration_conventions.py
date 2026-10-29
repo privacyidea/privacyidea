@@ -10,6 +10,8 @@ here means the convention is enforced whenever a new migration is added.
 import ast
 import pathlib
 import re
+from collections import deque
+from collections.abc import Iterator
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
@@ -172,9 +174,8 @@ LINTED_AFTER_REVISION = "d3a4b5c6e7f8"
 # exception, never a default: the lint fails for an entry whose rule the revision no longer breaks, so remove the entry
 # together with the fix.
 MIGRATION_LINT_EXCEPTIONS = {
-    # The data step inserts the moved rows without an id (4b810261d282 restarts the sequence after them). The downgrade
-    # recognises a table that is already gone by the error text, see below.
-    "7d4e9b2c1a3f": {"insert-without-sequence-id", "error-text-guard"},
+    # The data step inserts the moved rows without an id (4b810261d282 restarts the sequence after them).
+    "7d4e9b2c1a3f": {"insert-without-sequence-id"},
     # The downgrade drops the table of the migration and recognises a table that is already gone by the error text.
     # The texts it checks match on PostgreSQL, MariaDB, MySQL, Oracle and SQLite.
     "0147d78cbace": {"error-text-guard"},
@@ -306,41 +307,62 @@ def _string_text(node: ast.AST) -> str | None:
     return None
 
 
+def _scope_nodes(scope: ast.AST) -> Iterator[ast.AST]:
+    """The nodes of a module or function in the order of ast.walk, without the inside of the functions defined in it."""
+    pending = deque(ast.iter_child_nodes(scope))
+    while pending:
+        node = pending.popleft()
+        yield node
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+            pending.extend(ast.iter_child_nodes(node))
+
+
 def _inserts_without_sequence_id(tree: ast.Module, sequence_tables: set[str]) -> list[str]:
     """
-    The sequence-backed tables that the migration inserts into without taking the id from the sequence. The lint cannot
+    The sequence-backed tables that the migration inserts into without taking the id from the sequence. A name refers to
+    the construct it is bound to in its own function, or else in the enclosing functions or the module. The lint cannot
     resolve the placeholders of an f-string: an INSERT whose table is a placeholder counts with the placeholder as its
     table, and a placeholder in the column list does not count as the id column.
     """
-    constructs = {}
     functions = {}
     for node in ast.walk(tree):
-        assigned = _assigned_name(node)
-        if assigned and _table_construct(assigned[1]):
-            constructs[assigned[0]] = _table_construct(assigned[1])
         if isinstance(node, ast.FunctionDef):
             for returned in ast.walk(node):
                 if isinstance(returned, ast.Return) and _table_construct(returned.value):
                     functions[node.name] = _table_construct(returned.value)
-    for node in ast.walk(tree):
-        assigned = _assigned_name(node)
-        if assigned and isinstance(assigned[1], ast.Call) and _call_name(assigned[1]) in functions:
-            constructs[assigned[0]] = functions[_call_name(assigned[1])]
+
+    def construct_of(value: ast.AST) -> tuple[str, bool] | None:
+        """The table construct that an assigned value is, or that the function it calls returns."""
+        if isinstance(value, ast.Call) and _call_name(value) in functions:
+            return functions[_call_name(value)]
+        return _table_construct(value)
 
     tables = set()
-    compound_statements = (ast.FunctionDef, ast.ClassDef, ast.If, ast.For, ast.While, ast.Try, ast.With)
-    for statement in ast.walk(tree):
-        if not isinstance(statement, ast.stmt) or isinstance(statement, compound_statements):
-            continue
-        sets_id = _sets_id(statement)
-        for call in ast.walk(statement):
-            if not isinstance(call, ast.Call):
+    compound_statements = (ast.ClassDef, ast.If, ast.For, ast.While, ast.Try, ast.With)
+
+    def check_scope(scope: ast.AST, enclosing_constructs: dict[str, tuple[str, bool]]) -> None:
+        constructs = dict(enclosing_constructs)
+        for node in _scope_nodes(scope):
+            assigned = _assigned_name(node)
+            if assigned and construct_of(assigned[1]):
+                constructs[assigned[0]] = construct_of(assigned[1])
+        for statement in _scope_nodes(scope):
+            if isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                check_scope(statement, constructs)
                 continue
-            target = _insert_target(call, constructs)
-            if target:
-                table_name, declares_sequence = target
-                if table_name in sequence_tables and not declares_sequence and not sets_id:
-                    tables.add(table_name)
+            if not isinstance(statement, ast.stmt) or isinstance(statement, compound_statements):
+                continue
+            sets_id = _sets_id(statement)
+            for call in ast.walk(statement):
+                if not isinstance(call, ast.Call):
+                    continue
+                target = _insert_target(call, constructs)
+                if target:
+                    table_name, declares_sequence = target
+                    if table_name in sequence_tables and not declares_sequence and not sets_id:
+                        tables.add(table_name)
+
+    check_scope(tree, {})
     for node in ast.walk(tree):
         text = _string_text(node)
         if text is None:
@@ -483,6 +505,35 @@ def test_lint_flags_inserts_through_inline_and_annotated_constructs_and_f_string
         "tokeninfo = sa.table('tokeninfo', sa.column('token_id'))\n"
         "def upgrade():\n"
         "    op.get_bind().execute(tokeninfo.insert().from_select(['token_id'], sa.select(sa.column('id'))))\n"
+    )
+    assert _migration_lint_findings(source, {"tokeninfo"}) == {"insert-without-sequence-id": ["tokeninfo"]}
+
+
+def test_lint_resolves_a_name_in_its_own_function():
+    """
+    A local name refers to the construct of its own function, also when another function binds the same name to a Table
+    that declares the Sequence. A nested function sees the names of the function around it.
+    """
+    source = (
+        "import sqlalchemy as sa\n"
+        "def upgrade():\n"
+        "    old = sa.table('tokeninfo', sa.column('token_id'))\n"
+        "    op.get_bind().execute(old.insert().values(token_id=1))\n"
+        "def downgrade():\n"
+        "    old = sa.Table('tokeninfo', sa.MetaData(), sa.Column('id', sa.Integer, sa.Sequence('tokeninfo_seq')))\n"
+        "    op.get_bind().execute(old.insert().values(token_id=1))\n"
+    )
+    assert _migration_lint_findings(source, {"tokeninfo"}) == {"insert-without-sequence-id": ["tokeninfo"]}
+
+    source = (
+        "import sqlalchemy as sa\n"
+        "def upgrade():\n"
+        "    old = sa.table('tokeninfo', sa.column('token_id'))\n"
+        "    def copy():\n"
+        "        op.get_bind().execute(old.insert().values(token_id=1))\n"
+        "    copy()\n"
+        "def downgrade():\n"
+        "    old = sa.Table('tokeninfo', sa.MetaData(), sa.Column('id', sa.Integer, sa.Sequence('tokeninfo_seq')))\n"
     )
     assert _migration_lint_findings(source, {"tokeninfo"}) == {"insert-without-sequence-id": ["tokeninfo"]}
 

@@ -49,7 +49,7 @@ database:
   sequence hands out an id that already exists. A schema that `pi-manage setup create_tables` creates takes a row in
   every table, too.
 - Every migration since 3.9 can go down and up again with the same columns, indexes, foreign keys and unique
-  constraints, and the full downgrade to 3.9 restores the schema of 3.9 without losing rows of the tables that stay.
+  constraints. The full downgrade to 3.9 restores the schema of 3.9 and keeps the rows of the tables that stay.
 - Every migration since a seed can run again on its own result, as after a failure or a stamp set back by hand,
   without changing the schema or any row (exceptions in `NOT_RERUNNABLE_REVISIONS`).
 - A database of a release, upgraded to head and downgraded back, has the schema and every row of that release again,
@@ -225,8 +225,8 @@ policies of its own.
 
 A downgrade takes a database back to the previous release: its schema is that release's again, and its data is what
 it was, apart from what a migration cannot bring back. A downgrade that cannot copy data back fails instead of
-dropping it. What a downgrade does not undo on purpose (e.g. deleted challenges) is said in the migration's docstring
-and listed in `_expected_contents_after_downgrade` of `test_migrations.py`.
+dropping it. What a downgrade does not undo on purpose, for example deleted challenges, is said in the migration's
+docstring and listed in `_expected_contents_after_downgrade` of `test_migrations.py`.
 
 `test_downgrade_returns_the_database_of_a_release` proves this for every release in `RELEASE_HEADS`
 (`migration_test_utils.py`): it takes a database of the release, adds data for the migrations since, upgrades it to
@@ -234,7 +234,7 @@ head, downgrades it back and compares the schema and the contents of every table
 every new data migration.
 
 Head reaches 3.13.4 through a merge, so a database of 3.13.4 that runs a 3.14 migration has two revisions stamped,
-e.g. `d3a4b5c6e7f8` and `a1e0ba6ad9dc`. Alembic downgrades by undoing every applied revision that descends from the
+for example `d3a4b5c6e7f8` and `a1e0ba6ad9dc`. Alembic downgrades by undoing every applied revision that descends from the
 target. A downgrade to the parent `b1a2c3d4e5f6` therefore also undoes the two 3.13.4 migrations after the branch
 point, and a downgrade to `d3a4b5c6e7f8` from head stops at the merge and leaves the 3.14 branch stamped next to it.
 `downgrade_keeping(target, keep)` downgrades to the target and leaves the release's revisions applied, taking a

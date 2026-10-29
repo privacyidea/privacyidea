@@ -375,9 +375,19 @@ def generate(revision: str, version: str, engine: str, keep_database: bool) -> p
             path = SEED_DIRECTORY / f"seed_v{version}_{head}_{engine}.sql"
             header = [f"-- privacyIDEA {version} (git commit {commit}), alembic revision {head}, "
                       f"{_server_version(engine)}", *SEED_HEADER, ""]
+            # check_seed reads the seed from its place among the test data, the way the tests find it. A seed that
+            # fails the check does not stay there: the earlier content comes back.
+            previous = path.read_bytes() if path.exists() else None
             path.write_text("\n".join(header) + "\n".join(f"{statement};\n" for statement in statements),
                             encoding="utf-8")
-            check_seed(engine, head)
+            try:
+                check_seed(engine, head)
+            except BaseException:
+                if previous is None:
+                    path.unlink()
+                else:
+                    path.write_bytes(previous)
+                raise
         finally:
             if not keep_database:
                 drop_database(engine)
