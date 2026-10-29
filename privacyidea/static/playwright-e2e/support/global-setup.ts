@@ -20,24 +20,45 @@
 import { chromium, FullConfig } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
+import { ADMIN_SESSION_FILE, ADMIN_STATE_FILE, login } from "./session";
+
+// Each run writes its results and report to a directory of its own (playwright.config.ts); the newest are kept.
+const KEPT_RUNS = 5;
+
+// Removes all but the newest KEPT_RUNS run directories under `dir`; the running one is always among them.
+function pruneRuns(dir: string): void {
+  if (!fs.existsSync(dir)) {
+    return;
+  }
+  const older = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && e.name !== process.env["E2E_RUN_ID"])
+    .map((e) => path.join(dir, e.name))
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  for (const run of older.slice(KEPT_RUNS - 1)) {
+    fs.rmSync(run, { recursive: true, force: true });
+  }
+}
 
 // Logs in once and stores the session, so every spec starts authenticated.
 export default async function globalSetup(config: FullConfig): Promise<void> {
-  const baseURL = config.projects[0].use.baseURL as string;
-  const file = path.join(__dirname, "..", ".auth", "admin.json");
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  pruneRuns(path.join(__dirname, "..", "test-results"));
+  pruneRuns(path.join(__dirname, "..", "playwright-report"));
 
+  const baseURL = config.projects[0].use.baseURL as string;
+  fs.mkdirSync(path.dirname(ADMIN_STATE_FILE), { recursive: true });
   const browser = await chromium.launch();
-  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
-  const page = await context.newPage();
-  await page.goto("login");
-  await page.fill("#username", process.env["E2E_USER"] ?? "admin");
-  await page.fill("#password", process.env["E2E_PASS"] ?? "admin");
-  await page.click('button[type="submit"]');
-  await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 20_000 });
-  await context.storageState({ path: file });
-  // The session lives in sessionStorage, which storageState does not save; support/test.ts restores it.
-  const session = await page.evaluate(() => JSON.stringify(Object.fromEntries(Object.entries(sessionStorage))));
-  fs.writeFileSync(path.join(path.dirname(file), "session.json"), session);
-  await browser.close();
+  try {
+    const session = await login(
+      browser,
+      baseURL,
+      process.env["E2E_USER"] ?? "admin",
+      process.env["E2E_PASS"] ?? "admin",
+      ADMIN_STATE_FILE
+    );
+    // The session lives in sessionStorage, which the stored state does not hold; support/test.ts restores it.
+    fs.writeFileSync(ADMIN_SESSION_FILE, session);
+  } finally {
+    await browser.close();
+  }
 }

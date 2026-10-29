@@ -24,6 +24,7 @@ import {
   expectTableOrState,
   filterInput,
   measureTable,
+  noMatchFilter,
   openPage,
   setSticky,
   settle
@@ -44,9 +45,15 @@ test.describe("table width stays put", () => {
       states.push(["sticky", await measureTable(page)]);
       await setSticky(page, false);
 
-      for (const filter of ["zzzzqq", ""]) {
+      // Each filter is measured once the table shows its outcome: the panel of a filter that matches nothing, then the
+      // rows again. The server-side filters answer after a pause and a request, so an idle network says nothing yet.
+      const outcomes = [
+        { filter: noMatchFilter(route.name), shown: page.locator(".table-scroll-region .table-state") },
+        { filter: "", shown: page.locator(".table-scroll-region tr.mat-mdc-row:not(:has(.table-state))") }
+      ];
+      for (const { filter, shown } of outcomes) {
         await applyFilter(page, filter);
-        await page.waitForLoadState("networkidle");
+        await expect(shown.first(), `the outcome of the filter "${filter}"`).toBeVisible();
         await settle(page);
         states.push([`filter "${filter}"`, await measureTable(page)]);
         await setSticky(page, true);
