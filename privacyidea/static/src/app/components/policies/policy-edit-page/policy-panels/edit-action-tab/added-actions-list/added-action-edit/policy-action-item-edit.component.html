@@ -44,6 +44,8 @@
               [items]="actionValues"
               [itemLabel]="valueLabelOf"
               [selectedItems]="selectedItems()"
+              [errorText]="errorHint() ?? ''"
+              [errorId]="errorId()"
               (selectionChange)="updateValue($event)">
             </app-multi-select-only>
           } @else if (actionValues.length === 0) {

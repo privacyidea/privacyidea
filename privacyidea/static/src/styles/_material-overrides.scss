@@ -54,6 +54,35 @@
   }
 }
 
+// A multi-select option carries a pseudo-checkbox. On the opaque primary fills of the hovered, focused and keyboard-active row
+// its frame and fill move to on-primary, so the box reads white, and the checkmark takes the colour of the row. Material
+// keeps its on-surface frame there by itself, which sinks into the blue. Idle rows and .type-option / .known-client-option
+// rows keep the Material colours.
+.mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled, .type-option, .known-client-option):is(
+    :hover,
+    :focus,
+    .mat-mdc-option-active
+  ) {
+  @include mat.pseudo-checkbox-overrides(
+    (
+      full-unselected-icon-color: var(--mat-sys-on-primary),
+      full-selected-icon-color: var(--mat-sys-on-primary),
+      full-selected-checkmark-color: var(--mat-sys-primary-light)
+    )
+  );
+}
+
+.mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled, .type-option, .known-client-option):is(
+    :focus,
+    .mat-mdc-option-active
+  ) {
+  @include mat.pseudo-checkbox-overrides(
+    (
+      full-selected-checkmark-color: var(--mat-sys-primary-base-active)
+    )
+  );
+}
+
 // Options of the user autocomplete: a surface-step row whose hover and keyboard-active states
 // are the --sky-bg tint and whose selected row is the primary-light state layer with white text.
 // These are Material's own tokens, so they win whatever order the stylesheets load in.

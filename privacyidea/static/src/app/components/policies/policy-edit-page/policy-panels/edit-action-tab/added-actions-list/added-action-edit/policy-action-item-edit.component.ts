@@ -118,6 +118,7 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
     const unparsable = this.valueForm()
       .errors()
       .some((error) => error.kind === ERR.parse);
+    if (this.actionDetail()?.multiple) return $localize`:@@policy.actionValueSelectOne:Select at least one option.`;
     const isInt = this.actionDetail()?.type === "int";
     if (isInt && unparsable) return $localize`:@@policy.actionValueNotNumber:Enter a valid number.`;
     return isInt && String(this.valueModel()).trim() !== ""

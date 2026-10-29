@@ -30,6 +30,7 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { MockToggleGroupComponent } from "@testing/mock-components/mock-toggle-group.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { INVALID_ACTION_VALUE } from "../../action-value.rule";
@@ -56,6 +57,7 @@ describe("PolicyActionItemEditComponent", () => {
             CommonModule,
             FormField,
             MockToggleGroupComponent,
+            MultiSelectOnlyComponent,
             MatButtonModule,
             MatIconModule,
             MatFormFieldModule,
@@ -457,6 +459,19 @@ describe("PolicyActionItemEditComponent", () => {
 
       expect(hint()?.textContent?.trim()).toBe("Value is required.");
       expect(input().getAttribute("aria-invalid")).toBe("true");
+    });
+
+    it("asks for at least one option below a multi select that was cleared", () => {
+      fixture.componentRef.setInput("action", { name: "test_action", value: "val1" });
+      fixture.componentRef.setInput("actionDetail", { type: "str", desc: "", value: ["val1", "val2"], multiple: true });
+      fixture.detectChanges();
+
+      component.updateValue([]);
+      fixture.detectChanges();
+
+      const multiSelectHint: HTMLElement | null = fixture.nativeElement.querySelector(".detail-value .error-hint");
+      expect(multiSelectHint?.textContent?.trim()).toBe("Select at least one option.");
+      expect(multiSelectHint?.id).toBe("test_action-error");
     });
 
     it("removes the hint once the value is corrected", async () => {
