@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input } from "@angular/core";
+import { FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -29,6 +30,7 @@ import { CustomAttributeDraft } from "./custom-attribute-draft";
   selector: "app-user-custom-attributes",
   standalone: true,
   imports: [
+    FormField,
     MatButtonModule,
     MatIcon,
     MatFormField,

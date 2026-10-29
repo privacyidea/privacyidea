@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, effect, inject, signal } from "@angular/core";
+import { form, validate } from "@angular/forms/signals";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { firstValueFrom } from "rxjs";
 
@@ -79,8 +80,16 @@ export class CustomAttributeDraft {
     const opts = this.editValueOptions();
     return opts.includes("*") || opts.length === 0;
   });
-  readonly canSaveEdit = computed<boolean>(() => this.editingKey() !== null && this.editValue().trim().length > 0);
+  readonly editValueForm = form(this.editValue, (f) =>
+    validate(f, (ctx) => (ctx.value().trim() ? [] : [{ kind: "required" }]))
+  );
+  readonly canSaveEdit = computed<boolean>(() => this.editingKey() !== null && this.editValueForm().valid());
   readonly hasChanges = computed(() => this.hasInput() || this.editingKey() !== null);
+  readonly hasValidChanges = computed(() =>
+    this.editingKey() === null
+      ? this.canAddAttribute()
+      : this.canSaveEdit() && (!this.hasInput() || this.canAddAttribute())
+  );
 
   constructor() {
     effect(() => {
@@ -113,15 +122,15 @@ export class CustomAttributeDraft {
     const value = this.editValue().trim();
     if (!key || !value) return false;
 
-    try {
-      await firstValueFrom(this.userService.setUserAttribute(key, value));
-      this.userService.userAttributesResource.reload();
-      this.userService.userResource.reload();
-      this.cancelEdit();
-      return true;
-    } catch {
-      return false;
-    }
+    if (!(await this.setAttribute(key, value))) return false;
+    this.cancelEdit();
+    return true;
+  }
+
+  async save(): Promise<boolean> {
+    if (this.editingKey() === null) return this.add();
+    if (!(await this.saveEdit())) return false;
+    return !this.hasInput() || this.add();
   }
 
   startAdd() {
@@ -152,15 +161,18 @@ export class CustomAttributeDraft {
 
     if (!key || !value) return false;
 
-    try {
-      await firstValueFrom(this.userService.setUserAttribute(key, value));
-      this.userService.userAttributesResource.reload();
-      this.userService.userResource.reload();
-      this.clearInput();
-      return true;
-    } catch {
-      return false;
-    }
+    if (!(await this.setAttribute(key, value))) return false;
+    this.clearInput();
+    return true;
+  }
+
+  // setUserAttribute reports a refused value itself and then emits undefined instead of failing.
+  private async setAttribute(key: string, value: string): Promise<boolean> {
+    const response = await firstValueFrom(this.userService.setUserAttribute(key, value));
+    if (!response) return false;
+    this.userService.userAttributesResource.reload();
+    this.userService.userResource.reload();
+    return true;
   }
 
   delete(key: string) {

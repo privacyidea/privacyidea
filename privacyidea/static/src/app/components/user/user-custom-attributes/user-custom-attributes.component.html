@@ -146,15 +146,13 @@
               subscriptSizing="dynamic">
               @if (draft().isEditValueInput()) {
                 <input
-                  [value]="draft().editValue()"
-                  (input)="draft().editValue.set($event.target['value'])"
+                  [formField]="draft().editValueForm"
                   aria-label="Attribute Value"
                   i18n-aria-label="@@user.attributeValue"
                   matInput />
               } @else {
                 <mat-select
-                  [value]="draft().editValue()"
-                  (selectionChange)="draft().editValue.set($event.value)"
+                  [formField]="draft().editValueForm"
                   aria-label="Attribute Value"
                   i18n-aria-label="@@user.attributeValue">
                   @for (v of draft().editValueOptions(); track v) {

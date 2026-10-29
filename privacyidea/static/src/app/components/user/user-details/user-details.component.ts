@@ -159,27 +159,14 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   });
 
   readonly attributeDraft = new CustomAttributeDraft();
-  attributeSetMap = this.attributeDraft.attributeSetMap;
-  deletableAttributes = this.attributeDraft.deletableAttributes;
-  keyOptions = this.attributeDraft.keyOptions;
-  hasWildcardKey = this.attributeDraft.hasWildcardKey;
-  canSetCustomAttribute = this.attributeDraft.canSetCustomAttribute;
   showsAttributeExtrasColumn = computed(
     () =>
-      this.canSetCustomAttribute() ||
+      this.attributeDraft.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
       this.authService.actionAllowed("get_user_internal_attributes") ||
       this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
-  addKeyInput = this.attributeDraft.addKeyInput;
-  addValueInput = this.attributeDraft.addValueInput;
-  selectedKey = this.attributeDraft.selectedKey;
-  selectedValue = this.attributeDraft.selectedValue;
-  keyMode = this.attributeDraft.keyMode;
-  valueOptions = this.attributeDraft.valueOptions;
-  isValueInput = this.attributeDraft.isValueInput;
-  canAddAttribute = this.attributeDraft.canAddAttribute;
 
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
@@ -230,13 +217,11 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
     this.pendingChangesService.registerValidChanges(() => {
       if (this.editMode()) return true;
-      if (this.attributeDraft.editingKey() !== null) return this.attributeDraft.canSaveEdit();
-      return this.attributeDraft.canAddAttribute();
+      return this.attributeDraft.hasValidChanges();
     });
     this.pendingChangesService.registerSave(() => {
       if (this.editMode()) return this.saveEditAsync();
-      if (this.attributeDraft.editingKey() !== null) return this.attributeDraft.saveEdit();
-      return this.addCustomAttribute();
+      return this.attributeDraft.save();
     });
   }
 
@@ -275,22 +260,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       next.add(key);
     }
     this.expandedKeys.set(next);
-  }
-
-  switchToCustomKey() {
-    this.attributeDraft.switchToCustomKey();
-  }
-
-  switchToSelectKey() {
-    this.attributeDraft.switchToSelectKey();
-  }
-
-  addCustomAttribute(): Promise<boolean> {
-    return this.attributeDraft.add();
-  }
-
-  deleteCustomAttribute(key: string) {
-    this.attributeDraft.delete(key);
   }
 
   assignUserToToken(option: TokenDetails) {

@@ -20,6 +20,7 @@ import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UserService } from "@services/user/user.service";
 import { MockUserService } from "@testing/mock-services";
+import { of } from "rxjs";
 import { CustomAttributeDraft } from "./custom-attribute-draft";
 import { UserCustomAttributesComponent } from "./user-custom-attributes.component";
 
@@ -124,6 +125,34 @@ describe("UserCustomAttributesComponent", () => {
       expect(userServiceMock.setUserAttribute).not.toHaveBeenCalled();
       expect(fixture.nativeElement.textContent).toContain("sales");
     });
+
+    it("keeps the row open with the entered value when the server refuses the value", async () => {
+      userServiceMock.setUserAttribute.mockReturnValue(of(undefined));
+      draft.startEdit("department", "sales");
+      draft.editValue.set("marketing");
+
+      const saved = await draft.saveEdit();
+
+      expect(saved).toBe(false);
+      expect(draft.editingKey()).toBe("department");
+      expect(draft.editValue()).toBe("marketing");
+      expect(userServiceMock.userAttributesResource.reload).not.toHaveBeenCalled();
+    });
+  });
+
+  it("keeps the entered key and value when the server refuses a new attribute", async () => {
+    userServiceMock.setUserAttribute.mockReturnValue(of(undefined));
+    draft.startAdd();
+    draft.keyMode.set("input");
+    draft.addKeyInput.set("room");
+    draft.addValueInput.set("live-check-1");
+
+    const added = await draft.add();
+
+    expect(added).toBe(false);
+    expect(draft.addKeyInput()).toBe("room");
+    expect(draft.addValueInput()).toBe("live-check-1");
+    expect(draft.isAdding()).toBe(true);
   });
 
   it("renders nothing without a settable key and without stored attributes", () => {
