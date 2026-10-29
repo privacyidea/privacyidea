@@ -19,7 +19,9 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.dialects import sqlite, mysql
+from sqlalchemy.engine import Dialect
 from sqlalchemy.sql.sqltypes import BigInteger, Unicode
+from sqlalchemy.types import TypeDecorator, TypeEngine
 
 from privacyidea.models import db
 
@@ -69,6 +71,46 @@ def case_sensitive_unicode(length: int):
     """
     return Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
                                         "mysql", "mariadb")
+
+
+#: What a column made by :func:`keep_empty_string_on_oracle` stores on Oracle in place of an empty string.
+ORACLE_EMPTY_STRING = "\x00"
+
+
+class _OracleEmptyString(TypeDecorator):
+    """
+    The Oracle variant of a string column that has to hold an empty string.
+
+    Oracle stores ``''`` as NULL, so an empty string cannot be written to a NOT NULL or primary key column there,
+    reads back as None and is not found by ``== ''``. This type writes :data:`ORACLE_EMPTY_STRING` instead and reads
+    it back as ``''``. A value compared with the column itself (``column == ''``, ``column.in_([''])``) is converted
+    the same way, because SQLAlchemy binds it with the column's type. A comparison with an expression such as
+    ``func.lower(column)`` and literal SQL are not converted. The DDL is that of the wrapped type.
+    """
+    impl = Unicode
+    cache_ok = True
+
+    def __init__(self, column_type: TypeEngine):
+        super().__init__()
+        self.column_type = column_type
+        self.impl = column_type
+
+    def process_bind_param(self, value: str | None, dialect: Dialect) -> str | None:
+        return ORACLE_EMPTY_STRING if value == "" else value
+
+    def process_result_value(self, value: str | None, dialect: Dialect) -> str | None:
+        return "" if value == ORACLE_EMPTY_STRING else value
+
+
+def keep_empty_string_on_oracle(column_type: TypeEngine) -> TypeEngine:
+    """
+    Let a string column hold ``''`` on Oracle as well, see :class:`_OracleEmptyString`. Every other database uses
+    *column_type* unchanged.
+
+    Meant for columns where the empty string is a value of its own, such as part of a key or a NOT NULL column.
+    Elsewhere Oracle's NULL simply reads back as None.
+    """
+    return column_type.with_variant(_OracleEmptyString(column_type), "oracle")
 
 
 class MethodsMixin:

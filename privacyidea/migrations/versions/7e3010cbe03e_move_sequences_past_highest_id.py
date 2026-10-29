@@ -83,7 +83,7 @@ def upgrade() -> None:
     sequences = {name.lower() for name in inspector.get_sequence_names()}
     for table, sequence in TABLE_SEQUENCES.items():
         if table in tables and sequence in sequences:
-            restart_sequence_past_max(op, table, sequence, only_forward=True)
+            restart_sequence_past_max(op, table, sequence)
 
 
 def downgrade() -> None:

@@ -106,7 +106,9 @@ INTERNAL_OPTION_KEYS = frozenset({
 NO_UNQUOTE_USER_AGENTS = {
     'privacyidea-cp': None,
     'privacyidea-ldap-proxy': None,
-    'simplesamlphp': None
+    'simplesamlphp': None,
+    'pam': None,
+    'privacyidea-pam': None
 }
 
 SESSION_KEY_LENGTH = 32
@@ -358,6 +360,17 @@ def pop_auth_event_serials(details: dict | None) -> list[str]:
     if not serials:
         return []
     return [str(serial) for serial in serials] if isinstance(serials, (list, tuple)) else [str(serials)]
+
+
+def add_autoresync_to_audit(autoresync_info: str | None) -> None:
+    """
+    Append the autoresync outcome of the checked tokens to the info of the audit entry (see
+    :data:`~privacyidea.lib.autoresync.LOG_AUTORESYNC_KEY`).
+
+    :param autoresync_info: the outcome the lib layer recorded, or None if no autoresync took place
+    """
+    if autoresync_info:
+        g.audit_object.add_to_log({"info": autoresync_info}, add_with_comma=True)
 
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,

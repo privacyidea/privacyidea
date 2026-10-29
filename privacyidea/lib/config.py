@@ -127,10 +127,10 @@ class SharedConfigClass:
                 policies = []
                 events = []
                 caconnectors = []
-                # Load system configuration
+                # Load system configuration. Oracle stores an empty value as NULL, callers expect a string.
                 for sysconf in Config.query.all():
                     config[sysconf.Key] = {
-                        "Value": sysconf.Value,
+                        "Value": sysconf.Value or "",
                         "Type": sysconf.Type,
                         "Description": sysconf.Description}
                 # Load resolver configuration
@@ -184,7 +184,7 @@ class SharedConfigClass:
                         realmdef["resolver"].append({"priority": x.priority,
                                                      "name": x.resolver.name,
                                                      "type": x.resolver.rtype,
-                                                     "node": x.node_uuid})
+                                                     "node": x.node_uuid or ""})
                     realmconfig[realm.name] = realmdef
                 # Load all policies
                 policies_db = db.session.scalars(select(Policy)).unique().all()

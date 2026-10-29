@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from typing import TYPE_CHECKING
+import json
+from typing import TYPE_CHECKING, Any
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, Sequence, event, inspect, select, text, types as sqltypes
@@ -193,27 +194,31 @@ def sequence_id_column(op, sequence_name):  # pragma: no cover
     return Column('id', Integer(), nullable=False, autoincrement=True)
 
 
-def restart_sequence_past_max(op, table_name, sequence_name, only_forward=False):  # pragma: no cover
+def restart_sequence_past_max(op, table_name, sequence_name):  # pragma: no cover
     """Advance ``sequence_name`` past ``MAX(id)`` in ``table_name`` on backends
-    that support sequences; a no-op elsewhere.
-
-    With ``only_forward``, a sequence that is already past ``MAX(id)`` stays
-    where it is. Finding that out takes one value from it, which leaves a gap of
-    one id.
+    that support sequences; a no-op elsewhere, and for a sequence that does not exist.
 
     Covers the table-already-exists case where the sequence (newly created or
     pre-existing) would otherwise hand out a value ``<= MAX(id)`` and cause a
-    duplicate-PK error on the next insert. Uses :func:`build_restart_sequence_sql`
+    duplicate-PK error on the next insert, and rows that took their id from the
+    column default instead of the sequence. Uses :func:`build_restart_sequence_sql`
     so MariaDB gets the Galera-required ``INCREMENT BY 0``.
+
+    The sequence is only restarted when its next value is not above ``MAX(id)``,
+    which uses up one value of the sequence. A sequence that is in step or ahead
+    keeps its position, so the ids that a writer which still runs during the
+    upgrade took from it are not handed out again. ``MAX(id)`` is read first: a
+    row that such a writer inserts in between has an id below that next value.
 
     ``table_name`` and ``sequence_name`` must be trusted, code-defined
     identifiers — they are interpolated verbatim.
     """
     bind = op.get_bind()
-    if bind.dialect.supports_sequences:
-        max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0  # nosec B608
-        if only_forward and bind.execute(select(Sequence(sequence_name).next_value())).scalar() > max_id:
-            return
+    if not bind.dialect.supports_sequences or not sequence_exists(bind, sequence_name):
+        return
+    max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0  # nosec B608
+    next_id = bind.execute(select(Sequence(sequence_name).next_value())).scalar()
+    if next_id <= max_id:
         op.execute(build_restart_sequence_sql(sequence_name, max_id + 1, bind.dialect.name))
 
 
@@ -223,14 +228,32 @@ def compile_json_oracle(type_, compiler, **kw):  # pragma: no cover
     return "CLOB"
 
 
+def serialize_json_for_oracle(value: Any) -> str:
+    """
+    Serialize the value of a JSON column for the CLOB it is stored in on Oracle, keeping non-ASCII characters as
+    they are.
+    """
+    return json.dumps(value, ensure_ascii=False)
+
+
+def deserialize_json_from_oracle(value: Any) -> Any:
+    """
+    Deserialize the value of a JSON column read from Oracle. python-oracledb already decodes a column with an
+    ``IS JSON`` check constraint (``radiusserver.options``), so only text is parsed and a decoded value is returned
+    as it is.
+    """
+    if isinstance(value, (str, bytes)):
+        return json.loads(value)
+    return value
+
+
 # The hook above only settles the column type. SQLAlchemy's Oracle dialect implements
 # no generic JSON support at all, so unlike every JSON-capable dialect it never sets
 # the _json_serializer/_json_deserializer attributes that sqlalchemy.types.JSON reads
 # when binding and fetching a value — writing to a JSON column raises
 # "AttributeError: 'OracleDialect_oracledb' object has no attribute _json_serializer".
-# Providing them as None selects the type's own json.dumps/json.loads fallback, which
-# is exactly what the CLOB column needs. Guarded so a future SQLAlchemy that does
-# support JSON on Oracle keeps its own implementation.
+# Set on the class, they apply to every Oracle engine. Guarded so a future SQLAlchemy
+# that does support JSON on Oracle keeps its own implementation.
 if not hasattr(OracleDialect, "_json_serializer"):
-    OracleDialect._json_serializer = None
-    OracleDialect._json_deserializer = None
+    OracleDialect._json_serializer = staticmethod(serialize_json_for_oracle)
+    OracleDialect._json_deserializer = staticmethod(deserialize_json_from_oracle)

@@ -17,7 +17,7 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, text_column_equals
 from privacyidea.models import TokenCredentialIdHash, TokenInfo
 from tests.authlog_utils import assert_authentication_log
 from .base import MyApiTestCase
@@ -311,7 +311,7 @@ class WebAuthn(MyApiTestCase):
         self.assertTrue(tcih)
         tcih.delete()
         token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                            .filter(TokenInfo.Value == credential_id_hash).first())
+                            .filter(text_column_equals(TokenInfo.Value, credential_id_hash)).first())
         self.assertTrue(token_info_entry)
         token_info_entry.delete()
 
@@ -1010,15 +1010,11 @@ class WebAuthn(MyApiTestCase):
         finally:
             remove_token(serial)
 
-    def test_32_authenticate_wrong_uv(self):
+    def _enroll_uv_token(self) -> tuple[str, dict]:
         """
-        Test that authentication fails if UV is required but not provided in authenticator data.
+        Enroll the WebAuthn token of the user verification tests for hans with the PIN 12. Returns its serial and the
+        request headers.
         """
-        delete_policies(["wan1", "wan2", "wan3", "uv_req"])
-        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
-        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
-        set_policy("uv_req", scope=SCOPE.AUTH, action="webauthn_user_verification_requirement=required")
-
         headers = {"authorization": self.at,
                    "Host": "pi.fritz.box:5000",
                    "Origin": "https://pi.fritz.box:5000"}
@@ -1077,6 +1073,39 @@ class WebAuthn(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
 
+        return webauthn_serial, headers
+
+    @staticmethod
+    def _uv_answer(webauthn_serial: str, transaction_id: str) -> dict:
+        """
+        The answer of the token enrolled by _enroll_uv_token to the challenge with the nonce
+        Z1osHXV_kbmE0Jg5S2zkBWUKI3ZO6UYO-hkzBv-YypA, without user verification.
+        """
+        user_handle = bytes_to_base64url(webauthn_serial.encode())
+        credential_id = "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg"
+        return {
+            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
+                          "aGt6QnYtWXlwQSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
+            "credentialid": credential_id,
+            "signaturedata": "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2C"
+                             "AVK_1kh",
+            "transaction_id": transaction_id,
+            "userHandle": user_handle,
+            "username": "hans"
+        }
+
+    def test_32_authenticate_wrong_uv(self):
+        """
+        Test that authentication fails if UV is required but not provided in authenticator data.
+        """
+        delete_policies(["wan1", "wan2", "wan3", "uv_req"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        set_policy("uv_req", scope=SCOPE.AUTH, action="webauthn_user_verification_requirement=required")
+
+        webauthn_serial, headers = self._enroll_uv_token()
+
         # Trigger auth
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1094,19 +1123,7 @@ class WebAuthn(MyApiTestCase):
             sign_req = detail.get("attributes", {}).get("webAuthnSignRequest", {})
             self.assertEqual("required", sign_req.get("userVerification"))
 
-        user_handle = bytes_to_base64url(webauthn_serial.encode())
-        credential_id = "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg"
-        data = {
-            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA",
-            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8t"
-                          "aGt6QnYtWXlwQSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
-            "credentialid": credential_id,
-            "signaturedata": "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2C"
-                             "AVK_1kh",
-            "transaction_id": transaction_id,
-            "userHandle": user_handle,
-            "username": "hans"
-        }
+        data = self._uv_answer(webauthn_serial, transaction_id)
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -1114,6 +1131,39 @@ class WebAuthn(MyApiTestCase):
             self.assertTrue(j.get("result").get("status"))
             self.assertFalse(j.get("result").get("value"))
             self.assertEqual("REJECT", j.get("result").get("authentication"))
+
+        delete_policies(["wan1", "wan2", "uv_req"])
+        remove_token(webauthn_serial)
+
+    def test_32a_authenticate_wrong_uv_triggered_by_serial(self):
+        """
+        A challenge triggered with the serial of the token requires the user verification of the owner's realm.
+        """
+        delete_policies(["wan1", "wan2", "wan3", "uv_req"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        set_policy("uv_req", scope=SCOPE.AUTH, action="webauthn_user_verification_requirement=required",
+                   realm=self.realm1)
+        webauthn_serial, headers = self._enroll_uv_token()
+
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"serial": webauthn_serial, "pass": "12"},
+                                           headers=headers), patch(
+            'privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("Z1osHXV_kbmE0Jg5S2zkBWUKI3ZO6UYO-hkzBv-YypA")
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            sign_req = detail.get("attributes", {}).get("webAuthnSignRequest", {})
+            self.assertEqual("required", sign_req.get("userVerification"), res.json)
+
+        data = self._uv_answer(webauthn_serial, transaction_id)
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual("REJECT", res.json.get("result").get("authentication"), res.json)
 
         delete_policies(["wan1", "wan2", "uv_req"])
         remove_token(webauthn_serial)

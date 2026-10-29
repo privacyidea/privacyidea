@@ -83,17 +83,19 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           disabled_token_types, auth_timelimit, load_challenge_text)
+                                           disabled_token_types, auth_timelimit, load_challenge_text,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token,
-                                       pop_auth_event_reason, pop_auth_event_serials)
+                                       pop_auth_event_reason, pop_auth_event_serials, add_autoresync_to_audit)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
                                                                           LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
@@ -520,7 +522,7 @@ def get_auth_token():
                                 "token_type": token.get_type()})
             _refuse_disabled_login(login_disabled_policies, login_user, serial=token.get_serial(),
                                    transaction_id=transaction_id)
-        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token, login_user)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
@@ -719,8 +721,7 @@ def get_auth_token():
                     # row, which a refused login must not be given the chance to write.
                     reject_locked_fallback_user(user)
                     auth_timelimit(request, None)
-                    increase_failcounter_on_challenge(request, None)
-                    disabled_token_types(request, None)
+                    rerun_user_dependent_prepolicies(request)
 
             if local_admin_exist and not user.exist():
                 # Only a local admin's wrong password is left, and the WebUI login mode does not apply to local admins
@@ -766,6 +767,8 @@ def get_auth_token():
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
+            # LOG_AUTORESYNC_KEY stays in details until the exit that writes the audit info: on a failure that is
+            # auth_error, which appends it after the failure message.
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
@@ -829,6 +832,7 @@ def get_auth_token():
                 log_authentication(auth_event_type, request, user=user, serial=log_serials or serials,
                                    transaction_id=details.get("transaction_id"),
                                    reasons=auth_reasons, reason_detail=auth_reason_detail)
+                add_autoresync_to_audit(details.pop(LOG_AUTORESYNC_KEY, None))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
@@ -865,6 +869,7 @@ def get_auth_token():
         raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details or {})
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
+        add_autoresync_to_audit(details.pop(LOG_AUTORESYNC_KEY, None))
         request.User = user
 
     # If the HSM is not ready, we need to create the nonce in another way!

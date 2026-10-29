@@ -1366,6 +1366,27 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         reason=AuthEventReason.AUTHORIZATION_DENIED, policies=["authlog_deny"],
                                         reasons={self.serial: AuthEventReason.WRONG_OTP}, endpoint=self.endpoint_path)
 
+    def test_attempt_id_groups_an_answer_refused_by_auth_max_fail(self):
+        # An answer refused before its token is checked is still a step of the attempt of the challenge it answers
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
 
 class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     """The shared contract plus /auth-only cases: local-admin login, divergent error codes and authorization."""
@@ -1686,6 +1707,56 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.USER_STORE_UNAVAILABLE],
                                         user=User("doesnotexist", self.realm1), endpoint=self.endpoint_path,
                                         reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["authlog_login_disabled"])
+
+    def test_attempt_id_groups_an_answer_refused_by_auth_max_fail(self):
+        # An answer refused before its token is checked is still a step of the attempt of the challenge it answers.
+        # The refusal comes from the auth_timelimit pre-policy, which does not know the token, so the row names none.
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._authenticate("000000", transaction_id=transaction_id))
+            self._assert_failed(self._authenticate("755224", transaction_id=transaction_id))
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                             AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+
+    def test_answer_of_an_unknown_user_refused_by_auth_max_fail(self):
+        # A user who does not exist is refused like one who does, and owns no token, so the challenge it names is
+        # someone else's and the refusal is no step of its attempt
+        self._enable_challenge_response()
+        set_policy("authlog_max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        Audit.query.delete()
+        db.session.commit()
+        unknown_user = {"username": "doesnotexist", "realm": self.realm1, "password": "wrong"}
+        try:
+            transaction_id = self._trigger_challenge()
+            self._auth(unknown_user, status=401)
+            response = self._auth({**unknown_user, "transaction_id": transaction_id}, status=401)
+        finally:
+            delete_policy("authlog_cr")
+            delete_policy("authlog_max_fail")
+        self.assertEqual(403, response.json["result"]["error"]["code"], response.json)
+        self.assertEqual("Authentication failure. The account has exceeded the authentication time limit!",
+                         response.json["result"]["error"]["message"], response.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
+                         response.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id, same_attempt=False)
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=User("doesnotexist", self.realm1),
+                                        transaction_id=transaction_id, endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.AUTH_MAX_FAIL)
+        self.assertNotEqual(entries[AuthEventType.CHALLENGE_TRIGGERED].attempt_id,
+                            entries[AuthEventType.NOT_AUTHORIZED].attempt_id)
 
 
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
