@@ -26,8 +26,12 @@ import { DetailsCardComponent } from "@components/shared/details-shared/details-
 import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
 import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { CustomAttributeDraft } from "@components/user/user-custom-attributes/custom-attribute-draft";
+import { UserCustomAttributesComponent } from "@components/user/user-custom-attributes/user-custom-attributes.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
+import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   selector: "app-user-details-self-service",
@@ -38,7 +42,9 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatButtonModule,
     DetailsCardComponent,
     DetailFieldComponent,
-    DetailFieldRowComponent
+    DetailFieldRowComponent,
+    UserCustomAttributesComponent,
+    UserDetailsEditComponent
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./user-details.self-service.component.html",
@@ -49,6 +55,7 @@ export class UserDetailsSelfServiceComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
+  readonly attributeDraft = new CustomAttributeDraft();
 
   expandedKeys = signal<Set<string>>(new Set<string>());
 
@@ -93,6 +100,14 @@ export class UserDetailsSelfServiceComponent {
 
   userData = this.userService.user;
 
+  // The standard user attributes a user may change through PUT /user/. Users cannot read the resolver mapping,
+  // so other attributes of the record (identifiers, raw columns of the user store) are not offered.
+  private readonly userFields = ["givenname", "surname", "email", "phone", "mobile", "description"];
+  editableFields = computed(() => this.userFields.filter((key) => key in (this.userData() ?? {})));
+  canEdit = computed(() => this.authService.actionAllowed("updateuser") && !!this.userData()?.editable);
+  editMode = signal(false);
+  editedUserData = signal<EditUserData>({ username: "" });
+
   detailsEntries = computed(() => {
     const data: Record<string, unknown> = this.userData() ?? {};
     const result: { key: string; label: string; value: unknown }[] = [];
@@ -121,6 +136,34 @@ export class UserDetailsSelfServiceComponent {
   });
 
   protected readonly Array = Array;
+
+  editUser() {
+    const data = this.userData() as Record<string, unknown>;
+    const edited: EditUserData = { username: this.userData().username };
+    for (const field of this.editableFields()) {
+      edited[field] = this.str(data[field]);
+    }
+    this.editedUserData.set(edited);
+    this.editMode.set(true);
+  }
+
+  cancelEdit() {
+    this.editMode.set(false);
+  }
+
+  onUpdateEditedUser(data: EditUserData) {
+    this.editedUserData.set(data);
+  }
+
+  async saveEdit(): Promise<boolean> {
+    const data = { ...this.editedUserData(), username: this.userData().username };
+    const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
+    if (success) {
+      this.userService.userResource.reload();
+      this.editMode.set(false);
+    }
+    return !!success;
+  }
 
   enrollNewToken() {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();

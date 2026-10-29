@@ -1,0 +1,215 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (draft().canSetCustomAttribute() || draft().attributesList().length > 0) {
+  <app-details-card
+    class="details-card--user-info"
+    title="Custom Attributes"
+    i18n-title="@@user.customAttributes">
+    @if (draft().canSetCustomAttribute() && !draft().isAdding()) {
+      <button
+        (click)="draft().startAdd()"
+        class="action-button-primary button-width-m margin-bottom-8"
+        mat-stroked-button
+        type="button">
+        <mat-icon>add</mat-icon>
+        <span i18n="@@user.addCustomAttribute">Add Attribute</span>
+      </button>
+    }
+    <div class="details-field-list">
+      @if (draft().canSetCustomAttribute() && draft().isAdding()) {
+        <div class="new-attribute-row detail-field--editing">
+          <div class="detail-field-label">
+            <mat-form-field
+              class="details-field-height new-attribute-field"
+              subscriptSizing="dynamic">
+              @if (draft().keyMode() === "select") {
+                <mat-select
+                  [value]="draft().selectedKey()"
+                  (selectionChange)="draft().selectedKey.set($event.value)"
+                  aria-label="Attribute Key"
+                  i18n-aria-label="@@user.attributeKey"
+                  i18n-placeholder="@@user.attributeKey"
+                  placeholder="Attribute Key">
+                  @for (k of draft().keyOptions(); track k) {
+                    <mat-option [value]="k">{{ k }}</mat-option>
+                  }
+                  @if (draft().hasWildcardKey()) {
+                    <mat-option
+                      (onSelectionChange)="draft().switchToCustomKey()"
+                      [value]="'__CUSTOM__'">
+                      <i i18n="@@common.custom">Custom…</i>
+                    </mat-option>
+                  }
+                </mat-select>
+              } @else {
+                <input
+                  [value]="draft().addKeyInput()"
+                  (input)="draft().addKeyInput.set($event.target['value'])"
+                  aria-label="Attribute Key"
+                  i18n-aria-label="@@user.attributeKey"
+                  i18n-placeholder="@@user.enterKey"
+                  matInput
+                  placeholder="Enter key" />
+              }
+            </mat-form-field>
+            @if (draft().keyMode() === "input" && draft().keyOptions().length > 0) {
+              <button
+                (click)="draft().switchToSelectKey()"
+                aria-label="Back to key select"
+                class="return-button"
+                i18n-aria-label="Back to key select@@user.backKeySelect"
+                mat-icon-button
+                type="button">
+                <mat-icon>arrow_left</mat-icon>
+              </button>
+            }
+          </div>
+          <div class="detail-field-value">
+            <div class="value-row">
+              <div class="value-content">
+                <mat-form-field
+                  class="input-width-m details-field-height"
+                  subscriptSizing="dynamic">
+                  @if (draft().isValueInput()) {
+                    <input
+                      [value]="draft().addValueInput()"
+                      (input)="draft().addValueInput.set($event.target['value'])"
+                      aria-label="Attribute Value"
+                      i18n-aria-label="@@user.attributeValue"
+                      i18n-placeholder="@@user.enterValue"
+                      matInput
+                      placeholder="Enter value" />
+                  } @else {
+                    <mat-select
+                      [value]="draft().selectedValue()"
+                      (selectionChange)="draft().selectedValue.set($event.value)"
+                      aria-label="Attribute Value"
+                      i18n-aria-label="@@user.attributeValue"
+                      i18n-placeholder="@@user.attributeValue"
+                      placeholder="Attribute Value">
+                      @for (v of draft().valueOptions(); track v) {
+                        <mat-option [value]="v">{{ v }}</mat-option>
+                      }
+                    </mat-select>
+                  }
+                </mat-form-field>
+              </div>
+              <div class="value-edit row-actions">
+                <button
+                  (click)="draft().add()"
+                  [disabled]="!draft().canAddAttribute()"
+                  aria-label="Save"
+                  color="primary"
+                  i18n-aria-label="@@common.save"
+                  mat-icon-button>
+                  <mat-icon>save</mat-icon>
+                </button>
+                <button
+                  (click)="draft().clearInput()"
+                  aria-label="Cancel"
+                  class="red"
+                  i18n-aria-label="@@common.cancel"
+                  mat-icon-button>
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @for (attr of draft().attributesList(); track attr.key) {
+        @let isEditing = draft().editingKey() === attr.key;
+        <app-detail-field-row
+          [label]="attr.key"
+          [isEditing]="isEditing">
+          @if (isEditing) {
+            <mat-form-field
+              class="input-width-m details-field-height"
+              fieldValue
+              subscriptSizing="dynamic">
+              @if (draft().isEditValueInput()) {
+                <input
+                  [value]="draft().editValue()"
+                  (input)="draft().editValue.set($event.target['value'])"
+                  aria-label="Attribute Value"
+                  i18n-aria-label="@@user.attributeValue"
+                  matInput />
+              } @else {
+                <mat-select
+                  [value]="draft().editValue()"
+                  (selectionChange)="draft().editValue.set($event.value)"
+                  aria-label="Attribute Value"
+                  i18n-aria-label="@@user.attributeValue">
+                  @for (v of draft().editValueOptions(); track v) {
+                    <mat-option [value]="v">{{ v }}</mat-option>
+                  }
+                </mat-select>
+              }
+            </mat-form-field>
+          } @else {
+            <span fieldValue>{{ attr.value || "-" }}</span>
+          }
+          <div
+            class="row-actions"
+            fieldEdit>
+            @if (isEditing) {
+              <button
+                (click)="draft().saveEdit()"
+                [disabled]="!draft().canSaveEdit()"
+                aria-label="Save"
+                color="primary"
+                i18n-aria-label="@@common.save"
+                mat-icon-button>
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                (click)="draft().cancelEdit()"
+                aria-label="Cancel"
+                class="red"
+                i18n-aria-label="@@common.cancel"
+                mat-icon-button>
+                <mat-icon>cancel</mat-icon>
+              </button>
+            } @else {
+              @if (draft().canEdit(attr.key)) {
+                <button
+                  (click)="draft().startEdit(attr.key, attr.value)"
+                  aria-label="Edit custom attribute"
+                  i18n-aria-label="Edit custom attribute@@user.editCustomAttribute"
+                  mat-icon-button>
+                  <mat-icon>edit</mat-icon>
+                </button>
+              }
+              @if (draft().deletableAttributes().includes(attr.key) || draft().deletableAttributes().includes("*")) {
+                <button
+                  (click)="draft().delete(attr.key)"
+                  aria-label="Delete custom attribute"
+                  i18n-aria-label="Delete custom attribute@@user.deleteCustomAttribute"
+                  mat-icon-button>
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            }
+          </div>
+        </app-detail-field-row>
+      }
+    </div>
+  </app-details-card>
+}

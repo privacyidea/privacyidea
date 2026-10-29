@@ -666,6 +666,21 @@ describe("UserDetailsComponent", () => {
       expect(result).toBe(false);
     });
 
+    it("counts a value edited in its row as a pending change and saves it under its key", async () => {
+      component.attributeDraft.startEdit("department", "sales");
+      expect(getHasChangesFn()()).toBe(true);
+
+      component.attributeDraft.editValue.set("");
+      expect(getValidChangesFn()()).toBe(false);
+
+      component.attributeDraft.editValue.set("finance");
+      expect(getValidChangesFn()()).toBe(true);
+      const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
+      const result = await getSaveFn()();
+      expect(setSpy).toHaveBeenCalledWith("department", "finance");
+      expect(result).toBe(true);
+    });
+
     it("ngOnDestroy clears all pending-changes registrations", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();

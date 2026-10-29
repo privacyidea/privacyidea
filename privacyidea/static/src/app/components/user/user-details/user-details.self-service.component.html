@@ -25,47 +25,92 @@
     <h3 i18n="@@user.yourDetails">Your Details</h3>
   </div>
 
-  <app-details-card
-    class="details-card--user-info"
-    title="Attributes"
-    i18n-title="@@user.attributes">
-    <div class="details-field-list">
-      @for (item of detailsEntries(); track item.key) {
-        @if (Array.isArray(item.value) && item.value.length > 1) {
-          <app-detail-field-row [label]="item.label">
-            <ng-container fieldValue>
-              <ul class="value-list">
-                @if (isExpanded(item.key)) {
-                  @for (val of item.value; track val) {
-                    <li>{{ val }}</li>
-                  }
-                } @else {
-                  <li>{{ item.value[0] }}</li>
-                }
-              </ul>
-              <button
-                (click)="toggleExpanded(item.key)"
-                [attr.aria-expanded]="isExpanded(item.key)"
-                class="value-toggle"
-                type="button">
-                @if (isExpanded(item.key)) {
-                  <mat-icon>expand_less</mat-icon>
-                  <span i18n="@@user.showLess">Show less</span>
-                } @else {
-                  <mat-icon>expand_more</mat-icon>
-                  <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} more</span>
-                }
-              </button>
-            </ng-container>
-          </app-detail-field-row>
-        } @else {
-          <app-detail-field
-            [label]="item.label"
-            [displayText]="str(item.value)" />
-        }
+  @if (canEdit()) {
+    <div class="flex gap-8 margin-bottom-16">
+      @if (!editMode()) {
+        <button
+          (click)="editUser()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>edit</mat-icon>
+          <span i18n="@@user.edit">Edit</span>
+        </button>
+      } @else {
+        <button
+          (click)="cancelEdit()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n="@@common.cancel">Cancel</span>
+        </button>
+        <button
+          (click)="saveEdit()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n="@@common.save">Save</span>
+        </button>
       }
     </div>
-  </app-details-card>
+  }
+
+  @if (editMode()) {
+    <app-details-card
+      class="details-card--user-info"
+      title="Attributes"
+      i18n-title="@@user.attributes">
+      <app-user-details-edit
+        [resolver]="userData().resolver"
+        [initialUserData]="userData()"
+        [fields]="editableFields()"
+        (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+    </app-details-card>
+  } @else {
+    <app-details-card
+      class="details-card--user-info"
+      title="Attributes"
+      i18n-title="@@user.attributes">
+      <div class="details-field-list">
+        @for (item of detailsEntries(); track item.key) {
+          @if (Array.isArray(item.value) && item.value.length > 1) {
+            <app-detail-field-row [label]="item.label">
+              <ng-container fieldValue>
+                <ul class="value-list">
+                  @if (isExpanded(item.key)) {
+                    @for (val of item.value; track val) {
+                      <li>{{ val }}</li>
+                    }
+                  } @else {
+                    <li>{{ item.value[0] }}</li>
+                  }
+                </ul>
+                <button
+                  (click)="toggleExpanded(item.key)"
+                  [attr.aria-expanded]="isExpanded(item.key)"
+                  class="value-toggle"
+                  type="button">
+                  @if (isExpanded(item.key)) {
+                    <mat-icon>expand_less</mat-icon>
+                    <span i18n="@@user.showLess">Show less</span>
+                  } @else {
+                    <mat-icon>expand_more</mat-icon>
+                    <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} more</span>
+                  }
+                </button>
+              </ng-container>
+            </app-detail-field-row>
+          } @else {
+            <app-detail-field
+              [label]="item.label"
+              [displayText]="str(item.value)" />
+          }
+        }
+      </div>
+    </app-details-card>
+  }
+
+  <app-user-custom-attributes
+    class="margin-top-16"
+    [draft]="attributeDraft" />
 
   <div class="flex gap-8 margin-top-16">
     @if (authService.tokenEnrollmentAllowed()) {

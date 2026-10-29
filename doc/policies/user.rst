@@ -304,8 +304,8 @@ updateuser
 type: ``bool``
 
 If the ``updateuser`` action is defined, the user is allowed to change their
-attributes in the user store. In the current WebUI users can not edit their user
-data; the action applies to the REST API (``PUT /user/``) and to the previous WebUI.
+attributes in the user store. The WebUI offers this on the page of the user's own
+details, which also requires the ``userlist`` action.
 
 .. note:: To be able to edit the attributes, the resolver must be defined as
    editable.
@@ -572,8 +572,7 @@ type: ``string``
 
 This defines how a user is allowed to set their own attributes.
 It uses the same setting as the admin policy :ref:`admin_set_custom_user_attributes`.
-In the current WebUI users can not edit their custom attributes; the action applies to
-the REST API (``POST /user/attribute``) and to the previous WebUI.
+The WebUI offers the allowed keys and values on the page of the user's own details.
 
 .. note:: Using a '*' in this setting allows the user to set any attribute or any value and thus the user
    can overwrite existing attributes from the user store. If policies depending on user attributes
@@ -591,8 +590,7 @@ type: ``string``
 
 This defines how a user is allowed to delete their own attributes.
 It uses the same setting as the admin policy :ref:`admin_delete_custom_user_attributes`.
-In the current WebUI users can not edit their custom attributes; the action applies to
-the REST API (``DELETE /user/attribute/...``) and to the previous WebUI.
+The WebUI offers deleting these attributes on the page of the user's own details.
 
 .. note:: Using a '*' in this setting allows the user to delete any attribute and thus the user
    can change overwritten attributes and revert to the user store attributes.

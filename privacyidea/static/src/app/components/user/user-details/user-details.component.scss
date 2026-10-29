@@ -113,16 +113,20 @@
   padding-right: 0;
 }
 
-.add-attr-row {
-  display: flex;
-  gap: calc(16px * 0.75);
-  align-items: center;
-  flex-wrap: nowrap;
+// The empty top row of the custom attributes: the key field fills the label cell, beside the button
+// that returns from a free-text key to the key list.
+.new-attribute-row .detail-field-label {
+  gap: 4px;
+}
 
-  .input-width-l {
-    flex: 1 1 0;
-    min-width: 0;
-  }
+.new-attribute-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
 }
 
 .ml-8 {

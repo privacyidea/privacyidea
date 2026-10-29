@@ -18,12 +18,15 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, Router } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
+import { ResolverService } from "@services/resolver/resolver.service";
 import { UserData, UserService } from "@services/user/user.service";
 import { MockUserService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { of } from "rxjs";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { UserDetailsSelfServiceComponent } from "./user-details.self-service.component";
@@ -42,7 +45,8 @@ describe("UserDetailsSelfServiceComponent", () => {
         provideHttpClientTesting(),
         { provide: ActivatedRoute, useValue: { params: of({}) } },
         { provide: UserService, useClass: MockUserService },
-        { provide: AuthService, useClass: MockAuthService }
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ResolverService, useClass: MockResolverService }
       ]
     }).compileComponents();
 
@@ -55,6 +59,117 @@ describe("UserDetailsSelfServiceComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("editing the own user data", () => {
+    const ownData: UserData = {
+      username: "alice",
+      givenname: "Alice",
+      surname: "Smith",
+      email: "alice@example.org",
+      phone: "",
+      mobile: "",
+      description: "",
+      userid: "u1",
+      resolver: "res1",
+      editable: true
+    };
+    const editButton = () =>
+      Array.from(fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLButtonElement>).find((b) =>
+        b.textContent?.includes("Edit")
+      );
+    const allowUpdate = () =>
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.update((data) => ({
+        ...data!,
+        rights: ["updateuser"]
+      }));
+
+    it("offers editing only with the updateuser right", () => {
+      userServiceMock.user.set(ownData);
+      fixture.detectChanges();
+      expect(editButton()).toBeUndefined();
+
+      allowUpdate();
+      fixture.detectChanges();
+      expect(editButton()).toBeDefined();
+    });
+
+    it("offers no editing when the resolver is not editable", () => {
+      allowUpdate();
+      userServiceMock.user.set({ ...ownData, editable: false });
+      fixture.detectChanges();
+      expect(editButton()).toBeUndefined();
+    });
+
+    it("edits the standard user attributes of the own record only", () => {
+      allowUpdate();
+      userServiceMock.user.set({ ...ownData, id: 7 } as unknown as UserData);
+      fixture.detectChanges();
+      editButton()!.click();
+      fixture.detectChanges();
+
+      expect(component.editableFields()).toEqual(["givenname", "surname", "email", "phone", "mobile", "description"]);
+      expect(fixture.nativeElement.querySelector("app-user-details-edit")).not.toBeNull();
+    });
+
+    it("saves the edited data for the own account and leaves edit mode", async () => {
+      allowUpdate();
+      userServiceMock.user.set(ownData);
+      userServiceMock.editUser.mockReturnValue(of(true));
+      fixture.detectChanges();
+      editButton()!.click();
+      component.onUpdateEditedUser({ username: "alice", givenname: "Alicia" });
+
+      await component.saveEdit();
+
+      expect(userServiceMock.editUser).toHaveBeenCalledWith("res1", { username: "alice", givenname: "Alicia" });
+      expect(userServiceMock.userResource.reload).toHaveBeenCalled();
+      expect(component.editMode()).toBe(false);
+    });
+  });
+
+  describe("own custom attributes", () => {
+    const customAttributesCard = () =>
+      Array.from(fixture.nativeElement.querySelectorAll("app-details-card") as NodeListOf<HTMLElement>).find(
+        (card) => card.getAttribute("title") === "Custom Attributes"
+      );
+
+    it("shows no custom attributes card without a policy and without stored attributes", () => {
+      expect(customAttributesCard()).toBeUndefined();
+    });
+
+    it("offers adding an attribute when the policy allows a key", async () => {
+      (userServiceMock.attributeSetMap as WritableSignal<Record<string, string[]>>).set({
+        department: ["sales", "finance"]
+      });
+      (userServiceMock.keyOptions as WritableSignal<string[]>).set(["department"]);
+      fixture.detectChanges();
+
+      expect(customAttributesCard()).toBeDefined();
+      const addButton = Array.from(customAttributesCard()!.querySelectorAll("button")).find((b) =>
+        b.textContent?.includes("Add Attribute")
+      )!;
+      addButton.click();
+      fixture.detectChanges();
+      expect(customAttributesCard()!.querySelector(".new-attribute-row mat-select")).not.toBeNull();
+    });
+
+    it("lists the stored attributes and offers delete only for deletable keys", () => {
+      userServiceMock.userAttributesList.set([
+        { key: "department", value: "sales" },
+        { key: "city", value: "Berlin" }
+      ]);
+      (userServiceMock.deletableAttributes as WritableSignal<string[]>).set(["department"]);
+      fixture.detectChanges();
+
+      const card = customAttributesCard()!;
+      expect(card.textContent).toContain("Berlin");
+      const deleteButtons = card.querySelectorAll<HTMLButtonElement>("button[aria-label='Delete custom attribute']");
+      expect(deleteButtons.length).toBe(1);
+
+      deleteButtons[0].click();
+      expect(userServiceMock.deleteUserAttribute).toHaveBeenCalledWith("department");
+    });
   });
 
   it("enrollNewToken navigates to token enrollment", () => {
