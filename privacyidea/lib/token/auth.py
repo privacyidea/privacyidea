@@ -356,7 +356,7 @@ def keep_tokens_usable_for_request(token_object_list: list[TokenClass], options:
     change via ``/validate/check``, which do not reach the rest of :func:`check_token_list`.
 
     :param token_object_list: The tokens of the request
-    :param options: The options of the request, with the disabled token types and e.g. the service_id
+    :param options: The options of the request, with the disabled token types and for example the service_id
     :param token_reasons: Why each removed token could not authenticate, by serial, changed in place
     :return: The tokens that may authenticate this request
     """

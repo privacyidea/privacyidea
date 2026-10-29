@@ -15,6 +15,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
+from flask import g
 from passlib.hash import argon2
 from sqlalchemy import select
 from testfixtures import Replace, test_datetime
@@ -61,7 +62,7 @@ from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOw
                                 NodeName)
 from privacyidea.models.utils import utc_now
 from . import smtpmock, ldap3mock, radiusmock
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
@@ -736,6 +737,8 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         if service_id:
             data["service_id"] = service_id
         with self.app.test_request_context("/validate/check", method="POST", data=data):
+            # The tests share one app context, and /validate/check comes without a logged in user
+            g.pop("logged_in_user", None)
             response = self.app.full_dispatch_request()
         self.assertEqual(200, response.status_code, response.json)
         return response.json
@@ -769,9 +772,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
 
     def test_02_an_expired_challenge_is_refused(self):
         _first, second = self._enter_new_pin()
-        for challenge in db.session.scalars(select(Challenge).where(Challenge.transaction_id == second)):
-            challenge.expiration = utc_now() - datetime.timedelta(hours=5)
-        db.session.commit()
+        force_expire_challenges(second)
 
         result = self._check("newpin1", second)
         self.assertFalse(result["result"]["value"], result)
@@ -864,6 +865,33 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
         self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+
+    def test_10_a_revoked_token_is_refused(self):
+        _first, second = self._enter_new_pin()
+        # A fail counter past its clear timeout is reset before the other checks, but not on a revoked token
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial=self.serial)
+        token.set_failcount(token.get_max_failcount())
+        exceeded = (datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)).strftime(DATE_FORMAT)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded)
+        revoke_token(self.serial)
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Token is revoked", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_11_the_answers_keep_the_version_hidden(self):
+        set_policy("hide_version", scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION)
+        self.addCleanup(delete_policy, "hide_version")
+        result = self._check("test" + self.valid_otp_values[0])
+        first = result["detail"]["transaction_id"]
+
+        result = self._check("newpin1", first)
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+        self.assertNotIn("version", result)
+        self.assertNotIn("versionnumber", result)
 
 
 class LastUsedTokenTypeWriteTestCase(MyApiTestCase):

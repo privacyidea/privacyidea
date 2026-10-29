@@ -117,18 +117,19 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             if not token or not challenge.is_open():
                 return False, {"message": _("Response did not match the challenge.")}
             # Like for any other answer to a challenge, the token has to be usable for an authentication: the second
-            # answer ends in one. So the policies and the token itself have to allow it for this request, e.g. for
-            # its type and its service_id.
+            # answer ends in one. So the policies and the token itself have to allow it for this request, for
+            # example for its type and its service_id.
             from privacyidea.lib.token.auth import keep_tokens_usable_for_request
             if not keep_tokens_usable_for_request([token], options, {}):
                 return False, {"serial": token.token.serial,
                                "message": _("No suitable token found for authentication.")}
-            # Reset an exceeded fail counter whose reset timeout is reached, as for a login
-            token.check_reset_failcount()
-            message_list = []
-            if not token.check_all(message_list):
+            # And the token has to pass the checks of a login: revoked, fail counter with its reset timeout, active,
+            # validity period and rollout state
+            from privacyidea.lib.fido2.challenge import check_fido2_token_state
+            token_state = check_fido2_token_state(token)
+            if not token_state.usable:
                 return False, {"serial": token.token.serial,
-                               "message": ", ".join(message_list)}
+                               "message": token_state.message}
             # Then either verify the PIN or set the PIN the first time. The
             # PIN from the 1st response is stored in challenge.data
             challenge_data = challenge.get_data()
@@ -143,7 +144,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                                        "message": _("Response did not match the challenge.")}
                     token.inc_failcount()
                     return False, {"serial": token.token.serial,
-                                   "message": "PINs do not match"}
+                                   "message": _("PINs do not match")}
                 # Each challenge can be answered once: of several requests with the same answer only the one that
                 # removes the challenge sets the PIN
                 if not consume_challenge(challenge):
@@ -163,12 +164,13 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     # Obviously the admin removed the policy for changing pins,
                     # so we will not require to change the PIN again
                     token.remove_tokeninfo("next_pin_change")
-                return True, {"message": "PIN successfully set.",
+                return True, {"message": _("PIN successfully set."),
                               "serial": token.token.serial}
             else:
                 # The PIN is presented the first time.
                 # Verify if the PIN adheres to the PIN policies. This is always in the normal user context
                 g = options.get("g")
+                request_logged_in_user = getattr(g, "logged_in_user", None)
                 g.logged_in_user = {"role": SCOPE.USER}
                 if user_obj:
                     # check_pin below originally works for logged in users, since only logged in users
@@ -176,7 +178,15 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     # check_pin would fail.
                     g.logged_in_user["username"] = user_obj.login
                     g.logged_in_user["realm"] = user_obj.realm
-                check_pin(g, args[1], token.token.tokentype, user_obj)
+                try:
+                    check_pin(g, args[1], token.token.tokentype, user_obj)
+                finally:
+                    # The logged in user is only for check_pin: the rest of the request, for example the policy
+                    # hide_version, has to see the request as it is
+                    if request_logged_in_user is None:
+                        delattr(g, "logged_in_user")
+                    else:
+                        g.logged_in_user = request_logged_in_user
                 # The first challenge is used up, the new PIN has to be confirmed with a second one
                 if not consume_challenge(challenge):
                     return False, {"serial": token.token.serial,
