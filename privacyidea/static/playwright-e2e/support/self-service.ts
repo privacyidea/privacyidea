@@ -19,6 +19,7 @@
 
 import { test as base } from "@playwright/test";
 import { BASE_URL } from "./env";
+import { login, restoreSession } from "./session";
 
 export { expect } from "@playwright/test";
 
@@ -35,19 +36,7 @@ export const selfTest = base.extend<object, { selfSession: string }>({
         await use("");
         return;
       }
-      const context = await browser.newContext({
-        ignoreHTTPSErrors: true,
-        baseURL: BASE_URL
-      });
-      const page = await context.newPage();
-      await page.goto("login");
-      await page.fill("#username", SELF_USER);
-      await page.fill("#password", SELF_PASS);
-      await page.click('button[type="submit"]');
-      await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 20_000 });
-      const session = await page.evaluate(() => JSON.stringify(Object.fromEntries(Object.entries(sessionStorage))));
-      await context.close();
-      await use(session);
+      await use(await login(browser, BASE_URL, SELF_USER, SELF_PASS));
     },
     { scope: "worker" }
   ],
@@ -61,16 +50,7 @@ export const selfTest = base.extend<object, { selfSession: string }>({
       viewport
     });
     if (selfSession) {
-      await context.addInitScript((entries: string) => {
-        if (location.origin === "null") {
-          return;
-        }
-        for (const [key, value] of Object.entries(JSON.parse(entries) as Record<string, string>)) {
-          if (sessionStorage.getItem(key) === null) {
-            sessionStorage.setItem(key, value);
-          }
-        }
-      }, selfSession);
+      await restoreSession(context, selfSession);
     }
     await use(context);
     await context.close();

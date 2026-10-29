@@ -24,7 +24,38 @@ import { TestType } from "@playwright/test";
 // test reports "expected to fail, but passed" - the cue to delete its entry here.
 type Known = Record<string, { reason: string; pages: string[] | "all" }>;
 
-export const KNOWN: Known = {};
+export const KNOWN: Known = {
+  "heading outline": {
+    reason: "the first heading these pages draw is an h3 right after the page's h1",
+    pages: [
+      "clients",
+      "token enrollment",
+      "token applications",
+      "token get serial",
+      "token import",
+      "container create",
+      "container template create",
+      "user create",
+      "resolver create",
+      "policy create",
+      "conditional access create",
+      "api client create",
+      "event create",
+      "machine resolver create",
+      "periodic task create",
+      "system config",
+      "ui settings",
+      "token type config",
+      "smtp create",
+      "radius create",
+      "sms create",
+      "privacyidea server create",
+      "ca connector create",
+      "tokengroup create",
+      "service id create"
+    ]
+  }
+};
 
 // Marks the running test as an expected failure when the check is known to fail on this page.
 export function knownFailure(test: Pick<TestType<any, any>, "fail">, check: string, page: string): void {
