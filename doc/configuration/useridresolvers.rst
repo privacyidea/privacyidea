@@ -422,8 +422,7 @@ database.
 You can mark the users as ``Editable``. The ``Password_Hash_Type`` determines
 the hash that is written when the password of an editable user is set:
 ``PHPASS``, ``SHA``, ``SSHA``, ``SSHA256`` (default), ``SSHA512``, ``OTRS``,
-``SHA256CRYPT``, ``SHA512CRYPT`` or ``MD5CRYPT``. The current WebUI does not
-offer ``SHA256CRYPT``.
+``SHA256CRYPT``, ``SHA512CRYPT`` or ``MD5CRYPT``.
 
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
