@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+export const DEFAULT_OTP_LENGTH = "DefaultOtpLen";
+
 // TOTP Token
 export const TOTP_HASHLIB = "totp.hashlib";
 export const TOTP_OTP_LENGTH = "totp.otplen";

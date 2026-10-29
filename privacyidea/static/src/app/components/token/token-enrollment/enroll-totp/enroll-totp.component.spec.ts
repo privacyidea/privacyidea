@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import { DEFAULT_OTP_LENGTH, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
@@ -32,6 +32,7 @@ describe("EnrollTotpComponent", () => {
   let component: EnrollTotpComponent;
   let fixture: ComponentFixture<EnrollTotpComponent>;
   let authService: MockAuthService;
+  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -46,6 +47,7 @@ describe("EnrollTotpComponent", () => {
     }).compileComponents();
 
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
     fixture = TestBed.createComponent(EnrollTotpComponent);
     component = fixture.componentInstance;
@@ -93,6 +95,31 @@ describe("EnrollTotpComponent", () => {
     fixture.componentRef.setInput("disabled", false);
     fixture.detectChanges();
     checkPolicyEnforcedValues();
+  });
+
+  it("presets hashlib, otplen and time step from the system config", () => {
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture = TestBed.createComponent(EnrollTotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.timeStep()).toBe(60);
+    expect(component.timeStepForm().disabled()).toBe(false);
+    expect(component.otpLength()).toBe(8);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+  });
+
+  it("keeps the policy values over a system config that loads later", () => {
+    authService.rightsWithValues.set({ [TOTP_HASHLIB]: "sha512", [TOTP_OTP_LENGTH]: "6", [TOTP_TIME_STEP]: "30" });
+    fixture.detectChanges();
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.timeStep()).toBe(30);
+    expect(component.otpLength()).toBe(6);
   });
 
   it("should disable/enable all controls according to disable input", () => {

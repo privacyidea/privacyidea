@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
+import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
@@ -32,6 +32,7 @@ describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
   let fixture: ComponentFixture<EnrollHotpComponent>;
   let authService: MockAuthService;
+  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -50,6 +51,7 @@ describe("EnrollHotpComponent", () => {
     component = fixture.componentInstance;
 
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
     fixture.detectChanges();
   }
@@ -95,6 +97,39 @@ describe("EnrollHotpComponent", () => {
     fixture.componentRef.setInput("disabled", false);
     fixture.detectChanges();
     checkPolicyEnforcedValues();
+  });
+
+  it("presets hashlib and otplen from the system config", () => {
+    (TestBed.inject(SystemService) as unknown as MockSystemService).systemConfig.set({
+      [HOTP_HASHLIB]: "sha512",
+      [DEFAULT_OTP_LENGTH]: "8"
+    });
+    createAndInit();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.otpLength()).toBe(8);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+  });
+
+  it("applies the system config when it loads after the dialog opened", () => {
+    createAndInit();
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(8);
+  });
+
+  it("keeps the policy values over a system config that loads later", () => {
+    createAndInit();
+    authService.rightsWithValues.set({ [HOTP_HASHLIB]: "sha256", [HOTP_OTP_LENGTH]: "6" });
+    fixture.detectChanges();
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha512", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(6);
   });
 
   it("disables generateOnServer when policy forces server-side key generation", () => {

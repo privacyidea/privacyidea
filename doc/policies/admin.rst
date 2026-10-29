@@ -1361,8 +1361,8 @@ Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified ha
 The corresponding input selector will be disabled in the web UI.
 Possible values are *sha1*, *sha256* and *sha512*. Without this policy, a request that does not
 send the hashlib gets the value of the token configuration (``hotp.hashlib``, ``totp.hashlib`` or
-``daypassword.hashlib``), or *sha1* if it is not set there. The current WebUI presets *sha1* in the
-HOTP and TOTP forms (the token configuration value in the DayPassword form) and always sends it.
+``daypassword.hashlib``), or *sha1* if it is not set there. The WebUI presets its forms with that
+value.
 
 .. versionadded:: 3.2 ``hotp_hashlib`` and ``totp_hashlib``
 
@@ -1411,7 +1411,7 @@ Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
 Possible values are *30* or *60*. Without this policy, a request that does not send the time step
 gets the value of the token configuration (``totp.timeStep``), or *30* if it is not set there.
-The current WebUI presets *30* in the form and always sends it.
+The WebUI presets its form with that value.
 
 .. versionadded:: 3.2
 

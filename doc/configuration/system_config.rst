@@ -220,11 +220,10 @@ OTP length of newly enrolled tokens
 
 This is the default length of the OTP value of OATH-based tokens like SMS,
 Email, TOTP and HOTP. It is used when the enrollment request contains no OTP
-length, e.g. an API request without ``otplen``. The current WebUI always sends
-an OTP length for HOTP and TOTP tokens (6 unless changed in the dialog), so
-there this value only applies to Email and SMS tokens; the previous WebUI sends
-6 for every token type. An ``hotp_otplen`` or ``totp_otplen`` policy replaces
-the sent value on the server.
+length, e.g. an API request without ``otplen``. The current WebUI presets its
+HOTP and TOTP dialogs with this value; the previous WebUI sends 6 for every
+token type. An ``hotp_otplen`` or ``totp_otplen`` policy replaces the sent value
+on the server.
 
 Count Window of newly enrolled tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

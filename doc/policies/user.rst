@@ -449,11 +449,10 @@ type: ``string``
 
 Force the user to enroll HOTP, TOTP or DayPassword tokens with the specified hashlib.
 The corresponding input selector will be disabled/hidden in the web UI.
-Possible values are *sha1*, *sha256* and *sha512*. Without this policy, the current WebUI presets
-*sha1* in the HOTP and TOTP forms (the token configuration value in the DayPassword form) and sends it.
-A REST API request that does not send the value gets the value of the token configuration
-(``hotp.hashlib``, ``totp.hashlib`` or ``daypassword.hashlib``), or *sha1* if it is not set there.
-The previous WebUI presets the hash algorithm from the token configuration.
+Possible values are *sha1*, *sha256* and *sha512*. Without this policy, a REST API request that
+does not send the value gets the value of the token configuration (``hotp.hashlib``,
+``totp.hashlib`` or ``daypassword.hashlib``), or *sha1* if it is not set there. The WebUI presets
+its forms with that value.
 
 .. versionadded:: 2.0 ``hotp_hashlib`` and ``totp_hashlib``
 
@@ -471,9 +470,10 @@ type: ``integer``
 
 Force the user to enroll HOTP, TOTP or DayPassword tokens with the specified OTP length.
 The corresponding input selector will be disabled/hidden in the web UI.
-Possible values are *6* or *8*. Without this policy, the current WebUI presets *6* and sends it.
-A REST API request that does not send the value gets the value of the system configuration
-(``DefaultOtpLen``), or *6* if it is not set there. The previous WebUI presets *6*.
+Possible values are *6* or *8*. Without this policy, a REST API request that does not send the
+value gets the value of the system configuration (``DefaultOtpLen``), or *6* if it is not set
+there. The current WebUI presets its HOTP and TOTP forms with that value. The previous WebUI
+presets *6*.
 
 .. versionadded:: 2.0 ``hotp_otplen``
 
@@ -513,10 +513,9 @@ type: ``integer``
 
 Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
-Possible values are *30* or *60*. Without this policy, the current WebUI presets *30* and sends it.
-A REST API request that does not send the value gets the value of the token configuration
-(``totp.timeStep``), or *30* if it is not set there. The previous WebUI presets the time step from
-the token configuration.
+Possible values are *30* or *60*. Without this policy, a REST API request that does not send the
+value gets the value of the token configuration (``totp.timeStep``), or *30* if it is not set
+there. The WebUI presets its form with that value.
 
 .. versionadded:: 2.0
 
