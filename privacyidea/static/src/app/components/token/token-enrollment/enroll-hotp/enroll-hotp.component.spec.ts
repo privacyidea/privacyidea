@@ -121,6 +121,17 @@ describe("EnrollHotpComponent", () => {
     expect(component.otpLength()).toBe(8);
   });
 
+  it("keeps the values the user picked when the system config loads later", () => {
+    createAndInit();
+    component.hashAlgorithm.set("sha512");
+    component.otpLength.set(8);
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "6" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.otpLength()).toBe(8);
+  });
+
   it("keeps the policy values over a system config that loads later", () => {
     createAndInit();
     authService.rightsWithValues.set({ [HOTP_HASHLIB]: "sha256", [HOTP_OTP_LENGTH]: "6" });

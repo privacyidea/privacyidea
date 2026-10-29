@@ -79,8 +79,15 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
     () =>
       this.authService.rightsWithValues()[HOTP_HASHLIB] || this.systemService.systemConfig()[HOTP_HASHLIB] || "sha1"
   );
-  otpLength = linkedSignal<number>(() => this.defaultOtpLength());
-  hashAlgorithm = linkedSignal<string>(() => this.defaultHashAlgorithm());
+  // A preset that changes later (the system config loads after the dialog opened) does not overwrite a user's choice.
+  otpLength = linkedSignal<number, number>({
+    source: this.defaultOtpLength,
+    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+  });
+  hashAlgorithm = linkedSignal<string, string>({
+    source: this.defaultHashAlgorithm,
+    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+  });
 
   twoStepDisabled = computed(() => this.disabled() || this.twoStep() === "force");
   generateOnServerDisabled = computed(

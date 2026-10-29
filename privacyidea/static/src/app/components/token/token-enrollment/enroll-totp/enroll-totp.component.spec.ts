@@ -111,6 +111,19 @@ describe("EnrollTotpComponent", () => {
     expect(component.otpLengthForm().disabled()).toBe(false);
   });
 
+  it("keeps the values the user picked when the system config loads later", () => {
+    fixture.detectChanges();
+    component.hashAlgorithm.set("sha512");
+    component.timeStep.set(60);
+    component.otpLength.set(8);
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "30", [DEFAULT_OTP_LENGTH]: "6" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.timeStep()).toBe(60);
+    expect(component.otpLength()).toBe(8);
+  });
+
   it("keeps the policy values over a system config that loads later", () => {
     authService.rightsWithValues.set({ [TOTP_HASHLIB]: "sha512", [TOTP_OTP_LENGTH]: "6", [TOTP_TIME_STEP]: "30" });
     fixture.detectChanges();
