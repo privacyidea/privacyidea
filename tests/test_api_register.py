@@ -189,22 +189,45 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         # host (which is "localhost" here)
         self.app.config["PI_BASE_URL"] = "https://pi.example.com"
         try:
-            with self.app.test_request_context('/recover',
-                                               method='POST',
-                                               data={"user": "corneliusReg",
-                                                     "realm": "register",
-                                                     "email":
-                                                         "cornelius@privacyidea.org"}):
-                res = self.app.full_dispatch_request()
-                self.assertTrue(res.status_code == 200, res.data)
-                data = res.json
-                self.assertEqual(data.get("result").get("value"), True)
-                # The emailed link host is the configured PI_BASE_URL, not the
-                # request host (which is "localhost" here).
-                body = message_from_string(
-                    smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
-                self.assertIn("https://pi.example.com/#!/reset/corneliusReg@register/", body)
-                self.assertNotIn("localhost", body)
+            with mock.patch("privacyidea.api.recover.is_new_webui_served", return_value=False):
+                with self.app.test_request_context('/recover',
+                                                   method='POST',
+                                                   data={"user": "corneliusReg",
+                                                         "realm": "register",
+                                                         "email": "cornelius@privacyidea.org"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertTrue(res.status_code == 200, res.data)
+                    data = res.json
+                    self.assertEqual(data.get("result").get("value"), True)
+                    # The emailed link host is the configured PI_BASE_URL, not the
+                    # request host (which is "localhost" here).
+                    body = message_from_string(
+                        smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+                    self.assertIn("https://pi.example.com/#!/reset/corneliusReg@register/", body)
+                    self.assertNotIn("localhost", body)
+        finally:
+            self.app.config.pop("PI_BASE_URL", None)
+
+    @smtpmock.activate
+    def test_02a_recover_link_opens_the_current_webui(self):
+        smtpmock.setdata(response={"cornelius@privacyidea.org": (200, "OK")})
+        set_privacyidea_config("recovery.identifier", "myserver")
+        self.app.config["PI_BASE_URL"] = "https://pi.example.com"
+        try:
+            with mock.patch("privacyidea.api.recover.is_new_webui_served", return_value=True):
+                with self.app.test_request_context('/recover',
+                                                   method='POST',
+                                                   data={"user": "corneliusReg",
+                                                         "realm": "register",
+                                                         "email": "cornelius@privacyidea.org"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.data)
+            body = message_from_string(
+                smtpmock.get_sent_message()).get_payload(decode=True).decode("utf-8")
+            # The compiled WebUI routes by path below its mount point, not by hashbang,
+            # and carries the recovery code in the fragment, which is not sent to the server
+            self.assertRegex(body, r"https://pi\.example\.com/app/v2/reset/corneliusReg@register#[A-Za-z0-9]+\s")
+            self.assertNotIn("#!", body)
         finally:
             self.app.config.pop("PI_BASE_URL", None)
 
@@ -317,6 +340,10 @@ class RecoveryCodeResolverBindingTestCase(PristineSqliteFixtures, MyApiTestCase)
 
     def setUp(self) -> None:
         super().setUp()
+        # The tests read the code from the link of the previous WebUI, whichever WebUI the static folder holds
+        patcher = mock.patch("privacyidea.api.recover.is_new_webui_served", return_value=False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.assertGreater(save_resolver(self._sql_resolver("recover_home", "testuser.sqlite")), 0)
         self.assertGreater(save_resolver(self._sql_resolver("recover_other", "testuser-api.sqlite")), 0)
         set_realm("recover_home", [{"name": "recover_home"}])

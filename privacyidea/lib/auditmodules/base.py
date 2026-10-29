@@ -229,7 +229,7 @@ class Audit:  # pragma: no cover
         :return:
         """
         for k, v in param.items():
-            if k not in self.audit_data:
+            if self.audit_data.get(k) is None:
                 # We need to create the entry
                 self.audit_data[k] = v
             else:
