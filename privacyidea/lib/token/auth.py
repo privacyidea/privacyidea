@@ -345,6 +345,42 @@ def _keep_usable(tokens: list[TokenClass], token_reasons: dict[str, str], is_usa
     return kept
 
 
+def keep_tokens_usable_for_request(token_object_list: list[TokenClass], options: dict,
+                                   token_reasons: dict[str, str]) -> list[TokenClass]:
+    """
+    Return the tokens that may authenticate this request: those of a type the policy ``disabled_token_types`` does
+    not exclude and that do not exclude themselves, see
+    :meth:`~privacyidea.lib.tokenclass.TokenClass.use_for_authentication`.
+
+    Every answer that can end in a successful authentication has to pass this filter, also the answers of the PIN
+    change via ``/validate/check``, which do not reach the rest of :func:`check_token_list`.
+
+    :param token_object_list: The tokens of the request
+    :param options: The options of the request, with the disabled token types and e.g. the service_id
+    :param token_reasons: Why each removed token could not authenticate, by serial, changed in place
+    :return: The tokens that may authenticate this request
+    """
+    # Remove disabled token types from token_object_list
+    if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
+        disabled_types = options[PolicyAction.DISABLED_TOKEN_TYPES]
+        token_object_list = _keep_usable(token_object_list, token_reasons,
+                                        lambda token: token.type not in disabled_types,
+                                        AuthEventReason.TOKEN_TYPE_DISABLED)
+
+    # Remove certain disabled tokens from token_object_list
+    if len(token_object_list) > 0:
+        # A type that excludes itself here usually means "not applicable to this request" (an
+        # application-specific password whose service_id does not match), but push and passkey express *disabled*
+        # through this very hook - and they are then never seen by check_all, which would have named that state. So
+        # ask the token whether it is disabled before falling back to the generic reason.
+        token_object_list = _keep_usable(
+            token_object_list, token_reasons,
+            lambda token: token.use_for_authentication(options),
+            lambda token: (AuthEventReason.TOKEN_DISABLED if not token.is_active()
+                           else AuthEventReason.TOKEN_NOT_APPLICABLE))
+    return token_object_list
+
+
 def _note_event(request_events: list, event_serials: dict[str, set[str]], event: AuthEventType,
                 token: TokenClass) -> None:
     """
@@ -454,24 +490,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             raise TokenAdminError(_("This action is not possible, since the token is locked"),
                                   id=Error.TOKEN_LOCKED)
 
-    # Remove disabled token types from token_object_list
-    if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
-        disabled_types = options[PolicyAction.DISABLED_TOKEN_TYPES]
-        token_object_list = _keep_usable(token_object_list, token_reasons,
-                                        lambda token: token.type not in disabled_types,
-                                        AuthEventReason.TOKEN_TYPE_DISABLED)
-
-    # Remove certain disabled tokens from token_object_list
-    if len(token_object_list) > 0:
-        # A type that excludes itself here usually means "not applicable to this request" (an
-        # application-specific password whose service_id does not match), but push and passkey express *disabled*
-        # through this very hook - and they are then never seen by check_all, which would have named that state. So
-        # ask the token whether it is disabled before falling back to the generic reason.
-        token_object_list = _keep_usable(
-            token_object_list, token_reasons,
-            lambda token: token.use_for_authentication(options),
-            lambda token: (AuthEventReason.TOKEN_DISABLED if not token.is_active()
-                           else AuthEventReason.TOKEN_NOT_APPLICABLE))
+    # Remove the tokens of disabled types and the tokens that are not for this request
+    token_object_list = keep_tokens_usable_for_request(token_object_list, options, token_reasons)
 
     for token_object in sorted(token_object_list, key=weigh_token_type):
         if log.isEnabledFor(logging.DEBUG):

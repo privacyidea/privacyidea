@@ -116,7 +116,15 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             token = next((t for t in args[0] if t.token.serial == challenge.serial), None)
             if not token or not challenge.is_open():
                 return False, {"message": _("Response did not match the challenge.")}
-            # Like for any other answer to a challenge, the token has to be usable for an authentication
+            # Like for any other answer to a challenge, the token has to be usable for an authentication: the second
+            # answer ends in one. So the policies and the token itself have to allow it for this request, e.g. for
+            # its type and its service_id.
+            from privacyidea.lib.token.auth import keep_tokens_usable_for_request
+            if not keep_tokens_usable_for_request([token], options, {}):
+                return False, {"serial": token.token.serial,
+                               "message": _("No suitable token found for authentication.")}
+            # Reset an exceeded fail counter whose reset timeout is reached, as for a login
+            token.check_reset_failcount()
             message_list = []
             if not token.check_all(message_list):
                 return False, {"serial": token.token.serial,
@@ -128,8 +136,11 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             if pin_hash:
                 # Verify the password
                 if not verify_pass_hash(args[1], pin_hash):
-                    # The PIN change has to be started again, and the attempt counts as a failed one
-                    consume_challenge(challenge)
+                    # The PIN change has to be started again, and the attempt counts as a failed one. Only the request
+                    # that removes the challenge counts it: another one answered the challenge already.
+                    if not consume_challenge(challenge):
+                        return False, {"serial": token.token.serial,
+                                       "message": _("Response did not match the challenge.")}
                     token.inc_failcount()
                     return False, {"serial": token.token.serial,
                                    "message": "PINs do not match"}

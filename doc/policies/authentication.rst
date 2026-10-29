@@ -525,7 +525,7 @@ will start a challenge response mechanism in which the user is supposed to enter
 PIN two times.
 
 Only if the user successfully changes the PIN the authentication process is finished
-successfully. E.g. if the user enters two different new PINs, the authentication process will fail:
+successfully. For example, if the user enters two different new PINs, the authentication process will fail:
 this counts as a failed authentication of the token, and the PIN change starts again with the next login.
 Each of the two challenges can be answered once and only within its validity time, and the token has to be
 usable like for any other authentication.

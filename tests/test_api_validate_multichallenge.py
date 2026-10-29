@@ -53,6 +53,7 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
@@ -727,10 +728,13 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
                 remove_token(serial)
         super().tearDown()
 
-    def _check(self, password: str, transaction_id: str | None = None, user: str = "cornelius") -> dict:
+    def _check(self, password: str, transaction_id: str | None = None, user: str = "cornelius",
+               service_id: str | None = None) -> dict:
         data = {"user": user, "realm": self.realm1, "pass": password}
         if transaction_id:
             data["transaction_id"] = transaction_id
+        if service_id:
+            data["service_id"] = service_id
         with self.app.test_request_context("/validate/check", method="POST", data=data):
             response = self.app.full_dispatch_request()
         self.assertEqual(200, response.status_code, response.json)
@@ -809,6 +813,57 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         # The challenge stays open for the owner of the token
         result = self._check("newpin1", first)
         self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+
+    def test_06_a_disabled_token_type_is_refused(self):
+        _first, second = self._enter_new_pin()
+        set_policy("disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "disabled_hotp")
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("No suitable token found for authentication.", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_07_an_application_specific_password_is_refused_for_another_service(self):
+        for service_id in ("thunderbird", "evolution"):
+            set_serviceid(service_id)
+            self.addCleanup(delete_serviceid, service_id)
+        token = init_token({"type": "applspec", "serial": self.other_serial, "service_id": "thunderbird",
+                            "otpkey": "apppassword", "pin": "apppin"}, user=User("cornelius", self.realm1))
+        token.set_next_pin_change(diff="-1d")
+        result = self._check("apppinapppassword", service_id="thunderbird")
+        self.assertEqual("Please enter a new PIN", result["detail"]["message"], result)
+        first = result["detail"]["transaction_id"]
+
+        result = self._check("newpin1", first, service_id="evolution")
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("No suitable token found for authentication.", result["detail"]["message"], result)
+
+        # The challenge stays open for the service of the token
+        result = self._check("newpin1", first, service_id="thunderbird")
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+
+    def test_08_an_exceeded_fail_counter_past_its_clear_timeout_is_reset(self):
+        _first, second = self._enter_new_pin()
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial=self.serial)
+        token.set_failcount(token.get_max_failcount())
+        exceeded = (datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)).strftime(DATE_FORMAT)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded)
+
+        result = self._check("newpin1", second)
+        self.assertTrue(result["result"]["value"], result)
+        self.assertTrue(self._pin_is("newpin1"))
+
+    def test_09_a_wrong_confirmation_of_an_answered_challenge_does_not_count(self):
+        _first, second = self._enter_new_pin()
+        # Another request removes the challenge after this request read it
+        with mock.patch("privacyidea.lib.challengeresponsedecorators.consume_challenge", return_value=False):
+            result = self._check("otherpin", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
 
 
 class LastUsedTokenTypeWriteTestCase(MyApiTestCase):
