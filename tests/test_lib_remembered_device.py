@@ -10,7 +10,8 @@ from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          create_remembered_device, consume_remember_device_cookie,
                                          get_valid_device, user_identity, UserIdentity, rotate_device,
                                          cleanup_expired_remembered_devices, count_user_devices,
-                                         hash_series_id, usable_tokens, parse_device_duration,
+                                         hash_series_id, token_usability, TokenUsability, MissReason,
+                                         parse_device_duration,
                                          remove_idle_devices,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.error import ParameterError
@@ -123,23 +124,6 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.assertNotIn(device.series_id, output)
         self.assertIn("HIDDEN", output)
 
-    def test_theft_log_does_not_leak_series_id(self):
-        # The series_id is the secret half of the cookie. The theft/replay log
-        # path must not write it verbatim - the SENSITIVE_KEY_NAMES redaction only
-        # covers structured keys, not f-string messages.
-        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
-        try:
-            client_id = self._client_id()
-            nemo = self._identity("nemo")
-            device, cookie = create_remembered_device(nemo, client_id)
-            consume_remember_device_cookie(cookie, client_id, nemo)   # -> counter 2
-            with self.assertLogs("privacyidea.lib.remembered_device", level="DEBUG") as captured:
-                consume_remember_device_cookie(cookie, client_id, nemo)   # replay -> theft
-            self.assertNotIn(parse_cookie(cookie)[0], "\n".join(captured.output))
-            self.assertNotIn(device.series_id, "\n".join(captured.output))
-        finally:
-            self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
-
     def test_consume_recognized_rotates(self):
         client_id = self._client_id()
         bob = self._identity("bob")
@@ -162,14 +146,14 @@ class RememberedDeviceLibTestCase(MyTestCase):
 
     def test_wrong_user_does_not_match(self):
         # A cookie is bound to the user it was issued for; another user of the
-        # same client presenting it does not validate (get_valid_device returns
-        # None) - but since the series is live for someone else on this client it
+        # same client presenting it does not validate (get_valid_device answers
+        # UNKNOWN) - but since the series is live for someone else on this client it
         # is a "foreign" soft miss (not recognised, must not be cleared), not a
         # dead "miss".
         client_id = self._client_id()
         _device, cookie = create_remembered_device(self._identity("frank"), client_id)
         eve = self._identity("eve")
-        self.assertIsNone(get_valid_device(cookie, client_id, eve))
+        self.assertEqual(MissReason.UNKNOWN, get_valid_device(cookie, client_id, eve))
         self.assertEqual("foreign", consume_remember_device_cookie(cookie, client_id, eve).status)
 
     def test_cross_realm_does_not_match(self):
@@ -368,8 +352,13 @@ class RememberedDeviceLibTestCase(MyTestCase):
 
     def test_unknown_series_returns_miss(self):
         client_id = self._client_id()
-        self.assertEqual("miss", consume_remember_device_cookie("doesnotexist:1", client_id,
-                                                                self._identity("x")).status)
+        result = consume_remember_device_cookie("doesnotexist:1", client_id, self._identity("x"))
+        self.assertEqual(("miss", MissReason.UNKNOWN), (result.status, result.miss))
+
+    def test_malformed_cookie_returns_miss(self):
+        client_id = self._client_id()
+        result = consume_remember_device_cookie("no counter", client_id, self._identity("x"))
+        self.assertEqual(("miss", MissReason.MALFORMED), (result.status, result.miss))
 
     def test_expired_device_is_removed(self):
         client_id = self._client_id()
@@ -379,7 +368,8 @@ class RememberedDeviceLibTestCase(MyTestCase):
         device.expires_at = utc_now() - timedelta(seconds=1)
         device.save()
 
-        self.assertEqual("miss", consume_remember_device_cookie(cookie, client_id, erin).status)
+        result = consume_remember_device_cookie(cookie, client_id, erin)
+        self.assertEqual(("miss", MissReason.EXPIRED), (result.status, result.miss))
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=series_id).first())
 
     def test_cleanup_expired_remembered_devices(self):
@@ -450,7 +440,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
 
         result = consume_remember_device_cookie(rotated.cookie_value, client_id, quinn,
                                                 idle_timeout=timedelta(hours=1))
-        self.assertEqual("miss", result.status)
+        self.assertEqual(("miss", MissReason.IDLE), (result.status, result.miss))
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=stored_series_id).first())
 
     def test_idle_timeout_counts_from_the_creation_of_an_unused_device(self):
@@ -535,40 +525,42 @@ class RememberedDeviceLibTestCase(MyTestCase):
 
     def test_usable_tokens(self):
         # The checks a login applies to each token decide whether the user still has a usable token
+        # and each other token says why a login could not use it
         user = User(login="cornelius", realm=self.realm1)
         remove_token(user=user)
-        self.assertFalse(usable_tokens(user))
+        self.assertEqual(TokenUsability([], {}), token_usability(user))
 
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_1"}, user=user)
         self.addCleanup(remove_token, "USABLE_1")
-        self.assertTrue(usable_tokens(user))
+        self.assertTrue(token_usability(user).usable)
 
         enable_token("USABLE_1", False)
-        self.assertFalse(usable_tokens(user))
+        self.assertEqual(TokenUsability([], {"USABLE_1": "Token is disabled"}), token_usability(user))
         enable_token("USABLE_1", True)
 
         token = get_one_token(serial="USABLE_1")
         token.set_validity_period_end("2020-01-01T00:00+0000")
-        self.assertFalse(usable_tokens(user))
+        self.assertEqual(TokenUsability([], {"USABLE_1": "Outside validity period"}), token_usability(user))
         token.set_validity_period_end("")
-        self.assertTrue(usable_tokens(user))
+        self.assertTrue(token_usability(user).usable)
 
         token.token.rollout_state = RolloutState.CLIENTWAIT
         token.token.save()
-        self.assertFalse(usable_tokens(user))
+        self.assertEqual(TokenUsability([], {"USABLE_1": "Token is not yet enrolled"}), token_usability(user))
         token.token.rollout_state = ""
         token.token.save()
 
         token.token.failcount = token.token.maxfail
         token.token.save()
-        self.assertFalse(usable_tokens(user))
+        self.assertEqual(TokenUsability([], {"USABLE_1": "Failcounter exceeded"}), token_usability(user))
 
         # Only the usable one of the user's tokens is returned
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_2"}, user=user)
         self.addCleanup(remove_token, "USABLE_2")
-        self.assertEqual(["USABLE_2"], [usable.get_serial() for usable in usable_tokens(user)])
+        self.assertEqual(["USABLE_2"], [usable.get_serial() for usable in token_usability(user).usable])
         revoke_token("USABLE_2")
-        self.assertFalse(usable_tokens(user))
+        self.assertEqual(TokenUsability([], {"USABLE_1": "Failcounter exceeded", "USABLE_2": "Token is revoked"}),
+                         token_usability(user))
 
     def test_usable_tokens_clears_an_expired_fail_counter(self):
         # Like a login, the check first clears a fail counter whose clear timeout has passed
@@ -583,7 +575,7 @@ class RememberedDeviceLibTestCase(MyTestCase):
         token.set_failcount(5)
         exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
         token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
-        self.assertTrue(usable_tokens(user))
+        self.assertTrue(token_usability(user).usable)
         self.assertEqual(0, get_one_token(serial="USABLE_FAIL").token.failcount)
 
     def test_usable_tokens_skip_a_revoked_token_with_an_expired_fail_counter(self):
@@ -600,13 +592,13 @@ class RememberedDeviceLibTestCase(MyTestCase):
         exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
         token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
         revoke_token("REVOKED_FAIL")
-        self.assertFalse(usable_tokens(user))
+        self.assertFalse(token_usability(user).usable)
         self.assertEqual(5, get_one_token(serial="REVOKED_FAIL").token.failcount)
 
         # The user's other, usable token still counts
         init_token({"type": "spass", "pin": "test", "serial": "USABLE_AFTER_REVOKED"}, user=user)
         self.addCleanup(remove_token, "USABLE_AFTER_REVOKED")
-        self.assertEqual(["USABLE_AFTER_REVOKED"], [usable.get_serial() for usable in usable_tokens(user)])
+        self.assertEqual(["USABLE_AFTER_REVOKED"], [usable.get_serial() for usable in token_usability(user).usable])
 
     def test_usable_tokens_skip_tokens_that_cannot_log_in(self):
         # An SSH key or a certificate cannot verify a login, and an application-specific password is not used by a
@@ -622,8 +614,11 @@ class RememberedDeviceLibTestCase(MyTestCase):
         init_token({"type": "applspec", "service_id": "remembered_device_service", "otpkey": "applspec1234",
                     "serial": "NO_LOGIN_APPLSPEC"}, user=user)
         self.addCleanup(remove_token, "NO_LOGIN_APPLSPEC")
-        self.assertEqual([], usable_tokens(user))
+        self.assertEqual(TokenUsability([], {"NO_LOGIN_SSH": "Token type sshkey cannot verify a login",
+                                             "NO_LOGIN_CERT": "Token type certificate cannot verify a login",
+                                             "NO_LOGIN_APPLSPEC": "Token is only used with a service ID"}),
+                         token_usability(user))
 
         init_token({"type": "spass", "pin": "test", "serial": "LOGIN_SPASS"}, user=user)
         self.addCleanup(remove_token, "LOGIN_SPASS")
-        self.assertEqual(["LOGIN_SPASS"], [usable.get_serial() for usable in usable_tokens(user)])
+        self.assertEqual(["LOGIN_SPASS"], [usable.get_serial() for usable in token_usability(user).usable])

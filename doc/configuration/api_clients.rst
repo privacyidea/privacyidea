@@ -161,6 +161,11 @@ holds while :ref:`policy_remember_device_idle_timeout` policies of the same
 priority set different values. To end the devices for good, revoke them (see
 below).
 
+A remembered device is also not recognized while :ref:`policy_auth_max_fail` or
+:ref:`policy_auth_max_success` refuses a login of the user. The device is kept in
+the same way. A recognition is not an authentication, so it does not count
+toward these limits.
+
 These checks apply only to a live device. The cookie is checked first, so a
 replayed cookie, a dead cookie and an idle device are handled in the same way,
 whatever the state of the user's tokens.

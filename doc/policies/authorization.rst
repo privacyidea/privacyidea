@@ -274,6 +274,9 @@ This policy applies to ``/auth`` and ``/validate/check`` and holds for both admi
 evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
 authentication that names no user, is matched for the owner of the token.
 
+While this policy refuses a login, a remembered device (see :ref:`policy_remember_device`) is not recognized either.
+A recognition of a remembered device does not count as a successful authentication.
+
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
    work.
@@ -307,6 +310,8 @@ Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
 evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
 authentication that names no user, is matched for the owner of the token.
+
+While this policy refuses a login, a remembered device (see :ref:`policy_remember_device`) is not recognized either.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.

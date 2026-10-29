@@ -125,8 +125,8 @@ from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
                                                CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
-                                               handle_device_theft, parse_device_duration, usable_tokens,
-                                               remove_idle_devices)
+                                               handle_device_theft, parse_device_duration, token_usability,
+                                               MissReason, remove_idle_devices)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -138,7 +138,7 @@ from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import SCOPE
-from privacyidea.lib.policies.helper import check_auth_time_limit
+from privacyidea.lib.policies.helper import check_auth_time_limit, check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -426,7 +426,7 @@ def issue_remembered_device(request: Request, response: Response, *args, **kwarg
     except PolicyError as exc:
         # Policies of the same priority that set different remember-device values
         log.warning(f"Could not issue a remembered device for user {candidate.user.login!r} in realm "
-                    f"{candidate.user.realm!r}, the login succeeds without one: {exc!r}")
+                    f"{candidate.user.realm!r}, the login succeeds without one: {exc.get_description()}")
         g.audit_object.add_to_log({"action_detail": f"remembered device not issued: {exc.get_description()}"},
                                   add_with_comma=True)
         cookie_action = None
@@ -1333,8 +1333,11 @@ def _resolve_persistent_cookie(user: User, token_verified: bool) -> CookieAction
     # both pass the check and overshoot the cap by the concurrency. That is an
     # accepted trade-off - the cap bounds accumulation, it is not a security
     # control, and serialising issuance per user is not worth the contention.
-    max_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_MAX_DEVICES,
-                          user_object=user).action_values(unique=True)
+    try:
+        max_pols = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE_MAX_DEVICES,
+                              user_object=user).action_values(unique=True)
+    except PolicyError as exc:
+        raise _name_conflicting_action(PolicyAction.REMEMBER_DEVICE_MAX_DEVICES, exc) from exc
     if max_pols:
         try:
             max_devices = int(list(max_pols)[0])
@@ -1375,31 +1378,93 @@ def _remember_device_duration(user: User, action: str) -> timedelta | None:
     """
     Return the duration a remember-device policy action (``remember_device_validity`` or
     ``remember_device_idle_timeout``) sets for *user*, or ``None`` if no policy sets a valid one.
-    Policies of the same priority that set different values raise a PolicyError, as for every
-    action that takes a single value; saving a policy already refuses a value that is no duration.
+    Policies of the same priority that set different values raise a PolicyError that names the
+    action, as for every action that takes a single value; saving a policy already refuses a value
+    that is no duration.
     """
-    values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
+    try:
+        values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
+    except PolicyError as exc:
+        raise _name_conflicting_action(action, exc) from exc
     if not values:
         return None
     return parse_device_duration(list(values)[0])
+
+
+# Why a presented cookie is dead, as the audit info and the log say it
+_MISS_INFO = {
+    MissReason.MALFORMED: "the cookie is malformed",
+    MissReason.UNKNOWN: "the cookie matches no remembered device of the user on this client",
+    MissReason.EXPIRED: "the remembered device expired and is removed",
+    MissReason.IDLE: "the remembered device was not used within the remember_device_idle_timeout and is removed",
+}
+
+
+def _name_conflicting_action(action: str, exc: PolicyError) -> PolicyError:
+    """
+    The error for policies of the same priority that set different values for *action*. *exc* names only the
+    policies, and several actions of a remembered device can conflict, so this adds the action.
+    """
+    return PolicyError(f"{action}: {exc.get_description()}")
+
+
+def _recognition_refusal(user: User) -> str | None:
+    """
+    Why a live remembered device of *user* is not recognised, as the audit info, or ``None``. A login of the user
+    would be refused as well: by a time limit (see :func:`_time_limit_refusal`), or because none of the user's tokens
+    can be used for it (see :func:`_token_refusal`). The time limits come first, as a login checks them before its
+    tokens.
+    """
+    return _time_limit_refusal(user) or _token_refusal(user)
+
+
+def _time_limit_refusal(user: User) -> str | None:
+    """
+    Why a remembered device of *user* is not recognised because ``auth_max_fail`` or ``auth_max_success`` refuses a
+    login of the user, as the audit info, or ``None`` if both allow a login. A recognition is not an authentication,
+    so it counts toward neither limit.
+
+    These are the checks of :func:`~privacyidea.lib.policies.helper.check_auth_time_limit` in the same order, one by
+    one, so that the audit info names the action that refuses.
+    """
+    user_search_dict = {"user": user.login, "realm": user.realm}
+    for action, check_time_limit in ((PolicyAction.AUTHMAXFAIL, check_max_auth_fail),
+                                     (PolicyAction.AUTHMAXSUCCESS, check_max_auth_success)):
+        try:
+            allowed, reply_dict = check_time_limit(user, user_search_dict)
+        except PolicyError as exc:
+            # Policies of the same priority that set different values, which refuse a login as well
+            conflict = _name_conflicting_action(action, exc).get_description()
+            log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                        f"{conflict}. The device is kept and recognised again once the policies agree.")
+            return f"device not recognised: {conflict}"
+        if not allowed:
+            message = reply_dict["message"]
+            log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {action}: "
+                     f"{message} The device is kept and recognised again once the time limit allows a login.")
+            return f"device not recognised: {action}: {message}"
+    return None
 
 
 def _token_refusal(user: User) -> str | None:
     """
     Why a remembered device of *user* is not recognised because of the user's tokens, as the audit info, or ``None``
     if a login could use one of them. A token has to pass the checks a login applies to it (see
-    :func:`~privacyidea.lib.remembered_device.usable_tokens`) and the token restrictions of the policies (see
+    :func:`~privacyidea.lib.remembered_device.token_usability`) and the token restrictions of the policies (see
     :func:`_policies_refusing_tokens`).
     """
-    tokens = usable_tokens(user)
-    if not tokens:
-        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: none of the "
-                 f"user's tokens is usable (disabled, revoked, fail or authentication counter exceeded, outside its "
-                 f"validity period, not yet enrolled or of a type that cannot verify a login). The device is kept "
-                 f"and recognised again once a token of the user is usable.")
-        return "device not recognised: the user has no usable token"
+    usability = token_usability(user)
+    if not usability.usable:
+        if usability.unusable:
+            refusal = "the user has no usable token: " + ", ".join(f"{serial} ({reason})" for serial, reason
+                                                                   in usability.unusable.items())
+        else:
+            refusal = "the user has no token"
+        log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {refusal}. "
+                 f"The device is kept and recognised again once a token of the user is usable.")
+        return f"device not recognised: {refusal}"
     try:
-        refusing_policies = _policies_refusing_tokens(user, tokens)
+        refusing_policies = _policies_refusing_tokens(user, usability.usable)
     except PolicyError as exc:
         # last_auth policies of the same priority that set different values, which refuse a login as well
         log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
@@ -1435,8 +1500,11 @@ def _policies_refusing_tokens(user: User, tokens: list[TokenClass]) -> list[str]
     allowed_serials = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.SERIAL).action_values(unique=False)
     tokeninfo_policy = Match.action_only(g, scope=SCOPE.AUTHZ, action=PolicyAction.TOKENINFO).action_values(
         unique=False, allow_white_space_in_action=True)
-    last_auth = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH,
-                           user_object=user).action_values(unique=True, write_to_audit_log=False)
+    try:
+        last_auth = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH,
+                               user_object=user).action_values(unique=True, write_to_audit_log=False)
+    except PolicyError as exc:
+        raise _name_conflicting_action(PolicyAction.LASTAUTH, exc) from exc
     refusing = set()
     for token in tokens:
         if token.type in disabled_types:
@@ -1529,12 +1597,14 @@ def check_remember_device():
     reports); otherwise the answer is always ``false`` and a presented cookie is
     left untouched. A device that was not recognised for the
     ``remember_device_idle_timeout`` is removed and its cookie cleared. A live
-    device is also not recognised while none of the user's tokens could be used for
-    a login: every token is disabled, revoked, has a counter exceeded, is outside its
-    validity period, not yet enrolled or of a type that cannot verify a login, or is
-    excluded by the ``disabled_token_types``, ``tokentype``, ``serial``,
-    ``tokeninfo`` or ``last_auth`` policies. The cookie is then left untouched, so
-    the device is recognised again once a token is usable. The same holds while
+    device is also not recognised while ``auth_max_fail`` or ``auth_max_success``
+    refuses a login of the user, which a recognition does not count toward, or
+    while none of the user's tokens could be used for a login: every token is
+    disabled, revoked, has a counter exceeded, is outside its validity period, not
+    yet enrolled or of a type that cannot verify a login, or is excluded by the
+    ``disabled_token_types``, ``tokentype``, ``serial``, ``tokeninfo`` or
+    ``last_auth`` policies. The cookie is then left untouched, so the device is
+    recognised again once a login is possible. The same holds while
     ``remember_device_idle_timeout`` policies of the same priority set different
     values. These checks come after the cookie is looked up, so a theft, a dead
     cookie or an idle device is handled whatever the user's tokens are.
@@ -1611,15 +1681,16 @@ def check_remember_device():
             info = f"device not recognised: {exc.get_description()}"
         else:
             result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"),
-                                                    idle_timeout, check_refusal=lambda: _token_refusal(user))
+                                                    idle_timeout, check_refusal=lambda: _recognition_refusal(user))
             if result.status == RememberStatus.RECOGNIZED:
                 recognised = True
                 cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
                 info = "remembered device recognised"
             elif result.status == RememberStatus.REFUSED:
-                # The device stands in for the second factor, and the user has no token left to present one with - a
-                # full login would fail as well. The cookie is neither consumed nor cleared, so the device is
-                # recognised again once a token of the user is usable, like after a refusal by conditional access.
+                # The device stands in for the second factor, and a full login would fail as well: a time limit
+                # refuses it, or the user has no token left to present one with. The cookie is neither consumed nor
+                # cleared, so the device is recognised again once a login is possible, like after a refusal by
+                # conditional access.
                 info = result.refusal
             elif result.status == RememberStatus.GRACE:
                 # Tolerated concurrent/duplicate request: recognised, but do not
@@ -1640,18 +1711,23 @@ def check_remember_device():
                 # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
                 # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
                 # replayed series, is handle_device_theft's to state.
-                log.warning(f"Persistent device cookie reuse detected for client {g.get('client_id')!r}; "
-                            f"series invalidated and all remembered devices of this user revoked.")
+                log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
+                            f"{g.client_id!r} is not recognised: cookie reuse detected. The device is deleted and "
+                            f"all other remembered devices of the user are revoked.")
                 g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                           add_with_comma=True)
                 log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
                                    other_info={"client_id": g.get("client_id")})
-                handle_device_theft(identity)
+                revoked = handle_device_theft(identity)
                 cookie_action = CookieAction("clear")
-                info = "device not recognised: cookie reuse detected, all remembered devices of the user revoked"
-            else:  # miss: the cookie is dead (unknown, expired or idle) - clear it
+                info = (f"device not recognised: cookie reuse detected, the device is deleted and the other "
+                        f"remembered devices of the user are revoked ({revoked})")
+            else:  # miss: the cookie is dead - clear it
                 cookie_action = CookieAction("clear")
-                info = "device not recognised: the cookie is unknown, expired or idle and is cleared"
+                miss = _MISS_INFO[result.miss]
+                log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
+                         f"{g.client_id!r} is not recognised: {miss}. The cookie is cleared.")
+                info = f"device not recognised: {miss}, the cookie is cleared"
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it

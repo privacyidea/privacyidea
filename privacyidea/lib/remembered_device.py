@@ -196,39 +196,55 @@ def user_identity(user: "User | None") -> UserIdentity | None:
     return UserIdentity(resolver, user_id, user.realm_id)
 
 
-def usable_tokens(user: "User") -> list["TokenClass"]:
+class TokenUsability(NamedTuple):
     """
-    The tokens of the user that could be used to log in right now, by the checks a login applies to each token
-    (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not), neither its
-    fail counter nor its authentication counters are exceeded, it is within its validity period and it is fully
-    enrolled. Like a login, this first clears a fail counter whose clear timeout has passed. A token type that cannot
-    verify a login (see :attr:`~privacyidea.lib.tokenclass.TokenClass.verifies_login`) does not count, and neither does
-    a token that excludes itself from a login without a ``service_id``, like an application-specific password.
+    The tokens of a user, split by whether a login could use them right now (see :func:`token_usability`).
+    """
+    usable: list["TokenClass"]
+    # Why a login could not use each of the other tokens, by serial
+    unusable: dict[str, str]
+
+
+def token_usability(user: "User") -> TokenUsability:
+    """
+    Split the tokens of the user by whether they could be used to log in right now, by the checks a login applies to
+    each token (:meth:`~privacyidea.lib.tokenclass.TokenClass.check_all`): it is active (a revoked token is not),
+    neither its fail counter nor its authentication counters are exceeded, it is within its validity period and it is
+    fully enrolled. Like a login, this first clears a fail counter whose clear timeout has passed. A token type that
+    cannot verify a login (see :attr:`~privacyidea.lib.tokenclass.TokenClass.verifies_login`) is not usable, and
+    neither is a token that excludes itself from a login without a ``service_id``, like an application-specific
+    password.
 
     A remembered device stands in for the second factor, so it is recognised only while the user has a token to
     present one with. The token restrictions of the policies are the caller's to apply.
 
     :param user: the user the device is bound to
-    :return: the usable tokens of the user
+    :return: the usable tokens of the user, and why each other token is not usable
     """
     # Imported lazily: privacyidea.lib.token pulls in a large part of the library, and this module is imported early
     # through the policy evaluators.
     from privacyidea.lib.token import get_tokens
-    tokens = []
+    usable = []
+    unusable = {}
     for token in get_tokens(user=user):
         if not token.verifies_login:
+            unusable[token.get_serial()] = f"Token type {token.get_tokentype()} cannot verify a login"
             continue
         # Revocation first, as a login checks it: revoke() also locks the token, and check_reset_failcount() calls
         # the lock-protected reset() once the clear timeout has passed, which would raise for a revoked token.
         if token.is_revoked():
-            continue
-        # A recognition carries no service_id, so a token that a login without one does not use does not count
-        if not token.use_for_authentication({}):
+            unusable[token.get_serial()] = "Token is revoked"
             continue
         token.check_reset_failcount()
-        if token.check_all([]):
-            tokens.append(token)
-    return tokens
+        messages = []
+        if not token.check_all(messages):
+            unusable[token.get_serial()] = messages[0]
+        elif not token.use_for_authentication({}):
+            # A recognition carries no service_id, so a token that a login without one does not use does not count
+            unusable[token.get_serial()] = "Token is only used with a service ID"
+        else:
+            usable.append(token)
+    return TokenUsability(usable, unusable)
 
 
 def create_remembered_device(identity: UserIdentity, client_id: str, ip_address: str | None = None,
@@ -281,8 +297,24 @@ class ValidDevice(NamedTuple):
     is_grace: bool
 
 
+class MissReason(str, enum.Enum):
+    """
+    Why a presented cookie matches no live device of the user (see :func:`get_valid_device`).
+
+    * ``MALFORMED`` - the cookie is not a ``series_id:counter`` value.
+    * ``UNKNOWN`` - no device of the user on this client has the series. It was never issued, it was revoked or
+      removed, or it belongs to another user.
+    * ``EXPIRED`` - the device is past its validity and is deleted.
+    * ``IDLE`` - the device was not used within the idle timeout and is deleted.
+    """
+    MALFORMED = "malformed"
+    UNKNOWN = "unknown"
+    EXPIRED = "expired"
+    IDLE = "idle"
+
+
 def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
-                      client_ip: str | None = None, idle_timeout: timedelta | None = None) -> ValidDevice | None:
+                     client_ip: str | None = None, idle_timeout: timedelta | None = None) -> ValidDevice | MissReason:
     """
     Look up and validate a remember-device cookie **without** rotating it.
 
@@ -291,9 +323,10 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
     only ever validates for the client it was issued to and the user it was
     issued for.
 
-    * Returns ``None`` if no matching device exists, it has expired or it was
-      not used within ``idle_timeout`` (such a device is deleted). A stale
-      counter on an idle device is still a replay, see below.
+    * Returns a :class:`MissReason` if the cookie is malformed, no matching device
+      exists, it has expired or it was not used within ``idle_timeout`` (such a
+      device is deleted). A stale counter on an idle device is still a replay,
+      see below.
     * If the presented counter matches the stored one, returns
       ``(device, False)`` (a fresh use; the caller should rotate it).
     * If the presented counter is the immediately-previous one and the request
@@ -325,29 +358,29 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
         window (a grace hit must come from the IP the device was last seen at)
     :param idle_timeout: if given, a device whose last recognition (or, if it was
         never recognised, its creation) lies further back than this is no longer valid
-    :return: ``None`` if there is no live device for this cookie (unknown,
-        expired or idle); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
+    :return: a :class:`MissReason` if there is no live device for this cookie
+        (malformed, unknown, expired or idle); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
         ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
         token) and ``True`` for a tolerated grace-window hit (the caller must
         **not** rotate - it converges on the current token)
     :raises AuthError: if cookie reuse (theft) is detected
     """
     series_id, counter = parse_cookie(cookie_value)
-    if not series_id or counter is None or not identity:
-        return None
+    if not series_id or counter is None:
+        return MissReason.MALFORMED
+    if not identity:
+        return MissReason.UNKNOWN
 
     device = RememberedDevice.query.filter_by(series_id=hash_series_id(series_id), client_id=client_id,
                                           resolver=identity.resolver, user_id=identity.user_id,
                                           realm_id=identity.realm_id).first()
     if not device:
-        return None
+        return MissReason.UNKNOWN
 
+    # The caller logs what came of the cookie. Never log the series_id: it is the secret half of the cookie.
     if device.expires_at and device.expires_at < utc_now():
-        # Never log the series_id: it is the secret half of the cookie. Correlate
-        # on the (non-secret) client_id instead.
-        log.info(f"Remembered device for client {client_id!r} expired; removing it.")
         device.delete()
-        return None
+        return MissReason.EXPIRED
 
     is_grace = device.counter != counter and _is_within_grace(device, counter, client_ip)
     if device.counter != counter and not is_grace:
@@ -355,15 +388,12 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
         # whole series so neither the legitimate client nor the attacker can use it.
         # This comes before the idle timeout, so a replay is reported as one also when
         # the device has not been used for a while.
-        log.warning(f"Remembered device token reuse detected for client {client_id!r}; "
-                    f"deleting the device.")
         device.delete()
         raise AuthError(_("Authentication failure. Device token reuse detected."))
 
     if idle_timeout and (device.last_used_at or device.created_at) + idle_timeout < utc_now():
-        log.info(f"Remembered device for client {client_id!r} was not used within the idle timeout; removing it.")
         device.delete()
-        return None
+        return MissReason.IDLE
 
     if is_grace:
         # Concurrent/duplicate request presenting the just-superseded counter -
@@ -455,7 +485,7 @@ class RememberStatus(str, enum.Enum):
     * ``FOREIGN`` - the series is live but bound to a *different* user on the
       same client (a shared browser). Not recognised, but the caller must **not**
       clear it, or one user logging in would wipe another user's cookie.
-    * ``MISS`` - no live device for this cookie (unknown, expired or idle); the caller
+    * ``MISS`` - no live device for this cookie, and ``miss`` says why; the caller
       should clear it.
     * ``THEFT`` - replay detected; the series has already been invalidated and
       the caller must clear the cookie.
@@ -483,6 +513,7 @@ class ConsumeResult(NamedTuple):
     cookie_value: str | None
     expires_at: datetime | None
     refusal: str | None = None
+    miss: MissReason | None = None
 
 
 def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: UserIdentity,
@@ -521,7 +552,7 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         result = get_valid_device(cookie_value, client_id, identity, client_ip, idle_timeout)
     except AuthError:
         return ConsumeResult(RememberStatus.THEFT, None, None)
-    if not result:
+    if isinstance(result, MissReason):
         # A miss can mean the cookie is dead (unknown/expired) or that it simply
         # belongs to a different user on this same client - a shared browser,
         # where the cookie is a single browser-level value. Distinguish the two:
@@ -531,7 +562,7 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
             other = RememberedDevice.query.filter_by(series_id=hash_series_id(series_id), client_id=client_id).first()
             if other and not (other.expires_at and other.expires_at < utc_now()):
                 return ConsumeResult(RememberStatus.FOREIGN, None, None)
-        return ConsumeResult(RememberStatus.MISS, None, None)
+        return ConsumeResult(RememberStatus.MISS, None, None, miss=result)
     if check_refusal and (refusal := check_refusal()):
         return ConsumeResult(RememberStatus.REFUSED, None, None, refusal)
     if result.is_grace:
@@ -545,9 +576,11 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
             again = get_valid_device(cookie_value, client_id, identity, client_ip, idle_timeout)
         except AuthError:
             return ConsumeResult(RememberStatus.THEFT, None, None)
-        if again and again.is_grace:
+        if isinstance(again, MissReason):
+            return ConsumeResult(RememberStatus.MISS, None, None, miss=again)
+        if again.is_grace:
             return ConsumeResult(RememberStatus.GRACE, None, None)
-        return ConsumeResult(RememberStatus.MISS, None, None)
+        return ConsumeResult(RememberStatus.MISS, None, None, miss=MissReason.UNKNOWN)
     return ConsumeResult(RememberStatus.RECOGNIZED, build_cookie_value(series_id, rotated.counter), rotated.expires_at)
 
 
