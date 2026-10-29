@@ -77,6 +77,57 @@ describe("EditUserConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith({ user_case_insensitive: true });
   });
 
+  describe("check all resolvers", () => {
+    const checkbox = (): HTMLInputElement =>
+      fixture.nativeElement.querySelector(".check-all-resolvers input[type='checkbox']");
+    const description = (): HTMLElement => fixture.nativeElement.querySelector("#check-all-resolvers-description");
+    const setPolicy = (resolver: string[], check_all_resolvers: boolean) => {
+      fixture.componentRef.setInput("policy", { realm: ["realm1"], resolver, check_all_resolvers });
+      fixture.detectChanges();
+    };
+
+    it("should toggle the option", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.toggleCheckAllResolvers();
+      expect(spy).toHaveBeenCalledWith({ check_all_resolvers: true });
+    });
+
+    it("should keep the option when the last resolver is removed", () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      component.selectResolver([]);
+      expect(spy).toHaveBeenCalledWith({ resolver: [] });
+    });
+
+    it("should enable the checkbox and explain the option while resolvers are selected", () => {
+      setPolicy(["resolver1"], true);
+      expect(checkbox().checked).toBe(true);
+      expect(checkbox().disabled).toBe(false);
+      expect(checkbox().getAttribute("aria-describedby")).toContain("check-all-resolvers-description");
+      expect(description().classList).toContain("checkbox-hint");
+      expect(description().textContent!.trim()).toBe(
+        "Also match users who are contained in one of the selected resolvers, but were found in another resolver of the realm."
+      );
+    });
+
+    it("should disable the unchecked checkbox without resolvers", () => {
+      setPolicy([], false);
+      expect(checkbox().checked).toBe(false);
+      expect(checkbox().disabled).toBe(true);
+      expect(description().classList).toContain("checkbox-hint");
+      expect(description().textContent!.trim()).toBe("Select a resolver to use this option.");
+    });
+
+    it("should warn and let the option be cleared while it is set without resolvers", () => {
+      setPolicy([], true);
+      expect(checkbox().checked).toBe(true);
+      expect(checkbox().disabled).toBe(false);
+      expect(description().classList).toContain("checkbox-error");
+      expect(description().textContent!.trim()).toBe(
+        "Without a resolver, a policy with this option matches no user. Select a resolver or clear this option."
+      );
+    });
+  });
+
   it("should validate that user does not contain commas", () => {
     component.userSignal.set("user,name");
     expect(component.userField().valid()).toBe(false);

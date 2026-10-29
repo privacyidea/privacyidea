@@ -28,7 +28,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
-import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { checkAllResolversWithoutResolver, PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 
@@ -69,6 +69,8 @@ export class EditUserConditionsComponent {
   readonly selectedResolvers = computed(() => this.policy().resolver || []);
   readonly selectedUsers = computed(() => this.policy().user || []);
   readonly userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
+  readonly checkAllResolvers = computed(() => this.policy().check_all_resolvers || false);
+  readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.policy()));
 
   readonly isAllRealmsSelected = computed(
     () => this.selectedRealms().length === this.realmService.realmOptions().length
@@ -133,6 +135,10 @@ export class EditUserConditionsComponent {
   toggleAllResolvers() {
     this.emitEdits({ resolver: this.isAllResolversSelected() ? [] : this.resolverService.resolverOptions() });
     setTimeout(() => this.resolverSelect?.close());
+  }
+
+  toggleCheckAllResolvers() {
+    this.emitEdits({ check_all_resolvers: !this.checkAllResolvers() });
   }
 
   addUser(user: string) {

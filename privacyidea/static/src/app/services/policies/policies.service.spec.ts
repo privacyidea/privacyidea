@@ -28,6 +28,7 @@ import { MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import {
+  checkAllResolversWithoutResolver,
   policyActionMatchesFilter,
   PolicyActionDetail,
   PolicyDetail,
@@ -839,6 +840,15 @@ describe("policyNameCollides", () => {
 
   it("should find nothing in an empty list", () => {
     expect(policyNameCollides([], "helpdesk")).toBe(false);
+  });
+});
+
+describe("checkAllResolversWithoutResolver", () => {
+  it("should only report check_all_resolvers without a resolver", () => {
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: true, resolver: [] })).toBe(true);
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: true })).toBe(true);
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: true, resolver: ["resolver1"] })).toBe(false);
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: false, resolver: [] })).toBe(false);
   });
 });
 

@@ -142,6 +142,15 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.canSave()).toBe(true);
   });
 
+  it("canSave returns false while check_all_resolvers is set without a resolver", () => {
+    component.addPolicyEdit({ name: "ValidName", resolver: ["resolver1"], check_all_resolvers: true });
+    expect(component.canSave()).toBe(true);
+    component.addPolicyEdit({ resolver: [] });
+    expect(component.canSave()).toBe(false);
+    component.addPolicyEdit({ check_all_resolvers: false });
+    expect(component.canSave()).toBe(true);
+  });
+
   const mockPanel = (): MockPanel => fixture.debugElement.query(By.directive(MockPanel)).componentInstance;
 
   describe("name collision", () => {
