@@ -440,7 +440,9 @@ export class AuthService implements AuthServiceInterface {
   }
 
   logout(): void {
+    const redirectUrl = this.logoutRedirectUrl();
     this.endSession();
+    if (redirectUrl) window.location.assign(redirectUrl);
   }
 
   private endSession(): void {
