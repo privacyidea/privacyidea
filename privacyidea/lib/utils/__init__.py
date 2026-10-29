@@ -43,10 +43,16 @@ from datetime import timedelta, datetime
 from enum import Enum
 from importlib import import_module
 from importlib import metadata
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import segno
 import sqlalchemy
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import Grouping
+from sqlalchemy.sql.operators import OperatorType
+from sqlalchemy.sql.visitors import InternalTraversal
+from sqlalchemy.types import TypeDecorator
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -1129,6 +1135,80 @@ def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
     # the user wildcard first means it can never collide with the escaping, so any
     # wildcard character (including '%' or '_') is handled correctly.
     return "%".join(escape_sql_like(part) for part in value.split(wildcard))
+
+
+class _OracleLikePattern(TypeDecorator):
+    """
+    The type of the value :func:`text_column_equals` compares a column with. On Oracle, where the comparison is a
+    ``LIKE``, the metacharacters of the value are escaped. Every other database gets the value as it is.
+    """
+    impl = sqlalchemy.UnicodeText
+    cache_ok = True
+
+    def __init__(self, column_type: sqlalchemy.types.TypeEngine):
+        super().__init__()
+        self.column_type = column_type
+        self.impl = column_type
+
+    def process_bind_param(self, value: str | None, dialect: sqlalchemy.engine.Dialect) -> str | None:
+        if dialect.name == "oracle" and value is not None:
+            return escape_sql_like(value)
+        return value
+
+
+class _TextColumnEquals(sqlalchemy.ColumnElement):
+    """The condition :func:`text_column_equals` returns, compiled for the database it runs on."""
+    inherit_cache = True
+    type = sqlalchemy.Boolean()
+    # A condition already: without this, a database with no boolean type, such as Oracle, gets an appended "= 1"
+    _is_implicitly_boolean = True
+    _traverse_internals = [("column", InternalTraversal.dp_clauseelement),
+                           ("value", InternalTraversal.dp_clauseelement)]
+
+    def __init__(self, column: sqlalchemy.ColumnElement, value: str):
+        self.column = column
+        self.value = sqlalchemy.bindparam(None, value, type_=_OracleLikePattern(column.type), unique=True)
+
+    @property
+    def _from_objects(self) -> list[sqlalchemy.FromClause]:
+        # The table of the column joins the FROM list, also when no other part of the statement names it
+        return self.column._from_objects
+
+    def self_group(self, against: OperatorType | None = None) -> sqlalchemy.ColumnElement:
+        # Both forms are a comparison, like "a = b": inside an operator of the same or a higher precedence, for
+        # example "== false()", the condition needs parentheses
+        if operators.is_precedent(operators.eq, against):
+            return Grouping(self)
+        return self
+
+
+@compiles(_TextColumnEquals)
+def _compile_text_column_equals(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                **kw: Any) -> str:
+    return f"{compiler.process(element.column, **kw)} = {compiler.process(element.value, **kw)}"
+
+
+@compiles(_TextColumnEquals, "oracle")
+def _compile_text_column_equals_on_oracle(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                          **kw: Any) -> str:
+    return (f"{compiler.process(element.column, **kw)} LIKE {compiler.process(element.value, **kw)} "
+            f"ESCAPE '{SQL_LIKE_ESCAPE}'")
+
+
+def text_column_equals(column: sqlalchemy.ColumnElement, value: str) -> sqlalchemy.ColumnElement[bool]:
+    """
+    Compare a text column with *value*, also where the column is a CLOB.
+
+    Every database compares with ``=``, except Oracle. Oracle stores long text, such as the token info value, as a
+    CLOB, which it can neither compare with ``=`` (ORA-00932) nor convert to a string beyond 4000 bytes (ORA-22835).
+    There the comparison is a ``LIKE`` with the metacharacters of *value* escaped, which matches the value exactly
+    and with case, like ``=`` does on Oracle. SQLAlchemy chooses the form when it compiles the statement.
+
+    :param column: the text column
+    :param value: the value the column has to hold
+    :return: the condition
+    """
+    return _TextColumnEquals(column, value)
 
 
 def convert_timestamp_to_utc(timestamp):

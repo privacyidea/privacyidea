@@ -2006,6 +2006,7 @@ class LDAPResolverTestCase(MyTestCase):
         # 1) start_tls has actually been called!
         self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
@@ -2035,6 +2036,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = start_tls_resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
@@ -2072,6 +2074,7 @@ class LDAPResolverTestCase(MyTestCase):
             # 1) start_tls has actually been called!
             self.assertTrue(start_tls_resolver.connection.start_tls_called)
             # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
+            self.assertTrue(ldap3mock.get_server_mock().call_args_list)
             for _, kwargs in ldap3mock.get_server_mock().call_args_list:
                 self.assertIsNotNone(kwargs['tls'])
                 self.assertFalse(kwargs['use_ssl'])
@@ -2111,6 +2114,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = start_tls_resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])

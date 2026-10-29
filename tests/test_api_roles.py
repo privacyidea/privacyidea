@@ -156,7 +156,10 @@ class APIAuthTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             # In the result list should only be users from reso3.
-            for user in result.get("value"):
+            users = result.get("value")
+            self.assertIn("root", {user.get("username") for user in users})
+            self.assertSetEqual({self.realm3}, {user.get("realm") for user in users})
+            for user in users:
                 self.assertEqual(user.get("resolver"), self.resolvername3)
 
         delete_policy("realmadmin")
@@ -298,7 +301,10 @@ class APIAuthTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
             result = res.json.get("result")
-            for user in result.get("value"):
+            users = result.get("value")
+            self.assertIn("root", {user.get("username") for user in users})
+            self.assertSetEqual({self.realm3}, {user.get("realm") for user in users})
+            for user in users:
                 self.assertEqual(user.get("resolver"), self.resolvername3)
 
         delete_policy("realmadmin_empty")
@@ -1234,7 +1240,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()
         serial = "serial0001"
-        tok = Token(serial)
+        tok = Token(serial, tokentype="hotp")
         tok.save()
 
         # Can not set things
