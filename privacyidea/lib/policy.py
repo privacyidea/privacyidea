@@ -182,6 +182,7 @@ from sqlalchemy import Text, select
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.cache.user import cached_user_id
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_types,
@@ -190,7 +191,7 @@ from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundE
 from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms, get_ordered_resolvers
-from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
@@ -207,6 +208,19 @@ from ..models import (Policy, db, save_config_timestamp, PolicyDescription, Poli
 from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
+
+
+def _user_in_resolver(login: str, resolver_name: str) -> bool:
+    """
+    Check if a user with the given login name is contained in the resolver.
+
+    :param login: The login name of the user
+    :param resolver_name: The name of the resolver
+    :return: True if the resolver knows a user id for the login name
+    :raises ResolverError: if the resolver can not load its config, e.g. because its user store is not reachable
+    """
+    resolver = get_resolver_object(resolver_name)
+    return resolver is not None and cached_user_id(resolver, resolver_name, login) not in (None, "")
 
 
 def check_policy_name(name):
@@ -546,6 +560,7 @@ class PolicyClass:
         if resolver is not None:
             new_policies = []
             user_resolvers = []
+            user_in_resolver = {}
             for policy in reduced_policies:
                 if policy.get("check_all_resolvers"):
                     if realm and user:
@@ -557,9 +572,13 @@ class PolicyClass:
                             value_found, value_excluded = self._search_value(
                                 policy.get("resolver"), reso)
                             # An excluded resolver is left out, as a realm or a user excluded with "!" is.
+                            # A listed resolver only counts if the user is contained in it.
                             if value_found and not value_excluded:
-                                new_policies.append(policy)
-                                break
+                                if reso not in user_in_resolver:
+                                    user_in_resolver[reso] = reso == resolver or _user_in_resolver(user, reso)
+                                if user_in_resolver[reso]:
+                                    new_policies.append(policy)
+                                    break
                 elif not policy.get("resolver"):
                     # We also find the policies with no distinct information
                     # about the request value

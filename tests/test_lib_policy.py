@@ -1180,6 +1180,27 @@ class PolicyTestCase(MyTestCase):
             rid = delete_resolver(reso)
             self.assertTrue(rid > 0, rid)
 
+    def test_21a_check_all_resolver_user_not_in_resolver(self):
+        # reso1 (prio 1) contains selfservice and cornelius, reso2 (prio 2) contains cornelius and root.
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1}, {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=totp")
+        try:
+            expected_matches = {"selfservice": [], "cornelius": ["checkAll"], "root": ["checkAll"]}
+            for login, expected in expected_matches.items():
+                with self.subTest(login=login):
+                    user = User(login, "test_realm")
+                    policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                                                            resolver=user.resolver, user=user.login)
+                    self.assertListEqual(expected, [policy["name"] for policy in policies], str(user))
+        finally:
+            delete_policy("checkAll")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
+
     def test_22_non_ascii_user(self):
         set_policy(name="polnonascii",
                    action=f"enrollHOTP, {PolicyAction.OTPPINMINLEN}=4",

@@ -4915,6 +4915,28 @@ class APIDetermineUserFromSerialForPolicies(MyApiTestCase):
         remove_token(serial)
         delete_policy(polname)
 
+    def test_02_disabling_token_check_all_resolvers(self):
+        # realm4: resolver1 (prio 1) contains selfservice and cornelius, reso3 (prio 2) contains cornelius and root.
+        # A policy with check_all_resolvers only applies to owners who are contained in one of its resolvers.
+        self.setUp_user_realm4_with_2_resolvers()
+        set_policy("helpdesk_reso3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm4,
+                   resolver=self.resolvername3, check_all_resolvers=True)
+        try:
+            expected_status = {"selfservice": 403, "cornelius": 200, "root": 200}
+            for login, expected in expected_status.items():
+                with self.subTest(login=login):
+                    serial = f"SPASS_{login}"
+                    init_token({"type": "spass", "serial": serial}, user=User(login, self.realm4))
+                    try:
+                        with self.app.test_request_context("/token/disable", method="POST", data={"serial": serial},
+                                                           headers={"Authorization": self.at}):
+                            res = self.app.full_dispatch_request()
+                        self.assertEqual(expected, res.status_code, res.json)
+                    finally:
+                        remove_token(serial)
+        finally:
+            delete_policy("helpdesk_reso3")
+
 
 class APIRolloutState(MyApiTestCase):
 

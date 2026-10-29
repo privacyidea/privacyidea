@@ -160,7 +160,8 @@ resolver values must name existing realms and resolvers.
      If you also want to match a policy with ``resolver=resolver2``, you need
      to select *Check all possible resolvers* in this policy. Thus this
      policy will match for all users, which are also contained in *resolver2*
-     as a secondary resolver.
+     as a secondary resolver. Users of the realm that are not contained in
+     *resolver2* are not matched.
 
 .. versionadded:: 2.0
 

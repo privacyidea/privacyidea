@@ -203,6 +203,10 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **Policies with `check_all_resolvers` match only users contained in one of their resolvers.** Such a policy now
+  applies to a user only if the user was found in one of the resolvers it names or is also contained in one of them as
+  a lower-priority resolver of the realm, as documented.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
