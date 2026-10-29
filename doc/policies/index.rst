@@ -156,7 +156,8 @@ resolver values must name existing realms and resolvers.
   With this option, the policy also applies to users who are contained in one
   of its resolvers, but belong to another resolver of their realm. This way a
   resolver with a lower priority can work like a group, for example a list of
-  the login names that may use a VPN.
+  the login names that may use a VPN. Only the resolvers with a lower priority
+  than the user's resolver count.
 
   Example: the realm *company* contains the resolvers *ldap* (priority 1) and
   *vpn-users* (priority 2). *vpn-users* lists some of the login names of

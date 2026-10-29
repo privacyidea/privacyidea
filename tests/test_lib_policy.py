@@ -1204,7 +1204,20 @@ class PolicyTestCase(MyTestCase):
                 self.assertRaises(ResolverError, PolicyClass().match_policies, scope=SCOPE.AUTHZ,
                                   realm=user.realm, resolver=user.resolver, user=user.login)
             self.assertIn(f"'reso2' of the policy 'checkAll' with check_all_resolvers: {error}", logs.output[0])
+
+            # A resolver ranked above the user's resolver is not asked, also for a user created with its resolver
+            # whose login name is also in the resolver ranked above.
+            set_policy(name="checkAllHigher", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso1",
+                       check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=hotp")
+            users = [User("root", "test_realm"), User("cornelius", "test_realm", resolver="reso2")]
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error):
+                for user in users:
+                    with self.subTest(user=str(user)):
+                        policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                                                                resolver=user.resolver, user=user.login)
+                        self.assertListEqual(["checkAll"], [policy["name"] for policy in policies])
         finally:
+            delete_policy("checkAllHigher")
             delete_policy("checkAll")
             delete_realm("test_realm")
             delete_resolver("reso1")

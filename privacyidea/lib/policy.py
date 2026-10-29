@@ -554,9 +554,8 @@ class PolicyClass:
                     searchkey, searchvalue, [p.get('name') for p in reduced_policies]))
 
         # We need to act individually on the resolver key word
-        # We either match the resolver exactly or we match another resolver (
-        # which is not the first resolver) of the user, but only if the
-        # check_all_resolvers flag in the policy is set.
+        # We either match the resolver exactly or, only if the check_all_resolvers flag in the policy is set,
+        # a resolver of the realm with a lower priority than the user's resolver that also contains the user.
         if resolver is not None:
             new_policies = []
             user_resolvers = []
@@ -564,10 +563,14 @@ class PolicyClass:
             for policy in reduced_policies:
                 if policy.get("check_all_resolvers"):
                     if realm and user:
-                        # We have a realm and a user, so get all resolvers of that realm
-                        # in priority order to match against the policy's resolver list.
+                        # The user's resolver and the resolvers of the realm ranked below it, in priority order.
+                        # A resolver ranked above can not hold another possible resolver of the user.
                         if not user_resolvers:
-                            user_resolvers = get_ordered_resolvers(realm)
+                            realm_resolvers = get_ordered_resolvers(realm)
+                            if resolver in realm_resolvers:
+                                user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
+                            else:
+                                user_resolvers = [resolver]
                         for reso in user_resolvers:
                             value_found, value_excluded = self._search_value(
                                 policy.get("resolver"), reso)
