@@ -22,12 +22,15 @@ pre-check lock test, and the policy-evaluation workflow (stage selection,
 de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 """
 import ipaddress
+import json
 from collections.abc import Sequence
 from contextlib import contextmanager
 from datetime import datetime, timedelta, UTC
 from email import message_from_string
 
 from unittest import mock
+
+import responses
 
 from privacyidea.lib.conditional_access import engine
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthLogUserRole,
@@ -71,6 +74,7 @@ from privacyidea.lib.conditional_access.policy import (StageDefinition, StageAct
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
+from privacyidea.lib.webhook import ContentType, delete_webhook, set_webhook
 from privacyidea.models import Admin, db
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.conditional_access_policy import (
@@ -3086,3 +3090,203 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         state = self._state()
         self.assertIsNone(state.lock_expires_at)
         self.assertEqual("Locked for {duration}.", state.error_message)
+
+    # --- WEBHOOK action -------------------------------------------------------
+
+    WEBHOOK_URL = "https://siem.example.com/ca"
+
+    def _make_webhook(self, identifier="ca-hook", **kwargs):
+        """Create a webhook definition for a WEBHOOK stage action and drop it again after the test."""
+        set_webhook(identifier, url=self.WEBHOOK_URL, **kwargs)
+        self.addCleanup(delete_webhook, identifier)
+        return identifier
+
+    @responses.activate
+    def test_webhook_action_fires_when_the_stage_trips(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook()
+        self._make_policy(
+            name="hook", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK,
+                                                              {"webhook": "ca-hook"})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user, "10.0.0.9"), AuthEventType.MFA_FAIL)
+
+        self.assertEqual(1, len(responses.calls))
+        self.assertListEqual([str(ConditionalAccessAction.WEBHOOK)],
+                             [outcome.action_type for outcome in outcomes])
+        # A pure notification writes no lock state, like the EMAIL_* actions.
+        self.assertIsNone(self._state())
+
+    @responses.activate
+    def test_webhook_action_renders_the_conditional_access_tags(self):
+        # A JSON payload is substituted value by value, so a tag carrying a quote cannot break the document -
+        # the treatment the WebHookHandler gives a JSON body.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook()
+        payload = ('{"user": "{username}", "realm": "{realm}", "ip": "{client_ip}", '
+                   '"seen": "{count}", "limit": "{threshold}", "event": "{event_type}", "policy": "{policy}"}')
+        self._make_policy(
+            name="hooktags", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK,
+                                                              {"webhook": "ca-hook", "payload": payload})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user, "10.0.0.9"), AuthEventType.MFA_FAIL)
+
+        sent = json.loads(responses.calls[0].request.body)
+        self.assertEqual("cornelius", sent["user"])
+        self.assertEqual(self.user.realm, sent["realm"])
+        self.assertEqual("10.0.0.9", sent["ip"])
+        self.assertEqual("3", sent["seen"])
+        self.assertEqual("3", sent["limit"])
+        self.assertEqual(str(AuthEventType.MFA_FAIL), sent["event"])
+        self.assertEqual("hooktags", sent["policy"])
+
+    @responses.activate
+    def test_webhook_action_renders_a_plain_text_payload(self):
+        # Anything that is not a JSON object or array is substituted as plain text.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook(content_type=ContentType.URLENCODED)
+        self._make_policy(
+            name="hooktext", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(
+                ConditionalAccessAction.WEBHOOK,
+                {"webhook": "ca-hook", "payload": "user={username}&count={count}"})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertEqual("user=cornelius&count=3", responses.calls[0].request.body)
+
+    @responses.activate
+    def test_webhook_action_without_a_payload_sends_the_webhooks_own_default(self):
+        # The payload is optional: one webhook can then serve several policies with one body.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook(default_payload='{"source": "conditional access"}')
+        self._make_policy(
+            name="hookdefault", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK,
+                                                              {"webhook": "ca-hook"})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertEqual({"source": "conditional access"}, json.loads(responses.calls[0].request.body))
+
+    @responses.activate
+    def test_webhook_action_fires_on_a_source_ip_policy(self):
+        # A source-IP policy resolves no user, which is exactly the spraying traffic a SIEM notification is for:
+        # the user-derived tags render empty and the webhook still goes out.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook()
+        ip = "10.0.0.7"
+        self._make_policy(
+            name="hookspray", counter_type=AuthEventType.PASSWORD_FAIL, target=ConditionalAccessTarget.SOURCE_IP,
+            stages=(StageDefinition(3, [StageActionDefinition(
+                ConditionalAccessAction.WEBHOOK,
+                {"webhook": "ca-hook", "payload": '{"ip": "{client_ip}", "user": "{username}"}'})]),))
+        self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
+        outcomes = evaluate_conditional_access_policies(CAContext(None, ip), AuthEventType.PASSWORD_FAIL)
+
+        self.assertListEqual([str(ConditionalAccessAction.WEBHOOK)],
+                             [outcome.action_type for outcome in outcomes])
+        sent = json.loads(responses.calls[0].request.body)
+        self.assertEqual(ip, sent["ip"])
+        self.assertEqual("", sent["user"])
+
+    @responses.activate
+    def test_dry_run_webhook_action_records_the_outcome_but_fires_nothing(self):
+        # Dry-run must not produce the side effect itself - and a webhook is the side effect another system acts
+        # on, so a trial run that fired it would be indistinguishable from enforcement to the receiver.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook()
+        self._make_policy(
+            name="hookdry", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK,
+                                                              {"webhook": "ca-hook"})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertListEqual([str(ConditionalAccessAction.WEBHOOK)],
+                             [outcome.action_type for outcome in outcomes])
+        self.assertListEqual([True], [outcome.dry_run for outcome in outcomes])
+        self.assertEqual(0, len(responses.calls))
+
+    @responses.activate
+    def test_webhook_action_without_an_identifier_is_skipped(self):
+        # A hand-written row the CRUD layer would have rejected: logged and skipped, never sent or raised.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        self._make_webhook()
+        self._make_policy(
+            name="hookbad", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK, {})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertEqual(0, len(responses.calls))
+        # Nothing happened, so nothing is recorded.
+        self.assertListEqual([], list(outcomes))
+
+    @responses.activate
+    def test_an_unknown_webhook_is_skipped_and_records_nothing(self):
+        self._make_policy(
+            name="hookmissing", counter_type=AuthEventType.MFA_FAIL,
+            stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.WEBHOOK,
+                                                              {"webhook": "does-not-exist"})]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertEqual(0, len(responses.calls))
+        self.assertListEqual([], list(outcomes))
+
+    @responses.activate
+    def test_a_failing_webhook_records_nothing_and_breaks_nothing(self):
+        # The endpoint answers 500: the authentication is unaffected, the stage's lock is still written, and the
+        # webhook - which did not deliver - is left out of the history.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"error": "boom"}, status=500)
+        self._make_webhook()
+        actions = [StageActionDefinition(ConditionalAccessAction.LOCK_USER, {"duration_seconds": 600}),
+                   StageActionDefinition(ConditionalAccessAction.WEBHOOK, {"webhook": "ca-hook"})]
+        self._make_policy(name="hookfail", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, actions),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
+                             [outcome.action_type for outcome in outcomes])
+        self.assertIsNotNone(self._state())
+        self.assertTrue(is_user_locked(self.user))
+
+    @responses.activate
+    def test_an_unreachable_webhook_does_not_skip_the_remaining_actions(self):
+        # No response registered at all -> requests raises inside fire_webhook, which swallows it. The lock action
+        # that follows on the same stage must still run.
+        self._make_webhook()
+        actions = [StageActionDefinition(ConditionalAccessAction.WEBHOOK, {"webhook": "ca-hook"}),
+                   StageActionDefinition(ConditionalAccessAction.LOCK_USER, {"duration_seconds": 600})]
+        self._make_policy(name="hookdead", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, actions),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertIsNotNone(self._state())
+        self.assertTrue(is_user_locked(self.user))
+
+    @responses.activate
+    def test_two_webhook_actions_on_one_stage_notify_two_systems(self):
+        # WEBHOOK is repeatable for the same reason EMAIL_ADMIN is: each copy names its own definition, so a
+        # second one reaches a system the first cannot.
+        other_url = "https://chat.example.com/ca"
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        responses.add(responses.POST, other_url, json={"ok": True}, status=200)
+        self._make_webhook()
+        set_webhook("ca-chat", url=other_url)
+        self.addCleanup(delete_webhook, "ca-chat")
+        actions = [StageActionDefinition(ConditionalAccessAction.WEBHOOK, {"webhook": "ca-hook"}),
+                   StageActionDefinition(ConditionalAccessAction.WEBHOOK, {"webhook": "ca-chat"})]
+        self._make_policy(name="hooktwo", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, actions),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertSetEqual({self.WEBHOOK_URL, other_url}, {call.request.url for call in responses.calls})
+        self.assertListEqual([str(ConditionalAccessAction.WEBHOOK)] * 2,
+                             [outcome.action_type for outcome in outcomes])

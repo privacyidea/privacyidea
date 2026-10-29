@@ -1156,6 +1156,37 @@ Changes take effect after a restart of the web server.
 
 .. versionadded:: 3.14
 
+.. _ini_outbound_guard:
+
+Outbound request guard
+----------------------
+
+.. index:: outbound request guard, webhook, SSRF
+
+A :ref:`webhook_config` requests a URL that an administrator chose, from the
+privacyIDEA server. ``PI_OUTBOUND_GUARD`` limits where such a request may go::
+
+    PI_OUTBOUND_GUARD = "warn"
+    PI_OUTBOUND_GUARD_ALLOW = ["10.1.2.0/24", "siem.corp:8443"]
+
+The guard is **off by default**, so an upgrade changes nothing until you opt in.
+The three modes are ``off`` (no checks at all), ``warn`` (every check runs and a
+rejection is logged, but the request is still sent) and ``enforce`` (a rejected
+request is not sent, and redirects are not followed). An unrecognised value is
+logged and treated as ``off``.
+
+Run ``warn`` first and read the log: it names every delivery ``enforce`` would
+refuse, without refusing it yet.
+
+``PI_OUTBOUND_GUARD_ALLOW`` lists the exceptions - CIDR networks, or a host or
+address with an optional port. It is checked against both the configured host
+name and every address it resolves to.
+
+The blocked ranges, the allowlist syntax and the guard's limits are described in
+full under :ref:`webhook_outbound_guard`.
+
+.. versionadded:: 3.15
+
 .. _picfg_further_keys:
 
 Further keys

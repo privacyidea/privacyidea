@@ -56,6 +56,7 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
+import { WebhookService } from "@services/webhook/webhook.service";
 
 export const routes: Routes = [
   { path: "login", component: LoginComponent, canActivate: [loginGuard] },
@@ -99,7 +100,8 @@ export const routes: Routes = [
       TableUtilsService,
       TokengroupService,
       TokenService,
-      UserService
+      UserService,
+      WebhookService
     ],
     children: [
       {

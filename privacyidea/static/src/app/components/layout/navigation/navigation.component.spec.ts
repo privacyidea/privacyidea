@@ -373,6 +373,19 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       expect(componentPrivate.getFilteredNavItems().some((item) => item.section === "policies")).toBe(true);
     });
 
+    it("should keep the 'external_services' section when only webhook_read is allowed", () => {
+      // The section's toolbar gates its Webhooks entry on webhook_read, so an administrator
+      // holding only that right has somewhere to go - but the parent item used to require one of
+      // the older service rights, which left the link out of the navigation entirely.
+      (authService.oneActionAllowed as jest.Mock).mockImplementation((actions: string[]) =>
+        actions.includes("webhook_read")
+      );
+
+      expect(componentPrivate.getFilteredNavItems().some((item) => item.section === "external_services")).toBe(
+        true
+      );
+    });
+
     it("should drop the 'policies' section when neither policyread nor eventhandling_read is allowed", () => {
       (authService.actionAllowed as jest.Mock).mockReturnValue(false);
 

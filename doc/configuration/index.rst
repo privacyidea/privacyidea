@@ -25,6 +25,7 @@ found under *Policies*.
    radiusserver_config.rst
    privacyideaserver_config.rst
    sms_gateway_config.rst
+   webhook_config.rst
    serviceids.rst
    api_clients.rst
    token_config.rst

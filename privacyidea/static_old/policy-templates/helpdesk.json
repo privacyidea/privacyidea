@@ -60,6 +60,7 @@
     "enrollSSHKEY": true,
     "manage_machine_tokens": false,
     "smtpserver_write": false,
-    "radiusserver_write": false
+    "radiusserver_write": false,
+    "webhook_write": false
   }
 }

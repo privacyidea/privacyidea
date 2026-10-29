@@ -55,6 +55,7 @@ import { ServiceIdService } from "@services/service-id/service-id.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
 import { SmtpService } from "@services/smtp/smtp.service";
+import { WebhookService } from "@services/webhook/webhook.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { SystemService } from "@services/system/system.service";
 import { ChallengesService } from "@services/token/challenges/challenges.service";
@@ -90,6 +91,7 @@ import {
   MockSessionTimerService,
   MockSmsGatewayService,
   MockSmtpService,
+  MockWebhookService,
   MockSystemService,
   MockTokenService,
   MockTokengroupService,
@@ -169,6 +171,7 @@ describe("UserUtilsPanelComponent", () => {
         { provide: DialogService, useClass: MockDialogService },
         { provide: ResolverService, useClass: MockResolverService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: WebhookService, useClass: MockWebhookService },
         { provide: RadiusServerService, useClass: MockRadiusService },
         { provide: SmsGatewayService, useClass: MockSmsGatewayService },
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },

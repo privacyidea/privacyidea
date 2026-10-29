@@ -965,6 +965,36 @@
         <span i18n="@@common.createService">Create Service ID</span>
       </a>
     }
+    @if (authService.actionAllowed("webhook_read")) {
+      <a
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS]">
+        <mat-icon>webhook</mat-icon>
+        <span i18n="@@nav.webhooks">Webhooks</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS)) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">webhook</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
+        <span i18n="@@nav.webhookDetails">Webhook Details</span>
+      </a>
+    }
+    @if (contentService.routePath() === ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_NEW) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">webhook</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@webhook.createWebhook">Create Webhook</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }

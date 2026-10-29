@@ -250,6 +250,87 @@ class APIEventsTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertEqual(result.get("value"), [])
 
+    def test_02c_a_new_webhook_handler_stores_no_blank_inline_rows(self):
+        """
+        ``URL`` and ``content_type`` are shown, not set, so the editor sends no ``option.*`` for
+        them when there is nothing stored. Storing them blank would only add rows the handler has
+        to read as "not configured".
+        """
+        from privacyidea.lib.webhook import set_webhook
+        set_webhook("siem", url="https://siem.example.com/hook")
+
+        param = {
+            "name": "Coffee maker",
+            "event": "validate_check",
+            "action": "post_webhook",
+            "handlermodule": "WebHook",
+            "option.webhook": "siem",
+            "option.data": '{"a": 1}',
+            "option.replace": "True"
+        }
+        with self.app.test_request_context('/event', data=param, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            ev_id = res.json.get("result").get("value")
+
+        with self.app.test_request_context(f'/event/{ev_id!s}', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            options = res.json.get("result").get("value")[0].get("options")
+
+        self.assertEqual(["data", "replace", "webhook"], sorted(options))
+
+        with self.app.test_request_context(f'/event/{ev_id!s}', method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def test_02d_converting_a_handler_keeps_its_inline_options(self):
+        """
+        A handler the 3.15 upgrade converted carries both shapes. Saving it must not drop the
+        inline rows: ``set_event`` replaces the whole option set, and ``pi-manage db downgrade``
+        strips the ``webhook`` option from every handler - one that lost its ``URL`` here would
+        come back from a downgrade with no endpoint at all and silently stop posting. The editor
+        therefore passes the read-only values through, and this is the API side of that.
+        """
+        from privacyidea.lib.webhook import set_webhook
+        set_webhook("siem", url="https://siem.example.com/hook")
+
+        param = {
+            "name": "Converted",
+            "event": "validate_check",
+            "action": "post_webhook",
+            "handlermodule": "WebHook",
+            "option.URL": "https://old.example.com/hook",
+            "option.content_type": "application/json",
+            "option.data": '{"a": 1}'
+        }
+        with self.app.test_request_context('/event', data=param, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            ev_id = res.json.get("result").get("value")
+
+        # The save after a webhook has been selected, as the editor sends it.
+        converted = dict(param, **{"id": ev_id, "option.webhook": "siem",
+                                   "option.replace": "True"})
+        with self.app.test_request_context('/event', data=converted, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+
+        with self.app.test_request_context(f'/event/{ev_id!s}', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            options = res.json.get("result").get("value")[0].get("options")
+
+        self.assertEqual(["URL", "content_type", "data", "replace", "webhook"], sorted(options))
+        self.assertEqual("https://old.example.com/hook", options.get("URL"))
+
+        with self.app.test_request_context(f'/event/{ev_id!s}', method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
     def test_02b_reorder_keeps_options(self):
         # Regression test for the "change order in the overview deletes actions"
         # bug: reordering an event handler sends the binding without any
