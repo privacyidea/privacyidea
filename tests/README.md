@@ -19,14 +19,21 @@ This directory contains the migration test suite for privacyIDEA.
 > `test_migration_conventions.py`.
 >
 > **Lint:** `test_migration_conventions.py` also checks every migration since
-> 3.14 against `LINT_RULES`: an insert into a sequence-backed table takes its
-> id from the sequence, whether an object exists or is already gone is checked
-> by reflection rather than by the error text, database errors are not printed
-> and ignored, and nothing is imported from `privacyidea.lib` or the models
-> (except the helper modules `privacyidea.models.db` and
-> `privacyidea.models.utils`). Known exceptions are listed in
-> `MIGRATION_LINT_EXCEPTIONS`; the test fails for an entry that no longer
-> applies, so remove it together with the fix.
+> 3.14 against `LINT_RULES`:
+>
+> - An insert into a sequence-backed table takes its id from the sequence.
+> - A check whether an object exists or is already gone uses reflection, not
+>   the error text.
+> - A database error is not printed and ignored.
+> - Nothing is imported from `privacyidea.lib` or the models, apart from the
+>   helper modules `privacyidea.models.db` and `privacyidea.models.utils`.
+>
+> `MIGRATION_LINT_EXCEPTIONS` lists the known exceptions. The test fails for an
+> entry that no longer applies, so remove the entry together with the fix.
+>
+> The lint does not check the helper modules. A change to a helper changes
+> every migration that calls it, also the released ones. Check the callers in
+> `privacyidea/migrations/versions/` before you change a helper.
 
 ---
 
@@ -144,8 +151,8 @@ the above.  Examples:
      another source than the model uses makes the next row privacyIDEA writes
      collide with it.
 
-   A test may read through the models or the lib after the upgrade; the
-   cleanup ends the session's transaction before it drops the tables.
+   A test can read through the models or the lib after the upgrade. The
+   cleanup ends the transaction of the session before it drops the tables.
 
 ### Skeleton
 

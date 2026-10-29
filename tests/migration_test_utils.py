@@ -681,7 +681,8 @@ class MigrationTestBase:
         Upgrade to head, then insert a row into every table the way the models do, ids from their sequences included.
 
         End a test with this when its migration inserts rows: a row whose id came from another source than the one the
-        model uses, e.g. AUTO_INCREMENT instead of the sequence, makes a later insert of privacyIDEA collide with it.
+        model uses, for example AUTO_INCREMENT instead of the sequence, makes a later insert of privacyIDEA collide with
+        it.
         """
         self._upgrade("head")
         failures = insert_minimal_row_into_every_table()

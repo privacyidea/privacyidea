@@ -220,7 +220,9 @@ DATABASE_ERRORS = {"Exception", "BaseException", "SQLAlchemyError", "DBAPIError"
 
 MIGRATION_HELPER_MODULES = {"privacyidea.models.db", "privacyidea.models.utils"}
 
-RAW_INSERT = re.compile(r"INSERT\s+INTO\s+[`\"]?(\w+)[`\"]?\s*\(([^)]*)\)", re.IGNORECASE)
+# An INSERT with a column list. In an f-string, the table or the columns can be a placeholder such as {name}. An INSERT
+# without a column list fills the columns in their order, the id first, so it sets the id.
+RAW_INSERT = re.compile(r"INSERT\s+INTO\s+[`\"]?(\w+|\{[^}]*\})[`\"]?\s*\(([^)]*)\)", re.IGNORECASE)
 
 
 def _sequence_tables() -> set[str]:
@@ -252,59 +254,131 @@ def _table_construct(node: ast.AST) -> tuple[str, bool] | None:
     return node.args[0].value, declares_sequence
 
 
+def _assigned_name(node: ast.AST) -> tuple[str, ast.AST] | None:
+    """For an assignment to a single name, plain or annotated, the name and the assigned value."""
+    if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        return node.targets[0].id, node.value
+    if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.value is not None:
+        return node.target.id, node.value
+    return None
+
+
+def _insert_target(call: ast.Call, constructs: dict[str, tuple[str, bool]]) -> tuple[str, bool] | None:
+    """
+    For an insert(), bulk_insert() or .insert() call, the table construct it writes into: a name bound to a construct,
+    or a construct written in place.
+    """
+    if _call_name(call) in ("insert", "bulk_insert") and call.args:
+        target = call.args[0]
+    elif isinstance(call.func, ast.Attribute) and call.func.attr == "insert":
+        target = call.func.value
+    else:
+        return None
+    if isinstance(target, ast.Name):
+        return constructs.get(target.id)
+    return _table_construct(target)
+
+
+def _sets_id(statement: ast.stmt) -> bool:
+    """
+    Whether the statement gives the inserted rows an id: an id= keyword, a dictionary with an "id" key, or "id" in the
+    column list of from_select(). An "id" anywhere else, for example in the select of from_select(), does not count.
+    """
+    for node in ast.walk(statement):
+        if isinstance(node, ast.keyword) and node.arg == "id":
+            return True
+        if isinstance(node, ast.Dict) and any(isinstance(key, ast.Constant) and key.value == "id" for key in node.keys):
+            return True
+        if (isinstance(node, ast.Call) and _call_name(node) == "from_select" and node.args
+                and isinstance(node.args[0], (ast.List, ast.Tuple))
+                and any(isinstance(element, ast.Constant) and element.value == "id" for element in node.args[0].elts)):
+            return True
+    return False
+
+
+def _string_text(node: ast.AST) -> str | None:
+    """The text of a string literal. In an f-string, each placeholder becomes {expression}."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        return "".join(part.value if isinstance(part, ast.Constant) else f"{{{ast.unparse(part.value)}}}"
+                       for part in node.values)
+    return None
+
+
 def _inserts_without_sequence_id(tree: ast.Module, sequence_tables: set[str]) -> list[str]:
-    """The sequence-backed tables that the migration inserts into without taking the id from the sequence."""
+    """
+    The sequence-backed tables that the migration inserts into without taking the id from the sequence. The lint cannot
+    resolve the placeholders of an f-string: an INSERT whose table is a placeholder counts with the placeholder as its
+    table, and a placeholder in the column list does not count as the id column.
+    """
     constructs = {}
     functions = {}
     for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            construct = _table_construct(node.value)
-            if construct:
-                constructs[node.targets[0].id] = construct
+        assigned = _assigned_name(node)
+        if assigned and _table_construct(assigned[1]):
+            constructs[assigned[0]] = _table_construct(assigned[1])
         if isinstance(node, ast.FunctionDef):
             for returned in ast.walk(node):
                 if isinstance(returned, ast.Return) and _table_construct(returned.value):
                     functions[node.name] = _table_construct(returned.value)
     for node in ast.walk(tree):
-        if (isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
-                and isinstance(node.value, ast.Call) and _call_name(node.value) in functions):
-            constructs[node.targets[0].id] = functions[_call_name(node.value)]
+        assigned = _assigned_name(node)
+        if assigned and isinstance(assigned[1], ast.Call) and _call_name(assigned[1]) in functions:
+            constructs[assigned[0]] = functions[_call_name(assigned[1])]
 
     tables = set()
     compound_statements = (ast.FunctionDef, ast.ClassDef, ast.If, ast.For, ast.While, ast.Try, ast.With)
     for statement in ast.walk(tree):
         if not isinstance(statement, ast.stmt) or isinstance(statement, compound_statements):
             continue
-        sets_id = any((isinstance(node, ast.keyword) and node.arg == "id")
-                      or (isinstance(node, ast.Constant) and node.value == "id") for node in ast.walk(statement))
+        sets_id = _sets_id(statement)
         for call in ast.walk(statement):
             if not isinstance(call, ast.Call):
                 continue
-            target = None
-            if _call_name(call) in ("insert", "bulk_insert") and call.args and isinstance(call.args[0], ast.Name):
-                target = call.args[0].id
-            elif (isinstance(call.func, ast.Attribute) and call.func.attr == "insert"
-                  and isinstance(call.func.value, ast.Name)):
-                target = call.func.value.id
-            if target in constructs:
-                table_name, declares_sequence = constructs[target]
+            target = _insert_target(call, constructs)
+            if target:
+                table_name, declares_sequence = target
                 if table_name in sequence_tables and not declares_sequence and not sets_id:
                     tables.add(table_name)
     for node in ast.walk(tree):
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            for match in RAW_INSERT.finditer(node.value):
-                columns = [column.strip(' `"').lower() for column in match.group(2).split(",")]
-                if match.group(1).lower() in sequence_tables and "id" not in columns:
-                    tables.add(match.group(1).lower())
+        text = _string_text(node)
+        if text is None:
+            continue
+        for match in RAW_INSERT.finditer(text):
+            table_name = match.group(1).lower()
+            columns = [column.strip(' `"').lower() for column in match.group(2).split(",")]
+            if (table_name in sequence_tables or table_name.startswith("{")) and "id" not in columns:
+                tables.add(table_name)
     return sorted(tables)
+
+
+def _names_a_database_error(node: ast.AST) -> bool:
+    return ((isinstance(node, ast.Name) and node.id in DATABASE_ERRORS)
+            or (isinstance(node, ast.Attribute) and node.attr in DATABASE_ERRORS))
 
 
 def _catches_database_errors(handler: ast.ExceptHandler) -> bool:
     if handler.type is None:
         return True
     caught = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
-    return any((isinstance(name, ast.Name) and name.id in DATABASE_ERRORS)
-               or (isinstance(name, ast.Attribute) and name.attr in DATABASE_ERRORS) for name in caught)
+    return any(_names_a_database_error(name) for name in caught)
+
+
+def _suppresses_database_errors(statement: ast.With) -> bool:
+    """Whether a with statement ignores database errors through contextlib.suppress()."""
+    return any(isinstance(item.context_expr, ast.Call) and _call_name(item.context_expr) == "suppress"
+               and any(_names_a_database_error(argument) for argument in item.context_expr.args)
+               for item in statement.items)
+
+
+def _compares_a_text(handler: ast.ExceptHandler) -> bool:
+    """Whether the handler checks if a text occurs in something, as a guard on the error message does."""
+    for node in ast.walk(handler):
+        if (isinstance(node, ast.Compare) and isinstance(node.left, ast.Constant) and isinstance(node.left.value, str)
+                and any(isinstance(operator, (ast.In, ast.NotIn)) for operator in node.ops)):
+            return True
+    return False
 
 
 def _migration_lint_findings(source: str, sequence_tables: set[str]) -> dict[str, list[str]]:
@@ -323,10 +397,14 @@ def _migration_lint_findings(source: str, sequence_tables: set[str]) -> dict[str
         if isinstance(node, ast.ExceptHandler):
             texts = [inner.value.lower() for inner in ast.walk(node)
                      if isinstance(inner, ast.Constant) and isinstance(inner.value, str)]
-            if any(error_text in text for text in texts for error_text in ERROR_TEXTS):
+            catches_database_errors = _catches_database_errors(node)
+            if (any(error_text in text for text in texts for error_text in ERROR_TEXTS)
+                    or (catches_database_errors and _compares_a_text(node))):
                 findings.setdefault("error-text-guard", []).append(f"line {node.lineno}")
-            elif _catches_database_errors(node) and not any(isinstance(inner, ast.Raise) for inner in ast.walk(node)):
+            elif catches_database_errors and not any(isinstance(inner, ast.Raise) for inner in ast.walk(node)):
                 findings.setdefault("swallowed-error", []).append(f"line {node.lineno}")
+        if isinstance(node, ast.With) and _suppresses_database_errors(node):
+            findings.setdefault("swallowed-error", []).append(f"line {node.lineno}")
     tables = _inserts_without_sequence_id(tree, sequence_tables)
     if tables:
         findings["insert-without-sequence-id"] = tables
@@ -377,8 +455,36 @@ def test_lint_accepts_an_insert_with_the_sequence_or_an_id():
         "    op.get_bind().execute(sa.insert(tokeninfo).values(token_id=1))\n"
         "    op.get_bind().execute(lightweight.insert().values(id=5, token_id=1))\n"
         "    op.execute('INSERT INTO tokeninfo (id, token_id) VALUES (5, 1)')\n"
+        "    op.bulk_insert(lightweight, [{'id': 6, 'token_id': 1}])\n"
+        "    op.get_bind().execute(lightweight.insert().from_select(['id', 'token_id'], sa.select(token.c.id, 1)))\n"
+        "    op.execute('INSERT INTO tokeninfo SELECT 7, 1')\n"
     )
     assert _migration_lint_findings(source, {"tokeninfo"}) == {}
+
+
+def test_lint_flags_inserts_through_inline_and_annotated_constructs_and_f_strings():
+    """
+    An insert into a construct written in place or bound by an annotated assignment, an INSERT in an f-string, and an
+    insert whose only "id" is in the select of from_select() leave the id to the column default.
+    """
+    source = (
+        "import sqlalchemy as sa\n"
+        "annotated: sa.TableClause = sa.table('tokeninfo', sa.column('token_id'))\n"
+        "def upgrade():\n"
+        "    op.bulk_insert(sa.table('tokeninfo', sa.column('token_id')), [{'token_id': 1}])\n"
+        "    op.get_bind().execute(sa.table('tokeninfo', sa.column('token_id')).insert().values(token_id=1))\n"
+        "    op.get_bind().execute(annotated.insert().values(token_id=1))\n"
+        "    op.execute(f'INSERT INTO {name} (token_id) VALUES (1)')\n"
+    )
+    assert _migration_lint_findings(source, {"tokeninfo"}) == {"insert-without-sequence-id": ["tokeninfo", "{name}"]}
+
+    source = (
+        "import sqlalchemy as sa\n"
+        "tokeninfo = sa.table('tokeninfo', sa.column('token_id'))\n"
+        "def upgrade():\n"
+        "    op.get_bind().execute(tokeninfo.insert().from_select(['token_id'], sa.select(sa.column('id'))))\n"
+    )
+    assert _migration_lint_findings(source, {"tokeninfo"}) == {"insert-without-sequence-id": ["tokeninfo"]}
 
 
 def test_lint_flags_error_text_guards_and_swallowed_errors():
@@ -413,3 +519,24 @@ def test_lint_flags_guards_on_a_missing_object():
         "            raise\n"
     )
     assert _migration_lint_findings(source, set()) == {"error-text-guard": ["line 4"]}
+
+
+def test_lint_flags_suppressed_errors_and_guards_on_any_text():
+    """
+    contextlib.suppress() ignores a database error like a handler without a raise does. A handler that raises only
+    when the error message lacks some text guards on that text, also when the text is not in ERROR_TEXTS.
+    """
+    source = (
+        "import contextlib\n"
+        "def upgrade():\n"
+        "    with contextlib.suppress(OperationalError):\n"
+        "        op.drop_table('a')\n"
+        "    try:\n"
+        "        op.drop_table('b')\n"
+        "    except OperationalError as error:\n"
+        "        if 'some text' not in str(error):\n"
+        "            raise\n"
+        "    with contextlib.suppress(ValueError):\n"
+        "        int('x')\n"
+    )
+    assert _migration_lint_findings(source, set()) == {"swallowed-error": ["line 3"], "error-text-guard": ["line 7"]}
