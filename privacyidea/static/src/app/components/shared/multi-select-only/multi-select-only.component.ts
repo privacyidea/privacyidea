@@ -63,6 +63,12 @@ export class MultiSelectOnlyComponent<T = string | number> {
 
   readonly subscriptSizing = input<"dynamic" | "fixed">("fixed");
 
+  /** Error shown below the field; empty while the selection is acceptable. */
+  readonly errorText = input<string>("");
+
+  /** Id of the error text, which the form field adds to the select's description. */
+  readonly errorId = input<string>("");
+
   /** Width utility class applied to the form field (e.g. "input-width-xl"). Defaults to filling the host. */
   readonly fieldClass = input<string>("width-full");
 
