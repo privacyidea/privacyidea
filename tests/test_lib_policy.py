@@ -1197,7 +1197,19 @@ class PolicyTestCase(MyTestCase):
                                                             resolver=user.resolver, user=user.login)
                     self.assertListEqual(expected, [policy["name"] for policy in policies], str(user))
 
+            # One policy object asks each resolver once for a user
             user = User("selfservice", "test_realm")
+            policy_object = PolicyClass()
+            with mock.patch.object(PasswdIdResolver, "getUserId", autospec=True,
+                                   side_effect=PasswdIdResolver.getUserId) as get_user_id:
+                for _ in range(2):
+                    policy_object.match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                                 user=user.login)
+                self.assertEqual(1, get_user_id.call_count)
+                PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                             user=user.login)
+                self.assertEqual(2, get_user_id.call_count)
+
             error = ResolverError("unreachable")
             with (mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error),
                   self.assertLogs("privacyidea.lib.policy", level="ERROR") as logs):

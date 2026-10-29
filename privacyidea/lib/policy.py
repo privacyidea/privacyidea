@@ -173,6 +173,7 @@ import copy
 import logging
 import re
 import traceback
+from dataclasses import dataclass
 from datetime import datetime
 from operator import itemgetter
 
@@ -208,6 +209,15 @@ from ..models import (Policy, db, save_config_timestamp, PolicyDescription, Poli
 from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ResolverLogin:
+    """
+    A login name in a resolver, the key for remembering whether the resolver contains the user.
+    """
+    resolver: str
+    login: str
 
 
 def _user_in_resolver(login: str, resolver_name: str) -> bool:
@@ -370,10 +380,13 @@ class PolicyClass:
     config object which contains the current set of policies.
 
     Hence, reloading the request-local config object also reloads the set of policies.
+
+    The object remembers whether a user is contained in a resolver checked for a policy with
+    ``check_all_resolvers``, so that each resolver is asked once per object, i.e. once per request.
     """
 
     def __init__(self):
-        pass
+        self._resolver_membership: dict[ResolverLogin, bool] = {}
 
     @property
     def policies(self):
@@ -559,7 +572,6 @@ class PolicyClass:
         if resolver is not None:
             new_policies = []
             user_resolvers = []
-            user_in_resolver = {}
             for policy in reduced_policies:
                 if policy.get("check_all_resolvers"):
                     if realm and user:
@@ -577,15 +589,17 @@ class PolicyClass:
                             # An excluded resolver is left out, as a realm or a user excluded with "!" is.
                             # A listed resolver only counts if the user is contained in it.
                             if value_found and not value_excluded:
-                                if reso not in user_in_resolver:
+                                key = ResolverLogin(resolver=reso, login=user)
+                                if key not in self._resolver_membership:
                                     try:
-                                        user_in_resolver[reso] = reso == resolver or _user_in_resolver(user, reso)
+                                        self._resolver_membership[key] = (reso == resolver
+                                                                          or _user_in_resolver(user, reso))
                                     except Exception as error:
                                         log.error(f"Could not check if the user {user!r} is contained in the "
                                                   f"resolver {reso!r} of the policy {policy.get('name')!r} with "
                                                   f"check_all_resolvers: {error}")
                                         raise
-                                if user_in_resolver[reso]:
+                                if self._resolver_membership[key]:
                                     new_policies.append(policy)
                                     break
                 elif not policy.get("resolver"):
