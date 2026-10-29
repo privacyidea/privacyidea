@@ -2,22 +2,25 @@
 Data transformation test for migration 4b810261d282
 v3.14.1: Restart the id sequences of internaluserattribute and tokeninfo after their highest id
 
-The data migrations 7d4e9b2c1a3f and a1e0ba6ad9dc insert rows without an id, so the database takes the id from the
-column default. privacyIDEA takes the id of a new row from the sequence of the table.
+A data migration that inserts rows without an id leaves the id to the column default, for example 7d4e9b2c1a3f on
+MariaDB. privacyIDEA takes the id of a new row from the sequence of the table, so that sequence can stay behind the
+inserted rows.
 
 upgrade()   — restarts internaluserattribute_seq and tokeninfo_seq at the id after the highest one of their table,
               on databases with sequences
 downgrade() — leaves the sequences where they are
 
 After the upgrade, new internal user attributes and token info rows can be added through the models next to the rows
-the data migrations inserted.
+that took their id from the column default.
 """
 
 import os
 
 import pytest
+from sqlalchemy import text
 
-from tests.migration_test_utils import MigrationTestBase
+from privacyidea.models.db import build_restart_sequence_sql
+from tests.migration_test_utils import MigrationTestBase, is_mariadb, is_oracle, is_postgres
 
 pytestmark = [
     pytest.mark.migration,
@@ -27,9 +30,8 @@ pytestmark = [
     ),
 ]
 
-# The revisions right before the data migrations that insert rows without an id
+# The revision right before the data migration that inserts internal user attributes without an id
 BEFORE_INTERNAL_USER_ATTRIBUTE_MIGRATION = "3cafe2771cdd"
-BEFORE_U2F_DEPRECATION_MIGRATION = "b1a2c3d4e5f6"
 
 
 class TestMigration4b810261d282(MigrationTestBase):
@@ -64,15 +66,26 @@ class TestMigration4b810261d282(MigrationTestBase):
 
     def test_upgrade_lets_the_model_add_token_info(self, flask_app):
         """
-        The marker rows that a1e0ba6ad9dc adds to tokeninfo for u2f tokens leave room for new token info rows added
-        through the model.
+        Token info rows that took the next ids of tokeninfo_seq from the column default, while the sequence stayed
+        behind them, leave room for new token info rows added through the model.
         """
+        if not (is_postgres() or is_oracle() or is_mariadb()):
+            pytest.skip("MySQL has no sequences, so every token info takes its id from AUTO_INCREMENT")
         engine = self._engine()
-        self._load_seed_and_upgrade_to(engine, BEFORE_U2F_DEPRECATION_MIGRATION)
-        token_ids = [9001, 9002, 9003]
+        self._load_seed_and_upgrade_to_parent(engine)
+        token_id = 9001
         self._insert_rows(engine, "token", [
-            {"id": token_id, "serial": f"U2F{token_id}", "tokentype": "u2f", "active": True}
-            for token_id in token_ids
+            {"id": token_id, "serial": f"U2F{token_id}", "tokentype": "deprecated", "active": False},
+        ])
+        # The sequence is in step with the table, then the marker rows of a deprecated u2f token take its next ids
+        next_id = self._fetch_scalar(engine, "SELECT COALESCE(MAX(id), 0) FROM tokeninfo") + 1
+        with engine.connect() as conn:
+            conn.execute(text(build_restart_sequence_sql("tokeninfo_seq", next_id, engine.dialect.name)))
+            conn.commit()
+        markers = {"original_tokentype": "u2f", "original_active": "1", "deprecated_in": "3.14"}
+        self._insert_rows(engine, "tokeninfo", [
+            {"id": next_id + offset, "token_id": token_id, "Key": key, "Value": value, "Type": "", "Description": ""}
+            for offset, (key, value) in enumerate(markers.items())
         ])
         token_info_count = self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo")
         engine.dispose()
@@ -81,13 +94,10 @@ class TestMigration4b810261d282(MigrationTestBase):
 
         from privacyidea.models import TokenInfo, db
         new_keys = ["note", "label", "owner_hint", "location"]
-        for token_id in token_ids:
-            for key in new_keys:
-                db.session.add(TokenInfo(token_id=token_id, Key=key, Value="value"))
-                db.session.commit()
+        for key in new_keys:
+            db.session.add(TokenInfo(token_id=token_id, Key=key, Value="value"))
+            db.session.commit()
 
         engine = self._engine()
-        markers_per_token = 3
-        expected = token_info_count + len(token_ids) * (markers_per_token + len(new_keys))
-        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo") == expected
+        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo") == token_info_count + len(new_keys)
         engine.dispose()
