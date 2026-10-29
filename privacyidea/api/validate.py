@@ -1456,8 +1456,9 @@ def _token_refusal(user: User) -> str | None:
     usability = token_usability(user)
     if not usability.usable:
         if usability.unusable:
+            # By serial, as the database returns the tokens in no fixed order
             refusal = "the user has no usable token: " + ", ".join(f"{serial} ({reason})" for serial, reason
-                                                                   in usability.unusable.items())
+                                                                   in sorted(usability.unusable.items()))
         else:
             refusal = "the user has no token"
         log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {refusal}. "
