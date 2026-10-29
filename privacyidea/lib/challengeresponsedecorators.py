@@ -182,7 +182,10 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
     """
     Check if the authentication request results in an autosync
 
-    Conditions: To do so we check for "otp1c" in the tokeninfo data.
+    Conditions: The token has a pending autoresync (has_pending_autoresync): it stored the first OTP value of an
+    autoresync in "otp1c" and waits for the next one. For HOTP the AutoResyncTimeout ("dueDate") must not have passed
+    yet, as the next value can no longer complete the autoresync afterwards; TOTP has no AutoResyncTimeout. Token types
+    without an autoresync never have a pending one.
 
     Policies: A policy defines that the token resync should be allowed this way.
     Note: The general config "autoresync" needs to be set anyway.
