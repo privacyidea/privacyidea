@@ -16,7 +16,7 @@ from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import ParameterError, PrivacyIDEAError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError, ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
@@ -34,6 +34,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import init_token, get_dynamic_policy_definitions
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
@@ -1195,6 +1196,14 @@ class PolicyTestCase(MyTestCase):
                     policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
                                                             resolver=user.resolver, user=user.login)
                     self.assertListEqual(expected, [policy["name"] for policy in policies], str(user))
+
+            user = User("selfservice", "test_realm")
+            error = ResolverError("unreachable")
+            with (mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error),
+                  self.assertLogs("privacyidea.lib.policy", level="ERROR") as logs):
+                self.assertRaises(ResolverError, PolicyClass().match_policies, scope=SCOPE.AUTHZ,
+                                  realm=user.realm, resolver=user.resolver, user=user.login)
+            self.assertIn(f"'reso2' of the policy 'checkAll' with check_all_resolvers: {error}", logs.output[0])
         finally:
             delete_policy("checkAll")
             delete_realm("test_realm")

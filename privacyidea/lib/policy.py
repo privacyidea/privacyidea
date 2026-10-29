@@ -575,7 +575,13 @@ class PolicyClass:
                             # A listed resolver only counts if the user is contained in it.
                             if value_found and not value_excluded:
                                 if reso not in user_in_resolver:
-                                    user_in_resolver[reso] = reso == resolver or _user_in_resolver(user, reso)
+                                    try:
+                                        user_in_resolver[reso] = reso == resolver or _user_in_resolver(user, reso)
+                                    except Exception as error:
+                                        log.error(f"Could not check if the user {user!r} is contained in the "
+                                                  f"resolver {reso!r} of the policy {policy.get('name')!r} with "
+                                                  f"check_all_resolvers: {error}")
+                                        raise
                                 if user_in_resolver[reso]:
                                     new_policies.append(policy)
                                     break
