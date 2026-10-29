@@ -94,6 +94,35 @@ class PasswordTokenClass(TokenClass):
     def get_class_prefix():
         return "PW"
 
+    @classmethod
+    def get_password_policy_actions(cls) -> tuple[str, str]:
+        """
+        Return the names of the enrollment policy actions, which define the length and the contents of a generated
+        password, e.g. ``("pw.length", "pw.contents")``. The prepolicy passes their values to the token in the
+        request parameters of the same names.
+        """
+        tokentype = cls.get_class_type()
+        return f"{tokentype}.length", f"{tokentype}.contents"
+
+    @classmethod
+    def get_password_policy_definitions(cls, length_desc: str, contents_desc: str) -> dict:
+        """
+        Return the definitions of the enrollment policy actions for the length and the contents of a generated
+        password.
+
+        :param length_desc: The description of the length action
+        :param contents_desc: The description of the contents action
+        :return: The policy definitions
+        """
+        length_action, contents_action = cls.get_password_policy_actions()
+        return {length_action: {'type': 'int',
+                                'value': list(range(1, 32)),
+                                'desc': length_desc,
+                                'group': GROUP.TOKEN},
+                contents_action: {'type': 'str',
+                                  'desc': contents_desc,
+                                  'group': GROUP.TOKEN}}
+
     @staticmethod
     @log_with(log)
     def get_class_info(key=None, ret='all'):
@@ -119,6 +148,13 @@ class PasswordTokenClass(TokenClass):
                'ui_enroll': [],
                'policy': {
                    SCOPE.ENROLL: {
+                       **PasswordTokenClass.get_password_policy_definitions(
+                           _("Set the length of the password of generated password tokens."),
+                           _("Specify the required "
+                             "contents of the password of a password token. "
+                             "(c)haracters, (n)umeric, "
+                             "(s)pecial. Use modifiers +/- or a list "
+                             "of allowed characters [1234567890]")),
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
                            'desc': _("The user may only have this maximum number of password tokens assigned."),
@@ -159,9 +195,7 @@ class PasswordTokenClass(TokenClass):
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
-            type_prefix = self.get_class_type()
-            length_param = f"{type_prefix}.length"
-            contents_param = f"{type_prefix}.contents"
+            length_param, contents_param = self.get_password_policy_actions()
             if length_param in param:
                 size = param[length_param]
                 del param[length_param]

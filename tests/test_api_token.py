@@ -21,6 +21,7 @@ import codecs
 import datetime
 import json
 from io import BytesIO
+import string
 import unittest
 from urllib.parse import quote, urlencode
 
@@ -49,11 +50,11 @@ from privacyidea.lib.error import ParameterError, ResolverError, ResourceNotFoun
 from privacyidea.lib.event import EventConfiguration, delete_event, set_event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, set_policy
+from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, get_policies, set_policy
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
-from privacyidea.lib.serviceid import set_serviceid
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway, set_smsgateway
 from privacyidea.lib.token import (
     add_tokeninfo,
@@ -4364,6 +4365,52 @@ class APITokenTestCase(MyApiTestCase):
             remove_token(other_token.get_serial())
             remove_token(own_token.get_serial())
             set_realm(self.realm1, [{"name": self.resolvername1}])
+
+    def test_64e_applspec_generated_password_follows_policies(self):
+        """The password of an application specific password token is generated according to the policies
+        applspec.length and applspec.contents. Request parameters with these names are ignored, so neither an
+        administrator nor a user can choose the password when the server is forced to generate it."""
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        set_serviceid("mail", "the service of the tokens below")
+        set_policy("admin_enroll", scope=SCOPE.ADMIN,
+                   action=f"enrollAPPLSPEC, applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
+        set_policy("user_enroll", scope=SCOPE.USER,
+                   action=f"enrollAPPLSPEC, applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
+        manipulated = {"applspec.length": "4", "applspec.contents": "[0]", "otpkey": "0000"}
+
+        def enroll(auth, data):
+            with self.app.test_request_context('/token/init', method='POST',
+                                               data={"type": "applspec", "service_id": "mail", **data},
+                                               headers={'Authorization': auth}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                remove_token(res.json["detail"]["serial"])
+                return res.json["detail"]["password"]
+
+        try:
+            # Without a policy the default of 23 characters is used, also when the request asks for something else
+            for auth, data in ((self.at, {"user": "selfservice", "realm": self.realm1, **manipulated}),
+                               (self.at_user, manipulated)):
+                password = enroll(auth, data)
+                self.assertEqual(23, len(password), password)
+                self.assertNotEqual("0000", password)
+                self.assertTrue(set(password) - {"0"}, password)
+
+            # The policies define the length and the contents
+            set_policy("applspec_password", scope=SCOPE.ENROLL, action="applspec.length=16, applspec.contents=-s")
+            allowed_characters = set(string.ascii_letters + string.digits)
+            for auth, data in ((self.at, {"user": "selfservice", "realm": self.realm1}),
+                               (self.at_user, {}),
+                               (self.at_user, manipulated)):
+                password = enroll(auth, data)
+                self.assertEqual(16, len(password), password)
+                self.assertTrue(set(password) <= allowed_characters, password)
+        finally:
+            for name in ("admin_enroll", "user_enroll", "applspec_password"):
+                if get_policies(name=name):
+                    delete_policy(name)
+            delete_serviceid("mail")
 
     def test_65_bulk_unassign(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)

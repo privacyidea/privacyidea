@@ -81,6 +81,8 @@ class PolicyAction:
     REGISTRATIONCODE_CONTENTS = "registration.contents"
     PASSWORD_LENGTH = "pw.length"  # nosec B105 # policy name
     PASSWORD_CONTENTS = "pw.contents"  # nosec B105 # policy name
+    APPLSPEC_LENGTH = "applspec.length"
+    APPLSPEC_CONTENTS = "applspec.contents"
     REMOTE_USER = "remote_user"
     REQUIREDEMAIL = "requiredemail"
     RESET = "reset"

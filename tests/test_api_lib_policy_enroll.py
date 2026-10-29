@@ -68,11 +68,12 @@ from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, REMOTE_USER,
                                     AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL,
+                                    get_static_policy_definitions)
 from privacyidea.lib.realm import delete_realm
 from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
-from privacyidea.lib.token import (init_token, get_tokens, remove_token,
+from privacyidea.lib.token import (get_dynamic_policy_definitions, init_token, get_tokens, remove_token,
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -1165,6 +1166,86 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # delete policy
         delete_policy("pw_length")
         delete_policy("pw_contents")
+
+    def test_37a_init_applspec_length_contents(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST',
+                                 data={'type': "applspec", "genkey": 1},
+                                 headers={})
+        env = builder.get_environ()
+        req = Request(env)
+
+        # Without a policy the defaults of the token class are set
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "applspec", "genkey": 1}
+        init_token_length_contents(req)
+        self.assertEqual(23, req.all_data.get("applspec.length"))
+        self.assertEqual("cn", req.all_data.get("applspec.contents"))
+
+        set_policy(name="applspec_length", scope=SCOPE.ENROLL, action="applspec.length=10")
+        set_policy(name="applspec_contents", scope=SCOPE.ENROLL, action="applspec.contents=-s")
+        try:
+            req.all_data = {"user": "cornelius", "realm": "home", "type": "applspec", "genkey": 1}
+            init_token_length_contents(req)
+            self.assertEqual("10", req.all_data.get("applspec.length"))
+            self.assertEqual("-s", req.all_data.get("applspec.contents"))
+
+            # The policies of the other password token types do not apply to the applspec token
+            self.assertNotIn("pw.length", req.all_data)
+            self.assertNotIn("pw.contents", req.all_data)
+        finally:
+            delete_policy("applspec_length")
+            delete_policy("applspec_contents")
+
+    def test_37b_init_length_contents_ignores_request_parameters(self):
+        # The length and contents of a generated password are only defined by the policies or the defaults of the
+        # token class. Request parameters with these names must not reach the token, otherwise the user enrolling
+        # the token chooses the password.
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST', data={}, headers={})
+        req = Request(builder.get_environ())
+
+        from privacyidea.lib.tokens.passwordtoken import (DEFAULT_LENGTH as PW_DEFAULT_LENGTH,
+                                                          DEFAULT_CONTENTS as PW_DEFAULT_CONTENTS)
+        expected = {"pw": (PW_DEFAULT_LENGTH, PW_DEFAULT_CONTENTS),
+                    "registration": (DEFAULT_LENGTH, DEFAULT_CONTENTS),
+                    "applspec": (23, "cn")}
+        for tokentype, (length, contents) in expected.items():
+            req.all_data = {"user": "cornelius", "realm": "home", "type": tokentype, "genkey": 1,
+                            f"{tokentype}.length": "4", f"{tokentype}.contents": "[0]"}
+            init_token_length_contents(req)
+            self.assertEqual(length, req.all_data.get(f"{tokentype}.length"), tokentype)
+            self.assertEqual(contents, req.all_data.get(f"{tokentype}.contents"), tokentype)
+
+        # The token type is not case-sensitive
+        req.all_data = {"user": "cornelius", "realm": "home", "type": "APPLSPEC", "genkey": 1,
+                        "applspec.length": "4", "applspec.contents": "[0]"}
+        init_token_length_contents(req)
+        self.assertEqual(23, req.all_data.get("applspec.length"))
+        self.assertEqual("cn", req.all_data.get("applspec.contents"))
+
+        # A policy also wins over the request parameters
+        set_policy(name="applspec_length", scope=SCOPE.ENROLL, action="applspec.length=12")
+        set_policy(name="applspec_contents", scope=SCOPE.ENROLL, action="applspec.contents=-s")
+        try:
+            req.all_data = {"user": "cornelius", "realm": "home", "type": "applspec", "genkey": 1,
+                            "applspec.length": "4", "applspec.contents": "[0]"}
+            init_token_length_contents(req)
+            self.assertEqual("12", req.all_data.get("applspec.length"))
+            self.assertEqual("-s", req.all_data.get("applspec.contents"))
+        finally:
+            delete_policy("applspec_length")
+            delete_policy("applspec_contents")
+
+    def test_37c_length_contents_policy_definitions(self):
+        # Every token type that generates a password offers the policies for the length and contents
+        definitions = get_static_policy_definitions(SCOPE.ENROLL) | get_dynamic_policy_definitions(SCOPE.ENROLL)
+        for tokentype in ("pw", "registration", "applspec"):
+            self.assertTrue(f"{tokentype}.length" in definitions, tokentype)
+            self.assertTrue(f"{tokentype}.contents" in definitions, tokentype)
 
     def test_50_enroll_ca_connector(self):
         g.logged_in_user = {"username": "admin1",
