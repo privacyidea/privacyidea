@@ -27,6 +27,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { checkAllResolversWithoutResolver, PolicyDetail } from "@services/policies/policies.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-edit-user-conditions",
@@ -37,6 +38,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 })
 export class EditUserConditionsComponent {
   readonly realmService: RealmServiceInterface = inject(RealmService);
+  readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
@@ -66,21 +68,28 @@ export class EditUserConditionsComponent {
 
   readonly availableResolvers = computed(() => {
     const realms = this.realmService.realms();
-    // Without a selected realm, offer the resolvers of every realm. A resolver that is in no realm has no users a
-    // policy could apply to.
-    const realmNames = this.selectedRealms().length > 0 ? this.selectedRealms() : Object.keys(realms);
+    const selectedRealms = this.selectedRealms();
+    const realmNames = selectedRealms.length > 0 ? selectedRealms : Object.keys(realms);
     const resolversSet = new Set<string>();
     realmNames.forEach((realmName) => {
       realms[realmName]?.resolver.forEach((r) => resolversSet.add(r.name));
     });
+    if (selectedRealms.length === 0) {
+      // Without a selected realm, offer every resolver. Without the right to list the resolvers, the list is empty
+      // and only the resolvers in a realm are known.
+      this.resolverService.resolverOptions().forEach((name) => resolversSet.add(name));
+    }
     return Array.from(resolversSet);
   });
 
-  readonly selectResolverHint = computed(() =>
-    this.selectedRealms().length > 0
-      ? $localize`:@@policy.resolversOfSelectedRealms:Lists the resolvers of the selected realms.`
-      : $localize`:@@policy.resolversOfAllRealms:Lists the resolvers of all realms. A resolver that is in no realm is not listed.`
-  );
+  readonly selectResolverHint = computed(() => {
+    if (this.selectedRealms().length > 0) {
+      return $localize`:@@policy.resolversOfSelectedRealms:Lists the resolvers of the selected realms.`;
+    }
+    return this.resolverService.resolverOptions().length > 0
+      ? $localize`:@@policy.allResolvers:Lists all resolvers.`
+      : $localize`:@@policy.resolversOfAllRealms:Lists the resolvers of all realms. A resolver that is in no realm is not listed.`;
+  });
 
   readonly selectResolverTooltip = computed(() =>
     this.availableResolvers().length === 0

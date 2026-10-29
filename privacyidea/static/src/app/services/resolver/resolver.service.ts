@@ -225,7 +225,11 @@ export class ResolverService implements ResolverServiceInterface {
 
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   resolversResource = httpResource<PiResponse<Resolvers>>(() => {
-    if (!this.contentService.onAnyUsersRoute() && !this.contentService.onLockedUsers()) {
+    if (
+      !this.contentService.onAnyUsersRoute() &&
+      !this.contentService.onLockedUsers() &&
+      !this.contentService.onPolicies()
+    ) {
       return undefined;
     }
     if (!this.authService.actionAllowed("resolverread")) {

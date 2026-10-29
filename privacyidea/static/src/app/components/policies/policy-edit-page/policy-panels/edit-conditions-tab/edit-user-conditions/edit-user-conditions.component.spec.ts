@@ -19,7 +19,9 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
 import { MockRealmService } from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EditUserConditionsComponent } from "./edit-user-conditions.component";
 
 describe("EditUserConditionsComponent", () => {
@@ -29,7 +31,10 @@ describe("EditUserConditionsComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditUserConditionsComponent],
-      providers: [{ provide: RealmService, useClass: MockRealmService }]
+      providers: [
+        { provide: RealmService, useClass: MockRealmService },
+        { provide: ResolverService, useClass: MockResolverService }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditUserConditionsComponent);
@@ -85,7 +90,15 @@ describe("EditUserConditionsComponent", () => {
       });
     });
 
-    it("should offer the resolvers of every realm while no realm is selected", () => {
+    it("should offer every resolver while no realm is selected", () => {
+      const resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
+      resolverService.setResolverOptions(["resolver1", "resolver2", "resolver3", "unused"]);
+      fixture.componentRef.setInput("policy", { realm: [], resolver: [] });
+      expect(component.availableResolvers().sort()).toEqual(["resolver1", "resolver2", "resolver3", "unused"]);
+      expect(component.selectResolverHint()).toBe("Lists all resolvers.");
+    });
+
+    it("should offer the resolvers of every realm while no realm is selected and the resolvers are not listed", () => {
       fixture.componentRef.setInput("policy", { realm: [], resolver: [] });
       expect(component.availableResolvers().sort()).toEqual(["resolver1", "resolver2", "resolver3"]);
       expect(component.selectResolverHint()).toBe(
@@ -94,6 +107,8 @@ describe("EditUserConditionsComponent", () => {
     });
 
     it("should offer the resolvers of the selected realms", () => {
+      const resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
+      resolverService.setResolverOptions(["resolver1", "resolver2", "resolver3", "unused"]);
       fixture.componentRef.setInput("policy", { realm: ["realm2"], resolver: [] });
       expect(component.availableResolvers().sort()).toEqual(["resolver2", "resolver3"]);
       expect(component.selectResolverHint()).toBe("Lists the resolvers of the selected realms.");
