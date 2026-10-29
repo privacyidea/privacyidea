@@ -342,14 +342,16 @@ class UserLockStateTestCase(MyTestCase):
         self.assertEqual(1, db.session.query(BlockList).count())
 
     def test_block_ip_stores_an_ipv4_mapped_address_the_way_the_pre_check_sees_it(self):
-        # A dual-stack listener puts an IPv4 client in REMOTE_ADDR as ::ffff:192.0.2.1, and that is what
-        # g.client_ip carries into the pre-check. "Canonical" therefore has to mean netaddr's rendering,
-        # which keeps that notation - ipaddress would store ::ffff:c000:201, which the lookup never matches
-        # and which no admin recognizes in the blocklist next to the same client's authentication log.
-        entry = block_ip("::ffff:192.0.2.1", duration_seconds=300)
-        self.assertEqual("::ffff:192.0.2.1", entry["identifier"])
-        self.assertEqual("::ffff:192.0.2.1", db.session.query(BlockList).one().ip)
-        self.assertTrue(is_ip_blocked("::ffff:192.0.2.1"))
+        # A dual-stack listener puts an IPv4 client in REMOTE_ADDR as ::ffff:192.0.2.1, and its client IP is
+        # 192.0.2.1. A block of either spelling is stored under the IPv4 address and applies to both.
+        for blocked, ipv4, mapped in (("::ffff:192.0.2.1", "192.0.2.1", "::ffff:192.0.2.1"),
+                                      ("192.0.2.2", "192.0.2.2", "::ffff:192.0.2.2")):
+            with self.subTest(blocked=blocked):
+                entry = block_ip(blocked, duration_seconds=300)
+                self.assertEqual(ipv4, entry["identifier"])
+                self.assertTrue(is_ip_blocked(ipv4))
+                self.assertTrue(is_ip_blocked(mapped))
+        self.assertSetEqual({"192.0.2.1", "192.0.2.2"}, {row.ip for row in db.session.query(BlockList)})
 
     # --- the lock cause --------------------------------------------------------
 

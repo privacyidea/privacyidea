@@ -46,6 +46,7 @@ from privacyidea.lib.conditional_access.context import CAContext
 from privacyidea.lib.conditional_access.outcome_log import outcome_for_stage
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.utils import safe_format as _safe_format
+from privacyidea.lib.utils import canonical_client_ip
 from privacyidea.models import (AuthenticationLog, BlockList, ConditionalAccessOutcome, ConditionalAccessPolicy,
                                 ConditionalAccessPolicyCounterType, ConditionalAccessPolicyStage,
                                 ConditionalAccessStageAction, UserLockState)
@@ -1288,18 +1289,17 @@ def canonical_block_identifier(identifier: str) -> str | None:
     configured - while an administrator types the address by hand. Every path that names a row by its
     identifier goes through here, so only one spelling is ever stored or looked up.
 
-    :func:`~privacyidea.lib.utils.get_client_ip_info` is the reference: the address it selects through a proxy
-    override is rendered by ``netaddr``, so that is the rendering the key takes. It also keeps the blocklist
-    and the authentication log naming one client the same way, and matches what the operating system puts in
-    ``REMOTE_ADDR``: ``netaddr`` keeps the ``::ffff:192.0.2.1`` notation of an IPv4-mapped address, where
-    ``ipaddress`` would render the same address ``::ffff:c000:201``.
+    :func:`~privacyidea.lib.utils.get_client_ip_info` is the reference: both use
+    :func:`~privacyidea.lib.utils.canonical_client_ip`, so the blocklist and the authentication log name one
+    client the same way. An IPv4-mapped address (``::ffff:192.0.2.1``) is stored as the IPv4 address it stands
+    for (``192.0.2.1``), as that is the client IP of such a client.
 
     ``None`` rather than the value unchanged, so a caller taking an address from an administrator can refuse
     it (:func:`~privacyidea.lib.conditional_access.state.block_ip`) while one reading the table can fall back
     to the raw value and stay able to find - and delete - a row some other path filed under it.
     """
     try:
-        return str(IPAddress(identifier))
+        return canonical_client_ip(IPAddress(identifier))
     except (AddrFormatError, ValueError):
         return None
 

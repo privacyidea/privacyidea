@@ -26,6 +26,27 @@
   token settings *Default Time Shift* of TOTP tokens (`totp.timeShift`), the U2F *AppID* (`u2f.appId`) and
   `webauthn.appid`, which nothing read. Values that are already stored stay in the database and are ignored.
 
+* **A proxy entry without a mapping target now also maps IPv6 clients.** An
+  [*Override Authorization Client*](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client)
+  entry such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
+  documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
+
+* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy path.** The entries
+  after it are recorded in the authentication log but never become the client IP. If your proxy writes such a value,
+  the client IP of these requests is the proxy's address, so configure the proxy to write the client address
+  instead. Entries with a port (`192.0.2.43:51234`) or in brackets (`[2001:db8::1]`) are now read as addresses. How
+  privacyIDEA determines the client IP and how to configure your proxies for it is described in
+  [Override Authorization Client](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client).
+
+* **The client IP of an IPv4 client is now always its IPv4 address.** A dual-stack listener reports an IPv4 client
+  as `::ffff:10.0.0.5`. privacyIDEA now uses `10.0.0.5` as the client IP, with and without
+  *Override Authorization Client*. The authentication log keeps the reported address in `peer_ip` and `ip_chain`.
+  IPv4 networks in *Override Authorization Client* now also contain the mapped form of a proxy address. Policies and
+  event handler conditions with an IPv6 network such as `::/0` no longer contain these clients. If your audit log
+  shows client IPs that start with `::ffff:`, check these policies and event handlers. IP blocks of addresses that
+  start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
+  start again for these clients.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
