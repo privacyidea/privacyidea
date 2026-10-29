@@ -7,7 +7,7 @@ MariaDB. privacyIDEA takes the id of a new row from the sequence of the table, s
 inserted rows.
 
 upgrade()   — restarts internaluserattribute_seq and tokeninfo_seq at the id after the highest one of their table,
-              on databases with sequences
+              when the sequence is behind the table, on databases with sequences
 downgrade() — leaves the sequences where they are
 
 After the upgrade, new internal user attributes and token info rows can be added through the models next to the rows
@@ -42,6 +42,9 @@ class TestMigration4b810261d282(MigrationTestBase):
         """
         The fido2_user_id rows that 7d4e9b2c1a3f moves into internaluserattribute leave room for new internal user
         attributes added through the model.
+
+        Only MariaDB has the gap here, because its id column takes the id from AUTO_INCREMENT. On PostgreSQL and
+        Oracle the column default is the sequence, and MySQL has no sequences.
         """
         engine = self._engine()
         self._load_seed_and_upgrade_to(engine, BEFORE_INTERNAL_USER_ATTRIBUTE_MIGRATION)
@@ -100,4 +103,53 @@ class TestMigration4b810261d282(MigrationTestBase):
 
         engine = self._engine()
         assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM tokeninfo") == token_info_count + len(new_keys)
+        engine.dispose()
+
+    def test_upgrade_keeps_a_sequence_that_is_ahead(self, flask_app):
+        """
+        A sequence that is already past the highest id of its table keeps its position, so the ids that a writer took
+        from it during the upgrade are not handed out again.
+        """
+        if not (is_postgres() or is_oracle() or is_mariadb()):
+            pytest.skip("MySQL has no sequences")
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        token_id = 9001
+        self._insert_rows(engine, "token", [
+            {"id": token_id, "serial": f"HOTP{token_id}", "tokentype": "hotp", "active": True},
+        ])
+        ahead_id = self._fetch_scalar(engine, "SELECT COALESCE(MAX(id), 0) FROM tokeninfo") + 100
+        with engine.connect() as conn:
+            conn.execute(text(build_restart_sequence_sql("tokeninfo_seq", ahead_id, engine.dialect.name)))
+            conn.commit()
+        engine.dispose()
+
+        self._upgrade()
+
+        from privacyidea.models import TokenInfo, db
+        db.session.add(TokenInfo(token_id=token_id, Key="note", Value="value"))
+        db.session.commit()
+
+        engine = self._engine()
+        new_id = self._fetch_scalar(engine, "SELECT id FROM tokeninfo WHERE token_id = :tid", {"tid": token_id})
+        assert new_id >= ahead_id
+        engine.dispose()
+
+    def test_upgrade_skips_a_missing_sequence(self, flask_app):
+        """A table whose sequence does not exist is left as it is, and the upgrade finishes."""
+        if not (is_postgres() or is_oracle() or is_mariadb()):
+            pytest.skip("MySQL has no sequences")
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        # On PostgreSQL the id default of internaluserattribute depends on the sequence
+        cascade = " CASCADE" if is_postgres() else ""
+        with engine.connect() as conn:
+            conn.execute(text(f"DROP SEQUENCE internaluserattribute_seq{cascade}"))
+            conn.commit()
+        engine.dispose()
+
+        self._upgrade()
+
+        engine = self._engine()
+        assert self._fetch_scalar(engine, "SELECT version_num FROM alembic_version") == self.REVISION
         engine.dispose()
