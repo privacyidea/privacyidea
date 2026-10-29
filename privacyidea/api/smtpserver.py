@@ -43,7 +43,8 @@ from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
-from ..lib.crypto import censor_dict
+from ..lib.crypto import censor_dict, is_censored
+from ..lib.error import ParameterError
 from ..lib.utils import is_true
 
 #: SMTP server fields that must never be returned in clear text by the API.
@@ -194,6 +195,11 @@ def test():
     :jsonparam private_key: PEM-encoded S/MIME private key.
     :jsonparam private_key_password: passphrase for the S/MIME private key.
     :jsonparam certificate: PEM-encoded S/MIME certificate.
+
+    If ``password`` or ``private_key_password`` is the ``__CENSORED__``
+    placeholder returned by ``GET /smtpserver/``, the stored value of the
+    saved configuration ``identifier`` is used instead.
+
     :status 200: ``True`` if the message was delivered successfully,
         ``False`` otherwise.
     """
@@ -212,6 +218,17 @@ def test():
     private_key = get_optional(param, "private_key", default="")
     private_key_password = get_optional(param, "private_key_password", default="")
     certificate = get_optional(param, "certificate", default="")
+
+    # The WebUI echoes the censored placeholder back for secrets it never received.
+    # Sending that to the mail server would fail the login, so use the stored secret.
+    if is_censored(password) or is_censored(private_key_password):
+        stored = list_smtpservers(identifier=identifier).get(identifier)
+        if not stored:
+            raise ParameterError(f"No saved SMTP server '{identifier}' to take the censored secrets from.")
+        if is_censored(password):
+            password = stored.get("password") or ""
+        if is_censored(private_key_password):
+            private_key_password = stored.get("private_key_password") or ""
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,

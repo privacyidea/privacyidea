@@ -1,4 +1,5 @@
 import email
+from unittest import mock
 
 from privacyidea.lib.crypto import encryptPassword, CENSORED
 from . import smtpmock
@@ -135,6 +136,37 @@ class SMTPServerTestCase(MyApiTestCase):
         res = self._send_test_email()
         assert res.status_code == 200
         assert res.json["result"]["value"] is True
+
+    def test_send_test_email_with_censored_password(self):
+        """A censored password in the test request is replaced by the stored one."""
+        self._create_server()
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        with mock.patch("smtplib.SMTP.login", return_value=(235, b"OK")) as login:
+            res = self._send_test_email(extra_data={"identifier": "server1", "password": CENSORED})
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
+        login.assert_called_once_with("cornelius", "secret")
+
+    def test_send_test_email_with_censored_private_key_password(self):
+        """A censored private key password is replaced by the stored one."""
+        self._create_server(extra_data={"private_key_password": "pkpass"})
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        with mock.patch("privacyidea.lib.smtpserver.serialization.load_pem_private_key",
+                        side_effect=ValueError("no key")) as load_key:
+            self._send_test_email(extra_data={"identifier": "server1",
+                                              "smime": True,
+                                              "private_key": "tests/testdata/ca/cakey.pem",
+                                              "certificate": "tests/testdata/ca/cacert.pem",
+                                              "private_key_password": CENSORED})
+        load_key.assert_called_once()
+        assert load_key.call_args.args[1] == b"pkpass"
+
+    def test_send_test_email_with_censored_password_unknown_server(self):
+        """A censored password without a saved server is rejected, not sent."""
+        with mock.patch("smtplib.SMTP.login") as login:
+            res = self._send_test_email(extra_data={"identifier": "unknown", "password": CENSORED})
+        assert res.status_code == 400
+        login.assert_not_called()
 
     def test_send_smime_email(self):
         """Sending an S/MIME signed test email succeeds."""
