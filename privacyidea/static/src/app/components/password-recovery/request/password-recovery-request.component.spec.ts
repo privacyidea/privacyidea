@@ -118,6 +118,20 @@ describe("PasswordRecoveryRequestComponent", () => {
     expect(component.errorMessage()).toBe("The email does not match the users email.");
   });
 
+  it("shows the generic message if the server sends no message", () => {
+    recoverService.requestRecoveryCode.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    component.username.set("alice");
+    component.email.set("alice@example.com");
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component.errorMessage()).toBe("The recovery email could not be sent.");
+    expect(fixture.nativeElement.querySelector("[role=alert]").textContent).toContain(
+      "The recovery email could not be sent."
+    );
+  });
+
   it("does not submit an incomplete form", () => {
     component.onSubmit();
     expect(recoverService.requestRecoveryCode).not.toHaveBeenCalled();

@@ -39,7 +39,7 @@ $border-radius: var(--border-radius);
     overflow-y: auto;
     width: 100%;
 
-    // Password recovery pages grow from the login height on route entry.
+    // The password recovery pages show their instructions above the messages and need more room.
     &.login-message-container--tall {
       height: 146px;
     }
@@ -79,20 +79,5 @@ $border-radius: var(--border-radius);
   .reset-btn.margin-top-16,
   .passkey-btn.margin-top-16 {
     margin-top: 0;
-  }
-}
-
-@keyframes login-message-grow {
-  from {
-    height: 73px;
-  }
-  to {
-    height: 146px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-container .login-message-container--tall {
-    animation: none;
   }
 }
