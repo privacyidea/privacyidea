@@ -175,6 +175,22 @@ describe("NewSmtpServerComponent", () => {
       expect(component.hasChanges).toBe(false);
     });
 
+    it.each([
+      ["tls", "Use StartTLS"],
+      ["smime", "S/MIME signing"],
+      ["dont_send_on_error", "Don't send on signing error"]
+    ] as const)("should mark the form dirty when the %s checkbox is toggled", (field, label) => {
+      const checkbox = Array.from(fixture.nativeElement.querySelectorAll("mat-checkbox") as NodeListOf<HTMLElement>)
+        .find((element) => element.textContent?.trim() === label);
+      const before = component.smtpModel()[field];
+
+      checkbox!.querySelector("input")!.click();
+      fixture.detectChanges();
+
+      expect(component.smtpModel()[field]).toBe(!before);
+      expect(component.hasChanges).toBe(true);
+    });
+
     describe("onCancel", () => {
       let mockSaveExitDialogRef: { afterClosed: jest.Mock };
 

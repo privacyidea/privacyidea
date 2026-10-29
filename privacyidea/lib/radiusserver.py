@@ -48,7 +48,7 @@ from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
 from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import fetch_one_resource, to_bytes
+from privacyidea.lib.utils import fetch_one_resource, to_bytes, validate_path_identifier
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
@@ -251,6 +251,7 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
     :param options: Additional options for the RADIUS server
     :return: The Id of the database object
     """
+    validate_path_identifier(identifier, "RADIUS server")
     existing_server = db.session.scalars(select(RADIUSServerDB).filter_by(identifier=identifier)).one_or_none()
 
     encrypted_secret = encryptPassword(secret)
