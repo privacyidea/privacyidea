@@ -83,6 +83,12 @@
   );
 }
 
+// Material fades the box's frame and fill over 90 ms, but the row behind it changes colour at once. Left alone, the
+// box lags the row by a visible fraction of a second whenever the pointer or the keyboard moves between rows.
+.mat-mdc-option .mat-pseudo-checkbox {
+  transition: none;
+}
+
 // Options of the user autocomplete: a surface-step row whose hover and keyboard-active states
 // are the --sky-bg tint and whose selected row is the primary-light state layer with white text.
 // These are Material's own tokens, so they win whatever order the stylesheets load in.
