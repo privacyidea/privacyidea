@@ -727,7 +727,8 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # Check that we do not have a log message (action_detail) regarding the max tokens in the audit
         audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
         self.assertIsNotNone(audit_entry)
-        self.assertFalse(audit_entry["action_detail"].startswith("ERR303: The number of "), audit_entry)
+        # An empty action_detail is None on Oracle
+        self.assertFalse((audit_entry["action_detail"] or "").startswith("ERR303: The number of "), audit_entry)
         self.assertEqual(audit_entry["authentication"], AUTH_RESPONSE.ACCEPT, audit_entry)
         self.assertEqual(audit_entry["success"], 1, audit_entry)
 
