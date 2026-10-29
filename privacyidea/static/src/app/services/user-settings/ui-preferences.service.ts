@@ -23,7 +23,6 @@ import {
   isKnownLocale,
   localeAttempted,
   localeFromPath,
-  localeSegmentFromPath,
   localeTargetUrl,
   markLocaleAttempt,
   normalizeLocale,
@@ -189,11 +188,13 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
    * Aligns the URL with the bundle that is actually running. A path asking for a locale the
    * server did not serve leaves the app on a route the router cannot resolve -- and a
    * logged-in principal then ends up on the landing page instead of the page they asked for.
+   * A path without a locale segment asks for the source-locale bundle, so a link like the one in the
+   * password recovery email (/app/v2/reset/...) opened with another preferred language gets the locale
+   * added to find its route.
    * Runs before the first navigation, so the requested page survives the correction.
    */
   public normalizeLocaleUrl(): void {
-    const requested = localeSegmentFromPath();
-    if (requested === null || requested === this.currentLocale) {
+    if (localeFromPath() === this.currentLocale) {
       return;
     }
     this.navigate(localeTargetUrl(this.currentLocale));
