@@ -91,17 +91,22 @@ export class EditUserConditionsComponent {
   });
 
   readonly availableResolvers = computed(() => {
-    const selectedRealms = this.selectedRealms();
-    if (selectedRealms.length === 0) {
-      return this.resolverService.resolverOptions();
-    }
     const realms = this.realmService.realms();
+    // Without a selected realm, offer the resolvers of every realm. A resolver that is in no realm has no users a
+    // policy could apply to.
+    const realmNames = this.selectedRealms().length > 0 ? this.selectedRealms() : Object.keys(realms);
     const resolversSet = new Set<string>();
-    selectedRealms.forEach((realmName) => {
+    realmNames.forEach((realmName) => {
       realms[realmName]?.resolver.forEach((r) => resolversSet.add(r.name));
     });
     return Array.from(resolversSet);
   });
+
+  readonly selectResolverHint = computed(() =>
+    this.selectedRealms().length > 0
+      ? $localize`:@@policy.resolversOfSelectedRealms:Lists the resolvers of the selected realms.`
+      : $localize`:@@policy.resolversOfAllRealms:Lists the resolvers of all realms. A resolver that is in no realm is not listed.`
+  );
 
   readonly selectResolverTooltip = computed(() =>
     this.availableResolvers().length === 0

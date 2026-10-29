@@ -34,16 +34,16 @@
   </app-multi-select-only>
 
   <app-multi-select-only
-    class="margin-bottom-16"
-    fieldClass="input-width-xl"
+    fieldClass="input-width-xl margin-bottom-16"
     label="Select Resolvers"
     [items]="availableResolvers()"
     [selectedItems]="selectedResolvers()"
     [tooltipText]="selectResolverTooltip()"
+    [hint]="selectResolverHint()"
     (selectionChange)="selectResolver($event)">
   </app-multi-select-only>
 
-  <div class="flex-column check-all-resolvers">
+  <div class="flex-column margin-bottom-16 check-all-resolvers">
     <mat-checkbox
       [checked]="checkAllResolvers()"
       [disabled]="selectedResolvers().length === 0 && !checkAllResolvers()"

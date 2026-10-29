@@ -77,6 +77,37 @@ describe("EditUserConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith({ user_case_insensitive: true });
   });
 
+  describe("available resolvers", () => {
+    const realmWith = (id: number, ...names: string[]) => ({
+      default: false,
+      id,
+      option: "",
+      resolver: names.map((name) => ({ name, node: "", type: "passwdresolver", priority: null }))
+    });
+
+    beforeEach(() => {
+      const realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
+      realmService.realms.set({
+        realm1: realmWith(1, "resolver1", "resolver2"),
+        realm2: realmWith(2, "resolver2", "resolver3")
+      });
+    });
+
+    it("should offer the resolvers of every realm while no realm is selected", () => {
+      fixture.componentRef.setInput("policy", { realm: [], resolver: [] });
+      expect(component.availableResolvers().sort()).toEqual(["resolver1", "resolver2", "resolver3"]);
+      expect(component.selectResolverHint()).toBe(
+        "Lists the resolvers of all realms. A resolver that is in no realm is not listed."
+      );
+    });
+
+    it("should offer the resolvers of the selected realms", () => {
+      fixture.componentRef.setInput("policy", { realm: ["realm2"], resolver: [] });
+      expect(component.availableResolvers().sort()).toEqual(["resolver2", "resolver3"]);
+      expect(component.selectResolverHint()).toBe("Lists the resolvers of the selected realms.");
+    });
+  });
+
   describe("check all resolvers", () => {
     const checkbox = (): HTMLInputElement =>
       fixture.nativeElement.querySelector(".check-all-resolvers input[type='checkbox']");
