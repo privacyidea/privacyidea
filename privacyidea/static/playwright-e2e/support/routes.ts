@@ -18,7 +18,8 @@
  **/
 
 // Every admin page the suite visits, relative to the app's base URL. Detail pages that need an existing
-// record are not listed; the forms below ("new"/"create") cover their templates.
+// record are not listed; the forms below ("new"/"create") cover their templates. src/app/route-titles.spec.ts
+// fails when an admin page that needs no record is missing here.
 
 export interface PageRoute {
   name: string;

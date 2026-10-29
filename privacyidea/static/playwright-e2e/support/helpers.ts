@@ -23,10 +23,20 @@ import { expect, Page } from "@playwright/test";
 export async function openPage(page: Page, path: string): Promise<void> {
   await page.goto(path, { waitUntil: "networkidle" });
   await expectAdminPage(page);
-  // Loading indicators come and go with the data; a page measured while one shows is not the settled page.
+  await settleContent(page);
+}
+
+// Waits until the page that is loaded has drawn its content, then makes it wear the emulated theme. Loading indicators
+// come and go with the data; a page measured while one shows is not the settled page.
+export async function settleContent(page: Page): Promise<void> {
   await expect(page.locator("mat-spinner, mat-progress-spinner, mat-progress-bar")).toHaveCount(0, { timeout: 15_000 });
   await settle(page);
   await forceTheme(page);
+}
+
+// How far the page itself scrolls sideways, in CSS px.
+export async function sideways(page: Page): Promise<number> {
+  return page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 }
 
 // Asserts the page is an admin page and not the login a lost session redirects to, which would pass every check for
@@ -89,7 +99,7 @@ export async function settle(page: Page): Promise<void> {
 // For a page that is a table page: whether it shows its table (true) or the panel of an empty or failed list (false).
 // A page with neither has lost its content, which fails the test instead of skipping it.
 export async function expectTableOrState(page: Page): Promise<boolean> {
-  const table = await hasTable(page);
+  const table = await showsTable(page);
   if (!table) {
     expect(
       await page.locator(".table-state").count(),
@@ -106,7 +116,7 @@ export interface TableBox {
   rows: number;
 }
 
-export async function hasTable(page: Page): Promise<boolean> {
+export async function showsTable(page: Page): Promise<boolean> {
   return (await page.locator(".table-scroll-region table").count()) > 0;
 }
 
@@ -146,6 +156,25 @@ export async function applyFilter(page: Page, text: string): Promise<void> {
   const input = filterInput(page);
   await input.fill(text);
   await input.press("Enter");
+}
+
+// A filter that matches nothing. A search is itself audited with the serial it names, so the audit filter uses a
+// keyword no request carries. The server-side filters read "keyword: value" entries and ignore plain text; the
+// blocklist matches plain text against every column.
+const NO_MATCH = "zzzzqq";
+const NO_MATCH_FILTER: Record<string, string> = {
+  tokens: `serial: ${NO_MATCH}`,
+  challenges: `serial: ${NO_MATCH}`,
+  containers: `container_serial: ${NO_MATCH}`,
+  audit: `action: ${NO_MATCH}`,
+  "authentication log": `username: ${NO_MATCH}`,
+  "container templates": `name: ${NO_MATCH}`,
+  "locked users": `usernames: ${NO_MATCH}`
+};
+
+// The filter text that leaves the table page `name` without a row.
+export function noMatchFilter(name: string): string {
+  return NO_MATCH_FILTER[name] ?? NO_MATCH;
 }
 
 // Backend calls the shell of the app needs to render at all; everything else a page loads can be held or failed.

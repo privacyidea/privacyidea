@@ -111,7 +111,11 @@ async function selectFirstRowAndClick(page: Page, label: RegExp): Promise<boolea
     return false;
   }
   await checkbox.check({ force: true });
-  const button = page.locator(".actions-row").getByRole("button", { name: label }).first();
+  // The rows ScrollEdgesDirective collapses: tokens and containers have rows of their own.
+  const button = page
+    .locator(".actions-row, .token-actions-row, .container-actions-row")
+    .getByRole("button", { name: label })
+    .first();
   if ((await button.count()) === 0 || !(await button.isEnabled())) {
     return false;
   }

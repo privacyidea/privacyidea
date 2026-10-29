@@ -20,6 +20,7 @@
 import { defineConfig } from "@playwright/test";
 import * as path from "path";
 import { BASE_URL } from "./support/env";
+import { ADMIN_STATE_FILE } from "./support/session";
 
 // Runs against an already running WebUI (default: the local `ng serve`) and a backend it proxies to.
 // The suite only reads: it logs in, visits pages, types into filters and opens menus, never saves.
@@ -28,8 +29,8 @@ import { BASE_URL } from "./support/env";
 //   E2E_USER   default admin
 //   E2E_PASS   default admin
 // Playwright empties its output directory when a run starts, which would wipe the artifacts of a run in progress next
-// to it; each run writes to a directory of its own. The id is an environment variable so that the workers, which load
-// this file again, agree with the process that started them.
+// to it; each run writes to a directory of its own, and global-setup removes all but the newest few. The id is an
+// environment variable so that the workers, which load this file again, agree with the process that started them.
 process.env["E2E_RUN_ID"] ??= String(process.pid);
 
 export default defineConfig({
@@ -52,7 +53,7 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     ignoreHTTPSErrors: true,
-    storageState: path.join(__dirname, ".auth", "admin.json"),
+    storageState: ADMIN_STATE_FILE,
     // Animations (menu, collapse, shadow transitions) make measurements race; the app honours this.
     reducedMotion: "reduce",
     trace: "retain-on-failure",
