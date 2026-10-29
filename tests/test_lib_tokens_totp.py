@@ -16,6 +16,7 @@ from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOP
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.models import Token, Config, Challenge
@@ -591,10 +592,12 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("705493", window=30,
                             options={"initTime": 47251644 * 30})
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 47251650 => otp = 389836, will be autosynced.
         r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == 47251650, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
 
         # counter = 47251640 => otp = 166325 is an old OTP value
         # counter = 47251641 => otp = 432730 is an old OTP value
@@ -605,6 +608,7 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("166325", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
         # Autoresync with two consecutive old OTP values must not work out!
         r = token.check_otp("166325", window=30,
                             options={"initTime": 47251644 * 30})
@@ -612,6 +616,7 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("432730", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
 
         # Autosync with a gap in the next otp value will fail
         token.token.count = 47251640
@@ -625,12 +630,26 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+
+        # Another request stores the resynced counter first, so this one records no resync
+        token.token.count = 47251640
+        r = token.check_otp("705493", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertEqual(-1, r)
+        token.auth_details.clear()
+        with mock.patch.object(TotpTokenClass, "advance_otp_count", return_value=False):
+            r = token.check_otp("589836", window=30,
+                                options={"initTime": 47251645 * 30})
+        self.assertEqual(-1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
         # TOTP has no dueDate / AutoResyncTimeout
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)
         token.token.count = 47251640
+        token.auth_details.clear()
         token.set_sync_window(10)
         # counter = 47251649 => otp = 705493, is out of sync
         r = token.check_otp("705493", window=30,
@@ -640,6 +659,7 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
@@ -701,7 +721,8 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
-        self.assertTrue(r)
+        # The value of the RFC belongs to the 32 byte seed: the 20 byte seed gives another OTP value
+        self.assertEqual(-1, r)
 
         # sha256 with a 32 byte seed
         serial = "sha256"
@@ -715,7 +736,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("67062674", options={"initTime": 1111111111})
-        self.assertTrue(r)
+        self.assertEqual(0x00000000023523ED, r)
 
         # sha512 with a 20 byte seed
         serial = "sha512"
@@ -729,7 +750,8 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("99943326", options={"initTime": 1111111111})
-        self.assertTrue(r)
+        # The value of the RFC belongs to the 64 byte seed
+        self.assertEqual(-1, r)
 
         # sha512 with a 64byte seed
         serial = "sha512b"
@@ -744,7 +766,7 @@ class TOTPTokenTestCase(MyTestCase):
         db_token = Token.query.filter_by(serial=serial).first()
         token = TotpTokenClass(db_token)
         r = token.check_otp("93441116", options={"initTime": 1234567890})
-        self.assertTrue(r)
+        self.assertEqual(0x000000000273EF07, r)
 
     def test_26_get_setting_type(self):
         r = TotpTokenClass.get_setting_type("totp.hashlib")

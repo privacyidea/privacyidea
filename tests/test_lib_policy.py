@@ -3,6 +3,7 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import ast
 import json
 import pathlib
 import re
@@ -29,7 +30,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
                                     set_policy_conditions, validate_actions, get_policies,
                                     import_policy, export_policy, filter_invalid_actions,
-                                    negate_disabled_bool_actions, drop_bool_action_values)
+                                    negate_disabled_bool_actions)
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
@@ -38,7 +39,7 @@ from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, NodeName
-from .base import MyTestCase, FakeFlaskG, FakeAudit
+from .base import MyTestCase, FakeFlaskG, FakeAudit, stored_empty_string
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
@@ -74,6 +75,12 @@ class PolicyTestCase(MyTestCase):
     """
     Test the policies on a database level
     """
+
+    def assert_undefined_values(self, kind: str, values: set[str], message: str) -> None:
+        # The undefined values are listed in no particular order
+        prefix = f"Undefined {kind}: "
+        self.assertTrue(message.startswith(prefix) and message.endswith("!"), message)
+        self.assertSetEqual(values, set(ast.literal_eval(message[len(prefix):-1])), message)
 
     def setUp(self):
         self.setUp_user_realms()
@@ -249,7 +256,7 @@ class PolicyTestCase(MyTestCase):
                    description="")
         policy = get_policies(name="keep_values")[0]
         expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False,
-                    "priority": 3, "description": ""}
+                    "priority": 3, "description": stored_empty_string()}
         self.assertEqual(expected, {key: policy.get(key) for key in expected})
         delete_policy("keep_values")
 
@@ -269,48 +276,44 @@ class PolicyTestCase(MyTestCase):
         # Scope is None, but actions are defined
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", action=PolicyAction.ENABLE)
-            self.assertEqual("Scope is required to set action values!", exception.exception.message)
+        self.assertEqual("Scope is required to set action values!", exception.exception.message)
 
         # Invalid actions
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action="invalid_action")
-            self.assertEqual(f"The following actions are not valid for scope '{SCOPE.ADMIN}': ['invalid_action']",
-                             exception.exception.message)
+        self.assertEqual("Invalid actions ['invalid_action']!", exception.exception.message)
 
         # Priority
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, priority=0)
-            self.assertEqual("Priority must be at least 1", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, priority=0)
+        self.assertEqual("Priority must be at least 1", exception.exception.message)
 
         # Invalid client ip
         with self.assertRaises(PrivacyIDEAError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, client="10.1.2.3.4")
-            self.assertEqual("Invalid client definition!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, client="10.1.2.3.4")
+        self.assertEqual("Invalid client definition!", exception.exception.message)
 
         # Invalid realm
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, realm="invalid_realm")
-            self.assertEqual("Invalid Realms ['invalid_realm']!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm="invalid_realm")
+        self.assert_undefined_values("User-realms", {"invalid_realm"}, exception.exception.message)
 
-        # Invalid adminrealm
-        with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, adminrealm="invalid_realm")
-            self.assertEqual("Invalid Adminrealms ['invalid_realm']!", exception.exception.message)
+        # set_policy takes any admin realm: the API checks it against the admin realms of the app configuration
 
         # Invalid resolver
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, resolver="invalid_resolver")
-            self.assertEqual("Undefined resolvers ['invalid_resolver']!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, resolver="invalid_resolver")
+        self.assert_undefined_values("Resolvers", {"invalid_resolver"}, exception.exception.message)
 
         # Invalid node
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, pinode="invalid_node")
-            self.assertEqual("Undefined nodes ['invalid_node']!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode="invalid_node")
+        self.assert_undefined_values("Privacyidea nodes", {"invalid_node"}, exception.exception.message)
 
         # Invalid time
         with self.assertRaises(ParameterError) as exception:
-            set_policy(name="invalid", action=PolicyAction.ENABLE, time="Monday: 12-18")
-            self.assertEqual("Invalid time format!", exception.exception.message)
+            set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, time="Monday: 12-18")
+        self.assertEqual("Invalid time format 'Monday: 12-18'!", exception.exception.message)
 
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
@@ -461,7 +464,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("172.16.0.3, 172.16.0.4/24", policy.client)
         # Set empty string removes client
         set_policy(name="pol1", scope=SCOPE.CONTAINER, client="")
-        self.assertEqual("", policy.client)
+        self.assert_empty_string(policy.client)
 
     def test_08_user_policies(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, user="*")
@@ -506,7 +509,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("admin, root, user1", policy.user)
         # Set empty string removes adminuser
         set_policy(name="pol2", scope=SCOPE.AUTHZ, user="")
-        self.assertEqual("", policy.user)
+        self.assert_empty_string(policy.user)
 
     def test_08a_adminuser_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, adminuser="*", user="")
@@ -551,7 +554,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("admin, root, user1", policy.adminuser)
         # Set empty string removes adminuser
         set_policy(name="pol2", scope=SCOPE.ADMIN, adminuser="", user="*")
-        self.assertEqual("", policy.adminuser)
+        self.assert_empty_string(policy.adminuser)
 
     def test_09_realm_resolver_policy(self):
         set_policy(name="pol1", scope=SCOPE.CONTAINER, realm=self.realm1)
@@ -613,8 +616,8 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(self.realm1, policy.realm)
         # Set empty string removes realm and resolver
         set_policy(name="pol2", scope=SCOPE.AUTHZ, realm="", resolver="")
-        self.assertEqual("", policy.resolver)
-        self.assertEqual("", policy.realm)
+        self.assert_empty_string(policy.resolver)
+        self.assert_empty_string(policy.realm)
 
     def test_10_action_policies(self):
         set_policy(name="pol1", scope=SCOPE.ADMIN, action=f"enrollHOTP, {PolicyAction.ENABLE}, {PolicyAction.DISABLE}")
@@ -856,7 +859,7 @@ class PolicyTestCase(MyTestCase):
         # Update with empty list removes adminrealm
         set_policy(name="tokenEnroll", scope=SCOPE.ADMIN, adminrealm="", action="enrollYUBIKEY")
         policy = Policy.query.filter_by(name="tokenEnroll").first()
-        self.assertEqual("", policy.adminrealm)
+        self.assert_empty_string(policy.adminrealm)
 
         delete_policy("tokenEnroll")
 
@@ -956,7 +959,7 @@ class PolicyTestCase(MyTestCase):
         # set empty string removes time
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="")
         policy = Policy.query.filter_by(name="test").first()
-        self.assertEqual("", policy.time)
+        self.assert_empty_string(policy.time)
 
         # Set invalid times raises Error
         self.assertRaises(ParameterError, set_policy, name="test", scope=SCOPE.AUTHZ,
@@ -1726,7 +1729,7 @@ class PolicyTestCase(MyTestCase):
         # Pass empty string to remove pinode parameter
         set_policy("import_node1", scope=SCOPE.ADMIN, action=PolicyAction.IMPORT,
                    adminuser="import_admin, delete_admin", pinode="")
-        self.assertEqual("", policy.pinode)
+        self.assert_empty_string(policy.pinode)
 
         delete_policy("import_node1")
         delete_policy("delete_node2")
@@ -2472,7 +2475,7 @@ class PolicyTestCase(MyTestCase):
                          negate_disabled_bool_actions(SCOPE.AUTH, {PolicyAction.PASSONNOTOKEN: False,
                                                                    PolicyAction.PASSONNOUSER: 0}))
 
-        # validate_actions rejects these
+        # Any other value stays as it is
         for value in ["yes", "tRuE", "hotp"]:
             action = f"{PolicyAction.PASSONNOTOKEN}={value}"
             self.assertEqual(action, negate_disabled_bool_actions(SCOPE.AUTH, action))
@@ -2539,207 +2542,34 @@ class PolicyTestCase(MyTestCase):
         self.assertNotIn("helpdesk", matching(SCOPE.ADMIN, PolicyAction.POLICYWRITE))
         delete_policy("helpdesk")
 
-    def test_52d_set_policy_rejects_invalid_bool_action_values(self):
-        # A value that is neither true nor false would act as enabled, whatever was meant by it, so it is rejected, also
-        # a Python value. test_52h covers the strings.
-        with self.assertRaises(ParameterError) as exception:
-            set_policy("invalid_bool", scope=SCOPE.ADMIN, action={PolicyAction.TRIGGERCHALLENGE: 2})
-        self.assertIn(f"Invalid value for action '{PolicyAction.TRIGGERCHALLENGE}'", exception.exception.message)
-        self.assertFalse(get_policies(name="invalid_bool"))
-
-        # An update of a stored policy is rejected as well and leaves the stored actions as they are
-        set_policy("invalid_bool", scope=SCOPE.ADMIN, action=PolicyAction.TRIGGERCHALLENGE)
-        with self.assertRaises(ParameterError) as exception:
-            set_policy("invalid_bool", action={PolicyAction.TRIGGERCHALLENGE: "hotp"})
-        self.assertIn("is neither true nor false", exception.exception.message)
-        self.assertEqual({PolicyAction.TRIGGERCHALLENGE: True}, get_policies(name="invalid_bool")[0].get("action"))
-        delete_policy("invalid_bool")
-
-        # True, false and empty values are valid, also as Python values
-        for value in [True, 1, "1", "TRUE", "", None, False, 0, "0", "False", "fAlSe"]:
-            self.assertTrue(validate_actions(SCOPE.ADMIN, {PolicyAction.TRIGGERCHALLENGE: value}), value)
-
-        # An excluded action and an action of another type are not checked
-        self.assertTrue(validate_actions(SCOPE.ADMIN, f"-{PolicyAction.TRIGGERCHALLENGE}=hotp"))
-        self.assertTrue(validate_actions(SCOPE.CONTAINER, {PolicyAction.CONTAINER_SSL_VERIFY: "False"}))
-
-    def test_52e_set_policy_rejects_duplicate_actions(self):
-        # Only the last value of an action given more than once would count, so the action string is rejected, also
-        # for an action of another type. test_52h covers the boolean actions.
-        with self.assertRaises(ParameterError) as exception:
-            set_policy("duplicate", scope=SCOPE.AUTH,
-                       action=f"{PolicyAction.OTPPIN}=userstore, {PolicyAction.OTPPIN}=token")
-        self.assertIn(f"Actions given more than once: ['{PolicyAction.OTPPIN}']", exception.exception.message)
-        self.assertFalse(get_policies(name="duplicate"))
-
-        # A disabled action is stored as its exclusion, so it is the same action as the exclusion, in a string as in
-        # a dict
-        for action in [f"{PolicyAction.ENABLE}=false, -{PolicyAction.ENABLE}",
-                       f"{PolicyAction.ENABLE}=false,-{PolicyAction.ENABLE}=false",
-                       {PolicyAction.ENABLE: "false", f"-{PolicyAction.ENABLE}": True},
-                       {PolicyAction.ENABLE: "false", f"-{PolicyAction.ENABLE}": "false"},
-                       {PolicyAction.ENABLE: "0", f"-{PolicyAction.ENABLE}": True}]:
+    def test_52d_set_policy_rejects_whitespace_around_action_keys(self):
+        # A key with whitespace around it is not a known action, whitespace around the value of a boolean action is
+        # allowed
+        for action in [f"{PolicyAction.ENABLE}, {PolicyAction.POLICYWRITE} = true",
+                       {PolicyAction.ENABLE: True, f"{PolicyAction.POLICYWRITE} ": "true"}]:
             with self.assertRaises(ParameterError) as exception:
-                set_policy("duplicate", scope=SCOPE.ADMIN, action=action)
-            self.assertIn(f"Actions given more than once: ['-{PolicyAction.ENABLE}']", exception.exception.message)
-            self.assertFalse(get_policies(name="duplicate"))
+                set_policy("whitespace", scope=SCOPE.ADMIN, action=action)
+            self.assertIn("Invalid actions", exception.exception.message)
+            self.assertFalse(get_policies(name="whitespace"))
 
-        # Actions that differ only in the whitespace around them are the same action
-        for action in [f" {PolicyAction.DISABLE}, {PolicyAction.DISABLE} ",
-                       {f" {PolicyAction.DISABLE}": True, PolicyAction.DISABLE: True}]:
-            with self.assertRaises(ParameterError) as exception:
-                set_policy("duplicate", scope=SCOPE.ADMIN, action=action)
-            self.assertIn(f"Actions given more than once: ['{PolicyAction.DISABLE}']", exception.exception.message)
-            self.assertFalse(get_policies(name="duplicate"))
-
-        # An action and its exclusion are different actions, an escaped comma does not separate actions
-        for action in [f"{PolicyAction.POLICYWRITE}, -{PolicyAction.POLICYWRITE}",
-                       {PolicyAction.POLICYWRITE: True, f"-{PolicyAction.POLICYWRITE}": True}]:
-            set_policy("duplicate", scope=SCOPE.ADMIN, action=action)
-            self.assertEqual({PolicyAction.POLICYWRITE: True, f"-{PolicyAction.POLICYWRITE}": True},
-                             get_policies(name="duplicate")[0].get("action"))
-        delete_policy("duplicate")
-        self.assertTrue(validate_actions(SCOPE.AUTH, f"{PolicyAction.CHALLENGETEXT}=a\\, "
-                                                     f"{PolicyAction.CHALLENGETEXT}=b"))
-
-    def test_52f_drop_bool_action_values(self):
-        # Older versions stored any value of a boolean action and it acted as enabled, so the import removes a value
-        # that is not true, like the migration f8a498439814 does, and keeps the other values and actions as they are.
-        # A value is true as it is when the policy is saved, so an empty value stays and "tRuE" is removed.
-        action = {PolicyAction.POLICYWRITE: "False", PolicyAction.ENABLE: "hotp", PolicyAction.DISABLE: False,
-                  PolicyAction.REVOKE: "", PolicyAction.RESYNC: None, PolicyAction.DELETE: True,
-                  PolicyAction.SETPIN: "1", PolicyAction.UNASSIGN: "tRuE", f"-{PolicyAction.RESET}": "hotp"}
-        self.assertEqual(({PolicyAction.POLICYWRITE: True, PolicyAction.ENABLE: True, PolicyAction.DISABLE: True,
-                           PolicyAction.REVOKE: "", PolicyAction.RESYNC: None, PolicyAction.DELETE: True,
-                           PolicyAction.SETPIN: "1", PolicyAction.UNASSIGN: True, f"-{PolicyAction.RESET}": "hotp"},
-                          [f"{PolicyAction.POLICYWRITE}=False", f"{PolicyAction.ENABLE}=hotp",
-                           f"{PolicyAction.DISABLE}=False", f"{PolicyAction.UNASSIGN}=tRuE"]),
-                         drop_bool_action_values(SCOPE.ADMIN, action))
-        self.assertEqual((f"{PolicyAction.CHALLENGETEXT}=Hello\\, enter the OTP, {PolicyAction.PASSONNOTOKEN}, "
-                          f"{PolicyAction.PASSONNOUSER}=TRUE",
-                          [f"{PolicyAction.PASSONNOTOKEN}=0"]),
-                         drop_bool_action_values(SCOPE.AUTH, f"{PolicyAction.CHALLENGETEXT}=Hello\\, enter the OTP, "
-                                                             f"{PolicyAction.PASSONNOTOKEN}=0, "
-                                                             f"{PolicyAction.PASSONNOUSER}=TRUE"))
-        # An action of another type keeps its value
-        self.assertEqual(({PolicyAction.CONTAINER_SSL_VERIFY: "False"}, []),
-                         drop_bool_action_values(SCOPE.CONTAINER, {PolicyAction.CONTAINER_SSL_VERIFY: "False"}))
-
-    def test_52g_set_policy_removes_whitespace_around_actions(self):
-        # The whitespace around the keys and values is removed, so a boolean action with whitespace is checked and
-        # negated like one without. test_52h covers a boolean action with a false value.
-        set_policy("whitespace", scope=SCOPE.ADMIN, action=f" {PolicyAction.ENABLE} , {PolicyAction.DISABLE}= true ")
-        self.assertEqual({PolicyAction.ENABLE: True, PolicyAction.DISABLE: "true"},
-                         get_policies(name="whitespace")[0].get("action"))
-        set_policy("whitespace", scope=SCOPE.ADMIN, action={f" {PolicyAction.ENABLE} ": True,
-                                                            PolicyAction.DISABLE: " true "})
-        self.assertEqual({PolicyAction.ENABLE: True, PolicyAction.DISABLE: "true"},
-                         get_policies(name="whitespace")[0].get("action"))
-        with self.assertRaises(ParameterError):
-            set_policy("whitespace", scope=SCOPE.ADMIN, action=f"{PolicyAction.ENABLE} = hotp")
-        delete_policy("whitespace")
-
-        # The value of an action of another type loses the whitespace around it, not the whitespace inside it
-        set_policy("whitespace", scope=SCOPE.AUTH, action={PolicyAction.CHALLENGETEXT: "  Enter the OTP  "})
-        self.assertEqual({PolicyAction.CHALLENGETEXT: "Enter the OTP"},
+        set_policy("whitespace", scope=SCOPE.ADMIN, action=f"{PolicyAction.ENABLE}, {PolicyAction.POLICYWRITE}= False ")
+        self.assertEqual({PolicyAction.ENABLE: True, f"-{PolicyAction.POLICYWRITE}": True},
                          get_policies(name="whitespace")[0].get("action"))
         delete_policy("whitespace")
 
-    def test_52h_import_and_save_of_actions_from_older_versions(self):
-        # The import keeps what a policy of an older version did, like the migration f8a498439814, saving a policy
-        # takes the value as it is meant. The import of the WebUI (import_policies) has no skip_invalid and behaves
-        # like the plain import. Each case gives the stored actions after the import, the import with skip_invalid and
-        # saving the policy, a string is a part of the error message and None means the policy is skipped.
-        invalid = "Invalid actions"
-        invalid_key = "Invalid actions ['policywrite ']"
-        duplicate = "Actions given more than once: ['policywrite']"
-        neither = "is neither true nor false"
-        cases = [
-            # The value of a boolean action
-            ("policywrite=False", {"policywrite": True}, {"policywrite": True}, {"-policywrite": True}),
-            ({"policywrite": "False", "triggerchallenge": "hotp"}, {"policywrite": True, "triggerchallenge": True},
-             {"policywrite": True, "triggerchallenge": True}, neither),
-            ("policywrite=0", {"policywrite": True}, {"policywrite": True}, {"-policywrite": True}),
-            ("policywrite=hotp", {"policywrite": True}, {"policywrite": True}, neither),
-            ("policywrite=tRuE", {"policywrite": True}, {"policywrite": True}, neither),
-            ("policywrite=", {"policywrite": True}, {"policywrite": True}, {"policywrite": True}),
-            ("policywrite=True", {"policywrite": "True"}, {"policywrite": "True"}, {"policywrite": "True"}),
-            ("policywrite=1", {"policywrite": "1"}, {"policywrite": "1"}, {"policywrite": "1"}),
-            # Exclusions and wildcards
-            ("-policywrite=false", {"-policywrite": "false"}, {"-policywrite": "false"}, {"-policywrite": "false"}),
-            ("policywrite, -policywrite", {"policywrite": True, "-policywrite": True},
-             {"policywrite": True, "-policywrite": True}, {"policywrite": True, "-policywrite": True}),
-            ("policywrite=false, -policywrite", {"policywrite": True, "-policywrite": True},
-             {"policywrite": True, "-policywrite": True}, "Actions given more than once: ['-policywrite']"),
-            ("*, policywrite=False", {"*": True, "policywrite": True}, {"*": True, "policywrite": True},
-             {"*": True, "-policywrite": True}),
-            # Duplicates
-            ("policywrite=hotp, policywrite", duplicate, {"policywrite": True}, duplicate),
-            ("policywrite, policywrite=false", duplicate, {"policywrite": True}, duplicate),
-            ("policywrite=false, enable, policywrite", duplicate, {"policywrite": True, "enable": True}, duplicate),
-            ("policywrite, policywrite", duplicate, {"policywrite": True}, duplicate),
-            (" policywrite, policywrite", duplicate, {"policywrite": True}, duplicate),
-            # Whitespace around the value and around the key
-            ("policywrite= true", {"policywrite": "true"}, {"policywrite": "true"}, {"policywrite": "true"}),
-            ("policywrite= False ", {"policywrite": True}, {"policywrite": True}, {"-policywrite": True}),
-            ("policywrite= ", {"policywrite": True}, {"policywrite": True}, {"policywrite": True}),
-            ("enable, policywrite = False", invalid_key, {"enable": True}, {"enable": True, "-policywrite": True}),
-            ("enable, policywrite = true", invalid_key, {"enable": True}, {"enable": True, "policywrite": "true"}),
-            ({"enable": True, "policywrite ": "False"}, invalid_key, {"enable": True},
-             {"enable": True, "-policywrite": True}),
-            # Unknown actions
-            ("enable, this_action_is_gone", invalid, {"enable": True}, invalid),
-            ("this_action_is_gone", invalid, None, invalid),
-        ]
+    def test_52e_import_stores_disabled_bool_actions_as_excluded(self):
+        # The import stores a boolean action with a false value as the excluded action, like saving the policy
+        for action in [f"{PolicyAction.ENABLE}, {PolicyAction.POLICYWRITE}=False",
+                       {PolicyAction.ENABLE: True, PolicyAction.POLICYWRITE: "False"}]:
+            import_policy([{"name": "imported", "scope": SCOPE.ADMIN, "action": action}])
+            self.assertEqual({PolicyAction.ENABLE: True, f"-{PolicyAction.POLICYWRITE}": True},
+                             get_policies(name="imported")[0].get("action"), action)
+            delete_policy("imported")
 
-        def stored_actions(func):
-            try:
-                func()
-            except PrivacyIDEAError as e:
-                self.assertFalse(get_policies(name="table"))
-                return e.message
-            policies = get_policies(name="table")
-            if policies:
-                delete_policy("table")
-                return policies[0].get("action")
-            return None
-
-        def check(expected, result, action):
-            if isinstance(expected, str):
-                self.assertIsInstance(result, str, action)
-                self.assertIn(expected, result, action)
-            else:
-                self.assertEqual(expected, result, action)
-
-        for action, imported, imported_skip_invalid, saved in cases:
-            policy = {"name": "table", "scope": SCOPE.ADMIN, "action": action}
-            check(imported, stored_actions(lambda: import_policy([policy])), action)
-            check(imported, stored_actions(
-                lambda: import_policies(f'[table]\nscope = {SCOPE.ADMIN}\naction = "{action!r}"\n')), action)
-            if imported == duplicate:
-                # skip_invalid logs the removed earlier occurrences
-                with self.assertLogs("privacyidea.lib.policy", level="WARNING") as logs:
-                    result = stored_actions(lambda: import_policy([policy], skip_invalid=True))
-                self.assertTrue(any("removed the earlier occurrences of actions given more than once" in line
-                                    for line in logs.output), logs.output)
-            else:
-                result = stored_actions(lambda: import_policy([policy], skip_invalid=True))
-            check(imported_skip_invalid, result, action)
-            check(saved, stored_actions(lambda: set_policy("table", scope=SCOPE.ADMIN, action=action)), action)
-
-        # skip_invalid logs the removed unknown action
-        with self.assertLogs("privacyidea.lib.policy", level="WARNING") as logs:
-            import_policy([{"name": "table", "scope": SCOPE.ADMIN, "action": "enable, this_action_is_gone"}],
-                          skip_invalid=True)
-        self.assertTrue(any("dropping actions not valid" in line and "this_action_is_gone" in line
-                            for line in logs.output), logs.output)
-        delete_policy("table")
-
-        # The export of a policy with such a value can be imported again
-        import_policies(export_policies([{"name": "table", "scope": SCOPE.ADMIN,
-                                          "action": {"policywrite": "False"}}]))
-        self.assertEqual({"policywrite": True}, get_policies(name="table")[0].get("action"))
-        delete_policy("table")
+        import_policies(export_policies([{"name": "imported", "scope": SCOPE.ADMIN,
+                                          "action": {PolicyAction.POLICYWRITE: "False"}}]))
+        self.assertEqual({f"-{PolicyAction.POLICYWRITE}": True}, get_policies(name="imported")[0].get("action"))
+        delete_policy("imported")
 
     def test_53_set_policy_validate_realms(self):
         """
@@ -2764,13 +2594,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Realm
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=[self.realm2, "undefined_realm", self.realm1, "invalid"])
-            self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, undefined_realm,{self.realm1} ,invalid")
-            self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, -undefined_realm,{self.realm1} ,!invalid")
-            self.assertEqual("Undefined Realms: ['undefined_realm', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
 
         delete_policy("test")
 
@@ -2796,14 +2626,14 @@ class PolicyTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=[self.resolvername1, "undefined_resolver", self.resolvername3, "invalid"])
-            self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"undefined_resolver,{self.resolvername1}, invalid")
-            self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=f"*, -undefined_resolver,{self.resolvername1}, !invalid")
-            self.assertEqual("Undefined Resolvers: ['undefined_resolver', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
 
         delete_policy("test")
 
@@ -2833,13 +2663,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "undefined_node", node_name2, "invalid"])
-            self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
-            self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
-            self.assertEqual("Undefined Nodes: ['undefined_node', 'invalid']!", exception.exception.message)
+        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
 
         db.session.delete(node1)
         db.session.delete(node2)
@@ -3068,36 +2898,36 @@ class PolicyConditionClassTestCase(MyTestCase):
         # Invalid section
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", True)
-            self.assertIn("Unknown section", exception.exception.message)
+        self.assertIn("Unknown section", exception.exception.message)
 
         # Invalid key
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES, ".*@example.com",
                                  True)
-            self.assertEqual("Key must be a non-empty string. Got '[\"email\"]' of type 'list' instead.",
-                             exception.exception.message)
+        self.assertEqual("Key must be a non-empty string. Got '['email']' of type '<class 'list'>' instead.",
+                         exception.exception.message)
 
         # Invalid comparator
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", "random", ".*@example.com", True)
-            self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
+        self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
 
         # Invalid value
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, True)
-            self.assertIn("Value must be a non-empty string.", exception.exception.message)
+        self.assertIn("Value must be a non-empty string.", exception.exception.message)
 
         # Invalid active
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
                                  "True")
-            self.assertIn("Active must be a boolean.", exception.exception.message)
+        self.assertIn("Active must be a boolean.", exception.exception.message)
 
         # Invalid handle_missing_data
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  "random")
-            self.assertIn("Unknown handle missing data value", exception.exception.message)
+        self.assertIn("Unknown handle missing data value", exception.exception.message)
 
     def test_03_allow_invalid_parameters(self):
         """
@@ -3115,14 +2945,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Unknown section", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Unknown section", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass("invalid", "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  pass_if_inactive=True)
-            self.assertIn("Unknown section", exception.exception.message)
+        self.assertIn("Unknown section", exception.exception.message)
 
         # --- Invalid key ---
         # inactive condition
@@ -3136,16 +2966,16 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Key must be a non-empty string", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Key must be a non-empty string", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, ["email"], PrimaryComparators.MATCHES, ".*@example.com",
                                  True,
                                  pass_if_inactive=True)
-            self.assertEqual("Key must be a non-empty string. Got '[\"email\"]' of type 'list' instead.",
-                             exception.exception.message)
+        self.assertEqual("Key must be a non-empty string. Got '['email']' of type '<class 'list'>' instead.",
+                         exception.exception.message)
 
         # --- Invalid comparator ---
         # inactive condition
@@ -3157,14 +2987,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Unknown comparator", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Unknown comparator", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", "random", ".*@example.com", True,
                                  pass_if_inactive=True)
-            self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
+        self.assertEqual("Unknown comparator 'random'.", exception.exception.message)
 
         # --- Invalid value ---
         # inactive condition
@@ -3178,19 +3008,19 @@ class PolicyConditionClassTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, False, True,
                                  pass_if_inactive=True)
-            self.assertIn("Value must be a non-empty string.", exception.exception.message)
+        self.assertIn("Value must be a non-empty string.", exception.exception.message)
 
         # Invalid active always raises error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
                                  "True",
                                  pass_if_inactive=True)
-            self.assertIn("Active must be a boolean.", exception.exception.message)
+        self.assertIn("Active must be a boolean.", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com",
                                  "False",
                                  pass_if_inactive=True)
-            self.assertIn("Active must be a boolean.", exception.exception.message)
+        self.assertIn("Active must be a boolean.", exception.exception.message)
 
         # --- Invalid handle_missing_data ---
         # inactive condition
@@ -3203,14 +3033,14 @@ class PolicyConditionClassTestCase(MyTestCase):
         # activate the condition will raise an error
         with self.assertRaises(ParameterError) as exception:
             condition.active = True
-            self.assertIn("Invalid condition can not be activated", exception.exception.message)
-            self.assertIn("Unknown handle missing data", exception.exception.message)
+        self.assertIn("Invalid condition can not be activated", exception.exception.message)
+        self.assertIn("Unknown handle missing data", exception.exception.message)
 
         # active condition will still raise error
         with self.assertRaises(ParameterError) as exception:
             PolicyConditionClass(ConditionSection.USERINFO, "email", PrimaryComparators.MATCHES, ".*@example.com", True,
                                  "random", True)
-            self.assertIn("Unknown handle missing data value", exception.exception.message)
+        self.assertIn("Unknown handle missing data value", exception.exception.message)
 
     def test_04_get_user_data(self):
         self.setUp_user_realms()
@@ -3605,7 +3435,7 @@ class ConditionHandleMissingDataTestCase(MyTestCase):
         # invalid value
         with self.assertRaises(ParameterError) as exception:
             ConditionHandleMissingData.get_from_value("invalid_value")
-            self.assertIn("Unknown handle missing data value", exception.exception.message)
+        self.assertIn("Unknown handle missing data value", exception.exception.message)
 
     def test_03_get_selection_dict(self):
         # Check that all enum values are included in the selection dict
@@ -3880,6 +3710,106 @@ class PolicyMatchTestCase(MyTestCase):
         self.assertFalse(admin_match("privacyIDEA-WebUI").allowed())
 
         delete_policy("only-cp")
+
+    @staticmethod
+    def fake_g(logged_in_user: dict | None = None) -> FakeFlaskG:
+        g = FakeFlaskG()
+        g.client_ip = "127.0.0.1"
+        g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
+        g.policy_object = PolicyClass()
+        if logged_in_user:
+            g.logged_in_user = logged_in_user
+        return g
+
+    def test_08_admin_policies_match_the_admin_realm(self):
+        # A policy for the administrators of one realm applies neither to the administrators of another realm nor to
+        # the local administrators
+        set_policy(name="realm1admins", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, adminrealm=self.realm1)
+        try:
+            for admin_realm, expected in ((self.realm1, {"realm1admins"}), (self.realm2, set()), ("", set())):
+                g = self.fake_g({"username": "helpdesk", "realm": admin_realm, "role": ROLE.ADMIN})
+                self.check_names(Match.admin(g, PolicyAction.DISABLE).policies(), expected)
+                self.check_names(Match.admin_or_user(g, PolicyAction.DISABLE, None).policies(), expected)
+        finally:
+            delete_policy("realm1admins")
+
+    def test_09_a_policy_for_every_realm_matches_the_realms_of_a_token(self):
+        token = init_token({"type": "hotp", "genkey": 1}, tokenrealms=[self.realm1])
+        try:
+            # pol2 is defined for every realm, pol2a for realm2 only
+            self.check_names(Match.token(self.fake_g(), SCOPE.AUTHZ, PolicyAction.TOKENTYPE, token).policies(),
+                             {"pol2"})
+        finally:
+            token.delete_token()
+
+    def test_10_check_all_resolvers_leaves_out_an_excluded_resolver(self):
+        # realm1 has resolver1 only
+        set_policy(name="every_resolver", scope=SCOPE.USER, action=PolicyAction.DELETE, realm=self.realm1,
+                   resolver="*", check_all_resolvers=True)
+        set_policy(name="resolver1_excluded", scope=SCOPE.USER, action=PolicyAction.DELETE, realm=self.realm1,
+                   resolver=f"*, !{self.resolvername1}", check_all_resolvers=True)
+        try:
+            policies = Match.user(self.fake_g(), SCOPE.USER, PolicyAction.DELETE,
+                                  User("cornelius", self.realm1)).policies()
+            self.check_names(policies, {"every_resolver"})
+        finally:
+            delete_policies(["every_resolver", "resolver1_excluded"])
+
+    def test_11_a_scope_with_only_inactive_policies_allows_every_action(self):
+        delete_all_policies()
+        set_policy(name="inactive", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, active=False)
+        g = self.fake_g({"username": "admin", "realm": "", "role": ROLE.ADMIN})
+        try:
+            self.assertTrue(Match.admin(g, PolicyAction.ENABLE).allowed())
+            enable_policy("inactive")
+            self.assertFalse(Match.admin(g, PolicyAction.ENABLE).allowed())
+        finally:
+            delete_policy("inactive")
+
+    def test_12_a_request_without_user_agent_matches_only_policies_without_one(self):
+        set_policy(name="webui_only", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=SPASS",
+                   user_agents="privacyIDEA-WebUI")
+        try:
+            g = self.fake_g()
+            self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.TOKENTYPE).policies(), {"pol2", "pol2a"})
+            g.user_agent = "privacyIDEA-WebUI"
+            self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.TOKENTYPE).policies(),
+                             {"pol2", "pol2a", "webui_only"})
+        finally:
+            delete_policy("webui_only")
+
+    def test_13_conditions_do_not_see_the_password_of_the_request(self):
+        for name, key in (("pass_condition", "pass"), ("password_condition", "password"),
+                          ("user_condition", "user")):
+            value = "cornelius" if key == "user" else "secret"
+            set_policy(name=name, scope=SCOPE.AUTHZ, action=PolicyAction.NODETAILSUCCESS,
+                       conditions=[(ConditionSection.REQUEST_DATA, key, PrimaryComparators.EQUALS, value, True,
+                                    ConditionHandleMissingData.IS_FALSE.value)])
+        try:
+            g = self.fake_g()
+            g.request_data = {"user": "cornelius", "pass": "secret", "password": "secret"}
+            self.check_names(Match.action_only(g, SCOPE.AUTHZ, PolicyAction.NODETAILSUCCESS).policies(),
+                             {"user_condition"})
+            # The request data itself keeps the password
+            self.assertEqual("secret", g.request_data["pass"])
+        finally:
+            delete_policies(["pass_condition", "password_condition", "user_condition"])
+
+    def test_14_admin_policies_see_the_token_of_the_request(self):
+        token = init_token({"type": "hotp", "genkey": 1})
+        set_policy(name="hotp_only", scope=SCOPE.ADMIN, action=PolicyAction.DELETE,
+                   conditions=[(ConditionSection.TOKEN, "tokentype", PrimaryComparators.EQUALS, "hotp", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        try:
+            g = self.fake_g({"username": "admin", "realm": "", "role": ROLE.ADMIN})
+            g.serial = token.get_serial()
+            self.check_names(Match.admin(g, PolicyAction.DELETE).policies(), {"hotp_only"})
+            g.serial = None
+            self.check_names(Match.admin(g, PolicyAction.DELETE).policies(), set())
+        finally:
+            delete_policy("hotp_only")
+            token.delete_token()
 
     @classmethod
     def tearDownClass(cls):

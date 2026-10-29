@@ -462,7 +462,7 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
-            self.assertEqual(tokeninfo.get("firebase_token"), "")
+            self.assert_empty_string(tokeninfo.get("firebase_token"))
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config

@@ -21,21 +21,15 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { Router } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import {
-  AuthData,
-  AuthDetail,
-  AuthService,
-  MultiChallenge,
-  WebAuthnSignRequestData
-} from "@services/auth/auth.service";
+import { AuthData, AuthDetail, AuthService, MultiChallenge, WebAuthnSignRequest } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
-import { ValidateService, WebAuthnSignRequest } from "@services/validate/validate.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
   MockAuthDetail,
   MockLocalService,
@@ -48,6 +42,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
 import { of, throwError } from "rxjs";
 import { LoginComponent } from "./login.component";
 
@@ -223,7 +218,7 @@ describe("LoginComponent", () => {
     });
 
     it("should handle a complex multi-challenge response with WebAuthn and OTP", () => {
-      const webAuthnSignRequestData: WebAuthnSignRequestData = {
+      const webAuthnSignRequestData: WebAuthnSignRequest = {
         allowCredentials: [
           {
             id: "sLGtMkbtYaEl2sYAD4iDdsVRUyihBfPBDhkVQemXUujuLE2G7WdSO5sb0IfGE-dwsABqT00mcqR9oTntiP0mEQ",
@@ -284,6 +279,75 @@ describe("LoginComponent", () => {
       expect(sessionTimerService.startRefreshingRemainingTime).not.toHaveBeenCalled();
       expect(sessionTimerService.startTimer).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("should combine the allowed credentials of all WebAuthn tokens into one sign request", () => {
+      authService.authenticate.mockReturnValue(
+        of(
+          new MockPiResponse<AuthData, AuthDetail>({
+            detail: {
+              transaction_id: "tx-webauthn",
+              multi_challenge: [
+                mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1")),
+                mockWebAuthnChallenge("WAN00000002", mockWebAuthnSignRequest("credential-key-2"))
+              ]
+            },
+            result: { authentication: "CHALLENGE", status: true }
+          })
+        )
+      );
+
+      component.onSubmit();
+
+      expect(component.webAuthnTriggered()).toEqual({
+        ...mockWebAuthnSignRequest("credential-key-1"),
+        allowCredentials: [
+          ...mockWebAuthnSignRequest("credential-key-1").allowCredentials,
+          ...mockWebAuthnSignRequest("credential-key-2").allowCredentials
+        ]
+      });
+    });
+
+    it("should drop the WebAuthn sign request when the next challenge has no WebAuthn entry", () => {
+      const hotpChallenge = (transactionId: string): MultiChallenge => ({
+        client_mode: "interactive",
+        message: "please enter otp: ",
+        serial: "OATH00000001",
+        transaction_id: transactionId,
+        type: "hotp"
+      });
+      authService.authenticate
+        .mockReturnValueOnce(
+          of(
+            new MockPiResponse<AuthData, AuthDetail>({
+              detail: {
+                transaction_id: "tx-webauthn",
+                multi_challenge: [
+                  mockWebAuthnChallenge("WAN00000001", mockWebAuthnSignRequest("credential-key-1")),
+                  hotpChallenge("tx-webauthn")
+                ]
+              },
+              result: { authentication: "CHALLENGE", status: true }
+            })
+          )
+        )
+        .mockReturnValueOnce(
+          of(
+            new MockPiResponse<AuthData, AuthDetail>({
+              detail: { transaction_id: "tx-next", multi_challenge: [hotpChallenge("tx-next")] },
+              result: { authentication: "CHALLENGE", status: true }
+            })
+          )
+        );
+
+      component.onSubmit();
+      expect(component.webAuthnTriggered()).not.toBeNull();
+
+      component.otp.set("123456");
+      component.onSubmit();
+
+      expect(component.webAuthnTriggered()).toBeNull();
+      expect((component as unknown as { transactionId: string }).transactionId).toBe("tx-next");
     });
 
     it("should handle a challenge response", () => {
@@ -661,5 +725,50 @@ describe("passkeyLoginEnabled signal", () => {
     });
     fixture.detectChanges();
     expect(component.passkeyLoginEnabled()).toBe(false);
+  });
+});
+
+describe("LoginComponent password reset link", () => {
+  let fixture: ComponentFixture<LoginComponent>;
+  let configService: MockConfigService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: LocalService, useClass: MockLocalService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ValidateService, useClass: MockValidateService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: ConfigService, useClass: MockConfigService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService }
+      ]
+    }).compileComponents();
+    configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
+    fixture = TestBed.createComponent(LoginComponent);
+  });
+
+  const resetLink = (): HTMLAnchorElement | null => fixture.nativeElement.querySelector(".password-reset-link");
+
+  it("is hidden while the password_reset policy is not active", () => {
+    fixture.detectChanges();
+    expect(resetLink()).toBeNull();
+  });
+
+  it("links to the password recovery page if the password_reset policy is active", () => {
+    configService.config.update((config) => ({ ...config, password_reset: true }));
+    fixture.detectChanges();
+    expect(resetLink()?.getAttribute("href")).toBe(ROUTE_PATHS.PASSWORD_RECOVERY);
+  });
+
+  it("is hidden while the one-time password is asked for", () => {
+    configService.config.update((config) => ({ ...config, password_reset: true }));
+    fixture.componentInstance.showOtpField.set(true);
+    fixture.detectChanges();
+    expect(resetLink()).toBeNull();
   });
 });

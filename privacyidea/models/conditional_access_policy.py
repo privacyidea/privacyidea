@@ -35,7 +35,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole, CountMode,
                                                                            RestrictionCause)
 from privacyidea.models import db
-from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode
+from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode, keep_empty_string_on_oracle
 
 log = logging.getLogger(__name__)
 
@@ -310,9 +310,10 @@ class UserLockState(MethodsMixin, db.Model):
     so it can have no history row of its own.
     """
     __tablename__ = 'user_lock_state'
-    resolver: Mapped[str] = mapped_column(case_sensitive_unicode(120), primary_key=True)
+    # A local admin's row keys on an empty resolver and realm, which Oracle could not store in a key column.
+    resolver: Mapped[str] = mapped_column(keep_empty_string_on_oracle(case_sensitive_unicode(120)), primary_key=True)
     uid: Mapped[str] = mapped_column(case_sensitive_unicode(320), primary_key=True)
-    realm: Mapped[str] = mapped_column(case_sensitive_unicode(255), primary_key=True)
+    realm: Mapped[str] = mapped_column(keep_empty_string_on_oracle(case_sensitive_unicode(255)), primary_key=True)
     # Denormalized login captured at lock time; lets management views display/filter by name and lets
     # a user-scoped read policy be enforced in SQL without a live resolver lookup, which fails for a deleted user.
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)

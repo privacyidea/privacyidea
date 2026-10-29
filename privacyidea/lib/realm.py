@@ -298,10 +298,6 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confir
         log.warning(f"Deleting realm '{realm_name}' although it is still referenced by conditional-access "
                     f"policies ({', '.join(ca_policy_names)}).")
 
-    # Check if there is a default realm
-    def_realm = get_default_realm()
-    had_def_realm_before = (def_realm != "")
-
     # Delete relationships
     stmt = delete(TokenRealm).where(TokenRealm.realm_id == realm.id)
     db.session.execute(stmt)
@@ -316,16 +312,12 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confir
     save_config_timestamp()
     db.session.commit()
 
-    # If there was a default realm before
-    # and if there is only one realm left, we set the
-    # remaining realm the default realm
-    if had_def_realm_before is True:
-        def_realm = get_default_realm()
-        if not def_realm:
-            realms = get_realms()
-            if len(realms) == 1:
-                for key in realms:
-                    set_default_realm(key)
+    # The only realm that is left becomes the default realm, whether there was a default realm before or not
+    if not get_default_realm():
+        realms = get_realms()
+        if len(realms) == 1:
+            for key in realms:
+                set_default_realm(key)
 
     return realm_id
 
@@ -361,8 +353,7 @@ def set_realm(realm, resolvers=None):
     added = []
     failed = []
     realm_created = False
-    realm = realm.lower().strip()
-    realm = realm.replace(" ", "-")
+    realm = normalize_realm_name(realm)
     sanity_name_check(realm, r"^[A-Za-z0-9_\-\.]+$")
 
     # create new realm if it does not exist
@@ -386,8 +377,9 @@ def set_realm(realm, resolvers=None):
         db_resolver = db.session.scalar(resolver_stmt)
         if db_resolver:
             try:
+                # An export of an Oracle installation can name "no node" as None
                 new_resolver_realm = ResolverRealm(db_resolver.id, db_realm.id,
-                                                   node_uuid=str(reso.get('node', '')),
+                                                   node_uuid=str(reso.get('node') or ''),
                                                    priority=reso.get('priority'))
                 db.session.add(new_resolver_realm)
                 added.append(reso_name)
@@ -437,6 +429,17 @@ def import_realms(data, name=None):
             set_default_realm(realm)
         log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
                  f'failed: {failed!s}')
+
+
+def normalize_realm_name(realm: str) -> str:
+    """
+    The name :func:`set_realm` stores the realm *realm* under: lowercase, stripped, with "-" for every space. A check
+    on a realm named in a request reads the name with this function, so it looks at the realm that is acted on.
+
+    :param realm: the realm name of a request
+    :return: the stored realm name
+    """
+    return realm.lower().strip().replace(" ", "-")
 
 
 def split_realms(value: str | list | None) -> list[str]:

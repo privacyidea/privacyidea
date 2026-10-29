@@ -16,8 +16,10 @@
 # SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
+import itertools
 from datetime import datetime, timedelta, timezone
 
+import jwt
 from dateutil.tz import tzlocal
 from unittest.mock import patch
 
@@ -26,10 +28,13 @@ from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
+from privacyidea.lib.auth import ROLE
+from privacyidea.lib.cache import flush_user_cache
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.crypto import CENSORED
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, ResolverError
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
@@ -1381,6 +1386,53 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
+    def test_18a_last_auth_policy_of_the_owner_realm(self):
+        self.setUp_user_realm2()
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        token = get_tokens(serial=serial)[0]
+        self.set_policy_with_cleanup("last_auth_realm1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=2d",
+                                     realm=self.realm1)
+        self.set_policy_with_cleanup("last_auth_realm2", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=10d",
+                                     realm=self.realm2)
+        data = dict(self.authentication_response_no_uv)
+        data_uv = dict(self.authentication_response_uv)
+
+        # The token owner is in realm1, so its policy decides
+        token.write_tokeninfo(PolicyAction.LASTAUTH,
+                              (datetime.now(timezone.utc) - timedelta(days=3)).isoformat(timespec="seconds"))
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+            self.assertIn("Last authentication policy check failed", res.json["detail"]["message"], res.json)
+        token.write_tokeninfo("sign_count", 0)
+        data_uv["transaction_id"] = self._trigger_passkey_challenge(
+            self.authentication_challenge_uv)["transaction_id"]
+        with self.app.test_request_context('/auth', method='POST', data=data_uv,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual(4306, res.json["result"]["error"]["code"], res.json)
+
+        token.write_tokeninfo(PolicyAction.LASTAUTH,
+                              (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(timespec="seconds"))
+        token.write_tokeninfo("sign_count", 0)
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+        token.write_tokeninfo("sign_count", 0)
+        data_uv["transaction_id"] = self._trigger_passkey_challenge(
+            self.authentication_challenge_uv)["transaction_id"]
+        with self.app.test_request_context('/auth', method='POST', data=data_uv,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+
     def test_19_disabled_passkey(self):
         """
         Disabled passkeys should not be usable for authentication
@@ -1875,6 +1927,124 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
+    def test_27a_api_key_scoped_to_realm(self):
+        """
+        An api_key_required policy scoped to the token owner's realm applies to the usernameless login.
+        """
+        serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, serial)
+        self.set_policy_with_cleanup("api_key_realm1", scope=SCOPE.AUTHZ, realm=self.realm1,
+                                     action=PolicyAction.APIKEY)
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertEqual("No valid API key was passed.", res.json["result"]["error"]["message"], res.json)
+
+        api_key = jwt.encode({"role": ROLE.VALIDATE, "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+                             self.app.secret_key)
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin, "Authorization": api_key}):
+            res = self.app.full_dispatch_request()
+            self._assert_result_value_true(res.json)
+
+    def _passkey_answer(self, signature: str | None = None) -> tuple[Response, str]:
+        """
+        A usernameless login with the passkey of self.passkey_serial. Returns the response and the transaction id.
+        """
+        token = get_one_token(serial=self.passkey_serial)
+        token.write_tokeninfo("sign_count", 0)
+        data = dict(self.authentication_response_no_uv)
+        data["transaction_id"] = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)["transaction_id"]
+        if signature:
+            data["signature"] = signature
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            return self.app.full_dispatch_request(), data["transaction_id"]
+
+    def test_27b_auth_max_fail_on_usernameless_login(self):
+        """
+        auth_max_fail applies to the usernameless login, and its failed answers count.
+        """
+        self.passkey_serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, self.passkey_serial)
+        self.set_policy_with_cleanup("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        self.app_context.g.audit_object.clear()
+
+        res, _ = self._passkey_answer(signature="wrong_signature")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"], res.json)
+
+        res, transaction_id = self._passkey_answer()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+        self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", res.json["detail"]["message"],
+                         res.json)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={self.passkey_serial}, transaction_id=transaction_id,
+                                        endpoint='/validate/check', reason=AuthEventReason.AUTH_MAX_FAIL)
+
+    def test_27c_auth_max_success_on_usernameless_login(self):
+        self.passkey_serial = self._enroll_static_passkey()
+        self.addCleanup(remove_token, self.passkey_serial)
+        self.set_policy_with_cleanup("max_success", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXSUCCESS}=1/1m")
+        self.app_context.g.audit_object.clear()
+
+        self._assert_result_value_true(self._passkey_answer()[0].json)
+
+        res, _ = self._passkey_answer()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+        self.assertEqual("Only 1 successful authentications per 0:01:00 allowed.", res.json["detail"]["message"],
+                         res.json)
+
+    def test_27d_auth_max_fail_on_enroll_via_multichallenge(self):
+        """
+        auth_max_fail applies to the registration that completes an enroll_via_multichallenge login.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.addCleanup(remove_token, spass_token.get_serial())
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action="enroll_via_multichallenge=PASSKEY")
+        self.set_policy_with_cleanup("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
+        self.app_context.g.audit_object.clear()
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": "1"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual("CHALLENGE", res.json["result"]["authentication"], res.json)
+                passkey_serial = res.json["detail"]["serial"]
+                transaction_id = res.json["detail"]["multi_challenge"][0]["transaction_id"]
+        self.addCleanup(remove_token, passkey_serial)
+        # A failed authentication after the enrollment started
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": self.user.login, "pass": "2"}):
+            self.assertFalse(self.app.full_dispatch_request().json["result"]["value"])
+
+        data = {
+            "attestationObject": self.registration_attestation,
+            "clientDataJSON": self.registration_client_data,
+            "credential_id": self.credential_id,
+            "rawId": self.credential_id,
+            "authenticatorAttachment": self.authenticator_attachment,
+            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
+            "transaction_id": transaction_id,
+            "type": "passkey",
+            "user": self.user.login,
+            "realm": self.user.realm,
+            "serial": passkey_serial
+        }
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+            self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", res.json["detail"]["message"],
+                             res.json)
+
     def test_28_locked_owner_rejected_before_token_work(self):
         """A locked passkey owner is rejected at /validate/check by the
         conditional-access pre-check. The request is username-less, so the owner is
@@ -2089,6 +2259,95 @@ class PasskeyAPITest(PasskeyAPITestBase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        remove_token(serial)
+
+    def test_33b_auth_passkey_of_named_user_with_failing_user_store(self):
+        """
+        Whether the passkey belongs to the named user can not be told while the user store fails to look the user up.
+        The login is refused and logged as a failing user store, not as a token of somebody else.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        # A login name the user store does not know, so that the expected row can be built while it answers
+        data.update({"transaction_id": transaction_id, "username": "doesnotexist", "realm": self.realm1.upper()})
+        with patch("privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserId",
+                   side_effect=ResolverError("The user store is not available")):
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self._verify_auth_fail_with_error(res, 4031)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.USER_STORE_UNAVAILABLE], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                        user=User(login="doesnotexist", realm=self.realm1),
+                                        transaction_id=transaction_id, endpoint='/auth')
+        remove_token(serial)
+
+    def test_33c_passkey_without_username_with_failing_user_store(self):
+        """
+        A passkey login without a username is for the token owner. If the user store fails to look the owner up, the
+        login is refused and logged, also if the user store answers again later in the request.
+        """
+        original_get_username = PasswdIdResolver.getUsername
+        for endpoint, mode in itertools.product(["/validate/check", "/auth"], ["always", "once"]):
+            serial = self._enroll_static_passkey()
+            transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
+            data = dict(self.authentication_response_uv)
+            data["transaction_id"] = transaction_id
+            lookups = []
+
+            def get_username(resolver: PasswdIdResolver, user_id: str) -> str:
+                lookups.append(user_id)
+                if mode == "always" or len(lookups) == 1:
+                    raise ResolverError("The user store is not available")
+                return original_get_username(resolver, user_id)
+
+            # The user cache would answer for the user store
+            flush_user_cache()
+            with patch.object(PasswdIdResolver, "getUsername", get_username):
+                with self.app.test_request_context(endpoint, method='POST', data=data,
+                                                   headers={"Origin": self.expected_origin}):
+                    res = self.app.full_dispatch_request()
+            if endpoint == "/auth":
+                self._verify_auth_fail_with_error(res, 4031)
+            else:
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+            # /validate refuses in the conditional access pre-check, before the answer is shown to continue the
+            # challenge, so its row starts an attempt of its own
+            auth_log_entries = assert_authentication_log(
+                [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.USER_STORE_UNAVAILABLE],
+                transaction_id=transaction_id, same_attempt=endpoint == "/auth")
+            # The authentication log looks the owner of the serial up itself, which succeeds once the user store
+            # answers again
+            assert_authentication_log_entry(auth_log_entries[AuthEventType.USER_STORE_UNAVAILABLE],
+                                            user=self.user if mode == "once" else None, serials={serial},
+                                            transaction_id=transaction_id, endpoint=endpoint)
+            remove_token(serial)
+
+    def test_33d_auth_passkey_without_username_user_store_fails_after_verification(self):
+        """
+        The owner of the passkey is looked up, the passkey is verified, and the user store fails on the lookup of the
+        user the session would act as. The login is refused and logged as a failing user store.
+        """
+        serial = self._enroll_static_passkey()
+        transaction_id = self._trigger_passkey_challenge(self.authentication_challenge_uv)["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        # The owner is looked up by user ID, the session user by login name. The user cache would answer for both.
+        flush_user_cache()
+        with patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("The user store is not available")):
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(907, res.json["result"]["error"]["code"], res.json)
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.USER_STORE_UNAVAILABLE], transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.USER_STORE_UNAVAILABLE], user=self.user,
+                                        transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
     def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):

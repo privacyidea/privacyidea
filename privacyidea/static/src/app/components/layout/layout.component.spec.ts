@@ -19,9 +19,10 @@
 
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { RouterOutlet } from "@angular/router";
+import { provideRouter, RouterOutlet } from "@angular/router";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { DebugNoticeComponent } from "@components/layout/debug-notice/debug-notice.component";
+import { SubscriptionExpiredNoticeComponent } from "@components/layout/subscription-expired-notice/subscription-expired-notice.component";
 import { LayoutComponent } from "@components/layout/layout.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -69,6 +70,7 @@ describe("LayoutComponent", () => {
     await TestBed.configureTestingModule({
       imports: [LayoutComponent],
       providers: [
+        provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: LoadingService, useClass: MockLoadingService }
@@ -82,7 +84,8 @@ describe("LayoutComponent", () => {
             NavigationStubComponent,
             NavigationSelfServiceStubComponent,
             NavigationSelfServiceWizardStubComponent,
-            DebugNoticeComponent
+            DebugNoticeComponent,
+            SubscriptionExpiredNoticeComponent
           ]
         }
       })
@@ -131,6 +134,29 @@ describe("LayoutComponent", () => {
       fixture.detectChanges();
 
       expect(fixture.nativeElement.querySelector(".admin-content.admin-content-flush")).toBeNull();
+    });
+  });
+
+  describe("subscription expired notice", () => {
+    let authService: MockAuthService;
+
+    beforeEach(() => {
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.update((data) => ({ ...data!, subscription_status: 2 }));
+    });
+
+    it("is rendered in the admin layout", () => {
+      authService.role.set("admin");
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".admin-layout .subscription-expired-notice")).not.toBeNull();
+    });
+
+    it("is not rendered for a self-service user", () => {
+      authService.role.set("user");
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".subscription-expired-notice")).toBeNull();
     });
   });
 });

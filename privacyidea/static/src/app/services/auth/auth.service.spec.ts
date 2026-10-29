@@ -533,6 +533,25 @@ describe("AuthService", () => {
     });
   });
 
+  describe("updateSubscriptionStatus", () => {
+    it("replaces the status and stores the new auth data", () => {
+      authService.authData.set({ token: "t", role: "admin", username: "admin", subscription_status: 2 } as AuthData);
+
+      authService.updateSubscriptionStatus(3);
+
+      expect(authService.subscriptionStatus()).toBe(3);
+      const stored = (mockLocal.saveData as jest.Mock).mock.calls.find((c) => c[0] === AUTH_DATA_STORAGE_KEY);
+      expect(JSON.parse(stored[1]).subscription_status).toBe(3);
+    });
+
+    it("does nothing without a session", () => {
+      authService.updateSubscriptionStatus(3);
+
+      expect(authService.authData()).toBeNull();
+      expect(mockLocal.saveData).not.toHaveBeenCalled();
+    });
+  });
+
   describe("session rehydration (restoreSession)", () => {
     const makeJwt = (expSecondsFromNow: number): string => {
       const payload = {

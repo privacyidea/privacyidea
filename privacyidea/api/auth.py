@@ -64,6 +64,7 @@ import copy
 import logging
 import threading
 import traceback
+from dataclasses import dataclass
 from datetime import (datetime, timezone)
 from functools import wraps
 from typing import NoReturn
@@ -82,17 +83,19 @@ from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_respo
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
-                                           disabled_token_types, auth_timelimit, load_challenge_text)
+                                           disabled_token_types, auth_timelimit, load_challenge_text,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token,
-                                       pop_auth_event_reason, pop_auth_event_serials)
+                                       pop_auth_event_reason, pop_auth_event_serials, add_autoresync_to_audit)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
                                                                           LOG_TRANSACTION_ID_KEY)
+from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
@@ -119,6 +122,24 @@ from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_u
 log = logging.getLogger(__name__)
 
 jwtauth = Blueprint('jwtauth', __name__)
+
+
+@dataclass
+class FailedUserLookup:
+    """
+    The user of a login that the user store failed to look up in ``before_request``: the user the request names, or
+    the owner of the passkey a login without a username is made with. The login goes on, so that a local admin of
+    the same name can still log in, and every refusal of it is logged as ``USER_STORE_UNAVAILABLE`` with what is
+    known about the user.
+
+    :ivar login_name: The login name the request names, None for a login without a username
+    :ivar realm: The realm of the named login, None for a login without a username
+    :ivar serial: The passkey of a login without a username. None for a named login, as the authentication log would
+        take the token owner as the user of the row, who is not necessarily the user named.
+    """
+    login_name: str | None = None
+    realm: str | None = None
+    serial: str | None = None
 
 
 @jwtauth.before_request
@@ -157,7 +178,7 @@ def before_request():
                         "action_detail": "",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
-    g.resolved_user = {"is_local_admin": False}
+    g.resolved_user = {"is_local_admin": False, "failed_user_lookup": None}
 
     request.User = User()
     username = request.all_data.get("username")
@@ -182,13 +203,20 @@ def before_request():
                 request.User = User(login_name, realm)
             except Exception as e:
                 request.User = None
+                g.resolved_user["failed_user_lookup"] = FailedUserLookup(login_name, realm.lower())
                 log.warning(f"Problem resolving user {login_name} in realm {realm}: {e!s}.")
                 log.debug(f"{traceback.format_exc()!s}")
     elif credential_id:
         # Get user for passkey and webauthn login
         token = get_fido2_token_by_credential_id(credential_id)
         if token:
-            request.User = token.user
+            try:
+                request.User = token.user
+            except Exception as e:
+                # Refused in the view, after the conditional access gate, without looking the owner up again
+                request.User = None
+                g.resolved_user["failed_user_lookup"] = FailedUserLookup(serial=token.get_serial())
+                log.warning(f"Problem resolving the owner of the token {token.get_serial()}: {e!s}")
 
 
 def _refuse_disabled_login(login_disabled_policies: list[str], user: User, serial: str | None = None,
@@ -196,13 +224,27 @@ def _refuse_disabled_login(login_disabled_policies: list[str], user: User, seria
     """
     Refuse a WebUI login that a ``login_mode=disable`` policy disables. A user who does not exist gets the same
     response as one who does, only the authentication log tells them apart: ``USER_UNKNOWN`` instead of
-    ``NOT_AUTHORIZED``.
+    ``NOT_AUTHORIZED``, or ``USER_STORE_UNAVAILABLE`` if the user store failed to look the user up.
 
+    :param login_disabled_policies: The names of the policies that disable the login
+    :param user: The user who tries to log in
+    :param serial: The serial of the token the login was made with, if any
+    :param transaction_id: The transaction the login answered, if any
     :raises PolicyError: always
     """
-    event_type = AuthEventType.NOT_AUTHORIZED if user.exist() else AuthEventType.USER_UNKNOWN
+    failed_lookup = g.resolved_user.get("failed_user_lookup")
+    username = None
+    realm = None
+    if user.exist():
+        event_type = AuthEventType.NOT_AUTHORIZED
+    elif failed_lookup:
+        event_type = AuthEventType.USER_STORE_UNAVAILABLE
+        username = failed_lookup.login_name
+        realm = failed_lookup.realm
+    else:
+        event_type = AuthEventType.USER_UNKNOWN
     log_authentication(event_type, request, user=user, serial=serial, transaction_id=transaction_id,
-                       reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
+                       username=username, realm=realm, reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
                        reason_detail=build_reason_detail(policies=login_disabled_policies))
     raise PolicyError(_("The login for this user is disabled."))
 
@@ -422,6 +464,14 @@ def get_auth_token():
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+        failed_lookup = g.resolved_user.get("failed_user_lookup")
+        if failed_lookup:
+            # Without the user store, neither the token owner nor whether the token belongs to the named user is known
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=failed_lookup.serial,
+                               transaction_id=transaction_id, username=failed_lookup.login_name,
+                               realm=failed_lookup.realm)
+            raise AuthError(_("Authentication failure using passkey."),
+                            id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         # The WebAuthn second factor sends the username along; it may only be answered with a token of that user.
         # A passkey login without a username authenticates the token owner.
         if username and not token_belongs_to_user(token, user):
@@ -472,7 +522,7 @@ def get_auth_token():
                                 "token_type": token.get_type()})
             _refuse_disabled_login(login_disabled_policies, login_user, serial=token.get_serial(),
                                    transaction_id=transaction_id)
-        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token, login_user)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user,
@@ -671,8 +721,7 @@ def get_auth_token():
                     # row, which a refused login must not be given the chance to write.
                     reject_locked_fallback_user(user)
                     auth_timelimit(request, None)
-                    increase_failcounter_on_challenge(request, None)
-                    disabled_token_types(request, None)
+                    rerun_user_dependent_prepolicies(request)
 
             if local_admin_exist and not user.exist():
                 # Only a local admin's wrong password is left, and the WebUI login mode does not apply to local admins
@@ -687,6 +736,14 @@ def get_auth_token():
                     policy_names = sorted({name for names in login_mode_values.values() for name in names})
                     raise PolicyError(f"There are policies with conflicting actions: {policy_names!r}")
                 login_mode = next(iter(login_mode_values), LOGINMODE.USERSTORE)
+            failed_lookup = g.resolved_user.get("failed_user_lookup")
+            if failed_lookup:
+                # The credentials can not be checked without the user, and a passOnNoUser policy would take the empty
+                # user for one that does not exist and accept the login
+                log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=failed_lookup.login_name,
+                                   realm=failed_lookup.realm,
+                                   transaction_id=get_optional(request.all_data, "transaction_id"))
+                raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 # Never copy internal keys
@@ -710,6 +767,8 @@ def get_auth_token():
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
+            # LOG_AUTORESYNC_KEY stays in details until the exit that writes the audit info: on a failure that is
+            # auth_error, which appends it after the failure message.
             if 'multi_challenge' in details:
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
@@ -773,9 +832,16 @@ def get_auth_token():
                 log_authentication(auth_event_type, request, user=user, serial=log_serials or serials,
                                    transaction_id=details.get("transaction_id"),
                                    reasons=auth_reasons, reason_detail=auth_reason_detail)
+                add_autoresync_to_audit(details.pop(LOG_AUTORESYNC_KEY, None))
                 return send_result(False, rid=2, details=details)
 
     # Authentication log
+    log_realm = None
+    failed_lookup = g.resolved_user.get("failed_user_lookup")
+    if failed_lookup and not admin_auth and not user_auth:
+        # Without the user, the credential check failed only because the user store did not answer
+        auth_event_type = AuthEventType.USER_STORE_UNAVAILABLE
+        log_realm = failed_lookup.realm
     if auth_event_type is None and not terminal_event_suppressed:
         # When nothing classified the request: a success defaults to LOGIN_SUCCESS, and an unclassified failure logs
         # as UNKNOWN_FAIL_REASON rather than PASSWORD_FAIL, which would wrongly skew password-failure
@@ -789,6 +855,7 @@ def get_auth_token():
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,
+                       realm=log_realm,
                        internal_admin=internal_admin,
                        reasons=auth_reasons, reason_detail=auth_reason_detail)
 
@@ -802,6 +869,7 @@ def get_auth_token():
         raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details or {})
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
+        add_autoresync_to_audit(details.pop(LOG_AUTORESYNC_KEY, None))
         request.User = user
 
     # If the HSM is not ready, we need to create the nonce in another way!

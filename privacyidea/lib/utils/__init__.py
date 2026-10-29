@@ -42,9 +42,16 @@ from datetime import timedelta, datetime
 from enum import Enum
 from importlib import import_module
 from importlib import metadata
+from typing import TYPE_CHECKING, Any
 
 import segno
 import sqlalchemy
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import Grouping
+from sqlalchemy.sql.operators import OperatorType
+from sqlalchemy.sql.visitors import InternalTraversal
+from sqlalchemy.types import TypeDecorator
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
@@ -53,6 +60,9 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.conditional_access.authentication_event_types import strip_internal_classification
 from privacyidea.lib.framework import get_app_config_value, get_base_url
+
+if TYPE_CHECKING:
+    from privacyidea.models import Config
 
 log = logging.getLogger(__name__)
 
@@ -855,39 +865,31 @@ def check_ip_in_policy(client_ip, policy):
     return client_found, client_excluded
 
 
-def reload_db(timestamp, db_ts):
+def reload_db(loaded_db_timestamp: str | None, db_ts: "Config | None") -> bool:
     """
-    Check if the configuration database should be reloaded. This is verified
-    by comparing the chache timestamp and the database timestamp
+    Check if the configuration has to be reloaded from the database.
 
-    :param timestamp: cache timestamp
-    :type timestamp: timestamp
-    :param db_ts: database timestamp
-    :type db_ts: Config Object with timestamp str in .Value
+    The database holds the time of the last configuration change, as written by
+    the node that made the change. The configuration is reloaded if this value
+    differs from the value that was read together with the currently loaded
+    configuration. The value is not compared with the local clock, so a change is
+    noticed whatever the clock difference between the nodes and however long the
+    last reload took.
 
-    :return: bool
+    :param loaded_db_timestamp: the database timestamp that was read with the
+        currently loaded configuration, None if no configuration is loaded yet
+    :param db_ts: the database timestamp, a Config object with the timestamp
+        string in ``.Value``, or None if the database has no timestamp
+    :return: True if the configuration has to be reloaded
     """
-    internal_timestamp = ''
-    if timestamp:
-        internal_timestamp = timestamp.strftime("%s")
-    rdb = False
-    # Reason to reload
-    if db_ts and db_ts.Value.startswith("2016-"):
-        # If there is an old timestamp in the database
-        rdb = True
-        log.debug("Old timestamp. We need to reread policies "
-                  "from DB.")
-    if not (timestamp and db_ts):
-        # If values are not initialized
-        rdb = True
-        log.debug("Values are not initialized. We need to reread "
-                  "policies from DB.")
-    if db_ts and db_ts.Value >= internal_timestamp:
-        # If the DB contents is newer
-        rdb = True
-        log.debug("timestamp in DB newer. We need to reread policies "
-                  "from DB.")
-    return rdb
+    if loaded_db_timestamp is None or db_ts is None:
+        log.debug("Configuration or database timestamp not initialized. We need to reread the configuration "
+                  "from the database.")
+        return True
+    if db_ts.Value != loaded_db_timestamp:
+        log.debug("The configuration in the database has changed. We need to reread it.")
+        return True
+    return False
 
 
 def reduce_realms(all_realms, policies):
@@ -1132,6 +1134,80 @@ def convert_wildcard_to_sql_like(value: str, wildcard: str = "*") -> str:
     # the user wildcard first means it can never collide with the escaping, so any
     # wildcard character (including '%' or '_') is handled correctly.
     return "%".join(escape_sql_like(part) for part in value.split(wildcard))
+
+
+class _OracleLikePattern(TypeDecorator):
+    """
+    The type of the value :func:`text_column_equals` compares a column with. On Oracle, where the comparison is a
+    ``LIKE``, the metacharacters of the value are escaped. Every other database gets the value as it is.
+    """
+    impl = sqlalchemy.UnicodeText
+    cache_ok = True
+
+    def __init__(self, column_type: sqlalchemy.types.TypeEngine):
+        super().__init__()
+        self.column_type = column_type
+        self.impl = column_type
+
+    def process_bind_param(self, value: str | None, dialect: sqlalchemy.engine.Dialect) -> str | None:
+        if dialect.name == "oracle" and value is not None:
+            return escape_sql_like(value)
+        return value
+
+
+class _TextColumnEquals(sqlalchemy.ColumnElement):
+    """The condition :func:`text_column_equals` returns, compiled for the database it runs on."""
+    inherit_cache = True
+    type = sqlalchemy.Boolean()
+    # A condition already: without this, a database with no boolean type, such as Oracle, gets an appended "= 1"
+    _is_implicitly_boolean = True
+    _traverse_internals = [("column", InternalTraversal.dp_clauseelement),
+                           ("value", InternalTraversal.dp_clauseelement)]
+
+    def __init__(self, column: sqlalchemy.ColumnElement, value: str):
+        self.column = column
+        self.value = sqlalchemy.bindparam(None, value, type_=_OracleLikePattern(column.type), unique=True)
+
+    @property
+    def _from_objects(self) -> list[sqlalchemy.FromClause]:
+        # The table of the column joins the FROM list, also when no other part of the statement names it
+        return self.column._from_objects
+
+    def self_group(self, against: OperatorType | None = None) -> sqlalchemy.ColumnElement:
+        # Both forms are a comparison, like "a = b": inside an operator of the same or a higher precedence, for
+        # example "== false()", the condition needs parentheses
+        if operators.is_precedent(operators.eq, against):
+            return Grouping(self)
+        return self
+
+
+@compiles(_TextColumnEquals)
+def _compile_text_column_equals(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                **kw: Any) -> str:
+    return f"{compiler.process(element.column, **kw)} = {compiler.process(element.value, **kw)}"
+
+
+@compiles(_TextColumnEquals, "oracle")
+def _compile_text_column_equals_on_oracle(element: _TextColumnEquals, compiler: sqlalchemy.sql.compiler.SQLCompiler,
+                                          **kw: Any) -> str:
+    return (f"{compiler.process(element.column, **kw)} LIKE {compiler.process(element.value, **kw)} "
+            f"ESCAPE '{SQL_LIKE_ESCAPE}'")
+
+
+def text_column_equals(column: sqlalchemy.ColumnElement, value: str) -> sqlalchemy.ColumnElement[bool]:
+    """
+    Compare a text column with *value*, also where the column is a CLOB.
+
+    Every database compares with ``=``, except Oracle. Oracle stores long text, such as the token info value, as a
+    CLOB, which it can neither compare with ``=`` (ORA-00932) nor convert to a string beyond 4000 bytes (ORA-22835).
+    There the comparison is a ``LIKE`` with the metacharacters of *value* escaped, which matches the value exactly
+    and with case, like ``=`` does on Oracle. SQLAlchemy chooses the form when it compiles the statement.
+
+    :param column: the text column
+    :param value: the value the column has to hold
+    :return: the condition
+    """
+    return _TextColumnEquals(column, value)
 
 
 def convert_timestamp_to_utc(timestamp):

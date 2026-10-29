@@ -89,6 +89,7 @@ import copy
 import json
 import logging
 import threading
+from functools import partial
 
 from flask import (Blueprint, request, g, Response)
 from flask_babel import _
@@ -111,12 +112,13 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_authz,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
-                                           disabled_token_types, load_challenge_text)
+                                           disabled_token_types, load_challenge_text,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
                                                     RejectionShape, REMEMBER_DEVICE_REJECTION,
                                                     TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
-                                       INTERNAL_OPTION_KEYS)
+                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
@@ -128,11 +130,12 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError, EnrollmentError, ValidateError)
+                                   TokenAdminError, EnrollmentError, ValidateError, ResolverError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import SCOPE
+from privacyidea.lib.policies.helper import check_auth_time_limit
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
@@ -141,12 +144,13 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, require_fido2_assertion,
                                                  require_fido2_registration)
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
-from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
+from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication, get_request_identity
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
                         log_authentication, pop_auth_event_reason, pop_auth_event_serials)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
@@ -154,7 +158,9 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
-from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
+from ..lib.autoresync import LOG_AUTORESYNC_KEY
+from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
+                                                      confirm_attempt_for_serials)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
                                    check_fido2_token_state, record_fido2_login_success)
@@ -219,7 +225,15 @@ def before_request():
     # Check if a policy defines the realm
     realm = get_realm_for_authentication(g, username, realm)
     resolver = request.all_data.get("resolver")
-    request.User = User(username, realm, resolver)
+    try:
+        request.User = User(username, realm, resolver)
+    except ResolverError:
+        if request.blueprint == validate_blueprint.name:
+            # Lowercase like the realm of a User object, which this request could not build
+            log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, username=username,
+                               realm=realm.lower() if realm else None,
+                               transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
     request.all_data["realm"] = realm
 
     # Replace the requested user with the user it was resolved to
@@ -369,45 +383,6 @@ def offlinerefill():
         raise
 
 
-def _conditional_access_identity():
-    """
-    Resolve the identity the conditional-access pre-check must gate on, for the endpoints that accept a token
-    instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
-
-    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
-    (identified by ``credential_id``) or a serial-only request arrives without a login name, at most with a realm —
-    and the user-lock / DENY checks would be silently skipped, letting a locked user authenticate by credential id or
-    serial, or an admin trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in
-    that case so the lock is enforced before any token work runs.
-
-    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
-    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
-    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
-    resolved, so the IP-block check still applies. That costs a user-scoped check only on a request that cannot
-    authenticate anyway: the authenticating path repeats this lookup without ``silent_fail``
-    (:func:`~privacyidea.lib.token.check_serial_pass`), so a serial that does not resolve to exactly one token
-    raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
-    itself, so an attempt that does reach a token is still counted.
-    """
-    if request.User and request.User.login:
-        return request.User
-    credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
-    serial = get_optional(request.all_data, "serial")
-    token = None
-    try:
-        if serial:
-            token = get_one_token(serial=serial, silent_fail=True)
-        elif credential_id:
-            # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
-            # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
-            # practice - a passkey is hashed at enrollment, the webauthn second leg carries the user - and not worth
-            # a challenge lookup plus otpkey decrypt on every request.
-            token = get_fido2_token_by_credential_id(credential_id)
-    except Exception as ex:
-        log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
-    return token.user if (token and token.user) else request.User
-
-
 def _challenge_owner(challenge) -> User:
     """
     Resolve the owner (a token owner or the first container user) of a single
@@ -446,7 +421,7 @@ def _challenge_owner(challenge) -> User:
 @prepolicy(mangle, request=request)
 # Below set_realm and mangle in particular, because both *rewrite the identity*
 # Besides of them, CA gate should the first step to run before any other authentication step starts
-@conditional_access_gate(_conditional_access_identity)
+@conditional_access_gate(partial(get_request_identity, request))
 @prepolicy(increase_failcounter_on_challenge, request=request)
 @prepolicy(save_client_application_type, request=request)
 @prepolicy(webauthntoken_request, request=request)
@@ -630,6 +605,8 @@ def check():
         # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
         # a failure was made against belong on the authentication-log row alone.
         AUTH_EVENT_SERIALS_KEY: [],
+        # Audit-only, never part of the response (see LOG_AUTORESYNC_KEY)
+        LOG_AUTORESYNC_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -655,6 +632,10 @@ def check():
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
             # TOKEN_LOCKED is raised only for a revoked token: check_token_list drops those before any other check.
             _record_context_reason(context, AuthEventReason.TOKEN_REVOKED)
+        raise
+    except ResolverError:
+        # A user store that failed after the request was let in, e.g. on a later lookup of the token owner
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_STORE_UNAVAILABLE
         raise
     finally:
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
@@ -831,6 +812,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.TOKEN_TYPE_DISABLED, token.get_serial())
         raise PolicyError(_("The authentication method is not available."))
 
+    # Also for the answers of enrollment challenges, as check_user_pass does
+    if not _check_time_limit(context, user, token.get_serial()):
+        return  # Result remains False
+
     # Handle Enrollment vs Authentication (attestation_object was read with the shape check above)
     if attestation_object:
         # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
@@ -889,7 +874,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             webauthntoken_request(request, None)
             webauthntoken_authz(request, None)
 
-        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
+        last_auth_ok, last_auth_policies = check_last_auth_policy(g, token, user)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             context["details"]["message"] = _(
@@ -969,6 +954,25 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         _record_context_reason(context, AuthEventReason.CHALLENGE_WRONG_RESPONSE, token.get_serial())
 
 
+def _check_time_limit(context: dict, user: User, serial: str) -> bool:
+    """
+    Check the auth_max_fail and auth_max_success policies of the user, which check_user_pass applies to an
+    authentication with a user, and record a refusal in the context.
+
+    :param context: The context of the authentication request
+    :param user: The user who authenticates
+    :param serial: The serial of the token the request authenticates with
+    :return: True if the user may authenticate
+    """
+    time_limit = check_auth_time_limit(user)
+    if not time_limit.allowed:
+        context["details"].update(time_limit.reply_dict)
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+        context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        _record_context_reason(context, time_limit.reason)
+    return time_limit.allowed
+
+
 def _handle_serial_auth(context: dict, serial: str):
     """
     Handles authentication with serial provided
@@ -995,6 +999,16 @@ def _handle_serial_auth(context: dict, serial: str):
             request.User = user
             context["user"] = user
             context["options"]["user"] = user
+            rerun_user_dependent_prepolicies(request, context["options"])
+            # Not one of the shared pre-policies, since /auth disables the push wait
+            pushtoken_validate(request, None)
+            context["options"][PushAction.WAIT] = request.all_data[PushAction.WAIT]
+
+    if user and user.exist():
+        # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer
+        confirm_attempt_for_serials([serial])
+        if not _check_time_limit(context, user, serial):
+            return  # Result remains False
 
     # Perform Check
     if not otp_only:
@@ -1004,6 +1018,8 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
+        # Read before the check, which deletes a used registration token
+        token_type = get_one_token(serial=serial).get_tokentype()
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
         # token that can not be used is classified by check_otp.
@@ -1011,8 +1027,12 @@ def _handle_serial_auth(context: dict, serial: str):
             AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
-        # a message, so without this the row would name no token although the request named exactly one.
+        # a message, so without this the rows would name no token although the request named exactly one. The audit
+        # entry is logged directly, since serial_list would also update the last authentication on success and a
+        # type in the details would be part of the response.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        g.audit_object.log({"serial": serial, "token_type": token_type})
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success
     context["details"] = details
@@ -1068,6 +1088,7 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -1140,9 +1161,9 @@ def _finalize_auth_response(context):
                 except Exception as e:
                     log.debug(f"Could not find container for token {serial}: {e}")
 
-            # Client Mode Per User Policy
+            # Client Mode Per User Policy: an opt-in, the last used token type is only stored when the policy is set
             if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                          user_object=user).allowed():
+                          user_object=user).enforced():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
@@ -1188,6 +1209,7 @@ def _finalize_auth_response(context):
     if details.get("type"):
         audit_entry["token_type"] = details.get("type")
     g.audit_object.log(audit_entry)
+    add_autoresync_to_audit(context[LOG_AUTORESYNC_KEY])
 
     return ret
 
@@ -1473,7 +1495,7 @@ def check_remember_device():
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 # First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
-@conditional_access_gate(_conditional_access_identity, shape=TRIGGER_CHALLENGE_REJECTION)
+@conditional_access_gate(partial(get_request_identity, request), shape=TRIGGER_CHALLENGE_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)

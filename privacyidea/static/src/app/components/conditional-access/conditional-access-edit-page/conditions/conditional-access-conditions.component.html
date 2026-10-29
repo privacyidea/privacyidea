@@ -23,14 +23,24 @@
         group as a whole stays top-aligned with the value select. -->
       <div class="ca-condition-subject">
         <span class="ca-condition-label">{{ row.label }}</span>
+        <!-- A multi-selection, so that the selected operator can be pressed again to leave none selected. -->
         <mat-button-toggle-group
+          multiple
           [attr.aria-label]="row.operatorAriaLabel"
-          [value]="selectedOperator(row.type)"
-          (change)="onOperatorChange(row.type, $event.value)">
+          [attr.aria-describedby]="'ca-operator-hint-' + row.type"
+          [value]="selectedOperators(row.type)"
+          (change)="onOperatorToggle(row.type, $event.source.value, $event.source.checked)">
           @for (operator of operatorOptions(row.type); track operator.name) {
             <mat-button-toggle [value]="operator.name">{{ operator.label }}</mat-button-toggle>
           }
         </mat-button-toggle-group>
+        <!-- Pressing one operator releases the other, which a screen reader cannot tell from the toggles alone. -->
+        <span
+          class="visually-hidden"
+          [id]="'ca-operator-hint-' + row.type"
+          i18n="@@conditionalAccess.chooseAtMostOneOperator"
+          >Choose at most one operator.</span
+        >
       </div>
 
       <mat-form-field
@@ -40,6 +50,7 @@
         <mat-label>{{ row.valuesLabel }}</mat-label>
         <mat-select
           multiple
+          [disabled]="selectedOperator(row.type) === null"
           [value]="selectedValues(row.type)"
           (selectionChange)="onValuesChange(row.type, $event.value)">
           @for (value of valueOptions(row.type); track value) {

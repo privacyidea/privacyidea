@@ -13,7 +13,7 @@ from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import delete_from_cache, _hash_password
 from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import (set_policy, delete_policy,
+from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     PolicyClass, SCOPE,
                                     ACTIONVALUE)
 from privacyidea.lib.policydecorators import (auth_otppin,
@@ -28,6 +28,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -222,6 +223,18 @@ class LibPolicyTestCase(MyTestCase):
                          "to 'pol1'")
         delete_policy("pol1")
 
+    def test_04b_empty_user_is_not_accepted_by_passOnNoUser(self):
+        # An empty user object is left behind by a failed lookup, it is no user that does not exist
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        set_policy(name="pol1", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER)
+        try:
+            self.assertRaises(UserError, auth_user_does_not_exist, check_user_pass, User(), "somePW",
+                              options={"g": g})
+        finally:
+            delete_policy("pol1")
+
     def test_05_user_has_no_tokens(self):
         user = User("cornelius", realm="r1")
         passw = "test"
@@ -410,8 +423,9 @@ class LibPolicyTestCase(MyTestCase):
 
         token = get_tokens(serial=serial)[0]
         # Set a very old last_auth
+        # Written as text: the token info is a CLOB on Oracle, which refuses a bound datetime
         token.write_tokeninfo(PolicyAction.LASTAUTH,
-                            datetime.datetime.utcnow() - datetime.timedelta(days=2))
+                              str(datetime.datetime.utcnow() - datetime.timedelta(days=2)))
         rv = auth_lastauth(fake_auth, user, pin, options)
         self.assertEqual(rv[0], False)
         self.assertTrue("The last successful authentication was" in
@@ -805,6 +819,7 @@ class LibPolicyTestCase(MyTestCase):
         # Clean up
         remove_token(pin1)
         remove_token(pin2)
+        delete_policy("reset_all")
 
     @radiusmock.activate
     def test_16_passthru_assign(self):
@@ -1347,3 +1362,110 @@ class LibPolicyTestCase(MyTestCase):
         remove_token("NOTOKEN_ENROLLED1")
         delete_policy("pol_notoken")
         delete_policy("pol_notoken_ignore")
+
+    @radiusmock.activate
+    def test_22_passthru_refuses_a_wrong_password(self):
+        save_resolver({"resolver": "myreso", "type": "passwdresolver", "fileName": PW_FILE_2})
+        set_realm("r1", [{"name": "myreso"}])
+        add_radius("radiusconfig1", "1.2.3.4", "testing123", dictionary=DICT_FILE)
+        # The user has no token, so the passthru policy applies. The user store password of cornelius is "test".
+        user = User("cornelius", realm="r1")
+        self.assertEqual(0, get_tokens(user=user, count=True))
+
+        def passthru(target: str, password: str) -> tuple[bool, dict]:
+            set_policy(name="pthru", scope=SCOPE.AUTH, action=f"{PolicyAction.PASSTHRU}={target}")
+            self.set_default_g_variables()
+            self.app_context.g.policy_object = PolicyClass()
+            self.app_context.g.audit_object = FakeAudit()
+            return auth_user_passthru(check_user_pass, user, password, options={"g": self.app_context.g})
+
+        try:
+            self.assertTrue(passthru("userstore", "test")[0])
+            result, reply = passthru("userstore", "wrong")
+            self.assertFalse(result, reply)
+
+            radiusmock.setdata(response=radiusmock.AccessReject)
+            result, reply = passthru("radiusconfig1", "test")
+            self.assertFalse(result, reply)
+            radiusmock.setdata(response=radiusmock.AccessAccept)
+            self.assertTrue(passthru("radiusconfig1", "test")[0])
+        finally:
+            delete_policy("pthru")
+
+    def test_23_reset_all_user_tokens_only_after_a_success(self):
+        self.setUp_user_realms()
+        user = User(login="cornelius", realm=self.realm1)
+        token = init_token({"serial": "RESETALL1", "pin": "pin1", "type": "spass"}, user=user)
+        registration_token = init_token({"serial": "RESETALLREG", "type": "registration"}, user=user)
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+        g.client_ip = None
+        g.serial = None
+
+        def failcounts_after(result: bool, allow_reset_all_tokens: bool) -> tuple[int, int]:
+            for user_token in (token, registration_token):
+                user_token.token.failcount = 2
+                user_token.token.save()
+            reset_all_user_tokens(self.fake_check_token_list, [token, registration_token], "pw", None,
+                                  options={"g": g}, allow_reset_all_tokens=allow_reset_all_tokens, result=result)
+            return token.token.failcount, registration_token.token.failcount
+
+        try:
+            # Without the policy, a success resets nothing
+            self.assertTupleEqual((2, 2), failcounts_after(result=True, allow_reset_all_tokens=True))
+
+            set_policy("reset_all", scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS)
+            # A failed authentication resets nothing
+            self.assertTupleEqual((2, 2), failcounts_after(result=False, allow_reset_all_tokens=True))
+            # Neither does a success of a check that does not allow it, like the four-eyes check of a realm
+            self.assertTupleEqual((2, 2), failcounts_after(result=True, allow_reset_all_tokens=False))
+            # A success resets every token of the user except the registration token
+            self.assertTupleEqual((0, 2), failcounts_after(result=True, allow_reset_all_tokens=True))
+        finally:
+            remove_token("RESETALL1")
+            remove_token("RESETALLREG")
+            delete_policies(["reset_all"])
+
+    def test_24_a_refused_authentication_does_not_renew_last_auth(self):
+        self.setUp_user_realms()
+        serial = "SPASSLASTAUTH2"
+        user = User("cornelius", realm=self.realm1)
+        init_token({"type": "spass", "pin": "secretpin", "serial": serial}, user=user)
+        set_policy(name="pol_lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+
+        def authenticated(user_object: User, passw: str, options: dict) -> tuple[bool, dict]:
+            return True, {"serial": serial}
+
+        try:
+            token = get_tokens(serial=serial)[0]
+            last_auth = (datetime.datetime.now(datetime.timezone.utc) - timedelta(days=2)).strftime(AUTH_DATE_FORMAT)
+            token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth)
+            self.assertFalse(auth_lastauth(authenticated, user, "secretpin", {"g": g})[0])
+            # The refused authentication keeps the date of the last successful one, so the next one is refused as well
+            self.assertEqual(last_auth, get_tokens(serial=serial)[0].get_tokeninfo(PolicyAction.LASTAUTH))
+            self.assertFalse(auth_lastauth(authenticated, user, "secretpin", {"g": g})[0])
+        finally:
+            remove_token(serial)
+            delete_policy("pol_lastauth")
+
+    def test_25_challenge_response_token_types_ignore_the_case(self):
+        self.setUp_user_realms()
+        user = User("cornelius", realm=self.realm1)
+        token = init_token({"type": "totp", "otpkey": "1234", "pin": "test", "serial": "CRCASE"}, user=user)
+
+        def is_challenge_request() -> bool:
+            g = FakeFlaskG()
+            g.policy_object = PolicyClass()
+            g.audit_object = FakeAudit()
+            return token.is_challenge_request("test", user=user, options={"g": g})
+
+        try:
+            self.assertFalse(is_challenge_request())
+            set_policy(name="pol_chal_resp_upper", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=TOTP")
+            self.assertTrue(is_challenge_request())
+        finally:
+            remove_token("CRCASE")
+            delete_policy("pol_chal_resp_upper")

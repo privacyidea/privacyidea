@@ -19,7 +19,6 @@
 #
 import copy
 import importlib
-import json
 import logging
 import os
 from dataclasses import dataclass
@@ -1695,12 +1694,9 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     # convert to dict
     template_list = []
     for template in template_obj_list:
-        template_options = {}
-        if template.template_options != "":
-            template_options = json.loads(template.template_options)
         template_dict = {"name": template.name,
                          "container_type": template.container_type,
-                         "template_options": template_options,
+                         "template_options": template.get_template_options_as_dict(),
                          "default": template.default}
         template_list.append(template_dict)
 
@@ -1789,7 +1785,7 @@ def compare_template_with_container(template: ContainerTemplateBase, container: 
             }
     """
     result = {"tokens": {"missing": [], "additional": []}}
-    template_options = json.loads(template.template_options)
+    template_options = template.get_template_options_as_dict()
 
     # compare tokens
     template_tokens = template_options.get("tokens", [])

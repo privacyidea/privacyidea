@@ -27,6 +27,7 @@ import {
   ContainerDetailsComponent,
   formatContainerTimestamp
 } from "@components/container/container-details/container-details.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
@@ -514,6 +515,37 @@ describe("ContainerDetailsComponent", () => {
       expect(fn()).toBe(true);
     });
 
+    it("does not count unloaded container details as pending changes", () => {
+      containerService.containerDetailsResource.set(undefined);
+
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(false);
+    });
+
+    it("counts an open detail row as pending changes while the details have not loaded", () => {
+      containerService.containerDetailsResource.set(undefined);
+      component.containerDetailData()[0].isEditing.set(true);
+
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(true);
+    });
+
+    it("counts an open registered field editor as pending changes while the details have not loaded", () => {
+      containerService.containerDetailsResource.set(undefined);
+      fixture.debugElement.injector
+        .get(DetailsEditRegistry)
+        .register({ isEditing: signal(true), save: jest.fn(), cancel: jest.fn() });
+
+      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      expect(fn()).toBe(true);
+    });
+
+    it("still blocks editing while the container details have not loaded", () => {
+      containerService.containerDetailsResource.set(undefined);
+
+      expect(component.isAnyEditing()).toBe(true);
+    });
+
     it("ngOnDestroy clears all pending-changes registrations", () => {
       component.ngOnDestroy();
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
@@ -638,4 +670,3 @@ describe("formatContainerTimestamp", () => {
     expect(result).toContain("2024");
   });
 });
-

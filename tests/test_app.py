@@ -345,3 +345,11 @@ class DockerConfigSecretKeyTestCase(unittest.TestCase):
             self.assertEqual(
                 self._docker_secret_key({"SECRET_KEY_FILE": plain, "PI_SECRET_KEY_FILE": alias}),
                 "PLAIN-VALUE")
+
+
+class DockerConfigEngineRegistryTestCase(unittest.TestCase):
+
+    def test_01_shared_engine_registry(self):
+        # The Docker image keeps one database engine with a connection pool per process for the audit log and the
+        # SQL resolvers
+        self.assertEqual("shared", config["docker"].PI_ENGINE_REGISTRY_CLASS)

@@ -85,7 +85,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
-from sqlalchemy import select, delete, update
+from sqlalchemy import ColumnElement, select, delete, update
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY, AuthEventReason,
@@ -150,6 +150,24 @@ class ClientMode:
     INTERACTIVE = 'interactive'
     POLL = 'poll'
     WEBAUTHN = 'webauthn'
+
+
+def lock_token_row(condition: ColumnElement[bool]) -> None:
+    """
+    Lock the row of the token that matches the condition until the end of the transaction, so that a read, compare
+    and write on the token or its token info is not interleaved with the one of another request.
+
+    :param condition: The condition that selects the token, e.g. ``Token.id == token_id``
+    """
+    if db.session.get_bind().dialect.name == "sqlite":
+        # SQLite has no row locks and drops FOR UPDATE. A write takes the lock of the whole database and holds it
+        # until the commit, so the transaction starts with one that changes nothing.
+        db.session.execute(update(Token).where(condition).values(id=Token.id)
+                           .execution_options(synchronize_session=False))
+    else:
+        # Only the id is selected: the eagerly loaded relations of the whole entity would turn the statement into an
+        # outer join, which PostgreSQL refuses to lock.
+        db.session.execute(select(Token.id).where(condition).with_for_update())
 
 
 class TokenClass:
@@ -1272,7 +1290,7 @@ class TokenClass:
         # with outer joins. The save() below commits and releases the lock.
         token_id = self.token.id
         db.session.commit()
-        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        lock_token_row(Token.id == token_id)
         db.session.refresh(self.token)
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)

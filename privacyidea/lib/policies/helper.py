@@ -17,12 +17,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import logging
+from collections import defaultdict
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from flask import g, request
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -127,6 +130,35 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
         reply_dict["message"] = f"Only {policy_count} successful authentications per {time_delta} allowed."
 
     return result, reply_dict
+
+
+@dataclass(frozen=True)
+class AuthTimeLimitResult:
+    """
+    The result of :func:`check_auth_time_limit`.
+    """
+    allowed: bool
+    # Which limit refused the authentication, None if it is allowed
+    reason: AuthEventReason | None = None
+    # The client-facing message of the refusal, see check_max_auth_fail
+    reply_dict: dict = field(default_factory=dict)
+
+
+def check_auth_time_limit(user: User) -> AuthTimeLimitResult:
+    """
+    Check the auth_max_fail and auth_max_success policies of a user who authenticates at /validate/check or /auth.
+
+    :param user: The user who authenticates
+    :return: Whether the user may authenticate, and which limit refused it
+    """
+    user_search_dict = {"user": user.login, "realm": user.realm}
+    allowed, reply_dict = check_max_auth_fail(user, user_search_dict)
+    if not allowed:
+        return AuthTimeLimitResult(False, AuthEventReason.AUTH_MAX_FAIL, reply_dict)
+    allowed, reply_dict = check_max_auth_success(user, user_search_dict)
+    if not allowed:
+        return AuthTimeLimitResult(False, AuthEventReason.AUTH_MAX_SUCCESS, reply_dict)
+    return AuthTimeLimitResult(True)
 
 
 def get_jwt_validity(user: User) -> timedelta:
@@ -281,6 +313,63 @@ def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] |
     return list(granted_realms)
 
 
+def admin_granted_resolvers(action: str, every_realm: bool = False) -> set[str] | None:
+    """
+    The resolvers the logged-in admin's policies grant for *action*, as the union over every applicable policy.
+
+    A resolver belongs to the realms it is part of, so a policy grants the resolvers of the realms in its realm field,
+    narrowed to the resolvers in its resolver field if that is set. Such a policy also grants the resolvers that are
+    part of no realm, narrowed the same way: they serve no user of any realm yet, and an admin adds a new user store
+    to a realm by creating the resolver first. A policy with only a resolver field grants the resolvers it names,
+    whether they are part of a realm or not, and whether they exist yet or not.
+
+    The user field of a policy restricts nothing here: the configuration of a user store is not bound to any of its
+    users, so a policy that names users grants the resolvers the same policy without them grants.
+
+    :param action: the policy action whose scoping to read, like ``resolverread``
+    :param every_realm: a resolver granted through realms is only granted if it is granted in every realm it is part
+        of, on any node, for callers that change the resolver and so the users of all these realms
+    :return: ``None`` for unrestricted - no active admin policy at all, or an applicable policy restricting neither
+        realm nor resolver - otherwise the set of granted resolver names, which may be empty
+    """
+    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+        return None
+    granted_resolvers = set()
+    granting_realms = defaultdict(set)
+    all_realms = None
+    resolvers_without_realm = set()
+    for policy in Match.admin(g, action=action).policies():
+        realm_names = policy_realm_names(policy.get("realm"))
+        resolver_names = _policy_field_names(policy.get("resolver"), get_resolver_list)
+        if realm_names is None and resolver_names is None:
+            return None
+        if realm_names is None:
+            granted_resolvers.update(resolver_names)
+            continue
+        if not realm_names:
+            # A realm field that matches no realm grants nothing
+            continue
+        if all_realms is None:
+            all_realms = get_realms()
+            resolvers_in_realms = {entry.get("name") for config in all_realms.values()
+                                   for entry in config.get("resolver", [])}
+            resolvers_without_realm = set(get_resolver_list()) - resolvers_in_realms
+        granted_resolvers.update(resolver for resolver in resolvers_without_realm
+                                 if resolver_names is None or resolver in resolver_names)
+        for realm in realm_names:
+            for entry in all_realms.get(realm, {}).get("resolver", []):
+                if resolver_names is None or entry.get("name") in resolver_names:
+                    granting_realms[entry.get("name")].add(realm)
+    if every_realm and granting_realms:
+        realms_of_resolver = defaultdict(set)
+        for realm, config in all_realms.items():
+            for entry in config.get("resolver", []):
+                realms_of_resolver[entry.get("name")].add(realm)
+        granting_realms = {resolver: realms for resolver, realms in granting_realms.items()
+                           if realms_of_resolver[resolver] <= realms}
+    return granted_resolvers | set(granting_realms)
+
+
 def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:
     """
     The realms a policy's realm field matches, read the way the policy engine matches it.
@@ -335,19 +424,6 @@ def _policy_usernames(policy_users: list[str] | None, case_insensitive: bool) ->
     named_users = [user for user in dict.fromkeys(policy_users)
                    if user[:1] not in ("!", "-") and fold(user) not in excluded_folded]
     return (named_users, []) if named_users else None
-
-
-def policy_target_is_unrestricted(policy: dict) -> bool:
-    """
-    Whether an admin policy grants its actions on every target: its realm, resolver and user fields are each empty or
-    ``"*"``, read the way the policy engine matches them. Such a policy makes :func:`get_policy_visibility_scopes`
-    answer ``None``.
-
-    :param policy: the policy as the policy engine returns it
-    """
-    return (policy_realm_names(policy.get("realm")) is None
-            and _policy_field_names(policy.get("resolver"), get_resolver_list) is None
-            and _policy_usernames(policy.get("user"), bool(policy.get("user_case_insensitive"))) == ([], []))
 
 
 def _accounts_of(logins: list[str], realms: list[str]) -> list[tuple[str, str]]:
