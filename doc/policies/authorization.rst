@@ -87,7 +87,7 @@ are used for authentication.
 
 .. versionadded:: 3.4
 
-.. _serial_policy:
+.. _policy_serial:
 
 serial
 ~~~~~~

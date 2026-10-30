@@ -1358,8 +1358,10 @@ class WebAuthnAuthorizationTestCase(MyApiTestCase):
         res = self._validate_check(transaction_id)
         self.assertEqual(403, res.status_code, res.json)
         self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
-        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
-                                  transaction_id=transaction_id)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        # The refusal is the response itself, so the entry does not repeat its message
+        self.assertNotIn("error", entries[AuthEventType.NOT_AUTHORIZED].other_info or {})
 
         set_policy("authz_req", scope=SCOPE.AUTHZ, action=f"{FIDO2PolicyAction.REQ}=issuer/.*Yubico.*/")
         res = self._validate_check(transaction_id)

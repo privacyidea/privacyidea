@@ -163,6 +163,10 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             # Credential Provider retries a refill on every logon, so counting them would lock a user's online logins
             # over a stale offline token.
             AuthEventType.OFFLINE_REFILL_FAIL,
+            # An error after the authentication mainly comes from a policy misconfiguration: not the user's fault
+            # and no sign of an attack, so counting it would lock users out over a configuration they cannot fix. The
+            # rate limits count it like every other attempt.
+            AuthEventType.POST_AUTHENTICATION_FAIL,
         }
         # This check covers only the trackable types. The other FAILURE outcomes - conditional access's own
         # rejections (USER_LOCKED, IP_BLOCKED, ACCESS_DENIED) and the client signals (SUSPENDED_API_KEY_USED) - are

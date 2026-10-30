@@ -170,11 +170,13 @@ Sat, Sun.
 """
 import ast
 import copy
+import functools
 import logging
 import re
 import traceback
 from datetime import datetime
 from operator import itemgetter
+from types import MappingProxyType
 
 from configobj import ConfigObj
 from netaddr import AddrFormatError
@@ -984,7 +986,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of MENUs to be displayed
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         role = logged_in_user.get("role")
         user_rights = self.ui_get_rights(role,
                                          logged_in_user.get("realm"),
@@ -992,12 +993,9 @@ class PolicyClass:
                                          client,
                                          user_agent)
         main_menus = []
-        static_rights = get_static_policy_definitions(role)
-        enroll_rights = get_dynamic_policy_definitions(role)
-        static_rights.update(enroll_rights)
+        action_menus = get_policy_action_menus(role)
         for r in user_rights:
-            menus = static_rights.get(r, {}).get("mainmenu", [])
-            main_menus.extend(menus)
+            main_menus.extend(action_menus.get(r, ()))
 
         main_menus = list(set(main_menus))
         return main_menus
@@ -1018,7 +1016,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of actions
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
@@ -1061,8 +1058,7 @@ class PolicyClass:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            rights = get_static_policy_definitions(scope)
-            rights.update(get_dynamic_policy_definitions(scope))
+            rights = get_policy_action_menus(scope)
         rights = list(rights)
         log.debug(f"returning the admin rights: {rights!s}")
         return rights
@@ -3437,6 +3433,23 @@ def get_static_policy_definitions(scope=None):
     else:
         ret = pol
     return ret
+
+
+@functools.lru_cache(maxsize=2)
+def get_policy_action_menus(scope: str) -> MappingProxyType:
+    """
+    Return the WebUI main menus of every policy action in the scope, in the order of the policy definitions.
+
+    The action names and their menus come from the code, the token classes and the token types that pi.cfg allows to
+    enroll (PI_ENABLE_TOKEN_TYPE_ENROLLMENT). These change only when the process restarts, so the menus are built once
+    per scope and process. The full policy definitions are not cached: they also hold database entries like the SMTP
+    servers, and descriptions in the language of the request.
+
+    :param scope: SCOPE.ADMIN or SCOPE.USER
+    :return: A read-only mapping from the action name to a tuple of main menus
+    """
+    return MappingProxyType({action: tuple(definition.get("mainmenu", []))
+                             for action, definition in _action_definitions_for_scope(scope).items()})
 
 
 def get_action_values_from_options(scope, action, options):

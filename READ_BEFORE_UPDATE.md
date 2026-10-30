@@ -83,6 +83,17 @@
   disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
   the policy is saved again.
 
+* **The schema update stops on a database without schema revision stamp** — `privacyidea-schema-upgrade`, which
+  `privacyidea-pip-update` and the Ubuntu packages run, and `pi-manage db upgrade` stop with an error and leave the
+  database unchanged if its `alembic_version` table holds no revision. Stamp such a database with the newest revision
+  of the version that created its tables, then run the update again. For tables that the installed version created
+  with `pi-manage setup create_tables --no-stamp`, use `pi-manage db stamp head`. Versions before 3.10 created the
+  tables without a stamp by default. The upgrade documentation lists their revisions, for example
+  `pi-manage db stamp 5cb310101a1f` for 3.9. Set up an empty database with `pi-manage setup create_tables`.
+  `privacyidea-schema-upgrade` prints the database and its schema revision before and after the update. Keep this
+  output. `privacyidea-pip-update` ends with the exit code of the step that failed. The option `-s`/`--skipstamp` of
+  both scripts is accepted and has no effect.
+
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
   `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
@@ -205,6 +216,21 @@
 
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
+
+* **An authentication answered with an error is audited as a failure** — An authentication that succeeds or
+  triggers a challenge but is then answered with an error, e.g. because a policy refuses it, is now recorded in the
+  audit log with `success` false and `authentication` `REJECT`. The authentication that starts an enrollment via
+  multichallenge is recorded as a challenge. The `auth_max_success` and `auth_max_fail` policies, which count the
+  requests to `/validate/check` and `/auth`, count these requests accordingly: as a failed authentication, and the
+  enrollment start not as a successful one.
+
+* **An authentication answered with an error is logged as `POST_AUTHENTICATION_FAIL`.** An authentication that
+  succeeds or triggers a challenge can still get an error response, for example because of policies with conflicting
+  actions. The authentication log records such a request as `POST_AUTHENTICATION_FAIL`, with the error message. With
+  3.14 it was logged as `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED`. A conditional-access policy that counts
+  `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED` no longer counts these requests. This includes policies created from the
+  *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
+  `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
 
 ## Update from 3.13 to 3.14
 

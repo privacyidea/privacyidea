@@ -163,7 +163,7 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.autoresync import LOG_AUTORESYNC_KEY
 from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
-                                                      confirm_attempt_for_serials)
+                                                      confirm_attempt_for_serials, get_ca_context)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
                                    check_fido2_token_state, record_fido2_login_success)
@@ -629,7 +629,9 @@ def check():
     """
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
-        return _handle_enrollment_cancellation(request.all_data)
+        response = _handle_enrollment_cancellation(request.all_data)
+        get_ca_context().answered_by_view = True
+        return response
 
     # This dictionary carries state across the extracted helper functions
     # to avoid changing the functional signatures of the underlying libraries yet.
@@ -684,6 +686,7 @@ def check():
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
+    get_ca_context().answered_by_view = True
     return response
 
 
@@ -1062,8 +1065,6 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
-        # Read before the check, which deletes a used registration token
-        token_type = get_one_token(serial=serial).get_tokentype()
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure. A
         # token that can not be used is classified by check_otp.
@@ -1072,10 +1073,9 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
         # a message, so without this the rows would name no token although the request named exactly one. The audit
-        # entry is logged directly, since serial_list would also update the last authentication on success and a
-        # type in the details would be part of the response.
+        # entry is logged directly, since serial_list would also update the last authentication on success.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
-        g.audit_object.log({"serial": serial, "token_type": token_type})
+        g.audit_object.log({"serial": serial})
     context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success
@@ -1928,7 +1928,7 @@ def trigger_challenge():
         "info": log_used_user(user, f"triggered {triggered_challenges!s} challenges"),
         "serial": ",".join(challenge_serials),
     })
-
+    get_ca_context().answered_by_view = True
     return r
 
 

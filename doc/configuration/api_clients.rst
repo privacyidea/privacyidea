@@ -150,7 +150,7 @@ passes the checks that a login applies to it:
   carries no service ID.
 * The token restrictions of the policies allow it. These are
   :ref:`policy_disabled_token_types` in the authentication scope and
-  :ref:`tokentype_policy`, :ref:`serial_policy`, :ref:`policy_tokeninfo` and
+  :ref:`tokentype_policy`, :ref:`policy_serial`, :ref:`policy_tokeninfo` and
   :ref:`policy_last_auth` in the authorization scope.
 
 A user whose tokens are all disabled, revoked, removed, locked or excluded by
