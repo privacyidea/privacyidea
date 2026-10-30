@@ -253,6 +253,8 @@ def before_create_user_request():
     request.all_data = copy.deepcopy(g.request_data)
     request.User = None
     get_before_request_config()
+    # A new user has no token, but the admin policies of the request are matched with g.serial
+    g.serial = None
 
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
 
