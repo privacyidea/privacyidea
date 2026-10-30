@@ -141,7 +141,7 @@ describe("UserDetailsSelfServiceComponent", () => {
         username: "alice",
         givenname: "Alicia",
         surname: "Smith",
-        mobile: ["+49 151 0001", "+49 151 0002"]
+        mobile: ["+49 151 0001", "+49 151 0002"] as unknown as string
       });
 
       await component.saveEdit();
