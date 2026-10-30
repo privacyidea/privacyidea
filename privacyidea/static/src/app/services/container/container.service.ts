@@ -272,7 +272,6 @@ export class ContainerService extends FilterableTableService implements Containe
   private readonly userService: UserServiceInterface = inject(UserService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly http = inject(HttpClient);
-  private readonly pollingTrigger = signal<number>(0);
   private readonly isRolloverPolling = signal(false);
   readonly compatibleWithSelectedTokenType: WritableSignal<string | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -333,13 +332,20 @@ export class ContainerService extends FilterableTableService implements Containe
 
     effect(() => {
       clearTimeout(this.pollingTimeoutId);
-      this.pollingTrigger();
       const serial = this.containerSerial();
       const active = this.isPollingActive();
 
       const onAllowedRoute = this.contentService.onContainersCreate() || this.contentService.onContainersDetails();
 
-      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
+      // The value of a running reload is the one from before the poll, e.g. still "registered" at the start of a
+      // rollover: only the answer to the poll decides whether the registration is completed.
+      if (
+        !active ||
+        !serial ||
+        this.containerDetailsResource.isLoading() ||
+        !this.containerDetailsResource.hasValue() ||
+        !onAllowedRoute
+      ) {
         return;
       }
 
@@ -353,7 +359,7 @@ export class ContainerService extends FilterableTableService implements Containe
 
       if (registrationState !== "registered") {
         this.pollingTimeoutId = setTimeout(() => {
-          this.pollingTrigger.update((count) => count + 1);
+          this.containerDetailsResource.reload();
         }, 2000);
       } else {
         const isRollover = this.isRolloverPolling();
@@ -613,7 +619,6 @@ export class ContainerService extends FilterableTableService implements Containe
 
   containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
-    this.pollingTrigger();
     if (serial === "" || !this.authService.actionAllowed("container_list")) return undefined;
     return {
       url: this.containerBaseUrl,
@@ -1082,7 +1087,8 @@ export class ContainerService extends FilterableTableService implements Containe
     this.containerSerial.set(containerSerial);
     this.isRolloverPolling.set(isRollover);
     this.isPollingActive.set(true);
-    this.pollingTrigger.update((count) => count + 1);
+    // A reload keeps the loaded value while polling, a new request would drop it and blank the details page
+    this.containerDetailsResource.reload();
   }
 
   async compareWithTemplate() {
