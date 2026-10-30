@@ -427,3 +427,11 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("public", stored.Type)
         self.assertEqual("second", stored.Value)
         delete_privacyidea_config("PlainToUpdate")
+
+    def test_15_default_otp_length_is_public(self):
+        set_privacyidea_config("DefaultOtpLen", "8")
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assertEqual("public", stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
