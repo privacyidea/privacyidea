@@ -3788,27 +3788,34 @@ class Match:
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
-        From the token object we try to determine the user as the owner and the token realms.
+        From the token object we try to determine the user as the owner, the token realms and the container of the
+        token.
         The default is an empty user object and an empty realm list to avoid matching policies with any user and realm
         condition.
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param token: The token where the user object or the realm should match.
+        :param token: The token where the user object, the realm or the container should match.
         :rtype: Match
         """
+        from .container import find_container_for_token
+        container_serial = None
         if token:
             owner = token.user or User()
             realms = token.get_realms()
             # serial is required for the extended condition checks (TODO: allow passing the token object)
             serial = token.get_serial()
+            container = find_container_for_token(serial)
+            if container:
+                container_serial = container.serial
         else:
             log.debug("No token available. Matching policies without user and realm.")
             owner = User()
             realms = None
             serial = None
-        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial)
+        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial,
+                           container_serial=container_serial)
 
     @classmethod
     def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":

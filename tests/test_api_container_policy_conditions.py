@@ -9,7 +9,7 @@ from privacyidea.lib.containers.container_states import ContainerStates
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection, ConditionHandleMissingData
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import init_token, unassign_token
+from privacyidea.lib.token import get_one_token, get_tokeninfo, init_token, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from tests.test_lib_tokencontainer import MockSmartphone
@@ -525,3 +525,18 @@ class ContainerPolicyConditions(APIContainerAuthorization):
         delete_policy("registration")
         delete_policy("rollover")
         container.delete()
+
+    def test_12_token_init_in_container(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
+        container_serial = init_container({"type": "smartphone"})["container_serial"]
+
+        result = self.request_assert_success("/token/init", {"type": "hotp", "genkey": True,
+                                                             "container_serial": container_serial}, self.at, "POST")
+
+        serial = result["detail"]["serial"]
+        self.assertIsNotNone(get_tokeninfo(serial, "next_pin_change"))
+
+        delete_policy("change_pin")
+        delete_container_by_serial(container_serial)
+        get_one_token(serial=serial).delete_token()

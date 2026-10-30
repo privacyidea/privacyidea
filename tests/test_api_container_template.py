@@ -6,6 +6,7 @@ from privacyidea.lib.container import (create_container_template, get_template_o
 from privacyidea.lib.container import (init_container, find_container_by_serial)
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.serviceid import set_serviceid
@@ -17,6 +18,7 @@ from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from .api_container_common import (
     APIContainerTest,
 )
@@ -749,3 +751,35 @@ class APIContainerTemplate(APIContainerTest):
 
         self.assertTrue(isinstance(template_token_types["generic"]["description"], str))
         self.assertTrue(isinstance(template_token_types["generic"]["token_types"], list))
+
+    def test_18_create_container_with_template_change_pin_container_condition(self):
+        set_policy("admin", scope=SCOPE.ADMIN, action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True})
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
+
+        def create_container(container_type):
+            template_params = {"name": "test",
+                               "container_type": container_type,
+                               "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
+            request_params = json.dumps({"type": container_type, "user": "hans", "realm": self.realm1,
+                                         "template": template_params})
+            result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+            container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            return container, tokens[0]
+
+        # Policy applies to tokens in a smartphone
+        smartphone, smartphone_token = create_container("smartphone")
+        self.assertIsNotNone(get_tokeninfo(smartphone_token.get_serial(), "next_pin_change"))
+
+        # Policy does not apply to tokens in other container types
+        generic, generic_token = create_container("generic")
+        self.assertIsNone(get_tokeninfo(generic_token.get_serial(), "next_pin_change"))
+
+        delete_policy("change_pin")
+        delete_policy("admin")
+        smartphone.delete()
+        generic.delete()
+        smartphone_token.delete_token()
+        generic_token.delete_token()
