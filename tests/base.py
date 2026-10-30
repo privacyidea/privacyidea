@@ -317,6 +317,14 @@ class MyTestCase(unittest.TestCase):
         cls.app = create_app(cls.app_config_name, pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
+        cls.set_up_database()
+
+    @classmethod
+    def set_up_database(cls) -> None:
+        """
+        Empty the database, then add the configuration timestamp and the test admin. A test class that needs this
+        state for every test calls it in setUp.
+        """
         _reset_database()
 
         # save the current timestamp to the database to avoid hanging cached data
