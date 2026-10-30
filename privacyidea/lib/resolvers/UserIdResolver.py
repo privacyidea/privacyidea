@@ -49,12 +49,39 @@ Defines the rough interface for a UserId Resolver
 - for SQL the unique index ( what's the right name here (tm))
 
 """
+import copy
+import functools
+from typing import Any
+
+import yaml
+
 from privacyidea.lib import lazy_gettext
 
 # The message of the error a resolver raises when the user store failed to answer the lookup of a login name. It
 # reaches unauthenticated clients, so it is the same for every resolver and names neither the user store nor its error,
 # which the resolver logs instead. Raised as str: the audit log stores the message and drops an entry with a lazy one.
 USER_LOOKUP_FAILED = lazy_gettext("The user could not be looked up in the user store.")
+
+
+@functools.lru_cache(maxsize=1024)
+def _parse_yaml_text(text: str) -> Any:
+    return yaml.safe_load(text)
+
+
+def parse_config_yaml(text: Any) -> Any:
+    """
+    Parse a YAML value of a resolver configuration, such as the attribute mapping.
+
+    Resolver objects live for one request, so they parse their configuration on every request. Each text is parsed
+    only once per process, because the YAML parser is slow compared to the rest of the configuration. Every call
+    returns its own copy: a resolver changes its parsed mapping, and resolvers with the same text must not share it.
+
+    :param text: The YAML text. Other values, such as a stream, are parsed without the cache.
+    :return: The parsed value
+    """
+    if not isinstance(text, str):
+        return yaml.safe_load(text)
+    return copy.deepcopy(_parse_yaml_text(text))
 
 
 class UserIdResolver:
