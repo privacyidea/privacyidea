@@ -20,8 +20,10 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, effect, inject, input, output, signal } from "@angular/core";
 import { form, required } from "@angular/forms/signals";
+import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
@@ -45,8 +47,10 @@ export type EventActionOptionValues = Record<string, EventActionOptionValue>;
   selector: "app-event-action-tab",
   standalone: true,
   imports: [
+    MatButton,
     MatFormField,
     MatHint,
+    MatIcon,
     MatLabel,
     MatOption,
     MatSelect,
@@ -79,6 +83,19 @@ export class EventActionTabComponent {
 
   selectedOptions = signal<EventActionOptionValues>({});
   touchedOptions = signal<Record<string, boolean>>({});
+
+  /**
+   * The Script handler offers each file in its script directory as an action. If the directory is empty or the
+   * server cannot read it, the tab explains where the scripts go instead of showing an empty dropdown. The server
+   * reads the directory on each request, so new scripts show up after a reload of the actions. A reload keeps the
+   * hint visible. Only the first load for the selected handler module hides it.
+   */
+  noScriptsFound = computed(
+    () =>
+      this.eventService.selectedHandlerModule() === "Script" &&
+      this.eventService.moduleActionsResource.status() !== "loading" &&
+      Object.keys(this.eventService.moduleActions()).length === 0
+  );
 
   actionOptions = computed(() => {
     const action = this.selectedAction();
@@ -169,6 +186,10 @@ export class EventActionTabComponent {
   onActionSelectionChange(value: string): void {
     this.selectedAction.set(value);
     this.newAction.emit(value);
+  }
+
+  reloadScripts(): void {
+    this.eventService.moduleActionsResource.reload();
   }
 
   checkOptionVisibility(optionName: string): boolean {
