@@ -129,6 +129,12 @@ class ConditionalAccessContext:
         # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
         # success and the identity itself (see _audit_rejection).
         self.rejection_audit: dict | None = None
+        # Whether a post-policy refused the request and classified the staged event itself, so the error response is
+        # the very refusal the event records (see _reject_not_authorized in api/lib/postpolicy.py).
+        self.rejected_by_post_policy = False
+        # Whether the view answered the request with a response of its own instead of raising, so an error response
+        # after it came from a later step (see record_post_authentication_failure in api/before_after.py).
+        self.answered_by_view = False
         # The gate this request passed, kept so it can be run again when a pre-event handler changes who the request
         # is for (see recheck_conditional_access_gate).
         self.gate_check: GateCheck | None = None

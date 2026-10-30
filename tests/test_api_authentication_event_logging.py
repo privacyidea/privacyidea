@@ -64,6 +64,22 @@ else:
     _ContractHost = object
 
 
+def _set_conflicting_policies(scope: str, action: str, values: tuple[str, str]) -> None:
+    # Two policies of the same priority setting different values: reading the action raises a PolicyError.
+    set_policy("authlog_conflict_a", scope=scope, action=f"{action}={values[0]}")
+    set_policy("authlog_conflict_b", scope=scope, action=f"{action}={values[1]}")
+
+
+def _delete_conflicting_policies() -> None:
+    delete_policy("authlog_conflict_a")
+    delete_policy("authlog_conflict_b")
+
+
+def _audit_outcome(path: str) -> tuple:
+    entry = Audit.query.filter(Audit.action.like(f"% {path}")).order_by(Audit.id.desc()).first()
+    return entry.success, entry.authentication
+
+
 class _AuthLogContractTests(_ContractHost):
     """
     Endpoint-agnostic authentication-log contract, shared by /validate/check and /auth.
@@ -127,6 +143,30 @@ class _AuthLogContractTests(_ContractHost):
         response = self._authenticate(f"{self.pin}755224")
         self._assert_succeeded(response)
         self.assertNotIn(AUTH_EVENT_TYPE_KEY, response.json.get("detail") or {})
+
+    # --- Authorization policies on the token used (NOT_AUTHORIZED) ---
+
+    def _assert_token_not_authorized(self, action: str, reason: AuthEventReason) -> None:
+        set_policy("authlog_token_authz", scope=SCOPE.AUTHZ, action=action)
+        try:
+            response = self._authenticate(f"{self.pin}755224")
+        finally:
+            delete_policy("authlog_token_authz")
+        self.assertEqual(403, response.status_code, response.json)
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user, serials={self.serial},
+                                        reason=reason, policies=["authlog_token_authz"],
+                                        endpoint=self.endpoint_path)
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome(self.endpoint_path))
+
+    def test_tokentype_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.TOKENTYPE}=spass", AuthEventReason.TOKENTYPE_NOT_ALLOWED)
+
+    def test_serial_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.SERIAL}=^SPASS", AuthEventReason.SERIAL_NOT_ALLOWED)
+
+    def test_tokeninfo_policy_logs_not_authorized(self):
+        self._assert_token_not_authorized(f"{PolicyAction.TOKENINFO}=foo/bar/", AuthEventReason.TOKENINFO_MISMATCH)
 
     # --- No / unusable token ---
 
@@ -1388,6 +1428,82 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         reason=AuthEventReason.AUTH_MAX_FAIL)
 
 
+    # --- An error response after the authentication (POST_AUTHENTICATION_FAIL) ---
+
+    def test_post_policy_error_after_a_success_logs_post_authentication_fail(self):
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}755224"})
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(403, res.status_code, res.json)
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_post_policy_error_after_a_failure_keeps_the_failure(self):
+        # The failed authentication already says why the request failed, so it keeps its type; the error that
+        # followed it is recorded beside it, since the client received that error rather than the plain failure.
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}000000"})
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(403, res.status_code, res.json)
+        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user, serials={self.serial},
+                                        endpoint=self.endpoint_path, reason=AuthEventReason.WRONG_OTP,
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP},
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_post_policy_error_after_a_triggered_challenge_logs_post_authentication_fail(self):
+        # A challenge step is audited with success=False and authentication=CHALLENGE, not as a success.
+        self._enable_challenge_response()
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": self.pin})
+        finally:
+            _delete_conflicting_policies()
+            delete_policy("authlog_cr")
+        self.assertEqual(403, res.status_code, res.json)
+        transaction_id = get_challenges(serial=self.serial)[0].transaction_id
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_is_authorized_deny_marks_the_audit_entry_failed(self):
+        set_policy("authlog_deny", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED}={AUTHORIZED.DENY}")
+        try:
+            res = self._post('/validate/check', {"user": self.username, "pass": f"{self.pin}755224"})
+        finally:
+            delete_policy("authlog_deny")
+        self.assertEqual(400, res.status_code, res.json)
+        assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/check'))
+
+    def test_radiuscheck_post_policy_error_logs_post_authentication_fail(self):
+        # The RADIUS shaping empties the body, so the error has to be read before it.
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            res = self._post('/validate/radiuscheck', {"user": self.username, "pass": f"{self.pin}755224"})
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(400, res.status_code, res.data)
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        entry = entries[AuthEventType.POST_AUTHENTICATION_FAIL]
+        error = (entry.other_info or {}).get("error") or ""
+        self.assertTrue(error.startswith("There are policies with conflicting actions"), entry.other_info)
+        assert_authentication_log_entry(entry, user=self.user, serials={self.serial},
+                                        endpoint="/validate/radiuscheck", other_info={"error": error})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/radiuscheck'))
+
+
 class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     """The shared contract plus /auth-only cases: local-admin login, divergent error codes and authorization."""
 
@@ -1759,6 +1875,19 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                             entries[AuthEventType.NOT_AUTHORIZED].attempt_id)
 
 
+    def test_post_policy_error_after_a_success_logs_post_authentication_fail(self):
+        _set_conflicting_policies(SCOPE.WEBUI, PolicyAction.LOGOUTTIME, ("100", "200"))
+        try:
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=403)
+        finally:
+            _delete_conflicting_policies()
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        endpoint=self.endpoint_path,
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/auth'))
+
+
 class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
     """Authentication-log coverage for the admin /validate/triggerchallenge endpoint."""
 
@@ -1775,6 +1904,24 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial}, transaction_id=transaction_id,
                                         endpoint='/validate/triggerchallenge')
+
+    def test_post_policy_error_after_a_triggered_challenge_logs_post_authentication_fail(self):
+        _set_conflicting_policies(SCOPE.AUTH, PolicyAction.PREFERREDCLIENTMODE, ("poll", "interactive"))
+        try:
+            with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                               data={"user": self.username},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+        finally:
+            _delete_conflicting_policies()
+        self.assertEqual(403, res.status_code, res.json)
+        transaction_id = get_challenges(serial=self.serial)[0].transaction_id
+        entries = assert_authentication_log([AuthEventType.POST_AUTHENTICATION_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.POST_AUTHENTICATION_FAIL], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint='/validate/triggerchallenge',
+                                        other_info={"error": res.json["result"]["error"]["message"]})
+        self.assertTupleEqual((0, "REJECT"), _audit_outcome('/validate/triggerchallenge'))
 
     def test_triggerchallenge_without_token_logs_no_token(self):
         # No challenge-capable token for the user -> nothing is triggered -> NO_TOKEN
