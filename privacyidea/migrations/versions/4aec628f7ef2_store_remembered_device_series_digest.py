@@ -11,7 +11,7 @@ downgrade therefore removes the remembered devices stored with a digest. Their u
 and can have the device remembered again.
 
 Revision ID: 4aec628f7ef2
-Revises: 9e8487714b46
+Revises: 4b810261d282
 Create Date: 2026-10-22 12:53:31.000000
 
 """
@@ -25,7 +25,7 @@ from alembic import op
 log = logging.getLogger("alembic.env")
 
 revision = '4aec628f7ef2'
-down_revision = '9e8487714b46'
+down_revision = '4b810261d282'
 branch_labels = None
 depends_on = None
 

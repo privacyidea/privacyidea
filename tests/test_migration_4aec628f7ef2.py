@@ -31,7 +31,7 @@ CLIENT_ID = "6f1c2c1e-4aec-4628-8f7e-f2a1b2c3d4e5"
 
 class TestMigration4aec628f7ef2(MigrationTestBase):
     REVISION = "4aec628f7ef2"
-    PARENT_REVISION = "9e8487714b46"
+    PARENT_REVISION = "4b810261d282"
 
     def _insert_client(self, engine: Engine) -> None:
         self._insert_rows(engine, "clients", [{
