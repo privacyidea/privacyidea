@@ -202,10 +202,11 @@ class TestSchemaUpgrade:
         assert result.returncode == 1, result
         assert f"The migration directory '{missing_directory}' does not exist." in result.stdout
 
-    def test_05_migration_directory_option_needs_a_value(self):
-        result = self.run_schema_upgrade(["-d"])
+    @pytest.mark.parametrize("arguments", [["-d"], ["-d", ""], ["--migration_dir", ""]])
+    def test_05_migration_directory_option_needs_a_value(self, arguments: list[str]):
+        result = self.run_schema_upgrade(arguments)
         assert result.returncode == 1, result
-        assert "Option -d requires a directory" in result.stdout
+        assert f"Option {arguments[0]} requires a directory" in result.stdout
         assert "Usage:" in result.stdout
 
     def test_06_upgrade_prints_the_revision_before_and_after(self, tmp_path: Path, pi_manage_directory: Path,
@@ -222,15 +223,19 @@ class TestSchemaUpgrade:
         assert f"++ Schema revision after the upgrade: {head} (head)" in result.stdout
 
     def test_07_database_without_stamp_is_left_unchanged(self, pi_manage_directory: Path, database: Path):
-        """The script stops before stamping or migrating. The option --skipstamp is accepted and changes nothing."""
+        """
+        "pi-manage db upgrade" stops on a database without stamp, and the script ends with its exit code. The option
+        --skipstamp is accepted and changes nothing.
+        """
         run_sql(database, "DELETE FROM alembic_version")
         tables = run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
         result = self.run_schema_upgrade(["--skipstamp"], pi_manage_environment(pi_manage_directory, database),
                                          REPOSITORY_DIRECTORY)
         assert result.returncode == 1, result
         assert f"++ Database: sqlite:///{database}" in result.stdout
-        assert "ERROR: The database has no schema revision stamp" in result.stdout
-        assert "Upgrading DB schema" not in result.stdout
+        assert "++ Schema revision before the upgrade: none\n" in result.stdout
+        assert f"The database sqlite:///{database} has no schema revision stamp" in result.stderr
+        assert "++ Schema revision after the upgrade: none\n" in result.stdout
         assert run_sql(database, "SELECT version_num FROM alembic_version") == []
         assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") == tables
 
@@ -290,6 +295,8 @@ class TestPiManageDbUpgrade:
         assert result.returncode == 1, result
         assert f"The database sqlite:///{database} has no schema revision stamp" in result.stderr
         assert "stamp the database with 'pi-manage db stamp head'" in result.stderr
+        assert ("If an older version created the tables, stamp the database with the newest revision of that version."
+                in result.stderr)
         assert run_sql(database, "SELECT version_num FROM alembic_version") == []
         assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name") == tables
 
@@ -298,6 +305,7 @@ class TestPiManageDbUpgrade:
         result = self.run_pi_manage(["db", "upgrade"], pi_manage_directory, database)
         assert result.returncode == 1, result
         assert "create the tables with 'pi-manage setup create_tables'" in result.stderr
+        assert "stamp the database" not in result.stderr
         assert run_sql(database, "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'token'") == []
 
     def test_04_stamp_of_a_database_without_stamp(self, pi_manage_directory: Path, database: Path):
@@ -308,6 +316,13 @@ class TestPiManageDbUpgrade:
         assert result.returncode == 0, result
         assert f"Stamped revision {head}, no migration ran (was base)" in result.stdout
         assert run_sql(database, "SELECT version_num FROM alembic_version") == [(head,)]
+
+    def test_05_upgrade_uses_the_migration_directory_of_the_command_group(self, tmp_path: Path,
+                                                                          pi_manage_directory: Path, database: Path):
+        missing_directory = tmp_path / "missing"
+        result = self.run_pi_manage(["db", "-d", str(missing_directory), "upgrade"], pi_manage_directory, database)
+        assert result.returncode == 1, result
+        assert f"Path doesn't exist: {missing_directory}" in result.stderr
 
 
 PI_CFG_WITH_SECRETS = """import logging

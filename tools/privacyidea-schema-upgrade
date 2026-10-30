@@ -21,7 +21,7 @@ usage()
 while [ "$#" -gt 0 ]; do
   case $1 in
     -d|--migration_dir)
-      if [ "$#" -lt 2 ]; then
+      if [ "$#" -lt 2 ] || [ -z "$2" ]; then
         echo "Option $1 requires a directory"
         usage 1
       fi
@@ -57,10 +57,12 @@ if [ "${MIGRATION_DIR}" ]; then
 fi
 
 # "pi-manage db current -v" prints "Current revision(s) for <database URL without password>:" and one line
-# "Rev: <revision> (head)" per revision the database is stamped with. The revisions are printed on one line.
+# "Rev: <revision> (head)" per revision the database is stamped with. The revisions are printed on one line, "none"
+# for a database without stamp.
 revisions()
 {
-  printf '%s\n' "$1" | sed -n 's/^Rev: //p' | paste -s -d ' ' -
+  revision_list=$(printf '%s\n' "$1" | sed -n 's/^Rev: //p' | paste -s -d ' ' -)
+  echo "${revision_list:-none}"
 }
 
 if ! current_output=$(pi-manage db current -v "$@"); then
@@ -70,18 +72,9 @@ if ! current_output=$(pi-manage db current -v "$@"); then
 fi
 database=$(printf '%s\n' "${current_output}" | sed -n 's/^Current revision(s) for \(.*\):$/\1/p')
 echo "++ Database: ${database}"
-start_revision=$(revisions "${current_output}")
-if [ -z "${start_revision}" ]; then
-  echo "ERROR: The database has no schema revision stamp, so the migrations to apply are unknown."
-  echo "  Check that this is the database you expect."
-  echo "  If the database is empty, create the tables with 'pi-manage setup create_tables'."
-  echo "  If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed"
-  echo "  version, stamp the database with 'pi-manage db stamp head'."
-  echo "  Then run this script again."
-  exit 1
-fi
-echo "++ Schema revision before the upgrade: ${start_revision}"
+echo "++ Schema revision before the upgrade: $(revisions "${current_output}")"
 
+# "pi-manage db upgrade" stops on a database without schema revision stamp and says what to do.
 echo "++ Upgrading DB schema."
 upgrade_status=0
 pi-manage db upgrade "$@" || upgrade_status=$?

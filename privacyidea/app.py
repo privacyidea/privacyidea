@@ -38,6 +38,7 @@ from pathlib import Path, PurePath
 from typing import Any
 
 import click
+import flask_migrate.cli
 import sqlalchemy as sa
 import yaml
 from alembic.runtime.migration import MigrationContext
@@ -482,33 +483,34 @@ def _check_revision_stamp() -> None:
         has_tables = sa.inspect(connection).has_table("token")
     database = db.engine.url.render_as_string(hide_password=True)
     if has_tables:
-        hint = ("If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
-                "stamp the database with 'pi-manage db stamp head'.")
+        hints = ["If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
+                 "stamp the database with 'pi-manage db stamp head'.",
+                 "If an older version created the tables, stamp the database with the newest revision of that "
+                 "version. The upgrade documentation lists the revisions of the versions before 3.10.",
+                 "Then run the upgrade again."]
     else:
-        hint = "If the database is empty, create the tables with 'pi-manage setup create_tables'."
-    raise click.ClickException(f"The database {database} has no schema revision stamp, so the migrations to apply "
-                               f"are unknown. Check that this is the database you expect. {hint}")
+        hints = ["If the database is empty, create the tables with 'pi-manage setup create_tables'."]
+    raise click.ClickException("\n  ".join([f"The database {database} has no schema revision stamp, so the "
+                                            "migrations to apply are unknown.",
+                                            "Check that this is the database you expect."] + hints))
 
 
-def _refuse_db_upgrade_without_revision_stamp(db_command: click.Group) -> None:
+@with_appcontext
+def _upgrade_if_stamped(**parameters: Any) -> Any:
     """
-    Make "db upgrade" stop on a database without a schema revision stamp, unless it only prints the SQL.
-    "db stamp" and "db current" stay available for such a database.
+    Run "db upgrade" of Flask-Migrate. Stop on a database without schema revision stamp, unless the command only
+    prints the SQL.
     """
-    upgrade_command = db_command.commands.get("upgrade")
-    # The command group of Flask-Migrate is shared by all apps, so it is wrapped only once
-    if upgrade_command is None or getattr(upgrade_command.callback, "checks_revision_stamp", False):
-        return
-    run_upgrade = upgrade_command.callback
+    if not parameters.get("sql"):
+        _check_revision_stamp()
+    return flask_migrate.cli.upgrade.callback(**parameters)
 
-    @with_appcontext
-    def upgrade_if_stamped(**parameters: Any) -> Any:
-        if not parameters.get("sql"):
-            _check_revision_stamp()
-        return run_upgrade(**parameters)
 
-    upgrade_if_stamped.checks_revision_stamp = True
-    upgrade_command.callback = upgrade_if_stamped
+# "db upgrade" with the parameters of Flask-Migrate, so that "pi-manage db -d <directory> upgrade" works as before.
+# "db stamp" and "db current" stay available for a database without stamp.
+db_upgrade_command = click.Command("upgrade", callback=_upgrade_if_stamped, params=flask_migrate.cli.upgrade.params,
+                                   help=f"{flask_migrate.cli.upgrade.help}\n\n"
+                                        "Stops on a database without schema revision stamp.")
 
 
 def create_app(config_name="development",
@@ -620,7 +622,8 @@ def create_app(config_name="development",
                 "interpreted as an option. Use '--' to separate them from options:\n"
                 "  pi-manage db downgrade -- -3"
             )
-        _refuse_db_upgrade_without_revision_stamp(db_command)
+        # The command group of Flask-Migrate is shared by all apps. Adding the same command again changes nothing.
+        db_command.add_command(db_upgrade_command)
 
     app.jinja_env.filters["versioned"] = versioned_asset
 
