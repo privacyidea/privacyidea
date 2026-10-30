@@ -387,7 +387,10 @@ class DbUpgradeCommandTestCase(unittest.TestCase):
                 connection.execute(sa.text(statement))
 
     def invoke(self, *arguments: str) -> Result:
-        return self.app.test_cli_runner().invoke(args=["db", *arguments])
+        # The command runs in the active app context. Without the context of this app, it would use an app that an
+        # earlier test left active.
+        with self.app.app_context():
+            return self.app.test_cli_runner().invoke(args=["db", *arguments])
 
     def test_01_stamped_database(self):
         self.run_sql("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)",
