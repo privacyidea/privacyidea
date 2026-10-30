@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+
+# An external database instead of the bundled MariaDB. Select it in .env:
+#
+#   COMPOSE_FILE=compose.yaml:compose.external-db.yaml
+#
+# and write the database's SQLAlchemy URI to secrets/database_uri, e.g.
+#
+#   postgresql+psycopg2://pi:<password>@db.example.org:5432/pi
+#   mysql+pymysql://pi:<password>@db.example.org:3306/pi
+#
+# Percent-encode the characters @ : / ? # % in the user name and password
+# (@ becomes %40). The image has the drivers for MariaDB and MySQL
+# (mysql+pymysql) and for PostgreSQL (postgresql+psycopg2). Needs Docker Compose
+# 2.24 or newer, for "!reset".
+
+services:
+  # Never started: no one activates the profile "bundled-db".
+  db:
+    profiles: ["bundled-db"]
+
+  pi-init:
+    # Waited for the bundled database, which is gone. The external one has to be
+    # up: pi-init stops with "could not determine database state" otherwise.
+    depends_on: !reset {}
+    secrets:
+      - database_uri
+    environment:
+      # Takes precedence over the URI DockerConfig builds from the PI_DB_* parts.
+      SQLALCHEMY_DATABASE_URI_FILE: /run/secrets/database_uri
+
+  pi:
+    secrets:
+      - database_uri
+    environment:
+      SQLALCHEMY_DATABASE_URI_FILE: /run/secrets/database_uri
+
+  pi-cron:
+    secrets:
+      - database_uri
+    environment:
+      SQLALCHEMY_DATABASE_URI_FILE: /run/secrets/database_uri
+
+secrets:
+  database_uri:
+    file: ./secrets/database_uri

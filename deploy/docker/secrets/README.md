@@ -18,9 +18,16 @@ except this README.
 | `bootstrap_admin_password` | Password for the initial admin account created by `pi-init`. |
 | `audit_key_private` / `audit_key_public` | RSA keypair that signs audit entries and API responses. Without it, privacyIDEA silently disables audit/response signing. |
 
+With an external database (`compose.external-db.yaml`), one more file is needed,
+which you write yourself:
+
+| File           | Purpose                                                                  |
+|----------------|--------------------------------------------------------------------------|
+| `database_uri` | SQLAlchemy URI of the database, including its password; mode `0644` like the others. See *External database* in `README.Docker.md`. |
+
 ## Generating the secrets
 
-The easiest way is from `deploy/docker/`:
+The easiest way is from the deployment directory:
 
 ```bash
 make init          # or: ./scripts/init-secrets.sh
@@ -33,7 +40,7 @@ of this section documents the equivalent manual steps.
 ## Generate all at once (manual)
 
 ```bash
-cd deploy/docker/secrets
+cd secrets
 
 # enckey is raw 96 binary bytes (three 32-byte keys) — do NOT hex/base64 encode it
 head -c 96 /dev/urandom                                         > enckey
