@@ -76,7 +76,7 @@
             >This is the unique identifying name for this group definition.</mat-hint
           >
           @if (hasError(tokengroupForm.groupname, ERR.required)) {
-            <mat-error i18n="@@common.identifierRequiredError">Identifier is <strong>required</strong>.</mat-error>
+            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong>.</mat-error>
           }
           @if (hasError(tokengroupForm.groupname, ERR.pattern)) {
             <mat-error i18n="@@common.identifierContains"

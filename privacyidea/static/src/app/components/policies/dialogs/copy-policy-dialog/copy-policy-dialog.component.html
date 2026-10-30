@@ -19,11 +19,11 @@
         (keyup.enter)="!isInvalid() && onAction('submit')" />
 
       @if (hasError(nameField, ERR.required)) {
-        <mat-error i18n="@@policy.policyNameRequired">Policy name is <strong>required</strong></mat-error>
+        <mat-error i18n="@@policy.nameRequiredError">Policy name is <strong>required</strong>.</mat-error>
       }
       @if (hasError(nameField, NOT_CHANGED)) {
         <mat-error i18n="@@policy.policyNameMust"
-          >Policy name must be <strong>different</strong> from the original</mat-error
+          >Policy name must be <strong>different</strong> from the original.</mat-error
         >
       }
       @if (hasError(nameField, ERR.pattern)) {

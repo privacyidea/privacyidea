@@ -35,7 +35,7 @@
           }
         </mat-select>
         @if (hasError(caConnectorForm, ERR.required)) {
-          <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong></mat-error>
+          <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
       <mat-form-field class="input-width-l">
@@ -77,7 +77,7 @@
           placeholder="Paste the Certificate Signing Request here"
           rows="3"></textarea>
         <mat-error i18n="@@token.certificateSigningRequest"
-          >Certificate Signing Request is <strong>required</strong></mat-error
+          >Certificate Signing Request is <strong>required</strong>.</mat-error
         >
       </mat-form-field>
     }
@@ -90,7 +90,7 @@
           matInput
           placeholder="Paste the Certificate here"
           rows="3"></textarea>
-        <mat-error i18n="@@token.certificateRequired">Certificate is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.certificateRequired">Certificate is <strong>required</strong>.</mat-error>
       </mat-form-field>
     }
   }

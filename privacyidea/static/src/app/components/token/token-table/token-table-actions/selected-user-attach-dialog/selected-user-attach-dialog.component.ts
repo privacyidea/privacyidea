@@ -92,7 +92,7 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
     );
   });
   readonly pinMismatchError = computed(() =>
-    hasError(this.form.pinRepeat, ERR.pinMismatch) ? $localize`:@@common.pinsDoNotMatch:PINs do not match` : ""
+    hasError(this.form.pinRepeat, ERR.pinMismatch) ? $localize`:@@common.pinsDoNotMatch:PINs do not match.` : ""
   );
   readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {

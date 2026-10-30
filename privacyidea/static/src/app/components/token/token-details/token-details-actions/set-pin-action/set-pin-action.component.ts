@@ -55,7 +55,7 @@ export class SetPinActionComponent {
   setPin() {
     if (!this.repeatPinForm().valid()) {
       this.repeatPinForm().markAsTouched();
-      this.notificationService.warning($localize`:@@common.pinsDoNotMatchError:PINs do not match.`);
+      this.notificationService.warning($localize`:@@common.pinsDoNotMatch:PINs do not match.`);
       return;
     }
     this.tokenService.setPin(this.tokenService.tokenSerial(), this.setPinValue()).subscribe({

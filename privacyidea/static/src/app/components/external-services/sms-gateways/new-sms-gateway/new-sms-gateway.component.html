@@ -80,7 +80,7 @@
                 placeholder="mySmsGateway" />
             </app-clearable-input>
             @if (hasError(smsForm.name, ERR.required)) {
-              <mat-error i18n="@@smsGateway.nameRequired">Name is <strong>required</strong></mat-error>
+              <mat-error i18n="@@common.nameRequired">Name is <strong>required</strong>.</mat-error>
             }
             @if (hasError(smsForm.name, ERR.pattern)) {
               <mat-error i18n="@@common.nameContainsInvalid"
@@ -103,7 +103,7 @@
             </mat-select>
             @if (hasError(smsForm.providermodule, ERR.required)) {
               <mat-error i18n="@@smsGateway.providerModuleRequired"
-                >Provider Module is <strong>required</strong></mat-error
+                >Provider Module is <strong>required</strong>.</mat-error
               >
             }
           </mat-form-field>
@@ -171,7 +171,7 @@
                 <mat-hint>{{ param.value.description }}</mat-hint>
 
                 @if (hasError(field, ERR.required)) {
-                  <mat-error i18n="@@smsGateway.isRequired">{{ param.key }} is <strong>required</strong></mat-error>
+                  <mat-error i18n="@@smsGateway.isRequired">{{ param.key }} is <strong>required</strong>.</mat-error>
                 }
               </mat-form-field>
             }
