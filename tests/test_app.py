@@ -9,9 +9,12 @@ import sys
 import tempfile
 import unittest
 import flask
+import flask_migrate.cli
 import inspect
 import logging
 import mock
+import sqlalchemy as sa
+from click.testing import Result
 from testfixtures import Comparison, compare, OutputCapture
 from contextlib import contextmanager
 
@@ -19,6 +22,7 @@ from privacyidea.app import (ENV_KEY, create_app, create_docker_app,
                              _setup_database_engine_options)
 from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.models import db
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -353,3 +357,70 @@ class DockerConfigEngineRegistryTestCase(unittest.TestCase):
         # The Docker image keeps one database engine with a connection pool per process for the audit log and the
         # SQL resolvers
         self.assertEqual("shared", config["docker"].PI_ENGINE_REGISTRY_CLASS)
+
+
+class DbUpgradeCommandTestCase(unittest.TestCase):
+    """
+    "pi-manage db upgrade" stops on a database without schema revision stamp. Otherwise it passes its parameters on
+    to the upgrade command of Flask-Migrate, which a mock replaces here. Each test has its own SQLite database.
+    """
+
+    def setUp(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.database = os.path.join(directory.name, "pi.sqlite")
+        config_class = type("Config", (TestingConfig,), {"SQLALCHEMY_DATABASE_URI": f"sqlite:///{self.database}"})
+        with mock.patch.dict("privacyidea.config.config", {"testing": config_class}), isolated_config_file():
+            self.app = create_app(config_name="testing", silent=True)
+        self.addCleanup(self.dispose_engine)
+        upgrade_patcher = mock.patch.object(flask_migrate.cli.upgrade, "callback")
+        self.flask_migrate_upgrade = upgrade_patcher.start()
+        self.addCleanup(upgrade_patcher.stop)
+
+    def dispose_engine(self) -> None:
+        with self.app.app_context():
+            db.engine.dispose()
+
+    def run_sql(self, *statements: str) -> None:
+        with self.app.app_context(), db.engine.begin() as connection:
+            for statement in statements:
+                connection.execute(sa.text(statement))
+
+    def invoke(self, *arguments: str) -> Result:
+        # The command runs in the active app context. Without the context of this app, it would use an app that an
+        # earlier test left active.
+        with self.app.app_context():
+            return self.app.test_cli_runner().invoke(args=["db", *arguments])
+
+    def test_01_stamped_database(self):
+        self.run_sql("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)",
+                     "INSERT INTO alembic_version (version_num) VALUES ('d3a4b5c6e7f8')")
+        result = self.invoke("upgrade")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.flask_migrate_upgrade.assert_called_once_with(directory=None, sql=False, tag=None, x_arg=(),
+                                                           revision="head")
+
+    def test_02_tables_without_stamp(self):
+        with self.app.app_context():
+            db.create_all()
+        result = self.invoke("upgrade")
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn(f"The database sqlite:///{self.database} has no schema revision stamp", result.output)
+        self.assertIn("stamp the database with 'pi-manage db stamp head'", result.output)
+        self.assertIn("If an older version created the tables, stamp the database with the newest revision of that "
+                      "version.", result.output)
+        self.flask_migrate_upgrade.assert_not_called()
+
+    def test_03_empty_database(self):
+        result = self.invoke("upgrade")
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("create the tables with 'pi-manage setup create_tables'", result.output)
+        self.assertNotIn("stamp the database", result.output)
+        self.flask_migrate_upgrade.assert_not_called()
+
+    def test_04_sql_output_of_a_database_without_stamp(self):
+        """With --sql the command only prints the SQL, so it does not read the stamp."""
+        result = self.invoke("upgrade", "--sql", "base:head")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.flask_migrate_upgrade.assert_called_once_with(directory=None, sql=True, tag=None, x_arg=(),
+                                                           revision="base:head")
