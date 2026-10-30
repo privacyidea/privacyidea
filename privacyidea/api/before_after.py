@@ -692,9 +692,11 @@ def record_post_authentication_failure(request: Request, response: Response) -> 
     such an event, e.g. a wrong credential or a ``NOT_AUTHORIZED`` an authorization policy recorded itself, already
     says why the request failed. It keeps its type, and gets the error message only if the view answered the failure
     with a response of its own (``answered_by_view``) and the error came afterwards from something else. A view that
-    raised - an unknown user, a revoked token, every failed login at ``/auth`` - answers its failure with that very
+    raised - an unknown user, a revoked token, a failed login at ``/auth`` - answers its failure with that very
     error, and so does a post-policy that classified the event itself (``rejected_by_post_policy``), so the message
-    would repeat what the event already says. A rejection by conditional access is never amendable and stays as it is.
+    would repeat what the event already says. Only the ``/validate`` views set ``answered_by_view``, so a failure at
+    ``/auth`` never gets the message, also not an unusable passkey, which ``/auth`` answers with a response of its own.
+    A rejection by conditional access is never amendable and stays as it is.
 
     :param request: the request object
     :param response: the response object
