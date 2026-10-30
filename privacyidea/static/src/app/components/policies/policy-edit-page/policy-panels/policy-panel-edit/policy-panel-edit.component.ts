@@ -18,9 +18,10 @@
  **/
 
 import { Component, computed, inject, input, linkedSignal, model, output, viewChild } from "@angular/core";
+import { MatTabsModule } from "@angular/material/tabs";
 
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { PolicyActionDrafts } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/policy-action-drafts";
 import { EditConditionsTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
@@ -35,7 +36,7 @@ export type PolicyTab = "actions" | "conditions";
   selector: "app-policy-panel-edit",
   standalone: true,
   imports: [
-    SelectorButtonsComponent,
+    MatTabsModule,
     EditActionTabComponent,
     EditConditionsTabComponent,
     PolicyDescriptionEditComponent,
@@ -44,10 +45,12 @@ export type PolicyTab = "actions" | "conditions";
     PolicyScopeEditComponent
   ],
   templateUrl: "./policy-panel-edit.component.html",
-  styleUrl: "./policy-panel-edit.component.scss"
+  styleUrl: "./policy-panel-edit.component.scss",
+  providers: [PolicyActionDrafts]
 })
 export class PolicyPanelEditComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly actionDrafts = inject(PolicyActionDrafts);
 
   /**
    * Initial policy data from parent.
@@ -69,11 +72,13 @@ export class PolicyPanelEditComponent {
   readonly searchInHeader = input<boolean>(false);
 
   private readonly actionTab = viewChild(EditActionTabComponent);
+  private readonly nameEdit = viewChild(PolicyNameEditComponent);
+  private readonly priorityEdit = viewChild(PolicyPriorityEditComponent);
   readonly searchAnchor = computed(() => this.actionTab()?.searchAnchor().nativeElement);
   readonly searchField = computed(() => this.actionTab()?.searchField());
 
   readonly tabValues: PolicyTab[] = ["actions", "conditions"];
-  readonly tabLabels = [$localize`:@@common.actions:Actions`, $localize`:@@common.conditions:Conditions`];
+  readonly tabIndex = computed(() => this.tabValues.indexOf(this.activeTab()));
 
   /**
    * Puffer for local changes.
@@ -96,14 +101,29 @@ export class PolicyPanelEditComponent {
    * Helper to check if the current draft has unsaved changes.
    */
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
+  /**
+   * True while the name and the priority satisfy their rules, a scope is chosen and no added action holds a value
+   * that does not suit it. The backend rejects a priority below 1, and a policy without a scope cannot be saved. The
+   * invalid action values come from the drafts, so they count while the conditions tab is open or a filter hides them.
+   */
+  readonly valid = computed(() => {
+    const actions = this.editedPolicy().action ?? {};
+    return (
+      !!this.nameEdit()?.valid() &&
+      !!this.priorityEdit()?.valid() &&
+      !!this.editedPolicy().scope &&
+      !this.actionDrafts.names().some((name) => name in actions)
+    );
+  });
   readonly policyHasActions = computed(() => Object.keys(this.editedPolicy().action ?? {}).length > 0);
 
   public setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);
   }
 
-  public onTabSelected(tab: string | undefined): void {
-    if (tab === "actions" || tab === "conditions") {
+  public onTabIndexChange(index: number): void {
+    const tab = this.tabValues[index];
+    if (tab) {
       this.setActiveTab(tab);
     }
   }
@@ -114,6 +134,16 @@ export class PolicyPanelEditComponent {
   public addPolicyEdit(edits: Partial<PolicyDetail>): void {
     this.policyEdits.set({ ...this.policyEdits(), ...edits });
     this.policyEdit.emit(edits);
+  }
+
+  /**
+   * Stores the priority. An empty field is not a priority: the policy keeps its last number and the priority field
+   * reports the missing value through {@link valid}.
+   */
+  public onPriorityChange(priority: number | null): void {
+    if (priority !== null) {
+      this.addPolicyEdit({ priority });
+    }
   }
 
   public updateActions(actions: Record<string, string | boolean>): void {

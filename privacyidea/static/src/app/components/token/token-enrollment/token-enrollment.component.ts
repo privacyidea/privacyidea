@@ -27,11 +27,10 @@ import {
   OnDestroy,
   OnInit,
   signal,
-  ViewChild,
   viewChild,
   WritableSignal
 } from "@angular/core";
-import { form, FormField, validate, ValidationError } from "@angular/forms/signals";
+import { FieldTree, form, FormField, validate, ValidationError } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import {
   DateAdapter,
@@ -78,6 +77,8 @@ import {
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { ERR, markRequired, mustEqual } from "@utils/form-rules.utils";
+import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { lastValueFrom, Observable } from "rxjs";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 import {
@@ -194,8 +195,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     }
   });
   serial = signal<string | null>(null);
-  @ViewChild(UserAssignmentComponent)
-  userAssignmentComponent!: UserAssignmentComponent;
+  readonly userAssignmentComponent = viewChild(UserAssignmentComponent);
   protected readonly enrollSwitch = viewChild(EnrollTokenTypeSwitchComponent);
 
   enrolledDialogData = signal<TokenEnrollmentDialogData | null>(null);
@@ -222,21 +222,50 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   selectedStartTime = signal<string>("00:00");
   selectedEndDate = signal<Date | null>(null);
   selectedEndTime = signal<string>("23:59");
-  isDirty = signal<boolean>(false);
+
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
 
   descriptionForm = form(this.description, (f) => {
+    markRequired(f, () => this.descriptionRequired());
     validate(f, (ctx) => {
       const v = ctx.value();
       const errors: ValidationError[] = [];
-      if (this.descriptionRequired() && !v.trim()) errors.push({ kind: "required" });
-      if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: "maxlength" });
+      if (this.descriptionRequired() && !v.trim()) errors.push({ kind: ERR.required });
+      if (v.length > this.tokenService.maxDescriptionLength) errors.push({ kind: ERR.maxLength });
       return errors;
     });
   });
 
   setPinForm = form(this.setPin);
   repeatPinForm = form(this.repeatPin, (f) => {
-    validate(f, (ctx) => (ctx.value() !== this.setPin() ? [{ kind: "pinMismatch" }] : []));
+    mustEqual(f, () => this.setPin());
+  });
+  selectedContainerForm = form(this.selectedContainer);
+  selectedTimezoneOffsetForm = form(this.selectedTimezoneOffset);
+  selectedStartDateForm = form(this.selectedStartDate);
+  selectedStartTimeForm = form(this.selectedStartTime);
+  selectedEndDateForm = form(this.selectedEndDate);
+  selectedEndTimeForm = form(this.selectedEndTime);
+
+  private readonly allForms: FieldTree<unknown>[] = [
+    this.descriptionForm,
+    this.setPinForm,
+    this.repeatPinForm,
+    this.selectedContainerForm,
+    this.selectedTimezoneOffsetForm,
+    this.selectedStartDateForm,
+    this.selectedStartTimeForm,
+    this.selectedEndDateForm,
+    this.selectedEndTimeForm
+  ];
+
+  isDirty = computed(() => this.allForms.some((field) => field().dirty()));
+
+  // Without the assignment component (self-service, wizard) the user comes from the session.
+  private readonly userValid = computed(() => {
+    const assignment = this.userAssignmentComponent();
+    return assignment ? assignment.valid() : !this.isUserRequired() || !!this.userService.selectedUser();
   });
 
   // A PIN left over from another token type must not block a type whose PIN fields are hidden:
@@ -248,6 +277,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     () =>
       !this.descriptionForm().valid() ||
       (this.showPinFields() && !this.repeatPinForm().valid()) ||
+      !this.userValid() ||
       !!this.enrollmentBlockedReason()
   );
 
@@ -268,15 +298,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(
-      () =>
-        this.isDirty() || this.descriptionForm().dirty() || this.setPinForm().dirty() || this.repeatPinForm().dirty()
-    );
+    this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(
-      () =>
-        !!this.tokenService.selectedTokenType()?.key &&
-        !this.isFormInvalid() &&
-        (!this.isUserRequired() || !!this.userService.selectedUser())
+      () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
     );
     this.pendingChangesService.registerSave(() => this.enrollToken());
   }
@@ -330,24 +354,13 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   async enrollToken(): Promise<boolean> {
     const currentTokenType = this.tokenService.selectedTokenType();
-    let everythingIsValid = true;
     if (!currentTokenType) {
       this.notificationService.warning($localize`:@@token.pleaseSelectToken:Please select a token type.`);
       return false;
     }
 
-    const user = this.userService.selectedUser();
-    if (this.isUserRequired() && !user) {
-      everythingIsValid = false;
-    }
-
     if (this.isFormInvalid()) {
-      this.descriptionForm().markAsTouched();
-      this.repeatPinForm().markAsTouched();
-      everythingIsValid = false;
-    }
-
-    if (!everythingIsValid) {
+      this.touchFields();
       this.notificationService.warning(
         $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
       );
@@ -362,6 +375,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       return false;
     }
 
+    const user = this.userService.selectedUser();
     let validityPeriodStart = "";
     if (this.selectedStartDate() && this.selectedStartTime()) {
       validityPeriodStart = this.formatDateTimeOffset(
@@ -387,7 +401,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       validityPeriodEnd: validityPeriodEnd,
       user: user?.username ?? "",
       realm: this.userService.selectedUserRealm() ?? "",
-      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
+      onlyAddToRealm: this.userAssignmentComponent()?.onlyAddToRealm() ?? false,
       pin: this.showPinFields() ? (this.setPin() ?? "") : "",
       serial: this.serial()
     };
@@ -514,8 +528,20 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
   }
 
-  protected trackChange(): void {
-    this.isDirty.set(true);
+  protected clearContainer(): void {
+    clearField(this.selectedContainerForm, "");
+  }
+
+  // Marks every field touched so each required or invalid field shows its error.
+  private touchFields(): void {
+    for (const field of this.allForms) {
+      void touchAll(field);
+    }
+    const assignment = this.userAssignmentComponent();
+    if (assignment) {
+      void touchAll(assignment.realmForm);
+      void touchAll(assignment.userFilterForm);
+    }
   }
 
   protected lastStepDialogIsDismissable(): boolean {

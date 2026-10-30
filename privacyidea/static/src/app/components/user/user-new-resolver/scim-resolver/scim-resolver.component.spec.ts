@@ -62,4 +62,57 @@ describe("ScimResolverComponent", () => {
     expect(component.model().Secret).toBe("secret1");
     expect(component.model().Mapping).toBe("{}");
   });
+
+  describe("edits through the controls", () => {
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    const filled = {
+      Authserver: "http://auth",
+      Resourceserver: "http://resource",
+      Client: "client1",
+      Secret: "secret1",
+      Mapping: "{}"
+    };
+
+    beforeEach(async () => {
+      componentRef.setInput("data", filled);
+      await flush();
+    });
+
+    it("starts pristine and valid after the data input is applied", () => {
+      expect(component.isDirty()).toBe(false);
+      expect(component.isValid()).toBe(true);
+    });
+
+    it.each([
+      [0, "Authserver"],
+      [1, "Resourceserver"],
+      [2, "Client"],
+      [3, "Secret"]
+    ] as const)("marks the resolver dirty when clear button %s empties %s", async (index, field) => {
+      const buttons = fixture.nativeElement.querySelectorAll(
+        "app-clearable-input button"
+      ) as NodeListOf<HTMLButtonElement>;
+      buttons[index].click();
+      await flush();
+
+      expect(component.model()[field]).toBe("");
+      expect(component.scimForm[field]().dirty()).toBe(true);
+      expect(component.isDirty()).toBe(true);
+      expect(component.isValid()).toBe(false);
+    });
+
+    it("shows the required message once an emptied field is touched", async () => {
+      const textarea = fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+      textarea.value = "";
+      textarea.dispatchEvent(new Event("input"));
+      textarea.dispatchEvent(new Event("blur"));
+      await flush();
+
+      expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("required");
+    });
+  });
 });

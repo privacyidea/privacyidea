@@ -9,6 +9,12 @@
   grid-template-columns: repeat(2, var(--input-width-l));
   gap: 16px;
 
+  // A field grows by its error line, so a neighbour in the same grid row keeps its own height instead of stretching
+  // to the taller one.
+  > mat-form-field {
+    align-self: start;
+  }
+
   @include mat.form-field-overrides(
     (
       filled-disabled-label-text-color: var(--mat-sys-on-surface-variant)

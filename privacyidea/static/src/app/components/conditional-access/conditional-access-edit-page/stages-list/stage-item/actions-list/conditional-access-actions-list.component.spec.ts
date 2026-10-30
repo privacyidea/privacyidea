@@ -16,26 +16,41 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { applyEach, FieldTree, form } from "@angular/forms/signals";
+import { By } from "@angular/platform-browser";
 import { AuthService } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
-  ConditionalAccessStageAction
+  ConditionalAccessStageAction,
+  ConditionalAccessTarget
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
+import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 import { ConditionalAccessActionsListComponent } from "./conditional-access-actions-list.component";
 
 describe("ConditionalAccessActionsListComponent", () => {
   let component: ConditionalAccessActionsListComponent;
   let fixture: ComponentFixture<ConditionalAccessActionsListComponent>;
+  let model: WritableSignal<{ actions: ConditionalAccessStageAction[] }>;
+  let actionFields: FieldTree<ConditionalAccessStageAction[]>;
+  let policyServiceMock: MockConditionalAccessPolicyService;
 
   const actions: ConditionalAccessStageAction[] = [
     { action_type: "LOCK_USER", action_value: 600 },
     { action_type: "EMAIL_ADMIN", action_value: null }
   ];
+  const items = () =>
+    Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("app-conditional-access-action-item"));
+  const withActions = (list: ConditionalAccessStageAction[]) => {
+    model.set({ actions: list.map((action) => ({ ...action })) });
+    fixture.detectChanges();
+  };
+  const withTarget = (target: ConditionalAccessTarget) => fixture.componentRef.setInput("target", target);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -47,8 +62,13 @@ describe("ConditionalAccessActionsListComponent", () => {
       ]
     }).compileComponents();
 
+    policyServiceMock = TestBed.inject(ConditionalAccessPolicyService) as unknown as MockConditionalAccessPolicyService;
+    model = signal({ actions: actions.map((action) => ({ ...action })) });
+    actionFields = TestBed.runInInjectionContext(() =>
+      form(model, (p) => applyEach(p.actions, () => undefined))
+    ).actions;
     fixture = TestBed.createComponent(ConditionalAccessActionsListComponent);
-    fixture.componentRef.setInput("actions", actions);
+    fixture.componentRef.setInput("actions", actionFields);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -57,68 +77,90 @@ describe("ConditionalAccessActionsListComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should emit a new array with an appended action on add", () => {
-    const spy = jest.spyOn(component.actionsChange, "emit");
+  it("should render one item per action", () => {
+    expect(items()).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector(".ca-actions-list-empty")).toBeNull();
+  });
+
+  // An item finds its own entry among the stage's actions by its place, so its own type stays selectable in its picker.
+  it("should tell every item its place in the stage", () => {
+    const indexes = fixture.debugElement
+      .queryAll(By.directive(ConditionalAccessActionItemComponent))
+      .map((item) => (item.componentInstance as ConditionalAccessActionItemComponent).actionIndex());
+    expect(indexes).toEqual([0, 1]);
+  });
+
+  it("should say so when there are no actions", () => {
+    withActions([]);
+    expect(items()).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector(".ca-actions-list-empty")).toBeTruthy();
+  });
+
+  it("should append an action on add", () => {
     component.onAddAction();
+    fixture.detectChanges();
     // EMAIL_ADMIN is the fallback once the target's allowed/unavailable types are both still unknown.
-    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "EMAIL_ADMIN", action_value: null }]);
+    expect(model().actions).toHaveLength(3);
+    expect(model().actions[2]).toMatchObject({ action_type: "EMAIL_ADMIN", action_value: null });
+    expect(items()).toHaveLength(3);
+  });
+
+  it("should add an action from the button", () => {
+    (fixture.nativeElement.querySelector(".ca-actions-list ~ .ca-add-button-row button") as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(items()).toHaveLength(3);
   });
 
   it("should default the new action to the first action allowed for the target", () => {
-    const policyServiceMock = TestBed.inject(
-      ConditionalAccessPolicyService
-    ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
       user: ["LOCK_USER", "DENY"],
       source_ip: ["BLOCK_IP", "DENY"]
     });
-    fixture.componentRef.setInput("target", "source_ip");
+    withTarget("source_ip");
 
-    const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
-    expect(spy).toHaveBeenCalledWith([...actions, { action_type: "BLOCK_IP", action_value: null }]);
+    expect(model().actions[2]).toMatchObject({ action_type: "BLOCK_IP", action_value: null });
   });
 
   // A singleton action already on the stage - and anything mutually exclusive with one - cannot be added
   // twice, so offering it would only produce an action the admin has to change straight away.
   it("should skip an action type the stage cannot take again", () => {
-    const policyServiceMock = TestBed.inject(
-      ConditionalAccessPolicyService
-    ) as unknown as MockConditionalAccessPolicyService;
     policyServiceMock.actionsByTarget.set({
       user: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"],
       source_ip: ["BLOCK_IP", "DENY"]
     });
     policyServiceMock.unavailableActionTypes.mockReturnValue(new Set(["LOCK_USER", "PERMANENT_LOCK_USER"]));
-    fixture.componentRef.setInput("actions", [{ action_type: "LOCK_USER", action_value: null }]);
+    withActions([{ action_type: "LOCK_USER", action_value: null }]);
 
-    const spy = jest.spyOn(component.actionsChange, "emit");
     component.onAddAction();
     // LOCK_USER is taken and PERMANENT_LOCK_USER contradicts it, so the first free type wins.
-    expect(spy).toHaveBeenCalledWith([
-      { action_type: "LOCK_USER", action_value: null },
-      { action_type: "EMAIL_ADMIN", action_value: null }
-    ]);
+    expect(model().actions.map((action) => action.action_type)).toEqual(["LOCK_USER", "EMAIL_ADMIN"]);
   });
 
-  it("should emit a merged action on update by index", () => {
-    const spy = jest.spyOn(component.actionsChange, "emit");
-    component.onUpdateAction(1, { action_type: "EMAIL_USER" });
-    expect(spy).toHaveBeenCalledWith([actions[0], { action_type: "EMAIL_USER", action_value: null }]);
-  });
-
-  it("should emit the array without the removed index", () => {
-    const spy = jest.spyOn(component.actionsChange, "emit");
+  it("should drop the action at the index on remove", () => {
     component.onRemoveAction(0);
-    expect(spy).toHaveBeenCalledWith([actions[1]]);
+    expect(model().actions).toMatchObject([{ action_type: "EMAIL_ADMIN", action_value: null }]);
+  });
+
+  it("should keep the item of the action that stays when another one is removed", () => {
+    // Items follow their action rather than their position, so the one that stays is not rebound to another action.
+    const [, second] = items();
+    (items()[0].querySelector("button[aria-label='Remove action']") as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(items()).toHaveLength(1);
+    expect(items()[0]).toBe(second);
+  });
+
+  it("should keep the item of an action that is edited", () => {
+    // An edit rewrites the action in the form model; the item stays bound to its field, so its open panel survives.
+    const [first] = items();
+    actionFields[0]().value.update((action) => ({ ...action, action_value: 900 }));
+    fixture.detectChanges();
+    expect(items()[0]).toBe(first);
+    expect(model().actions[0].action_value).toBe(900);
   });
 
   describe("redundant restrictions", () => {
-    const withActions = (list: ConditionalAccessStageAction[]) => {
-      fixture.componentRef.setInput("actions", list);
-      fixture.detectChanges();
-    };
-
     it("should flag a timed restriction that sits next to a permanent one", () => {
       // The permanent lock wins the row whichever order they run in, so the timed action changes nothing.
       withActions([

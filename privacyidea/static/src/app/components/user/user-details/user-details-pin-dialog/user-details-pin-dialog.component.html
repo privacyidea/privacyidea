@@ -28,9 +28,8 @@
     class="pin-field">
     <mat-label i18n="@@common.pinOptional">PIN (optional)</mat-label>
     <input
-      (input)="pin.set($event.target['value'])"
+      [formField]="pinForm.pin"
       [type]="hidePin() ? 'password' : 'text'"
-      [value]="pin()"
       autocomplete="new-password"
       matInput />
 
@@ -62,9 +61,8 @@
     class="pin-field">
     <mat-label i18n="@@common.pinRepeat">PIN (repeat)</mat-label>
     <input
-      (input)="pinRepeat.set($event.target['value'])"
+      [formField]="pinForm.pinRepeat"
       [type]="hidePin() ? 'password' : 'text'"
-      [value]="pinRepeat()"
       autocomplete="new-password"
       matInput />
 
@@ -90,7 +88,7 @@
       }
     </button>
 
-    @if (pinRepeat() && !pinsMatch()) {
+    @if (hasError(pinForm.pinRepeat, ERR.pinMismatch)) {
       <mat-error i18n="@@common.pinsDoNotMatch">PINs do not match</mat-error>
     }
   </mat-form-field>

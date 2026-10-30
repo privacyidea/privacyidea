@@ -27,9 +27,7 @@
   <div class="actions-sections-row">
     @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
       <section class="actions-section actions-section--pin">
-        <app-set-pin-action
-          [repeatPinValue]="repeatPinValue()"
-          [setPinValue]="setPinValue()">
+        <app-set-pin-action>
           <h4
             panelTitle
             class="details-card-title"

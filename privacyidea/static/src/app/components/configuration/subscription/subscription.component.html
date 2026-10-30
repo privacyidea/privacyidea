@@ -25,7 +25,7 @@
   <input
     #fileInput
     (change)="upload($event); fileInput.value = ''"
-    style="display: none"
+    class="hidden-input"
     type="file" />
 
   @if (tableState.showTable()) {

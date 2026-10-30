@@ -18,6 +18,7 @@
  **/
 
 import { Component, computed, ElementRef, inject, input, linkedSignal, output, viewChild } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
@@ -30,7 +31,14 @@ import { tokenTypes } from "@utils/token.utils";
 @Component({
   selector: "app-template-added-token-row",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, MatCheckboxModule, MatExpansionModule, EnrollTokenTypeSwitchComponent],
+  imports: [
+    MatIconModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatExpansionModule,
+    FormField,
+    EnrollTokenTypeSwitchComponent
+  ],
   templateUrl: "./template-added-token-row.component.html",
   styleUrls: ["./template-added-token-row.component.scss"]
 })
@@ -44,6 +52,7 @@ export class TemplateAddedTokenRowComponent {
   private readonly elementRef = inject(ElementRef);
 
   readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
+  readonly userAssignField = form(this.userAssign);
 
   readonly tokenTypeDescription = computed(() => {
     const type = this.tokenEnrollmentPayload().type;
@@ -77,10 +86,6 @@ export class TemplateAddedTokenRowComponent {
   scrollIntoView(): void {
     this.expansionPanel()?.open();
     this.elementRef.nativeElement.scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  toggleUserAssign(checked: boolean) {
-    this.userAssign.set(checked);
   }
 
   emitRemoveToken() {

@@ -106,23 +106,6 @@ $input-focus-outline: theme.$focus-outline;
   gap: 8px;
 }
 
-@mixin action-tab-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-family: inherit;
-  font-size: 1rem;
-  resize: vertical;
-  width: 100%;
-
-  &:focus {
-    border-bottom-color: var(--mat-sys-primary);
-    outline: none;
-  }
-}
-
 .input-width-xs {
   width: 100%;
   max-width: var(--input-width-xs);
@@ -146,6 +129,23 @@ $input-focus-outline: theme.$focus-outline;
 .input-width-xl {
   width: 100%;
   max-width: var(--input-width-xl);
+}
+
+// A form field with dynamic subscript sizing that holds the space of one message line from the start, so an error of one
+// line appears without moving anything below the field.
+.reserve-one-message-line .mat-mdc-form-field-subscript-wrapper {
+  min-height: 20px;
+}
+
+// A form field with dynamic subscript sizing that holds the space of two message lines from the start, so a hint or error
+// of up to two lines appears without moving anything below the field. The field does not add its message width to the
+// width of its container, so a long message wraps instead of widening a dialog.
+.reserve-two-message-lines {
+  contain: inline-size;
+
+  .mat-mdc-form-field-subscript-wrapper {
+    min-height: 36px;
+  }
 }
 
 .input-width-xxl {

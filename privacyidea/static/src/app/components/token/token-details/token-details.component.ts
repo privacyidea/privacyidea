@@ -141,8 +141,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
-  setPinValue = signal("");
-  repeatPinValue = signal("");
   passkeyTestResult = signal<{
     kind: "success" | "warning";
     message: string;
@@ -284,7 +282,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     return (
       // Block editing until the token details have loaded for the first time.
       !this.tokenDetailResource.hasValue() ||
-      this.tokenDetailData().some((element) => element.isEditing()) ||
       this.editRegistry.anyEditing() ||
       this.isEditingUser() ||
       this.isEditingInfo() ||
@@ -322,21 +319,20 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(
-      () =>
-        this.tokenDetailData().some((element) => element.isEditing()) ||
-        this.editRegistry.anyEditing() ||
-        this.isEditingUser() ||
-        this.isEditingInfo()
+      () => this.editRegistry.anyEditing() || this.isEditingUser() || this.isEditingInfo()
     );
-    this.pendingChangesService.registerValidChanges(() => true);
+    this.pendingChangesService.registerValidChanges(() => this.canSaveInlineEdits());
     this.pendingChangesService.registerSave(() => this.saveAllInlineEdits());
   }
 
+  /** False while an open inline edit holds a value that must not be saved. */
+  protected canSaveInlineEdits(): boolean {
+    return !this.editRegistry.anyInvalid() && (this.infoChild?.canSave() ?? true);
+  }
+
   async saveAllInlineEdits(): Promise<boolean> {
-    for (const row of this.tokenDetailData()) {
-      if (row.isEditing()) {
-        this.saveTokenEdit(row);
-      }
+    if (!this.canSaveInlineEdits()) {
+      return false;
     }
     await this.editRegistry.saveAll();
     if (this.isEditingUser()) {
@@ -630,28 +626,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  cancelTokenEdit(element: EditableElement) {
-    this.resetEdit();
-    element.isEditing.set(!element.isEditing());
-  }
-
-  saveTokenEdit(element: EditableElement) {
-    this.saveTokenDetail(element.keyMap.key, element.value);
-    element.isEditing.set(!element.isEditing());
-  }
-
-  toggleTokenEdit(element: EditableElement): void {
-    element.isEditing.set(!element.isEditing());
-  }
-
-  saveTokenDetail(key: string, value: unknown): void {
-    this.tokenService.saveTokenDetail(this.tokenSerial(), key, value).subscribe({
-      next: () => {
-        this.tokenDetailResource.reload();
-      }
-    });
-  }
-
   isEditableElement(key: string) {
     const rightEntry = tokenDetailsRightsMap.find((entry) => entry.key === key);
     return !!(rightEntry && this.authService.actionAllowed(rightEntry.right as PolicyAction));
@@ -669,9 +643,5 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected showTokenAuditLog() {
     this.auditService.setFilter(new FilterValue({ value: `serial: ${this.tokenSerial()}` }));
-  }
-
-  private resetEdit(): void {
-    this.tokenDetailResource.reload();
   }
 }

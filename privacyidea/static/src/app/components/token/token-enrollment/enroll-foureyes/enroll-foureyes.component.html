@@ -43,10 +43,8 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@common.selectRealms">Select Realms</mat-label>
       <mat-select
-        [value]="requiredTokensOfRealms()"
-        (selectionChange)="requiredTokensOfRealms.set($event.value)"
-        multiple
-        required>
+        [formField]="requiredTokensOfRealmsForm"
+        multiple>
         @for (realm of realmOptions(); track realm) {
           <div class="required-realms-div">
             <mat-option
@@ -66,7 +64,9 @@
           </div>
         }
       </mat-select>
-      <mat-error i18n="@@token.leastOneRealm">At least one realm is <strong>required</strong></mat-error>
+      @if (hasError(requiredTokensOfRealmsForm, ERR.required)) {
+        <mat-error i18n="@@token.leastOneRealm">At least one realm is <strong>required</strong></mat-error>
+      }
     </mat-form-field>
   </div>
 </div>

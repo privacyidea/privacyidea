@@ -18,42 +18,44 @@
 -->
 <app-details-card
   class="details-card--description"
-  [class.is-editing]="element().isEditing()"
+  [class.is-editing]="field.isEditing()"
   title="Description"
   i18n-title="@@common.description">
   <div class="value-row">
     <div class="value-content">
-      @if (element().isEditing()) {
+      @if (field.isEditing()) {
         @if (selfService()) {
           <mat-form-field
             class="input-width-xl description"
             subscriptSizing="dynamic">
             <textarea
-              [value]="element().value"
-              (input)="element().value = $any($event.target).value"
-              maxlength="80"
+              [formField]="descriptionForm"
               i18n-placeholder="@@common.enterDescription"
               matInput
               placeholder="Enter description"
               rows="3"></textarea>
-            <mat-hint align="end"
-              >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
-            </mat-hint>
+            <mat-hint align="end">{{ draft().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
+            @if (hasError(descriptionForm, ERR.maxLength)) {
+              <mat-error i18n="@@token.descriptionMust"
+                >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
+              >
+            }
           </mat-form-field>
         } @else {
           <mat-form-field
             class="input-width-xl description"
             subscriptSizing="dynamic">
             <textarea
-              [value]="element().value"
-              (input)="element().value = $any($event.target).value"
-              maxlength="80"
+              [formField]="descriptionForm"
               appAutofocus
               matInput
               rows="3"></textarea>
-            <mat-hint align="end"
-              >{{ element().value.length || 0 }} / {{ tokenService.maxDescriptionLength }}
-            </mat-hint>
+            <mat-hint align="end">{{ draft().length }} / {{ tokenService.maxDescriptionLength }} </mat-hint>
+            @if (hasError(descriptionForm, ERR.maxLength)) {
+              <mat-error i18n="@@token.descriptionMust"
+                >Description must not exceed {{ tokenService.maxDescriptionLength }} characters.</mat-error
+              >
+            }
           </mat-form-field>
         }
       } @else {
@@ -63,13 +65,13 @@
     <div class="value-edit">
       @if (editable()) {
         <app-edit-buttons
-          [cancelEdit]="cancelEdit()"
-          [element]="element()"
-          [isEditingInfo]="isEditingInfo()"
-          [isEditingUser]="isEditingUser()"
-          [saveEdit]="saveEdit()"
+          [cancelEdit]="field.cancel"
+          [element]="field.editButtonsElement"
+          [isEditingInfo]="false"
+          [isEditingUser]="false"
+          [saveEdit]="field.commit"
           [shouldHideEdit]="isAnyEditingOrRevoked()"
-          [toggleEdit]="toggleEdit()"></app-edit-buttons>
+          [toggleEdit]="field.toggle"></app-edit-buttons>
       }
     </div>
   </div>

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
@@ -42,7 +42,7 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { RealmService } from "@services/realm/realm.service";
 import { SystemService } from "@services/system/system.service";
 import { EnrollTokenArguments, TokenService, TokenType } from "@services/token/token.service";
-import { UserService } from "@services/user/user.service";
+import { UserData, UserService } from "@services/user/user.service";
 import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
@@ -55,6 +55,7 @@ import {
   MockUserService,
   MockVersioningService
 } from "@testing/mock-services";
+import { clearOverlays, flushFixture, pickOption, typeInto } from "@testing/enroll-form-dom";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
@@ -1086,6 +1087,211 @@ describe("TokenEnrollmentComponent", () => {
         wizardFixture.detectChanges();
         expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).toBeNull();
       });
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    const hasChanges = () => (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+    // The container input is the last clearable input, after the user filter of the assignment.
+    const container = () =>
+      Array.from(fixture.nativeElement.querySelectorAll("app-clearable-input input")).pop() as HTMLInputElement;
+    const timeInputs = () =>
+      Array.from(fixture.nativeElement.querySelectorAll("input[type=time]")) as HTMLInputElement[];
+    const errors = () =>
+      Array.from(fixture.nativeElement.querySelectorAll("mat-error")).map((el) => (el as HTMLElement).textContent);
+
+    beforeEach(async () => {
+      authServiceMock.authData.set({
+        ...authServiceMock.authData()!,
+        rights: ["userlist", "container_list", "enrollpin"],
+        require_description: ["hotp"]
+      });
+      await flushFixture(fixture);
+    });
+
+    it("reports no changes before any control is touched", () => {
+      expect(component.isDirty()).toBe(false);
+      expect(hasChanges()()).toBe(false);
+    });
+
+    it("writes the container input to the model and reports changes", async () => {
+      await typeInto(fixture, container(), "CONT-7");
+
+      expect(component.selectedContainer()).toBe("CONT-7");
+      expect(component.selectedContainerForm().dirty()).toBe(true);
+      expect(hasChanges()()).toBe(true);
+    });
+
+    it("writes a container picked from the autocomplete to the model and reports changes", async () => {
+      const containers = TestBed.inject(ContainerService) as unknown as MockContainerService;
+      (containers.containersForTokenType as WritableSignal<string[]>).set(["CONT-1", "CONT-2"]);
+      await flushFixture(fixture);
+
+      container().focus();
+      container().dispatchEvent(new Event("focusin"));
+      await flushFixture(fixture);
+      (document.querySelectorAll("mat-option")[1] as HTMLElement).click();
+      await flushFixture(fixture);
+
+      expect(component.selectedContainer()).toBe("CONT-2");
+      expect(component.selectedContainerForm().dirty()).toBe(true);
+      expect(hasChanges()()).toBe(true);
+    });
+
+    it("clears the container through the field and reports changes", async () => {
+      component.selectedContainer.set("CONT-7");
+      await flushFixture(fixture);
+      expect(component.isDirty()).toBe(false);
+
+      component["clearContainer"]();
+
+      expect(component.selectedContainer()).toBe("");
+      expect(component.selectedContainerForm().dirty()).toBe(true);
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("writes the picked timezone to the model and reports changes", async () => {
+      await pickOption(fixture, fixture.debugElement.query(By.css(".zone-picker mat-select")).componentInstance, 14);
+
+      expect(component.selectedTimezoneOffset()).toBe("+02:00");
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("writes the validity times to the model and reports changes", async () => {
+      await typeInto(fixture, timeInputs()[0], "08:30");
+      await typeInto(fixture, timeInputs()[1], "17:45");
+
+      expect(component.selectedStartTime()).toBe("08:30");
+      expect(component.selectedEndTime()).toBe("17:45");
+      expect(component.selectedStartTimeForm().dirty()).toBe(true);
+      expect(component.selectedEndTimeForm().dirty()).toBe(true);
+    });
+
+    it("writes the typed validity dates to the model and reports changes", async () => {
+      const [startDate, endDate] = Array.from(
+        fixture.nativeElement.querySelectorAll(".date-picker input")
+      ) as HTMLInputElement[];
+
+      await typeInto(fixture, startDate, "2026-03-04");
+      await typeInto(fixture, endDate, "2026-05-06");
+
+      expect(component.selectedStartDate()?.getMonth()).toBe(2);
+      expect(component.selectedEndDate()?.getDate()).toBe(6);
+      expect(component.selectedStartDateForm().dirty()).toBe(true);
+      expect(component.selectedEndDateForm().dirty()).toBe(true);
+    });
+
+    it("writes null for a validity date that cannot be parsed", async () => {
+      const [startDate] = Array.from(
+        fixture.nativeElement.querySelectorAll(".date-picker input")
+      ) as HTMLInputElement[];
+      component.selectedStartDate.set(new Date("2026-03-04"));
+
+      await typeInto(fixture, startDate, "not a date");
+
+      expect(component.selectedStartDate()).toBeNull();
+    });
+
+    it("touches every field on a refused enrollment so the errors render", async () => {
+      expect(errors()).toHaveLength(0);
+
+      await component.enrollToken();
+      await flushFixture(fixture);
+
+      expect(component.descriptionForm().touched()).toBe(true);
+      expect(errors().join(" ")).toContain("Description is required");
+    });
+
+    it("renders the length error for a description above the maximum", async () => {
+      const description = fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+
+      await typeInto(fixture, description, "x".repeat(tokenService.maxDescriptionLength + 1));
+      description.dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(component.isFormInvalid()).toBe(true);
+      expect(errors().join(" ")).toContain("must not exceed");
+    });
+
+    it("treats a description of only whitespace as missing while a description is required", async () => {
+      expect(component.descriptionRequired()).toBe(true);
+      const description = fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+
+      await typeInto(fixture, description, "   ");
+      description.dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(component.descriptionForm().valid()).toBe(false);
+      expect(component.isFormInvalid()).toBe(true);
+      expect(errors().join(" ")).toContain("Description is required");
+    });
+
+    it("accepts a description of exactly the maximum length", async () => {
+      const description = fixture.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+
+      await typeInto(fixture, description, "x".repeat(tokenService.maxDescriptionLength));
+      description.dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(component.descriptionForm().valid()).toBe(true);
+      expect(errors().join(" ")).not.toContain("must not exceed");
+    });
+
+    it("renders the user errors on a refused enrollment of a type that needs a user", async () => {
+      tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
+      await flushFixture(fixture);
+      expect(component.isFormInvalid()).toBe(true);
+
+      await component.enrollToken();
+      await flushFixture(fixture);
+
+      expect(errors().join(" ")).toContain("User Realm is required");
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
+        "Please fill in all required fields or correct invalid entries."
+      );
+    });
+
+    it("reads the validity of the user assignment", async () => {
+      tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
+      component.description.set("a token");
+      await flushFixture(fixture);
+      expect(component.isFormInvalid()).toBe(true);
+
+      userService.selectedUserRealm.set("realm1");
+      userService.selectedUser.set({ username: "alice" } as UserData);
+      await flushFixture(fixture);
+
+      expect(component.userAssignmentComponent()?.valid()).toBe(true);
+      expect(component.isFormInvalid()).toBe(false);
+    });
+
+    it("does not require a user for a type that works without one", () => {
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      component.description.set("a token");
+
+      expect(component.isFormInvalid()).toBe(false);
+    });
+
+    it("falls back to the session user where the assignment component is not rendered", () => {
+      const selfService = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
+      tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
+      userService.selectedUser.set(null);
+
+      expect(selfService.componentInstance.isFormInvalid()).toBe(true);
+
+      userService.selectedUser.set({ username: "alice" } as UserData);
+      expect(selfService.componentInstance.isFormInvalid()).toBe(false);
+    });
+
+    it("keeps validChanges false while the user is missing", async () => {
+      const validChanges = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
+      userService.selectedUser.set(null);
+      await flushFixture(fixture);
+
+      expect(validChanges()).toBe(false);
     });
   });
 

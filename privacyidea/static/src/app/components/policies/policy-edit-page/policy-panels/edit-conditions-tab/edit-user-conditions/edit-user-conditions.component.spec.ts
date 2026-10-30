@@ -18,6 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { By } from "@angular/platform-browser";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { PolicyService } from "@services/policies/policies.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -61,30 +64,92 @@ describe("EditUserConditionsComponent", () => {
     expect(spy).toHaveBeenCalledWith({ realm: ["realm2"] });
   });
 
-  it("should add user and clear form", () => {
-    const spy = jest.spyOn(component.policyEdit, "emit");
-    component.addUser("newuser");
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user: ["testuser", "newuser"]
-      })
-    );
+  const chipList = () => fixture.debugElement.query(By.directive(ChipListInputComponent));
+  const extras = () =>
+    (fixture.nativeElement as HTMLElement).querySelectorAll(".chip-list-extras button, mat-checkbox");
+
+  it("should show the users as chips", () => {
+    const chips = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll(".mat-mdc-chip-action-label"));
+    expect(chips.map((chip) => chip.textContent!.trim())).toEqual(["testuser"]);
   });
 
-  it("should toggle user case insensitive state", () => {
+  it("should emit only the users when an entry is added", () => {
     const spy = jest.spyOn(component.policyEdit, "emit");
-    component.toggleUserCaseInsensitive();
-    expect(spy).toHaveBeenCalledWith({ user_case_insensitive: true });
+    chipList().triggerEventHandler("valuesChange", ["testuser", "newuser"]);
+    expect(spy).toHaveBeenCalledWith({ user: ["testuser", "newuser"] });
   });
 
-  it("should validate that user does not contain commas", () => {
-    component.userSignal.set("user,name");
-    expect(component.userField().valid()).toBe(false);
-    expect(
-      component
-        .userField()
-        .errors()
-        .some((e) => e.kind === "includesComma")
-    ).toBe(true);
+  it("should emit only the users when an entry is removed", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    chipList().triggerEventHandler("valuesChange", []);
+    expect(spy).toHaveBeenCalledWith({ user: [] });
+  });
+
+  it("should project the case checkbox and the clear button while users exist", () => {
+    expect(extras()).toHaveLength(2);
+  });
+
+  it("should hide the extras without any user", () => {
+    fixture.componentRef.setInput("policy", { user: [], realm: [], resolver: [] });
+    fixture.detectChanges();
+    expect(extras()).toHaveLength(0);
+  });
+
+  it("should clear the users", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    component.clearUsers();
+    expect(spy).toHaveBeenCalledWith({ user: [] });
+  });
+
+  describe("case insensitive checkbox", () => {
+    const checkbox = () => fixture.debugElement.query(By.directive(MatCheckbox)).componentInstance as MatCheckbox;
+    const checkboxInput = (): HTMLInputElement =>
+      fixture.debugElement.query(By.css("mat-checkbox input")).nativeElement;
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it("should show the state of the policy", async () => {
+      expect(checkbox().checked).toBe(false);
+
+      fixture.componentRef.setInput("policy", { user: ["testuser"], user_case_insensitive: true });
+      await flush();
+
+      expect(checkbox().checked).toBe(true);
+    });
+
+    it("should emit the edit and mark the field dirty when the checkbox is clicked", async () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+      expect(component.caseInsensitiveField().dirty()).toBe(false);
+
+      checkboxInput().click();
+      await flush();
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith({ user_case_insensitive: true });
+      expect(component.caseInsensitiveField().dirty()).toBe(true);
+    });
+
+    it("should emit false when a checked checkbox is clicked", async () => {
+      fixture.componentRef.setInput("policy", { user: ["testuser"], user_case_insensitive: true });
+      await flush();
+      const spy = jest.spyOn(component.policyEdit, "emit");
+
+      checkboxInput().click();
+      await flush();
+
+      expect(spy).toHaveBeenCalledWith({ user_case_insensitive: false });
+    });
+
+    it("should not emit an edit while the policy only changes the state", async () => {
+      const spy = jest.spyOn(component.policyEdit, "emit");
+
+      fixture.componentRef.setInput("policy", { user: ["testuser"], user_case_insensitive: true });
+      await flush();
+
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 });

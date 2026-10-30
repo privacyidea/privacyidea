@@ -17,17 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, forwardRef, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { PolicyActionDrafts } from "../policy-action-drafts";
+import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 import { AddedActionsListComponent } from "./added-actions-list.component";
 
 @Component({
   selector: "app-policy-action-item-edit",
   standalone: true,
-  template: "<div></div>"
+  template: "<div></div>",
+  providers: [
+    { provide: PolicyActionItemEditComponent, useExisting: forwardRef(() => MockPolicyActionItemEditComponent) }
+  ]
 })
 class MockPolicyActionItemEditComponent {
   action = input.required<{ name: string; value: string | number }>();
@@ -50,7 +55,7 @@ describe("AddedActionsListComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AddedActionsListComponent],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }, PolicyActionDrafts]
     })
       .overrideComponent(AddedActionsListComponent, {
         set: {
@@ -100,6 +105,26 @@ describe("AddedActionsListComponent", () => {
 
   it("should keep every action when no search term is set", () => {
     expect(component.filteredActions()).toEqual(mockActions);
+  });
+
+  describe("invalid values kept in the drafts", () => {
+    const drafts = () => TestBed.inject(PolicyActionDrafts);
+
+    it("keeps an action with an invalid value in the list while the filter does not match it", () => {
+      drafts().set("action2", "");
+      fixture.componentRef.setInput("actionFilter", "action1");
+      fixture.detectChanges();
+
+      expect(component.filteredActions().map((action) => action.name)).toEqual(["action1", "action2"]);
+    });
+
+    it("forgets the invalid value of a removed action", () => {
+      drafts().set("action2", "");
+
+      component.removeActionFromSelectedPolicy("action2");
+
+      expect(drafts().has("action2")).toBe(false);
+    });
   });
 
   it("should emit updated actions when an action is removed", () => {

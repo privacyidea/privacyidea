@@ -42,8 +42,7 @@
     }
   }
   <mat-checkbox
-    [checked]="readEmailDynamically()"
-    (change)="readEmailDynamically.set($event.checked)"
+    [formField]="readEmailDynamicallyForm"
     i18n="@@token.readEmailDynamically"
     >Read email dynamically from user source on each request</mat-checkbox
   >

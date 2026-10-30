@@ -32,8 +32,26 @@ import { MockDialogService, MockRouter } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockRadiusService } from "@testing/mock-services/mock-radius-service";
-import { BehaviorSubject } from "rxjs";
+import { BehaviorSubject, of } from "rxjs";
 import { NewRadiusServerComponent } from "./new-radius-server.component";
+
+const flush = async (fixture: ComponentFixture<unknown>) => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+};
+
+const authenticatorCheckbox = (fixture: ComponentFixture<unknown>): HTMLInputElement =>
+  fixture.nativeElement.querySelector("mat-checkbox input") as HTMLInputElement;
+
+const inputOf = (fixture: ComponentFixture<unknown>, placeholder: string): HTMLInputElement =>
+  fixture.nativeElement.querySelector(`input[placeholder="${placeholder}"]`) as HTMLInputElement;
+
+const typeInto = async (fixture: ComponentFixture<unknown>, input: HTMLInputElement, value: string) => {
+  input.value = value;
+  input.dispatchEvent(new Event("input"));
+  await flush(fixture);
+};
 
 describe("NewRadiusServerComponent", () => {
   let component: NewRadiusServerComponent;
@@ -102,7 +120,12 @@ describe("NewRadiusServerComponent", () => {
 
   it.each(["test_request", ".", ".."])("rejects the reserved identifier %p", (identifier) => {
     component.radiusModel.update((m) => ({ ...m, identifier, server: "1.2.3.4", secret: "s" }));
-    expect(component.radiusForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+    expect(
+      component.radiusForm
+        .identifier()
+        .errors()
+        .some((e) => e.kind === "reservedName")
+    ).toBe(true);
     expect(component.radiusForm().valid()).toBe(false);
     expect(component.canSave).toBe(false);
   });
@@ -178,16 +201,10 @@ describe("NewRadiusServerComponent", () => {
       expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
     });
 
-    it("should open SaveAndExitDialog when there are changes", () => {
+    it("should open SaveAndExitDialog when there are changes", async () => {
       mockSaveExitDialogRef.afterClosed.mockReturnValue(new BehaviorSubject("discard").asObservable());
-      component.radiusModel.update((m) => ({
-        ...m,
-        identifier: "test",
-        server: "1.2.3.4",
-        secret: "secret",
-        port: 1812
-      }));
-      component.radiusForm().markAsDirty();
+      authenticatorCheckbox(fixture).click();
+      await flush(fixture);
 
       component.onCancel();
 
@@ -337,5 +354,105 @@ describe("NewRadiusServerComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("NewRadiusServerComponent bound controls", () => {
+  let component: NewRadiusServerComponent;
+  let fixture: ComponentFixture<NewRadiusServerComponent>;
+  let radiusServiceMock: MockRadiusService;
+
+  const existing = {
+    identifier: "radius-1",
+    server: "1.2.3.4",
+    port: 1812,
+    timeout: 5,
+    retries: 3,
+    secret: "s",
+    options: { message_authenticator: true }
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [NewRadiusServerComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: Router, useClass: MockRouter },
+        { provide: RadiusServerService, useClass: MockRadiusService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ identifier: "radius-1" })) } }
+      ]
+    }).compileComponents();
+    radiusServiceMock = TestBed.inject(RadiusServerService) as unknown as MockRadiusService;
+    radiusServiceMock.radiusServers.set([existing]);
+    fixture = TestBed.createComponent(NewRadiusServerComponent);
+    component = fixture.componentInstance;
+    await flush(fixture);
+  });
+
+  it("writes the Message-Authenticator checkbox to the model and marks the form dirty", async () => {
+    expect(authenticatorCheckbox(fixture).checked).toBe(true);
+    expect(component.hasChanges).toBe(false);
+    authenticatorCheckbox(fixture).click();
+    await flush(fixture);
+    expect(component.radiusModel().message_authenticator).toBe(false);
+    expect(component.radiusForm.message_authenticator().dirty()).toBe(true);
+    expect(component.hasChanges).toBe(true);
+  });
+
+  it("shows a model change in the checkbox", async () => {
+    component.radiusModel.update((m) => ({ ...m, message_authenticator: false }));
+    await flush(fixture);
+    expect(authenticatorCheckbox(fixture).checked).toBe(false);
+  });
+
+  it("keeps the checkbox edit when the server list is reloaded", async () => {
+    authenticatorCheckbox(fixture).click();
+    await flush(fixture);
+
+    radiusServiceMock.radiusServers.set([{ ...existing, retries: 9 }]);
+    await flush(fixture);
+
+    expect(component.radiusModel().message_authenticator).toBe(false);
+    expect(component.radiusModel().retries).toBe(3);
+  });
+
+  it("re-initializes from a reloaded list while the form is pristine", async () => {
+    radiusServiceMock.radiusServers.set([{ ...existing, retries: 9 }]);
+    await flush(fixture);
+    expect(component.radiusModel().retries).toBe(9);
+    expect(component.hasChanges).toBe(false);
+  });
+
+  it("marks the form dirty when a clear button empties a field", async () => {
+    const clear = inputOf(fixture, "1.2.3.4").closest("app-clearable-input")!.querySelector("button");
+    (clear as HTMLButtonElement).click();
+    await flush(fixture);
+    expect(component.radiusModel().server).toBe("");
+    expect(component.radiusForm.server().dirty()).toBe(true);
+    expect(component.hasChanges).toBe(true);
+  });
+
+  it.each([
+    ["1812", "port"],
+    ["5", "timeout"],
+    ["3", "retries"]
+  ] as const)("renders the parse message of the %s field once it is touched", async (placeholder, field) => {
+    const input = inputOf(fixture, placeholder);
+    jest.spyOn(input, "validity", "get").mockReturnValue({ badInput: true } as ValidityState);
+    await typeInto(fixture, input, "");
+    expect(
+      component.radiusForm[field]()
+        .errors()
+        .map((e) => e.kind)
+    ).toEqual(["parse"]);
+    expect(component.radiusForm().valid()).toBe(false);
+
+    input.dispatchEvent(new Event("blur"));
+    await flush(fixture);
+    expect(fixture.nativeElement.textContent).toContain("Enter a valid number");
   });
 });

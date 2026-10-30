@@ -1,0 +1,37 @@
+@use "table";
+
+:host {
+  display: contents;
+}
+
+// The host is `display: contents`, so the grid's `> *` rule (flex: 1 1 28rem, min-width: 0, border-box) matches the host
+// and not this card. The card repeats it: it fills the rest of the row up to the card-width tier, instead of keeping the
+// full tier width and wrapping onto its own row beside the User card.
+.details-card--description {
+  @include table.details-description-card;
+  @include table.card-width(m);
+  box-sizing: border-box;
+  flex: 1 1 28rem;
+  min-width: 0;
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    min-width: 80px;
+    justify-content: flex-end;
+  }
+}

@@ -18,21 +18,21 @@
         placeholder="e.g. New_Policy_Name"
         (keyup.enter)="!isInvalid() && onAction('submit')" />
 
-      @if (nameField().errors().some(e => e.kind === 'required')) {
+      @if (hasError(nameField, ERR.required)) {
         <mat-error i18n="@@policy.policyNameRequired">Policy name is <strong>required</strong></mat-error>
       }
-      @if (nameField().errors().some(e => e.kind === 'notChanged')) {
+      @if (hasError(nameField, NOT_CHANGED)) {
         <mat-error i18n="@@policy.policyNameMust"
           >Policy name must be <strong>different</strong> from the original</mat-error
         >
       }
-      @if (nameField().errors().some(e => e.kind === 'pattern')) {
+      @if (hasError(nameField, ERR.pattern)) {
         <mat-error i18n="@@policy.policyNameContains"
           >Policy name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and
           hyphens are allowed.</mat-error
         >
       }
-      @if (nameField().errors().some(e => e.kind === 'nameTaken')) {
+      @if (hasError(nameField, ERR.nameTaken)) {
         <mat-error i18n="@@policy.nameAlreadyExists">A policy with this name already exists.</mat-error>
       }
 

@@ -51,23 +51,23 @@
           }
         </mat-hint>
         <app-clearable-input
-          (clearButtonClick)="resolverNameModel.update(m => ({ ...m, resolverName: '' }))"
+          (clearButtonClick)="clearField(resolverNameForm.resolverName, '')"
           [showClearButton]="!isEditMode() && !!resolverNameModel().resolverName">
           <input
             [formField]="resolverNameForm.resolverName"
             matInput
             placeholder="resolver1" />
         </app-clearable-input>
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'required')) {
+        @if (hasError(resolverNameForm.resolverName, ERR.required)) {
           <mat-error i18n="@@resolver.resolverNameRequired">Resolver name is <strong>required</strong>.</mat-error>
         }
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern')) {
+        @if (hasError(resolverNameForm.resolverName, ERR.pattern)) {
           <mat-error i18n="@@resolver.resolverNameContains"
             >Resolver name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
             and hyphens are allowed.</mat-error
           >
         }
-        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'reservedName')) {
+        @if (hasError(resolverNameForm.resolverName, ERR.reservedName)) {
           <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ resolverNameForm.resolverName().value() }}".</mat-error>
         }
       </mat-form-field>
@@ -76,8 +76,7 @@
         <mat-label i18n="@@common.type">Type</mat-label>
         <mat-select
           (selectionChange)="onTypeChange($event.value)"
-          [disabled]="isEditMode()"
-          [value]="resolverType()">
+          [formField]="resolverSettingsForm.resolverType">
           <mat-option [value]="'ldapresolver'">LDAP</mat-option>
           <mat-option [value]="'sqlresolver'">SQL</mat-option>
           <mat-option [value]="'httpresolver'">HTTP</mat-option>
@@ -98,11 +97,10 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@resolver.testUsername">Test Username</mat-label>
               <app-clearable-input
-                (clearButtonClick)="testUsername.set('')"
+                (clearButtonClick)="clearField(resolverSettingsForm.testUsername, '')"
                 [showClearButton]="!!testUsername()">
                 <input
-                  (input)="testUsername.set($any($event.target).value)"
-                  [value]="testUsername()"
+                  [formField]="resolverSettingsForm.testUsername"
                   matInput
                   placeholder="foo@bar.com" />
               </app-clearable-input>
@@ -111,11 +109,10 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@resolver.testUserId">Test User ID</mat-label>
               <app-clearable-input
-                (clearButtonClick)="testUserId.set('')"
+                (clearButtonClick)="clearField(resolverSettingsForm.testUserId, '')"
                 [showClearButton]="!!testUserId()">
                 <input
-                  (input)="testUserId.set($any($event.target).value)"
-                  [value]="testUserId()"
+                  [formField]="resolverSettingsForm.testUserId"
                   matInput
                   placeholder="foo@bar.com" />
               </app-clearable-input>

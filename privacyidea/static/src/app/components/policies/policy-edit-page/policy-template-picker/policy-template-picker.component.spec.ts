@@ -102,6 +102,16 @@ describe("PolicyTemplatePickerComponent", () => {
     expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: 1 }));
   });
 
+  it("falls back to priority 1 when the current priority is empty", () => {
+    templatesMock.setTemplate({ name: "tpl", scope: "admin" });
+    fixture.componentRef.setInput("currentPriority", null);
+    const emitSpy = jest.spyOn(component.templateApplied, "emit");
+
+    component.selectTemplate("tpl");
+
+    expect(emitSpy).toHaveBeenCalledWith(expect.objectContaining({ priority: 1 }));
+  });
+
   it("passes optional template fields through unchanged", () => {
     templatesMock.setTemplate({
       name: "complex",

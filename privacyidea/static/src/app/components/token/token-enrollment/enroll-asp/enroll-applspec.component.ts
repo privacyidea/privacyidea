@@ -62,6 +62,9 @@ export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentD
   generateOnServer = signal<boolean>(true);
   otpKey = signal<string>("");
 
+  generateOnServerForm = form(this.generateOnServer, (f) => {
+    disabled(f, () => this.disabled() || this.authService.checkForceServerGenerateOTPKey("applspec"));
+  });
   serviceIdForm = form(this.serviceId, (f) => {
     required(f);
     disabled(f, () => this.disabled() || !this.serviceIdService.canListServiceIds());

@@ -31,9 +31,8 @@
         subscriptSizing="dynamic">
         <mat-label i18n="@@common.pin">PIN</mat-label>
         <input
-          [value]="setPinValue()"
-          (input)="setPinValue.set($any($event.target).value)"
-          [type]="'password'"
+          [formField]="setPinForm"
+          type="password"
           matInput />
       </mat-form-field>
       <mat-form-field
@@ -41,10 +40,12 @@
         subscriptSizing="dynamic">
         <mat-label i18n="@@common.repeatPin">Repeat PIN</mat-label>
         <input
-          [value]="repeatPinValue()"
-          (input)="repeatPinValue.set($any($event.target).value)"
-          [type]="'password'"
+          [formField]="repeatPinForm"
+          type="password"
           matInput />
+        @if (hasError(repeatPinForm, ERR.pinMismatch)) {
+          <mat-error i18n="@@common.pinsDoNotMatchError">PINs do not match.</mat-error>
+        }
       </mat-form-field>
     </div>
   }
@@ -52,6 +53,7 @@
     @if (authService.actionAllowed("setpin")) {
       <button
         (click)="setPin()"
+        [disabled]="!repeatPinForm().valid()"
         class="action-button-secondary button-width-l"
         mat-stroked-button>
         <mat-icon>password</mat-icon>

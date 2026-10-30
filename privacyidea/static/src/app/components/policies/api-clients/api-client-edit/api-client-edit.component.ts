@@ -42,6 +42,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { clearField, hasError } from "@utils/form-state.utils";
+import { ERR } from "@utils/form-rules.utils";
 
 interface ApiClientFormModel {
   display_name: string;
@@ -117,6 +119,19 @@ export class ApiClientEditComponent implements OnDestroy {
     disabled(f.client_type, () => this.isEditMode());
     disabled(f.display_name, () => !this.canEditFields());
   });
+
+  // Edit mode shows the integration's label for the immutable client type in a read-only field.
+  private readonly clientTypeLabelModel = linkedSignal(() => ({
+    label: this.integrationsService.labelFor(this.apiClientModel().client_type)
+  }));
+
+  protected readonly clientTypeLabelForm = form(this.clientTypeLabelModel, (f) => {
+    disabled(f.label);
+  });
+
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
+  protected readonly ERR = ERR;
 
   canEditFields(): boolean {
     return this.authService.actionAllowed(this.isEditMode() ? "api_client_edit" : "api_client_add");

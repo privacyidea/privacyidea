@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -26,12 +27,24 @@ import { MatSelectModule } from "@angular/material/select";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
-import { DURATION_UNIT_FACTORS, DURATION_UNITS, DurationUnit } from "@utils/duration-unit.utils";
+import {
+  DURATION_UNITS,
+  DurationFormModel,
+  durationRules,
+  POSITIVE_INTEGER_ERROR,
+  selectedDurationSeconds
+} from "@utils/duration-unit.utils";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 // What the dialog hands back: a null duration means a block that does not expire.
 export interface BlocklistBlockDialogResult {
   ip: string;
   durationSeconds: number | null;
+}
+
+interface BlocklistBlockFormModel extends DurationFormModel {
+  ip: string;
 }
 
 @Component({
@@ -40,6 +53,7 @@ export interface BlocklistBlockDialogResult {
   styleUrls: ["./blocklist-block-dialog.component.scss"],
   standalone: true,
   imports: [
+    FormField,
     MatButtonModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -50,45 +64,41 @@ export interface BlocklistBlockDialogResult {
   ]
 })
 export class BlocklistBlockDialogComponent extends AbstractDialogComponent<void, BlocklistBlockDialogResult | null> {
-  readonly ip = signal("");
   // Permanent by default, matching the user lock: an admin blocking by hand is reacting to an incident.
-  readonly mode = signal<"permanent" | "timed">("permanent");
-  readonly durationInput = signal("");
-  readonly durationUnit = signal<DurationUnit>("minutes");
-  readonly durationUnits = DURATION_UNITS;
-
-  readonly durationSeconds = computed<number | null>(() => {
-    const parsed = Number.parseInt(this.durationInput().trim(), 10);
-    return Number.isNaN(parsed) || parsed <= 0 ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
+  readonly blockModel = signal<BlocklistBlockFormModel>({
+    ip: "",
+    mode: "permanent",
+    durationInput: null,
+    durationUnit: "minutes"
   });
-
-  // The timed controls stay in the layout while "permanent" is selected so switching modes does not
-  // shift the dialog; they are simply disabled until a timed block is chosen.
-  readonly durationDisabled = computed<boolean>(() => this.mode() === "permanent");
-
-  // Only the obviously-empty case is caught here; whether the address parses, and whether it is on the
-  // never-block list, is the backend's answer and arrives as a notification.
-  readonly canConfirm = computed<boolean>(
-    () => this.ip().trim().length > 0 && (this.mode() === "permanent" || this.durationSeconds() !== null)
-  );
+  // Only the obviously-empty address is caught here; whether it parses, and whether it is on the
+  // never-block list, is the backend's answer and arrives as a notification. The timed controls stay in the
+  // layout while "permanent" is selected so switching modes does not shift the dialog; the rules disable them
+  // until a timed block is chosen.
+  readonly blockForm = form(this.blockModel, (f) => {
+    requiredNonBlank(f.ip);
+    durationRules(f.mode, f.durationInput, f.durationUnit);
+  });
+  readonly durationUnits = DURATION_UNITS;
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly POSITIVE_INTEGER_ERROR = POSITIVE_INTEGER_ERROR;
 
   readonly dialogActions = computed((): DialogAction<string>[] => [
     {
       label: $localize`:@@blocklist.block:Block`,
       value: "confirm",
       type: "confirm",
-      disabled: !this.canConfirm(),
+      disabled: !this.blockForm().valid(),
       primary: true
     }
   ]);
 
   onAction(actionValue: string): void {
-    if (actionValue !== "confirm" || !this.canConfirm()) {
+    if (actionValue !== "confirm" || !this.blockForm().valid()) {
       return;
     }
-    this.dialogRef.close({
-      ip: this.ip().trim(),
-      durationSeconds: this.mode() === "permanent" ? null : this.durationSeconds()
-    });
+    const model = this.blockModel();
+    this.dialogRef.close({ ip: model.ip.trim(), durationSeconds: selectedDurationSeconds(model) });
   }
 }

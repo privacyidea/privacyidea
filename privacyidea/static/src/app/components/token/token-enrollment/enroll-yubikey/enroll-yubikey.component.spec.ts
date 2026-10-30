@@ -21,6 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EnrollYubikeyComponent } from "./enroll-yubikey.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { typeInto } from "@testing/enroll-form-dom";
 
 describe("EnrollYubikeyComponent", () => {
   let component: EnrollYubikeyComponent;
@@ -39,5 +40,17 @@ describe("EnrollYubikeyComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("writes the pushed Yubikey OTP to the model, marks it dirty and widens the OTP length", async () => {
+    const input = fixture.nativeElement.querySelector("input[matInput]") as HTMLInputElement;
+    expect(component.testYubiKeyForm().dirty()).toBe(false);
+
+    await typeInto(fixture, input, "x".repeat(40));
+    TestBed.tick();
+
+    expect(component.testYubiKey()).toBe("x".repeat(40));
+    expect(component.testYubiKeyForm().dirty()).toBe(true);
+    expect(component.otpLength()).toBe(40);
   });
 });
