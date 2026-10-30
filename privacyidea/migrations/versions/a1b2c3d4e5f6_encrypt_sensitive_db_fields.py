@@ -165,8 +165,11 @@ def downgrade():
     """
     Decrypt previously encrypted values back to plaintext.
     WARNING: This exposes sensitive data in the database again.
+
+    A value that cannot be decrypted, e.g. with another encryption key, stops the downgrade before anything is
+    changed: 3.13 would send the encrypted value to the SMS gateway.
     """
-    from privacyidea.lib.crypto import decryptPassword
+    from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword
 
     conn = op.get_bind()
 
@@ -184,19 +187,25 @@ def downgrade():
         sa.select(smsgatewayoption.c.id, smsgatewayoption.c.Key,
                   smsgatewayoption.c.Value, smsgatewayoption.c.Encrypted)
     )
-    for row in result:
-        option_id, key, value, encrypted = row
-        if not value or not encrypted:
-            continue
-        if not _looks_encrypted(value):
+    decrypted_values = {}
+    undecryptable_keys = []
+    for option_id, key, value, encrypted in result:
+        if not value or not encrypted or not _looks_encrypted(value):
             continue
         decrypted_value = decryptPassword(value)
-        if decrypted_value and not decrypted_value.startswith("FAILED TO DECRYPT"):
-            conn.execute(
-                smsgatewayoption.update().where(
-                    smsgatewayoption.c.id == option_id
-                ).values(Value=decrypted_value)
-            )
+        if decrypted_value == FAILED_TO_DECRYPT_PASSWORD:
+            undecryptable_keys.append(key)
+        else:
+            decrypted_values[option_id] = decrypted_value
+    if undecryptable_keys:
+        raise RuntimeError(f"Could not decrypt the SMS gateway options {', '.join(sorted(undecryptable_keys))}. "
+                           f"Run the downgrade with the encryption key they were encrypted with.")
+    for option_id, decrypted_value in decrypted_values.items():
+        conn.execute(
+            smsgatewayoption.update().where(
+                smsgatewayoption.c.id == option_id
+            ).values(Value=decrypted_value)
+        )
 
     # --- 1b. Drop the Encrypted column ---
     log.info("Dropping Encrypted column from smsgatewayoption table...")

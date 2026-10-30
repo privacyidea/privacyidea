@@ -255,6 +255,54 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         assert self._fetch_custom_value(engine, "u1", "fido2_user_id") == "abc123"
         engine.dispose()
 
+    def test_downgrade_runs_again_after_failing_midway(self, flask_app):
+        """A downgrade that stopped after copying the first row back copies every row back exactly once."""
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        self._insert_custom(engine, [
+            {"user_id": "u1", "Key": "fido2_user_id", "Value": "abc123"},
+            {"user_id": "u2", "Key": "fido2_user_id", "Value": "def456"},
+            {"user_id": "u1", "Key": "last_used_token_app-a", "Value": "push", "Type": PI_INTERNAL},
+        ])
+        engine.dispose()
+
+        self._upgrade()
+        self._downgrade_failing_after(r"INSERT INTO customuserattribute")
+        self._downgrade()
+
+        engine = self._engine()
+        for user_id, key in (("u1", "fido2_user_id"), ("u2", "fido2_user_id"), ("u1", "last_used_token_app-a")):
+            assert self._fetch_custom_count(engine, user_id, key) == 1
+        # The row copied back before the stop may be one of the seed
+        key_column = quote_identifier("Key")
+        duplicates = self._fetch_scalar(
+            engine,
+            f"SELECT COUNT(*) FROM (SELECT user_id, resolver, {key_column} FROM customuserattribute "
+            f"GROUP BY user_id, resolver, {key_column} HAVING COUNT(*) > 1) duplicates")
+        assert duplicates == 0
+        engine.dispose()
+
+    def test_downgrade_runs_again_after_stopping_behind_the_drop(self, flask_app):
+        """
+        A downgrade that stopped after it dropped internaluserattribute, with the revision still stamped, finishes when
+        it runs again and keeps the rows it copied back.
+        """
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        self._insert_custom(engine, [
+            {"user_id": "u1", "Key": "fido2_user_id", "Value": "abc123"},
+        ])
+        engine.dispose()
+
+        self._upgrade()
+        self._downgrade_failing_after(r"DROP TABLE internaluserattribute")
+        self._downgrade()
+
+        engine = self._engine()
+        assert self._fetch_custom_value(engine, "u1", "fido2_user_id") == "abc123"
+        assert self._fetch_custom_count(engine, "u1", "fido2_user_id") == 1
+        engine.dispose()
+
     def test_downgrade_explodes_last_used_token_dict(self, flask_app):
         """downgrade() must explode the consolidated last_used_token dict back
         into per-user-agent rows in customuserattribute."""
