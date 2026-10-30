@@ -44,7 +44,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, get_user_from_param
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
@@ -726,6 +726,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
     init_result = {}
     request_all_data_original = copy.deepcopy(request.all_data)
+    request_data_original = g.request_data
+    request_user_original = request.User
     policies = copy.deepcopy(g.policies)
 
     # Get policies for the token
@@ -739,96 +741,102 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                                                require_description, force_server_generate_key)
     from privacyidea.api.lib.postpolicy import check_verify_enrollment, save_pin_change
 
-    # Create each token defined in the template. The template contains the enroll information for each token.
-    for token_info in template_tokens:
-        token = None
-        user = User()
-        # If the user flag is set, the token is assigned to the container owner: set the full user information in the
-        # enroll information
-        if token_info.get("user"):
-            if container_owner:
-                token_info["user"] = container_owner.login
-                token_info["realm"] = container_owner.realm
-                token_info["resolver"] = container_owner.resolver
-            elif realms:
-                token_info["realm"] = realms[0]
+    try:
+        # Create each token defined in the template. The template contains the enroll information for each token.
+        for token_info in template_tokens:
+            token = None
+            user = User()
+            # If the user flag is set, the token is assigned to the container owner: set the full user information in
+            # the enroll information
+            if token_info.get("user"):
+                if container_owner:
+                    token_info["user"] = container_owner.login
+                    token_info["realm"] = container_owner.realm
+                    token_info["resolver"] = container_owner.resolver
+                elif realms:
+                    token_info["realm"] = realms[0]
+                    del token_info["user"]
+                else:
+                    del token_info["user"]
+                user = container_owner
+            elif user_role == "user" and request.User:
+                # Users are always assigned to the tokens, only admins can create tokens without a user
+                user = request.User
+                token_info["user"] = user.login
+                token_info["realm"] = user.realm
+                token_info["resolver"] = user.resolver
+            elif token_info.get("user") is not None:
                 del token_info["user"]
-            else:
-                del token_info["user"]
-            user = container_owner
-        elif user_role == "user" and request.User:
-            # Users are always assigned to the tokens, only admins can create tokens without a user
-            user = request.User
-            token_info["user"] = user.login
-            token_info["realm"] = user.realm
-            token_info["resolver"] = user.resolver
-        elif token_info.get("user") is not None:
-            del token_info["user"]
 
-        # The pre-policy decorator functions require a request object containing the enroll information.
-        # Hence, we need to clear the data in the request object from the previous token and set the new enroll
-        # information for the current token.
-        request.all_data = {}
-        request.all_data.update(token_info)
-        g.policies = {}
+            # The pre-policy decorator functions require a request object containing the enroll information.
+            # Hence, we need to clear the data in the request object from the previous token and set the new enroll
+            # information for the current token. The policy conditions on the request data and the user are evaluated
+            # against the current token as in a token enrollment request.
+            request.all_data = {}
+            request.all_data.update(token_info)
+            g.request_data = copy.deepcopy(token_info)
+            request.User = get_user_from_param(token_info)
+            g.policies = {}
 
-        # Pre-policy checks
-        # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
-        try:
-            check_max_token_realm(request, None)
-            require_description(request, None)
-            check_max_token_user(request, None)
-            check_token_init(request, None)
-            init_tokenlabel(request, None)
-            enroll_pin(request, None)
-            twostep_enrollment_activation(request, None)
-            twostep_enrollment_parameters(request, None)
-            init_random_pin(request, None)
-            encrypt_pin(request, None)
-            check_otp_pin(request, None)
-            check_external(request, None)
-            init_token_defaults(request, None)
-            init_token_length_contents(request, None)
-            papertoken_count(request, None)
-            sms_identifiers(request, None)
-            tantoken_count(request, None)
-            pushtoken_add_config(request, None)
-            indexedsecret_force_attribute(request, None)
-            force_server_generate_key(request, None)
-        except Exception as ex:
-            log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
-            continue
+            # Pre-policy checks
+            # TODO: Refactor including original uses of these functions (decorators on token init endpoint)
+            try:
+                check_max_token_realm(request, None)
+                require_description(request, None)
+                check_max_token_user(request, None)
+                check_token_init(request, None)
+                init_tokenlabel(request, None)
+                enroll_pin(request, None)
+                twostep_enrollment_activation(request, None)
+                twostep_enrollment_parameters(request, None)
+                init_random_pin(request, None)
+                encrypt_pin(request, None)
+                check_otp_pin(request, None)
+                check_external(request, None)
+                init_token_defaults(request, None)
+                init_token_length_contents(request, None)
+                papertoken_count(request, None)
+                sms_identifiers(request, None)
+                tantoken_count(request, None)
+                pushtoken_add_config(request, None)
+                indexedsecret_force_attribute(request, None)
+                force_server_generate_key(request, None)
+            except Exception as ex:
+                log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
+                continue
 
-        init_params = request.all_data
-        init_params["policies"] = g.policies
-        try:
-            token = init_token(init_params, user)
-            init_result[token.get_serial()] = {"type": token.get_type()}
-            init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
-            container.add_token(token)
-        except Exception as ex:
-            log.warning(f"Error creating token {token_info} from template: {ex}")
-            if token:
-                if init_result.get(token.get_serial()):
-                    del init_result[token.get_serial()]
-                token.delete_token()
-            continue
+            init_params = request.all_data
+            init_params["policies"] = g.policies
+            try:
+                token = init_token(init_params, user)
+                init_result[token.get_serial()] = {"type": token.get_type()}
+                init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
+                container.add_token(token)
+            except Exception as ex:
+                log.warning(f"Error creating token {token_info} from template: {ex}")
+                if token:
+                    if init_result.get(token.get_serial()):
+                        del init_result[token.get_serial()]
+                    token.delete_token()
+                continue
 
-        # Post-policy checks
-        try:
-            # Post-policy decorators require a response object containing the result of the token creation.
-            response = send_result(True, details=init_result[token.get_serial()])
-            check_verify_enrollment(request, response)
-            save_pin_change(request, response)
-        except Exception as ex:
-            log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
-            continue
+            # Post-policy checks
+            try:
+                # Post-policy decorators require a response object containing the result of the token creation.
+                response = send_result(True, details=init_result[token.get_serial()])
+                check_verify_enrollment(request, response)
+                save_pin_change(request, response)
+            except Exception as ex:
+                log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
+                continue
 
-        init_result[token.get_serial()].update(response.json["detail"])
-        init_result[token.get_serial()]["init_params"] = init_params
-
-    request.all_data = request_all_data_original
-    g.policies = policies
+            init_result[token.get_serial()].update(response.json["detail"])
+            init_result[token.get_serial()]["init_params"] = init_params
+    finally:
+        request.all_data = request_all_data_original
+        g.request_data = request_data_original
+        request.User = request_user_original
+        g.policies = policies
     return init_result
 
 

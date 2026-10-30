@@ -1,11 +1,18 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import copy
 import json
+from unittest import mock
 
-from privacyidea.lib.container import (create_container_template, get_template_obj)
+from flask import g, request
+
+from privacyidea.lib.container import (create_container_template, get_template_obj,
+                                       create_container_tokens_from_template)
 from privacyidea.lib.container import (init_container, find_container_by_serial)
+from privacyidea.lib.error import UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.serviceid import set_serviceid
@@ -17,6 +24,7 @@ from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from .api_container_common import (
     APIContainerTest,
 )
@@ -749,3 +757,132 @@ class APIContainerTemplate(APIContainerTest):
 
         self.assertTrue(isinstance(template_token_types["generic"]["description"], str))
         self.assertTrue(isinstance(template_token_types["generic"]["token_types"], list))
+
+    def test_18_create_container_with_template_change_pin_container_condition(self):
+        set_policy("admin", scope=SCOPE.ADMIN, action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True})
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
+
+        def create_container(container_type):
+            template_params = {"name": "test",
+                               "container_type": container_type,
+                               "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
+            request_params = json.dumps({"type": container_type, "user": "hans", "realm": self.realm1,
+                                         "template": template_params})
+            result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+            container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            tokens = container.get_tokens()
+            self.assertEqual(1, len(tokens))
+            return container, tokens[0]
+
+        # Policy applies to tokens in a smartphone
+        smartphone, smartphone_token = create_container("smartphone")
+        self.assertIsNotNone(get_tokeninfo(smartphone_token.get_serial(), "next_pin_change"))
+
+        # Policy does not apply to tokens in other container types
+        generic, generic_token = create_container("generic")
+        self.assertIsNone(get_tokeninfo(generic_token.get_serial(), "next_pin_change"))
+
+        delete_policy("change_pin")
+        delete_policy("admin")
+        smartphone.delete()
+        generic.delete()
+        smartphone_token.delete_token()
+        generic_token.delete_token()
+
+    def test_19_create_container_with_template_request_data_condition(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "hotp", True)])
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True},
+                                                           {"type": "totp", "genkey": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        # The condition is evaluated against the parameters of each template token
+        self.assertIsNotNone(get_tokeninfo(tokens["hotp"].get_serial(), "next_pin_change"))
+        self.assertIsNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+
+        delete_policy("change_pin")
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+
+    def test_20_create_container_with_template_policies_match_token_owner(self):
+        self.setUp_user_realms()
+        set_policy("enrollment", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   realm=self.realm1)
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True},
+                                                           {"type": "hotp", "genkey": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = container.get_tokens()
+        self.assertEqual(2, len(tokens))
+        owned_token = next(token for token in tokens if token.user)
+        unowned_token = next(token for token in tokens if not token.user)
+        # The policies are matched against the token owner and not against the container owner
+        self.assertEqual(RolloutState.VERIFY_PENDING, owned_token.rollout_state)
+        self.assertNotEqual(RolloutState.VERIFY_PENDING, unowned_token.rollout_state)
+
+        delete_policy("enrollment")
+        container.delete()
+        [token.delete_token() for token in tokens]
+
+    def test_21_create_container_with_template_policies_match_container_realm(self):
+        self.setUp_user_realms()
+        set_policy("enrollment", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   realm=self.realm1)
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
+        request_params = json.dumps({"type": "generic", "realm": self.realm1, "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        token = tokens[0]
+        # The container has no owner: the token only gets the container realm and the policies are matched against it
+        self.assertIsNone(token.user)
+        self.assertListEqual([self.realm1], token.get_realms())
+        self.assertEqual(RolloutState.VERIFY_PENDING, token.rollout_state)
+
+        delete_policy("enrollment")
+        container.delete()
+        token.delete_token()
+
+    def test_22_create_container_tokens_from_template_restores_request_on_error(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        request_data = {"type": "generic", "user": "hans", "realm": self.realm1}
+
+        with self.app.test_request_context("/container/init", method="POST"):
+            request.all_data = copy.deepcopy(request_data)
+            request.User = hans
+            g.request_data = copy.deepcopy(request_data)
+            g.policies = {"container_policy": "value"}
+            g.logged_in_user = {"role": "admin", "username": "admin", "realm": ""}
+            with mock.patch("privacyidea.lib.container.get_user_from_param", side_effect=UserError("unavailable")):
+                with self.assertRaises(UserError):
+                    create_container_tokens_from_template(container_serial, [{"type": "hotp", "genkey": True,
+                                                                              "user": True}], request, "admin")
+
+            self.assertDictEqual(request_data, request.all_data)
+            self.assertDictEqual(request_data, g.request_data)
+            self.assertEqual(hans, request.User)
+            self.assertDictEqual({"container_policy": "value"}, g.policies)
+
+        find_container_by_serial(container_serial).delete()

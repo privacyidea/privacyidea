@@ -214,6 +214,14 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **Tokens from a container template are checked with their own user and realm** — When a container is created from
+  a template, the enrollment policies are checked for each token as for a single token enrollment: against the user
+  and the realm the token gets, not against the user of the container. A token without *Assign to user* gets neither a
+  user nor a realm, so an administrator whose admin policies are restricted to certain realms can no longer create it
+  from a template. As before, such a token is skipped and the reason is only written to the log: the container is
+  created with the remaining tokens. **Review the container templates your realm administrators use** and select
+  *Assign to user* for the tokens they need to create.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
