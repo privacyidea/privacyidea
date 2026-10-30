@@ -106,7 +106,8 @@ def check_fido2_token_state(token: TokenClass) -> FIDO2TokenState:
     counters, active, fail counter, validity period and rollout state.
 
     A FIDO2 answer that carries a credential_id is handled outside ``check_token_list`` - the view resolves the
-    token from the credential itself - so the views call this before verifying the response. The state is
+    token from the credential itself - so the views call this before verifying the response. The answers of the PIN
+    change via ``/validate/check`` skip ``check_token_list`` as well and use it, too. The state is
     returned instead of raised, because each view phrases its own response and writes its own
     authentication-log row from the reason.
     """

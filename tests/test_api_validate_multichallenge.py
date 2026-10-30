@@ -15,7 +15,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
+from flask import g
 from passlib.hash import argon2
+from sqlalchemy import select
 from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
@@ -52,13 +54,15 @@ from privacyidea.lib.tokens.smstoken import SmsTokenClass
 from privacyidea.lib.tokens.totptoken import HotpTokenClass
 from privacyidea.lib.tokens.yubikeytoken import YubikeyTokenClass
 from privacyidea.lib.user import (User)
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.lib.utils import to_unicode
 from privacyidea.models import (Token, Policy, Challenge, AuthCache, db, TokenOwner, Realm, CustomUserAttribute,
                                 NodeName)
+from privacyidea.models.utils import utc_now
 from . import smtpmock, ldap3mock, radiusmock
-from .base import MyApiTestCase
+from .base import MyApiTestCase, force_expire_challenges
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
@@ -700,6 +704,194 @@ class MultiChallenge(MyApiTestCase):
         delete_policy("auth")
         sms.delete_token()
         totp.delete_token()
+
+
+class PinChangeViaValidateTestCase(MyApiTestCase):
+    """
+    The PIN change via /validate/check: after an authentication with a due PIN change, the new PIN is entered in
+    answer to a first challenge and confirmed in answer to a second one.
+    """
+    serial = "PINCHANGE1"
+    other_serial = "PINCHANGE2"
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        token = init_token({"type": "hotp", "serial": self.serial, "otpkey": self.otpkey, "pin": "test"},
+                           user=User("cornelius", self.realm1))
+        token.set_next_pin_change(diff="-1d")
+        set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+
+    def tearDown(self) -> None:
+        delete_policy("via_validate")
+        for serial in (self.serial, self.other_serial):
+            if get_tokens(serial=serial):
+                remove_token(serial)
+        super().tearDown()
+
+    def _check(self, password: str, transaction_id: str | None = None, user: str = "cornelius",
+               service_id: str | None = None) -> dict:
+        data = {"user": user, "realm": self.realm1, "pass": password}
+        if transaction_id:
+            data["transaction_id"] = transaction_id
+        if service_id:
+            data["service_id"] = service_id
+        with self.app.test_request_context("/validate/check", method="POST", data=data):
+            # The tests share one app context, and /validate/check comes without a logged in user
+            g.pop("logged_in_user", None)
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        return response.json
+
+    def _enter_new_pin(self, new_pin: str = "newpin1") -> tuple[str, str]:
+        """Authenticate and enter the new PIN. Returns the transaction IDs of both challenges."""
+        result = self._check("test" + self.valid_otp_values[0])
+        self.assertEqual("Please enter a new PIN", result["detail"]["message"], result)
+        first = result["detail"]["transaction_id"]
+        result = self._check(new_pin, first)
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+        return first, result["detail"]["transaction_id"]
+
+    def _pin_is(self, pin: str) -> bool:
+        return get_one_token(serial=self.serial).token.check_pin(pin)
+
+    def test_01_each_challenge_is_answered_once(self):
+        first, second = self._enter_new_pin()
+        result = self._check("newpin1", second)
+        self.assertTrue(result["result"]["value"], result)
+        self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+        self.assertTrue(self._pin_is("newpin1"))
+
+        # Neither challenge can be answered again
+        for transaction_id in (first, second):
+            result = self._check("otherpin", transaction_id)
+            self.assertFalse(result["result"]["value"], result)
+            result = self._check("newpin1", transaction_id)
+            self.assertFalse(result["result"]["value"], result)
+        self.assertTrue(self._pin_is("newpin1"))
+
+    def test_02_an_expired_challenge_is_refused(self):
+        _first, second = self._enter_new_pin()
+        force_expire_challenges(second)
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_03_a_disabled_token_is_refused(self):
+        _first, second = self._enter_new_pin()
+        enable_token(self.serial, enable=False)
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Token is disabled", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_04_a_wrong_confirmation_counts_as_a_failed_attempt_and_ends_the_change(self):
+        _first, second = self._enter_new_pin()
+
+        result = self._check("otherpin", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("PINs do not match", result["detail"]["message"], result)
+        self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+
+        # The confirmation can not be given again, the PIN change starts over with the next authentication
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_05_a_challenge_of_another_users_token_is_refused(self):
+        init_token({"type": "hotp", "serial": self.other_serial, "otpkey": self.otpkey, "pin": "other"},
+                   user=User("selfservice", self.realm1))
+        result = self._check("test" + self.valid_otp_values[0])
+        first = result["detail"]["transaction_id"]
+
+        result = self._check("whatever", first, user="selfservice")
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+
+        # The challenge stays open for the owner of the token
+        result = self._check("newpin1", first)
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+
+    def test_06_a_disabled_token_type_is_refused(self):
+        _first, second = self._enter_new_pin()
+        set_policy("disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "disabled_hotp")
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("No suitable token found for authentication.", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_07_an_application_specific_password_is_refused_for_another_service(self):
+        for service_id in ("thunderbird", "evolution"):
+            set_serviceid(service_id)
+            self.addCleanup(delete_serviceid, service_id)
+        token = init_token({"type": "applspec", "serial": self.other_serial, "service_id": "thunderbird",
+                            "otpkey": "apppassword", "pin": "apppin"}, user=User("cornelius", self.realm1))
+        token.set_next_pin_change(diff="-1d")
+        result = self._check("apppinapppassword", service_id="thunderbird")
+        self.assertEqual("Please enter a new PIN", result["detail"]["message"], result)
+        first = result["detail"]["transaction_id"]
+
+        result = self._check("newpin1", first, service_id="evolution")
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("No suitable token found for authentication.", result["detail"]["message"], result)
+
+        # The challenge stays open for the service of the token
+        result = self._check("newpin1", first, service_id="thunderbird")
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+
+    def test_08_an_exceeded_fail_counter_past_its_clear_timeout_is_reset(self):
+        _first, second = self._enter_new_pin()
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial=self.serial)
+        token.set_failcount(token.get_max_failcount())
+        exceeded = (datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)).strftime(DATE_FORMAT)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded)
+
+        result = self._check("newpin1", second)
+        self.assertTrue(result["result"]["value"], result)
+        self.assertTrue(self._pin_is("newpin1"))
+
+    def test_09_a_wrong_confirmation_of_an_answered_challenge_does_not_count(self):
+        _first, second = self._enter_new_pin()
+        # Another request removes the challenge after this request read it
+        with mock.patch("privacyidea.lib.challengeresponsedecorators.consume_challenge", return_value=False):
+            result = self._check("otherpin", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+
+    def test_10_a_revoked_token_is_refused(self):
+        _first, second = self._enter_new_pin()
+        # A fail counter past its clear timeout is reset before the other checks, but not on a revoked token
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 5)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial=self.serial)
+        token.set_failcount(token.get_max_failcount())
+        exceeded = (datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)).strftime(DATE_FORMAT)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded)
+        revoke_token(self.serial)
+
+        result = self._check("newpin1", second)
+        self.assertFalse(result["result"]["value"], result)
+        self.assertEqual("Token is revoked", result["detail"]["message"], result)
+        self.assertTrue(self._pin_is("test"))
+
+    def test_11_the_answers_keep_the_version_hidden(self):
+        set_policy("hide_version", scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION)
+        self.addCleanup(delete_policy, "hide_version")
+        result = self._check("test" + self.valid_otp_values[0])
+        first = result["detail"]["transaction_id"]
+
+        result = self._check("newpin1", first)
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+        self.assertNotIn("version", result)
+        self.assertNotIn("versionnumber", result)
 
 
 class LastUsedTokenTypeWriteTestCase(MyApiTestCase):

@@ -32,7 +32,7 @@ from privacyidea.lib.policy import check_pin, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import consume_challenge, get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.tokenclass import ClientMode, TokenClass
 from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
@@ -112,54 +112,90 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
         challenges = get_challenges(transaction_id=transaction_id, challenge=CHALLENGE_TYPE.PIN_RESET)
         if len(challenges) == 1:
             challenge = challenges[0]
-            # check if challenge matches a token and if it is valid
-            token = next(t for t in args[0] if t.token.serial == challenge.serial)
-            if token:
-                # Then either verify the PIN or set the PIN the first time. The
-                # PIN from the 1st response is stored in challenge.data
-                challenge_data = challenge.get_data()
-                pin_hash = challenge_data.get("pin_hash")
-                if pin_hash:
-                    # Verify the password
-                    if verify_pass_hash(args[1], pin_hash):
-                        g = options.get("g")
-                        challenge.set_otp_status(True)
-                        token.challenge_janitor()
-                        # Success, set new PIN and return success
-                        token.set_pin(args[1])
-                        pinpol = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
-                                             token=token).action_values(unique=True)
-                        # Set a new next_pin_change
-                        if pinpol:
-                            # Set a new next pin change
-                            token.set_next_pin_change(diff=list(pinpol)[0])
-                        else:
-                            # Obviously the admin removed the policy for changing pins,
-                            # so we will not require to change the PIN again
-                            token.remove_tokeninfo("next_pin_change")
-                        return True, {"message": "PIN successfully set.",
-                                      "serial": token.token.serial}
-                    else:
+            # The challenge has to belong to one of the tokens of the request and still be open, i.e. neither
+            # expired nor answered
+            token = next((t for t in args[0] if t.token.serial == challenge.serial), None)
+            if not token or not challenge.is_open():
+                return False, {"message": _("Response did not match the challenge.")}
+            # Like for any other answer to a challenge, the token has to be usable for an authentication: the second
+            # answer ends in one. So the policies and the token itself have to allow it for this request, for
+            # example for its type and its service_id.
+            from privacyidea.lib.token.auth import keep_tokens_usable_for_request
+            if not keep_tokens_usable_for_request([token], options, {}):
+                return False, {"serial": token.token.serial,
+                               "message": _("No suitable token found for authentication.")}
+            # And the token has to pass the checks of a login: revoked, fail counter with its reset timeout, active,
+            # validity period and rollout state
+            from privacyidea.lib.fido2.challenge import check_fido2_token_state
+            token_state = check_fido2_token_state(token)
+            if not token_state.usable:
+                return False, {"serial": token.token.serial,
+                               "message": token_state.message}
+            # Then either verify the PIN or set the PIN the first time. The
+            # PIN from the 1st response is stored in challenge.data
+            challenge_data = challenge.get_data()
+            pin_hash = challenge_data.get("pin_hash")
+            if pin_hash:
+                # Verify the password
+                if not verify_pass_hash(args[1], pin_hash):
+                    # The PIN change has to be started again, and the attempt counts as a failed one. Only the request
+                    # that removes the challenge counts it: another one answered the challenge already.
+                    if not consume_challenge(challenge):
                         return False, {"serial": token.token.serial,
-                                       "message": "PINs do not match"}
+                                       "message": _("Response did not match the challenge.")}
+                    token.inc_failcount()
+                    return False, {"serial": token.token.serial,
+                                   "message": _("PINs do not match")}
+                # Each challenge can be answered once: of several requests with the same answer only the one that
+                # removes the challenge sets the PIN
+                if not consume_challenge(challenge):
+                    return False, {"serial": token.token.serial,
+                                   "message": _("Response did not match the challenge.")}
+                g = options.get("g")
+                token.challenge_janitor()
+                # Success, set new PIN and return success
+                token.set_pin(args[1])
+                pinpol = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
+                                     token=token).action_values(unique=True)
+                # Set a new next_pin_change
+                if pinpol:
+                    # Set a new next pin change
+                    token.set_next_pin_change(diff=list(pinpol)[0])
                 else:
-                    # The PIN is presented the first time.
-                    # Verify if the PIN adheres to the PIN policies. This is always in the normal user context
-                    g = options.get("g")
-                    g.logged_in_user = {"role": SCOPE.USER}
-                    if user_obj:
-                        # check_pin below originally works for logged in users, since only logged in users
-                        # are allowed to change the pin. So we need to construct a logged_in_user object, otherwise
-                        # check_pin would fail.
-                        g.logged_in_user["username"] = user_obj.login
-                        g.logged_in_user["realm"] = user_obj.realm
+                    # Obviously the admin removed the policy for changing pins,
+                    # so we will not require to change the PIN again
+                    token.remove_tokeninfo("next_pin_change")
+                return True, {"message": _("PIN successfully set."),
+                              "serial": token.token.serial}
+            else:
+                # The PIN is presented the first time.
+                # Verify if the PIN adheres to the PIN policies. This is always in the normal user context
+                g = options.get("g")
+                request_logged_in_user = getattr(g, "logged_in_user", None)
+                g.logged_in_user = {"role": SCOPE.USER}
+                if user_obj:
+                    # check_pin below originally works for logged in users, since only logged in users
+                    # are allowed to change the pin. So we need to construct a logged_in_user object, otherwise
+                    # check_pin would fail.
+                    g.logged_in_user["username"] = user_obj.login
+                    g.logged_in_user["realm"] = user_obj.realm
+                try:
                     check_pin(g, args[1], token.token.tokentype, user_obj)
-                    # We need to ask for a 2nd time
-                    challenge.set_otp_status(True)
-                    reply_dict = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET,
-                                                   _("Please enter the new PIN again"),
-                                                   {"pin_hash": pass_hash(args[1])})
-                    return False, reply_dict
+                finally:
+                    # The logged in user is only for check_pin: the rest of the request, for example the policy
+                    # hide_version, has to see the request as it is
+                    if request_logged_in_user is None:
+                        delattr(g, "logged_in_user")
+                    else:
+                        g.logged_in_user = request_logged_in_user
+                # The first challenge is used up, the new PIN has to be confirmed with a second one
+                if not consume_challenge(challenge):
+                    return False, {"serial": token.token.serial,
+                                   "message": _("Response did not match the challenge.")}
+                reply_dict = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET,
+                                               _("Please enter the new PIN again"),
+                                               {"pin_hash": pass_hash(args[1])})
+                return False, reply_dict
 
     success, reply_dict = wrapped_function(*args, **kwds)
 
@@ -169,8 +205,9 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
         # Determine the realm by the serial
         serial = reply_dict.get("serial")
         # The tokenlist can contain more than one token. So we get the matching token object
-        token = next(t for t in args[0] if t.token.serial == serial)
-        if g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE, token=token).any():
+        token = next((t for t in args[0] if t.token.serial == serial), None)
+        if token and g and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE,
+                                       token=token).any():
             challenge_reply = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET, _("Please enter a new PIN"))
             _keep_autoresync_info(reply_dict, challenge_reply)
             return False, challenge_reply
@@ -214,7 +251,7 @@ def generic_challenge_response_resync(wrapped_function, *args, **kwds):
         # FIXME: Only works if the one token has a unique PIN
         serial = reply_dict.get("serial")
         # The tokenlist can contain more than one token. So we get the matching token object
-        token = next(t for t in args[0] if t.token.serial == serial)
+        token = next((t for t in args[0] if t.token.serial == serial), None)
         if token and _resync_pending(token, g):
             challenge_reply = _create_challenge(token, CHALLENGE_TYPE.RESYNC, _resync_message())
             _keep_autoresync_info(reply_dict, challenge_reply)
