@@ -3799,21 +3799,19 @@ class Match:
         :param token: The token where the user object, the realm or the container should match.
         :rtype: Match
         """
-        from .container import find_container_for_token
-        container_serial = None
         if token:
             owner = token.user or User()
             realms = token.get_realms()
             # serial is required for the extended condition checks (TODO: allow passing the token object)
             serial = token.get_serial()
-            container = find_container_for_token(serial)
-            if container:
-                container_serial = container.serial
+            containers = token.token.container
+            container_serial = containers[0].serial if containers else None
         else:
             log.debug("No token available. Matching policies without user and realm.")
             owner = User()
             realms = None
             serial = None
+            container_serial = None
         return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial,
                            container_serial=container_serial)
 
