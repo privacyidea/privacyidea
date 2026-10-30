@@ -2118,6 +2118,9 @@ class RememberDeviceGateTestCase(_GateContract, _UserGateContract, _PostResponse
         self.addCleanup(delete_policy, "ca_remember")
         client, self.api_key = create_client("ca gate client", "privacyidea-cp")
         _device, self.cookie = create_remembered_device(user_identity(self.user), client.id)
+        # A device is only recognised while the user has a usable token
+        init_token({"type": "spass", "pin": "test", "serial": "SPASS_CA_REMEMBER"}, user=self.user)
+        self.addCleanup(remove_token, "SPASS_CA_REMEMBER")
 
     def _authenticate(self, remote_addr: str | None = None) -> Response:
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}

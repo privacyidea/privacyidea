@@ -101,6 +101,7 @@ class SSHkeyTokenClass(TokenClass):
     """
     mode = [AuthenticationMode.AUTHENTICATE]
     using_pin = False
+    verifies_login = False
 
     owned_tokeninfo_keys = SSH_KEY_INFO_KEYS
 

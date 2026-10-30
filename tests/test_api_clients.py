@@ -399,6 +399,11 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             return self.app.full_dispatch_request()
 
+    def _list_user_devices(self, **params):
+        with self.app.test_request_context('/clients/remembered_devices', query_string=params, method='GET',
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
     def test_01_list_devices(self):
         client, _key = create_client("devices client", "privacyidea-cp")
         device, _cookie = create_remembered_device(self.identity, client.id, ip_address="10.0.0.9",
@@ -859,3 +864,50 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertNotIn(out_scope, listed)
         finally:
             delete_policy("clients_list_scoped")
+
+
+    def test_18_list_the_devices_of_a_user_across_clients(self):
+        # Every device of the user on every client is listed with its client; devices of other users are not
+        set_realm("xcuserlist", [{"name": self.resolvername1}])
+        client_a, _ = create_client("user list A", "privacyidea-cp")
+        client_b, _ = create_client("user list B", "privacyidea-keycloak")
+        device_a = self._device(client_a.id, "cornelius", realm="xcuserlist")
+        device_b = self._device(client_b.id, "cornelius", realm="xcuserlist")
+        self._device(client_a.id, "shadow", realm="xcuserlist")
+        expected = {device_a.device_id: client_a, device_b.device_id: client_b}
+
+        res = self._list_user_devices(user="cornelius", realm="xcuserlist")
+        self.assertEqual(200, res.status_code, res)
+        page = res.json['result']['value']
+        self.assertEqual(2, page['count'])
+        self.assertEqual(set(expected), {entry["device_id"] for entry in page['devices']})
+        for entry in page['devices']:
+            client = expected[entry["device_id"]]
+            self.assertEqual(client.id, entry["client_id"])
+            self.assertEqual(client.display_name, entry["client_name"])
+            self.assertEqual(client.client_type, entry["client_type"])
+            self.assertEqual("cornelius", entry["user"])
+            self.assertNotIn("series_id", entry)
+            self.assertNotIn("counter", entry)
+
+        # One device per page
+        res = self._list_user_devices(user="cornelius", realm="xcuserlist", pagesize=1)
+        page = res.json['result']['value']
+        self.assertEqual(1, len(page['devices']))
+        self.assertEqual(2, page['next'])
+
+    def test_19_listing_the_devices_of_a_user_needs_user_and_realm(self):
+        self.assertEqual(400, self._list_user_devices(realm=self.realm1).status_code)
+        self.assertEqual(400, self._list_user_devices(user="cornelius").status_code)
+        self.assertEqual(400, self._list_user_devices(user="nosuchuser", realm=self.realm1).status_code)
+
+    def test_20_listing_the_devices_of_a_user_respects_admin_realm_scope(self):
+        # A remembered_device_list policy for another realm does not allow listing the devices of a realm1 user
+        set_realm("xcscope", [{"name": self.resolvername1}])
+        set_policy("clients_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_LIST, realm="xcscope")
+        try:
+            self.assertEqual(403, self._list_user_devices(user="cornelius", realm=self.realm1).status_code)
+            self.assertEqual(200, self._list_user_devices(user="cornelius", realm="xcscope").status_code)
+        finally:
+            delete_policy("clients_scoped")

@@ -301,7 +301,7 @@ export class UserNewResolverComponent implements OnDestroy {
         .openDialog({
           component: SaveAndExitDialogComponent,
           data: {
-            title: $localize`:@@common.discardChanges:Discard changes`,
+            title: $localize`:@@common.discardChanges:Discard Changes`,
             allowSaveExit: this.canSave,
             saveExitDisabled: !this.canSave
           }

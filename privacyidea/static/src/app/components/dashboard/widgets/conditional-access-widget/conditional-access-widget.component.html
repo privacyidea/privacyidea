@@ -26,7 +26,7 @@
             <a
               [routerLink]="routePaths.POLICIES_CONDITIONAL_ACCESS"
               i18n="@@common.enforcingPolicies"
-              >Enforcing policies</a
+              >Enforcing Policies</a
             >
           </td>
           <td>{{ policies.enforcing }}</td>
@@ -67,7 +67,7 @@
             <a
               [routerLink]="routePaths.LOCKED_USERS"
               i18n="@@common.usersLocked"
-              >Users locked</a
+              >Users Locked</a
             >
           </td>
           <td>
@@ -91,7 +91,7 @@
             <a
               [routerLink]="routePaths.BLOCKLIST"
               i18n="@@common.ipsBlocked"
-              >IPs blocked</a
+              >IPs Blocked</a
             >
           </td>
           <td>
@@ -111,7 +111,7 @@
       }
       @if (staleRecords()) {
         <tr>
-          <td i18n="@@common.expiredRecords">Expired records</td>
+          <td i18n="@@common.expiredRecords">Expired Records</td>
           <td>
             <span
               class="highlight-disabled"
@@ -127,7 +127,7 @@
 
   @if (hasHistory()) {
     <p class="ca-section-title">
-      <span i18n="@@common.blocksLocksOverTime">Blocks and locks over time</span>
+      <span i18n="@@common.blocksLocksOverTime">Blocks and Locks over Time</span>
       <span
         class="ca-range-count"
         i18n="@@common.range"
@@ -225,7 +225,7 @@
     </div>
 
     <p class="ca-section-title">
-      <span i18n="@@common.restrictionsForce">Restrictions in force</span>
+      <span i18n="@@common.restrictionsForce">Restrictions in Force</span>
       <app-info-hint
         text="IPs and users still blocked or locked, restricted within the selected range. Newest first, expired ones left out."
         i18n-text="@@common.ipsUsersStillBlocked"

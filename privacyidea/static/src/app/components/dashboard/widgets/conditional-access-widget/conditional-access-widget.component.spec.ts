@@ -343,9 +343,9 @@ describe("ConditionalAccessWidgetComponent", () => {
   it("should render the counts, the highlighted IPs and their state", () => {
     create();
     const text = fixture.nativeElement.textContent;
-    expect(text).toContain("Enforcing policies");
-    expect(text).toContain("Users locked");
-    expect(text).toContain("IPs blocked");
+    expect(text).toContain("Enforcing Policies");
+    expect(text).toContain("Users Locked");
+    expect(text).toContain("IPs Blocked");
     expect(text).toContain("10.0.0.1");
     expect(text).toContain("10.0.0.2");
     // The expired entry belongs on the blocklist page, not in the highlights.
@@ -356,8 +356,8 @@ describe("ConditionalAccessWidgetComponent", () => {
 
   it("should flag a restriction in force and leave a zero count unflagged", () => {
     create();
-    expect(rowBadge("Users locked")?.className).toBe("highlight-false");
-    expect(rowBadge("Users locked")?.textContent).toBe("5");
+    expect(rowBadge("Users Locked")?.className).toBe("highlight-false");
+    expect(rowBadge("Users Locked")?.textContent).toBe("5");
 
     stateMock.setLockedUsersCount(["permanent"], 0);
     stateMock.setLockedUsersCount(["temporary"], 0);
@@ -365,7 +365,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     fixture.detectChanges();
 
     expect(component.summary().lockedUsers?.inForce).toBe(0);
-    expect(rowBadge("Users locked")?.className).toBe("highlight-true");
+    expect(rowBadge("Users Locked")?.className).toBe("highlight-true");
   });
 
   it("should tell the admin when nothing is blocked", () => {
@@ -633,7 +633,7 @@ describe("ConditionalAccessWidgetComponent", () => {
       // request in flight than the frame's own spinner.
       expect(component.hasHistory()).toBe(true);
       expect(component.state()).toBe("ready");
-      expect(fixture.nativeElement.textContent).toContain("Blocks and locks over time");
+      expect(fixture.nativeElement.textContent).toContain("Blocks and Locks over Time");
       expect(fixture.nativeElement.querySelectorAll(".ca-range-controls mat-button-toggle-group")).toHaveLength(2);
       expect(fixture.nativeElement.querySelectorAll(".ca-activity-bar")).toHaveLength(4);
 
@@ -802,7 +802,7 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(component.state()).toBe("ready");
       expect(stateMock.fetchOutcomeStatistics).not.toHaveBeenCalled();
       expect(component.hasHistory()).toBe(false);
-      expect(fixture.nativeElement.textContent).not.toContain("Blocks and locks over time");
+      expect(fixture.nativeElement.textContent).not.toContain("Blocks and Locks over Time");
       // The rest of the widget is untouched.
       expect(component.summary().blockedIps).not.toBeNull();
     });
@@ -819,9 +819,9 @@ describe("ConditionalAccessWidgetComponent", () => {
       expect(stateMock.countLockedUsers).not.toHaveBeenCalled();
 
       const text = fixture.nativeElement.textContent;
-      expect(text).toContain("IPs blocked");
-      expect(text).not.toContain("Enforcing policies");
-      expect(text).not.toContain("Users locked");
+      expect(text).toContain("IPs Blocked");
+      expect(text).not.toContain("Enforcing Policies");
+      expect(text).not.toContain("Users Locked");
     });
 
     it("should not count the skipped areas as failures", () => {

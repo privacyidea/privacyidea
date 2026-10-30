@@ -71,7 +71,9 @@ Set the :ref:`policy_remember_device` policy (scope *authentication*). It is
 fail-closed — without the policy, no cookie is ever issued. Because it is a
 normal policy, you can scope it by realm, user or other conditions. The cookie
 lifetime defaults to 30 days and can be set per scope with
-:ref:`policy_remember_device_validity`.
+:ref:`policy_remember_device_validity`, for example to a few hours. A device
+that is not used for a while can be forgotten before that with
+:ref:`policy_remember_device_idle_timeout`.
 
 Each opt-in creates a new remembered device, so a client that opts in on every
 login (rather than once per device) accumulates them until they expire. If that
@@ -89,12 +91,17 @@ Issuing the cookie
 ~~~~~~~~~~~~~~~~~~
 
 On a successful :http:post:`/validate/check` where the client sends
-``request_persistent_cookie=1``, privacyIDEA issues a cookie when the client is
-identified, the policy allows it and the authenticating user is resolvable. The
+``request_persistent_cookie=1``, privacyIDEA issues a cookie when a token of the
+user verified the request, the client is identified, the policy allows it and
+the authenticating user is resolvable. A login that a policy accepts without a
+token gets no cookie, for example through :ref:`passonnotoken`,
+:ref:`passonnouser`, :ref:`passthru_policy` or the :ref:`policy_auth_cache`. The
 cookie is ``HttpOnly`` + ``Secure`` + ``SameSite=Strict``, carries both a
 relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
 ``Max-Age``), and holds only a
 rotating ``series_id:counter`` token — **never** the API key.
+
+.. _api_clients_recognizing_device:
 
 Recognizing the device
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,6 +138,40 @@ the policy, exactly as at ``/validate/check``; with nothing configured the
    refusal, which would cost the user their remembered device on every temporary
    lock — a worse trade against a party that is already trusted enough to hold a
    key, and that can learn the same thing from ``/validate/check``.
+
+A remembered device stands in for the second factor, so it is only recognized
+while the user still has a token that can be used for a login. Such a token
+passes the checks that a login applies to it:
+
+* It is active and not revoked, within its validity period and fully enrolled.
+  Neither its fail counter nor its authentication counters are exceeded.
+* Its type can verify a login. An SSH key token and a certificate token cannot.
+  An application-specific password does not count either, because the request
+  carries no service ID.
+* The token restrictions of the policies allow it. These are
+  :ref:`policy_disabled_token_types` in the authentication scope and
+  :ref:`tokentype_policy`, :ref:`policy_serial`, :ref:`policy_tokeninfo` and
+  :ref:`policy_last_auth` in the authorization scope.
+
+A user whose tokens are all disabled, revoked, removed, locked or excluded by
+these policies gets "not recognized" from a remembered device as well. As with
+conditional access, the cookie is neither rotated nor cleared and the device is
+kept, so it can be recognized again once a token of the user is usable. The same
+holds while :ref:`policy_remember_device_idle_timeout` policies of the same
+priority set different values. To end the devices for good, revoke them (see
+below).
+
+A remembered device is also not recognized while :ref:`policy_auth_max_fail` or
+:ref:`policy_auth_max_success` refuses a login of the user. The device is kept in
+the same way. A recognition is not an authentication, so it does not count
+toward these limits.
+
+These checks apply only to a live device. The cookie is checked first, so a
+replayed cookie, a dead cookie and an idle device are handled in the same way,
+whatever the state of the user's tokens. While the idle timeout policies
+conflict, no device counts as idle. A refusal is not a recognition, so a device
+still expires and becomes idle while its recognition is refused, also by
+conditional access.
 
 On a miss the answer is simply "not recognized". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
@@ -186,6 +227,20 @@ is the first knob to reach for against false positives; it trades
 theft-detection tightness for fewer of them. The user is never wrongly
 authenticated either way.
 
+The source IP is the client IP privacyIDEA determines for the request. Without
+further configuration that is the address of the integration, which is the same
+for every user behind it, so for such an integration the exception is only
+bounded by time. If the integration passes the end user's address (as ``client``
+parameter or in ``X-Forwarded-For``) and :ref:`override_client` allows that for
+the integration, the duplicate request has to come from the address the device
+was last seen at, and the list of remembered devices shows the end users'
+addresses. Configuring the override this way is recommended for integrations
+that can pass the address. Turning it on or off later does not affect the
+remembered devices: a recognition with the current counter does not compare
+addresses, and it records the new one.
+
+
+.. _api_clients_revoking_devices:
 
 Viewing and revoking remembered devices
 ----------------------------------------
@@ -198,6 +253,11 @@ the WebUI on the client's *Remembered devices* view, or over
 a non-secret ``device_id``; the cookie's secret ``series_id`` is never returned,
 so viewing a device never exposes a usable credential.
 
+The remembered devices of one user on all clients are listed on the user's
+details page in the WebUI, or over :http:get:`/clients/remembered_devices` with
+``user`` and ``realm``. There each device also names the client it is
+remembered for, which helps when offboarding a user.
+
 Revoking (which requires :ref:`policy_remembered_device_revoke`) invalidates the affected
 device cookies immediately, and comes in two forms:
 
@@ -207,7 +267,10 @@ device cookies immediately, and comes in two forms:
   ``realm`` or to one ``user`` (together with ``realm``). This is a single
   atomic, server-side delete scoped to the client, so it also catches devices
   created between listing and revoking — useful for incident response ("re-MFA
-  every remembered device for this realm now").
+  every remembered device for this realm now");
+* all remembered devices of a realm, or of one ``user`` in it, on every client,
+  with :http:delete:`/clients/remembered_devices`. The user's details page in the
+  WebUI offers this for the user.
 
 .. note:: The IP address shown for a device is the client IP privacyIDEA
    determined for the request: the address of the integration, or the end user's

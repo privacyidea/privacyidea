@@ -119,7 +119,7 @@ export interface SectionOption {
 
 export const SECTION_OPTIONS: SectionOption[] = [
   { key: "HTTP Environment", label: $localize`:@@policy.httpEnvironment:HTTP Environment` },
-  { key: "HTTP Request header", label: $localize`:@@policy.httpRequestHeader:HTTP Request header` },
+  { key: "HTTP Request header", label: $localize`:@@policy.httpRequestHeader:HTTP Request Header` },
   { key: "Request Data", label: $localize`:@@policy.requestData:Request Data` },
   { key: "container", label: $localize`:@@common.container:Container` },
   { key: "container_info", label: $localize`:@@policy.containerInfo:Container Info` },

@@ -189,7 +189,7 @@ export class ApiClientEditComponent implements OnDestroy {
           items: [displayName],
           itemType: "api-client",
           confirmAction: {
-            label: $localize`:@@apiClient.rotateKey:Rotate key`,
+            label: $localize`:@@apiClient.rotateKey:Rotate Key`,
             value: true,
             type: "destruct"
           }

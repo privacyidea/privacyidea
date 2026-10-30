@@ -43,7 +43,7 @@ from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.clients import (get_client, get_clients, create_client, update_client,
                            rotate_client_key, delete_client, client_to_dict)
-from ..lib.remembered_device import (get_client_device, get_client_devices,
+from ..lib.remembered_device import (get_client_device, get_client_devices, get_user_devices,
                                revoke_client_devices, revoke_devices, devices_to_dicts, user_identity)
 from ..lib.policies.helper import admin_granted_realms
 from ..lib.realm import get_realm_id
@@ -202,6 +202,56 @@ def rotate_client_api(client_id):
     result = client_to_dict(client)
     result["api_key"] = api_key
     return send_result(result)
+
+
+@clients_blueprint.route('/remembered_devices', methods=['GET'])
+@prepolicy(check_base_action, request, PolicyAction.REMEMBERED_DEVICE_LIST)
+@event("remembered_device_list_user", request, g)
+@log_with(log)
+def list_user_remembered_devices_api():
+    """
+    List the remembered devices of one user on **all** clients, for example to see
+    which devices a user has before offboarding them.
+
+    As in the listing of a client's devices, no part of the cookie is included.
+    Each entry carries the non-secret ``device_id`` and the ``client_id``,
+    ``client_name`` and ``client_type`` of the client the device is remembered
+    for, so a device can be revoked with
+    :http:delete:`/clients/(client_id)/remembered_devices/(device_id)`. All devices
+    of the user are revoked with :http:delete:`/clients/remembered_devices`.
+
+    The acting administrator's realm restrictions apply: the
+    :ref:`policy_remembered_device_list` action is matched against the requested
+    ``user`` and ``realm``.
+
+    Requires admin authentication and the policy action :ref:`policy_remembered_device_list`.
+
+    :query user: the login of the user (required).
+    :query realm: the realm of the user (required).
+    :query page: 1-indexed page number, default ``1``; values below 1 are treated as 1.
+    :query pagesize: page size, default ``50``, capped at ``1000``.
+    :status 200: ``result.value`` is a dict with ``devices`` (this page, newest
+        first), ``count`` (total devices of the user), ``prev`` and ``next`` (page
+        numbers, or ``null`` when there is no such page).
+    :status 400: ``user`` or ``realm`` is missing, or the user does not resolve in the realm.
+    """
+    realm = get_required(request.all_data, "realm")
+    user = get_required(request.all_data, "user")
+    # The user check_base_action matched the policy against, see revoke_remembered_devices_api
+    identity = user_identity(request.User)
+    if not identity:
+        raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
+    page, page_size = get_pagination_params(request.all_data, default_page_size=50)
+
+    result = get_user_devices(identity, page=page, page_size=page_size)
+
+    g.audit_object.log({"success": True, "info": f"realm: {realm}, user: {user}"})
+    return send_result({
+        "devices": devices_to_dicts(result["devices"], include_client=True),
+        "count": result["count"],
+        "prev": result["prev"],
+        "next": result["next"]
+    })
 
 
 @clients_blueprint.route('/remembered_devices', methods=['DELETE'])

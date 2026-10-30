@@ -167,7 +167,7 @@
           </mat-form-field>
         } @else if (model().AUTHTYPE !== "Anonymous") {
           <mat-form-field class="input-width-l">
-            <mat-label i18n="@@resolver.bindPassword">Bind password</mat-label>
+            <mat-label i18n="@@resolver.bindPassword">Bind Password</mat-label>
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, BINDPW: '' }))"
               [showClearButton]="!!model().BINDPW">

@@ -1199,7 +1199,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.everySunday11" datatype="html">
-        <source>Every sunday at 11:01 pm</source>
+        <source>Every Sunday at 11:01 pm</source>
         <target>Jeden Sonntag um 23:01 Uhr</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
@@ -1327,7 +1327,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.discardChanges" datatype="html">
-        <source>Discard changes</source>
+        <source>Discard Changes</source>
         <target>Änderungen verwerfen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.ts</context>
@@ -2727,7 +2727,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.addNewQuestion" datatype="html">
-        <source>Add new question</source>
+        <source>Add New Question</source>
         <target>Neue Frage hinzufügen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/questionnaire-config/questionnaire-config.component.html</context>
@@ -7929,7 +7929,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.addActionsPolicy" datatype="html">
-        <source>Add Actions to this Policy</source>
+        <source>Add Actions to This Policy</source>
         <target>Aktionen zu dieser Richtlinie hinzufügen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
@@ -7993,7 +7993,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.actionsPolicy" datatype="html">
-        <source>Actions in this Policy</source>
+        <source>Actions in This Policy</source>
         <target>Aktionen in dieser Richtlinie</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-actions-list.component.html</context>
@@ -8229,7 +8229,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.validTime" datatype="html">
-        <source>Valid time</source>
+        <source>Valid Time</source>
         <target>Gültigkeitszeitraum</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/view-conditions-column/view-conditions-column.component.ts</context>
@@ -8313,7 +8313,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.clearUsers" datatype="html">
-        <source>Clear users</source>
+        <source>Clear Users</source>
         <target>Benutzerauswahl zurücksetzen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-user-conditions/edit-user-conditions.component.html</context>
@@ -8405,7 +8405,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.yesChangeScope" datatype="html">
-        <source>Yes, change scope</source>
+        <source>Yes, Change Scope</source>
         <target>Ja, Geltungsbereich ändern</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-panel-edit.component.ts</context>
@@ -8649,7 +8649,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="subscription.subscriptionExpires" datatype="html">
-        <source>Subscription expires soon</source>
+        <source>Subscription Expires Soon</source>
         <target>Subscription läuft bald ab</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/subscription-expiry-dialog/subscription-expiry-dialog.component.html</context>
@@ -8705,7 +8705,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="welcome.valueOpenSource" datatype="html">
-        <source>The value of open source</source>
+        <source>The Value of Open Source</source>
         <target>Der Wert von Open Source</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.ts</context>
@@ -8721,7 +8721,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="welcome.addedValuePrivacyidea" datatype="html">
-        <source>The added value of privacyIDEA Enterprise Edition</source>
+        <source>The Added Value of privacyIDEA Enterprise Edition</source>
         <target>Der Mehrwert der privacyIDEA Enterprise Edition</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/free-tier-dialog/free-tier-dialog.component.ts</context>
@@ -10009,7 +10009,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.otpLength" datatype="html">
-        <source>OTP length</source>
+        <source>OTP Length</source>
         <target>OTP-Länge</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -10049,7 +10049,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.hashAlgorithm" datatype="html">
-        <source>Hash algorithm</source>
+        <source>Hash Algorithm</source>
         <target>Hash-Algorithmus</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
@@ -10469,7 +10469,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.radiusServerConfiguration" datatype="html">
-        <source>RADIUS server configuration</source>
+        <source>RADIUS Server Configuration</source>
         <target>RADIUS-Serverkonfiguration</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
@@ -10605,7 +10605,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSpecific" datatype="html">
-        <source>A token specific SMS gateway</source>
+        <source>A Token Specific SMS Gateway</source>
         <target>Ein tokenspezifisches SMS-Gateway</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
@@ -10629,7 +10629,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.phoneNumber" datatype="html">
-        <source>Phone number</source>
+        <source>Phone Number</source>
         <target>Telefonnummer</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
@@ -10645,7 +10645,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.sshPublicKey" datatype="html">
-        <source>SSH public key</source>
+        <source>SSH Public Key</source>
         <target>Öffentlicher SSH-Schlüssel</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
@@ -10677,7 +10677,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.vascoTokenBlob" datatype="html">
-        <source>VASCO Token blob</source>
+        <source>VASCO Token Blob</source>
         <target>VASCO-Token-Blob</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
@@ -11049,7 +11049,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.takeActionYour" datatype="html">
-        <source>Take action on your authenticator</source>
+        <source>Take Action on Your Authenticator</source>
         <target>Führen Sie eine Aktion auf Ihrem Authenticator aus</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
@@ -11853,7 +11853,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.pinOptional" datatype="html">
-        <source>PIN (optional)</source>
+        <source>PIN (Optional)</source>
         <target>PIN (optional)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
@@ -11881,7 +11881,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.pinRepeat" datatype="html">
-        <source>PIN (repeat)</source>
+        <source>PIN (Repeat)</source>
         <target>PIN (wiederholen)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
@@ -12545,7 +12545,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.showLess" datatype="html">
-        <source>Show less</source>
+        <source>Show Less</source>
         <target>Weniger anzeigen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/expandable-message/expandable-message.component.ts</context>
@@ -12561,7 +12561,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.showMore" datatype="html">
-        <source>Show <x id="INTERPOLATION" equiv-text="{{ item.value.length - 1 }}"/> more</source>
+        <source>Show <x id="INTERPOLATION" equiv-text="{{ item.value.length - 1 }}"/> More</source>
         <target><x id="INTERPOLATION" equiv-text="{{ item.value.length - 1 }}"/> weitere anzeigen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
@@ -12711,7 +12711,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.headersJson" datatype="html">
-        <source>Headers (JSON format)</source>
+        <source>Headers (JSON Format)</source>
         <target>Header (JSON-Format)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-config/http-config.component.html</context>
@@ -12719,7 +12719,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.requestMappingJsonFormat" datatype="html">
-        <source>Request Mapping (JSON format)</source>
+        <source>Request Mapping (JSON Format)</source>
         <target>Request-Mapping (JSON-Format)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-config/http-config.component.html</context>
@@ -12727,7 +12727,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseMappingJsonFormat" datatype="html">
-        <source>Response Mapping (JSON format)</source>
+        <source>Response Mapping (JSON Format)</source>
         <target>Response-Mapping (JSON-Format)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-config/http-config.component.html</context>
@@ -12747,7 +12747,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseContainsJson" datatype="html">
-        <source>Response Contains (JSON format)</source>
+        <source>Response Contains (JSON Format)</source>
         <target>Response enthält (JSON-Format)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-config/http-config.component.html</context>
@@ -12979,7 +12979,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.responseContainsJsonFormat" datatype="html">
-        <source>Response contains (JSON Format)</source>
+        <source>Response Contains (JSON Format)</source>
         <target>Response enthält (JSON-Format)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -13711,7 +13711,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.passwdSettings" datatype="html">
-        <source>Passwd settings</source>
+        <source>Passwd Settings</source>
         <target>Passwd-Einstellungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/passwd-resolver/passwd-resolver.component.html</context>
@@ -13735,7 +13735,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.scimSettings" datatype="html">
-        <source>SCIM settings</source>
+        <source>SCIM Settings</source>
         <target>SCIM-Einstellungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/scim-resolver/scim-resolver.component.html</context>
@@ -14351,7 +14351,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.givenNameLabel" datatype="html">
-        <source>Given name</source>
+        <source>Given Name</source>
         <target>Vorname</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.ts</context>
@@ -14687,7 +14687,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.httpRequestHeader" datatype="html">
-        <source>HTTP Request header</source>
+        <source>HTTP Request Header</source>
         <target>HTTP-Request-Header</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
@@ -15291,7 +15291,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="welcome.readAgain" datatype="html">
-        <source>Read again</source>
+        <source>Read Again</source>
         <target>Erneut lesen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.ts</context>
@@ -15955,7 +15955,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.daysLeft" datatype="html">
-        <source>Days left</source>
+        <source>Days Left</source>
         <target>Verbleibende Tage</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/certificate-health-widget/certificate-health-widget.component.html</context>
@@ -16611,7 +16611,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.deleteAnyway" datatype="html">
-        <source>Delete anyway</source>
+        <source>Delete Anyway</source>
         <target>Trotzdem löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-delete-attributes-dialog/realm-delete-attributes-dialog.component.ts</context>
@@ -16675,7 +16675,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.enrollNewTokenLink" datatype="html">
-        <source>Enroll new token</source>
+        <source>Enroll New Token</source>
         <target>Neuen Token ausrollen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.self-service.component.html</context>
@@ -16683,7 +16683,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.createNewContainerLink" datatype="html">
-        <source>Create new container</source>
+        <source>Create New Container</source>
         <target>Neuen Container erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.self-service.component.html</context>
@@ -17171,7 +17171,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.bindPassword" datatype="html">
-        <source>Bind password</source>
+        <source>Bind Password</source>
         <target>Bind-Passwort</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -18031,7 +18031,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.lightSource2" datatype="html">
-        <source>Light source</source>
+        <source>Light Source</source>
         <target>Lichtquelle</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/ui-settings/ui-settings.component.html</context>
@@ -18103,7 +18103,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.statusColors" datatype="html">
-        <source>Status colors</source>
+        <source>Status Colors</source>
         <target>Statusfarben</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/ui-settings/ui-settings.component.html</context>
@@ -18227,7 +18227,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.appearancePreset" datatype="html">
-        <source>Appearance preset</source>
+        <source>Appearance Preset</source>
         <target>Voreinstellung für das Erscheinungsbild</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/appearance-widget/appearance-widget.component.html</context>
@@ -18303,7 +18303,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.currentVersion" datatype="html">
-        <source>Current version</source>
+        <source>Current Version</source>
         <target>Aktuelle Version</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/subscriptions-widget/subscriptions-widget.component.html</context>
@@ -19311,7 +19311,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.rotateKey" datatype="html">
-        <source>Rotate key</source>
+        <source>Rotate Key</source>
         <target>Schlüssel rotieren</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-edit/api-client-edit.component.html</context>
@@ -19331,7 +19331,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.displayName" datatype="html">
-        <source>Display name</source>
+        <source>Display Name</source>
         <target>Anzeigename</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-edit/api-client-edit.component.html</context>
@@ -19347,7 +19347,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.clientType" datatype="html">
-        <source>Client type</source>
+        <source>Client Type</source>
         <target>Client-Typ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-edit/api-client-edit.component.html</context>
@@ -19403,7 +19403,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.apiKeyFor" datatype="html">
-        <source>API key for &quot;<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>&quot;</source>
+        <source>API Key for &quot;<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>&quot;</source>
         <target>API-Key für &quot;<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>&quot;</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component.html</context>
@@ -19427,7 +19427,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.rememberedDevices" datatype="html">
-        <source>Remembered devices</source>
+        <source>Remembered Devices</source>
         <target>Gemerkte Geräte</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.html</context>
@@ -19459,7 +19459,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.lastUsed" datatype="html">
-        <source>Last used</source>
+        <source>Last Used</source>
         <target>Zuletzt verwendet</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.html</context>
@@ -19527,7 +19527,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.revokeAllDevicesForUser" datatype="html">
-        <source>Revoke All Devices For User</source>
+        <source>Revoke All Devices for User</source>
         <target>Alle Geräte des Benutzers widerrufen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.ts</context>
@@ -19535,7 +19535,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.revokeAllForThisClient" datatype="html">
-        <source>Revoke all for this client</source>
+        <source>Revoke All for This Client</source>
         <target>Alle für diesen Client widerrufen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.ts</context>
@@ -19543,7 +19543,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.revokeAllInThisRealm" datatype="html">
-        <source>Revoke all in this realm</source>
+        <source>Revoke All in This Realm</source>
         <target>Alle in diesem Realm widerrufen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.ts</context>
@@ -19551,7 +19551,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.revokeAll" datatype="html">
-        <source>Revoke all</source>
+        <source>Revoke All</source>
         <target>Alle widerrufen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.ts</context>
@@ -19559,7 +19559,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.revokeAllInRealm" datatype="html">
-        <source>Revoke All In Realm</source>
+        <source>Revoke All in Realm</source>
         <target>Alle im Realm widerrufen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.ts</context>
@@ -20407,7 +20407,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.dryRun2" datatype="html">
-        <source>Dry run</source>
+        <source>Dry Run</source>
         <target>Testlauf</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
@@ -20435,7 +20435,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.startTemplate" datatype="html">
-        <source>Start from template</source>
+        <source>Start from Template</source>
         <target>Mit einer Vorlage beginnen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
@@ -20555,7 +20555,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindow" datatype="html">
-        <source>Time window</source>
+        <source>Time Window</source>
         <target>Zeitfenster</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
@@ -20615,7 +20615,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.trackedEventTypes2" datatype="html">
-        <source>Tracked event types</source>
+        <source>Tracked Event Types</source>
         <target>Erfasste Ereignistypen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
@@ -21207,7 +21207,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.availablePlaceholdersSubjectBody" datatype="html">
-        <source>Available placeholders for subject and body</source>
+        <source>Available Placeholders for Subject and Body</source>
         <target>Verfügbare Platzhalter für Betreff und Text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/actions-list/action-item/conditional-access-action-item.component.html</context>
@@ -21295,7 +21295,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.smtpServer" datatype="html">
-        <source>SMTP server</source>
+        <source>SMTP Server</source>
         <target>SMTP-Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/actions-list/action-item/conditional-access-action-item.component.ts</context>
@@ -21311,7 +21311,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.recipientGroup" datatype="html">
-        <source>Recipient group</source>
+        <source>Recipient Group</source>
         <target>Empfängergruppe</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/actions-list/action-item/conditional-access-action-item.component.ts</context>
@@ -21327,7 +21327,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.mimeType" datatype="html">
-        <source>MIME type</source>
+        <source>MIME Type</source>
         <target>MIME-Typ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/actions-list/action-item/conditional-access-action-item.component.ts</context>
@@ -21527,7 +21527,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.stageName" datatype="html">
-        <source>Stage name</source>
+        <source>Stage Name</source>
         <target>Name der Stufe</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/conditional-access-stage-item.component.html</context>
@@ -21543,7 +21543,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.unnamedStage" datatype="html">
-        <source>Unnamed stage</source>
+        <source>Unnamed Stage</source>
         <target>Unbenannte Stufe</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/conditional-access-stage-item.component.html</context>
@@ -21575,7 +21575,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.failureThreshold" datatype="html">
-        <source>Failure threshold</source>
+        <source>Failure Threshold</source>
         <target>Fehler-Schwellenwert</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/stages-list/stage-item/conditional-access-stage-item.component.html</context>
@@ -21911,7 +21911,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.toggleDryRunSelected" datatype="html">
-        <source>Toggle Dry Run For Selected Policies</source>
+        <source>Toggle Dry Run for Selected Policies</source>
         <target>Testlauf für ausgewählte Richtlinien umschalten</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
@@ -22027,7 +22027,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.attemptsPerTimeBucket" datatype="html">
-        <source>Attempts per time bucket</source>
+        <source>Attempts per Time Bucket</source>
         <target>Versuche pro Zeitintervall</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.html</context>
@@ -22143,7 +22143,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.enforcingPolicies" datatype="html">
-        <source>Enforcing policies</source>
+        <source>Enforcing Policies</source>
         <target>Durchgesetzte Richtlinien</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.html</context>
@@ -22175,7 +22175,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.usersLocked" datatype="html">
-        <source>Users locked</source>
+        <source>Users Locked</source>
         <target>Gesperrte Benutzer</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.html</context>
@@ -22195,7 +22195,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.ipsBlocked" datatype="html">
-        <source>IPs blocked</source>
+        <source>IPs Blocked</source>
         <target>Blockierte IPs</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.html</context>
@@ -22203,7 +22203,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.expiredRecords" datatype="html">
-        <source>Expired records</source>
+        <source>Expired Records</source>
         <target>Abgelaufene Einträge</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.html</context>
@@ -22219,7 +22219,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.blocksLocksOverTime" datatype="html">
-        <source>Blocks and locks over time</source>
+        <source>Blocks and Locks over Time</source>
         <target>Blockierungen und Sperren im Zeitverlauf</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.html</context>
@@ -22243,7 +22243,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.restrictionsForce" datatype="html">
-        <source>Restrictions in force</source>
+        <source>Restrictions in Force</source>
         <target>Geltende Einschränkungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.html</context>
@@ -22747,7 +22747,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.dateRange" datatype="html">
-        <source>Date range</source>
+        <source>Date Range</source>
         <target>Zeitraum</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
@@ -22991,7 +22991,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.decidingPolicies" datatype="html">
-        <source>Deciding policies</source>
+        <source>Deciding Policies</source>
         <target>Entscheidende Richtlinien</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/reason-detail-dialog/reason-detail-dialog.html</context>
@@ -23007,7 +23007,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.tokensUsedAttempt" datatype="html">
-        <source>Tokens used for this attempt</source>
+        <source>Tokens Used for This Attempt</source>
         <target>Für diesen Versuch verwendete Token</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/reason-detail-dialog/reason-detail-dialog.html</context>
@@ -23039,7 +23039,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.otherTokensUser" datatype="html">
-        <source>Other tokens of the user</source>
+        <source>Other Tokens of the User</source>
         <target>Weitere Token des Benutzers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/reason-detail-dialog/reason-detail-dialog.html</context>
@@ -23079,7 +23079,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.ipAddress" datatype="html">
-        <source>IP address</source>
+        <source>IP Address</source>
         <target>IP-Adresse</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/blocklist/blocklist-block-dialog/blocklist-block-dialog.component.html</context>
@@ -23579,7 +23579,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.searchActionsLabel" datatype="html">
-        <source>Search actions</source>
+        <source>Search Actions</source>
         <target>Aktionen durchsuchen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-action-search/policy-action-search.component.html</context>
@@ -23827,7 +23827,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.changeLock" datatype="html">
-        <source>Change lock</source>
+        <source>Change Lock</source>
         <target>Sperre ändern</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
@@ -23875,7 +23875,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.resetLock" datatype="html">
-        <source>Reset lock</source>
+        <source>Reset Lock</source>
         <target>Sperre zurücksetzen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.ts</context>
@@ -24439,16 +24439,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.usersWithTokens" datatype="html">
-        <source>Users with tokens</source>
-        <target state="new">Users with tokens</target>
+        <source>Users with Tokens</source>
+        <target state="new">Users with Tokens</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
           <context context-type="linenumber">158</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.usersWithoutTokens" datatype="html">
-        <source>Users without tokens</source>
-        <target state="new">Users without tokens</target>
+        <source>Users without Tokens</source>
+        <target state="new">Users without Tokens</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
           <context context-type="linenumber">170</context>
@@ -24487,8 +24487,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.conditionalAccess" datatype="html">
-        <source>Conditional access policies</source>
-        <target state="new">Conditional access policies</target>
+        <source>Conditional Access Policies</source>
+        <target state="new">Conditional Access Policies</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
           <context context-type="linenumber">79</context>
@@ -24619,8 +24619,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.containerTemplates" datatype="html">
-        <source>Container templates</source>
-        <target state="new">Container templates</target>
+        <source>Container Templates</source>
+        <target state="new">Container Templates</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates.component.html</context>
           <context context-type="linenumber">57</context>
@@ -24631,8 +24631,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.eventHandlers" datatype="html">
-        <source>Event handlers</source>
-        <target state="new">Event handlers</target>
+        <source>Event Handlers</source>
+        <target state="new">Event Handlers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
           <context context-type="linenumber">70</context>
@@ -24643,8 +24643,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.caConnectors" datatype="html">
-        <source>CA connectors</source>
-        <target state="new">CA connectors</target>
+        <source>CA Connectors</source>
+        <target state="new">CA Connectors</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
           <context context-type="linenumber">69</context>
@@ -24655,8 +24655,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.privacyideaServers" datatype="html">
-        <source>privacyIDEA servers</source>
-        <target state="new">privacyIDEA servers</target>
+        <source>privacyIDEA Servers</source>
+        <target state="new">privacyIDEA Servers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
           <context context-type="linenumber">69</context>
@@ -24667,8 +24667,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.radiusServers" datatype="html">
-        <source>RADIUS servers</source>
-        <target state="new">RADIUS servers</target>
+        <source>RADIUS Servers</source>
+        <target state="new">RADIUS Servers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
           <context context-type="linenumber">69</context>
@@ -24679,8 +24679,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.smsGateways" datatype="html">
-        <source>SMS gateways</source>
-        <target state="new">SMS gateways</target>
+        <source>SMS Gateways</source>
+        <target state="new">SMS Gateways</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.html</context>
           <context context-type="linenumber">69</context>
@@ -24691,8 +24691,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.smtpServers" datatype="html">
-        <source>SMTP servers</source>
-        <target state="new">SMTP servers</target>
+        <source>SMTP Servers</source>
+        <target state="new">SMTP Servers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
           <context context-type="linenumber">69</context>
@@ -24703,8 +24703,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.tokengroups" datatype="html">
-        <source>Token groups</source>
-        <target state="new">Token groups</target>
+        <source>Token Groups</source>
+        <target state="new">Token Groups</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.html</context>
           <context context-type="linenumber">69</context>
@@ -24771,8 +24771,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.apiClients" datatype="html">
-        <source>API clients</source>
-        <target state="new">API clients</target>
+        <source>API Clients</source>
+        <target state="new">API Clients</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
           <context context-type="linenumber">77</context>
@@ -24971,16 +24971,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.settings" datatype="html">
-        <source>UI settings</source>
-        <target state="new">UI settings</target>
+        <source>UI Settings</source>
+        <target state="new">UI Settings</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">25</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.audit" datatype="html">
-        <source>Audit log</source>
-        <target state="new">Audit log</target>
+        <source>Audit Log</source>
+        <target state="new">Audit Log</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">26</context>
@@ -24995,16 +24995,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.authenticationLog" datatype="html">
-        <source>Authentication log</source>
-        <target state="new">Authentication log</target>
+        <source>Authentication Log</source>
+        <target state="new">Authentication Log</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.lockedUsers" datatype="html">
-        <source>Locked users</source>
-        <target state="new">Locked users</target>
+        <source>Locked Users</source>
+        <target state="new">Locked Users</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">30</context>
@@ -25019,56 +25019,56 @@
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.challenges" datatype="html">
-        <source>Token challenges</source>
-        <target state="new">Token challenges</target>
+        <source>Token Challenges</source>
+        <target state="new">Token Challenges</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.applications" datatype="html">
-        <source>Token applications</source>
-        <target state="new">Token applications</target>
+        <source>Token Applications</source>
+        <target state="new">Token Applications</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">34</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.getSerial" datatype="html">
-        <source>Find a token serial</source>
-        <target state="new">Find a token serial</target>
+        <source>Find a Token Serial</source>
+        <target state="new">Find a Token Serial</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.importTokens" datatype="html">
-        <source>Import tokens</source>
-        <target state="new">Import tokens</target>
+        <source>Import Tokens</source>
+        <target state="new">Import Tokens</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">36</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.enrollToken" datatype="html">
-        <source>Enroll a token</source>
-        <target state="new">Enroll a token</target>
+        <source>Enroll a Token</source>
+        <target state="new">Enroll a Token</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">37</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.assignToken" datatype="html">
-        <source>Assign a token</source>
-        <target state="new">Assign a token</target>
+        <source>Assign a Token</source>
+        <target state="new">Assign a Token</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.tokenWizard" datatype="html">
-        <source>Token enrollment wizard</source>
-        <target state="new">Token enrollment wizard</target>
+        <source>Token Enrollment Wizard</source>
+        <target state="new">Token Enrollment Wizard</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">39</context>
@@ -25083,48 +25083,48 @@
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.containerWizard" datatype="html">
-        <source>Container creation wizard</source>
-        <target state="new">Container creation wizard</target>
+        <source>Container Creation Wizard</source>
+        <target state="new">Container Creation Wizard</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.machineResolvers" datatype="html">
-        <source>Machine resolvers</source>
-        <target state="new">Machine resolvers</target>
+        <source>Machine Resolvers</source>
+        <target state="new">Machine Resolvers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">50</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.system" datatype="html">
-        <source>System configuration</source>
-        <target state="new">System configuration</target>
+        <source>System Configuration</source>
+        <target state="new">System Configuration</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">53</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.tokenTypes" datatype="html">
-        <source>Token type configuration</source>
-        <target state="new">Token type configuration</target>
+        <source>Token Type Configuration</source>
+        <target state="new">Token Type Configuration</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.details" datatype="html">
-        <source><x id="PAGE" equiv-text="base"/> - details</source>
-        <target state="new"><x id="PAGE" equiv-text="base"/> - details</target>
+        <source><x id="PAGE" equiv-text="base"/> - Details</source>
+        <target state="new"><x id="PAGE" equiv-text="base"/> - Details</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">72</context>
         </context-group>
       </trans-unit>
       <trans-unit id="pageTitle.new" datatype="html">
-        <source><x id="PAGE" equiv-text="base"/> - new</source>
-        <target state="new"><x id="PAGE" equiv-text="base"/> - new</target>
+        <source><x id="PAGE" equiv-text="base"/> - New</source>
+        <target state="new"><x id="PAGE" equiv-text="base"/> - New</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/core/route-titles.ts</context>
           <context context-type="linenumber">67</context>

@@ -53,7 +53,7 @@ export class ViewConditionsColumnComponent {
     resolvers: $localize`:@@common.resolvers:Resolvers`,
     users: $localize`:@@common.users:Users`,
     piNodes: $localize`:@@policy.condition.piNodes:privacyIDEA Nodes`,
-    validTime: $localize`:@@policy.validTime:Valid time`,
+    validTime: $localize`:@@policy.validTime:Valid Time`,
     client: $localize`:@@common.client:Client`,
     userAgents: $localize`:@@policy.condition.userAgents:User Agents`
   };
