@@ -653,9 +653,11 @@ export class ContainerService extends FilterableTableService implements Containe
   addToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to assign container.", error);
@@ -671,9 +673,11 @@ export class ContainerService extends FilterableTableService implements Containe
   removeToken(tokenSerial: string, containerSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign container.", error);
@@ -690,9 +694,11 @@ export class ContainerService extends FilterableTableService implements Containe
     const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`, { realms: valueString }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`,
+        { realms: valueString },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container realm.", error);
@@ -708,9 +714,11 @@ export class ContainerService extends FilterableTableService implements Containe
   setContainerDescription(containerSerial: string, value: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`, { description: value }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`,
+        { description: value },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container description.", error);
@@ -743,9 +751,11 @@ export class ContainerService extends FilterableTableService implements Containe
       new_states = states.concat("active").join(",");
     }
     return this.http
-      .post<
-        PiResponse<{ disabled: boolean } | { active: boolean }>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: new_states }, { headers })
+      .post<PiResponse<{ disabled: boolean } | { active: boolean }>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`,
+        { states: new_states },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
@@ -767,9 +777,11 @@ export class ContainerService extends FilterableTableService implements Containe
     }
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<Record<string, boolean>>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: states.join(",") }, { headers })
+      .post<PiResponse<Record<string, boolean>>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`,
+        { states: states.join(",") },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container states.", error);
@@ -851,9 +863,10 @@ export class ContainerService extends FilterableTableService implements Containe
   deleteInfo(containerSerial: string, key: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, { headers })
+      .delete<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`,
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete info.", error);
@@ -869,9 +882,11 @@ export class ContainerService extends FilterableTableService implements Containe
   addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to add token to container.", error);
@@ -887,9 +902,11 @@ export class ContainerService extends FilterableTableService implements Containe
   removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
@@ -959,9 +976,11 @@ export class ContainerService extends FilterableTableService implements Containe
     const headers = this.authService.getHeaders();
 
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/removeall`, { serial: tokensForAction.join(",") }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/removeall`,
+        { serial: tokensForAction.join(",") },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to remove all.", error);
@@ -993,9 +1012,11 @@ export class ContainerService extends FilterableTableService implements Containe
   deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<boolean>
-      >(`${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`, { serial: param.serialList }, { headers })
+      .post<PiResponse<boolean>>(
+        `${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`,
+        { serial: param.serialList },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
@@ -1034,9 +1055,11 @@ export class ContainerService extends FilterableTableService implements Containe
     this.stopPolling();
     const headers = this.authService.getHeaders();
     return this.http
-      .post<
-        PiResponse<ContainerUnregisterData>
-      >(`${this.containerBaseUrl}register/${encodeURIComponent(containerSerial)}/terminate`, {}, { headers })
+      .post<PiResponse<ContainerUnregisterData>>(
+        `${this.containerBaseUrl}register/${encodeURIComponent(containerSerial)}/terminate`,
+        {},
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);
@@ -1110,9 +1133,10 @@ export class ContainerService extends FilterableTableService implements Containe
 
     const headers = this.authService.getHeaders();
     const observable = this.http
-      .get<
-        PiResponse<TemplateComparisonResult>
-      >(`${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`, { headers })
+      .get<PiResponse<TemplateComparisonResult>>(
+        `${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`,
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           const message = error.error?.result?.error?.message || "";

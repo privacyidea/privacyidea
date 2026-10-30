@@ -118,7 +118,6 @@ export class UserDetailsTokenTableComponent {
    */
   readonly enrollAction = input<TemplateRef<unknown> | undefined>(undefined);
   readonly assignAction = input<TemplateRef<unknown> | undefined>(undefined);
-
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
