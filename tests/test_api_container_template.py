@@ -1,9 +1,15 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import copy
 import json
+from unittest import mock
 
-from privacyidea.lib.container import (create_container_template, get_template_obj)
+from flask import g, request
+
+from privacyidea.lib.container import (create_container_template, get_template_obj,
+                                       create_container_tokens_from_template)
 from privacyidea.lib.container import (init_container, find_container_by_serial)
+from privacyidea.lib.error import UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
@@ -856,3 +862,27 @@ class APIContainerTemplate(APIContainerTest):
         delete_policy("enrollment")
         container.delete()
         token.delete_token()
+
+    def test_22_create_container_tokens_from_template_restores_request_on_error(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        request_data = {"type": "generic", "user": "hans", "realm": self.realm1}
+
+        with self.app.test_request_context("/container/init", method="POST"):
+            request.all_data = copy.deepcopy(request_data)
+            request.User = hans
+            g.request_data = copy.deepcopy(request_data)
+            g.policies = {"container_policy": "value"}
+            g.logged_in_user = {"role": "admin", "username": "admin", "realm": ""}
+            with mock.patch("privacyidea.lib.container.get_user_from_param", side_effect=UserError("unavailable")):
+                with self.assertRaises(UserError):
+                    create_container_tokens_from_template(container_serial, [{"type": "hotp", "genkey": True,
+                                                                              "user": True}], request, "admin")
+
+            self.assertDictEqual(request_data, request.all_data)
+            self.assertDictEqual(request_data, g.request_data)
+            self.assertEqual(hans, request.User)
+            self.assertDictEqual({"container_policy": "value"}, g.policies)
+
+        find_container_by_serial(container_serial).delete()
