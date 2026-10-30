@@ -235,13 +235,17 @@ def token_usability(user: "User") -> TokenUsability:
         if token.is_revoked():
             unusable[token.get_serial()] = "Token is revoked"
             continue
+        if not token.use_for_authentication({}):
+            # A recognition carries no service_id, so a token that a login without one does not use does not count.
+            # Like a login, this comes before the fail counter is cleared, and push and passkey tokens report a
+            # disabled state here.
+            unusable[token.get_serial()] = ("Token is disabled" if not token.is_active()
+                                            else "Token is only used with a service ID")
+            continue
         token.check_reset_failcount()
         messages = []
         if not token.check_all(messages):
             unusable[token.get_serial()] = messages[0]
-        elif not token.use_for_authentication({}):
-            # A recognition carries no service_id, so a token that a login without one does not use does not count
-            unusable[token.get_serial()] = "Token is only used with a service ID"
         else:
             usable.append(token)
     return TokenUsability(usable, unusable)

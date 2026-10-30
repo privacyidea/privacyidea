@@ -509,7 +509,8 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
                              f"remembered devices of the user are revoked ({others})", entry["info"])
             output = "\n".join(logs.output)
             self.assertIn(f"Remembered device of user 'cornelius' in realm '{self.realm1}' on API client "
-                          f"'{client.id}' is not recognised: cookie reuse detected.", output)
+                          f"'{client.id}' is not recognised: cookie reuse detected. The device is deleted, and all "
+                          f"other remembered devices of the user are revoked next.", output)
             self.assertNotIn(parse_cookie(cookie)[0], output)
             self.assertNotIn(device.series_id, output)
         finally:
@@ -636,6 +637,51 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
 
         res = self._recognise(api_key=api_key, cookie=cookie)
         self.assertEqual(1, len(self._cookie_headers(res)))
+
+    def test_11c_cookie_checks_come_before_an_idle_timeout_conflict(self):
+        # While idle timeout policies conflict, the cookie is still looked up: a dead cookie is cleared and a replayed
+        # cookie is detected. No device counts as idle then.
+        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
+        client, api_key = create_client("idle conflict cookie client", "privacyidea-cp")
+        _device, replayed_cookie = create_remembered_device(self.identity, client.id)
+        self._recognise(api_key=api_key, cookie=replayed_cookie)
+        expired, expired_cookie = create_remembered_device(self.identity, client.id)
+        expired_series = expired.series_id
+        expired.expires_at = utc_now() - timedelta(hours=1)
+        expired.save()
+        idle, idle_cookie = create_remembered_device(self.identity, client.id)
+        idle_series = idle.series_id
+        idle.created_at = utc_now() - timedelta(days=30)
+        idle.save()
+        set_policy("idle_week", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=7d",
+                   priority=1)
+        set_policy("idle_hours", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT}=4h",
+                   priority=1)
+        try:
+            res = self._recognise(api_key=api_key, cookie=idle_cookie, expect_value=False)
+            self.assertEqual([], self._cookie_headers(res))
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=idle_series).first())
+
+            res = self._recognise(api_key=api_key, cookie=expired_cookie, expect_value=False)
+            self.assertTrue(any(h.startswith(f"{PERSISTENT_COOKIE_NAME}=;") for h in self._cookie_headers(res)),
+                            self._cookie_headers(res))
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=expired_series).first())
+
+            # The devices of the user that the theft revokes: all but the replayed one
+            others = RememberedDevice.query.filter_by(resolver=self.identity.resolver,
+                                                      user_id=self.identity.user_id).count() - 1
+            res = self._recognise(api_key=api_key, cookie=replayed_cookie, expect_value=False)
+            self.assertTrue(any(h.startswith(f"{PERSISTENT_COOKIE_NAME}=;") for h in self._cookie_headers(res)),
+                            self._cookie_headers(res))
+            self.assertEqual("device not recognised: cookie reuse detected, the device is deleted and the other "
+                             f"remembered devices of the user are revoked ({others})",
+                             self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
+            self.assertEqual(0, RememberedDevice.query.filter_by(resolver=self.identity.resolver,
+                                                                 user_id=self.identity.user_id).count())
+        finally:
+            delete_policy("idle_week")
+            delete_policy("idle_hours")
+            self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 
     def test_12_device_needs_a_usable_token(self):
         # While no token of the user could be used for a login, the device is not recognised. The cookie is neither

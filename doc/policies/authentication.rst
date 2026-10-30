@@ -1558,8 +1558,9 @@ days. If unset, a device stays recognized until its validity ends.
 The idle timeout counts from the last recognition at
 :http:post:`/validate/remember_device`, or from the issuance for a device that
 was never recognized. A login with the second factor at
-:http:post:`/validate/check` does not reset it. If the client opts in again
-there, it gets a new device with its own validity.
+:http:post:`/validate/check` does not reset it, and a refused recognition does
+not reset it either. If the client opts in again there, it gets a new device
+with its own validity.
 
 Together with :ref:`policy_remember_device_validity`, a remembered device ends at
 whichever limit it reaches first. The validity is fixed at issuance and no

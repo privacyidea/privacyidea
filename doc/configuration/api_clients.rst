@@ -156,7 +156,7 @@ passes the checks that a login applies to it:
 A user whose tokens are all disabled, revoked, removed, locked or excluded by
 these policies gets "not recognized" from a remembered device as well. As with
 conditional access, the cookie is neither rotated nor cleared and the device is
-kept, so it is recognized again once a token of the user is usable. The same
+kept, so it can be recognized again once a token of the user is usable. The same
 holds while :ref:`policy_remember_device_idle_timeout` policies of the same
 priority set different values. To end the devices for good, revoke them (see
 below).
@@ -168,7 +168,10 @@ toward these limits.
 
 These checks apply only to a live device. The cookie is checked first, so a
 replayed cookie, a dead cookie and an idle device are handled in the same way,
-whatever the state of the user's tokens.
+whatever the state of the user's tokens. While the idle timeout policies
+conflict, no device counts as idle. A refusal is not a recognition, so a device
+still expires and becomes idle while its recognition is refused, also by
+conditional access.
 
 On a miss the answer is simply "not recognized". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or

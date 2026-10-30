@@ -622,3 +622,27 @@ class RememberedDeviceLibTestCase(MyTestCase):
         init_token({"type": "spass", "pin": "test", "serial": "LOGIN_SPASS"}, user=user)
         self.addCleanup(remove_token, "LOGIN_SPASS")
         self.assertEqual(["LOGIN_SPASS"], [usable.get_serial() for usable in token_usability(user).usable])
+
+    def test_usable_tokens_leave_the_fail_counter_of_an_application_specific_password(self):
+        # A login without a service_id does not use an application-specific password, so it does not clear the fail
+        # counter of one either. A disabled one is reported as disabled, as by a login.
+        user = User(login="cornelius", realm=self.realm1)
+        remove_token(user=user)
+        set_serviceid("remembered_device_service")
+        self.addCleanup(delete_serviceid, "remembered_device_service")
+        init_token({"type": "applspec", "service_id": "remembered_device_service", "otpkey": "applspec1234",
+                    "serial": "APPLSPEC_FAIL"}, user=user)
+        self.addCleanup(remove_token, "APPLSPEC_FAIL")
+        set_privacyidea_config(FAILCOUNTER_CLEAR_TIMEOUT, 1)
+        self.addCleanup(delete_privacyidea_config, FAILCOUNTER_CLEAR_TIMEOUT)
+        token = get_one_token(serial="APPLSPEC_FAIL")
+        token.set_maxfail(5)
+        token.set_failcount(5)
+        exceeded_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, exceeded_at.strftime(DATE_FORMAT))
+        self.assertEqual(TokenUsability([], {"APPLSPEC_FAIL": "Token is only used with a service ID"}),
+                         token_usability(user))
+        self.assertEqual(5, get_one_token(serial="APPLSPEC_FAIL").token.failcount)
+
+        enable_token("APPLSPEC_FAIL", False)
+        self.assertEqual(TokenUsability([], {"APPLSPEC_FAIL": "Token is disabled"}), token_usability(user))

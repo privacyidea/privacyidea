@@ -1408,13 +1408,19 @@ def _name_conflicting_action(action: str, exc: PolicyError) -> PolicyError:
     return PolicyError(f"{action}: {exc.get_description()}")
 
 
-def _recognition_refusal(user: User) -> str | None:
+def _recognition_refusal(user: User, idle_timeout_conflict: str | None) -> str | None:
     """
-    Why a live remembered device of *user* is not recognised, as the audit info, or ``None``. A login of the user
-    would be refused as well: by a time limit (see :func:`_time_limit_refusal`), or because none of the user's tokens
-    can be used for it (see :func:`_token_refusal`). The time limits come first, as a login checks them before its
-    tokens.
+    Why a live remembered device of *user* is not recognised, as the audit info, or ``None``. The
+    ``remember_device_idle_timeout`` policies of the same priority can set different values, which
+    *idle_timeout_conflict* describes. Otherwise a login of the user would be refused as well: by a time limit (see
+    :func:`_time_limit_refusal`), or because none of the user's tokens can be used for it (see
+    :func:`_token_refusal`). The time limits come first, as a login checks them before its tokens.
     """
+    if idle_timeout_conflict:
+        log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
+                    f"{idle_timeout_conflict}. The device is kept and can be recognised again once the policies "
+                    f"agree.")
+        return f"device not recognised: {idle_timeout_conflict}"
     return _time_limit_refusal(user) or _token_refusal(user)
 
 
@@ -1436,12 +1442,13 @@ def _time_limit_refusal(user: User) -> str | None:
             # Policies of the same priority that set different values, which refuse a login as well
             conflict = _name_conflicting_action(action, exc).get_description()
             log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
-                        f"{conflict}. The device is kept and recognised again once the policies agree.")
+                        f"{conflict}. The device is kept and can be recognised again once the policies agree.")
             return f"device not recognised: {conflict}"
         if not allowed:
             message = reply_dict["message"]
             log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {action}: "
-                     f"{message} The device is kept and recognised again once the time limit allows a login.")
+                     f"{message} The device is kept and can be recognised again once the time limit allows a "
+                     f"login.")
             return f"device not recognised: {action}: {message}"
     return None
 
@@ -1462,21 +1469,22 @@ def _token_refusal(user: User) -> str | None:
         else:
             refusal = "the user has no token"
         log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: {refusal}. "
-                 f"The device is kept and recognised again once a token of the user is usable.")
+                 f"The device is kept and can be recognised again once a token of the user is usable.")
         return f"device not recognised: {refusal}"
     try:
         refusing_policies = _policies_refusing_tokens(user, usability.usable)
     except PolicyError as exc:
         # last_auth policies of the same priority that set different values, which refuse a login as well
         log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
-                    f"{exc.get_description()}. The device is kept and recognised again once the policies agree.")
+                    f"{exc.get_description()}. The device is kept and can be recognised again once the policies "
+                    f"agree.")
         return f"device not recognised: {exc.get_description()}"
     if refusing_policies:
         policy_names = ", ".join(refusing_policies)
         log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: the "
                     f"policies {policy_names} allow none of the user's tokens for a login (disabled_token_types, "
-                    f"tokentype, serial, tokeninfo or last_auth). The device is kept and recognised again once a "
-                    f"policy allows a token of the user.")
+                    f"tokentype, serial, tokeninfo or last_auth). The device is kept and can be recognised again "
+                    f"once a policy allows a token of the user.")
         return f"device not recognised: the policies {policy_names} allow none of the user's tokens"
     return None
 
@@ -1604,11 +1612,13 @@ def check_remember_device():
     disabled, revoked, has a counter exceeded, is outside its validity period, not
     yet enrolled or of a type that cannot verify a login, or is excluded by the
     ``disabled_token_types``, ``tokentype``, ``serial``, ``tokeninfo`` or
-    ``last_auth`` policies. The cookie is then left untouched, so the device is
-    recognised again once a login is possible. The same holds while
+    ``last_auth`` policies. The cookie is then left untouched, so the device can
+    be recognised again once a login is possible. The same holds while
     ``remember_device_idle_timeout`` policies of the same priority set different
-    values. These checks come after the cookie is looked up, so a theft, a dead
-    cookie or an idle device is handled whatever the user's tokens are.
+    values. A refusal is no recognition, so the device still expires and becomes
+    idle meanwhile. These checks come after the cookie is looked up, so a theft, a dead
+    cookie or an idle device is handled whatever the user's tokens are. While the
+    idle timeout policies conflict, the cookie is looked up without an idle timeout.
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
@@ -1671,64 +1681,62 @@ def check_remember_device():
     elif not Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE, user_object=user).any():
         info = "device not recognised: no remember_device policy applies to the user"
     else:
+        idle_timeout_conflict = None
         try:
             idle_timeout = _remember_device_duration(user, PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT)
         except PolicyError as exc:
-            # Policies of the same priority that set different idle timeouts. The cookie is neither consumed nor
-            # cleared, so the device is recognised again once the policies agree.
-            log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} is not recognised: "
-                        f"{exc.get_description()}. The device is kept and recognised again once the policies "
-                        f"agree.")
-            info = f"device not recognised: {exc.get_description()}"
-        else:
-            result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"),
-                                                    idle_timeout, check_refusal=lambda: _recognition_refusal(user))
-            if result.status == RememberStatus.RECOGNIZED:
-                recognised = True
-                cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
-                info = "remembered device recognised"
-            elif result.status == RememberStatus.REFUSED:
-                # The device stands in for the second factor, and a full login would fail as well: a time limit
-                # refuses it, or the user has no token left to present one with. The cookie is neither consumed nor
-                # cleared, so the device is recognised again once a login is possible, like after a refusal by
-                # conditional access.
-                info = result.refusal
-            elif result.status == RememberStatus.GRACE:
-                # Tolerated concurrent/duplicate request: recognised, but do not
-                # rotate (the client keeps the cookie it already has).
-                recognised = True
-                info = "remembered device recognised again within the grace window, cookie not rotated"
-            elif result.status == RememberStatus.FOREIGN:
-                # The cookie is live but belongs to a different user on this same
-                # client (a shared browser). Not recognised, but leave the cookie
-                # alone - clearing it would wipe the rightful user's remembered device
-                # off the shared browser just because someone else logged in.
-                info = "device not recognised: the cookie belongs to another user of this client"
-            elif result.status == RememberStatus.THEFT:
-                # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
-                # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
-                # authentication event, so conditional access can lock the account, block the source IP or notify as
-                # configured - and only then escalate. The order matters: handle_device_theft commits, so a lock wait
-                # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
-                # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
-                # replayed series, is handle_device_theft's to state.
-                log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
-                            f"{g.client_id!r} is not recognised: cookie reuse detected. The device is deleted and "
-                            f"all other remembered devices of the user are revoked.")
-                g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
-                                          add_with_comma=True)
-                log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
-                                   other_info={"client_id": g.get("client_id")})
-                revoked = handle_device_theft(identity)
-                cookie_action = CookieAction("clear")
-                info = (f"device not recognised: cookie reuse detected, the device is deleted and the other "
-                        f"remembered devices of the user are revoked ({revoked})")
-            else:  # miss: the cookie is dead - clear it
-                cookie_action = CookieAction("clear")
-                miss = _MISS_INFO[result.miss]
-                log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
-                         f"{g.client_id!r} is not recognised: {miss}. The cookie is cleared.")
-                info = f"device not recognised: {miss}, the cookie is cleared"
+            # Policies of the same priority that set different idle timeouts. The cookie is still looked up, without
+            # an idle timeout, so a replayed or a dead cookie is handled as always. A live device is then refused.
+            idle_timeout = None
+            idle_timeout_conflict = exc.get_description()
+        result = consume_remember_device_cookie(presented, g.client_id, identity, g.get("client_ip"), idle_timeout,
+                                                check_refusal=lambda: _recognition_refusal(user, idle_timeout_conflict))
+        if result.status == RememberStatus.RECOGNIZED:
+            recognised = True
+            cookie_action = CookieAction("set", result.cookie_value, result.expires_at)
+            info = "remembered device recognised"
+        elif result.status == RememberStatus.REFUSED:
+            # The idle timeout policies conflict, or a full login would fail as well, and the device stands in for
+            # the second factor: a time limit refuses the login, or the user has no token left to present one with.
+            # The cookie is neither consumed nor cleared, so the device can be recognised again later, like after a
+            # refusal by conditional access.
+            info = result.refusal
+        elif result.status == RememberStatus.GRACE:
+            # Tolerated concurrent/duplicate request: recognised, but do not
+            # rotate (the client keeps the cookie it already has).
+            recognised = True
+            info = "remembered device recognised again within the grace window, cookie not rotated"
+        elif result.status == RememberStatus.FOREIGN:
+            # The cookie is live but belongs to a different user on this same
+            # client (a shared browser). Not recognised, but leave the cookie
+            # alone - clearing it would wipe the rightful user's remembered device
+            # off the shared browser just because someone else logged in.
+            info = "device not recognised: the cookie belongs to another user of this client"
+        elif result.status == RememberStatus.THEFT:
+            # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
+            # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
+            # authentication event, so conditional access can lock the account, block the source IP or notify as
+            # configured - and only then escalate. The order matters: handle_device_theft commits, so a lock wait
+            # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
+            # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
+            # replayed series, is handle_device_theft's to state.
+            log.warning(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
+                        f"{g.client_id!r} is not recognised: cookie reuse detected. The device is deleted, and all "
+                        f"other remembered devices of the user are revoked next.")
+            g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
+                                      add_with_comma=True)
+            log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
+                               other_info={"client_id": g.get("client_id")})
+            revoked = handle_device_theft(identity)
+            cookie_action = CookieAction("clear")
+            info = (f"device not recognised: cookie reuse detected, the device is deleted and the other "
+                    f"remembered devices of the user are revoked ({revoked})")
+        else:  # miss: the cookie is dead - clear it
+            cookie_action = CookieAction("clear")
+            miss = _MISS_INFO[result.miss]
+            log.info(f"Remembered device of user {user.login!r} in realm {user.realm!r} on API client "
+                     f"{g.client_id!r} is not recognised: {miss}. The cookie is cleared.")
+            info = f"device not recognised: {miss}, the cookie is cleared"
 
     # A recognition is its own audit action ("POST /validate/remember_device") and
     # is intentionally not marked as an authentication (no ACCEPT/REJECT), so it
