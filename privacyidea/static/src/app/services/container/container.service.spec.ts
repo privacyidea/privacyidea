@@ -417,6 +417,21 @@ describe("ContainerService", () => {
       expect(containerService.isPollingActive()).toBe(false);
       expect(notificationServiceMock.success).toHaveBeenCalledWith("Container rollover completed successfully.");
     });
+
+    it("does not complete a rollover with the answer to a reload started before the poll", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "registered");
+      containerService.containerDetailsResource.reload();
+      TestBed.tick();
+      const staleRequest = expectDetailsRequest();
+
+      containerService.startPolling("SMPH1", true);
+      TestBed.tick();
+
+      // The running reload may still answer "registered" from before the rollover
+      expect(staleRequest.cancelled).toBe(true);
+      await answerPoll("rollover");
+      expect(containerService.isPollingActive()).toBe(true);
+    });
   });
 
   it("stopPolling resets isPollingActive", () => {

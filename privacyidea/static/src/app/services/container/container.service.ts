@@ -1087,7 +1087,12 @@ export class ContainerService extends FilterableTableService implements Containe
     this.containerSerial.set(containerSerial);
     this.isRolloverPolling.set(isRollover);
     this.isPollingActive.set(true);
-    // A reload keeps the loaded value while polling, a new request would drop it and blank the details page
+    // A reload keeps the loaded value while polling, a new request would drop it and blank the details page.
+    // A reload is ignored while a request is running, whose answer may be from before the registration: setting the
+    // value cancels that request.
+    if (this.containerDetailsResource.isLoading()) {
+      this.containerDetailsResource.set(this.containerDetailsResource.value());
+    }
     this.containerDetailsResource.reload();
   }
 
