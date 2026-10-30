@@ -2551,3 +2551,10 @@ class RemoteUserAccountTestCase(MyApiTestCase):
         with mock.patch("privacyidea.api.lib.prepolicy.User", side_effect=ResolverError("The user store is down")):
             self.assertEqual("cornelius", self._config_remote_user("cornelius"))
 
+    def test_06_login_page_without_a_remote_user_policy(self):
+        """The WebUI loads for a REMOTE_USER of an existing account, and without a policy it does not use the name."""
+        self.assertEqual("", self._config_remote_user("selfservice"))
+        with self.app.test_request_context("/", method="GET", environ_base={"REMOTE_USER": "selfservice"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code)
+
