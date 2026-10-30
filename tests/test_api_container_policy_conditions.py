@@ -529,14 +529,25 @@ class ContainerPolicyConditions(APIContainerAuthorization):
     def test_12_token_init_in_container(self):
         set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
-        container_serial = init_container({"type": "smartphone"})["container_serial"]
 
-        result = self.request_assert_success("/token/init", {"type": "hotp", "genkey": True,
-                                                             "container_serial": container_serial}, self.at, "POST")
+        def enroll_token(container_type):
+            container_serial = init_container({"type": container_type})["container_serial"]
+            result = self.request_assert_success("/token/init", {"type": "hotp", "genkey": True,
+                                                                 "container_serial": container_serial},
+                                                 self.at, "POST")
+            self.assertEqual(container_serial, result["detail"]["container_serial"])
+            return container_serial, result["detail"]["serial"]
 
-        serial = result["detail"]["serial"]
-        self.assertIsNotNone(get_tokeninfo(serial, "next_pin_change"))
+        # Policy applies to tokens in a smartphone
+        smartphone_serial, smartphone_token_serial = enroll_token("smartphone")
+        self.assertIsNotNone(get_tokeninfo(smartphone_token_serial, "next_pin_change"))
+
+        # Policy does not apply to tokens in other container types
+        generic_serial, generic_token_serial = enroll_token("generic")
+        self.assertIsNone(get_tokeninfo(generic_token_serial, "next_pin_change"))
 
         delete_policy("change_pin")
-        delete_container_by_serial(container_serial)
-        get_one_token(serial=serial).delete_token()
+        delete_container_by_serial(smartphone_serial)
+        delete_container_by_serial(generic_serial)
+        get_one_token(serial=smartphone_token_serial).delete_token()
+        get_one_token(serial=generic_token_serial).delete_token()
