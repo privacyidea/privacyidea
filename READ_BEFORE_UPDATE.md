@@ -224,6 +224,14 @@
   requests to `/validate/check` and `/auth`, count these requests accordingly: as a failed authentication, and the
   enrollment start not as a successful one.
 
+* **An authentication answered with an error is logged as `POST_AUTHENTICATION_FAIL`.** An authentication that
+  succeeds or triggers a challenge can still get an error response, for example because of policies with conflicting
+  actions. The authentication log records such a request as `POST_AUTHENTICATION_FAIL`, with the error message. With
+  3.14 it was logged as `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED`. A conditional-access policy that counts
+  `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED` no longer counts these requests. This includes policies created from the
+  *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
+  `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
