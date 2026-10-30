@@ -46,6 +46,7 @@ interface LdapFormModel {
   SERVERPOOL_ROUNDS: number;
   SERVERPOOL_SKIP: number;
   SERVERPOOL_PERSISTENT: boolean;
+  SERVERPOOL_STRATEGY: string;
   EDITABLE: boolean;
   OBJECT_CLASSES: string;
   DN_TEMPLATE: string;
@@ -123,6 +124,7 @@ export class LdapResolverComponent {
     SERVERPOOL_ROUNDS: 2,
     SERVERPOOL_SKIP: 30,
     SERVERPOOL_PERSISTENT: false,
+    SERVERPOOL_STRATEGY: "ROUND_ROBIN",
     EDITABLE: false,
     OBJECT_CLASSES: "",
     DN_TEMPLATE: "",
@@ -147,6 +149,9 @@ export class LdapResolverComponent {
     required(f.LDAPSEARCHFILTER);
     required(f.USERINFO);
     disabled(f.TLS_CA_FILE, () => this.tlsCaFileDisabled());
+    required(f.group_search_filter, { when: () => this.model().recursive_group_search });
+    required(f.group_name_attribute, { when: () => this.model().recursive_group_search });
+    required(f.group_attribute_mapping_key, { when: () => this.model().recursive_group_search });
   });
 
   constructor() {
@@ -173,6 +178,7 @@ export class LdapResolverComponent {
         ...(initial.SERVERPOOL_PERSISTENT !== undefined
           ? { SERVERPOOL_PERSISTENT: parseBooleanValue(initial.SERVERPOOL_PERSISTENT) }
           : {}),
+        ...(initial.SERVERPOOL_STRATEGY !== undefined ? { SERVERPOOL_STRATEGY: initial.SERVERPOOL_STRATEGY } : {}),
         ...(initial.EDITABLE !== undefined ? { EDITABLE: parseBooleanValue(initial.EDITABLE) } : {}),
         ...(initial.OBJECT_CLASSES !== undefined ? { OBJECT_CLASSES: initial.OBJECT_CLASSES } : {}),
         ...(initial.DN_TEMPLATE !== undefined ? { DN_TEMPLATE: initial.DN_TEMPLATE } : {}),

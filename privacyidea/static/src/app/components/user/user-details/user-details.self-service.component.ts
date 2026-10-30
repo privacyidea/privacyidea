@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { Router } from "@angular/router";
@@ -26,8 +26,13 @@ import { DetailsCardComponent } from "@components/shared/details-shared/details-
 import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
 import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { CustomAttributeDraft } from "@components/user/user-custom-attributes/custom-attribute-draft";
+import { UserCustomAttributesComponent } from "@components/user/user-custom-attributes/user-custom-attributes.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
+import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   selector: "app-user-details-self-service",
@@ -38,17 +43,37 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
     MatButtonModule,
     DetailsCardComponent,
     DetailFieldComponent,
-    DetailFieldRowComponent
+    DetailFieldRowComponent,
+    UserCustomAttributesComponent,
+    UserDetailsEditComponent
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./user-details.self-service.component.html",
   styleUrl: "./user-details.component.scss"
 })
-export class UserDetailsSelfServiceComponent {
+export class UserDetailsSelfServiceComponent implements OnInit, OnDestroy {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly pendingChangesService = inject(PendingChangesService);
+  readonly attributeDraft = new CustomAttributeDraft();
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
+    this.pendingChangesService.registerValidChanges(() => {
+      if (this.editMode()) return true;
+      return this.attributeDraft.hasValidChanges();
+    });
+    this.pendingChangesService.registerSave(() => {
+      if (this.editMode()) return this.saveEdit();
+      return this.attributeDraft.save();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
 
   expandedKeys = signal<Set<string>>(new Set<string>());
 
@@ -93,6 +118,15 @@ export class UserDetailsSelfServiceComponent {
 
   userData = this.userService.user;
 
+  // The standard user attributes a user may change through PUT /user/. Users cannot read the resolver mapping,
+  // so other attributes of the record (identifiers, raw columns of the user store) are not offered.
+  private readonly userFields = ["givenname", "surname", "email", "phone", "mobile", "description"];
+  editableFields = computed(() => this.userFields.filter((key) => key in (this.userData() ?? {})));
+  canEdit = computed(() => this.authService.actionAllowed("updateuser") && !!this.userData()?.editable);
+  editMode = signal(false);
+  editedUserData = signal<EditUserData>({ username: "" });
+  editIsDirty = computed(() => Object.keys(this.changedFields()).length > 0);
+
   detailsEntries = computed(() => {
     const data: Record<string, unknown> = this.userData() ?? {};
     const result: { key: string; label: string; value: unknown }[] = [];
@@ -121,6 +155,52 @@ export class UserDetailsSelfServiceComponent {
   });
 
   protected readonly Array = Array;
+
+  editUser() {
+    const data = this.userData() as Record<string, unknown>;
+    const edited: EditUserData = { username: this.userData().username };
+    for (const field of this.editableFields()) {
+      edited[field] = this.str(data[field]);
+    }
+    this.editedUserData.set(edited);
+    this.editMode.set(true);
+  }
+
+  cancelEdit() {
+    this.editMode.set(false);
+  }
+
+  onUpdateEditedUser(data: EditUserData) {
+    this.editedUserData.set(data);
+  }
+
+  // Only changed fields are sent: an unchanged multi-value attribute would otherwise replace its values with one
+  // joined string.
+  private readonly changedFields = computed(() => {
+    if (!this.editMode()) return {};
+    const original = (this.userData() ?? {}) as Record<string, unknown>;
+    const changed: Record<string, unknown> = {};
+    for (const [field, value] of Object.entries(this.editedUserData())) {
+      if (field !== "username" && this.str(value) !== this.str(original[field])) {
+        changed[field] = value;
+      }
+    }
+    return changed;
+  });
+
+  async saveEdit(): Promise<boolean> {
+    if (!this.editIsDirty()) {
+      this.editMode.set(false);
+      return true;
+    }
+    const data: EditUserData = { ...this.changedFields(), username: this.userData().username };
+    const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
+    if (success) {
+      this.userService.userResource.reload();
+      this.editMode.set(false);
+    }
+    return !!success;
+  }
 
   enrollNewToken() {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT).then();

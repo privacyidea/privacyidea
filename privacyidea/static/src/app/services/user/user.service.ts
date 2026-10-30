@@ -190,11 +190,24 @@ export class UserService extends FilterableTableService implements UserServiceIn
     return policies;
   });
 
+  // Custom attributes belong to the opened user for admins and to the own account for users.
+  private readonly attributeOwner = computed(() =>
+    this.authService.role() === "user"
+      ? { username: this.authService.username(), realm: this.authService.realm() }
+      : { username: this.detailsUser().username, realm: this.selectedUserRealm() }
+  );
+
+  private readonly onAttributesPage = computed(
+    () =>
+      this.contentService.onUserDetails() ||
+      (this.authService.role() === "user" && this.contentService.onUserDetailsSelfService())
+  );
+
   deletableAttributes = computed<string[]>(() => this.attributePolicy().delete ?? []);
 
   editableAttributesResource = httpResource<PiResponse<UserAttributePolicy>>(() => {
     // Only load editable user attributes on the user details page.
-    if (!this.contentService.onUserDetails()) {
+    if (!this.onAttributesPage()) {
       return undefined;
     }
 
@@ -202,7 +215,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
       url: this.baseUrl + "editable_attributes/",
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: { user: this.detailsUser().username, realm: this.selectedUserRealm() }
+      params: { user: this.attributeOwner().username, realm: this.attributeOwner().realm }
     };
   });
 
@@ -242,7 +255,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
 
   userAttributesResource = httpResource<PiResponse<Record<string, AttributeValue>>>(() => {
     // Only load user attributes on the user details page.
-    if (!this.contentService.onUserDetails()) {
+    if (!this.onAttributesPage()) {
       return undefined;
     }
 
@@ -250,7 +263,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
       url: this.baseUrl + "attribute",
       method: "GET",
       headers: this.authService.getHeaders(),
-      params: { user: this.detailsUser().username, realm: this.selectedUserRealm() }
+      params: { user: this.attributeOwner().username, realm: this.attributeOwner().realm }
     };
   });
 
@@ -592,8 +605,8 @@ export class UserService extends FilterableTableService implements UserServiceIn
 
   setUserAttribute(key: string, value: string) {
     const params: Record<string, string> = {
-      user: this.detailsUser().username,
-      realm: this.selectedUserRealm(),
+      user: this.attributeOwner().username,
+      realm: this.attributeOwner().realm,
       key,
       value
     };
@@ -615,8 +628,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
   }
 
   deleteUserAttribute(key: string) {
-    const username = this.detailsUser().username;
-    const realm = this.selectedUserRealm();
+    const { username, realm } = this.attributeOwner();
     const url =
       this.baseUrl +
       `attribute/${encodeURIComponent(key)}/${encodeURIComponent(username)}/${encodeURIComponent(realm)}`;

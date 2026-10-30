@@ -476,6 +476,50 @@ describe("UserService", () => {
     expect(params).toHaveProperty("username", "*root*");
   });
 
+  describe("own custom attributes on the self-service page", () => {
+    beforeEach(() => {
+      authServiceMock.role.set("user");
+      authServiceMock.username.set("selfuser");
+      authServiceMock.realm.set("selfrealm");
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS);
+    });
+
+    afterEach(() => {
+      httpMock.match((r) => r.url === "/user/");
+    });
+
+    it("loads the attribute policy and the custom attributes of the logged-in user", () => {
+      TestBed.tick();
+
+      const policyReq = httpMock.expectOne((r) => r.url === "/user/editable_attributes/");
+      expect(policyReq.request.params.get("user")).toBe("selfuser");
+      expect(policyReq.request.params.get("realm")).toBe("selfrealm");
+      const attributesReq = httpMock.expectOne((r) => r.url === "/user/attribute");
+      expect(attributesReq.request.params.get("user")).toBe("selfuser");
+      expect(attributesReq.request.params.get("realm")).toBe("selfrealm");
+    });
+
+    it("sets a custom attribute of the logged-in user", () => {
+      userService.setUserAttribute("department", "finance").subscribe();
+
+      const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
+      expect(req.request.params.get("user")).toBe("selfuser");
+      expect(req.request.params.get("realm")).toBe("selfrealm");
+      req.flush({ result: { value: 1 } });
+      httpMock.match(() => true);
+    });
+
+    it("deletes a custom attribute of the logged-in user", () => {
+      userService.deleteUserAttribute("department").subscribe();
+
+      const req = httpMock.expectOne(
+        (r) => r.method === "DELETE" && r.url.endsWith("/user/attribute/department/selfuser/selfrealm")
+      );
+      req.flush({ result: { status: true, value: 1 } });
+      httpMock.match(() => true);
+    });
+  });
+
   describe("has_tokens filter", () => {
     it("normalizes has_tokens to the backend's True/False spelling, unwrapped", () => {
       userService.activeFilter.set(new FilterValue({ value: "has_tokens: true" }));

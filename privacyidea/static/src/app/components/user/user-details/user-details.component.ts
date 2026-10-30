@@ -20,7 +20,6 @@ import { NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
-  effect,
   inject,
   linkedSignal,
   OnDestroy,
@@ -52,6 +51,8 @@ import {
 } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { CustomAttributeDraft } from "@components/user/user-custom-attributes/custom-attribute-draft";
+import { UserCustomAttributesComponent } from "@components/user/user-custom-attributes/user-custom-attributes.component";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -102,6 +103,7 @@ import { exactMatch, withUser } from "@utils/filter.utils";
     RouterLink,
     CopyableComponent,
     UserDetailsEditComponent,
+    UserCustomAttributesComponent,
     StickyHeaderDirective,
     DetailsCardComponent,
     DetailFieldComponent,
@@ -156,54 +158,15 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     }
   });
 
-  attributeSetMap = this.userService.attributeSetMap;
-  deletableAttributes = this.userService.deletableAttributes;
-  keyOptions = this.userService.keyOptions;
-  hasWildcardKey = this.userService.hasWildcardKey;
-  canSetCustomAttribute = computed(() => this.keyOptions().length > 0 || this.hasWildcardKey());
+  readonly attributeDraft = new CustomAttributeDraft();
   showsAttributeExtrasColumn = computed(
     () =>
-      this.canSetCustomAttribute() ||
+      this.attributeDraft.canSetCustomAttribute() ||
       this.userService.userAttributesList().length > 0 ||
       this.authService.actionAllowed("get_user_internal_attributes") ||
       this.authService.actionAllowed("user_lock_read")
   );
   expandedKeys = signal<Set<string>>(new Set<string>());
-  addKeyInput = signal<string>("");
-  addValueInput = signal<string>("");
-  selectedKey = signal<string | null>(null);
-  selectedValue = signal<string | null>(null);
-  keyMode = signal<"select" | "input">("select");
-  valueOptions = computed<string[]>(() => {
-    const map = this.attributeSetMap();
-    const mode = this.keyMode();
-    const key = mode === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "");
-    if (key && map[key]) return map[key];
-    if (map["*"]) return map["*"];
-    return [];
-  });
-  isValueInput = computed<boolean>(() => {
-    const opts = this.valueOptions();
-    if (opts.includes("*")) return true;
-    return opts.length === 0;
-  });
-  canAddAttribute = computed<boolean>(() => {
-    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-    return key.length > 0 && value.length > 0;
-  });
-
-  constructor() {
-    effect(() => {
-      const hasWildcard = this.hasWildcardKey();
-      const hasFixedKeys = this.keyOptions().length > 0;
-      if (hasWildcard && !hasFixedKeys) {
-        this.keyMode.set("input");
-      } else {
-        this.keyMode.set("select");
-      }
-    });
-  }
 
   detailsEntries = computed(() =>
     Object.entries(this.userData() ?? {})
@@ -251,23 +214,14 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(
-      () =>
-        this.editIsDirty() ||
-        !!this.addKeyInput() ||
-        !!this.addValueInput() ||
-        !!this.selectedKey() ||
-        !!this.selectedValue()
-    );
+    this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
     this.pendingChangesService.registerValidChanges(() => {
       if (this.editMode()) return true;
-      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-      return !!key && !!value;
+      return this.attributeDraft.hasValidChanges();
     });
     this.pendingChangesService.registerSave(() => {
       if (this.editMode()) return this.saveEditAsync();
-      return this.addCustomAttribute();
+      return this.attributeDraft.save();
     });
   }
 
@@ -306,45 +260,6 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       next.add(key);
     }
     this.expandedKeys.set(next);
-  }
-
-  switchToCustomKey() {
-    this.keyMode.set("input");
-    this.selectedKey.set(null);
-  }
-
-  switchToSelectKey() {
-    this.keyMode.set("select");
-    this.addKeyInput.set("");
-  }
-
-  async addCustomAttribute(): Promise<boolean> {
-    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
-
-    if (!key || !value) return false;
-
-    try {
-      await firstValueFrom(this.userService.setUserAttribute(key, value));
-      this.userService.userAttributesResource.reload();
-      this.userService.userResource.reload();
-      this.addKeyInput.set("");
-      this.addValueInput.set("");
-      this.selectedKey.set(null);
-      this.selectedValue.set(null);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  deleteCustomAttribute(key: string) {
-    this.userService.deleteUserAttribute(key).subscribe({
-      next: () => {
-        this.userService.userAttributesResource.reload();
-        this.userService.userResource.reload();
-      }
-    });
   }
 
   assignUserToToken(option: TokenDetails) {

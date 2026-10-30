@@ -56,6 +56,29 @@ interface ClientSuggestion {
   applications: string[];
 }
 
+const WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+function toMinutes(time: string): number | null {
+  const [hours, minutes = 0] = time.split(":").map(Number);
+  return hours <= 23 && minutes <= 59 ? hours * 60 + minutes : null;
+}
+
+// Mirrors check_time_in_range on the server: whitespace is ignored and day names are case-insensitive.
+function isValidTimeRange(value: string): boolean {
+  return value
+    .replace(/\s+/g, "")
+    .split(",")
+    .every((range) => {
+      const match = /^([a-z]{3})(?:-([a-z]{3}))?:(\d{1,2}(?::\d{1,2})?)-(\d{1,2}(?::\d{1,2})?)$/i.exec(range);
+      if (!match) return false;
+      const [, dayStart, dayEnd = dayStart, timeStart, timeEnd] = match;
+      if (!WEEKDAYS.includes(dayStart.toLowerCase()) || !WEEKDAYS.includes(dayEnd.toLowerCase())) return false;
+      const start = toMinutes(timeStart);
+      const end = toMinutes(timeEnd);
+      return start !== null && end !== null && start <= end;
+    });
+}
+
 @Component({
   selector: "app-edit-environment-conditions",
   standalone: true,
@@ -98,9 +121,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     validate(f, (ctx) => {
       const value = ctx.value();
       if (!value) return [];
-      const regex =
-        /^((Mon|Tue|Wed|Thu|Fri|Sat|Sun)(-(Mon|Tue|Wed|Thu|Fri|Sat|Sun))?:\s([0-1]?[0-9]|2[0-3])-([0-1]?[0-9]|2[0-3])(,\s)?)+$/;
-      return regex.test(value) ? [] : [{ kind: "invalidValidTime" }];
+      return isValidTimeRange(value) ? [] : [{ kind: "invalidValidTime" }];
     });
   });
 

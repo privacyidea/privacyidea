@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, forwardRef, inject, input, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -29,7 +29,7 @@ import {
   EnrollmentArgs,
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
-import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import { DEFAULT_OTP_LENGTH, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
@@ -88,9 +88,35 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
   twoStepEnabled = signal<boolean>(false);
   generateOnServer = signal<boolean>(true);
   otpKey = signal<string>("");
-  otpLength = signal<number>(6);
-  hashAlgorithm = signal<string>("sha1");
-  timeStep = signal<number>(30);
+  defaultOtpLength = computed(
+    () =>
+      parseInt(this.authService.rightsWithValues()[TOTP_OTP_LENGTH] ?? "", 10) ||
+      parseInt(this.systemService.systemConfig()[DEFAULT_OTP_LENGTH], 10) ||
+      6
+  );
+  defaultHashAlgorithm = computed(
+    () =>
+      this.authService.rightsWithValues()[TOTP_HASHLIB] || this.systemService.systemConfig()[TOTP_HASHLIB] || "sha1"
+  );
+  defaultTimeStep = computed(
+    () =>
+      parseInt(this.authService.rightsWithValues()[TOTP_TIME_STEP] ?? "", 10) ||
+      parseInt(this.systemService.systemConfig()[TOTP_TIME_STEP], 10) ||
+      30
+  );
+  // A preset that changes later (the system config loads after the dialog opened) does not overwrite a user's choice.
+  otpLength = linkedSignal<number, number>({
+    source: this.defaultOtpLength,
+    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+  });
+  hashAlgorithm = linkedSignal<string, string>({
+    source: this.defaultHashAlgorithm,
+    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+  });
+  timeStep = linkedSignal<number, number>({
+    source: this.defaultTimeStep,
+    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+  });
 
   twoStepDisabled = computed(() => this.disabled() || this.twoStep() === "force");
   generateOnServerDisabled = computed(
@@ -124,22 +150,6 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
 
   constructor() {
     super();
-
-    // Apply policy defaults when rights load
-    effect(() => {
-      const hashlib = this.authService.rightsWithValues()[TOTP_HASHLIB];
-      if (hashlib) this.hashAlgorithm.set(hashlib);
-      const otpLengthPolicy = this.authService.rightsWithValues()[TOTP_OTP_LENGTH];
-      if (otpLengthPolicy) {
-        const parsedLength = parseInt(otpLengthPolicy, 10);
-        if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
-      }
-      const timeStepPolicy = this.authService.rightsWithValues()[TOTP_TIME_STEP];
-      if (timeStepPolicy) {
-        const parsedTimeStep = parseInt(timeStepPolicy, 10);
-        if (!isNaN(parsedTimeStep)) this.timeStep.set(parsedTimeStep);
-      }
-    });
 
     // Force two-step when policy requires it
     effect(() => {

@@ -26,7 +26,12 @@ import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
-import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  hasUnescapedComma,
+  PolicyActionDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "@services/policies/policies.service";
 import {
   labeledOptions,
   POLICY_VOCABULARY_ACTIONS,
@@ -78,6 +83,7 @@ export class PolicyActionItemComponent {
     if (!detail || actionValue === undefined || actionValue === "") return false;
     return this.policyService.actionValueIsValid(detail, actionValue);
   });
+  readonly valueHasComma = computed(() => hasUnescapedComma(this.currentAction()?.value));
   readonly actionAdd = output<{ name: string; value: string | number | boolean | undefined }>();
 
   currentAction = linkedSignal({

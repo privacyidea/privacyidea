@@ -334,6 +334,11 @@ class SYSCONF:
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
 
 
+# System settings that users may read, as the token classes declare it for theirs in get_setting_type. The WebUI
+# presets the OTP length of the HOTP and TOTP enrollment with DefaultOtpLen, also for users.
+PUBLIC_SYSTEM_SETTINGS = {"DefaultOtpLen": "public"}
+
+
 # @cache.cached(key_prefix="allConfig")
 def get_privacyidea_config():
     # timestamp = Config.query.filter_by(Key="privacyidea.timestamp").first()
@@ -1069,6 +1074,9 @@ def set_privacyidea_config(key, value, typ="", desc=""):
             typ = tclass.get_setting_type(key)
         except Exception:
             log.debug("This seems to be no token specific setting")
+
+    if not typ:
+        typ = PUBLIC_SYSTEM_SETTINGS.get(key, "")
 
     if not typ and pi_config:
         # An update that names no type keeps the type of the existing entry, so that the stored
