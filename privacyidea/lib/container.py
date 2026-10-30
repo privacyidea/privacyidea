@@ -44,7 +44,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, get_user_from_param
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
@@ -774,7 +774,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         request.all_data = {}
         request.all_data.update(token_info)
         g.request_data = copy.deepcopy(token_info)
-        request.User = user
+        request.User = get_user_from_param(token_info)
         g.policies = {}
 
         # Pre-policy checks

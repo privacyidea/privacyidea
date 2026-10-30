@@ -832,3 +832,27 @@ class APIContainerTemplate(APIContainerTest):
         delete_policy("enrollment")
         container.delete()
         [token.delete_token() for token in tokens]
+
+    def test_21_create_container_with_template_policies_match_container_realm(self):
+        self.setUp_user_realms()
+        set_policy("enrollment", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   realm=self.realm1)
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
+        request_params = json.dumps({"type": "generic", "realm": self.realm1, "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        token = tokens[0]
+        # The container has no owner: the token only gets the container realm and the policies are matched against it
+        self.assertIsNone(token.user)
+        self.assertListEqual([self.realm1], token.get_realms())
+        self.assertEqual(RolloutState.VERIFY_PENDING, token.rollout_state)
+
+        delete_policy("enrollment")
+        container.delete()
+        token.delete_token()
