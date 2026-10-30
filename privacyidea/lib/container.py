@@ -726,6 +726,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
     init_result = {}
     request_all_data_original = copy.deepcopy(request.all_data)
+    request_data_original = g.request_data
+    request_user_original = request.User
     policies = copy.deepcopy(g.policies)
 
     # Get policies for the token
@@ -767,9 +769,12 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
 
         # The pre-policy decorator functions require a request object containing the enroll information.
         # Hence, we need to clear the data in the request object from the previous token and set the new enroll
-        # information for the current token.
+        # information for the current token. The policy conditions on the request data and the user are evaluated
+        # against the current token as in a token enrollment request.
         request.all_data = {}
         request.all_data.update(token_info)
+        g.request_data = copy.deepcopy(token_info)
+        request.User = user
         g.policies = {}
 
         # Pre-policy checks
@@ -828,6 +833,8 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         init_result[token.get_serial()]["init_params"] = init_params
 
     request.all_data = request_all_data_original
+    g.request_data = request_data_original
+    request.User = request_user_original
     g.policies = policies
     return init_result
 

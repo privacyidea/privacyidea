@@ -783,3 +783,52 @@ class APIContainerTemplate(APIContainerTest):
         generic.delete()
         smartphone_token.delete_token()
         generic_token.delete_token()
+
+    def test_19_create_container_with_template_request_data_condition(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+                   conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "hotp", True)])
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True},
+                                                           {"type": "totp", "genkey": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        # The condition is evaluated against the parameters of each template token
+        self.assertIsNotNone(get_tokeninfo(tokens["hotp"].get_serial(), "next_pin_change"))
+        self.assertIsNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+
+        delete_policy("change_pin")
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+
+    def test_20_create_container_with_template_policies_match_token_owner(self):
+        self.setUp_user_realms()
+        set_policy("enrollment", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   realm=self.realm1)
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True},
+                                                           {"type": "hotp", "genkey": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = container.get_tokens()
+        self.assertEqual(2, len(tokens))
+        owned_token = next(token for token in tokens if token.user)
+        unowned_token = next(token for token in tokens if not token.user)
+        # The policies are matched against the token owner and not against the container owner
+        self.assertEqual(RolloutState.VERIFY_PENDING, owned_token.rollout_state)
+        self.assertNotEqual(RolloutState.VERIFY_PENDING, unowned_token.rollout_state)
+
+        delete_policy("enrollment")
+        container.delete()
+        [token.delete_token() for token in tokens]
