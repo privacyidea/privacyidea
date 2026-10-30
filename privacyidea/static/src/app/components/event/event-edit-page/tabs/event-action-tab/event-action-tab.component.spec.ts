@@ -18,7 +18,7 @@
  **/
 
 import { provideHttpClient } from "@angular/common/http";
-import { OutputEmitterRef } from "@angular/core";
+import { OutputEmitterRef, ResourceStatus, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { EventService } from "@services/event/event.service";
@@ -137,5 +137,53 @@ describe("EventActionTabComponent", () => {
     component.selectedOptions.set({ opt1: true });
     fixture.detectChanges();
     expect(component.checkOptionVisibility("opt2")).toBe(true);
+  });
+
+  describe("Script handler without scripts", () => {
+    let eventService: MockEventService;
+
+    beforeEach(() => {
+      eventService = TestBed.inject(EventService) as unknown as MockEventService;
+      eventService.selectedHandlerModule.set("Script");
+      eventService.moduleActions.set({});
+      fixture.detectChanges();
+    });
+
+    it("shows the hint and the reload button instead of the action dropdown", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(component.noScriptsFound()).toBe(true);
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.textContent).toContain("No scripts found.");
+      expect(element.textContent).toContain("/etc/privacyidea/scripts");
+      expect(element.textContent).toContain("PI_SCRIPT_HANDLER_DIRECTORY");
+    });
+
+    it("reloads the actions when the reload button is clicked", () => {
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector("button");
+      button.click();
+      expect(eventService.moduleActionsResource.reload).toHaveBeenCalled();
+    });
+
+    it("keeps the hint while the actions reload, but hides it during the first load", () => {
+      const status = eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>;
+      status.set("reloading");
+      expect(component.noScriptsFound()).toBe(true);
+      status.set("loading");
+      expect(component.noScriptsFound()).toBe(false);
+    });
+
+    it("shows the action dropdown when the script directory contains scripts", () => {
+      eventService.moduleActions.set({ "backup.sh": { background: { type: "str", required: true } } });
+      fixture.detectChanges();
+      expect(component.noScriptsFound()).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+    });
+
+    it("shows the action dropdown for other handler modules", () => {
+      eventService.selectedHandlerModule.set("UserNotification");
+      fixture.detectChanges();
+      expect(component.noScriptsFound()).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+    });
   });
 });
