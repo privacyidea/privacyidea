@@ -83,6 +83,17 @@
   disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
   the policy is saved again.
 
+* **The schema update stops on a database without schema revision stamp** — `privacyidea-schema-upgrade`, which
+  `privacyidea-pip-update` and the Ubuntu packages run, and `pi-manage db upgrade` stop with an error and leave the
+  database unchanged if its `alembic_version` table holds no revision. Stamp such a database with the newest revision
+  of the version that created its tables, then run the update again. For tables that the installed version created
+  with `pi-manage setup create_tables --no-stamp`, use `pi-manage db stamp head`. Versions before 3.10 created the
+  tables without a stamp by default. The upgrade documentation lists their revisions, for example
+  `pi-manage db stamp 5cb310101a1f` for 3.9. Set up an empty database with `pi-manage setup create_tables`.
+  `privacyidea-schema-upgrade` prints the database and its schema revision before and after the update. Keep this
+  output. `privacyidea-pip-update` ends with the exit code of the step that failed. The option `-s`/`--skipstamp` of
+  both scripts is accepted and has no effect.
+
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
   `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
