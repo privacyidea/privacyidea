@@ -469,6 +469,26 @@ class HTTPResolver(UserIdResolver):
         user_name = user_info.get("username", "")
         return user_name
 
+    @track_resolver_op("get_username")
+    def lookup_username(self, user_id: str) -> str:
+        """
+        Returns the username for the given user ID. Unlike :py:func:`getUsername`, which answers an empty string
+        also for a failed request, it raises if the user store could not answer.
+
+        :param user_id: The ID of the user in the user store
+        :return: The username or an empty string if the user does not exist
+        :raises ResolverError: if the user store could not answer the request
+        """
+        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id})
+        try:
+            user_info = self._get_user(user_id, config, ["username"], raise_on_lookup_failure=True)
+        except (ResolverError, ValueError) as error:
+            # ValueError: the response is not JSON, e.g. the page of a proxy in front of the user store
+            log.error(f"Could not look up the user with the ID {user_id!r}: {error}")
+            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
+        user_name = user_info.get("username", "")
+        return user_name
+
     @track_resolver_op("get_user_info")
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """

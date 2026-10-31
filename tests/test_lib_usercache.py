@@ -16,7 +16,8 @@ from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time,
                                        cache_username, delete_user_cache, create_filter,
-                                       EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled)
+                                       EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled,
+                                       get_cached_usernames)
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
 from datetime import datetime
@@ -541,6 +542,26 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(self.username, cached_entry.username)
         delete_user_cache()
         self._delete_realm()
+
+    def test_16_get_cached_usernames(self) -> None:
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        delete_user_cache()
+        try:
+            UserCache("renamed", "renamed", "reso1", "uid1", datetime.now() - timedelta(seconds=10)).save()
+            UserCache("current", "current", "reso1", "uid1", datetime.now()).save()
+            UserCache("expired", "expired", "reso1", "uid2", datetime.now() - timedelta(seconds=700)).save()
+            UserCache("other", "other", "reso2", "uid3", datetime.now()).save()
+
+            # The latest entry wins, an expired entry and an entry of another resolver do not count
+            self.assertDictEqual({"uid1": "current"},
+                                 get_cached_usernames("reso1", ["uid1", "uid2", "uid3", "uid4"]))
+            self.assertDictEqual({}, get_cached_usernames("reso1", []))
+
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+            self.assertDictEqual({}, get_cached_usernames("reso1", ["uid1"]))
+        finally:
+            set_privacyidea_config(EXPIRATION_SECONDS, 600)
+            delete_user_cache()
 
     def test_99_unset_config(self):
         # Test early exit!

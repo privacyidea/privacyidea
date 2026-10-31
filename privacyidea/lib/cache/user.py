@@ -30,7 +30,9 @@ The user store stays the single source of truth. This is a read-through cache
 with an authoritative origin: a miss is always answered by asking the resolver,
 nothing is ever written here that does not come from a resolver, and dropping
 the whole keyspace at any moment costs nothing but a few extra lookups. That is
-what makes it safe to be aggressive about invalidation - see below.
+what makes it safe to be aggressive about invalidation - see below. Only
+``read_cached_username`` leaves a miss to its caller, which asks the resolver
+itself.
 
 Configuration (pi.cfg or environment)::
 
@@ -311,6 +313,21 @@ def cached_username(resolver, resolver_name: str, user_id: str) -> str:
     if login:
         _write(client, resolver_name, key, login)
     return login
+
+
+def read_cached_username(resolver_name: str, user_id: str) -> str | None:
+    """
+    Return the login name of ``user_id`` in the given resolver if the cache
+    holds it, without asking the resolver on a miss.
+
+    :param resolver_name: The name of the resolver
+    :param user_id: The ID of the user in the resolver
+    :return: The cached login name, or None if the cache is off or does not hold it
+    """
+    client = _cache_client()
+    if client is None or user_id in (None, ""):
+        return None
+    return _read(client, resolver_name, _LOGIN_KEY.format(_segment(resolver_name), _segment(user_id)))
 
 
 def cached_user_info(resolver, resolver_name: str, user_id: str, attributes: list[str] = None) -> dict:

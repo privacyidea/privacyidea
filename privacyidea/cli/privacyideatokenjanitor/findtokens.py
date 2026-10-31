@@ -54,7 +54,7 @@ from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import (get_tokens, remove_token, enable_token,
                                    unassign_token,
-                                   get_tokens_paginated_generator)
+                                   get_tokens_paginated_generator, get_orphaned_serials)
 from privacyidea.models import Token
 import re
 import sys
@@ -304,12 +304,16 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                     continue
                 if not all(comparator(value) for comparator in tokenattribute_filter):
                     continue
-            if orphaned is not None and token_obj.is_orphaned(orphaned_on_error) != orphaned:
-                continue
 
             tok_found += 1
             # if everything matched, we append the token object
             filtered_list.append(token_obj)
+
+        if orphaned is not None:
+            orphaned_serials = get_orphaned_serials(filtered_list, orphaned_on_error)
+            filtered_list = [token_obj for token_obj in filtered_list
+                             if (token_obj.token.serial in orphaned_serials) == orphaned]
+            tok_found = len(filtered_list)
 
         sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r\n')
         sys.stderr.write("++ Token object list created.\n")
