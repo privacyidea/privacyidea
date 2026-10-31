@@ -258,7 +258,9 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
         delete_policy("pol_setrealm_01")
         remove_token("SPASS_04")
 
+    @ldap3mock.activate
     def test_05_is_authorized(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
         set_policy(name="auth01", scope=SCOPE.AUTHZ, priority=2,
                    action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.DENY))
         set_policy(name="auth02", scope=SCOPE.AUTHZ, user="frank", priority=1,
