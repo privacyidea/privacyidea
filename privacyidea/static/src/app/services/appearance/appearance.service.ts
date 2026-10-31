@@ -74,6 +74,16 @@ export type CornerLevel = (typeof CORNER_LEVELS)[number];
 export const STATUS_COLOR_LEVELS = ["aaa", "aa", "a"] as const;
 export type StatusColorLevel = (typeof STATUS_COLOR_LEVELS)[number];
 
+/** The levels each theme sets while the appearance options are hidden; see AppearanceService.followTheme. */
+const THEME_LOOKS: Record<
+  "light" | "dark",
+  { depth: DepthLevel; lightSource: LightSourceLevel; statusColors: StatusColorLevel }
+> = {
+  // 280 degrees is stop 14 of the dial (14 * LIGHT_SOURCE_STEP_ANGLE).
+  dark: { depth: "default", lightSource: String(280 / LIGHT_SOURCE_STEP_ANGLE), statusColors: "aaa" },
+  light: { depth: "subtle", lightSource: DEFAULT_LIGHT_SOURCE, statusColors: "aa" }
+};
+
 /** One group of mutually exclusive levels, exactly one of which is a class on <html> at a time. */
 interface LevelGroup<T extends string> {
   levels: readonly T[];
@@ -158,6 +168,25 @@ export class AppearanceService {
 
   public setStatusColors(level: StatusColorLevel): void {
     this.set(this.statusColorsGroup, level);
+  }
+
+  /**
+   * Sets the look a theme switch implies while the appearance options are hidden (the show_appearance_settings policy
+   * is not set): nobody can pick a level then, so the theme decides it. Dark gets AAA status colors, the default depth
+   * and light from 280 degrees; light gets AA status colors, subtle depth and the default light source. Corners stay.
+   * With the options shown, the levels are the user's own choice and stay. One write covers all three, as the levels
+   * are stored in one settings document.
+   */
+  public followTheme(theme: "light" | "dark"): void {
+    if (this.authService.showAppearanceSettings()) {
+      return;
+    }
+    const look = THEME_LOOKS[theme];
+    this.apply(this.depthGroup, look.depth);
+    this.apply(this.lightSourceGroup, look.lightSource);
+    this.apply(this.statusColorsGroup, look.statusColors);
+    this.storeAll([this.depthGroup, this.lightSourceGroup, this.statusColorsGroup]);
+    this.cacheAppearance();
   }
 
   /**
