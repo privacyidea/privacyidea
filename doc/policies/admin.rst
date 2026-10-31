@@ -263,6 +263,9 @@ type: ``string``
 
 This specifies a blank-separated list of tokeninfo keys, which should be removed
 from the response and therefore will not be shown in the WebUI or JSON response.
+A policy restricted to realms, resolvers or users hides the keys for the tokens
+whose owner or token realm it names, also in the unfiltered token list and in
+the tokens of the container list.
 
 For example a value ``tokenkind auto_renew`` will hide these two tokeninfo entries.
 
@@ -1127,7 +1130,12 @@ auditlog_download
 
 type: ``bool``
 
-The administrator is allowed to download the audit log.
+The administrator is allowed to download the audit log. The download contains
+the entries of the realms that both the ``auditlog_download`` and the
+:ref:`policy_auditlog` policies of the administrator grant, plus the entries
+the administrator caused. Without a matching ``auditlog`` policy the download
+contains only the administrator's own entries. Grant ``auditlog_download``
+together with an ``auditlog`` policy for the same realms.
 
 .. note:: The :ref:`policy_auditlog_age` policy **is** applied to the
    download - older entries are excluded just as in the search view.
@@ -1160,8 +1168,11 @@ hide_audit_columns
 
 type: ``string``
 
-This specifies a blank-separated list of audit columns, that should be removed
-from the response and also from the WebUI.
+This specifies a blank-separated list of audit columns that are removed from the
+response and from the WebUI. A policy restricted to realms, resolvers or users
+removes the columns from the entries of the users and realms it names, also when
+the audit log is not filtered. The CSV download of the audit log is not affected
+by this policy.
 For example a value ``sig_check log_level`` will hide these two columns.
 
 The list of available columns can be checked by examining the response of the

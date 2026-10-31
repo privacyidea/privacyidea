@@ -405,18 +405,11 @@ class Audit(AuditBase):
 
         for search_key in param.keys():
             search_value = param.get(search_key)
-            if search_key == "allowed_audit_realm":
-                # Add each realm in the allowed_audit_realm list to the search condition
-                realm_conditions = []
-                for realm in search_value:
-                    realm_conditions.append(LogEntry.realm == realm)
-                filter_realm = or_(*realm_conditions)
-                conditions.append(filter_realm)
-            # Any other filter value is compared as a string. Coerce non-string
+            # Any filter value is compared as a string. Coerce non-string
             # scalars so a meaningful filter is never silently dropped, which would
             # widen the audit result set. An empty value or a bare '*' wildcard means
             # "no filter" for this key.
-            elif search_value is not None:
+            if search_value is not None:
                 if not isinstance(search_value, str):
                     search_value = str(search_value)
                 if search_value.strip() == '' or search_value.strip('*') == '':
@@ -427,10 +420,22 @@ class Audit(AuditBase):
                         search_value = search_value.strip("*")
                         conditions.append(getattr(LogEntry, search_key) ==
                                           int(is_true(search_value)))
+                    elif search_key == "number":
+                        # The entry number is the integer column id. It is compared exactly, a leading '!'
+                        # negates the condition, and a value that is not a number matches no entry.
+                        negate = search_value.startswith("!")
+                        number = search_value[1:] if negate else search_value
+                        if not number.strip().isdecimal():
+                            conditions.append(false())
+                        elif negate:
+                            conditions.append(LogEntry.id != int(number))
+                        else:
+                            conditions.append(LogEntry.id == int(number))
                     else:
                         # All other keys are compared as strings. Only '*' is a wildcard; literal '%' and '_' are
                         # matched literally. A leading '!' negates the condition.
-                        raw_column = getattr(LogEntry, search_key)
+                        # The entries name the column loglevel "log_level".
+                        raw_column = getattr(LogEntry, "loglevel" if search_key == "log_level" else search_key)
                         column = raw_column
                         if search_key in ["date", "startdate"]:
                             # but we cast a column with a DateTime type to an

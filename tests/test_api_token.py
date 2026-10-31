@@ -48,6 +48,7 @@ from privacyidea.lib.container import (
 from privacyidea.lib.error import ParameterError, ResolverError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.event import EventConfiguration, delete_event, set_event
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, set_policy
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
@@ -77,6 +78,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import NodeName, Token, db
 from privacyidea.models.token import TokenOwner
 
@@ -6599,4 +6601,90 @@ class TokenImportRealmTestCase(MyApiTestCase):
         self.assertEqual(2, res.json["result"]["value"]["n_imported"])
         self.assertEqual(User("cornelius", self.realm1), get_one_token(serial="IMPNEW1").user)
         self.assertEqual(self.file_key, self._key("IMPPOOL1"))
+
+
+class HideTokeninfoPerTokenTestCase(MyApiTestCase):
+    """
+    hide_tokeninfo restricted to a realm also applies in the lists that are not filtered by a user or realm: per token
+    by its owner and its realms.
+    """
+    serials = ("HIDEOWN", "HIDEUNASSIGNED", "HIDEREALM3")
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        init_token({"type": "hotp", "genkey": True, "serial": "HIDEOWN"}, user=User("cornelius", self.realm1))
+        init_token({"type": "hotp", "genkey": True, "serial": "HIDEUNASSIGNED"})
+        set_realms("HIDEUNASSIGNED", [self.realm1])
+        init_token({"type": "hotp", "genkey": True, "serial": "HIDEREALM3"}, user=User("root", self.realm3))
+        for serial in self.serials:
+            add_tokeninfo(serial, "secretinfo", "x")
+        self.container_serial = init_container({"type": "generic"})["container_serial"]
+        add_token_to_container(self.container_serial, "HIDEOWN")
+        set_policy("admin_list", scope=SCOPE.ADMIN, action=f"{PolicyAction.TOKENLIST}, {PolicyAction.CONTAINER_LIST}")
+        set_policy("admin_hide", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo")
+
+    def tearDown(self) -> None:
+        delete_container_by_serial(self.container_serial)
+        for serial in self.serials:
+            remove_token(serial)
+        delete_policy("admin_list")
+        delete_policy("admin_hide")
+        super().tearDown()
+
+    def get_value(self, path: str) -> dict:
+        with self.app.test_request_context(path, method="GET", headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]
+
+    def secretinfo_shown(self, path: str) -> dict[str, bool]:
+        return {token["serial"]: "secretinfo" in token["info"] for token in self.get_value(path)["tokens"]
+                if token["serial"] in self.serials}
+
+    def test_01_token_list(self):
+        expected = {"HIDEOWN": False, "HIDEUNASSIGNED": False, "HIDEREALM3": True}
+        with mock.patch("privacyidea.api.lib.policyhelper.resolve_token_owner") as resolve_owner:
+            self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
+        # The owners are matched by what the token list contains, without asking the user store again
+        resolve_owner.assert_not_called()
+        shown_in_realm1 = self.secretinfo_shown(f"/token/?realm={self.realm1}")
+        self.assertIn("HIDEOWN", shown_in_realm1)
+        self.assertDictEqual(dict.fromkeys(shown_in_realm1, False), shown_in_realm1)
+        self.assertDictEqual({"HIDEOWN": False}, self.secretinfo_shown("/token/?serial=HIDEOWN"))
+        self.assertDictEqual({"HIDEREALM3": True}, self.secretinfo_shown("/token/?serial=HIDEREALM3"))
+
+    def test_02_container_list(self):
+        containers = self.get_value("/container/")["containers"]
+        tokens = [token for container in containers if container["serial"] == self.container_serial
+                  for token in container["tokens"]]
+        self.assertListEqual(["HIDEOWN"], [token["serial"] for token in tokens])
+        self.assertNotIn("secretinfo", tokens[0]["info"])
+
+    def test_03_condition_on_the_user_attributes_of_the_owner(self):
+        for email, expected in (("user@localhost.localdomain",
+                                 {"HIDEOWN": False, "HIDEUNASSIGNED": False, "HIDEREALM3": True}),
+                                ("someone@else.example",
+                                 {"HIDEOWN": True, "HIDEUNASSIGNED": False, "HIDEREALM3": True})):
+            with self.subTest(email=email):
+                set_policy("admin_hide", scope=SCOPE.ADMIN, realm=self.realm1,
+                           action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo",
+                           conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.EQUALS, email, True)])
+                # The condition is evaluated for the owner; a token without owner has no user attributes, and the
+                # policy applies to it by its realm
+                self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
+
+    def test_04_policy_for_the_owner_of_a_token_in_more_than_one_realm(self):
+        set_realms("HIDEOWN", [self.realm1, self.realm3])
+        # A policy for cornelius without a realm applies to the token of cornelius in every realm of the token. A
+        # policy for cornelius of realm3 does not apply to the token of cornelius of realm1, although the token is in
+        # realm3 as well.
+        for policy_realm, expected in (("", {"HIDEOWN": False, "HIDEUNASSIGNED": True, "HIDEREALM3": True}),
+                                       (self.realm3, {"HIDEOWN": True, "HIDEUNASSIGNED": True, "HIDEREALM3": True})):
+            with self.subTest(policy_realm=policy_realm):
+                set_policy("admin_hide", scope=SCOPE.ADMIN, realm=policy_realm, user="cornelius",
+                           action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo")
+                self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
 

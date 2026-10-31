@@ -183,6 +183,36 @@ class AuditTestCase(MyTestCase):
             audit_log = self.Audit.search({"success": value})
             self.assertEqual([expected], [audit.get("success") for audit in audit_log.auditdata], value)
 
+    def log_entries_with_log_levels(self) -> list[int]:
+        for action, log_level in [("action1", "INFO"), ("action2", "WARNING"), ("action3", "INFO")]:
+            self.Audit.log({"action": action, "log_level": log_level})
+            self.Audit.finalize_log()
+        numbers = [entry["number"] for entry in self.Audit.search({}, sortorder="asc").auditdata]
+        self.assertEqual(3, len(numbers))
+        return numbers
+
+    def searched_actions(self, search_filter: dict) -> list[str]:
+        return [entry["action"] for entry in self.Audit.search(search_filter, sortorder="asc").auditdata]
+
+    def test_02e_filter_by_number(self):
+        # The entries name the column id "number"
+        numbers = self.log_entries_with_log_levels()
+        self.assertListEqual(["action2"], self.searched_actions({"number": str(numbers[1])}))
+        self.assertListEqual(["action1", "action3"], self.searched_actions({"number": f"!{numbers[1]}"}))
+        self.assertListEqual([], self.searched_actions({"number": str(max(numbers) + 1000)}))
+        # A value that is not a number matches no entry
+        self.assertListEqual([], self.searched_actions({"number": "abc"}))
+        self.assertListEqual([], self.searched_actions({"number": "²"}))
+
+    def test_02f_filter_by_log_level(self):
+        # The entries name the column loglevel "log_level"
+        self.log_entries_with_log_levels()
+        self.assertListEqual(["action2"], self.searched_actions({"log_level": "WARNING"}))
+        self.assertListEqual(["action1", "action3"], self.searched_actions({"log_level": "INF*"}))
+        self.assertListEqual([], self.searched_actions({"log_level": "nonexistent"}))
+        # The column name of the table filters as well
+        self.assertListEqual(["action2"], self.searched_actions({"loglevel": "WARNING"}))
+
     def test_02_get_count(self):
         # Prepare some audit entries:
         self.Audit.log({"action": "/validate/check",

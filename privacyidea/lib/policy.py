@@ -436,7 +436,8 @@ class PolicyClass:
 
         If additional_realms are passed as well as a user, all policies applicable to a realm of the additional_realms
         list or applicable to the user realm combination are returned. The user is only matched in combination with the
-        realm parameter and not with the additional realms.
+        realm parameter and not with the additional realms. A policy for users without a realm matches these users in
+        every realm, as it does without additional realms.
 
         :param name: The name of the policy
         :param scope: The scope of the policy
@@ -532,8 +533,12 @@ class PolicyClass:
                         value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
                             if searchkey == "user" and additional_realms and len(additional_realms) > 1 and realm:
-                                # we need to check if the policy is for the correct user realm
-                                if user in policy.get("user") and realm in policy.get("realm"):
+                                # The user only matches together with the user realm, not with one of the additional
+                                # realms. A policy without realms matches the user in every realm.
+                                policy_realms = policy.get("realm")
+                                realm_found, realm_excluded = (self._search_value(policy_realms, realm)
+                                                               if policy_realms else (True, False))
+                                if realm_found and not realm_excluded:
                                     new_policies.append(policy)
                             else:
                                 new_policies.append(policy)
@@ -2145,8 +2150,8 @@ def get_static_policy_definitions(scope=None):
                                               "group": GROUP.SYSTEM,
                                               'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_DOWNLOAD: {'type': 'bool',
-                                          "desc": _("The admin is allowed to download "
-                                                    "the complete auditlog."),
+                                          "desc": _("The admin is allowed to download the audit log entries "
+                                                    "that their auditlog policies let them see."),
                                           "group": GROUP.SYSTEM,
                                           'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.ADDUSER: {'type': 'bool',

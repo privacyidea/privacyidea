@@ -2087,6 +2087,33 @@ class PolicyTestCase(MyTestCase):
             for name in policies:
                 delete_policy(name)
 
+    def test_41e_list_policies_user_with_additional_realms(self):
+        # With the realms of a token or container, a policy for users matches the user as it does without these
+        # realms: without a realm in every realm, otherwise only in the user realm and not in another realm of the list.
+        policies = {"multi_realm_user": {"user": "cornelius"},
+                    "multi_realm_every_user": {"user": "*"},
+                    "multi_realm_regex": {"user": "corn.*"},
+                    "multi_realm_user_realm1": {"user": "cornelius", "realm": self.realm1},
+                    "multi_realm_every_user_realm1": {"user": "*", "realm": self.realm1},
+                    "multi_realm_case_insensitive": {"user": "Cornelius", "realm": self.realm1,
+                                                     "user_case_insensitive": True},
+                    "multi_realm_user_realm2": {"user": "cornelius", "realm": self.realm2},
+                    "multi_realm_other_user": {"user": "bob"}}
+        for name, attributes in policies.items():
+            set_policy(name=name, scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, **attributes)
+        policy_class = PolicyClass()
+
+        try:
+            matching = {policy["name"] for policy in policy_class.list_policies(
+                action=PolicyAction.DISABLE, user="cornelius", realm=self.realm1,
+                additional_realms=[self.realm1, self.realm2]) if policy["name"].startswith("multi_realm_")}
+            self.assertSetEqual({"multi_realm_user", "multi_realm_every_user", "multi_realm_regex",
+                                 "multi_realm_user_realm1", "multi_realm_every_user_realm1",
+                                 "multi_realm_case_insensitive"}, matching)
+        finally:
+            for name in policies:
+                delete_policy(name)
+
     def test_42_convert_action_dict_to_python_dict_success(self):
         action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
         python_dict = convert_action_dict_to_python_dict(action_dict)

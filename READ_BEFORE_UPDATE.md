@@ -214,6 +214,28 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **The audit log download contains the realms that both audit policies grant** — The audit log download
+  (`GET /audit/<file>.csv`) contains the entries of the realms that both the `auditlog_download` and the `auditlog`
+  policies of an administrator grant, plus the entries the administrator caused. An administrator with
+  `auditlog_download` but no matching `auditlog` policy downloads only their own entries; with `auditlog` for every
+  realm and `auditlog_download` for some realms, the download contains these realms. A `realm` parameter filters the
+  download within the granted realms. Nothing changes without admin policies or for administrators with both actions
+  for the same realms. Grant `auditlog_download` together with an `auditlog` policy for the same realms.
+
+* **`hide_tokeninfo` and `hide_audit_columns` with realms, resolvers or users apply in every list** — Such a policy
+  hides its token info keys for the tokens whose owner or token realm it names and its audit columns for the entries
+  of the users and realms it names, also in the token list, the container list and the audit log without a filter.
+  Administrators with such a policy see fewer token info entries and audit columns in these lists. Policies without
+  realm, resolver and user work as before.
+
+* **Policies that name users apply to tokens and containers in more than one realm.** Such a policy matches the
+  owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
+  matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
+  The user still matches only together with the realm of the user. Admin policies of this kind allow their actions
+  on more tokens and containers. The `change_pin_first_use` and `change_pin_every` policies of this kind apply to
+  more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
+  case-insensitive names.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 

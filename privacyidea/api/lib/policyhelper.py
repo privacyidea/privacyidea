@@ -40,7 +40,7 @@ from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined, get_ordered_resolvers
 from privacyidea.lib.tokens.push_types import PushAction
-from privacyidea.lib.token import get_tokens_from_serial_or_user, get_one_token
+from privacyidea.lib.token import get_one_token, get_token_owner_without_lookup, get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta
@@ -588,3 +588,95 @@ def get_realm_for_authentication(g, username: str, realm: str) -> str:
             g.policies = {PolicyAction.SET_REALM: new_realm}
         return new_realm
     return realm
+
+
+def _is_restricted_to_objects(policy: dict) -> bool:
+    """
+    Whether a policy is restricted to realms, resolvers or users. Only such a policy can apply to some objects of a list
+    and not to others.
+    """
+    return bool(policy.get("realm") or policy.get("resolver") or policy.get("user"))
+
+
+def hide_tokeninfo_per_token(g, token_dicts: list[dict]) -> None:
+    """
+    Remove from each token of a list the token info keys that the hide_tokeninfo policies of the logged-in
+    administrator hide for this token. The policies are matched like an action on the token: against the owner of the
+    token or one of the token realms, so a policy restricted to realms, resolvers or users also applies in a list that
+    is not filtered by a user. The owner is matched by the login, realm and resolver the token list contains; only a
+    policy with a condition on user attributes needs the owner from the user store. For a token without owner,
+    conditions on user attributes are not evaluated. Tokens reduced to their serial are skipped.
+
+    :param g: The global flask object g
+    :param token_dicts: The tokens as returned by the token list, changed in place
+    """
+    if g.logged_in_user.get("role") != "admin":
+        return
+    policies = g.policy_object.list_policies(scope=SCOPE.ADMIN, action=PolicyAction.HIDE_TOKENINFO, active=True)
+    if not any(_is_restricted_to_objects(policy) for policy in policies):
+        # The policies apply to every token alike, so the token list already removed their keys
+        return
+    owner_attributes_needed = any(condition[0] == ConditionSection.USERINFO
+                                  for policy in policies for condition in policy.get("conditions") or [])
+    sections_without_userinfo = [section for section in ConditionSection.get_all_sections()
+                                 if section != ConditionSection.USERINFO]
+    for token_dict in token_dicts:
+        token_info = token_dict.get("info")
+        serial = token_dict.get("serial")
+        if not token_info or not serial:
+            continue
+        if not token_dict.get("resolver"):
+            user_match = {"user": "", "realm": "", "resolver": "",
+                          "extended_condition_check": sections_without_userinfo}
+        elif owner_attributes_needed:
+            user_match = {"user_object": resolve_token_owner(serial)}
+        elif token_dict.get("username") in ("", "**resolver error**", None):
+            # The login of the owner is unknown: only the policies without users or for every user apply to them
+            user_match = {"user_object": get_token_owner_without_lookup(serial),
+                          "extended_condition_check": sections_without_userinfo}
+        else:
+            user_match = {"user": token_dict.get("username") or "", "realm": token_dict.get("user_realm") or "",
+                          "resolver": token_dict["resolver"], "extended_condition_check": sections_without_userinfo}
+        hidden_keys = Match.generic(g, scope=SCOPE.ADMIN, action=PolicyAction.HIDE_TOKENINFO,
+                                    adminuser=g.logged_in_user.get("username"),
+                                    adminrealm=g.logged_in_user.get("realm"),
+                                    additional_realms=list(token_dict.get("realms") or []) or None,
+                                    serial=serial, **user_match).action_values(unique=False)
+        for key in hidden_keys:
+            token_info.pop(key, None)
+            for key_list in ("readonly_info_keys", "undeletable_info_keys", "settable_info_keys"):
+                if key in token_dict.get(key_list, []):
+                    token_dict[key_list].remove(key)
+
+
+def hide_audit_columns_per_entry(g, audit_entries: list[dict]) -> None:
+    """
+    Remove from each audit entry the columns that the hide_audit_columns policies of the logged-in administrator
+    hide for the user, realm and resolver of this entry, so a policy restricted to realms, resolvers or users also
+    applies in an audit list that is not filtered by a user or realm. Conditions on user attributes, tokens and
+    containers are not evaluated for an audit entry.
+
+    :param g: The global flask object g
+    :param audit_entries: The audit entries of the result page, changed in place
+    """
+    if g.logged_in_user.get("role") != "admin":
+        return
+    policies = g.policy_object.list_policies(scope=SCOPE.ADMIN, action=PolicyAction.HIDE_AUDIT_COLUMNS, active=True)
+    if not any(_is_restricted_to_objects(policy) for policy in policies):
+        # The policies apply to every entry alike, so the search already removed their columns
+        return
+    object_sections = (ConditionSection.USERINFO, ConditionSection.TOKEN, ConditionSection.TOKENINFO,
+                       ConditionSection.CONTAINER, ConditionSection.CONTAINER_INFO)
+    request_sections = [section for section in ConditionSection.get_all_sections()
+                        if section not in object_sections]
+    hidden_columns_by_user = {}
+    for entry in audit_entries:
+        entry_user = (entry.get("user") or "", entry.get("realm") or "", entry.get("resolver") or "")
+        if entry_user not in hidden_columns_by_user:
+            hidden_columns_by_user[entry_user] = list(Match.generic(
+                g, scope=SCOPE.ADMIN, action=PolicyAction.HIDE_AUDIT_COLUMNS,
+                user=entry_user[0], realm=entry_user[1], resolver=entry_user[2],
+                adminuser=g.logged_in_user.get("username"), adminrealm=g.logged_in_user.get("realm"),
+                extended_condition_check=request_sections).action_values(unique=False))
+        for column in hidden_columns_by_user[entry_user]:
+            entry.pop(column, None)
