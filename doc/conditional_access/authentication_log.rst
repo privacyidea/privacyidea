@@ -154,10 +154,21 @@ Failure
      required enrollment policy is missing, or the registration data from the
      authenticator was rejected. The ready-made failure rate limits leave it out.
    ``NOT_AUTHORIZED``
-     an authorization policy or the server configuration refused the authentication.
+     an authorization policy or the server configuration refused the authentication. A policy that refuses the token
+     used, like :ref:`tokentype <tokentype_policy>`, may also refuse an authentication that failed, e.g. with a wrong
+     OTP. The request is then answered with the policy's refusal, so it is recorded as ``NOT_AUTHORIZED`` as well. What
+     was found about the token, e.g. ``WRONG_OTP``, is still shown in the details.
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
+   ``POST_AUTHENTICATION_FAIL``
+     the authentication succeeded or triggered a challenge, but the request was still answered with an error, for
+     example raised by a policy that is evaluated after the authentication. If the authentication failed, the entry
+     keeps the type of that failure instead, and records the error message as well if the error was not the failure's
+     own response. The error message is recorded in the other info as ``error``. The ready-made failure rate limits
+     leave it out: the authentication itself succeeded, and the error mostly comes from the configuration, e.g.
+     conflicting policies, rather than from the user or an attack. Counting it would lock users out who give correct
+     credentials. A wrong credential is still counted, since a failed authentication keeps its own type.
    ``DEVICE_TOKEN_REUSED``
      a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
      device series, and every other remembered device of this user, is revoked.
@@ -214,8 +225,14 @@ The state of a token
 A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
-     (``authorized=deny``); the next three are authorization decisions too,
-     each naming the specific limit that was hit.
+     (``authorized=deny``); the others below are authorization decisions too,
+     each naming the specific policy or limit that refused the request.
+   ``TOKENTYPE_NOT_ALLOWED``
+     the type of the token used is not one the :ref:`tokentype <tokentype_policy>` policy allows.
+   ``SERIAL_NOT_ALLOWED``
+     the serial of the token used does not match the :ref:`policy_serial` policy.
+   ``TOKENINFO_MISMATCH``
+     a tokeninfo field of the token used does not match the :ref:`policy_tokeninfo` policy.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see
      :ref:`policy_auth_max_fail`.
