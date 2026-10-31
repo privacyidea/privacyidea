@@ -174,6 +174,7 @@ import functools
 import logging
 import re
 import traceback
+from dataclasses import dataclass
 from datetime import datetime
 from operator import itemgetter
 from types import MappingProxyType
@@ -184,6 +185,7 @@ from sqlalchemy import Text, select
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.cache.user import cached_user_id
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_types,
@@ -192,7 +194,7 @@ from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundE
 from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms, get_ordered_resolvers
-from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
@@ -209,6 +211,28 @@ from ..models import (Policy, db, save_config_timestamp, PolicyDescription, Poli
 from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ResolverLogin:
+    """
+    A login name in a resolver, the key for remembering whether the resolver contains the user.
+    """
+    resolver: str
+    login: str
+
+
+def _user_in_resolver(login: str, resolver_name: str) -> bool:
+    """
+    Check if a user with the given login name is contained in the resolver.
+
+    :param login: The login name of the user
+    :param resolver_name: The name of the resolver
+    :return: True if the resolver knows a user id for the login name
+    :raises ResolverError: if the resolver can not load its config, e.g. because its user store is not reachable
+    """
+    resolver = get_resolver_object(resolver_name)
+    return resolver is not None and cached_user_id(resolver, resolver_name, login) not in (None, "")
 
 
 def check_policy_name(name):
@@ -358,10 +382,13 @@ class PolicyClass:
     config object which contains the current set of policies.
 
     Hence, reloading the request-local config object also reloads the set of policies.
+
+    The object remembers whether a user is contained in a resolver checked for a policy with
+    ``check_all_resolvers``, so that each resolver is asked once per object, i.e. once per request.
     """
 
     def __init__(self):
-        pass
+        self._resolver_membership: dict[ResolverLogin, bool] = {}
 
     @property
     def policies(self):
@@ -542,26 +569,41 @@ class PolicyClass:
                     searchkey, searchvalue, [p.get('name') for p in reduced_policies]))
 
         # We need to act individually on the resolver key word
-        # We either match the resolver exactly or we match another resolver (
-        # which is not the first resolver) of the user, but only if the
-        # check_all_resolvers flag in the policy is set.
+        # We either match the resolver exactly or, only if the check_all_resolvers flag in the policy is set,
+        # a resolver of the realm with a lower priority than the user's resolver that also contains the user.
         if resolver is not None:
             new_policies = []
             user_resolvers = []
             for policy in reduced_policies:
                 if policy.get("check_all_resolvers"):
                     if realm and user:
-                        # We have a realm and a user, so get all resolvers of that realm
-                        # in priority order to match against the policy's resolver list.
+                        # The user's resolver and the resolvers of the realm ranked below it, in priority order.
+                        # A resolver ranked above can not hold another possible resolver of the user.
                         if not user_resolvers:
-                            user_resolvers = get_ordered_resolvers(realm)
+                            realm_resolvers = get_ordered_resolvers(realm)
+                            if resolver in realm_resolvers:
+                                user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
+                            else:
+                                user_resolvers = [resolver]
                         for reso in user_resolvers:
                             value_found, value_excluded = self._search_value(
                                 policy.get("resolver"), reso)
                             # An excluded resolver is left out, as a realm or a user excluded with "!" is.
+                            # A listed resolver only counts if the user is contained in it.
                             if value_found and not value_excluded:
-                                new_policies.append(policy)
-                                break
+                                key = ResolverLogin(resolver=reso, login=user)
+                                if key not in self._resolver_membership:
+                                    try:
+                                        self._resolver_membership[key] = (reso == resolver
+                                                                          or _user_in_resolver(user, reso))
+                                    except Exception as error:
+                                        log.error(f"Could not check if the user {user!r} is contained in the "
+                                                  f"resolver {reso!r} of the policy {policy.get('name')!r} with "
+                                                  f"check_all_resolvers: {error}")
+                                        raise
+                                if self._resolver_membership[key]:
+                                    new_policies.append(policy)
+                                    break
                 elif not policy.get("resolver"):
                     # We also find the policies with no distinct information
                     # about the request value

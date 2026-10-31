@@ -45,7 +45,8 @@
     <app-view-condition-section
       [highlightTerms]="highlightTerms()"
       [label]="conditionLabels.resolvers"
-      [values]="selectedResolvers()">
+      [values]="selectedResolvers()"
+      [marker]="checkAllResolvers() ? checkAllResolversMarker : undefined">
     </app-view-condition-section>
   }
   @if (selectedUsers().length > 0) {

@@ -16,7 +16,7 @@ from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import ParameterError, PrivacyIDEAError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError, ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
@@ -35,6 +35,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import init_token, get_dynamic_policy_definitions
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
@@ -1203,6 +1204,60 @@ class PolicyTestCase(MyTestCase):
         for reso in ["reso1", "resoX", "resoA"]:
             rid = delete_resolver(reso)
             self.assertTrue(rid > 0, rid)
+
+    def test_21a_check_all_resolver_user_not_in_resolver(self):
+        # reso1 (prio 1) contains selfservice and cornelius, reso2 (prio 2) contains cornelius and root.
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1}, {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=totp")
+        try:
+            expected_matches = {"selfservice": [], "cornelius": ["checkAll"], "root": ["checkAll"]}
+            for login, expected in expected_matches.items():
+                with self.subTest(login=login):
+                    user = User(login, "test_realm")
+                    policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                                                            resolver=user.resolver, user=user.login)
+                    self.assertListEqual(expected, [policy["name"] for policy in policies], str(user))
+
+            # One policy object asks each resolver once for a user
+            user = User("selfservice", "test_realm")
+            policy_object = PolicyClass()
+            with mock.patch.object(PasswdIdResolver, "getUserId", autospec=True,
+                                   side_effect=PasswdIdResolver.getUserId) as get_user_id:
+                for _ in range(2):
+                    policy_object.match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                                 user=user.login)
+                self.assertEqual(1, get_user_id.call_count)
+                PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                             user=user.login)
+                self.assertEqual(2, get_user_id.call_count)
+
+            error = ResolverError("unreachable")
+            with (mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error),
+                  self.assertLogs("privacyidea.lib.policy", level="ERROR") as logs):
+                self.assertRaises(ResolverError, PolicyClass().match_policies, scope=SCOPE.AUTHZ,
+                                  realm=user.realm, resolver=user.resolver, user=user.login)
+            self.assertIn(f"'reso2' of the policy 'checkAll' with check_all_resolvers: {error}", logs.output[0])
+
+            # A resolver ranked above the user's resolver is not asked, also for a user created with its resolver
+            # whose login name is also in the resolver ranked above.
+            set_policy(name="checkAllHigher", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso1",
+                       check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=hotp")
+            users = [User("root", "test_realm"), User("cornelius", "test_realm", resolver="reso2")]
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error):
+                for user in users:
+                    with self.subTest(user=str(user)):
+                        policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                                                                resolver=user.resolver, user=user.login)
+                        self.assertListEqual(["checkAll"], [policy["name"] for policy in policies])
+        finally:
+            delete_policy("checkAllHigher")
+            delete_policy("checkAll")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
 
     def test_22_non_ascii_user(self):
         set_policy(name="polnonascii",

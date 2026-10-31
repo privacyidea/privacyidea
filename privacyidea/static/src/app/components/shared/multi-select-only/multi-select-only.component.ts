@@ -57,6 +57,8 @@ export class MultiSelectOnlyComponent<T = string | number> {
   readonly items = input<T[] | Set<T> | T[] | undefined>([]);
   readonly selectedItems = input<T[]>([]);
   readonly tooltipText = input<string>("");
+  /** Text shown below the select, e.g. which items it offers. */
+  readonly hint = input<string>("");
 
   /** Maps an item onto the text shown for it. Defaults to the item itself. */
   readonly itemLabel = input<(item: T) => string>((item: T) => String(item));

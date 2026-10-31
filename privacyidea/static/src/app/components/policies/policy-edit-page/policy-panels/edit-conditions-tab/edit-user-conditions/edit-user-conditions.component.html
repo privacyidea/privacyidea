@@ -34,14 +34,43 @@
   </app-multi-select-only>
 
   <app-multi-select-only
-    class="margin-bottom-16"
-    fieldClass="input-width-xl"
+    fieldClass="input-width-xl margin-bottom-16"
     label="Select Resolvers"
     [items]="availableResolvers()"
     [selectedItems]="selectedResolvers()"
     [tooltipText]="selectResolverTooltip()"
+    [hint]="selectResolverHint()"
     (selectionChange)="selectResolver($event)">
   </app-multi-select-only>
+
+  <div class="flex-column margin-bottom-16 check-all-resolvers">
+    <mat-checkbox
+      [checked]="checkAllResolvers()"
+      [disabled]="selectedResolvers().length === 0 && !checkAllResolvers()"
+      (change)="toggleCheckAllResolvers()"
+      aria-describedby="check-all-resolvers-description"
+      color="primary">
+      <span i18n="@@policy.checkAllResolvers">Check all possible resolvers of a user</span>
+    </mat-checkbox>
+    <p
+      id="check-all-resolvers-description"
+      class="below-checkbox"
+      [class.checkbox-error]="checkAllResolversWithoutResolver()"
+      [class.checkbox-hint]="!checkAllResolversWithoutResolver()">
+      @if (checkAllResolversWithoutResolver()) {
+        <span i18n="@@policy.checkAllResolversWithoutResolver"
+          >Without a resolver, a policy with this option matches no user. Select a resolver or clear this option.</span
+        >
+      } @else if (selectedResolvers().length > 0) {
+        <span i18n="@@policy.checkAllResolversDescription"
+          >Also match users who are contained in one of the selected resolvers, but were found in another resolver of
+          the realm.</span
+        >
+      } @else {
+        <span i18n="@@policy.checkAllResolversNeedsResolver">Select a resolver to use this option.</span>
+      }
+    </p>
+  </div>
 
   <div class="user-list-wrapper">
     <div class="user-list">

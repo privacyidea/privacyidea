@@ -137,30 +137,43 @@ resolver values must name existing realms and resolvers.
 
 .. versionadded:: 2.0
 
-.. _check_all_resolvers:
-
 **resolver**
 
-  This policy will be valid for all users in this resolver.
+  This policy is valid for the users of the resolvers in this field.
 
   If this field is left blank, this policy is valid for all resolvers.
 
-  .. note:: You can use the parameter
-     ``check_all_resolvers``. This is *Check all possible resolvers*
-     *of a user to match the resolver in this policy* in the previous WebUI.
-     The WebUI does not offer this option. It can be set with the parameter
-     ``check_all_resolvers`` of ``POST /policy/<name>``.
+  A user belongs to one resolver only: if the same login name exists in
+  several resolvers of a realm, the user belongs to the resolver with the
+  highest priority (see :ref:`resolver_priority`). By default, a policy for
+  another resolver of the realm does not apply to this user, even if that
+  resolver also contains the login name.
 
-     Assume a user *user@realm1* is contained in *resolver1* and *resolver2*
-     in the realm *realm1*, where *resolver1* is the resolver with the
-     highest priority. If the user authenticates as *user@realm1*, only
-     policies for *resolver1* will match, since the user is identified as
-     *user.resolver1@realm1*.
+.. _check_all_resolvers:
 
-     If you also want to match a policy with ``resolver=resolver2``, you need
-     to select *Check all possible resolvers* in this policy. Thus this
-     policy will match for all users, which are also contained in *resolver2*
-     as a secondary resolver.
+**Check all possible resolvers of a user**
+
+  With this option, the policy also applies to users who are contained in one
+  of its resolvers, but belong to another resolver of their realm. This way a
+  resolver with a lower priority can work like a group, for example a list of
+  the login names that may use a VPN. Only the resolvers with a lower priority
+  than the user's resolver count.
+
+  Example: the realm *company* contains the resolvers *ldap* (priority 1) and
+  *vpn-users* (priority 2). *vpn-users* lists some of the login names of
+  *ldap*. A policy for the resolver *vpn-users* applies to
+
+  * without the option: only the users that exist in *vpn-users* but not in
+    *ldap*,
+  * with the option: in addition, the users of *ldap* that are also listed in
+    *vpn-users*. Users of *ldap* that are not listed in *vpn-users* are not
+    affected.
+
+  The option only works together with a resolver. In the WebUI it is the
+  checkbox below the resolvers of the policy. It can only be selected while a
+  resolver is selected, and a policy with the option but without a resolver
+  can not be saved. The policy list shows *all resolvers of the user* next to
+  the resolvers of such a policy.
 
 .. versionadded:: 2.0
 

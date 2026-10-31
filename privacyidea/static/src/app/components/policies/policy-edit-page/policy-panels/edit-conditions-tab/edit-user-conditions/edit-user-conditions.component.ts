@@ -17,45 +17,28 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, output, signal, ViewChild } from "@angular/core";
+import { Component, computed, inject, input, output, signal } from "@angular/core";
 
 import { form, FormField, validate } from "@angular/forms/signals";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
-import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { checkAllResolversWithoutResolver, PolicyDetail } from "@services/policies/policies.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-edit-user-conditions",
   standalone: true,
-  imports: [
-    FormField,
-    MatIconModule,
-    MatInputModule,
-    MatAutocompleteModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatExpansionModule,
-    MultiSelectOnlyComponent,
-    MatCheckboxModule
-  ],
+  imports: [FormField, MatIconModule, MatInputModule, MatButtonModule, MultiSelectOnlyComponent, MatCheckboxModule],
   templateUrl: "./edit-user-conditions.component.html",
   styleUrl: "./edit-user-conditions.component.scss"
 })
 export class EditUserConditionsComponent {
-  @ViewChild("resolverSelect") resolverSelect!: MatSelect;
-  @ViewChild("realmSelect") realmSelect!: MatSelect;
-
   readonly realmService: RealmServiceInterface = inject(RealmService);
   readonly resolverService: ResolverServiceInterface = inject(ResolverService);
-  readonly policyService = inject(PolicyService);
 
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
@@ -69,13 +52,8 @@ export class EditUserConditionsComponent {
   readonly selectedResolvers = computed(() => this.policy().resolver || []);
   readonly selectedUsers = computed(() => this.policy().user || []);
   readonly userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
-
-  readonly isAllRealmsSelected = computed(
-    () => this.selectedRealms().length === this.realmService.realmOptions().length
-  );
-  readonly isAllResolversSelected = computed(
-    () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
-  );
+  readonly checkAllResolvers = computed(() => this.policy().check_all_resolvers || false);
+  readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.policy()));
 
   readonly availableRealms = computed(() => {
     const selectedResolvers = this.selectedResolvers();
@@ -89,16 +67,28 @@ export class EditUserConditionsComponent {
   });
 
   readonly availableResolvers = computed(() => {
-    const selectedRealms = this.selectedRealms();
-    if (selectedRealms.length === 0) {
-      return this.resolverService.resolverOptions();
-    }
     const realms = this.realmService.realms();
+    const selectedRealms = this.selectedRealms();
+    const realmNames = selectedRealms.length > 0 ? selectedRealms : Object.keys(realms);
     const resolversSet = new Set<string>();
-    selectedRealms.forEach((realmName) => {
+    realmNames.forEach((realmName) => {
       realms[realmName]?.resolver.forEach((r) => resolversSet.add(r.name));
     });
+    if (selectedRealms.length === 0) {
+      // Without a selected realm, offer every resolver. Without the right to list the resolvers, the list is empty
+      // and only the resolvers in a realm are known.
+      this.resolverService.resolverOptions().forEach((name) => resolversSet.add(name));
+    }
     return Array.from(resolversSet);
+  });
+
+  readonly selectResolverHint = computed(() => {
+    if (this.selectedRealms().length > 0) {
+      return $localize`:@@policy.resolversOfSelectedRealms:Lists the resolvers of the selected realms.`;
+    }
+    return this.resolverService.resolverOptions().length > 0
+      ? $localize`:@@policy.allResolvers:Lists all resolvers.`
+      : $localize`:@@policy.resolversOfAllRealms:Lists the resolvers of all realms. A resolver that is in no realm is not listed.`;
   });
 
   readonly selectResolverTooltip = computed(() =>
@@ -121,18 +111,12 @@ export class EditUserConditionsComponent {
     this.emitEdits({ realm: realmNames });
   }
 
-  toggleAllRealms() {
-    this.emitEdits({ realm: this.isAllRealmsSelected() ? [] : this.realmService.realmOptions() });
-    setTimeout(() => this.realmSelect?.close());
-  }
-
   selectResolver(resolverNames: string[]): void {
     this.emitEdits({ resolver: resolverNames });
   }
 
-  toggleAllResolvers() {
-    this.emitEdits({ resolver: this.isAllResolversSelected() ? [] : this.resolverService.resolverOptions() });
-    setTimeout(() => this.resolverSelect?.close());
+  toggleCheckAllResolvers() {
+    this.emitEdits({ check_all_resolvers: !this.checkAllResolvers() });
   }
 
   addUser(user: string) {
