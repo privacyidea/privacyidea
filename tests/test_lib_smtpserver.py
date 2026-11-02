@@ -15,7 +15,7 @@ from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer, send_email_identifier,
-                                        send_email_data)
+                                        send_email_data, parse_server_address, TIMEOUT)
 from tests.queuemock import MockQueueTestCase
 from . import smtpmock
 from .base import MyTestCase
@@ -253,6 +253,33 @@ class SMTPServerTestCase(MyTestCase):
             "an empty body (issue #5217). This happens when the message "
             "is handed to smtplib as bytes (e.g. via as_bytes()) instead "
             "of as a str.")
+
+
+class ParseServerAddressTestCase(MyTestCase):
+
+    def test_parse_server_address(self):
+        cases = [
+            (("mail.example.com", 25), ("smtp", "mail.example.com", 25)),
+            (("mail.example.com:2525", 25), ("smtp", "mail.example.com", 2525)),
+            (("smtp://mail.example.com", "587"), ("smtp", "mail.example.com", 587)),
+            (("smtps://mail.example.com", 25), ("smtps", "mail.example.com", 25)),
+            (("smtps://mail.example.com:465", 25), ("smtps", "mail.example.com", 465)),
+            (("192.0.2.1", 25), ("smtp", "192.0.2.1", 25)),
+            (("smtp://", 25), ("smtp", None, 25)),
+        ]
+        for (server, port), expected in cases:
+            with self.subTest(server=server):
+                self.assertEqual(expected, parse_server_address(server, port))
+        with self.assertRaises(ValueError):
+            parse_server_address("mail.example.com:99999", 25)
+
+    def test_sending_connects_to_the_parsed_address(self):
+        config = {"identifier": "parsed", "server": "smtps://mail.example.com:465", "port": 25,
+                  "sender": "pi@example.com", "tls": False}
+        with patch("smtplib.SMTP_SSL") as smtp_ssl:
+            smtp_ssl.return_value.sendmail.return_value = {}
+            SMTPServer.test_email(config, "recp@example.com", "subject", "body")
+        smtp_ssl.assert_called_once_with("mail.example.com", port=465, timeout=TIMEOUT)
 
 
 class SMTPServerQueueTestCase(MockQueueTestCase):

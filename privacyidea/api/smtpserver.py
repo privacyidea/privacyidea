@@ -35,14 +35,14 @@ import logging
 import smtplib
 import socket
 import ssl
-from urllib.parse import urlparse
 
 from flask import (Blueprint,
                    request)
 from flask import g
 
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
-                                        delete_smtpserver, send_or_enqueue_email, replace_censored_secrets)
+                                        delete_smtpserver, send_or_enqueue_email, replace_censored_secrets,
+                                        parse_server_address)
 from .lib.utils import (send_result)
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -79,17 +79,17 @@ def _parse_number(value, name: str, default: int, minimum: int, maximum: int) ->
 
 def _server_address(server: str, port: int) -> tuple[str, int]:
     """
-    Determine host and port the same way SMTPServer.send_email_with_config does: a port in the
-    server URL takes precedence over the port parameter.
+    Determine host and port with :func:`parse_server_address`, which the sending code uses as well.
 
-    :raises ParameterError: if the port in the server URL is not valid
+    :raises ParameterError: if the server URL has no host name or no valid port
     """
-    url = urlparse(server if "//" in server else f"//{server}", scheme="smtp")
     try:
-        url_port = url.port
+        _scheme, host, port = parse_server_address(server, port)
     except ValueError:
         raise ParameterError(f"The port in the server {server!r} must be a number between 1 and 65535.")
-    return url.hostname or server, url_port or port
+    if not host:
+        raise ParameterError(f"The server {server!r} does not contain a host name.")
+    return host, port
 
 
 def _check_email_address(address: str, name: str) -> None:

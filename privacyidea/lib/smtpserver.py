@@ -54,6 +54,24 @@ TIMEOUT = 10
 SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
 
 
+def parse_server_address(server: str, port) -> tuple[str, str | None, int]:
+    """
+    Determine the scheme, host and port an SMTP server definition connects to.
+
+    The server can be a host name, an IP address or a URL like ``smtp://host:port`` or
+    ``smtps://host:port``. A port in the URL takes precedence over the port parameter.
+
+    :param server: the server as configured
+    :param port: the configured port, used if the server URL does not contain one
+    :return: the scheme ("smtp" or "smtps"), the host name (None if the URL has none) and the port
+    :raises ValueError: if the port in the server URL is not a number between 0 and 65535
+    """
+    # urllib looks for a '//' to identify the host in the string. If it is
+    # missing we add one.
+    url = urlparse(server if "//" in server else f"//{server}", scheme="smtp")
+    return url.scheme, url.hostname, url.port or int(port)
+
+
 def _get_mail_debug_level():
     try:
         return int(current_app.config.get("PI_MAIL_DEBUG_LEVEL", 0))
@@ -118,19 +136,11 @@ class SMTPServer:
         msg['Date'] = strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime())
         msg['Reply-To'] = reply_to
 
-        srv = config['server']
-        # urllib looks for a '//' to identify the host in the string. If it is
-        # missing we add one.
-        smtp_server = ''.join(['//', srv]) if srv.find('//') < 0 else srv
-        smtp_url = urlparse(smtp_server, scheme='smtp')
-        if smtp_url.scheme == 'smtps':
-            mail = smtplib.SMTP_SSL(smtp_url.hostname,
-                                    port=smtp_url.port or int(config['port']),
-                                    timeout=config.get('timeout', TIMEOUT))
+        scheme, host, port = parse_server_address(config['server'], config['port'])
+        if scheme == 'smtps':
+            mail = smtplib.SMTP_SSL(host, port=port, timeout=config.get('timeout', TIMEOUT))
         else:
-            mail = smtplib.SMTP(smtp_url.hostname,
-                                port=smtp_url.port or int(config['port']),
-                                timeout=config.get('timeout', TIMEOUT))
+            mail = smtplib.SMTP(host, port=port, timeout=config.get('timeout', TIMEOUT))
         debug_level = _get_mail_debug_level()
         if debug_level:
             mail.set_debuglevel(debug_level)
@@ -139,7 +149,7 @@ class SMTPServer:
         r = mail.ehlo()
         log.debug(f"mailserver responded with {r!s}")
         # Start TLS if required
-        if not smtp_url.scheme == 'smtps' and config.get('tls', False):
+        if not scheme == 'smtps' and config.get('tls', False):
             log.debug("Trying to STARTTLS: {!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.

@@ -206,6 +206,7 @@ class SMTPServerTestCase(MyApiTestCase):
             ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
             ({"port": "abc"}, "The port must be a number, not 'abc'."),
             ({"timeout": "abc"}, "The timeout must be a number, not 'abc'."),
+            ({"server": "smtp://"}, "The server 'smtp://' does not contain a host name."),
         ]
         for data, expected in cases:
             with self.subTest(data=data):
