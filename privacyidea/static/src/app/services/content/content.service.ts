@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
