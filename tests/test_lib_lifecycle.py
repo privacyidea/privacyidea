@@ -32,13 +32,14 @@ class LifecycleTestCase(MyTestCase):
     def test_02_register_finalizer_request_context(self):
         finalizer1 = mock.MagicMock()
         finalizer2 = mock.MagicMock()
-        # test that we can use finalizers
+        # test that we can use finalizers. A request starts with an empty g, so they are registered after the
+        # request started, but before its request context ends.
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
             register_finalizer(finalizer1)
             register_finalizer(finalizer2)
-            res = self.app.full_dispatch_request()
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
@@ -57,13 +58,14 @@ class LifecycleTestCase(MyTestCase):
         finalizer1 = mock.MagicMock()
         finalizer1.side_effect = RuntimeError()
         finalizer2 = mock.MagicMock()
-        # test that we can use finalizers
+        # test that we can use finalizers. A request starts with an empty g, so they are registered after the
+        # request started, but before its request context ends.
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
             register_finalizer(finalizer1)
             register_finalizer(finalizer2)
-            res = self.app.full_dispatch_request()
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
         finalizer1.assert_called_once()
