@@ -6,6 +6,7 @@ The lib.tokenclass depends on the DB model and lib.user
 import binascii
 import datetime
 import hashlib
+import time
 import warnings
 
 import mock
@@ -13,7 +14,7 @@ from dateutil.tz import tzlocal
 from passlib.crypto.digest import pbkdf2_hmac
 from testfixtures import log_capture
 
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin, delete_privacyidea_config)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
                                     delete_policy)
@@ -605,16 +606,26 @@ class HOTPTokenTestCase(MyTestCase):
         self.assertTrue(r == -1, r)
         self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
 
-        # Autosync fails, if dueDate is over
+        # A value after the dueDate starts a new autoresync, which the next value completes
         token.token.count = 0
-        set_privacyidea_config("AutoResyncTimeout", 0)
+        set_privacyidea_config("AutoResyncTimeout", 300)
         # counter = 8, is out of sync
         r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
-        # counter = 9, is the next value, but duedate is over.
+        token.write_tokeninfo("dueDate", int(time.time()) - 1)
+        token.auth_details.clear()
+        # counter = 9, is the next value, but the dueDate is over
         r = token.check_otp("520489")
-        self.assertTrue(r == -1, r)
-        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual(-1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual("9", token.get_tokeninfo("otp1c"))
+        # counter = 10, will be autosynced
+        r = token.check_otp("403154")
+        self.assertEqual(10, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+        delete_privacyidea_config("AutoResyncTimeout")
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)

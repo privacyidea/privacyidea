@@ -3,7 +3,6 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
-import ast
 import json
 import pathlib
 import re
@@ -77,12 +76,6 @@ class PolicyTestCase(MyTestCase):
     """
     Test the policies on a database level
     """
-
-    def assert_undefined_values(self, kind: str, values: set[str], message: str) -> None:
-        # The undefined values are listed in no particular order
-        prefix = f"Undefined {kind}: "
-        self.assertTrue(message.startswith(prefix) and message.endswith("!"), message)
-        self.assertSetEqual(values, set(ast.literal_eval(message[len(prefix):-1])), message)
 
     def setUp(self):
         self.setUp_user_realms()
@@ -283,7 +276,7 @@ class PolicyTestCase(MyTestCase):
         # Invalid actions
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action="invalid_action")
-        self.assertEqual("Invalid actions ['invalid_action']!", exception.exception.message)
+        self.assertEqual("Invalid actions for scope 'admin': ['invalid_action']!", exception.exception.message)
 
         # Priority
         with self.assertRaises(ParameterError) as exception:
@@ -298,19 +291,19 @@ class PolicyTestCase(MyTestCase):
         # Invalid realm
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm="invalid_realm")
-        self.assert_undefined_values("User-realms", {"invalid_realm"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid_realm']!", exception.exception.message)
 
         # set_policy takes any admin realm: the API checks it against the admin realms of the app configuration
 
         # Invalid resolver
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, resolver="invalid_resolver")
-        self.assert_undefined_values("Resolvers", {"invalid_resolver"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid_resolver']!", exception.exception.message)
 
         # Invalid node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode="invalid_node")
-        self.assert_undefined_values("Privacyidea nodes", {"invalid_node"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid_node']!", exception.exception.message)
 
         # Invalid time
         with self.assertRaises(ParameterError) as exception:
@@ -2732,13 +2725,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Realm
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=[self.realm2, "undefined_realm", self.realm1, "invalid"])
-        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid', 'undefined_realm']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, undefined_realm,{self.realm1} ,invalid")
-        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid', 'undefined_realm']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, -undefined_realm,{self.realm1} ,!invalid")
-        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid', 'undefined_realm']!", exception.exception.message)
 
         delete_policy("test")
 
@@ -2764,14 +2757,14 @@ class PolicyTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=[self.resolvername1, "undefined_resolver", self.resolvername3, "invalid"])
-        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid', 'undefined_resolver']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"undefined_resolver,{self.resolvername1}, invalid")
-        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid', 'undefined_resolver']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=f"*, -undefined_resolver,{self.resolvername1}, !invalid")
-        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid', 'undefined_resolver']!", exception.exception.message)
 
         delete_policy("test")
 
@@ -2801,13 +2794,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "undefined_node", node_name2, "invalid"])
-        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
-        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
-        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
 
         db.session.delete(node1)
         db.session.delete(node2)
@@ -3800,8 +3793,20 @@ class PolicyMatchTestCase(MyTestCase):
         self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_corny).policies(),
                          {"no_condition", "realm4", "resolver3"})
 
+        # The container of the token is used for container conditions
+        set_policy(name="smartphone", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        container = find_container_by_serial(init_container({"type": "smartphone"})["container_serial"])
+        container.add_token(token_hans)
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_hans).policies(),
+                         {"no_condition", "realm4", "hans", "resolver1", "smartphone"})
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_no_user).policies(),
+                         {"no_condition"})
+        container.delete()
+
         # Clean up
-        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1"])
+        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1", "smartphone"])
         token_corny.delete_token()
         token_hans.delete_token()
         token_no_user.delete_token()
@@ -4023,3 +4028,28 @@ class PolicyTemplateTestCase(MyTestCase):
     def test_04_both_webui_copies_are_identical(self):
         first, second = [self._read_templates(directory) for directory in self.template_directories]
         self.assertEqual(first, second)
+
+
+class PolicyValueErrorTestCase(MyTestCase):
+    """
+    The errors of set_policy name the undefined values and the invalid actions sorted, the field as it is written and
+    the scope of the actions.
+    """
+
+    def test_01_undefined_values_are_listed_sorted(self):
+        for field, name in (("realm", "User-Realms"), ("resolver", "Resolvers"), ("pinode", "privacyIDEA Nodes")):
+            with self.subTest(field=field):
+                with self.assertRaises(ParameterError) as exception:
+                    set_policy(name="undefined_values", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE,
+                               **{field: "zzz_undefined, aaa_undefined, mmm_undefined"})
+                self.assertEqual(f"Undefined {name}: ['aaa_undefined', 'mmm_undefined', 'zzz_undefined']!",
+                                 exception.exception.message)
+                self.assertListEqual([], get_policies(name="undefined_values"))
+
+    def test_02_invalid_actions_name_the_scope(self):
+        with self.assertRaises(ParameterError) as exception:
+            set_policy(name="invalid_actions", scope=SCOPE.ADMIN,
+                       action=f"zzz_invalid, {PolicyAction.ENABLE}, aaa_invalid")
+        self.assertEqual("Invalid actions for scope 'admin': ['aaa_invalid', 'zzz_invalid']!",
+                         exception.exception.message)
+        self.assertListEqual([], get_policies(name="invalid_actions"))
