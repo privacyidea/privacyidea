@@ -20,8 +20,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_DIR="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="${BASE_DIR}/compose.yaml"
+# shellcheck source=SCRIPTDIR/common.sh
+. "${SCRIPT_DIR}/common.sh"
 
 BASE_URL="${PI_SMOKE_URL:-http://localhost:8080}"
 ADMIN_USER="${PI_SMOKE_ADMIN:-${BOOTSTRAP_ADMIN:-admin}}"
@@ -100,12 +100,11 @@ curl -fsS -o /dev/null "${BASE_URL}/static/public/policy-templates/index.json" \
 echo "[smoke] The WebUI is served."
 
 echo "[smoke] Checking pi-cron ..."
-# Wrapped in newlines so the match is anchored to a whole service name.
-running_services=$'\n'"$(docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running")"$'\n'
-if [[ "${running_services}" != *$'\npi-cron\n'* ]]; then
-    fail "pi-cron is not running, running services:${running_services//$'\n'/ }"
+if ! is_running pi-cron; then
+    compose ps
+    fail "pi-cron is not running"
 fi
-cron_logs="$(docker compose -f "${COMPOSE_FILE}" logs pi-cron 2>/dev/null)"
+cron_logs="$(compose logs pi-cron 2>/dev/null)"
 if [[ "${cron_logs}" != *"[pi-cron] Starting"* ]]; then
     fail "pi-cron did not log its startup banner"
 fi
