@@ -1,5 +1,6 @@
 import datetime
 import email
+import email.errors
 import os
 import smtplib
 import socket
@@ -189,6 +190,43 @@ class SMTPServerTestCase(MyApiTestCase):
         enqueued.assert_called_once()
         login.assert_not_called()
 
+    def test_send_test_email_invalid_parameters(self):
+        """Parameters smtplib or the email package would fail on are rejected before sending."""
+        cases = [
+            ({"recipient": "jörg@exämple.com"},
+             "The recipient 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"sender": "jörg@exämple.com"},
+             "The sender 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"recipient": "a@example.com\nBcc: x@example.com"},
+             "The recipient must not contain line breaks or other control characters."),
+            ({"sender": "a@example.com\r\nBcc: x@example.com"},
+             "The sender must not contain line breaks or other control characters."),
+            ({"server": "127.0.0.1:99999"},
+             "The port in the server '127.0.0.1:99999' must be a number between 1 and 65535."),
+            ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
+            ({"port": "abc"}, "The port must be a number, not 'abc'."),
+            ({"timeout": "abc"}, "The timeout must be a number, not 'abc'."),
+        ]
+        for data, expected in cases:
+            with self.subTest(data=data):
+                with mock.patch("smtplib.SMTP.sendmail") as sendmail:
+                    res = self._send_test_email(extra_data=data)
+                assert res.status_code == 400
+                assert expected in res.json["result"]["error"]["message"]
+                sendmail.assert_not_called()
+
+    def test_send_test_email_unexpected_value_error(self):
+        """Errors of the email package or encoding errors while sending are reported as a 400 as well."""
+        errors = [UnicodeEncodeError("ascii", "jörg", 1, 2, "ordinal not in range(128)"),
+                  email.errors.HeaderParseError("header value appears to contain an embedded header")]
+        for error in errors:
+            with self.subTest(error=type(error).__name__):
+                with mock.patch("smtplib.SMTP.sendmail", side_effect=error):
+                    res = self._send_test_email()
+                assert res.status_code == 400
+                message = res.json["result"]["error"]["message"]
+                assert str(error) in message
+
     def test_describe_smtp_error(self):
         """Every kind of error the mail server or the network can raise gets its own message."""
         cert_error = ssl.SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED]")
@@ -225,6 +263,11 @@ class SMTPServerTestCase(MyApiTestCase):
              "SMTP error 451 4.3.0 Try again later"),
             (smtplib.SMTPException("something else"),
              "SMTP error: something else"),
+            (email.errors.HeaderParseError("header value appears to contain an embedded header"),
+             "The email could not be created: header value appears to contain an embedded header"),
+            (UnicodeEncodeError("ascii", "jörg", 1, 2, "ordinal not in range(128)"),
+             "The email could not be sent: 'ascii' codec can't encode character '\\xf6' in position 1: "
+             "ordinal not in range(128)"),
         ]
         for error, expected in cases:
             with self.subTest(error=type(error).__name__):
@@ -286,6 +329,28 @@ class SMTPServerTestCase(MyApiTestCase):
         body = parsed.get_payload(decode=True).decode("utf-8")
         assert "This is a test email from privacyIDEA." in body
         assert "The configuration someServer is working." in body
+
+    def test_create_server_invalid_parameters(self):
+        """A definition that could not be used to send an email is not saved."""
+        cases = [
+            ({"server": "127.0.0.1:99999"},
+             "The port in the server '127.0.0.1:99999' must be a number between 1 and 65535."),
+            ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
+            ({"port": "abc"}, "The port must be a number, not 'abc'."),
+            ({"timeout": "0"}, "The timeout must be between 1 and 3600, not 0."),
+            ({"sender": "a@example.com\r\nBcc: x@example.com"},
+             "The sender must not contain line breaks or other control characters."),
+            ({"sender": "jörg@exämple.com"},
+             "The sender 'jörg@exämple.com' contains non-ASCII characters."),
+        ]
+        for data, expected in cases:
+            with self.subTest(data=data):
+                res = self._create_server(name="invalidserver", extra_data=data)
+                assert res.status_code == 400
+                assert expected in res.json["result"]["error"]["message"]
+
+        from privacyidea.lib.smtpserver import list_smtpservers
+        assert list_smtpservers(identifier="invalidserver") == {}
 
     def test_password_not_overwritten_by_censored(self):
         """Updating an SMTP server with __CENSORED__ password must preserve the original."""

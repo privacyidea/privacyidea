@@ -30,6 +30,7 @@ admin policy action :ref:`policy_smtpserver_read`; create, update,
 delete and the test send are gated by :ref:`policy_smtpserver_write`.
 """
 
+import email.errors
 import logging
 import smtplib
 import socket
@@ -48,7 +49,7 @@ from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..lib.crypto import censor_dict
-from ..lib.error import ConfigAdminError
+from ..lib.error import ConfigAdminError, ParameterError
 from ..lib.utils import is_true
 
 #: SMTP server fields that must never be returned in clear text by the API.
@@ -57,6 +58,51 @@ SMTPSERVER_SECRET_KEYS = {"password", "private_key_password"}
 log = logging.getLogger(__name__)
 
 smtpserver_blueprint = Blueprint('smtpserver_blueprint', __name__)
+
+
+def _parse_number(value, name: str, default: int, minimum: int, maximum: int) -> int:
+    """
+    Parse a numeric request parameter.
+
+    :raises ParameterError: if the value is not a whole number between minimum and maximum
+    """
+    if value in (None, ""):
+        return default
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        raise ParameterError(f"The {name} must be a number, not {value!r}.")
+    if not minimum <= number <= maximum:
+        raise ParameterError(f"The {name} must be between {minimum} and {maximum}, not {number}.")
+    return number
+
+
+def _server_address(server: str, port: int) -> tuple[str, int]:
+    """
+    Determine host and port the same way SMTPServer.send_email_with_config does: a port in the
+    server URL takes precedence over the port parameter.
+
+    :raises ParameterError: if the port in the server URL is not valid
+    """
+    url = urlparse(server if "//" in server else f"//{server}", scheme="smtp")
+    try:
+        url_port = url.port
+    except ValueError:
+        raise ParameterError(f"The port in the server {server!r} must be a number between 1 and 65535.")
+    return url.hostname or server, url_port or port
+
+
+def _check_email_address(address: str, name: str) -> None:
+    """
+    Reject an email address that can not be put into the message header or the SMTP envelope.
+
+    :raises ParameterError: if the address contains control characters or non-ASCII characters
+    """
+    if any(ord(character) < 32 or ord(character) == 127 for character in address):
+        raise ParameterError(f"The {name} must not contain line breaks or other control characters.")
+    if not address.isascii():
+        raise ParameterError(f"The {name} {address!r} contains non-ASCII characters. "
+                             f"privacyIDEA can only send emails from and to ASCII addresses.")
 
 
 def _smtp_reply(error: smtplib.SMTPResponseException) -> str:
@@ -71,17 +117,15 @@ def _describe_smtp_error(error: Exception, server: str, port: int, username: str
     """
     Turn an exception raised while talking to a mail server into a message an administrator can act on.
 
-    :param error: the exception raised by smtplib or the socket layer
+    :param error: the exception raised by smtplib, the socket layer or the email package
     :param server: the server as configured, possibly with an ``smtp://`` or ``smtps://`` scheme
     :param port: the configured port, used if the server does not contain one
     :param username: the SMTP user
     :param timeout: the socket timeout in seconds
     :return: the message
     """
-    # Determine the address the same way SMTPServer.send_email_with_config does.
-    url = urlparse(server if "//" in server else f"//{server}", scheme="smtp")
-    host = url.hostname or server
-    address = f"{host}:{url.port or port}"
+    host, port = _server_address(server, port)
+    address = f"{host}:{port}"
     tls_hint = "Check whether port and TLS mode (smtps:// or STARTTLS) match."
 
     if isinstance(error, smtplib.SMTPAuthenticationError):
@@ -118,7 +162,11 @@ def _describe_smtp_error(error: Exception, server: str, port: int, username: str
     if isinstance(error, ssl.SSLError):
         hint = f" {tls_hint}" if error.reason == "WRONG_VERSION_NUMBER" else ""
         return f"TLS error: {error.reason or error}.{hint}"
-    return f"Could not connect to {address}: {error.strerror or error}"
+    if isinstance(error, email.errors.MessageError):
+        return f"The email could not be created: {error}"
+    if isinstance(error, OSError):
+        return f"Could not connect to {address}: {error.strerror or error}"
+    return f"The email could not be sent: {error}"
 
 
 @smtpserver_blueprint.route('/<identifier>', methods=['POST'])
@@ -156,12 +204,13 @@ def create(identifier=None):
     :jsonparam private_key_password: passphrase for the S/MIME private key.
     :jsonparam certificate: PEM-encoded certificate for S/MIME signing.
     :status 200: ``True`` on success.
-    :status 400: the password is censored, but the connection settings differ
-        from the saved definition.
+    :status 400: a parameter is invalid (e.g. a port outside 1-65535 or a
+        sender with a line break or non-ASCII characters), or the password is
+        censored, but the connection settings differ from the saved definition.
     """
     param = request.all_data
     server = get_required(param, "server")
-    port = int(get_optional(param, "port", default=25))
+    port = _parse_number(get_optional(param, "port"), "port", 25, 1, 65535)
     # Not passed, the user name, the sender, the description, the private key and the certificate of an existing
     # server keep their stored values
     username = get_optional(param, "username")
@@ -169,13 +218,18 @@ def create(identifier=None):
     sender = get_optional(param, "sender")
     tls = is_true(get_optional(param, "tls", default=False))
     description = get_optional(param, "description")
-    timeout = int(get_optional(param, "timeout") or 10)
+    timeout = _parse_number(get_optional(param, "timeout"), "timeout", 10, 1, 3600)
     enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
     smime = is_true(get_optional(param, "smime", default=False))
     dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
     private_key = get_optional(param, "private_key")
     private_key_password = get_optional(param, "private_key_password")
     certificate = get_optional(param, "certificate")
+
+    # A definition that can not be used to send an email is not saved.
+    _server_address(server, port)
+    if sender:
+        _check_email_address(sender, "sender")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
@@ -280,26 +334,34 @@ def test():
     :status 200: ``True`` if the message was delivered (or queued)
         successfully. A queued message is sent by the job queue worker, which
         only logs a failure.
-    :status 400: the message could not be sent, or the password is censored
-        but the connection settings differ from the saved configuration. The
-        error message says why.
+    :status 400: the message could not be sent, a parameter is invalid (e.g.
+        a port outside 1-65535 or an address with a line break or non-ASCII
+        characters), or the password is censored but the connection settings
+        differ from the saved configuration. The error message says why.
     """
     param = request.all_data
     identifier = get_required(param, "identifier")
     server = get_required(param, "server")
-    port = int(get_optional(param, "port", default=25))
+    port = _parse_number(get_optional(param, "port"), "port", 25, 1, 65535)
     username = get_optional(param, "username", default="")
     password = get_optional(param, "password", default="")
     sender = get_optional(param, "sender", default="")
     tls = is_true(get_optional(param, "tls", default=False))
     recipient = get_required(param, "recipient")
-    timeout = int(get_optional(param, "timeout") or 10)
+    timeout = _parse_number(get_optional(param, "timeout"), "timeout", 10, 1, 3600)
     enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
     smime = is_true(get_optional(param, "smime", default=False))
     dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
     private_key = get_optional(param, "private_key", default="")
     private_key_password = get_optional(param, "private_key_password", default="")
     certificate = get_optional(param, "certificate", default="")
+
+    # Reject what smtplib and the email package would fail on with an exception of their own.
+    _server_address(server, port)
+    _check_email_address(recipient, "recipient")
+    if sender:
+        _check_email_address(sender, "sender")
+
     # The edit dialog sends back the placeholder that GET /smtpserver/ returned for a stored secret
     password, private_key_password = replace_censored_secrets(identifier, password, private_key_password,
                                                               server=server, port=port, username=username, tls=tls)
@@ -315,7 +377,7 @@ def test():
                                   "Test Email from privacyIDEA",
                                   "This is a test email from privacyIDEA. "
                                   f"The configuration {identifier} is working.")
-    except (smtplib.SMTPException, OSError) as error:
+    except (smtplib.SMTPException, OSError, ValueError, email.errors.MessageError) as error:
         message = _describe_smtp_error(error, server, port, username, timeout)
         log.warning(f"Sending the test email via {identifier!r} failed: {message}")
         raise ConfigAdminError(message)
