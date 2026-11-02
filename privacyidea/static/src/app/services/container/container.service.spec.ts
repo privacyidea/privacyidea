@@ -298,35 +298,140 @@ describe("ContainerService", () => {
     expect(r.result?.value?.container_url).toBe("u");
   });
 
-  it("poll container details completes when state == registered for container create", async () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_CREATE);
-    containerService.containerSerial.set("SMPH1");
-
-    const valueSpy = jest
-      .spyOn(containerService.containerDetailsResource, "value")
-      .mockReturnValueOnce(undefined)
-      .mockReturnValue({
-        result: {
-          value: {
-            count: 1,
-            containers: [{ info: { registration_state: "registered" } }]
+  describe("registration polling", () => {
+    const containerResponse = (registrationState: string) =>
+      MockPiResponse.fromValue({
+        count: 1,
+        containers: [
+          {
+            serial: "SMPH1",
+            type: "smartphone",
+            info: { registration_state: registrationState },
+            realms: [],
+            states: [],
+            tokens: [],
+            users: []
           }
-        }
-      } as unknown as PiResponse<ContainerDetails>);
-    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
+        ]
+      });
+    const expectDetailsRequest = () =>
+      httpMock.expectOne((r) => r.url === "/container/" && r.params.get("container_serial") === "SMPH1");
 
-    containerService.startPolling("SMPH1");
-    TestBed.tick();
-    const pollingTrigger = (containerService as unknown as { pollingTrigger: WritableSignal<number> }).pollingTrigger;
-    pollingTrigger.update((n) => n + 1);
-    TestBed.tick();
+    const loadContainer = async (route: string, registrationState: string) => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
+      contentServiceMock.routeUrl.set(route);
+      containerService.containerSerial.set("SMPH1");
+      TestBed.tick();
+      expectDetailsRequest().flush(containerResponse(registrationState));
+      await Promise.resolve();
+    };
 
-    expect(valueSpy).toHaveBeenCalled();
-    expect(
-      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info?.registration_state
-    ).toBe("registered");
-    expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.warning).not.toHaveBeenCalled();
+    const answerPoll = async (registrationState: string) => {
+      expectDetailsRequest().flush(containerResponse(registrationState));
+      await Promise.resolve();
+      TestBed.tick();
+    };
+
+    afterEach(() => containerService.stopPolling());
+
+    it("completes when state == registered for container create", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_CREATE, "client_wait");
+
+      containerService.startPolling("SMPH1");
+      TestBed.tick();
+      await answerPoll("registered");
+
+      expect(containerService.isPollingActive()).toBe(false);
+      expect(notificationServiceMock.success).not.toHaveBeenCalled();
+      expect(notificationServiceMock.warning).not.toHaveBeenCalled();
+    });
+
+    it("completes when state == registered for container details", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "client_wait");
+
+      containerService.startPolling("SMPH1");
+      TestBed.tick();
+      await answerPoll("registered");
+
+      expect(containerService.isPollingActive()).toBe(false);
+      expect(notificationServiceMock.success).toHaveBeenCalledWith("Container registered successfully.");
+    });
+
+    it("polls again while the container is not registered", async () => {
+      jest.useFakeTimers();
+      try {
+        await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "client_wait");
+
+        containerService.startPolling("SMPH1");
+        TestBed.tick();
+        await answerPoll("client_wait");
+        expect(containerService.isPollingActive()).toBe(true);
+
+        jest.advanceTimersByTime(2000);
+        TestBed.tick();
+        await answerPoll("registered");
+
+        expect(containerService.isPollingActive()).toBe(false);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("keeps the loaded container details while polling", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "client_wait");
+      expect(containerService.containerDetailsResource.hasValue()).toBe(true);
+
+      containerService.startPolling("SMPH1");
+      TestBed.tick();
+
+      // The details page replaces its content with a loading spinner while the resource has no value, which
+      // destroys the open registration dialog's owner and closes the dialog.
+      expect(containerService.containerDetailsResource.hasValue()).toBe(true);
+      await answerPoll("client_wait");
+    });
+
+    it("startPolling returns early when already active", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "client_wait");
+      containerService.startPolling("SMPH1");
+      TestBed.tick();
+      expect(containerService.isPollingActive()).toBe(true);
+      expectDetailsRequest();
+
+      containerService.startPolling("SMPH2");
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/container/");
+      expect(containerService.containerSerial()).toBe("SMPH1");
+    });
+
+    it("waits for the poll before completing a rollover of a registered container", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "registered");
+
+      containerService.startPolling("SMPH1", true);
+      TestBed.tick();
+      // The loaded value is still "registered" from before the rollover
+      expect(containerService.isPollingActive()).toBe(true);
+
+      await answerPoll("registered");
+
+      expect(containerService.isPollingActive()).toBe(false);
+      expect(notificationServiceMock.success).toHaveBeenCalledWith("Container rollover completed successfully.");
+    });
+
+    it("does not complete a rollover with the answer to a reload started before the poll", async () => {
+      await loadContainer(ROUTE_PATHS.CONTAINERS_DETAILS + "SMPH1", "registered");
+      containerService.containerDetailsResource.reload();
+      TestBed.tick();
+      const staleRequest = expectDetailsRequest();
+
+      containerService.startPolling("SMPH1", true);
+      TestBed.tick();
+
+      // The running reload may still answer "registered" from before the rollover
+      expect(staleRequest.cancelled).toBe(true);
+      await answerPoll("rollover");
+      expect(containerService.isPollingActive()).toBe(true);
+    });
   });
 
   it("stopPolling resets isPollingActive", () => {
@@ -335,82 +440,6 @@ describe("ContainerService", () => {
 
     containerService.stopPolling();
     expect(containerService.isPollingActive()).toBe(false);
-  });
-
-  it("poll container details completes when state == registered for container details", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/SMPH1");
-    containerService.containerSerial.set("SMPH1");
-
-    const valueSpy = jest
-      .spyOn(containerService.containerDetailsResource, "value")
-      .mockReturnValueOnce(undefined)
-      .mockReturnValue({
-        result: {
-          value: {
-            count: 1,
-            containers: [{ info: { registration_state: "registered" } }]
-          }
-        }
-      } as unknown as PiResponse<ContainerDetails>);
-    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
-
-    containerService.startPolling("SMPH1");
-    TestBed.tick();
-    const pollingTrigger = (containerService as unknown as { pollingTrigger: WritableSignal<number> }).pollingTrigger;
-    pollingTrigger.update((n) => n + 1);
-    TestBed.tick();
-
-    expect(valueSpy).toHaveBeenCalled();
-    expect(
-      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info?.registration_state
-    ).toBe("registered");
-    expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.success).toHaveBeenCalledWith("Container registered successfully.");
-  });
-
-  it("startPolling returns early when already active", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/SMPH1");
-    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
-    jest.spyOn(containerService.containerDetailsResource, "value").mockReturnValue({
-      result: { value: { count: 1, containers: [{ info: { registration_state: "pending" } }] } }
-    } as unknown as PiResponse<ContainerDetails>);
-
-    containerService.startPolling("SMPH1");
-    expect(containerService.isPollingActive()).toBe(true);
-
-    const pollingTrigger = (containerService as unknown as { pollingTrigger: WritableSignal<number> }).pollingTrigger;
-    const triggerBefore = pollingTrigger();
-    containerService.startPolling("SMPH2");
-
-    expect(pollingTrigger()).toBe(triggerBefore);
-    expect(containerService.containerSerial()).toBe("SMPH1");
-  });
-
-  it("poll container details shows rollover success notification when isRollover is true", () => {
-    contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/SMPH1");
-    containerService.containerSerial.set("SMPH1");
-
-    jest
-      .spyOn(containerService.containerDetailsResource, "value")
-      .mockReturnValueOnce(undefined)
-      .mockReturnValue({
-        result: {
-          value: {
-            count: 1,
-            containers: [{ info: { registration_state: "registered" } }]
-          }
-        }
-      } as unknown as PiResponse<ContainerDetails>);
-    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
-
-    containerService.startPolling("SMPH1", true);
-    TestBed.tick();
-    const pollingTrigger = (containerService as unknown as { pollingTrigger: WritableSignal<number> }).pollingTrigger;
-    pollingTrigger.update((n) => n + 1);
-    TestBed.tick();
-
-    expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.success).toHaveBeenCalledWith("Container rollover completed successfully.");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
