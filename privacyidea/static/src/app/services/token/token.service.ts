@@ -667,7 +667,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     // Only load token details on the token details page.
-    if (!this.contentService.onTokenDetails() || !this.canListTokens()) {
+    if (!this.contentService.onTokenDetails() || !this.canListTokens() || !this.tokenSerial()) {
       return undefined;
     }
 

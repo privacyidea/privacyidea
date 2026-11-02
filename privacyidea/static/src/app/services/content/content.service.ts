@@ -22,6 +22,16 @@ import { NavigationEnd, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { filter, map, pairwise, startWith } from "rxjs";
 
+// A hand-typed or truncated URL can carry malformed percent-encoding; keep the raw text instead of throwing
+// inside a signal computation.
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 export interface DetailsUser {
   username: string;
   realm: string;
@@ -98,7 +108,6 @@ export interface ContentServiceInterface {
 
 @Injectable()
 export class ContentService implements ContentServiceInterface {
-  detailsUser = signal<DetailsUser>({ username: "", realm: "" });
   router = inject(Router);
   private readonly _urlPair = toSignal(
     this.router.events.pipe(
@@ -124,7 +133,37 @@ export class ContentService implements ContentServiceInterface {
     });
     return params;
   });
-  tokenSerial = signal("");
+  // The URL is the only state a reload or a browser back/forward navigation keeps, so the shown user and token
+  // are read from it on their details pages. Off those pages the previous value is kept: other flows (enrollment
+  // polling, lost token, self-service assignment) set it there.
+  detailsUser: WritableSignal<DetailsUser> = linkedSignal<string, DetailsUser>({
+    source: this.routeUrl,
+    computation: (url, previous) => {
+      const prefix = ROUTE_PATHS.USERS_DETAILS + "/";
+      if (!url.startsWith(prefix)) {
+        return previous?.value ?? { username: "", realm: "" };
+      }
+      const encoded = url.slice(prefix.length).split(/[?#]/)[0];
+      if (!encoded) {
+        return previous?.value ?? { username: "", realm: "" };
+      }
+      const query = url.includes("?") ? url.slice(url.indexOf("?") + 1).split("#")[0] : "";
+      return {
+        username: safeDecode(encoded),
+        realm: new URLSearchParams(query).get("realm") ?? ""
+      };
+    }
+  });
+  tokenSerial: WritableSignal<string> = linkedSignal({
+    source: this.routeUrl,
+    computation: (url, previous) => {
+      if (!url.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
+        return previous?.value ?? "";
+      }
+      const encoded = url.slice(ROUTE_PATHS.TOKENS_DETAILS.length).split(/[?#]/)[0];
+      return encoded ? safeDecode(encoded) : (previous?.value ?? "");
+    }
+  });
   containerSerial: WritableSignal<string> = linkedSignal({
     source: this.routeUrl,
     computation: (url, previous) => {

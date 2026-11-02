@@ -398,6 +398,72 @@ describe("ContentService", () => {
     });
   });
 
+  describe("detailsUser from the URL", () => {
+    it("is set by navigating to the details URL without userSelected()", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+    });
+
+    it("decodes an encoded login", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent("a b/ü@x") + "?realm=r%201");
+      expect(service.detailsUser()).toEqual({ username: "a b/ü@x", realm: "r 1" });
+    });
+
+    it("keeps the raw text of a malformed encoded login instead of throwing", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/%zz?realm=x");
+      expect(service.detailsUser()).toEqual({ username: "%zz", realm: "x" });
+    });
+
+    it("gives an empty realm when the query parameter is missing", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "" });
+    });
+
+    it("restores the user after a browser back then forward", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      emitNav("/tokens");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/bob?realm=other");
+      expect(service.detailsUser()).toEqual({ username: "bob", realm: "other" });
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+    });
+  });
+
+  describe("tokenSerial from the URL", () => {
+    it("is set by navigating to the details URL without tokenSelected()", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(service.tokenSerial()).toBe("SER1");
+    });
+
+    it("decodes an encoded serial", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent("A/B 1"));
+      expect(service.tokenSerial()).toBe("A/B 1");
+    });
+
+    it("keeps the raw text of a malformed encoded serial instead of throwing", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "%E0%A4%A");
+      expect(service.tokenSerial()).toBe("%E0%A4%A");
+    });
+
+    it("keeps a value set by another flow off the details page", () => {
+      emitNav("/tokens/enrollment");
+      service.tokenSerial.set("ENROLL1");
+      emitNav("/tokens");
+      expect(service.tokenSerial()).toBe("ENROLL1");
+    });
+
+    it("restores the serial after a browser back then forward", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      emitNav("/tokens");
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER2");
+      expect(service.tokenSerial()).toBe("SER2");
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(service.tokenSerial()).toBe("SER1");
+    });
+  });
+
   describe("machineResolverSelected()", () => {
     it("navigates to machine resolver details", () => {
       emitNav("/tokens");
