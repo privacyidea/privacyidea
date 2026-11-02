@@ -143,7 +143,7 @@ resolver values must name existing realms and resolvers.
 
   If this field is left blank, this policy is valid for all resolvers.
 
-  A user belongs to one resolver only: if the same login name exists in
+  A user belongs to one resolver only. If the same login name exists in
   several resolvers of a realm, the user belongs to the resolver with the
   highest priority (see :ref:`resolver_priority`). By default, a policy for
   another resolver of the realm does not apply to this user, even if that
@@ -154,10 +154,10 @@ resolver values must name existing realms and resolvers.
 **Check all possible resolvers of a user**
 
   With this option, the policy also applies to users who are contained in one
-  of its resolvers, but belong to another resolver of their realm. This way a
-  resolver with a lower priority can work like a group, for example a list of
-  the login names that may use a VPN. Only the resolvers with a lower priority
-  than the user's resolver count.
+  of its resolvers, but belong to another resolver of their realm. A resolver
+  with a lower priority can then work like a group, for example a list of the
+  login names that can use a VPN. Only the resolvers with a lower priority than
+  the user's resolver count.
 
   Example: the realm *company* contains the resolvers *ldap* (priority 1) and
   *vpn-users* (priority 2). *vpn-users* lists some of the login names of
