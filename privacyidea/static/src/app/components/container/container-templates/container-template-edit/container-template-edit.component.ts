@@ -34,7 +34,7 @@ import {
   ContainerTemplateServiceInterface
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
-import { ERR, identifierName } from "@utils/form-rules.utils";
+import { ERR, identifierName, requiredNonEmptyArray } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body/container-template-edit-body.component";
 
@@ -109,7 +109,7 @@ export class ContainerTemplateEditComponent {
     validate(f.name, (ctx) => (this.isNameTaken(ctx.value()) ? [{ kind: ERR.nameTaken }] : []));
     required(f.container_type);
     disabled(f.container_type, () => this.hasToken());
-    validate(f.template_options.tokens, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
+    requiredNonEmptyArray(f.template_options.tokens);
   });
 
   // The template is saved only when this is true. The container type is a disabled field while tokens exist and is

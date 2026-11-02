@@ -35,7 +35,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
-import { ERR } from "@utils/form-rules.utils";
+import { ERR, WHOLE_NUMBER_PATTERN } from "@utils/form-rules.utils";
 import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { isChecked } from "@utils/parse-boolean-value";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
@@ -91,9 +91,6 @@ const BOOLEAN_KEYS: readonly SystemConfigKey[] = [
 /** Settings without a control on this page. They are read as booleans and sent back with the saved settings. */
 const PASS_THROUGH_BOOLEAN_KEYS = ["UiLoginDisplayHelpButton", "UiLoginDisplayRealmBox"];
 
-/** Settings the backend reads with `int()`: a count, a length or a time span, never negative or fractional. */
-const NON_NEGATIVE_INTEGER_PATTERN = /^\d+$/;
-
 @Component({
   selector: "app-system-config",
   templateUrl: "./system-config.component.html",
@@ -129,14 +126,14 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   readonly model = signal<SystemConfigModel>({ ...EMPTY_SYSTEM_CONFIG });
   readonly systemConfigForm = form(this.model, (f) => {
     disabled(f.AutoResyncTimeout, ({ valueOf }) => !valueOf(f.AutoResync));
-    pattern(f.failcounter_clear_timeout, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.AutoResyncTimeout, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.UserCacheExpiration, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.DefaultOtpLen, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.DefaultCountWindow, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.DefaultMaxFailCount, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.DefaultSyncWindow, NON_NEGATIVE_INTEGER_PATTERN);
-    pattern(f.DefaultChallengeValidityTime, NON_NEGATIVE_INTEGER_PATTERN);
+    pattern(f.failcounter_clear_timeout, WHOLE_NUMBER_PATTERN);
+    pattern(f.AutoResyncTimeout, WHOLE_NUMBER_PATTERN);
+    pattern(f.UserCacheExpiration, WHOLE_NUMBER_PATTERN);
+    pattern(f.DefaultOtpLen, WHOLE_NUMBER_PATTERN);
+    pattern(f.DefaultCountWindow, WHOLE_NUMBER_PATTERN);
+    pattern(f.DefaultMaxFailCount, WHOLE_NUMBER_PATTERN);
+    pattern(f.DefaultSyncWindow, WHOLE_NUMBER_PATTERN);
+    pattern(f.DefaultChallengeValidityTime, WHOLE_NUMBER_PATTERN);
   });
 
   /** The model as loaded or last saved. */

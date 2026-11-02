@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, model, output, viewChild } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, model, output, viewChild } from "@angular/core";
 import { MatTabsModule } from "@angular/material/tabs";
 
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
@@ -115,6 +115,12 @@ export class PolicyPanelEditComponent {
       !this.actionDrafts.names().some((name) => name in actions)
     );
   });
+  // A template or a scope change replaces all actions at once and destroys their rows without removing them one by one.
+  // The drafts of the replaced actions go with them, so an action added later starts from its own value again.
+  private readonly dropDraftsOfReplacedActions = effect(() =>
+    this.actionDrafts.retain(Object.keys(this.editedPolicy().action ?? {}))
+  );
+
   readonly policyHasActions = computed(() => Object.keys(this.editedPolicy().action ?? {}).length > 0);
 
   public setActiveTab(tab: PolicyTab): void {

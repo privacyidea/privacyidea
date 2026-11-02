@@ -480,6 +480,28 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
       expect(component.valid()).toBe(true);
     });
 
+    it("should drop the invalid value of an action that a template or a scope change replaced", () => {
+      component.addPolicyEdit({ action: { max_token_per_user: "5" } });
+      drafts().set("max_token_per_user", "");
+      fixture.detectChanges();
+
+      component.addPolicyEdit({ action: { otppin: "true" } });
+      fixture.detectChanges();
+
+      expect(drafts().has("max_token_per_user")).toBe(false);
+    });
+
+    it("should keep the invalid value of an action that is still in the policy", () => {
+      component.addPolicyEdit({ action: { max_token_per_user: "5", otppin: "true" } });
+      drafts().set("max_token_per_user", "");
+      fixture.detectChanges();
+
+      component.addPolicyEdit({ action: { max_token_per_user: "5" } });
+      fixture.detectChanges();
+
+      expect(drafts().has("max_token_per_user")).toBe(true);
+    });
+
     it("should be true again once a scope is chosen", () => {
       component.addPolicyEdit({ scope: "" });
       component.addPolicyEdit({ scope: "admin" });

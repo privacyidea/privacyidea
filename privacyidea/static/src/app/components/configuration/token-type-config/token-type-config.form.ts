@@ -59,7 +59,7 @@ import {
   YUBICO_SECRET,
   YUBICO_URL
 } from "@constants/token.constants";
-import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { ERR, requiredNonBlank, WHOLE_NUMBER_PATTERN } from "@utils/form-rules.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 /**
@@ -126,9 +126,6 @@ const OMIT_WHEN_EMPTY_KEYS: ReadonlySet<string> = new Set([
   TIQR_INFO_URL,
   QUESTION_NUMBER_OF_ANSWERS
 ]);
-
-/** Digits only: the number of answers is a count, so a sign, a decimal point or an exponent is rejected. */
-const WHOLE_NUMBER_PATTERN = /^\d+$/;
 
 const PANEL_KEY_SET: ReadonlySet<string> = new Set(TOKEN_TYPE_CONFIG_KEYS);
 

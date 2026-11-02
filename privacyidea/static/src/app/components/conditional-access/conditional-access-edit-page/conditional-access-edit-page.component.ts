@@ -195,7 +195,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     // Stages need at least one entry. The rules of one stage (the failure threshold and the specific error message)
     // are in stageSchema; the engine evaluates by descending failure_threshold, so a threshold of 0 is reserved for a
     // stage carrying only a standing verdict (see stageThresholdAllowed).
-    validate(p.stages, (ctx) => (ctx.value().length > 0 ? [] : [{ kind: ERR.required }]));
+    requiredNonEmptyArray(p.stages);
     // Only the highest matching threshold ever fires, so two stages sharing a threshold would leave one permanently
     // dead; the backend also rejects this (uq_ca_stage_policy_threshold).
     validate(p.stages, (ctx) => {

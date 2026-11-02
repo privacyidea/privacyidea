@@ -97,7 +97,10 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
     }
   });
 
-  answeredCount = computed(() => this.answers().filter((row) => row.answer.trim() !== "").length);
+  // The payload keys the answers by question text, so questions with the same text are one answer.
+  answeredCount = computed(
+    () => new Set(this.answers().filter((row) => row.answer.trim() !== "").map((row) => row.question)).size
+  );
 
   answersForm = form(this.answers, (f) => {
     validate(f, () => (this.answeredCount() < this.configMinNumberOfAnswers() ? [{ kind: ERR.required }] : []));

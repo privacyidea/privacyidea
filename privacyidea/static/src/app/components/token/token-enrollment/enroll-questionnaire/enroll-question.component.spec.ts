@@ -150,6 +150,17 @@ describe("EnrollQuestionnaireComponent", () => {
     expect(component.answers().map((row) => row.answer)).toEqual(["", "Rex"]);
   });
 
+  it("counts two questions with the same text as one answer, as the payload keys the answers by text", async () => {
+    configure(["Pet?", "Pet?", "Car?"], 3);
+    await flushFixture(fixture);
+    await typeInto(fixture, inputs()[0], "Rex");
+    await typeInto(fixture, inputs()[1], "Rex");
+    await typeInto(fixture, inputs()[2], "Golf");
+
+    expect(component.answeredCount()).toBe(2);
+    expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+  });
+
   it("defaults to five required answers without a configured number", () => {
     expect(component.configMinNumberOfAnswers()).toBe(5);
   });
