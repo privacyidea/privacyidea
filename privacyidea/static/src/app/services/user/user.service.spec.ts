@@ -675,6 +675,15 @@ describe("UserService", () => {
       expect(userService.userResource.value()).toBeUndefined();
     });
 
+    it("sends no request on user details while the details user is empty and the role is admin", () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/");
+      contentServiceMock.onUserDetails = signal(true);
+      userService.detailsUser.set({ username: "", realm: "" });
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/user/");
+    });
+
     it("should do request if route is USER_DETAILS", async () => {
       const realm = "test-realm";
       const user = "alice";
