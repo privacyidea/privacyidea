@@ -409,6 +409,19 @@ describe("ContentService", () => {
       expect(service.detailsUser()).toEqual({ username: "a b/ü@x", realm: "r 1" });
     });
 
+    it("keeps the previous user on a details URL without a login", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/?realm=themis");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+    });
+
+    it("is empty before any details URL was opened", () => {
+      emitNav("/tokens");
+      expect(service.detailsUser()).toEqual({ username: "", realm: "" });
+      expect(service.tokenSerial()).toBe("");
+    });
+
     it("keeps the raw text of a malformed encoded login instead of throwing", () => {
       emitNav(ROUTE_PATHS.USERS_DETAILS + "/%zz?realm=x");
       expect(service.detailsUser()).toEqual({ username: "%zz", realm: "x" });
@@ -440,6 +453,13 @@ describe("ContentService", () => {
     it("decodes an encoded serial", () => {
       emitNav(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent("A/B 1"));
       expect(service.tokenSerial()).toBe("A/B 1");
+    });
+
+    it("keeps the previous serial on a details URL without a serial", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(service.tokenSerial()).toBe("SER1");
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS);
+      expect(service.tokenSerial()).toBe("SER1");
     });
 
     it("keeps the raw text of a malformed encoded serial instead of throwing", () => {
