@@ -889,6 +889,11 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertEqual("cornelius", entry["user"])
             self.assertNotIn("series_id", entry)
             self.assertNotIn("counter", entry)
+        # The audit entry names the user and the realm in their own columns
+        audit_entry = self.find_most_recent_audit_entry(action="GET /clients/remembered_devices")
+        self.assertEqual(("cornelius", "xcuserlist", 1),
+                         (audit_entry["user"], audit_entry["realm"], audit_entry["success"]), audit_entry)
+        self.assertFalse(audit_entry["info"], audit_entry)
 
         # One device per page
         res = self._list_user_devices(user="cornelius", realm="xcuserlist", pagesize=1)

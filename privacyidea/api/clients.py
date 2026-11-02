@@ -245,7 +245,7 @@ def list_user_remembered_devices_api():
 
     result = get_user_devices(identity, page=page, page_size=page_size)
 
-    g.audit_object.log({"success": True, "info": f"realm: {realm}, user: {user}"})
+    g.audit_object.log({"success": True})
     return send_result({
         "devices": devices_to_dicts(result["devices"], include_client=True),
         "count": result["count"],
