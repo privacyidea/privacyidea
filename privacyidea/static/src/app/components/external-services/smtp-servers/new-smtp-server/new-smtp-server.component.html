@@ -208,15 +208,13 @@
         <div class="checkbox-group">
           @if (showTLS()) {
             <mat-checkbox
-              [checked]="smtpModel().tls"
-              (change)="smtpModel.update(m => ({...m, tls: $event.checked}))"
+              [formField]="smtpForm.tls"
               i18n="@@smtpServer.useStarttls"
               >Use StartTLS</mat-checkbox
             >
           }
           <mat-checkbox
-            [checked]="smtpModel().enqueue_job"
-            (change)="smtpModel.update(m => ({...m, enqueue_job: $event.checked}))"
+            [formField]="smtpForm.enqueue_job"
             i18n="@@smtpServer.sendMailFromJob"
             >Send mail from job queue</mat-checkbox
           >
@@ -252,14 +250,12 @@
 
           <div class="checkbox-group">
             <mat-checkbox
-              [checked]="smtpModel().smime"
-              (change)="smtpModel.update(m => ({...m, smime: $event.checked}))"
+              [formField]="smtpForm.smime"
               i18n="@@smtpServer.sMimeSigning"
               >S/MIME signing</mat-checkbox
             >
             <mat-checkbox
-              [checked]="smtpModel().dont_send_on_error"
-              (change)="smtpModel.update(m => ({...m, dont_send_on_error: $event.checked}))"
+              [formField]="smtpForm.dont_send_on_error"
               i18n="@@smtpServer.donTSendSigning"
               >Don't send on signing error</mat-checkbox
             >
