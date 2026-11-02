@@ -31,7 +31,7 @@ from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ConfigAdminError, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
@@ -544,12 +544,33 @@ def export_smtpserver(name=None, censor=False):
 
 @register_import('smtpserver')
 def import_smtpserver(data, name=None):
-    """Import SMTP server configuration"""
+    """Import SMTP server configuration
+
+    Each SMTP server is imported independently. If a single server cannot be
+    imported (e.g. because its identifier is not valid), the remaining servers
+    are still imported and a ``ConfigAdminError`` summarizing the failures is
+    raised after all servers have been processed.
+    """
     log.debug(f'Import SMTP server config: {data!s}')
+    imported = []
+    failed = {}
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
         # condition is apparently not used anymore
-        rid = add_smtpserver(res_name, **res_data)
+        try:
+            rid = add_smtpserver(res_name, **res_data)
+        except Exception as e:
+            # Leave the session usable for the next server
+            db.session.rollback()
+            log.warning(f'Could not import SMTP server "{res_name!s}": {e!s}')
+            failed[res_name] = e
+            continue
+        imported.append(res_name)
         log.info(f'Import of SMTP server "{res_name!s}" finished,'
                  f' id: {rid!s}')
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({e!s})' for n, e in failed.items())
+        raise ConfigAdminError(f"Could not import the following SMTP servers: "
+                               f"{failure_summary}. Successfully imported: {imported}.")

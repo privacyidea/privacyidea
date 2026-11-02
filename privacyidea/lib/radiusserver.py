@@ -378,8 +378,16 @@ def export_radiusserver(name=None, censor=False):
 
 @register_import('radiusserver')
 def import_radiusserver(data, name=None):
-    """Import radiusserver configuration"""
+    """Import radiusserver configuration
+
+    Each RADIUS server is imported independently. If a single server cannot be
+    imported (e.g. because its identifier is not valid), the remaining servers
+    are still imported and a ``ConfigAdminError`` summarizing the failures is
+    raised after all servers have been processed.
+    """
     log.debug(f'Import radiusserver config: {data!s}')
+    imported = []
+    failed = {}
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
@@ -392,6 +400,19 @@ def import_radiusserver(data, name=None):
         legacy_secret = res_data.pop("password", None)
         if legacy_secret is not None and "secret" not in res_data:
             res_data["secret"] = legacy_secret
-        rid = add_radius(res_name, **res_data)
+        try:
+            rid = add_radius(res_name, **res_data)
+        except Exception as e:
+            # Leave the session usable for the next server
+            db.session.rollback()
+            log.warning(f'Could not import radiusserver "{res_name!s}": {e!s}')
+            failed[res_name] = e
+            continue
+        imported.append(res_name)
         log.info(f'Import of radiusserver "{res_name!s}" finished,'
                  f' id: {rid!s}')
+
+    if failed:
+        failure_summary = ', '.join(f'"{n}" ({e!s})' for n, e in failed.items())
+        raise ConfigAdminError(f"Could not import the following RADIUS servers: "
+                               f"{failure_summary}. Successfully imported: {imported}.")

@@ -10,7 +10,7 @@ from smtplib import SMTPException
 from unittest.mock import patch
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ConfigAdminError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
@@ -442,7 +442,7 @@ class SMTPServerExportImportTestCase(MyTestCase):
         from privacyidea.lib.smtpserver import import_smtpserver
         with self.assertRaises(ParameterError):
             add_smtpserver("team/mail", server="mail.example", sender="pi@example.com")
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ConfigAdminError):
             import_smtpserver({"team/mail": {"server": "mail.example", "sender": "pi@example.com"}})
         self.assertEqual([], get_smtpservers(identifier="team/mail"))
         # POST /smtpserver/send_test_email is the test endpoint
@@ -473,7 +473,22 @@ class SMTPServerExportImportTestCase(MyTestCase):
         import_smtpserver(export)
         self.assertEqual("secret", list_smtpservers("censoredsmtp")["censoredsmtp"]["password"])
         export["censoredsmtp"]["server"] = "other.example"
-        with self.assertRaises(ParameterError):
+        with self.assertRaises(ConfigAdminError):
             import_smtpserver(export)
         self.assertEqual("mail.example", list_smtpservers("censoredsmtp")["censoredsmtp"]["server"])
         delete_smtpserver("censoredsmtp")
+
+    def test_04_import_continues_after_invalid_server(self):
+        from privacyidea.lib.smtpserver import import_smtpserver
+        server = {"server": "mail.example", "sender": "pi@example.com"}
+        with self.assertRaises(ConfigAdminError) as cm:
+            import_smtpserver({"good": server, "mail/relay": server, "send_test_email": server, "after": server})
+        self.assertIn('"mail/relay"', cm.exception.message)
+        self.assertIn("must not contain '/'", cm.exception.message)
+        self.assertIn('"send_test_email"', cm.exception.message)
+        self.assertIn("Successfully imported: ['good', 'after']", cm.exception.message)
+        self.assertEqual(["after", "good"],
+                         sorted(server.config.identifier for server in get_smtpservers()
+                                if server.config.identifier in ("good", "mail/relay", "send_test_email", "after")))
+        delete_smtpserver("good")
+        delete_smtpserver("after")

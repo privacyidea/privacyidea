@@ -208,3 +208,21 @@ class RADIUSServerTestCase(MyTestCase):
         with self.assertRaises(ParameterError):
             add_radius("test_request", "1.2.3.4", "testing123", dictionary=DICT_FILE)
         self.assertNotIn("test_request", list_radiusservers())
+
+    def test_import_continues_after_invalid_server(self):
+        from privacyidea.lib.radiusserver import import_radiusserver, list_radiusservers
+        server = {"server": "1.2.3.4", "secret": "testing123", "dictionary": DICT_FILE}
+        with self.assertRaises(ConfigAdminError) as cm:
+            import_radiusserver({"good": dict(server), "mail/relay": dict(server), "test_request": dict(server),
+                                 "after": dict(server)})
+        self.assertIn('"mail/relay"', cm.exception.message)
+        self.assertIn('"test_request"', cm.exception.message)
+        self.assertIn("must not contain '/'", cm.exception.message)
+        self.assertIn("Successfully imported: ['good', 'after']", cm.exception.message)
+        servers = list_radiusservers()
+        self.assertIn("good", servers)
+        self.assertIn("after", servers)
+        self.assertNotIn("mail/relay", servers)
+        self.assertNotIn("test_request", servers)
+        delete_radius("good")
+        delete_radius("after")
