@@ -2,7 +2,7 @@ Version 3.14.1
 
   Enhancements:
   * `find --orphaned` of both token janitors looks up the token owners with one batch lookup per resolver and chunk
-    instead of one lookup per token: 14 seconds instead of 7 minutes for 10,000 LDAP tokens (#1653)
+    instead of one lookup per token (#1653)
 
   Fixes:
   * The token janitors no longer treat tokens of an HTTP, Keycloak or Entra ID resolver as orphaned when the user
