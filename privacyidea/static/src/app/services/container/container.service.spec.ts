@@ -1406,6 +1406,76 @@ describe("ContainerService", () => {
     });
   });
 
+  it("addTokensToContainer sends every serial in a single addall request", async () => {
+    jest
+      .spyOn(http, "post")
+      .mockReturnValue(
+        of({ result: { value: { t1: true, t2: true } } } as unknown as PiResponse<Record<string, boolean>>)
+      );
+
+    await lastValueFrom(containerService.addTokensToContainer("cont1", ["t1", "t2"]));
+
+    expect(http.post).toHaveBeenCalledTimes(1);
+    expect(http.post).toHaveBeenCalledWith(
+      `${containerService.containerBaseUrl}cont1/addall`,
+      { serial: "t1,t2" },
+      expect.objectContaining({ headers: expect.anything() })
+    );
+  });
+
+  it("addTokensToContainer stays silent when the caller reports the errors itself", async () => {
+    jest.spyOn(http, "post").mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+    await expect(lastValueFrom(containerService.addTokensToContainer("c", ["t1", "t2"], false))).rejects.toBeDefined();
+
+    expect(notificationServiceMock.error).not.toHaveBeenCalled();
+  });
+
+  describe("containerPickerResource", () => {
+    beforeEach(() => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
+    });
+
+    const pickerRequest = () => httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+
+    const flushRemainingContainerRequests = () =>
+      httpMock
+        .match((r) => r.url === "/container/")
+        .forEach((r) => r.flush(MockPiResponse.fromValue({ containers: [], count: 0 })));
+
+    it("requests nothing while no picker is open", () => {
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      flushRemainingContainerRequests();
+    });
+
+    it("loads the list when a picker opens and nothing is typed yet", async () => {
+      containerService.containerPickerFilter.set("");
+      TestBed.tick();
+
+      const req = pickerRequest();
+      expect(req.request.params.get("container_serial")).toBeNull();
+      req.flush(
+        MockPiResponse.fromValue({
+          containers: [{ serial: "CONT0001", type: "generic", realms: [], states: [], tokens: [], users: [] }]
+        })
+      );
+      await Promise.resolve();
+
+      expect(containerService.pickableContainers()).toEqual(["CONT0001"]);
+      flushRemainingContainerRequests();
+    });
+
+    it("lets the backend filter the list by what was typed", () => {
+      containerService.containerPickerFilter.set("CONT");
+      TestBed.tick();
+
+      expect(pickerRequest().request.params.get("container_serial")).toBe("*CONT*");
+      flushRemainingContainerRequests();
+    });
+  });
+
   describe("compareWithTemplate", () => {
     const containerWithTemplate = (serial: string, template: string | undefined): ContainerDetails => ({
       count: 1,

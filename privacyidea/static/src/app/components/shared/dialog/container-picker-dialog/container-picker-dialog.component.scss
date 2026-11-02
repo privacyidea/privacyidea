@@ -1,0 +1,42 @@
+// Every row keeps the width of the input field, so the dialog does not change size
+// with the optional checkbox and hint.
+.container-picker-buttons,
+.container-picker-warning {
+  width: var(--input-width-l);
+  box-sizing: border-box;
+}
+
+// Two shortcuts per row, so a row plus its gap is exactly as wide as the input below it.
+.container-picker-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+  // Three rows of shortcuts fit, a fourth one peeks out so it is visible that the area scrolls.
+  max-height: 140px;
+  overflow: auto;
+
+  // Half the input width leaves no room for the default button padding next to a serial.
+  button {
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 8px;
+  }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    margin-right: 4px;
+  }
+}
+
+// A block of its own: mat-form-field is inline-flex, so an inline checkbox would sit beside it.
+.container-picker-assign {
+  max-width: var(--input-width-l);
+  margin-top: 8px;
+}
+
+.container-picker-warning {
+  margin-top: 8px;
+}

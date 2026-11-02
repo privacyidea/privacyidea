@@ -209,8 +209,13 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   selectedContainerSerial: WritableSignal<string | null>;
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   userContainersResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  userContainerSerials: Signal<string[]>;
   containersForTokenTypeResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containersForTokenType: Signal<string[]>;
+  containerPickerFilter: WritableSignal<string | null>;
+  containerPickerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  pickableContainerDetails: Signal<ContainerDetailData[]>;
+  pickableContainers: Signal<string[]>;
   containerSelection: RowSelector<ContainerDetailData>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
@@ -238,6 +243,11 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   setContainerInfos: (containerSerial: string, infos: Record<string, string>) => Observable<PiResponse<boolean>>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<PiResponse<boolean>>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
+  addTokensToContainer: (
+    containerSerial: string,
+    tokenSerials: string[],
+    notify?: boolean
+  ) => Observable<PiResponse<Record<string, boolean>>>;
   removeTokenFromContainer: (containerSerial: string, tokenSerial: string) => Observable<PiResponse<boolean>>;
   toggleAll: (action: "activate" | "deactivate") => Observable<(PiResponse<boolean> | null)[] | null>;
   removeAll: (containerSerial: string) => Observable<PiResponse<boolean> | null>;
@@ -500,6 +510,12 @@ export class ContainerService extends FilterableTableService implements Containe
     });
   });
 
+  readonly userContainerSerials = computed<string[]>(() =>
+    this.userContainersResource.hasValue()
+      ? (this.userContainersResource.value()?.result?.value?.containers.map((container) => container.serial) ?? [])
+      : []
+  );
+
   containersForTokenTypeResource = httpResource<PiResponse<ContainerDetails>>(() => {
     // Do not load containers if the action is not allowed, or we are not on the container details page
     if (!this.authService.actionAllowed("container_list")) {
@@ -556,6 +572,40 @@ export class ContainerService extends FilterableTableService implements Containe
       return source.value.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
+
+  // The container picker dialog is not bound to a route, so it loads its own list. A null filter
+  // means no picker is open and nothing is requested.
+  readonly containerPickerFilter: WritableSignal<string | null> = signal(null);
+
+  containerPickerResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    const filter = this.containerPickerFilter();
+    if (filter === null || !this.authService.actionAllowed("container_list")) {
+      return undefined;
+    }
+    return this.containerRequest({
+      page: 1,
+      pagesize: this.pageSize(),
+      no_token: 1,
+      ...toWildcardParam("container_serial", filter, new Set())
+    });
+  });
+
+  pickableContainerDetails: WritableSignal<ContainerDetailData[]> = linkedSignal({
+    source: () => ({
+      value: this.containerPickerResource.hasValue() ? this.containerPickerResource.value() : undefined,
+      isLoading: this.containerPickerResource.isLoading(),
+      error: this.containerPickerResource.error()
+    }),
+    computation: (source, previous): ContainerDetailData[] => {
+      if (source.error) return [];
+      if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
+      return source.value.result?.value?.containers ?? [];
+    }
+  });
+
+  readonly pickableContainers = computed<string[]>(() =>
+    this.pickableContainerDetails().map((container) => container.serial)
+  );
 
   containerSelection = new RowSelector<ContainerDetailData>({
     keyGetter: (container) => container.serial,
@@ -894,6 +944,34 @@ export class ContainerService extends FilterableTableService implements Containe
           this.notificationService.error(
             $localize`:@@container.failedToAddTokenTo:Failed to add token to container. ${message}:MESSAGE:`
           );
+          return throwError(() => error);
+        })
+      );
+  }
+
+  // Several tokens go in one request: parallel single adds each rewrite the whole token list of the
+  // container, so the last one to commit drops the tokens the others added.
+  addTokensToContainer(
+    containerSerial: string,
+    tokenSerials: string[],
+    notify = true
+  ): Observable<PiResponse<Record<string, boolean>>> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<PiResponse<Record<string, boolean>>>(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/addall`,
+        { serial: tokenSerials.join(",") },
+        { headers }
+      )
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to add tokens to container.", error);
+          if (notify) {
+            const message = error.error?.result?.error?.message || "";
+            this.notificationService.error(
+              $localize`:@@container.failedToAddTokensTo:Failed to add tokens to container. ${message}:MESSAGE:`
+            );
+          }
           return throwError(() => error);
         })
       );

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, Signal, signal } from "@angular/core";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -74,6 +74,13 @@ export class MockContainerService implements ContainerServiceInterface {
   containersForTokenTypeResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
     MockPiResponse.fromValue({ containers: [], count: 0 })
   );
+  containerPickerResource = new MockHttpResourceRef<PiResponse<ContainerDetails> | undefined>(
+    MockPiResponse.fromValue({ containers: [], count: 0 })
+  );
+  containerPickerFilter: WritableSignal<string | null> = signal(null);
+  userContainerSerials: WritableSignal<string[]> = signal([]);
+  pickableContainerDetails: WritableSignal<ContainerDetailData[]> = signal([]);
+  pickableContainers: WritableSignal<string[]> = signal([]);
   selectableContainers = signal<ContainerDetailData[]>([]);
   containerSelection = new RowSelector<ContainerDetailData>({
     keyGetter: (container) => container.serial,
@@ -129,6 +136,7 @@ export class MockContainerService implements ContainerServiceInterface {
   setContainerInfos = jest.fn().mockReturnValue(of({}));
   deleteInfo = jest.fn().mockReturnValue(of({}));
   addTokenToContainer = jest.fn().mockReturnValue(of(null));
+  addTokensToContainer = jest.fn().mockReturnValue(of(MockPiResponse.fromValue({})));
   removeTokenFromContainer = jest.fn().mockReturnValue(of(null));
   toggleAll = jest.fn().mockReturnValue(of(null));
   removeAll = jest.fn().mockReturnValue(of(null));

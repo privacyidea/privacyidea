@@ -52,14 +52,24 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContainerDetailToken } from "@services/container/container.service";
+import {
+  ContainerDetailToken,
+  ContainerService,
+  ContainerServiceInterface
+} from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import {
+  ContainerPickerDialogComponent,
+  ContainerPickerOwner,
+  ContainerPickerResult
+} from "@components/shared/dialog/container-picker-dialog/container-picker-dialog.component";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { catchError, forkJoin, map, Observable, of } from "rxjs";
+import { catchError, forkJoin, map, Observable, of, switchMap } from "rxjs";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
@@ -79,7 +89,7 @@ const columnWidthTiers: Record<string, "s" | "m" | "l" | "xl"> = {
   container_serial: "m"
 };
 
-type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
+type BulkAction = "unassign" | "toggleActive" | "resetFailCount" | "addToContainer";
 
 @Component({
   selector: "app-user-details-token-table",
@@ -118,9 +128,12 @@ export class UserDetailsTokenTableComponent {
    */
   readonly enrollAction = input<TemplateRef<unknown> | undefined>(undefined);
   readonly assignAction = input<TemplateRef<unknown> | undefined>(undefined);
+
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
@@ -237,6 +250,51 @@ export class UserDetailsTokenTableComponent {
     });
   }
 
+  async addToContainerSelected(): Promise<void> {
+    const choice = await this.dialogService.openDialogAsync<unknown, ContainerPickerResult>({
+      component: ContainerPickerDialogComponent
+    });
+    if (!choice?.containerSerial) {
+      return;
+    }
+    const serials = this.selector.selectedRows().map((r) => r.serial);
+    this.containerService.addTokensToContainer(choice.containerSerial, serials, false).subscribe({
+      next: (response) => {
+        const added = response.result?.value ?? {};
+        this.finishBulkAction(
+          "addToContainer",
+          serials.map((serial) => ({ serial, ok: added[serial] === true }))
+        );
+        if (choice.assignToUser) {
+          this.assignContainerToUser(choice.containerSerial, choice.previousOwner);
+        }
+      },
+      error: () =>
+        this.finishBulkAction(
+          "addToContainer",
+          serials.map((serial) => ({ serial, ok: false }))
+        )
+    });
+  }
+
+  private assignContainerToUser(containerSerial: string, previousOwner: ContainerPickerOwner | null): void {
+    const username = this.userService.detailsUser().username;
+    const userRealm = this.userService.selectedUserRealm();
+    if (!username || !userRealm) {
+      return;
+    }
+    const assign = this.containerService.assignUser({ containerSerial, username, userRealm });
+    // A container takes only one owner, so an existing one has to go before the new one can be set.
+    const request = previousOwner
+      ? this.containerService
+          .unassignUser(containerSerial, previousOwner.username, previousOwner.realm)
+          .pipe(switchMap(() => assign))
+      : assign;
+    request.subscribe({
+      next: () => this.containerService.userContainersResource.reload()
+    });
+  }
+
   toggleActive(tokenDetails: TokenDetails): void {
     if (
       !tokenDetails.revoked &&
@@ -280,8 +338,10 @@ export class UserDetailsTokenTableComponent {
         return $localize`:@@user.bulkUnassignFailed:${failed.length}:COUNT:/${total}:TOTAL: unassign failed: ${serials}:SERIALS:`;
       case "toggleActive":
         return $localize`:@@user.bulkToggleActiveFailed:${failed.length}:COUNT:/${total}:TOTAL: toggle active failed: ${serials}:SERIALS:`;
-      default:
+      case "resetFailCount":
         return $localize`:@@user.bulkResetFailCountFailed:${failed.length}:COUNT:/${total}:TOTAL: reset fail count failed: ${serials}:SERIALS:`;
+      default:
+        return $localize`:@@user.bulkAddToContainerFailed:${failed.length}:COUNT:/${total}:TOTAL: add to container failed: ${serials}:SERIALS:`;
     }
   }
 }
