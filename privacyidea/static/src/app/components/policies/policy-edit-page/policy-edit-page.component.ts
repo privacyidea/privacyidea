@@ -123,6 +123,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
     );
   });
+  readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.editedPolicy()));
   readonly canSave = computed(
     () =>
       this.savingName() === null &&
@@ -130,7 +131,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       !!this.editedPolicy().name?.trim() &&
       /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
       !this.nameTaken() &&
-      !checkAllResolversWithoutResolver(this.editedPolicy())
+      !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>
     this.mode() === "edit"
