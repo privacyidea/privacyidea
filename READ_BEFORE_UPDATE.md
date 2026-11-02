@@ -222,6 +222,15 @@
   created with the remaining tokens. **Review the container templates your realm administrators use** and select
   *Assign to user* for the tokens they need to create.
 
+* **Container conditions of PIN change and resync policies are checked against the container of the token.** The
+  policies `change_pin_on_first_use`, `change_pin_every`, `change_pin_via_validate` and `resync_via_multichallenge`
+  now compare a `container` or `container_info` condition with the container that holds the token. Before 3.14.1,
+  these conditions never got container data, so the *Handle Missing Data* option alone decided whether the policy
+  applied. For a token without a container, the option still decides. **Check these policies for container
+  conditions.** For example, a policy with *Condition is true* no longer applies to tokens in a container that does
+  not match the condition. A policy with *Condition is false* now applies to tokens in a container that matches the
+  condition.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
