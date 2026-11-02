@@ -484,7 +484,7 @@ class HTTPResolver(UserIdResolver):
             user_info = self._get_user(user_id, config, ["username"], raise_on_lookup_failure=True)
         except (ResolverError, ValueError) as error:
             # ValueError: the response is not JSON, e.g. the page of a proxy in front of the user store
-            log.error(f"Could not look up the user with the ID {user_id!r}: {error}")
+            log.warning(f"Could not look up the user with the ID {user_id!r}: {error}")
             raise ResolverError(str(USER_LOOKUP_FAILED)) from error
         user_name = user_info.get("username", "")
         return user_name
