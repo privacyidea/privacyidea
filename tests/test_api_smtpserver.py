@@ -15,7 +15,7 @@ from cryptography.x509.oid import NameOID
 
 from privacyidea.api.smtpserver import _describe_smtp_error
 from privacyidea.lib.crypto import encryptPassword, CENSORED
-from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver, list_smtpservers
 from . import smtpmock
 from .base import MyApiTestCase
 
@@ -503,6 +503,60 @@ class SMTPServerTestCase(MyApiTestCase):
         self.assertTrue(value)
         self.assertIn("application/x-pkcs7-signature", self.smtp_mock.get_sent_message().decode())
 
+
+    def test_test_email_with_changed_settings_needs_the_password(self):
+        """The stored password is not sent to a server other than the one it was saved for."""
+        add_smtpserver("savedServer3", server="mail.example.com", port=25, username="u", password="realsecret")
+        self.addCleanup(delete_smtpserver, "savedServer3")
+        changes = [("server", {"server": "other.example"}), ("port", {"port": 587}),
+                   ("username", {"username": "someone-else"}), ("tls", {"tls": True})]
+        for field, change in changes:
+            with self.subTest(field=field):
+                body = self._listed_definition("savedServer3")
+                body.update(identifier="savedServer3", recipient="recp@example.com", **change)
+                with mock.patch("smtplib.SMTP.login") as login:
+                    with self.app.test_request_context("/smtpserver/send_test_email", method="POST", json=body,
+                                                       headers={"Authorization": self.at}):
+                        res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                message = res.json["result"]["error"]["message"]
+                self.assertIn(f"The settings {field} differ from the saved SMTP server 'savedServer3'", message)
+                self.assertIn("Enter the password to test", message)
+                login.assert_not_called()
+
+    def test_save_with_changed_settings_needs_the_password(self):
+        """Saving __CENSORED__ with other connection settings is rejected and changes nothing."""
+        add_smtpserver("savedServer4", server="mail.example.com", port=25, username="u", password="realsecret",
+                       description="old")
+        self.addCleanup(delete_smtpserver, "savedServer4")
+        changes = [("server", {"server": "other.example"}), ("port", {"port": 587}),
+                   ("username", {"username": "someone-else"}), ("tls", {"tls": True})]
+        for field, change in changes:
+            with self.subTest(field=field):
+                body = self._listed_definition("savedServer4")
+                body.update(description="new", **change)
+                with self.app.test_request_context("/smtpserver/savedServer4", method="POST", json=body,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                message = res.json["result"]["error"]["message"]
+                self.assertIn(f"The settings {field} differ from the saved SMTP server 'savedServer4'", message)
+                self.assertIn("Enter the password to save", message)
+        stored = list_smtpservers(identifier="savedServer4")["savedServer4"]
+        self.assertEqual("mail.example.com", stored["server"])
+        self.assertEqual("old", stored["description"])
+        self.assertEqual("realsecret", stored["password"])
+
+        # With the password entered, the settings can be changed
+        body = self._listed_definition("savedServer4")
+        body.update(server="other.example", password="newsecret")
+        with self.app.test_request_context("/smtpserver/savedServer4", method="POST", json=body,
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        stored = list_smtpservers(identifier="savedServer4")["savedServer4"]
+        self.assertEqual("other.example", stored["server"])
+        self.assertEqual("newsecret", stored["password"])
 
 def _write_smime_key_and_certificate(directory: str, key_password: str) -> tuple[str, str]:
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)

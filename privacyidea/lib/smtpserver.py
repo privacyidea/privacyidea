@@ -31,6 +31,7 @@ from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
@@ -353,6 +354,34 @@ def list_smtpservers(identifier=None, server=None):
 
 
 @log_with(log)
+def check_censored_password(identifier: str, saved: dict, action: str, server: str | None = None,
+                            port: int | None = None, username: str | None = None, tls: bool | None = None) -> None:
+    """
+    Make sure a stored password is only used for the server it was saved for.
+
+    A client that never received the password sends the ``__CENSORED__`` placeholder instead, which
+    means "use the stored password". If the request also changes where or as whom the password is
+    sent, the stored password of one server could be pointed at any other host. A value of ``None``
+    means the setting is not changed.
+
+    :param identifier: the identifier of the saved SMTP server
+    :param saved: the saved configuration, as returned by ``SMTPServerDB.get()``
+    :param action: what the password is needed for, used in the error message (e.g. "save")
+    :param server: the requested server
+    :param port: the requested port
+    :param username: the requested username
+    :param tls: the requested TLS flag
+    :raises ParameterError: if one of the settings differs from the saved configuration
+    """
+    saved_settings = {"server": saved.get("server"), "port": saved.get("port"),
+                      "username": saved.get("username") or "", "tls": bool(saved.get("tls"))}
+    requested = {"server": server, "port": port, "username": username, "tls": tls}
+    changed = [key for key, value in requested.items() if value is not None and value != saved_settings[key]]
+    if changed:
+        raise ParameterError(f"The settings {', '.join(changed)} differ from the saved SMTP server "
+                             f"'{identifier}'. Enter the password to {action} the changed settings.")
+
+
 def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",
                    sender: str = "", description: str = "", tls: bool = False, timeout: int = TIMEOUT,
                    enqueue_job: bool = False, smime: bool = False, dont_send_on_error: bool = False,
@@ -368,16 +397,26 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     :type identifier: basestring
     :param server: The FQDN or IP address of the smtpserver
     :type server: basestring
+    :param password: The password. ``__CENSORED__`` keeps the stored password, but only if
+        server, port, username and tls stay the same.
     :return: The Id of the database object
+    :raises ParameterError: if the password is ``__CENSORED__`` and server, port, username or
+        tls differ from the saved configuration
     """
     # POST /smtpserver/send_test_email is the test endpoint, not the server of that name
     validate_path_identifier(identifier, "SMTP server", reserved=("send_test_email",))
+
+    stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
+    smtp_server = db.session.execute(stmt).scalar_one_or_none()
 
     # The CENSORED placeholder (what the API returned for the password) means
     # "keep the stored password unchanged" -> leave encrypted_password = None so
     # the update below skips the column. An empty string clears the password, any
     # other value sets it.
     if is_censored(password):
+        if smtp_server:
+            check_censored_password(identifier, smtp_server.get(), "save", server=server, port=port,
+                                    username=username, tls=tls)
         encrypted_password = None
     else:
         encrypted_password = encryptPassword(password)
@@ -389,9 +428,6 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     encrypted_private_key_password = private_key_password
     if private_key_password:
         encrypted_private_key_password = encryptPassword(private_key_password)
-
-    stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
-    smtp_server = db.session.execute(stmt).scalar_one_or_none()
 
     if smtp_server:
         # Update existing entry
@@ -435,22 +471,35 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
     return smtp_server.id
 
 
-def replace_censored_secrets(identifier: str, password: str, private_key_password: str) -> tuple[str, str]:
+def replace_censored_secrets(identifier: str, password: str, private_key_password: str, *,
+                             server: str | None = None, port: int | None = None, username: str | None = None,
+                             tls: bool | None = None) -> tuple[str, str]:
     """
     Replace the CENSORED placeholder of the password and of the S/MIME key password with the stored, encrypted value
     of the SMTP server definition *identifier*, as saving the definition keeps it. The sending code decrypts a stored
     value. A placeholder for a definition that does not exist becomes an empty value.
 
+    The stored password is only used if server, port, username and tls match the definition, see
+    :func:`check_censored_password`.
+
     :param identifier: the identifier of the SMTP server definition
     :param password: the password as the request sent it
     :param private_key_password: the S/MIME key password as the request sent it
+    :param server: the server the password is sent to
+    :param port: the port the password is sent to
+    :param username: the username the password is sent with
+    :param tls: whether the password is sent with STARTTLS
     :return: the password and the S/MIME key password to send with
+    :raises ParameterError: if the password is censored and one of the settings differs from the definition
     """
     if not (is_censored(password) or is_censored(private_key_password)):
         return password, private_key_password
     stored_servers = get_smtpservers(identifier=identifier)
     stored = stored_servers[0].config if stored_servers else None
     if is_censored(password):
+        if stored:
+            check_censored_password(identifier, stored.get(), "test", server=server, port=port,
+                                    username=username, tls=tls)
         password = stored.password if stored else ""
     if is_censored(private_key_password):
         private_key_password = (stored.private_key_password or "") if stored else ""

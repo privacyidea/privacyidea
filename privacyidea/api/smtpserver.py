@@ -137,7 +137,10 @@ def create(identifier=None):
     :jsonparam server: hostname or IP of the mail server (required).
     :jsonparam port: TCP port of the mail server, default ``25``.
     :jsonparam username: SMTP auth user. Empty string disables auth.
-    :jsonparam password: SMTP auth password (stored encrypted).
+    :jsonparam password: SMTP auth password (stored encrypted). The
+        ``__CENSORED__`` placeholder returned by ``GET /smtpserver/`` keeps the
+        stored password, but only if ``server``, ``port``, ``username`` and
+        ``tls`` stay the same. Otherwise the password has to be entered again.
     :jsonparam sender: ``From:`` address used when sending mail through
         this server.
     :jsonparam tls: ``True`` to use STARTTLS, ``False`` (default) for plain.
@@ -153,6 +156,8 @@ def create(identifier=None):
     :jsonparam private_key_password: passphrase for the S/MIME private key.
     :jsonparam certificate: PEM-encoded certificate for S/MIME signing.
     :status 200: ``True`` on success.
+    :status 400: the password is censored, but the connection settings differ
+        from the saved definition.
     """
     param = request.all_data
     server = get_required(param, "server")
@@ -258,7 +263,8 @@ def test():
     :jsonparam port: TCP port, default ``25``.
     :jsonparam username: SMTP auth user.
     :jsonparam password: SMTP auth password. ``__CENSORED__``, as ``GET /smtpserver/`` returns it, uses the stored
-        password of the definition ``identifier``.
+        password of the definition ``identifier``, but only if ``server``, ``port``, ``username`` and ``tls``
+        match the definition. Otherwise the password has to be entered again.
     :jsonparam sender: ``From:`` address used for the test message.
     :jsonparam tls: ``True`` to use STARTTLS, default ``False``.
     :jsonparam timeout: socket timeout in seconds, default ``10``.
@@ -274,8 +280,9 @@ def test():
     :status 200: ``True`` if the message was delivered (or queued)
         successfully. A queued message is sent by the job queue worker, which
         only logs a failure.
-    :status 400: the message could not be sent. The error message says why,
-        e.g. that the authentication failed or the server could not be reached.
+    :status 400: the message could not be sent, or the password is censored
+        but the connection settings differ from the saved configuration. The
+        error message says why.
     """
     param = request.all_data
     identifier = get_required(param, "identifier")
@@ -294,7 +301,8 @@ def test():
     private_key_password = get_optional(param, "private_key_password", default="")
     certificate = get_optional(param, "certificate", default="")
     # The edit dialog sends back the placeholder that GET /smtpserver/ returned for a stored secret
-    password, private_key_password = replace_censored_secrets(identifier, password, private_key_password)
+    password, private_key_password = replace_censored_secrets(identifier, password, private_key_password,
+                                                              server=server, port=port, username=username, tls=tls)
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,

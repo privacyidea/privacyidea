@@ -449,3 +449,31 @@ class SMTPServerExportImportTestCase(MyTestCase):
         with self.assertRaises(ParameterError):
             add_smtpserver("send_test_email", server="mail.example", sender="pi@example.com")
         self.assertEqual([], get_smtpservers(identifier="send_test_email"))
+
+    def test_03_censored_password_only_kept_for_same_settings(self):
+        from privacyidea.lib.crypto import CENSORED
+        from privacyidea.lib.smtpserver import export_smtpserver, import_smtpserver, list_smtpservers
+        add_smtpserver("censoredsmtp", server="mail.example", port=587, username="pi", password="secret",
+                       sender="pi@example.com", tls=True)
+
+        # Same settings, and settings that are not given, keep the stored password
+        add_smtpserver("censoredsmtp", server="mail.example", port=587, username="pi", password=CENSORED,
+                       sender="pi@example.com", tls=True, description="kept")
+        add_smtpserver("censoredsmtp", server=None, port=None, username=None, password=CENSORED, tls=None)
+        self.assertEqual("secret", list_smtpservers("censoredsmtp")["censoredsmtp"]["password"])
+
+        # A changed setting is rejected and changes nothing
+        with self.assertRaises(ParameterError):
+            add_smtpserver("censoredsmtp", server="other.example", port=587, username="pi", password=CENSORED,
+                           sender="pi@example.com", tls=True)
+        self.assertEqual("mail.example", list_smtpservers("censoredsmtp")["censoredsmtp"]["server"])
+
+        # A censored export can be imported into the same instance, but not with a changed server
+        export = export_smtpserver(name="censoredsmtp", censor=True)
+        import_smtpserver(export)
+        self.assertEqual("secret", list_smtpservers("censoredsmtp")["censoredsmtp"]["password"])
+        export["censoredsmtp"]["server"] = "other.example"
+        with self.assertRaises(ParameterError):
+            import_smtpserver(export)
+        self.assertEqual("mail.example", list_smtpservers("censoredsmtp")["censoredsmtp"]["server"])
+        delete_smtpserver("censoredsmtp")

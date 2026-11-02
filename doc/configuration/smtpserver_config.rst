@@ -61,3 +61,23 @@ Note that if the checkbox is checked, any test email will also be sent via the q
 This also means that privacyIDEA displays a success notice when the job has been
 sent to the queue successfully, which does not necessarily mean that the mail was
 actually sent. Thus, it is important to check that the test email is actually received.
+
+.. _smtpserver_password:
+
+Stored password
+~~~~~~~~~~~~~~~
+
+privacyIDEA never returns the stored password, neither in the WebUI nor in the
+:ref:`rest_smtpserver`. Instead, the password field contains the placeholder
+``__CENSORED__``. If you save the definition or send a test email with the
+placeholder, privacyIDEA uses the stored password.
+
+This only works as long as the *server*, the *port*, the *username* and the
+*TLS flag* stay the same. If you change one of them, you have to enter the
+password again before you can save the definition or send a test email.
+Otherwise privacyIDEA rejects the request with an error naming the changed
+settings. This prevents the stored password from being sent to a different
+server or used for a different account.
+
+.. versionchanged:: 3.14.1 The stored password is only kept or used if server,
+   port, username and TLS flag are unchanged.
