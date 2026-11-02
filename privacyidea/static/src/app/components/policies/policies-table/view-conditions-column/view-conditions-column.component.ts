@@ -57,6 +57,7 @@ export class ViewConditionsColumnComponent {
     client: $localize`:@@common.client:Client`,
     userAgents: $localize`:@@policy.condition.userAgents:User Agents`
   };
+  readonly checkAllResolversMarker = $localize`:@@policy.condition.checkAllResolvers:all resolvers of the user`;
 
   // Admin Conditions
   selectedAdmins = computed(() => this.policy().adminuser || []);
@@ -67,6 +68,7 @@ export class ViewConditionsColumnComponent {
   selectedResolvers = computed(() => this.policy().resolver || []);
   selectedUsers = computed(() => this.policy().user || []);
   userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
+  checkAllResolvers = computed(() => this.policy().check_all_resolvers || false);
 
   // Environment Conditions
   selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
