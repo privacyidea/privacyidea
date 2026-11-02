@@ -22,7 +22,7 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { catchError, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
+import { catchError, filter, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
 
 /**
  * The settings the backend accepts. It rejects any other top-level key, so a new
@@ -71,6 +71,8 @@ export class UserSettingsService implements UserSettingsServiceInterface {
   private readonly baseUrl = environment.proxyUrl + "/user/settings";
   private readonly cache = signal<UserSettings | null>(null);
   private request: Observable<UserSettings> | null = null;
+  // Counts the calls of clearCache(), so an answer to a request sent before one can be told apart.
+  private epoch = 0;
 
   public readonly settings: Signal<UserSettings | null> = this.cache.asReadonly();
 
@@ -92,21 +94,18 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       return of(cached);
     }
     if (!this.request) {
-      const request: Observable<UserSettings> = this.http
+      const epoch = this.epoch;
+      this.request = this.http
         .get<PiResponse<UserSettings>>(this.baseUrl, { headers: this.authService.getHeaders() })
         .pipe(
           map((response) => response.result?.value ?? {}),
-          tap((settings) => {
-            // A response can arrive after its session ended, when clearCache() has already reset the request.
-            // Storing it would hand the settings of the ended session to the next login.
-            if (this.request === request) {
-              this.store(settings);
-            }
-          }),
+          // An answer to a request from a session that has since ended is dropped before it is cached or reaches
+          // a subscriber: clearCache() has moved on, and the next login must not see the ended session's settings.
+          filter(() => epoch === this.epoch),
+          tap((settings) => this.store(settings)),
           catchError((error) => this.fail(error, "Failed to load the user settings.")),
           shareReplay(1)
         );
-      this.request = request;
     }
     return this.request;
   }
@@ -119,13 +118,14 @@ export class UserSettingsService implements UserSettingsServiceInterface {
     if (!this.available()) {
       return of({});
     }
+    const epoch = this.epoch;
     return this.http
       .post<
         PiResponse<UserSettings>
       >(this.baseUrl, { settings: { [key]: value } }, { headers: this.authService.getHeaders() })
       .pipe(
         map((response) => response.result?.value ?? {}),
-        tap((settings) => this.store(settings)),
+        tap((settings) => this.storeIfCurrent(settings, epoch)),
         catchError((error) => this.fail(error, "Failed to save the user settings."))
       );
   }
@@ -135,11 +135,12 @@ export class UserSettingsService implements UserSettingsServiceInterface {
     if (!this.available()) {
       return of({});
     }
+    const epoch = this.epoch;
     return this.http
       .post<PiResponse<UserSettings>>(this.baseUrl, { settings: values }, { headers: this.authService.getHeaders() })
       .pipe(
         map((response) => response.result?.value ?? {}),
-        tap((settings) => this.store(settings)),
+        tap((settings) => this.storeIfCurrent(settings, epoch)),
         catchError((error) => this.fail(error, "Failed to save the user settings."))
       );
   }
@@ -148,20 +149,29 @@ export class UserSettingsService implements UserSettingsServiceInterface {
     if (!this.available()) {
       return of({});
     }
+    const epoch = this.epoch;
     return this.http
       .delete<PiResponse<UserSettings>>(`${this.baseUrl}/${encodeURIComponent(key)}`, {
         headers: this.authService.getHeaders()
       })
       .pipe(
         map((response) => response.result?.value ?? {}),
-        tap((settings) => this.store(settings)),
+        tap((settings) => this.storeIfCurrent(settings, epoch)),
         catchError((error) => this.fail(error, "Failed to reset the user settings."))
       );
   }
 
   public clearCache(): void {
+    this.epoch++;
     this.cache.set(null);
     this.request = null;
+  }
+
+  /** The answer to a write sent before clearCache() belongs to a session that ended and is not cached. */
+  private storeIfCurrent(settings: UserSettings, epoch: number): void {
+    if (epoch === this.epoch) {
+      this.store(settings);
+    }
   }
 
   private store(settings: UserSettings): void {

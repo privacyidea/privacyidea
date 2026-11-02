@@ -648,6 +648,19 @@ describe("DashboardLayoutService", () => {
       expect(service.widgets()).not.toContainEqual(own("ended"));
     });
 
+    it("should load the stored layout when a change was made while logged out", () => {
+      build([own("second")]);
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+
+      service.moveWidgetTo(service.widgets()[0].id, 3, 3);
+      auth.isAuthenticated.set(true);
+      TestBed.tick();
+
+      expect(service.widgets()).toContainEqual(own("second"));
+      expect(stored()).toEqual([own("second")]);
+    });
+
     it("should leave edit mode when the session ends", () => {
       build();
       service.beginEdit();

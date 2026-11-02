@@ -85,6 +85,9 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
         }
         this.sessionActive = authenticated;
         if (authenticated) {
+          // A change made while logged out must not count as one made while this session's layout loads.
+          this.loaded = false;
+          this.changedWhileLoading = false;
           this.loadLayout();
         } else {
           this.resetSession();
