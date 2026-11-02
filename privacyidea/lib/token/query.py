@@ -607,7 +607,10 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
 
         # In certain cases the LDAP or SQL server might not be reachable. Then an exception is raised
         try:
-            login_map = resolver.get_usernames_batch(user_ids)
+            # An ID the batch can not search for is reported, so it is not taken for a user that does not exist
+            unresolvable_ids = set()
+            login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+            unresolvable_owners.update((resolver_name, user_id) for user_id in unresolvable_ids)
         except Exception as batch_error:
             # A failing batch must not cost the whole page. Fall back to looking the users of this
             # resolver up one by one, so that only the ones that keep failing are marked.
@@ -678,9 +681,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     does not exist in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
     If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
     read from the database is not orphaned, since it is not known to have an owner at all. An owner the
-    user cache holds is not looked up in the user store. An owner the batch lookup does not find is looked
-    up once more on its own, and the owners of a resolver without a batch lookup of its own are only looked
-    up on their own.
+    user cache holds is not looked up in the user store. The owners of a resolver without a batch lookup
+    of its own are looked up on their own.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
     :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
@@ -705,20 +707,19 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
             owners_to_resolve[token_id] = owner
 
     cached_login_by_owner = _get_cached_logins(list(owners_to_resolve.values()))
+    uncached_owners = [owner for owner in owners_to_resolve.values()
+                       if (owner.resolver, owner.user_id) not in cached_login_by_owner]
     # The batch lookup of a resolver without one of its own asks getUsername for each user, which for some
     # resolvers answers "" also for a user store that failed. Their owners are only looked up on their own below.
-    resolved = _resolve_owner_logins(
-        [owner for owner in owners_to_resolve.values()
-         if (owner.resolver, owner.user_id) not in cached_login_by_owner
-         and not _uses_default_batch_lookup(resolvers.get(owner.resolver, {}).get("type"))])
+    single_lookup_owner_keys = dict.fromkeys(
+        (owner.resolver, owner.user_id) for owner in uncached_owners
+        if _uses_default_batch_lookup(resolvers.get(owner.resolver, {}).get("type")))
+    resolved = _resolve_owner_logins([owner for owner in uncached_owners
+                                      if (owner.resolver, owner.user_id) not in single_lookup_owner_keys])
     login_by_owner = resolved.login_by_owner | cached_login_by_owner
     unresolvable_owners = set(resolved.unresolvable_owners)
-    # A batch lookup answers "" also for an ID it can not search for, like an objectGUID that is no UUID,
-    # where a single lookup raises. Only the single lookup tells a missing user from a lookup error.
     resolver_by_name = {}
-    for owner_key in dict.fromkeys((owner.resolver, owner.user_id) for owner in owners_to_resolve.values()):
-        if owner_key in unresolvable_owners or login_by_owner.get(owner_key):
-            continue
+    for owner_key in single_lookup_owner_keys:
         resolver_name, user_id = owner_key
         try:
             if resolver_name not in resolver_by_name:

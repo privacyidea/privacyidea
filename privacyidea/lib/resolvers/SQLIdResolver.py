@@ -308,13 +308,16 @@ class IdResolver (UserIdResolver):
         return userinfo
 
     @track_resolver_op("get_user_info_batch")
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several user IDs with one query per chunk of IDs, instead
         of one query per ID. IDs without a matching row are omitted from the result.
 
         :param user_ids: The user IDs in this resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: Accepted for the common interface, nothing is added to it: an ID the userid column
+                                 can not hold is a user that does not exist, as for :py:func:`get_user_info`
         :return: dictionary mapping each resolved user ID to its user information
         """
         user_info_map = {}
@@ -366,15 +369,18 @@ class IdResolver (UserIdResolver):
         return user_info_map
 
     @track_resolver_op("get_usernames_batch")
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users with one query per chunk of IDs.
 
         :param user_ids: The user IDs in this resolver
+        :param unresolvable_ids: Accepted for the common interface. An ID the userid column can not hold, e.g. a
+                                 non-numeric ID against an integer column, is a user that does not exist here,
+                                 as for a single lookup, so nothing is added to it.
         :return: dictionary mapping each user ID to its login name. IDs without a matching row are
                  mapped to an empty string, as getUsername does for a single user.
         """
-        return self._usernames_via_user_info_batch(user_ids)
+        return self._usernames_via_user_info_batch(user_ids, unresolvable_ids=unresolvable_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """

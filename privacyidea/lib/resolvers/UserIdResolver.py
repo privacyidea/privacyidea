@@ -175,7 +175,8 @@ class UserIdResolver:
         """
         return {}
 
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several users at once.
 
@@ -188,6 +189,10 @@ class UserIdResolver:
 
         :param user_ids: IDs of the users in the resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: If given, a batch implementation that skips an ID it can not search for, where
+                                 a single lookup of that ID raises, adds the ID to it. Such an ID is omitted from
+                                 the result like a user that does not exist. The default implementation raises
+                                 like the single lookup and adds nothing.
         :return: dictionary mapping each resolved user ID to its user information
         """
         user_info_map = {}
@@ -199,7 +204,7 @@ class UserIdResolver:
                 user_info_map[user_id] = user_info
         return user_info_map
 
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users at once.
 
@@ -208,13 +213,15 @@ class UserIdResolver:
         can answer for several users in one request should override this.
 
         :param user_ids: IDs of the users in the resolver
+        :param unresolvable_ids: If given, the IDs that can not be looked up at all are added to it, see
+                                 :py:func:`get_user_info_batch`. Their login name in the result is "".
         :return: dictionary mapping each user ID to its login name
         """
         # dict.fromkeys drops duplicate IDs, so a user that several tokens share is only looked up
         # once even though the result would be the same
         return {user_id: self.getUsername(user_id) for user_id in dict.fromkeys(user_ids)}
 
-    def _usernames_via_user_info_batch(self, user_ids: list) -> dict:
+    def _usernames_via_user_info_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Shared :py:func:`get_usernames_batch` body for a resolver whose :py:func:`get_user_info_batch`
         is the real batched implementation: read just the username attribute of each user through
@@ -222,9 +229,11 @@ class UserIdResolver:
         single user.
 
         :param user_ids: IDs of the users in the resolver
+        :param unresolvable_ids: see :py:func:`get_user_info_batch`
         :return: dictionary mapping each user ID to its login name
         """
-        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"],
+                                                 unresolvable_ids=unresolvable_ids)
         return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
 
     def get_available_info_keys(self) -> list[str]:

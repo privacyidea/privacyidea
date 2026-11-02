@@ -760,8 +760,13 @@ class SQLResolverTestCase(MyTestCase):
         self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
 
         # A user ID the userid column can not hold is skipped, the rest of the batch is unaffected
-        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"])
+        unresolvable_ids = set()
+        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"],
+                                                     unresolvable_ids=unresolvable_ids)
         self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
+        # Such a user does not exist, as for a single lookup, so the ID is not reported as unresolvable
+        self.assertSetEqual(set(), unresolvable_ids)
+        self.assertEqual("", resolver.getUsername("not-a-number"))
 
         # With every ID of a chunk skipped there is nothing left to ask the database for
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
@@ -3322,6 +3327,15 @@ class LDAPResolverTestCase(MyTestCase):
                                                          attributes=["username"])
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertSetEqual({objectGUIDs[0]}, set(user_info_map.keys()), user_info_map)
+
+        # The skipped id is reported, so that a caller does not take it for a user that does not exist
+        unresolvable_ids = set()
+        login_map = resolver.get_usernames_batch([objectGUIDs[0], "not-a-guid"], unresolvable_ids=unresolvable_ids)
+        self.assertSetEqual({"not-a-guid"}, unresolvable_ids)
+        self.assertDictEqual({objectGUIDs[0]: "alice", "not-a-guid": ""}, login_map)
+        # A single lookup of that id fails in the same way
+        with self.assertRaises(ValueError):
+            resolver.getUsername("not-a-guid")
 
     @ldap3mock.activate
     def test_50a_get_user_info_batch_ignores_referrals_and_matches_the_uid_case(self):

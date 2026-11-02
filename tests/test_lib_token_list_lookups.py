@@ -382,9 +382,9 @@ class TokenListLookupTestCase(MyTestCase):
         requested_user_ids = []
         original_batch = LDAPResolver.get_usernames_batch
 
-        def recording_batch(self, user_ids):
+        def recording_batch(self, user_ids, **kwargs):
             requested_user_ids.extend(user_ids)
-            return original_batch(self, user_ids)
+            return original_batch(self, user_ids, **kwargs)
 
         try:
             # A resolver without a batch lookup of its own pays for every repeated ID, so the page
@@ -748,10 +748,11 @@ class OrphanedTokenTestCase(MyTestCase):
             with count_ldap_searches() as search_filters:
                 orphaned_serials = get_orphaned_serials(tokens)
 
-        # Five tokens of the LDAP resolver are resolved with one search, plus one single lookup for the deleted
-        # user the search did not find. The deleted resolver and the owner without a resolver are not asked at all.
-        self.assertEqual(2, len(search_filters), search_filters)
-        self.assertIn("(oid=99)", search_filters[1], search_filters)
+        # Five tokens of the LDAP resolver are resolved with one search. The user the search did not find does not
+        # exist, so it is not looked up once more. The deleted resolver and the owner without a resolver are not
+        # asked at all.
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertIn("ORPHDELETEDUSER", orphaned_serials)
         # The HTTP resolver has no batch lookup of its own, so its user is only asked on its own
         self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
         self.assertEqual(1, http_lookup_username.call_count)
@@ -775,9 +776,12 @@ class OrphanedTokenTestCase(MyTestCase):
                 raise ValueError("badly formed hexadecimal UUID string")
             return trim_user_id(resolver, user_id)
 
-        with mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id):
+        with (mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id),
+              count_ldap_searches() as search_filters):
             self.assertSetEqual({"MALFORMEDID"}, get_orphaned_serials(tokens, orphaned_on_error=True))
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+        # The batch reports the ID it skipped, so it is neither searched for nor looked up on its own
+        self.assertEqual([], search_filters)
 
     def test_05_http_user_store_error(self) -> None:
         tokens = get_tokens(serial="ORPHUNREACHABLE")
