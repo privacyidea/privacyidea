@@ -10,7 +10,7 @@ from smtplib import SMTPException
 from unittest.mock import patch
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
@@ -437,3 +437,15 @@ class SMTPServerExportImportTestCase(MyTestCase):
         self.assertEqual(reexported["expsmtp"]["password"], "smtppw")
         self.assertEqual(reexported["expsmtp"]["private_key_password"], "pkppw")
         delete_smtpserver("expsmtp")
+
+    def test_02_identifier_not_addressable_in_url(self):
+        from privacyidea.lib.smtpserver import import_smtpserver
+        with self.assertRaises(ParameterError):
+            add_smtpserver("team/mail", server="mail.example", sender="pi@example.com")
+        with self.assertRaises(ParameterError):
+            import_smtpserver({"team/mail": {"server": "mail.example", "sender": "pi@example.com"}})
+        self.assertEqual([], get_smtpservers(identifier="team/mail"))
+        # POST /smtpserver/send_test_email is the test endpoint
+        with self.assertRaises(ParameterError):
+            add_smtpserver("send_test_email", server="mail.example", sender="pi@example.com")
+        self.assertEqual([], get_smtpservers(identifier="send_test_email"))

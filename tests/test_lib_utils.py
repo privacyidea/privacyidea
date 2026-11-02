@@ -36,7 +36,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
                                    convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE, reload_db,
-                                   get_version, get_version_number)
+                                   get_version, get_version_number, validate_path_identifier)
 from privacyidea.lib.params import require_in
 from privacyidea.lib import utils as privacyidea_utils
 from privacyidea.lib.utils import check_module_allowed
@@ -1330,3 +1330,25 @@ class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):
         for k, v in data.items():
             res = get_computer_name_from_user_agent(k)
             self.assertEqual(v, res)
+
+
+class ValidatePathIdentifierTestCase(MyTestCase):
+
+    def test_valid_identifiers(self):
+        for identifier in ["server1", "My Mailserver", "mail.example.com", "a#b?c", "Mailserver-Köln", "..."]:
+            validate_path_identifier(identifier, "SMTP server")
+
+    def test_invalid_identifiers(self):
+        for identifier in ["team/mail", "/", "team\\mail", "tab\tname", "new\nline", "del\x7f", ".", ".."]:
+            with self.assertRaises(ParameterError, msg=repr(identifier)) as cm:
+                validate_path_identifier(identifier, "SMTP server")
+            self.assertIn("SMTP server", cm.exception.message)
+
+    def test_reserved_identifiers(self):
+        with self.assertRaises(ParameterError) as cm:
+            validate_path_identifier("send_test_email", "SMTP server", reserved=("send_test_email",))
+        self.assertIn("the API uses this name for a route of its own", cm.exception.message)
+        # Only the exact name is reserved, and only if it is passed
+        validate_path_identifier("send_test_email2", "SMTP server", reserved=("send_test_email",))
+        validate_path_identifier("Send_Test_Email", "SMTP server", reserved=("send_test_email",))
+        validate_path_identifier("send_test_email", "RADIUS server", reserved=("test_request",))
