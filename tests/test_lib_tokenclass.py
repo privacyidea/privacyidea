@@ -3,6 +3,8 @@ This test file tests the lib.tokenclass
 
 The lib.tokenclass depends on the DB model and lib.user
 """
+import threading
+import time
 from datetime import datetime, timezone, timedelta
 
 import responses
@@ -21,18 +23,18 @@ from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.challenge_types import ChallengeSession
 from privacyidea.lib.token import init_token, assign_tokengroup, remove_token, get_one_token
-from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT)
+from privacyidea.lib.tokenclass import (TokenClass, DATE_FORMAT, AUTH_DATE_FORMAT, lock_token_row)
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.lib.tokens.radiustoken import RadiusTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.tokengroup import set_tokengroup
 from privacyidea.lib.user import (User)
-from privacyidea.lib.utils import hexlify_and_unicode, to_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, text_column_equals, to_unicode
 from privacyidea.models import (Token,
                                 Config,
                                 Challenge, Realm, TokenOwner, db, TokenRealm, Tokengroup, TokenTokengroup, TokenInfo,
                                 TokenContainer, TokenContainerToken)
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeFlaskG, run_in_parallel
 
 PWFILE = "tests/testdata/passwords"
 
@@ -322,7 +324,8 @@ class TokenBaseTestCase(MyTestCase):
         token_token_group = db.session.scalar(
             select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == token_group.id))
         self.assertIsNone(token_token_group, "TokenTokengroup relationship was not deleted.")
-        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key", TokenInfo.Value == "value"))
+        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key",
+                                                               text_column_equals(TokenInfo.Value, "value")))
         self.assertIsNone(token_info, "TokenInfo was not deleted.")
         container = db.session.scalar(select(TokenContainer).where(TokenContainer.serial == container_serial))
         self.assertIsNotNone(container, "TokenContainer was deleted.")
@@ -1202,7 +1205,8 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
 
         tdelta = timedelta(days=1)
-        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(tzlocal()) - tdelta)
+        # Written as text: the token info is a CLOB on Oracle, which refuses a bound datetime
+        token.write_tokeninfo(PolicyAction.LASTAUTH, str(datetime.now(tzlocal()) - tdelta))
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
@@ -1210,7 +1214,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # Old time format
         # lastauth_alt = datetime.utcnow().isoformat()
-        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc) - tdelta)
+        token.write_tokeninfo(PolicyAction.LASTAUTH, str(datetime.now(timezone.utc) - tdelta))
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
@@ -1246,7 +1250,7 @@ class TokenBaseTestCase(MyTestCase):
         # 2. step
         client_component = "AAAAAA"
         token_obj.update({"serial": serial, "otpkey": client_component})
-        self.assertEqual(db_token.rollout_state, "")
+        self.assert_empty_string(db_token.rollout_state)
         self.assertEqual(db_token.active, True)
 
         # Given a client component of K bytes, the base algorithm
@@ -1413,3 +1417,32 @@ class TokenBaseTestCase(MyTestCase):
         removed_user = token.remove_user()
         self.assertEqual(removed_user.login, "cornelius", removed_user)
         self.assertEqual(token.user, None, token.user)
+
+
+class LockTokenRowTestCase(MyTestCase):
+    """
+    The lock of a token row is held until the commit.
+    """
+
+    def test_second_request_gets_the_lock_after_the_commit(self):
+        token_id = init_token({"type": "hotp", "serial": "LOCKROW", "otpkey": self.otpkey}).token.id
+        self.addCleanup(remove_token, "LOCKROW")
+        first_has_the_lock = threading.Event()
+        order = []
+
+        def first() -> None:
+            lock_token_row(Token.id == token_id)
+            first_has_the_lock.set()
+            time.sleep(0.5)
+            order.append("first commits")
+            db.session.commit()
+
+        def second() -> None:
+            first_has_the_lock.wait(5)
+            lock_token_row(Token.id == token_id)
+            order.append("second has the lock")
+            db.session.commit()
+
+        results = run_in_parallel(self.app, [first, second])
+        self.assertListEqual([None, None], results)
+        self.assertListEqual(["first commits", "second has the lock"], order)

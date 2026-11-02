@@ -17,7 +17,7 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, text_column_equals
 from privacyidea.models import TokenCredentialIdHash, TokenInfo
 from tests.authlog_utils import assert_authentication_log
 from .base import MyApiTestCase
@@ -311,7 +311,7 @@ class WebAuthn(MyApiTestCase):
         self.assertTrue(tcih)
         tcih.delete()
         token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                            .filter(TokenInfo.Value == credential_id_hash).first())
+                            .filter(text_column_equals(TokenInfo.Value, credential_id_hash)).first())
         self.assertTrue(token_info_entry)
         token_info_entry.delete()
 
@@ -1358,8 +1358,10 @@ class WebAuthnAuthorizationTestCase(MyApiTestCase):
         res = self._validate_check(transaction_id)
         self.assertEqual(403, res.status_code, res.json)
         self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
-        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
-                                  transaction_id=transaction_id)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                            transaction_id=transaction_id)
+        # The refusal is the response itself, so the entry does not repeat its message
+        self.assertNotIn("error", entries[AuthEventType.NOT_AUTHORIZED].other_info or {})
 
         set_policy("authz_req", scope=SCOPE.AUTHZ, action=f"{FIDO2PolicyAction.REQ}=issuer/.*Yubico.*/")
         res = self._validate_check(transaction_id)

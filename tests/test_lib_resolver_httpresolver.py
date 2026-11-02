@@ -1981,11 +1981,13 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # request specific attributes without groups
         user_list = resolver.getUserList(attributes=["username", "email", "unknown"])
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual({"username", "email"}, set(user.keys()))
 
         # request specific attributes with groups
         user_list = resolver.getUserList(attributes=["username", custom_groups_key])
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual({"username", custom_groups_key}, set(user.keys()))
             if user["username"] == "Adams@contoso.com":
@@ -1995,6 +1997,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # request without attributes defined should return all attributes
         user_list = resolver.getUserList()
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual(
                 {"username", "userid", "givenname", "surname", "email", "mobile", "phone", custom_groups_key},

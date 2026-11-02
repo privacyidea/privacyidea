@@ -1,10 +1,17 @@
 """Base test configuration to set up/teardown tests."""
 import pathlib
+import threading
 import unittest
+from collections.abc import Iterator
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+
 import mock
+from flask import Flask
 from sqlalchemy import Sequence, select, text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
+from testfixtures import Replace, test_datetime
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
@@ -21,6 +28,46 @@ from privacyidea.lib.lifecycle import call_finalizers
 
 PWFILE = "tests/testdata/passwords"
 PWFILE2 = "tests/testdata/passwd"
+
+
+@contextmanager
+def clock_moved_forward(seconds: int) -> Iterator[None]:
+    """
+    Move the clock of the challenges and of the sent Email and SMS OTP values forward by the given seconds.
+    """
+    later = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=seconds)
+    with (Replace("privacyidea.models.utils.datetime", test_datetime(later, delta=0)),
+          Replace("privacyidea.lib.tokens.sent_otp_validity.datetime", test_datetime(later, delta=0))):
+        yield
+
+
+def run_in_parallel(app: Flask, functions: list) -> list:
+    """Run each function in its own thread and app context; return its result, or "exception: ..." if it raised."""
+    results = [None] * len(functions)
+
+    def run(index: int) -> None:
+        with app.app_context():
+            try:
+                results[index] = functions[index]()
+            except Exception as exception:  # every thread reports back
+                results[index] = f"exception: {exception!r}"[:200]
+            finally:
+                db.session.remove()
+
+    threads = [threading.Thread(target=run, args=(index,)) for index in range(len(functions))]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(30)
+    # End this thread's transaction, so the assertions read what the requests committed (MariaDB/MySQL
+    # REPEATABLE READ would otherwise keep showing an older snapshot).
+    db.session.rollback()
+    return results
+
+
+def results_of(responses: list) -> list:
+    """The result of each response body, or the exception string of a thread that did not get one."""
+    return [body["result"] if isinstance(body, dict) else body for body in responses]
 
 
 def force_expire_challenges(transaction_id):
@@ -79,6 +126,13 @@ def skip_unless_admin_lookup_folds_case(testcase):
     if not folds_case:
         testcase.skipTest("the admin lookup matches case-sensitively on this database, so one account cannot be "
                           "reached under a second spelling")
+
+
+def stored_empty_string() -> str | None:
+    """
+    What an empty string written to the database reads back as: ``''``, except on Oracle, which stores it as NULL.
+    """
+    return None if db.engine.dialect.name == "oracle" else ""
 
 
 class FakeFlaskG(object):
@@ -489,6 +543,12 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+    def assert_empty_string(self, value: str | None, msg: str | None = None) -> None:
+        """
+        Assert that *value* is an empty string read from the database, which on Oracle is None.
+        """
+        self.assertEqual(stored_empty_string(), value, msg)
 
     def find_most_recent_audit_entry(self, **filter_data):
         """

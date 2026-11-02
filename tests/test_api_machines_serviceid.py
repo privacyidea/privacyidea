@@ -295,6 +295,9 @@ class APIMachinesServiceIDTestCase(MyApiTestCase):
             value = result.get("value")
             # One token is attached via user "admin"
             self.assertEqual(len(value), 3)
-            self.assertEqual(value[0].get("options").get("user"), "root")
-            self.assertEqual(value[1].get("options").get("user"), "admin")
-            self.assertEqual(value[2].get("options").get("user"), "root")
+            self.assertEqual([self.serviceID2, self.serviceID2, self.serviceID1],
+                             [machine_token.get("options").get("service_id") for machine_token in value])
+            # The two entries of serviceID2 sort equal, so they can come in either order
+            self.assertEqual({"root", "admin"},
+                             {machine_token.get("options").get("user") for machine_token in value[:2]})
+            self.assertEqual("root", value[2].get("options").get("user"))

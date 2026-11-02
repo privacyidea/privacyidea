@@ -138,7 +138,9 @@ Database tables
 creates the tables in the database given by ``SQLALCHEMY_DATABASE_URI``. The
 database itself has to exist; only an SQLite database file is created.
 Afterwards the database is stamped with the newest schema revision, so that
-later upgrades know where to start. ``-n`` skips the stamp.
+later upgrades know where to start. ``-n`` skips the stamp. Stamp such a
+database with ``pi-manage db stamp head`` before installing a newer version:
+``privacyidea-schema-upgrade`` stops on a database without stamp.
 
 .. warning:: Run ``create_tables`` only on an empty database. On the database
    of an older privacyIDEA version it only adds the missing tables, leaves the
@@ -214,10 +216,10 @@ upgrade runs them for you through ``privacyidea-schema-upgrade``, see
    pi-manage db heads       # the newest revision of the installed version
    pi-manage db upgrade     # migrate the database to the installed version
 
-The migration directory is found automatically. If it is not, e.g. in an
-editable installation, pass it with ``-d``::
+The migrations of the installed version are used. ``-d`` takes them from
+another directory::
 
-   pi-manage db upgrade -d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations
+   pi-manage db upgrade -d /path/to/privacyidea/migrations
 
 ``db stamp <revision>`` only records a revision in the database without
 running any migration; a wrong stamp makes later upgrades skip or repeat

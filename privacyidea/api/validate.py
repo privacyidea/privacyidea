@@ -118,7 +118,7 @@ from privacyidea.api.lib.conditional_access import (conditional_access_gate, con
                                                     RejectionShape, REMEMBER_DEVICE_REJECTION,
                                                     TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
-                                       INTERNAL_OPTION_KEYS)
+                                       INTERNAL_OPTION_KEYS, add_autoresync_to_audit)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
@@ -158,8 +158,9 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
+from ..lib.autoresync import LOG_AUTORESYNC_KEY
 from ..lib.conditional_access.request_context import (continue_attempt, confirm_attempt,
-                                                      confirm_attempt_for_serials)
+                                                      confirm_attempt_for_serials, get_ca_context)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
                                    check_fido2_token_state, record_fido2_login_success)
@@ -587,7 +588,9 @@ def check():
     """
     # Handle Enrollment Cancellation (Immediate Return)
     if is_true(request.all_data.get("cancel_enrollment")):
-        return _handle_enrollment_cancellation(request.all_data)
+        response = _handle_enrollment_cancellation(request.all_data)
+        get_ca_context().answered_by_view = True
+        return response
 
     # This dictionary carries state across the extracted helper functions
     # to avoid changing the functional signatures of the underlying libraries yet.
@@ -604,6 +607,8 @@ def check():
         # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
         # a failure was made against belong on the authentication-log row alone.
         AUTH_EVENT_SERIALS_KEY: [],
+        # Audit-only, never part of the response (see LOG_AUTORESYNC_KEY)
+        LOG_AUTORESYNC_KEY: None,
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -638,6 +643,7 @@ def check():
         # Stage the single authentication-log row for this request; it is written at teardown, which then lets the
         # conditional-access engine react to the classified outcome.
         _log_authentication_event(context)
+    get_ca_context().answered_by_view = True
     return response
 
 
@@ -1022,8 +1028,11 @@ def _handle_serial_auth(context: dict, serial: str):
             AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
-        # a message, so without this the row would name no token although the request named exactly one.
+        # a message, so without this the rows would name no token although the request named exactly one. The audit
+        # entry is logged directly, since serial_list would also update the last authentication on success.
         context[AUTH_EVENT_SERIALS_KEY] = [serial]
+        g.audit_object.log({"serial": serial})
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     context["result"] = success
     context["details"] = details
@@ -1079,6 +1088,7 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
+    context[LOG_AUTORESYNC_KEY] = details.pop(LOG_AUTORESYNC_KEY, None)
 
     # Extract serials for logging
     if 'multi_challenge' in details:
@@ -1199,6 +1209,7 @@ def _finalize_auth_response(context):
     if details.get("type"):
         audit_entry["token_type"] = details.get("type")
     g.audit_object.log(audit_entry)
+    add_autoresync_to_audit(context[LOG_AUTORESYNC_KEY])
 
     return ret
 
@@ -1650,7 +1661,7 @@ def trigger_challenge():
         "info": log_used_user(user, f"triggered {triggered_challenges!s} challenges"),
         "serial": ",".join(challenge_serials),
     })
-
+    get_ca_context().answered_by_view = True
     return r
 
 
