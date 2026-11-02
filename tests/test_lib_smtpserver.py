@@ -130,7 +130,7 @@ class SMTPServerTestCase(MyTestCase):
         self.assertGreater(smtp_id, 0)
         server_list = get_smtpservers(identifier="myserver")
         server = server_list[0].config
-        self.assertEqual("", server.private_key_password)
+        self.assert_empty_string(server.private_key_password)
 
     def test_04_missing_configuration(self):
         self.assertRaises(ResourceNotFoundError, get_smtpserver, "notExisting")

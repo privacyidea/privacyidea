@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import mock
 from sqlalchemy import select
 
-from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import (delete_container_by_id, find_container_by_id, find_container_by_serial,
                                        init_container, get_all_containers, _gen_serial, find_container_for_token,
@@ -299,13 +299,15 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_15_delete_container_by_id(self):
         # Fail
         self.assertRaises(ParameterError, delete_container_by_id, None)
-        self.assertRaises(ResourceNotFoundError, delete_container_by_id, 11)
 
         # Success
         container = find_container_by_serial(self.yubikey_serial)
         container_id = container._db_container.id
         result = delete_container_by_id(container_id)
         self.assertEqual(container_id, result)
+
+        # Fail: the container is already deleted
+        self.assertRaises(ResourceNotFoundError, delete_container_by_id, container_id)
 
     def test_16_delete_container_by_serial(self):
         # Fail
@@ -521,7 +523,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Pass no value sets empty value
         add_container_info(container_serial, "key", None)
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual("", container_info["key"])
+        self.assert_empty_string(container_info["key"])
 
         # Try to modify internal info raises exception
         container = find_container_by_serial(container_serial)
@@ -561,7 +563,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         res = set_container_info(container_serial, {"key": None})
         self.assertTrue(res["key"])
         container_info = get_container_info_dict(container_serial)
-        self.assertEqual("", container_info["key"])
+        self.assert_empty_string(container_info["key"])
 
         # Try to set internal info
         container = find_container_by_serial(container_serial)
@@ -618,7 +620,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set empty description
         set_container_description(container_serial, description="")
-        self.assertEqual("", container.description)
+        self.assert_empty_string(container.description)
 
         # Set description
         set_container_description(container_serial, description="new description")
@@ -626,7 +628,7 @@ class TokenContainerManagementTestCase(MyTestCase):
 
         # Set None description
         set_container_description(container_serial, description=None)
-        self.assertEqual("", container.description)
+        self.assert_empty_string(container.description)
 
     def test_26_set_states(self):
         # Arrange
@@ -1287,7 +1289,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assert
         self.assertEqual("generic", container_dict["type"])
         self.assertEqual(container_serial, container_dict["serial"])
-        self.assertEqual("", container_dict["description"])
+        self.assert_empty_string(container_dict["description"])
         self.assertIsNone(container_dict["last_authentication"])
         self.assertIsNone(container_dict["last_synchronization"])
         self.assertListEqual(["active"], container_dict["states"])
@@ -1314,7 +1316,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # Assert
         self.assertEqual("generic", container_dict["type"])
         self.assertEqual(container_serial, container_dict["serial"])
-        self.assertEqual("", container_dict["description"])
+        self.assert_empty_string(container_dict["description"])
         self.assertIsNone(container_dict["last_authentication"])
         self.assertIsNone(container_dict["last_synchronization"])
         self.assertListEqual(["active"], container_dict["states"])
@@ -2326,9 +2328,12 @@ class TokenContainerSynchronization(MyTestCase):
         owner_in_realm2 = User("cornelius", self.realm2)
         container_serial = init_container({"type": "smartphone", "user": "cornelius",
                                            "realm": self.realm1})["container_serial"]
+        # Also deletes the challenges of the container
+        self.addCleanup(delete_container_by_serial, container_serial)
         # franzi of the second resolver of realm1 has the user id of the owner cornelius of the first resolver
         set_realm(self.realm1, [{"name": self.resolvername1, "priority": 1},
                                 {"name": self.resolvername3, "priority": 2}])
+        self.addCleanup(set_realm, self.realm1, [{"name": self.resolvername1}])
         user_of_another_resolver = User("franzi", self.realm1)
         self.assertEqual(User("cornelius", self.realm1, self.resolvername1).uid, user_of_another_resolver.uid)
 
@@ -2381,10 +2386,6 @@ class TokenContainerSynchronization(MyTestCase):
         with mock.patch("privacyidea.lib.container.delete_challenges", return_value=mock.Mock(removed=0)):
             result = check_container_challenge(challenge.transaction_id, owner)
         self.assertDictEqual({"success": False, "details": {}}, result)
-
-        delete_challenges(transaction_id=challenge.transaction_id)
-        delete_container_by_serial(container_serial)
-        set_realm(self.realm1, [{"name": self.resolvername1}])
 
     def test_99_container_without_challenge_response_raises(self):
         # A container type that implements no challenge-response protocol can not authenticate an anonymous
@@ -2886,6 +2887,23 @@ class TokenContainerTemplateTestCase(MyTestCase):
         self.assertEqual(['spass', 'spass'], token_result["additional"])
 
         template.delete()
+
+    def test_21a_compare_container_with_template_without_options(self):
+        # A template created without options has no tokens to compare
+        create_container_template(container_type="generic", template_name="no_options", options={})
+        template = get_template_obj("no_options")
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        token = init_token({"type": "spass"})
+        container.add_token(token)
+
+        result = compare_template_with_container(template, container)
+        self.assertEqual([], result["tokens"]["missing"])
+        self.assertEqual(["spass"], result["tokens"]["additional"])
+
+        template.delete()
+        delete_container_by_serial(container_serial)
+        remove_token(token.get_serial())
 
     def test_22_get_template_options_as_dict(self):
         # create template

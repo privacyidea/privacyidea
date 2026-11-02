@@ -1882,7 +1882,6 @@ class EntraIDResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
-        self.assertEqual(2, len(user_list))
         for user in user_list:
             if user["username"] == "Adams@contoso.com":
                 self.assertSetEqual({"Group1", "Group2"}, set(user["groups"]))
@@ -1900,7 +1899,6 @@ class EntraIDResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
-        self.assertEqual(2, len(user_list))
         for user in user_list:
             if user["username"] == "Adams@contoso.com":
                 self.assertSetEqual({"Group1", "Group2"}, set(user[custom_groups_key]))
@@ -1913,7 +1911,6 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"},
                             set(user["username"] for user in user_list))
-        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertNotIn("groups", user)
 

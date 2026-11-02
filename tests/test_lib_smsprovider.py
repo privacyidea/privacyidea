@@ -7,8 +7,10 @@ This test file tests the modules:
  lib.smsprovider.scriptsmsprovider
 """
 
+import base64
 import json
 import os
+from urllib.parse import parse_qs, urlparse
 
 import mock
 import responses
@@ -727,6 +729,37 @@ class HttpSMSTestCase(MyTestCase):
         delete_smsgateway(identifier)
 
     @responses.activate
+    def test_10a_empty_options_reach_the_gateway_as_empty_values(self):
+        # An option or header saved empty is sent as an empty value on every database, and an empty password
+        # still sends basic authentication with the user name
+        identifier = "emptyOptionsGW"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"HTTP_METHOD": "GET",
+                                "URL": "http://example.com/send",
+                                "RETURN_SUCCESS": "ID",
+                                "USERNAME": "api-key",
+                                "PASSWORD": "",
+                                "text": "{otp}",
+                                "phone": "{phone}",
+                                "sender": ""},
+                       headers={"X-Empty": ""})
+        sms = create_sms_instance(identifier)
+        self.assertEqual("", sms.smsgateway.option_dict["sender"])
+        self.assertEqual("", sms.smsgateway.option_dict["PASSWORD"])
+        self.assertEqual("", sms.smsgateway.header_dict["X-Empty"])
+
+        responses.add(responses.GET, "http://example.com/send", body=self.success_body)
+        self.assertTrue(sms.submit_message("123456", "Hello"))
+        request = responses.calls[0].request
+        query = parse_qs(urlparse(request.url).query, keep_blank_values=True)
+        self.assertEqual([""], query["sender"])
+        self.assertEqual("", request.headers["X-Empty"])
+        self.assertEqual(f"Basic {base64.b64encode(b'api-key:').decode()}", request.headers["Authorization"])
+
+        delete_smsgateway(identifier)
+
+    @responses.activate
     def test_11_send_nonascii_sms_post_success(self):
         responses.add(responses.POST,
                       self.post_url,
@@ -1246,7 +1279,7 @@ class SMSGatewayOptionEncryptionTestCase(MyTestCase):
 
         stmt = select(SMSGatewayOption).filter_by(gateway_id=gw_id, Key="PASSWORD", Type="option")
         option = db.session.execute(stmt).scalar_one()
-        self.assertEqual(option.Value, "")
+        self.assert_empty_string(option.Value)
         self.assertFalse(option.Encrypted)
 
         # Clean up

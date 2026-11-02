@@ -23,6 +23,7 @@ from contextlib import contextmanager
 import ldap3
 import mock
 import responses
+import yaml
 from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
@@ -48,7 +49,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver,
 from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.models import ResolverConfig, Resolver, db, save_config_timestamp
 from . import ldap3mock
@@ -3399,6 +3400,28 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertDictEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
         self.assertEqual(resolver.getUsername("2"), login_map["2"], login_map)
 
+    def test_53_resolvers_with_the_same_attribute_mapping(self):
+        # Two resolvers parse the same USERINFO text. Each puts the first attribute of its own LOGINNAMEATTRIBUTE
+        # into its user info, and the attribute mapping of both keeps the configured "username" attribute.
+        config = {"LDAPURI": "ldap://localhost",
+                  "LDAPBASE": "o=test",
+                  "USERINFO": '{"username": "cn", "email": "mail"}',
+                  "UIDTYPE": "DN"}
+        uid_resolver = LDAPResolver()
+        uid_resolver.loadConfig(config | {"LOGINNAMEATTRIBUTE": "uid"})
+        mail_resolver = LDAPResolver()
+        mail_resolver.loadConfig(config | {"LOGINNAMEATTRIBUTE": "mail"})
+        # A resolver that loads the same text again does not change the first two
+        LDAPResolver().loadConfig(config | {"LOGINNAMEATTRIBUTE": "sAMAccountName"})
+
+        self.assertEqual("uid", uid_resolver.userinfo["username"])
+        self.assertEqual("mail", mail_resolver.userinfo["username"])
+        self.assertEqual("cn", uid_resolver.map["username"])
+        self.assertEqual("cn", mail_resolver.map["username"])
+        self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
+        mail_resolver.multivalueattributes.append("email")
+        self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
+
 
 class BaseResolverTestCase(MyTestCase):
 
@@ -3456,6 +3479,27 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(2, mock_get_username.call_count)
 
         self.assertDictEqual({}, resolver.get_usernames_batch([]))
+
+    def test_03_parse_config_yaml(self):
+        # Every call returns its own copy, the first call too, so a change of one result does not reach the next
+        text = f'{{"username": "uid", "groups": ["admins"], "id": "{uuid.uuid4()}"}}'
+        first = parse_config_yaml(text)
+        first["username"] = "mail"
+        first["groups"].append("developers")
+        second = parse_config_yaml(text)
+        self.assertEqual("uid", second["username"])
+        self.assertEqual(["admins"], second["groups"])
+        self.assertIsNot(first, second)
+
+        self.assertEqual(["mobile"], parse_config_yaml('["mobile"]'))
+        self.assertEqual({"username": "userName"}, parse_config_yaml("{username: 'userName'}"))
+        # Invalid YAML raises on every call
+        for _ in range(2):
+            with self.assertRaises(yaml.YAMLError):
+                parse_config_yaml('{"username": "uid"')
+        # A value that is not a string goes to the YAML parser unchanged
+        with self.assertRaises(AttributeError):
+            parse_config_yaml({})
 
 
 class ResolverTestCase(MyTestCase):

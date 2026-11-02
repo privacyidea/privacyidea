@@ -19,11 +19,13 @@ import datetime
 import hashlib
 import json
 import logging
+from typing import Any
 
 import mock
 from dateutil import parser
 from dateutil.tz import tzlocal
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from testfixtures import log_capture
 
 from privacyidea.lib.challenge import get_challenges
@@ -65,6 +67,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
                                    get_tokens_paginated_generator)
+from privacyidea.lib.token.const import LOST_TOKEN_FOR
 from privacyidea.lib.token import log as token_log
 from privacyidea.lib.token import query as token_query
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
@@ -507,11 +510,11 @@ class TokenTestCase(MyTestCase):
         with self.assertRaises(ResourceNotFoundError):
             get_token_owner_without_lookup("does not exist")
 
-    def test_08a_get_owner_by_token_id_retries_once_after_a_transient_failure(self):
+    def test_08a_get_owners_by_token_id_retries_once_after_a_transient_failure(self):
         # A page-wide owner query that fails once (e.g. a lock-wait timeout) is retried
         # after a rollback, and the retry recovers the owner in one go.
         token_id = get_tokens(serial="hotptoken")[0].token.id
-        expected_owner = token_query._get_owner_by_token_id([token_id])[token_id]
+        expected_owner = token_query._get_owners_by_token_id([token_id])[token_id][0]
         real_select_owners = token_query._select_owners
         calls = []
 
@@ -522,19 +525,20 @@ class TokenTestCase(MyTestCase):
             return real_select_owners(token_ids)
 
         with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=flaky_select_owners):
-            owner_by_token_id = token_query._get_owner_by_token_id([token_id])
+            owners_by_token_id = token_query._get_owners_by_token_id([token_id])
 
         self.assertEqual(2, len(calls))
-        self.assertEqual(expected_owner.resolver, owner_by_token_id[token_id].resolver)
-        self.assertEqual(expected_owner.user_id, owner_by_token_id[token_id].user_id)
+        self.assertEqual(1, len(owners_by_token_id[token_id]), owners_by_token_id)
+        self.assertEqual(expected_owner.resolver, owners_by_token_id[token_id][0].resolver)
+        self.assertEqual(expected_owner.user_id, owners_by_token_id[token_id][0].user_id)
 
-    def test_08b_get_owner_by_token_id_falls_back_per_token_after_two_failures(self):
+    def test_08b_get_owners_by_token_id_falls_back_per_token_after_two_failures(self):
         # A page-wide owner query that keeps failing even after the retry falls back to
         # resolving each token's owner individually, so only the tokens that keep
         # failing (whether they have no owner or the per-token query itself keeps
-        # failing) are left without an owner.
+        # failing) are left without an owner. The tokens whose query keeps failing are reported.
         token_id = get_tokens(serial="hotptoken")[0].token.id
-        expected_owner = token_query._get_owner_by_token_id([token_id])[token_id]
+        expected_owner = token_query._get_owners_by_token_id([token_id])[token_id][0]
         real_select_owners = token_query._select_owners
         poison_id = -1
 
@@ -543,13 +547,16 @@ class TokenTestCase(MyTestCase):
                 raise Exception("simulated persistent DB error")
             return real_select_owners(token_ids)
 
+        unread_token_ids = set()
         with mock.patch("privacyidea.lib.token.query._select_owners", side_effect=flaky_select_owners):
-            owner_by_token_id = token_query._get_owner_by_token_id([token_id, 999999999, poison_id])
+            owners_by_token_id = token_query._get_owners_by_token_id([token_id, 999999999, poison_id],
+                                                                     unread_token_ids)
 
-        self.assertEqual(expected_owner.resolver, owner_by_token_id[token_id].resolver)
-        self.assertEqual(expected_owner.user_id, owner_by_token_id[token_id].user_id)
-        self.assertNotIn(999999999, owner_by_token_id)
-        self.assertNotIn(poison_id, owner_by_token_id)
+        self.assertEqual(expected_owner.resolver, owners_by_token_id[token_id][0].resolver)
+        self.assertEqual(expected_owner.user_id, owners_by_token_id[token_id][0].user_id)
+        self.assertNotIn(999999999, owners_by_token_id)
+        self.assertNotIn(poison_id, owners_by_token_id)
+        self.assertSetEqual({poison_id}, unread_token_ids)
 
     def test_09_get_tokenclass_info(self):
         info = get_tokenclass_info("hotp")
@@ -828,10 +835,10 @@ class TokenTestCase(MyTestCase):
         # now set the pin
         self.assertTrue(set_pin(serial, "1234") == 1)
         self.assertTrue(tokenobject.token.check_pin("1234"))
-        self.assertTrue(tokenobject.token.user_pin == "")
+        self.assert_empty_string(tokenobject.token.user_pin)
         self.assertTrue(set_pin_user(serial, "1234") == 1)
         self.assertTrue(tokenobject.token.user_pin != "")
-        self.assertTrue(tokenobject.token.so_pin == "")
+        self.assert_empty_string(tokenobject.token.so_pin)
         self.assertTrue(set_pin_so(serial, "1234") == 1)
         self.assertTrue(tokenobject.token.so_pin != "")
         remove_token(serial)
@@ -1039,6 +1046,22 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(parser.parse(r.get("end_date")) <= end_date, r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
+
+    def test_33a_lost_token_keeps_the_replacement_of_a_serial_in_other_case(self):
+        # The replacement of "CASELOST" is not one of "caselost", where the database compares with case
+        if db.engine.dialect.name in ("mysql", "mariadb"):
+            self.skipTest("MySQL and MariaDB compare token info values without case")
+        other_replacement = init_token({"serial": "OTHERREPL", "genkey": 1})
+        other_replacement.add_tokeninfo(LOST_TOKEN_FOR, "CASELOST")
+        init_token({"serial": "caselost", "genkey": 1}, user=User(login="cornelius", realm=self.realm1))
+
+        lost_token("caselost")
+        self.assertTrue(get_one_token(serial="OTHERREPL").token.active)
+        self.assertTrue(get_one_token(serial="lostcaselost").token.active)
+
+        remove_token("OTHERREPL")
+        remove_token("caselost")
+        remove_token("lostcaselost")
 
     @log_capture(level=logging.DEBUG)
     def test_34_check_token_list(self, capture):
@@ -1435,7 +1458,8 @@ class TokenTestCase(MyTestCase):
 
         tokens = get_tokens_paginate(sortby=Token.serial, page=1,
                                      sortdir="desc")
-        self.assertTrue(len(tokens.get("tokens")), token_count - 1)
+        # The token of an unknown type is counted, but not listed
+        self.assertEqual(token_count - 1, len(tokens.get("tokens")))
         self.assertEqual(tokens.get("count"), token_count)
         self.assertTrue(tokens.get("next") is None, tokens.get("next"))
         self.assertTrue(tokens.get("prev") is None, tokens.get("prev"))
@@ -1459,29 +1483,17 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(1, len(tokens))
         self.assertEqual(hotp_token.get_serial(), tokens[0]["serial"])
 
+        def token_types(**filters: Any) -> set[str]:
+            return {token["tokentype"] for token in get_tokens_paginate(psize=100, **filters)["tokens"]}
+
         # filter by type list
-        tokens_pag = get_tokens_paginate(token_type_list="spass,totp")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["spass", "totp"])
-
+        self.assertSetEqual({"spass", "totp"}, token_types(token_type_list=["spass", "totp"]))
         # type wildcard
-        tokens_pag = get_tokens_paginate(tokentype="*otp*")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["hotp", "totp"])
-
+        self.assertSetEqual({"hotp", "totp"}, token_types(tokentype="*otp*"))
         # filter by type list and wildcard
-        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="*otp*")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["totp"])
-
+        self.assertSetEqual({"totp"}, token_types(token_type_list=["spass", "totp"], tokentype="*otp*"))
         # filter by type list and type
-        tokens_pag = get_tokens_paginate(token_type_list="spass,totp", tokentype="totp")
-        tokens = tokens_pag["tokens"]
-        for token in tokens:
-            self.assertIn(token["tokentype"], ["totp"])
+        self.assertSetEqual({"totp"}, token_types(token_type_list=["spass", "totp"], tokentype="totp"))
 
         # Filter by container_serial
         container_serial = init_container({"type": "generic"})["container_serial"]
@@ -1667,17 +1679,23 @@ class TokenTestCase(MyTestCase):
         second_owner.save()
         db.session.commit()
 
-        # get_tokens(count=True) must return 1, not 2
-        count = get_tokens(serial=serial, count=True)
+        # get_tokens(count=True) must return 1, not 2. The assigned filter joins the owners, which is what yields
+        # a row per owner.
+        count = get_tokens(serial=serial, assigned=True, count=True)
         self.assertEqual(1, count,
                          "count must reflect distinct tokens, not raw joined rows")
 
         # The de-duplicated token list must also have length 1
-        token_list = get_tokens(serial=serial)
+        token_list = get_tokens(serial=serial, assigned=True)
         self.assertEqual(1, len(token_list))
 
         # count and list length must agree
         self.assertEqual(count, len(token_list))
+
+        # The same for the paginated list
+        result = get_tokens_paginate(serial=serial, assigned=True)
+        self.assertEqual(1, result["count"], result)
+        self.assertEqual(1, len(result["tokens"]), result)
 
         # Clean up the extra owner row and the token
         db.session.delete(second_owner)
@@ -1719,8 +1737,8 @@ class TokenTestCase(MyTestCase):
 
         self.assertTrue(tokens[0].get("serial") == "A8",
                         tokens[0])
-        # SQLite does not sort like other DBs
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        # SQLite and Oracle compare strings binary, putting upper case first
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[-1].get("serial"), tokens[-1])
         else:
             self.assertEqual('X', tokens[-1].get("serial"), tokens[-1])
@@ -1730,7 +1748,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
 
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[0].get("serial"), tokens[0])
         else:
             self.assertEqual('X', tokens[0].get("serial"), tokens[0])
@@ -1741,7 +1759,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="asc")
         tokens = tokendata.get("tokens")
 
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[-1].get("serial"), tokens[-1])
         else:
             self.assertEqual('X', tokens[-1].get("serial"), tokens[-1])
@@ -1751,7 +1769,7 @@ class TokenTestCase(MyTestCase):
                                         sortdir="desc")
         tokens = tokendata.get("tokens")
 
-        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite'):
+        if self.app.config['SQLALCHEMY_DATABASE_URI'].startswith(('sqlite', 'oracle')):
             self.assertEqual('hotptoken', tokens[0].get("serial"), tokens[0])
         else:
             self.assertEqual('X', tokens[0].get("serial"), tokens[0])
@@ -2692,3 +2710,43 @@ class TokenTestCase(MyTestCase):
         self.assertIn("ORPHAN001", result.failed_tokens)
         # The persisted row must have been rolled back, not left orphaned
         self.assertEqual(get_tokens(serial="ORPHAN001"), [])
+
+
+class InitTokenFailingSaveTestCase(MyTestCase):
+
+    def test_01_a_failing_save_reports_its_own_error(self):
+        # The token can not be saved, e.g. because of a duplicate primary key: init_token raises the
+        # database error, leaves no token behind and the session can be used again
+        def failing_save(token: Token) -> None:
+            db.session.add(token)
+            raise IntegrityError("INSERT INTO token", {}, Exception("duplicate primary key"))
+
+        with mock.patch.object(Token, "save", failing_save):
+            with self.assertRaises(IntegrityError):
+                init_token({"type": "hotp", "genkey": 1, "serial": "SAVEFAILS"})
+
+        self.assertEqual([], get_tokens(serial="SAVEFAILS"))
+
+    def test_02_a_token_whose_creation_fails_after_the_save_is_removed(self):
+        # The token is saved and its creation fails afterwards: init_token raises the error of the creation and
+        # removes the token
+        with (mock.patch.object(TokenClass, "update", side_effect=ValueError("the creation fails")),
+              self.assertLogs("privacyidea.lib.token.lifecycle", level="ERROR") as logs):
+            with self.assertRaises(ValueError):
+                init_token({"type": "hotp", "genkey": 1, "serial": "UPDATEFAILS"})
+
+        self.assertEqual([], get_tokens(serial="UPDATEFAILS"))
+        self.assertFalse(any("Could not remove" in line for line in logs.output), logs.output)
+
+    def test_03_a_token_that_can_not_be_removed_after_a_failed_creation_is_logged(self):
+        # The token is saved, its creation fails afterwards and it can not be removed either: init_token raises the
+        # error of the creation and logs the one of the removal as an error
+        with (mock.patch.object(TokenClass, "update", side_effect=ValueError("the creation fails")),
+              mock.patch.object(TokenClass, "delete_token", side_effect=Exception("the removal fails")),
+              self.assertLogs("privacyidea.lib.token.lifecycle", level="ERROR") as logs):
+            with self.assertRaises(ValueError):
+                init_token({"type": "hotp", "genkey": 1, "serial": "REMOVALFAILS"})
+
+        self.assertTrue(any("Could not remove the token REMOVALFAILS" in line and "the removal fails" in line
+                            for line in logs.output), logs.output)
+        remove_token("REMOVALFAILS")

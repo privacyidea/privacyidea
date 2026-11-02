@@ -25,6 +25,7 @@
     @if (authService.role() === "admin") {
       <div class="admin-layout">
         <app-navigation />
+        <app-subscription-expired-notice />
         <div
           class="admin-content"
           [class.admin-content-flush]="contentService.onDashboard()">

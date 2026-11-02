@@ -24,6 +24,7 @@ import { DebugNoticeComponent } from "@components/layout/debug-notice/debug-noti
 import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "@components/layout/navigation-self-service/navigation-self-service.wizard.component";
 import { NavigationComponent } from "@components/layout/navigation/navigation.component";
+import { SubscriptionExpiredNoticeComponent } from "@components/layout/subscription-expired-notice/subscription-expired-notice.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { LoadingGroup, LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
@@ -42,7 +43,8 @@ import {
     NavigationComponent,
     NavigationSelfServiceComponent,
     NavigationSelfServiceWizardComponent,
-    DebugNoticeComponent
+    DebugNoticeComponent,
+    SubscriptionExpiredNoticeComponent
   ],
   styleUrl: "./layout.component.scss"
 })

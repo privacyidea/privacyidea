@@ -308,6 +308,17 @@ describe("UiPreferencesService", () => {
       expect(navigateSpy).not.toHaveBeenCalled();
     });
 
+    it("should add the running locale to a URL without a locale segment", () => {
+      // The server answers a link without locale, such as the one in the recovery email, with the
+      // preferred language's bundle, whose router only resolves routes below its own base.
+      create("de");
+      window.history.replaceState({}, "", "/app/v2/reset/alice@realm1/abc123?foo=bar");
+
+      service.normalizeLocaleUrl();
+
+      expect(navigateSpy).toHaveBeenCalledWith("/app/v2/de/reset/alice@realm1/abc123?foo=bar");
+    });
+
     it("should not treat an unknown first segment as a locale", () => {
       create("en");
       window.history.replaceState({}, "", "/app/v2/tokens/details/OATH0001");

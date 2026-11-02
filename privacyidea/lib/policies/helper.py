@@ -19,11 +19,13 @@
 import logging
 from collections import defaultdict
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from flask import g, request
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -128,6 +130,35 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
         reply_dict["message"] = f"Only {policy_count} successful authentications per {time_delta} allowed."
 
     return result, reply_dict
+
+
+@dataclass(frozen=True)
+class AuthTimeLimitResult:
+    """
+    The result of :func:`check_auth_time_limit`.
+    """
+    allowed: bool
+    # Which limit refused the authentication, None if it is allowed
+    reason: AuthEventReason | None = None
+    # The client-facing message of the refusal, see check_max_auth_fail
+    reply_dict: dict = field(default_factory=dict)
+
+
+def check_auth_time_limit(user: User) -> AuthTimeLimitResult:
+    """
+    Check the auth_max_fail and auth_max_success policies of a user who authenticates at /validate/check or /auth.
+
+    :param user: The user who authenticates
+    :return: Whether the user may authenticate, and which limit refused it
+    """
+    user_search_dict = {"user": user.login, "realm": user.realm}
+    allowed, reply_dict = check_max_auth_fail(user, user_search_dict)
+    if not allowed:
+        return AuthTimeLimitResult(False, AuthEventReason.AUTH_MAX_FAIL, reply_dict)
+    allowed, reply_dict = check_max_auth_success(user, user_search_dict)
+    if not allowed:
+        return AuthTimeLimitResult(False, AuthEventReason.AUTH_MAX_SUCCESS, reply_dict)
+    return AuthTimeLimitResult(True)
 
 
 def get_jwt_validity(user: User) -> timedelta:

@@ -1,0 +1,15 @@
+<mat-form-field>
+  <mat-label i18n="@@common.realm">Realm</mat-label>
+  <mat-select
+    (selectionChange)="realm.set($event.value)"
+    [value]="realm()">
+    @for (realmOption of realms(); track realmOption) {
+      <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
+    }
+  </mat-select>
+  @if (realm() !== "") {
+    <app-clear-button
+      (clearButtonClick)="clearRealmSelection($event)"
+      matSuffix></app-clear-button>
+  }
+</mat-form-field>

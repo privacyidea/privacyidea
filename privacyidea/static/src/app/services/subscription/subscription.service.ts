@@ -20,10 +20,10 @@ import { HttpClient, httpResource } from "@angular/common/http";
 import { effect, inject, Injectable, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
-import { AuthService } from "@services/auth/auth.service";
+import { AuthService, SUBSCRIPTION_STATUS } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { catchError, Observable, throwError } from "rxjs";
+import { catchError, Observable, tap, throwError } from "rxjs";
 
 export interface Subscription {
   application: string;
@@ -118,11 +118,34 @@ export class SubscriptionService {
     });
   }
 
+  /**
+   * The expired subscription warning follows the status the server reported at login. Once the server's own
+   * subscription is no longer expired or exceeded, the warning is stale and the status is replaced.
+   */
+  private refreshSubscriptionStatus(): void {
+    if (this.authService.subscriptionStatus() !== SUBSCRIPTION_STATUS.INVALID) {
+      return;
+    }
+    this.getSubscriptionStatus().subscribe({
+      next: (response) => {
+        const server = response.result?.value?.find((entry) => entry.is_server);
+        if (!server || server.subscription === "expired" || server.subscription === "exceeded") {
+          return;
+        }
+        this.authService.updateSubscriptionStatus(
+          server.subscription === "none" ? SUBSCRIPTION_STATUS.WITHIN_FREE_TIER : SUBSCRIPTION_STATUS.VALID
+        );
+      },
+      error: (error) => console.error("Failed to refresh the subscription status.", error)
+    });
+  }
+
   deleteSubscription(application: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
     return this.http
       .delete<PiResponse<boolean>>(`${this.baseUrl}/${encodeURIComponent(application)}`, { headers })
       .pipe(
+        tap(() => this.refreshSubscriptionStatus()),
         catchError((error) => {
           console.error("Failed to delete subscription.", error);
           const message = error.error?.result?.error?.message || "";
@@ -140,6 +163,7 @@ export class SubscriptionService {
     formData.append("file", file);
 
     return this.http.post<PiResponse<boolean>>(`${this.baseUrl}/`, formData, { headers }).pipe(
+      tap(() => this.refreshSubscriptionStatus()),
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";

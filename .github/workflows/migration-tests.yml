@@ -49,7 +49,9 @@ jobs:
     name: Migration tests (${{ matrix.db.label }})
     permissions:
       checks: write
-    runs-on: ubuntu-latest
+    # Ubuntu 26.04 installs mariadb-client 11.8, which requires TLS by default. The MariaDB 10.11
+    # service has no TLS, so the backup round-trip cannot connect with that client.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     strategy:

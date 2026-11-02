@@ -73,7 +73,7 @@ export class ViewConditionsColumnComponent {
   selectedValidTime = computed(() => this.policy().time || "");
   selectedClient = computed(() => this.policy().client || []);
   selectedUserAgents = computed(() =>
-    (this.policy().user_agents || []).map((agent) => this.integrationsService.labelForPolicyValue(agent))
+    (this.policy().user_agents || []).map((agent) => this.integrationsService.displayForPolicyValue(agent))
   );
 
   // Additional Conditions

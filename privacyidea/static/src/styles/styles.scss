@@ -1,6 +1,7 @@
 @use "sass:map";
 @use "sass:math";
 @use "sass:meta";
+@use "sass:string";
 @use "@angular/material" as mat;
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
@@ -418,56 +419,79 @@ $corner-radii: (
 // The fills of the status chips, dots, ribbons, bars and snackbars, and the ink drawn on them. The user picks one level in UI
 // Settings; AppearanceService stamps it on <html> as html.status-colors-<level>. The fills are the same in both
 // themes, so each level holds its contrast in light and dark:
-// - aaa: black ink, every fill at 7:1 or better.
-// - aa: white ink, every fill at 4.5:1 or better (the default).
+// - aaa: black ink, every fill at 7:1 or better and the fills spaced in lightness. The edge tone holds 7:1.
+// - aa: white ink, every fill at 4.5:1 or better, and an edge tone that holds 4.5:1 (the default).
 // - a: white ink on the old WebUI green, orange, red and blue and a mid grey. Green, orange and red sit at 2.5:1, 2.0:1
 //   and 4.0:1 under white, blue and grey at 4.5:1, so this level has no contrast guarantee.
 $status-colors: (
   "aaa": (
     "ink": black,
+    // The grey the edges are shaded toward, dark on light and light on dark: 7:1 against the page in both themes.
+    "edge-tone": light-dark(hsl(0, 0%, 29%), hsl(0, 0%, 76%)),
+    // Black ink only sets a floor, so the fills spread upward from the darkest of them (green, at 7.5:1) to the lightest
+    // (yellow, at 14:1). Every pair holds at least 1.15:1 in lightness, so the fills stay apart without relying on hue.
     "green": hsl(120, 50%, 46%),
-    // The logo's bright blue (#00b4ff), darkened to 7.06:1 under black.
-    "blue": #009ee8,
-    // The old WebUI's orange, which holds 10.8:1 under black.
-    "yellow": #f0ad4e,
-    "red": hsl(2, 75%, 68%),
-    "grey": hsl(0, 0%, 62%)
+    // The logo's bright blue (#00b4ff), lightened to a sky blue that holds 10.6:1 under black.
+    "blue": hsl(200, 100%, 65%),
+    // The old WebUI's orange, lightened.
+    "yellow": hsl(35, 84%, 78%),
+    "red": hsl(2, 75%, 74%),
+    "grey": hsl(0, 0%, 78%)
   ),
   "aa": (
     "ink": white,
-    "green": hsl(120, 45%, 36%),
+    // 4.5:1 against the page in both themes.
+    "edge-tone": light-dark(hsl(0, 0%, 40%), hsl(0, 0%, 61%)),
+    // A green of this hue and saturation that holds 4.85:1 under white, a margin above the 4.5:1 minimum.
+    "green": hsl(120, 50%, 34%),
     // The logo's blue (#16536F), which is also the theme's primary blue (8.4:1 under white).
     "blue": #16536f,
     // The brightest orange of this hue and saturation that holds 4.5:1 under white (4.51:1).
     "yellow": #b26217,
-    "red": hsl(2, 64%, 52%),
-    "grey": hsl(0, 0%, 44%)
+    "red": hsl(2, 64%, 45%),
+    "grey": hsl(0, 0%, 34%)
   ),
   "a": (
     "ink": white,
+    "edge-tone": light-dark(hsl(0, 0%, 40%), hsl(0, 0%, 61%)),
     // The old WebUI's green, blue, orange and red.
     "green": #5cb85c,
     "blue": #337ab7,
     "yellow": #f0ad4e,
     "red": #d9534f,
-    "grey": #777777
+    "grey": #777777,
+    // Light edges for the green, orange and red: #f6e9a6 for the orange, 1.59:1 against its fill, and the green and red
+    // lightened to the same 1.59:1 against theirs. Blue and grey are shaded toward the edge tone like the other levels.
+    "green-edge": #acdbac,
+    "yellow-edge": #f6e9a6,
+    "red-edge": #e68c89
   )
 );
 
+// The edge of a fill: the level's own colour when it names one, else the fill shaded toward --status-edge-tone.
+@function status-edge($set, $fill) {
+  @if map.has-key($set, "#{$fill}-edge") {
+    @return map.get($set, "#{$fill}-edge");
+  }
+  @return string.unquote("color-mix(in srgb, var(--#{$fill}-fill), var(--status-edge-tone) 65%)");
+}
+
 @mixin status-colors($set) {
   --status-ink: #{map.get($set, "ink")};
+  --status-edge-tone: #{map.get($set, "edge-tone")};
   --green-fill: #{map.get($set, "green")};
   --blue-fill: #{map.get($set, "blue")};
   --yellow-fill: #{map.get($set, "yellow")};
   --red-fill: #{map.get($set, "red")};
   --grey-fill: #{map.get($set, "grey")};
   // The edge of a fill that carries no text (dots, bars) or sits on a surface it barely differs from (snackbars,
-  // callouts): the fill shaded toward --status-edge-tone, which holds 3:1 against the page at every level in both themes.
-  --green-edge: color-mix(in srgb, var(--green-fill), var(--status-edge-tone) 55%);
-  --blue-edge: color-mix(in srgb, var(--blue-fill), var(--status-edge-tone) 55%);
-  --yellow-edge: color-mix(in srgb, var(--yellow-fill), var(--status-edge-tone) 55%);
-  --red-edge: color-mix(in srgb, var(--red-fill), var(--status-edge-tone) 55%);
-  --grey-edge: color-mix(in srgb, var(--grey-fill), var(--status-edge-tone) 55%);
+  // callouts): the fill shaded toward --status-edge-tone, so the edge holds 3:1 against the page at the levels AAA and
+  // AA in both themes. Level A names its own edges for the green, orange and red.
+  --green-edge: #{status-edge($set, "green")};
+  --blue-edge: #{status-edge($set, "blue")};
+  --yellow-edge: #{status-edge($set, "yellow")};
+  --red-edge: #{status-edge($set, "red")};
+  --grey-edge: #{status-edge($set, "grey")};
 }
 
 // What holds before a level is applied: the default level, so the first paint already has every fill.

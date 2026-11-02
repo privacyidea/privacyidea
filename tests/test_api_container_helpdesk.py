@@ -887,15 +887,11 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
-        self.assertSetEqual({"totp", "hotp"}, {token.get_type() for token in tokens})
-        self.assertEqual(2, len(tokens))
-        # check user of tokens
-        for token in tokens:
-            if token.get_tokentype() == "totp":
-                self.assertEqual("hans", token.user.login)
-                self.assertEqual(self.realm1, token.user.realm)
-            elif token.get_tokentype() == "hotp":
-                self.assertIsNone(token.user)
+        # The tokens without the user flag get no user and no realm, hence the helpdesk is not allowed to enroll them
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("totp", tokens[0].get_tokentype())
+        self.assertEqual("hans", tokens[0].user.login)
+        self.assertEqual(self.realm1, tokens[0].user.realm)
         container_template = container.template
         self.assertEqual(template_params["name"], container_template.name)
 
@@ -928,17 +924,11 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
-        self.assertSetEqual({"totp", "hotp"}, {token.get_type() for token in tokens})
-        self.assertEqual(2, len(tokens))
-        # check realm of tokens
-        for token in tokens:
-            self.assertIsNone(token.user)
-            realms = token.get_realms()
-            if token.get_tokentype() == "totp":
-                self.assertEqual(1, len(realms))
-                self.assertEqual(self.realm1, realms[0])
-            elif token.get_tokentype() == "hotp":
-                self.assertEqual(0, len(realms))
+        # The token without the user flag gets no realm, hence the helpdesk is not allowed to enroll it
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("totp", tokens[0].get_tokentype())
+        self.assertIsNone(tokens[0].user)
+        self.assertListEqual([self.realm1], tokens[0].get_realms())
 
         container_template = container.template
         self.assertEqual(template_params["name"], container_template.name)

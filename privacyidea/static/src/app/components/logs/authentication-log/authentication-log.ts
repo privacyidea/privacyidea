@@ -87,7 +87,6 @@ import { BreakableCodeComponent } from "@components/shared/breakable-code/breaka
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
-import { USER_AGENT_PRESETS } from "@constants/user-agent.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
 import {
@@ -101,6 +100,7 @@ import {
   AuthenticationLogServiceInterface
 } from "@services/authentication-log/authentication-log.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
@@ -371,14 +371,16 @@ export class AuthenticationLog {
   readonly columnKeysMap = columnKeysMap;
   // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
   readonly scrollableColumnKeys = ["serial", ...INFO_COLUMN_KEYS];
-  // Client filter: shows the friendly user-agent name but filters by its identifier prefix, since client_label stores
+  // Client filter: shows the integration's label but filters by its user-agent prefix, since client_label stores
   // the full user-agent string including the version; the multi-select component appends the trailing "*". REVIEW: once
   // selected, the shared filter input displays the raw stored value (e.g. `client_label: privacyIDEA-Keycloak*`) not
-  // the friendly name the user picked; consider mapping it back for display.
-  readonly clientLabelOptions: readonly MultiSelectFilterOption[] = USER_AGENT_PRESETS.map((preset) => ({
-    label: preset.displayName,
-    value: preset.identifier
-  }));
+  // the label the user picked; consider mapping it back for display.
+  readonly clientLabelOptions = computed<MultiSelectFilterOption[]>(() =>
+    this.integrationsService.integrations().map((integration) => ({
+      label: integration.label,
+      value: integration.policy_value
+    }))
+  );
   // user_role has no table column (it is "user" on almost every row); it is filtered via the "More Filter" menu.
   readonly userRoleOptions: readonly MultiSelectFilterOption[] = USER_ROLE_CONFIG.map((role) => ({
     label: role.filterLabel,
@@ -389,6 +391,7 @@ export class AuthenticationLog {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly clientsService: ClientsServiceInterface = inject(ClientsService);
+  protected readonly integrationsService: IntegrationsServiceInterface = inject(IntegrationsService);
   protected readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
     inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

@@ -92,6 +92,9 @@ export class MockAuthService implements AuthServiceInterface {
     .fn()
     .mockReturnValue(of(MockPiResponse.fromValue<AuthData, AuthDetail>(new MockAuthData(), new MockAuthDetail())));
   acceptAuthentication = jest.fn();
+  updateSubscriptionStatus = jest.fn().mockImplementation((status: number) =>
+    this.authData.update((data) => (data ? { ...data, subscription_status: status } : data))
+  );
   logout = jest.fn();
   actionAllowed = jest.fn().mockImplementation((action: string) => this.rights().includes(action));
   actionsAllowed = jest.fn().mockReturnValue(true);

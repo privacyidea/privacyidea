@@ -21,48 +21,21 @@
   class="login-container"
   i18n-aria-label="@@login.loginContainer">
   <div class="login-scroll">
-    @if (customLogo()) {
-      <img
-        alt=""
-        class="custom-logo"
-        height="307"
-        ngSrc="{{ customLogo() }}"
-        ngSrcset="1x"
-        width="307" />
-    } @else {
-      <img
-        alt=""
-        class="logo"
-        height="307"
-        ngSrc="assets/privacyIDEA1.png"
-        ngSrcset="1x"
-        sizes="(max-width: 307px) 100vw, 307px"
-        width="307" />
-
-      <img
-        alt="privacyIDEA Authentication System"
-        class="logo-text"
-        height="109"
-        ngSrc="assets/logo-text.png"
-        ngSrcset="1x"
-        sizes="(max-width: 575px) 100vw, 575px"
-        width="575" />
-    }
+    <app-login-logo />
 
     @if (useRemoteLogin()) {
       <div class="login-form">
         <h3
           class="margin-bottom-16 text-center"
-          i18n="@@login.loginAs"
-          >Login as {{ remoteUser() }}</h3
-        >
+          i18n="@@login.loginAs">Login as {{ remoteUser() }}
+        </h3>
 
         <p
           class="margin-top-0 margin-bottom-32"
-          i18n="@@login.youAuthenticated"
-          >You are authenticated by the web server as user <strong>{{ remoteUser() }}</strong
-          >. You may log in as this user to privacyIDEA without any further credentials.</p
-        >
+          i18n="@@login.youAuthenticated">You are authenticated by the web server as user
+          <strong>{{ remoteUser() }}</strong>. You may log in as this user to privacyIDEA without any further
+          credentials.
+        </p>
 
         <button
           (click)="remoteLogin()"
@@ -115,21 +88,9 @@
         </div>
 
         @if (realms().length > 0) {
-          <mat-form-field>
-            <mat-label i18n="@@common.realm">Realm</mat-label>
-            <mat-select
-              (selectionChange)="realm.set($event.value)"
-              [value]="realm()">
-              @for (realmOption of realms(); track realmOption) {
-                <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
-              }
-            </mat-select>
-            @if (realm() !== "") {
-              <app-clear-button
-                (clearButtonClick)="clearRealmSelection($event)"
-                matSuffix></app-clear-button>
-            }
-          </mat-form-field>
+          <app-realm-select
+            [(realm)]="realm"
+            [realms]="realms()" />
         }
 
         @if (!showOtpField()) {
@@ -165,6 +126,16 @@
               <mat-icon>{{ hidePassword() ? "visibility" : "visibility_off" }}</mat-icon>
             </button>
           </mat-form-field>
+        }
+
+        @if (!showOtpField() && passwordResetEnabled()) {
+          <div class="width-100 text-center">
+            <a
+              [routerLink]="passwordRecoveryPath"
+              class="password-reset-link margin-top-16"
+              i18n="@@login.resetPassword">Reset Password
+            </a>
+          </div>
         }
 
         @if (showOtpField()) {

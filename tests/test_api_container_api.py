@@ -11,7 +11,7 @@ from privacyidea.lib.realm import delete_realm, set_default_realm, set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
-from privacyidea.models import Realm
+from privacyidea.models import Realm, ResolverRealm, db
 
 from .api_container_common import (
     APIContainerTest,
@@ -19,6 +19,18 @@ from .api_container_common import (
 
 
 class APIContainer(APIContainerTest):
+
+    @staticmethod
+    def _delete_realm_row(realm_name: str) -> None:
+        """
+        Delete the realm row directly, which delete_realm() refuses while a container user is in the realm, together
+        with its resolver links. Left behind without a realm, two links of the same resolver collide on Oracle, whose
+        unique constraint treats the NULL realms as equal.
+        """
+        realm = Realm.query.filter_by(name=realm_name).first()
+        for resolver_realm in ResolverRealm.query.filter_by(realm_id=realm.id).all():
+            db.session.delete(resolver_realm)
+        realm.delete()
 
     def test_00_init_delete_container_success(self):
         # Init container
@@ -369,7 +381,7 @@ class APIContainer(APIContainerTest):
         # ---- Invalid realm ---
         user = User("corny", self.realm3)
         container.add_user(user)
-        Realm.query.filter_by(name=self.realm3).first().delete()
+        self._delete_realm_row(self.realm3)
         # Success if providing everything (realm does not exist, hence realm_id is not set)
         payload = {"user": "corny", "realm": self.realm3, "user_id": user.uid, "resolver": user.resolver}
         result = self.request_assert_success(f'/container/{container_serial}/unassign', payload, self.at, 'POST')
@@ -379,7 +391,7 @@ class APIContainer(APIContainerTest):
         self.setUp_user_realm3()
         user = User("corny", self.realm3)
         container.add_user(user)
-        Realm.query.filter_by(name=self.realm3).first().delete()
+        self._delete_realm_row(self.realm3)
         # Also fails if not providing realm (sets default realm)
         payload = {"user": "corny", "user_id": user.uid, "resolver": user.resolver}
         self.request_assert_error(400, f'/container/{container_serial}/unassign',
@@ -603,7 +615,7 @@ class APIContainer(APIContainerTest):
         # An empty value is a value of its own
         self.request_assert_success(f'/container/{container_serial}/info/key1',
                                     {"value": ""}, self.at, 'POST')
-        self.assertEqual("", find_container_by_serial(container_serial).get_container_info_dict().get("key1"))
+        self.assert_empty_string(find_container_by_serial(container_serial).get_container_info_dict().get("key1"))
 
         delete_container_by_serial(container_serial)
 

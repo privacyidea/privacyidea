@@ -441,7 +441,7 @@ class RadiusTokenTestCase(MyTestCase):
         self.setUp_user_realms()
         owner = User("cornelius", self.realm1)
         token = init_token({"type": "radius", "radius.identifier": "myserver", "radius.user": ""}, owner)
-        self.assertEqual("", token.get_tokeninfo("radius.user"))
+        self.assert_empty_string(token.get_tokeninfo("radius.user"))
 
         with mock.patch.object(RADIUSServer, "request", autospec=True, side_effect=RADIUSServer.request) as request:
             self.assertTrue(token.authenticate("radiuspassword", options={"user": User("hans", self.realm1)})[0])

@@ -6,6 +6,7 @@ The lib.tokenclass depends on the DB model and lib.user
 import binascii
 import datetime
 import hashlib
+import time
 import warnings
 
 import mock
@@ -13,13 +14,14 @@ from dateutil.tz import tzlocal
 from passlib.crypto.digest import pbkdf2_hmac
 from testfixtures import log_capture
 
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin, delete_privacyidea_config)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policy import (PolicyClass, SCOPE, set_policy,
                                     delete_policy)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
 from privacyidea.lib.token import import_tokens, get_tokens, init_token, remove_token
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, AutoResyncResult
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.user import (User)
@@ -570,14 +572,26 @@ class HOTPTokenTestCase(MyTestCase):
         # counter = 8, is out of sync
         r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 9, will be autosynced.
         r = token.check_otp("520489")
         self.assertTrue(r == 9, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 10, has also to authenticate! The counter of the token is
         #  set.
         r = token.check_otp("403154")
         self.assertTrue(r == 10, r)
         self.assertEqual(token.token.count, 11)
+
+        # Another request stores the resynced counter first, so this one records no resync
+        token.token.count = 0
+        r = token.check_otp("399871")
+        self.assertEqual(-1, r)
+        token.auth_details.clear()
+        with mock.patch.object(HotpTokenClass, "advance_otp_count", return_value=False):
+            r = token.check_otp("520489")
+        self.assertEqual(-1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
         # Autosync with a gap in the next otp value will fail
         token.token.count = 0
@@ -586,29 +600,44 @@ class HOTPTokenTestCase(MyTestCase):
         # counter = 7, is out of sync
         r = token.check_otp("162583")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
         # counter = 9, will NOT _autosync
         r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
+        self.assertEqual(AutoResyncResult.FAILED, token.auth_details.get(AUTORESYNC_KEY))
 
-        # Autosync fails, if dueDate is over
+        # A value after the dueDate starts a new autoresync, which the next value completes
         token.token.count = 0
-        set_privacyidea_config("AutoResyncTimeout", 0)
+        set_privacyidea_config("AutoResyncTimeout", 300)
         # counter = 8, is out of sync
         r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
-        # counter = 9, is the next value, but duedate is over.
+        token.write_tokeninfo("dueDate", int(time.time()) - 1)
+        token.auth_details.clear()
+        # counter = 9, is the next value, but the dueDate is over
         r = token.check_otp("520489")
-        self.assertTrue(r == -1, r)
+        self.assertEqual(-1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual("9", token.get_tokeninfo("otp1c"))
+        # counter = 10, will be autosynced
+        r = token.check_otp("403154")
+        self.assertEqual(10, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+        delete_privacyidea_config("AutoResyncTimeout")
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)
         token.token.count = 0
+        token.auth_details.clear()
         # counter = 8, is out of sync
         r = token.check_otp("399871")
         self.assertTrue(r == -1, r)
         # counter = 9, will not be autosynced
         r = token.check_otp("520489")
         self.assertTrue(r == -1, r)
+        self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
     def test_23_resync(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()

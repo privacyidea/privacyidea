@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-@use "styles-api" as styles;
 
 :host {
   display: block;
@@ -25,9 +24,11 @@
   font-size: 14px;
 }
 
-// The field the widgets stand on, recessed at the deep step.
+// The field the widgets stand on: flat, in the colour of the navigation toolbar above it, with no shadow and no gradient.
 .dashboard-page {
-  @include styles.card-recessed(5);
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-variant);
   display: flex;
   flex-direction: column;
   height: 100%;

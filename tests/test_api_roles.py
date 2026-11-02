@@ -1240,7 +1240,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_31_user_is_not_allowed_for_some_api_calls(self):
         self.authenticate_selfservice_user()
         serial = "serial0001"
-        tok = Token(serial)
+        tok = Token(serial, tokentype="hotp")
         tok.save()
 
         # Can not set things

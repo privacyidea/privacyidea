@@ -143,7 +143,7 @@ class AuditTestCase(MyTestCase):
         # also contains the own auth audit entry
         self.assertEqual(1, len(admin_audits))
         self.assertEqual("local_admin", admin_audits[0].get("administrator"))
-        self.assertEqual("", admin_audits[0].get("realm"))
+        self.assert_empty_string(admin_audits[0].get("realm"))
 
         # Get audit entries for external admin who is allowed to only see realm1
         audit_log = self.Audit.search({}, admin_params={"admin": "external_admin", "admin_realm": "admin_realm",
@@ -707,6 +707,16 @@ class AuditTestCase(MyTestCase):
             audit.log({"serial": "S" * 500})
             audit._truncate_data()
             self.assertEqual(500, len(audit.audit_data.get("serial")))
+
+    def test_17_add_to_log(self):
+        self.Audit.log({"info": "first"})
+        self.Audit.add_to_log({"info": "second"}, add_with_comma=True)
+        self.assertEqual("first,second", self.Audit.audit_data.get("info"))
+        # A value logged as None counts as no value
+        self.Audit.log({"info": None})
+        self.Audit.add_to_log({"info": "only"}, add_with_comma=True)
+        self.assertEqual("only", self.Audit.audit_data.get("info"))
+        self.Audit.audit_data = {}
 
 
 class AuditEngineOptionsTestCase(unittest.TestCase):

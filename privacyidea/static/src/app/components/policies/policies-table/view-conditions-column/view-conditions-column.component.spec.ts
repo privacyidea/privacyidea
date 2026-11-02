@@ -107,10 +107,10 @@ describe("ConditionsTabComponent", () => {
     expect(component.selectedClient()).toEqual(["client1"]);
   });
 
-  it("should map a known user agent key to its display label", () => {
+  it("should show a known user agent with its display label and the stored value", () => {
     fixture.componentRef.setInput("policy", { ...mockPolicy, user_agents: ["privacyidea-cp"] });
     fixture.detectChanges();
-    expect(component.selectedUserAgents()).toEqual(["Windows Credential Provider"]);
+    expect(component.selectedUserAgents()).toEqual(["Windows Credential Provider (privacyidea-cp)"]);
   });
 
   it("should fall back to the raw identifier for an unknown/legacy user agent key", () => {

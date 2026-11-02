@@ -21,7 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
-import { Router } from "@angular/router";
+import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthData, AuthDetail, AuthService, MultiChallenge, WebAuthnSignRequest } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
@@ -725,5 +725,50 @@ describe("passkeyLoginEnabled signal", () => {
     });
     fixture.detectChanges();
     expect(component.passkeyLoginEnabled()).toBe(false);
+  });
+});
+
+describe("LoginComponent password reset link", () => {
+  let fixture: ComponentFixture<LoginComponent>;
+  let configService: MockConfigService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: LocalService, useClass: MockLocalService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ValidateService, useClass: MockValidateService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: ConfigService, useClass: MockConfigService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService }
+      ]
+    }).compileComponents();
+    configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
+    fixture = TestBed.createComponent(LoginComponent);
+  });
+
+  const resetLink = (): HTMLAnchorElement | null => fixture.nativeElement.querySelector(".password-reset-link");
+
+  it("is hidden while the password_reset policy is not active", () => {
+    fixture.detectChanges();
+    expect(resetLink()).toBeNull();
+  });
+
+  it("links to the password recovery page if the password_reset policy is active", () => {
+    configService.config.update((config) => ({ ...config, password_reset: true }));
+    fixture.detectChanges();
+    expect(resetLink()?.getAttribute("href")).toBe(ROUTE_PATHS.PASSWORD_RECOVERY);
+  });
+
+  it("is hidden while the one-time password is asked for", () => {
+    configService.config.update((config) => ({ ...config, password_reset: true }));
+    fixture.componentInstance.showOtpField.set(true);
+    fixture.detectChanges();
+    expect(resetLink()).toBeNull();
   });
 });

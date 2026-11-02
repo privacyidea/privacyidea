@@ -21,7 +21,7 @@ import { ComponentType } from "@angular/cdk/overlay";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { FreeTierDialogComponent } from "@components/shared/free-tier-dialog/free-tier-dialog.component";
 import { WelcomeDialogComponent } from "@components/shared/welcome-dialog/welcome-dialog.component";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { AuthService, AuthServiceInterface, SUBSCRIPTION_STATUS } from "@services/auth/auth.service";
 import { filter } from "rxjs";
 
 @Injectable({ providedIn: "root" })
@@ -53,7 +53,7 @@ export class WelcomeDialogService {
       if (this.auth.role() !== "admin") {
         return;
       }
-      const freeTierExceeded = this.auth.subscriptionStatus() === 1;
+      const freeTierExceeded = this.auth.subscriptionStatus() === SUBSCRIPTION_STATUS.FREE_TIER_EXCEEDED;
       // Every login stores a new AuthData object, so it identifies the session the dialogs belong to.
       const session = this.auth.authData();
       if (!this.auth.hideWelcome()) {

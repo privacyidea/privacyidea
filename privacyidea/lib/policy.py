@@ -170,11 +170,13 @@ Sat, Sun.
 """
 import ast
 import copy
+import functools
 import logging
 import re
 import traceback
 from datetime import datetime
 from operator import itemgetter
+from types import MappingProxyType
 
 from configobj import ConfigObj
 from netaddr import AddrFormatError
@@ -984,7 +986,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of MENUs to be displayed
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         role = logged_in_user.get("role")
         user_rights = self.ui_get_rights(role,
                                          logged_in_user.get("realm"),
@@ -992,12 +993,9 @@ class PolicyClass:
                                          client,
                                          user_agent)
         main_menus = []
-        static_rights = get_static_policy_definitions(role)
-        enroll_rights = get_dynamic_policy_definitions(role)
-        static_rights.update(enroll_rights)
+        action_menus = get_policy_action_menus(role)
         for r in user_rights:
-            menus = static_rights.get(r, {}).get("mainmenu", [])
-            main_menus.extend(menus)
+            main_menus.extend(action_menus.get(r, ()))
 
         main_menus = list(set(main_menus))
         return main_menus
@@ -1018,7 +1016,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of actions
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
@@ -1061,8 +1058,7 @@ class PolicyClass:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            rights = get_static_policy_definitions(scope)
-            rights.update(get_dynamic_policy_definitions(scope))
+            rights = get_policy_action_menus(scope)
         rights = list(rights)
         log.debug(f"returning the admin rights: {rights!s}")
         return rights
@@ -3430,6 +3426,23 @@ def get_static_policy_definitions(scope=None):
     return ret
 
 
+@functools.lru_cache(maxsize=2)
+def get_policy_action_menus(scope: str) -> MappingProxyType:
+    """
+    Return the WebUI main menus of every policy action in the scope, in the order of the policy definitions.
+
+    The action names and their menus come from the code, the token classes and the token types that pi.cfg allows to
+    enroll (PI_ENABLE_TOKEN_TYPE_ENROLLMENT). These change only when the process restarts, so the menus are built once
+    per scope and process. The full policy definitions are not cached: they also hold database entries like the SMTP
+    servers, and descriptions in the language of the request.
+
+    :param scope: SCOPE.ADMIN or SCOPE.USER
+    :return: A read-only mapping from the action name to a tuple of main menus
+    """
+    return MappingProxyType({action: tuple(definition.get("mainmenu", []))
+                             for action, definition in _action_definitions_for_scope(scope).items()})
+
+
 def get_action_values_from_options(scope, action, options):
     """
     This function is used in the library level to fetch policy action values
@@ -3775,14 +3788,15 @@ class Match:
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
-        From the token object we try to determine the user as the owner and the token realms.
+        From the token object we try to determine the user as the owner, the token realms and the container of the
+        token.
         The default is an empty user object and an empty realm list to avoid matching policies with any user and realm
         condition.
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param token: The token where the user object or the realm should match.
+        :param token: The token where the user object, the realm or the container should match.
         :rtype: Match
         """
         if token:
@@ -3790,12 +3804,16 @@ class Match:
             realms = token.get_realms()
             # serial is required for the extended condition checks (TODO: allow passing the token object)
             serial = token.get_serial()
+            containers = token.token.container
+            container_serial = containers[0].serial if containers else None
         else:
             log.debug("No token available. Matching policies without user and realm.")
             owner = User()
             realms = None
             serial = None
-        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial)
+            container_serial = None
+        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial,
+                           container_serial=container_serial)
 
     @classmethod
     def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":
