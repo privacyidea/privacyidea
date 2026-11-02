@@ -121,6 +121,15 @@ so a remembered device survives a login rename and is never recognized for a
 the bound user still resolves, so deleting or removing a user revokes their
 remembered devices.
 
+The recognition finds the user from the ``user`` and ``realm`` parameters in the
+same way as a login. It applies :ref:`policy_set_realm` of the authentication
+scope, but not :ref:`policy_mangle` and not :ref:`policy_setrealm` of the
+authorization scope. If one of these two policies changes the user or the realm
+of a login, the device is bound to the changed user. The client must then send
+the changed user and realm, for example ``alice`` in place of ``x-alice``.
+Otherwise the device is not recognized, and the cookie is neither rotated nor
+cleared.
+
 Recognition is subject to :ref:`conditional_access`, because a recognized device
 is what lets a client skip the second factor. While a user lock or a source-IP
 block is in force - or a policy's *deny* action decides the request - the answer
