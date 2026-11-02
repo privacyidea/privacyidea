@@ -1,6 +1,9 @@
 import datetime
 import email
 import os
+import smtplib
+import socket
+import ssl
 import shutil
 import tempfile
 from unittest import mock
@@ -10,6 +13,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
+from privacyidea.api.smtpserver import _describe_smtp_error
 from privacyidea.lib.crypto import encryptPassword, CENSORED
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from . import smtpmock
@@ -147,6 +151,92 @@ class SMTPServerTestCase(MyApiTestCase):
         assert res.status_code == 200
         assert res.json["result"]["value"] is True
 
+    def test_send_test_email_smtp_error(self):
+        """An SMTP error is reported as a readable 400 error instead of a 500."""
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        error = smtplib.SMTPAuthenticationError(535, b"5.7.8 Error: authentication failed")
+        with mock.patch("smtplib.SMTP.login", side_effect=error):
+            res = self._send_test_email()
+        assert res.status_code == 400
+        assert res.json["result"]["status"] is False
+        assert ("Authentication failed for user 'cornelius': 535 5.7.8 Error: authentication failed"
+                in res.json["result"]["error"]["message"])
+
+    def test_send_test_email_connection_error(self):
+        """A server that can not be reached is reported as a readable 400 error."""
+        with mock.patch("smtplib.SMTP.ehlo", side_effect=ConnectionRefusedError(111, "Connection refused")):
+            res = self._send_test_email()
+        assert res.status_code == 400
+        assert "Could not connect to 1.2.3.4:123: connection refused." in res.json["result"]["error"]["message"]
+
+    def test_send_test_email_not_accepted(self):
+        """A message the server did not accept is reported instead of returning a silent False."""
+        self.smtp_mock.setdata(response={"recp@example.com": (550, "User unknown")})
+        res = self._send_test_email()
+        assert res.status_code == 400
+        assert ("The server did not accept the message for recp@example.com."
+                in res.json["result"]["error"]["message"])
+
+    def test_send_test_email_queued(self):
+        """A queued test email is reported as successful, sending is left to the job queue worker."""
+        enqueued = mock.Mock(return_value=True)
+        with mock.patch("privacyidea.lib.smtpserver.has_job_queue", return_value=True), \
+                mock.patch("privacyidea.lib.smtpserver.wrap_job", return_value=enqueued), \
+                mock.patch("smtplib.SMTP.login", side_effect=smtplib.SMTPAuthenticationError(535, b"failed")) as login:
+            res = self._send_test_email(extra_data={"enqueue_job": True})
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
+        enqueued.assert_called_once()
+        login.assert_not_called()
+
+    def test_describe_smtp_error(self):
+        """Every kind of error the mail server or the network can raise gets its own message."""
+        cert_error = ssl.SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED]")
+        cert_error.verify_message = "unable to get local issuer certificate"
+        version_error = ssl.SSLError(1, "[SSL: WRONG_VERSION_NUMBER] wrong version number")
+        version_error.reason = "WRONG_VERSION_NUMBER"
+        cases = [
+            (smtplib.SMTPAuthenticationError(535, b"5.7.8 Error: authentication failed"),
+             "Authentication failed for user 'helpdesk': 535 5.7.8 Error: authentication failed"),
+            (smtplib.SMTPNotSupportedError("SMTP AUTH extension not supported by server."),
+             "The server does not support authentication (SMTP AUTH). Check whether TLS must be enabled."),
+            (smtplib.SMTPNotSupportedError("STARTTLS extension not supported by server."),
+             "The server does not support STARTTLS."),
+            (socket.gaierror(-2, "Name or service not known"),
+             "Could not resolve the host name 'mx.example.com'."),
+            (ConnectionRefusedError(111, "Connection refused"),
+             "Could not connect to mx.example.com:587: connection refused."),
+            (TimeoutError("timed out"),
+             "Connection to mx.example.com:587 timed out after 10 seconds."),
+            (cert_error,
+             "TLS error: certificate verify failed: unable to get local issuer certificate"),
+            (version_error,
+             "TLS error: WRONG_VERSION_NUMBER. Check whether port and TLS mode (smtps:// or STARTTLS) match."),
+            (smtplib.SMTPServerDisconnected("Connection unexpectedly closed"),
+             "The server closed the connection unexpectedly. "
+             "Check whether port and TLS mode (smtps:// or STARTTLS) match."),
+            (smtplib.SMTPSenderRefused(553, b"5.7.1 Sender address rejected", "pi@example.com"),
+             "The server refused the sender 'pi@example.com': 553 5.7.1 Sender address rejected"),
+            (smtplib.SMTPRecipientsRefused({"x@example.com": (550, b"5.1.1 User unknown")}),
+             "The server refused the recipient 'x@example.com': 550 5.1.1 User unknown"),
+            (smtplib.SMTPDataError(554, b"5.6.0 Message rejected"),
+             "The server rejected the message: 554 5.6.0 Message rejected"),
+            (smtplib.SMTPResponseException(451, b"4.3.0 Try again later"),
+             "SMTP error 451 4.3.0 Try again later"),
+            (smtplib.SMTPException("something else"),
+             "SMTP error: something else"),
+        ]
+        for error, expected in cases:
+            with self.subTest(error=type(error).__name__):
+                self.assertEqual(expected, _describe_smtp_error(error, "smtp://mx.example.com", 587,
+                                                                "helpdesk", 10))
+
+    def test_describe_smtp_error_port_from_url(self):
+        """A port in the server URL takes precedence over the port parameter, as when sending."""
+        message = _describe_smtp_error(ConnectionRefusedError(111, "Connection refused"),
+                                       "smtps://mx.example.com:465", 25, "", 10)
+        self.assertEqual("Could not connect to mx.example.com:465: connection refused.", message)
+
     def test_send_smime_email(self):
         """Sending an S/MIME signed test email succeeds."""
         self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
@@ -171,8 +261,8 @@ class SMTPServerTestCase(MyApiTestCase):
             "private_key": "tests/testdata/ca/cakey.pem",
             "certificate": "tests/testdata/ca",
         })
-        assert res.status_code == 200
-        assert res.json["result"]["value"] is False
+        assert res.status_code == 400
+        assert "S/MIME signature could not be created" in res.json["result"]["error"]["message"]
         assert self.smtp_mock.get_sent_message() is None
 
     def test_sent_email_text_content(self):
