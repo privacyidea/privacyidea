@@ -51,6 +51,7 @@ import json
 import logging
 import re
 import traceback
+from typing import NoReturn
 from urllib.parse import quote
 
 from flask import g, current_app, Request
@@ -64,7 +65,7 @@ from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
 from privacyidea.lib.crypto import get_sign_object
-from privacyidea.lib.error import PolicyError, ValidateError
+from privacyidea.lib.error import PolicyError, PrivacyIDEAError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
@@ -305,6 +306,55 @@ def hide_version(request, response):
     return response
 
 
+def _reject_not_authorized(request: Request, reason: AuthEventReason, policies: list[str],
+                           error: PrivacyIDEAError) -> NoReturn:
+    """
+    Refuse the request with *error*, classified as ``NOT_AUTHORIZED`` for *reason* by the authorization *policies*
+    that refused it.
+
+    The staged event is corrected where there is one, else an event is logged. Nothing is classified when conditional
+    access already turned the request away before any token logic ran: its rejection row already records why, and a
+    NOT_AUTHORIZED row here would bury that reason and hand the conditional-access counters an attempt the lock itself
+    produced.
+
+    The staged event is replaced even when it records a failed authentication, e.g. a wrong OTP for a token whose
+    type the tokentype policy does not allow: the request is answered with the policy's refusal rather than with the
+    failure, and the log records what the client received. The per-token findings, e.g. the wrong OTP, stay in the
+    reason detail. :func:`~privacyidea.api.before_after.record_post_authentication_failure` keeps a failure's type
+    instead, because the error it handles is unexpected and says nothing about the request, while this refusal is a
+    deliberate decision about it.
+
+    Classifying and raising are one step, so the event is marked as answered by this very error (see
+    ``rejected_by_post_policy``) only when that error is the response.
+
+    :param request: the request object
+    :param reason: why the policies refused the request
+    :param policies: the names of the policies that refused the request
+    :param error: the error the request is refused with
+    :raises PrivacyIDEAError: *error*, always
+    """
+    context = get_ca_context()
+    if not context.rejected_by_conditional_access:
+        # Name the policies: with several authorization policies in play, "which rule do I have to change" is the
+        # whole question the log has to answer.
+        reason_detail = build_reason_detail(policies=policies)
+        if context.amendable is not None:
+            # The detail is merged, so the per-serial reasons the token layer recorded survive alongside the policy
+            # that overrode them. The policy applies whatever the tokens looked like, so it *replaces* the token
+            # layer's reasons rather than joining them: it is the one thing to act on now.
+            context.reclassify(AuthEventType.NOT_AUTHORIZED, reasons=[reason], reason_detail=reason_detail)
+        else:
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User, reasons=[reason],
+                               reason_detail=reason_detail)
+        context.rejected_by_post_policy = True
+    raise error
+
+
+def _policy_names(action_values: dict) -> list[str]:
+    """The names of the policies behind *action_values* (see ``Match.action_values``), each once, in order."""
+    return list(dict.fromkeys(name for names in action_values.values() for name in names))
+
+
 def check_tokentype(request, response):
     """
     This policy function is to be used in a decorator of an API function.
@@ -326,9 +376,9 @@ def check_tokentype(request, response):
                                      user_object=user).action_values(unique=False)
     if token_type and allowed_token_types and token_type not in allowed_token_types:
         # If we have tokentype policies, but the tokentype is not allowed, we raise an exception
-        g.audit_object.log({"success": False,
-                            "action_detail": f"Tokentype {token_type!r} not allowed for authentication"})
-        raise PolicyError("Tokentype not allowed for authentication!")
+        g.audit_object.log({"action_detail": f"Tokentype {token_type!r} not allowed for authentication"})
+        _reject_not_authorized(request, AuthEventReason.TOKENTYPE_NOT_ALLOWED, _policy_names(allowed_token_types),
+                               PolicyError("Tokentype not allowed for authentication!"))
     return response
 
 
@@ -357,9 +407,10 @@ def check_serial(request, response):
                 serial_matches = True
                 break
         if serial_matches is False:
-            g.audit_object.log({"action_detail": "Serial is not allowed for "
-                                                 "authentication!"})
-            raise PolicyError("Serial is not allowed for authentication!")
+            g.audit_object.log({"action_detail": "Serial is not allowed for authentication!"})
+            # Raises the error
+            _reject_not_authorized(request, AuthEventReason.SERIAL_NOT_ALLOWED, _policy_names(allowed_serials),
+                                   PolicyError("Serial is not allowed for authentication!"))
     return response
 
 
@@ -394,8 +445,11 @@ def check_tokeninfo(request, response):
                         else:
                             log.info(f"Tokeninfo field {key!s} with contents {value!s} "
                                      f"does not match {regex!s}")
-                            raise PolicyError(f"Tokeninfo field {key!s} with contents does not"
-                                              " match regular expression.")
+                            # Raises the error
+                            _reject_not_authorized(request, AuthEventReason.TOKENINFO_MISMATCH,
+                                                   tokeninfo_policy[tokeninfo_pol],
+                                                   PolicyError(f"Tokeninfo field {key!s} with contents does not"
+                                                               " match regular expression."))
                     except ValueError:
                         log.warning(f"Invalid tokeninfo policy: {tokeninfo_pol!s}")
 
@@ -1188,6 +1242,8 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+        # The response is a challenge now, logged as a challenge step is: the login completes with its answer.
+        g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.CHALLENGE})
 
         # Reclassifies the staged authentication-log event, or creates one if none exists yet
         enrolled_serial = content.get("detail", {}).get("serial")
@@ -1275,27 +1331,9 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
-            context = get_ca_context()
-            # Nothing to classify when conditional access already turned the request away before any token logic ran:
-            # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
-            # conditional-access counters an attempt the lock itself produced.
-            if not context.rejected_by_conditional_access:
-                # Name the policy that denied it: with several authorization policies in play, "which rule do I
-                # have to change" is the whole question the log has to answer.
-                reason_detail = build_reason_detail(policies=next(iter(authorized_pol.values()), None))
-                if context.amendable is not None:
-                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
-                    # recorded survive alongside the policy that overrode them.
-                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
-                    # reasons rather than joining them: it is the one thing to act on now.
-                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
-                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
-                                       reason_detail=reason_detail)
-                else:
-                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
-                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
-                                       reason_detail=reason_detail)
-            raise ValidateError("User is not authorized to authenticate under these conditions.")
+            # Raises the error
+            _reject_not_authorized(request, AuthEventReason.AUTHORIZATION_DENIED, _policy_names(authorized_pol),
+                                   ValidateError("User is not authorized to authenticate under these conditions."))
 
     return response
 

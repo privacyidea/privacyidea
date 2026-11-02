@@ -43,7 +43,7 @@ from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
 from ..lib.user import get_user_from_param, split_user
 import logging
-from flask import request, g
+from flask import request, g, Request, Response
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
@@ -87,7 +87,8 @@ from ..lib.error import (PrivacyIDEAError,
                          PolicyError, ResourceNotFoundError, ResolverError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventOutcome, AuthEventType,
+                                                                           outcome_of)
 from privacyidea.api.lib.utils import log_authentication, add_autoresync_to_audit
 from privacyidea.lib.user import User
 import datetime
@@ -595,6 +596,10 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
+    # Ahead of the masking, which would replace the error message it records, and of the RADIUS shaping, which
+    # empties the body it reads.
+    record_post_authentication_failure(request, response)
+
     response = mask_authentication_error_response(request, response)
 
     # Re-apply the audit entry of a request the pre-check refused, which the endpoint's own view may since have
@@ -657,6 +662,10 @@ def record_suspended_api_client(response):
     return response
 
 
+# The routes that authenticate a request, whose response can still turn into an error after the authentication.
+POST_AUTHENTICATION_RULES = ("/validate/check", "/validate/radiuscheck", "/validate/triggerchallenge", "/auth")
+
+
 def _shaped_rule(request) -> str | None:
     """
     The route whose response is about to be shaped, or ``None`` when there is nothing to shape.
@@ -667,6 +676,52 @@ def _shaped_rule(request) -> str | None:
     if request.method == "OPTIONS":
         return None
     return getattr(getattr(request, "url_rule", None), "rule", None)
+
+
+def record_post_authentication_failure(request: Request, response: Response) -> None:
+    """
+    Record an error response that follows an authentication which did not fail, as the failure the client received.
+
+    The audit entry and the authentication-log event are written while the request is processed, but a later step -
+    a post-policy, or the view itself after the authentication - can still answer the request with an error. Neither
+    is corrected there, so both would keep recording a success the client never received.
+
+    The audit entry is set to rejected if it records an accepted authentication or a challenge; an entry that records
+    neither, e.g. of a malformed request, is left as it is. The staged authentication-log event is reclassified
+    as ``POST_AUTHENTICATION_FAIL`` with the error message in its other info, unless it already records a failure:
+    such an event, e.g. a wrong credential or a ``NOT_AUTHORIZED`` an authorization policy recorded itself, already
+    says why the request failed. It keeps its type, and gets the error message only if the view answered the failure
+    with a response of its own (``answered_by_view``) and the error came afterwards from something else. A view that
+    raised - an unknown user, a revoked token, a failed login at ``/auth`` - answers its failure with that very
+    error, and so does a post-policy that classified the event itself (``rejected_by_post_policy``), so the message
+    would repeat what the event already says. Only the ``/validate`` views set ``answered_by_view``, so a failure at
+    ``/auth`` never gets the message, also not an unusable passkey, which ``/auth`` answers with a response of its own.
+    A rejection by conditional access is never amendable and stays as it is.
+
+    :param request: the request object
+    :param response: the response object
+    """
+    # Every error response on these routes has a 4xx or 5xx status (see get_auth_error_status_code), so the body of
+    # any other response is not parsed at all.
+    if (_shaped_rule(request) not in POST_AUTHENTICATION_RULES or response.status_code < 400
+            or not response.is_json):
+        return
+    result = response.json.get("result") or {}
+    if result.get("status") is not False:
+        return
+    audit_authentication = g.audit_object.audit_data.get("authentication") if "audit_object" in g else None
+    if audit_authentication in (AUTH_RESPONSE.ACCEPT, AUTH_RESPONSE.CHALLENGE):
+        g.audit_object.log({"success": False, "authentication": AUTH_RESPONSE.REJECT})
+    context = peek_ca_context()
+    event = context.amendable if context is not None else None
+    if event is None:
+        return
+    message = (result.get("error") or {}).get("message")
+    fields = {"other_info": {**(event.other_info or {}), "error": message}} if message else {}
+    if outcome_of(event.event_type) != AuthEventOutcome.FAILURE:
+        context.reclassify(AuthEventType.POST_AUTHENTICATION_FAIL, **fields)
+    elif fields and context.answered_by_view and not context.rejected_by_post_policy:
+        context.reclassify(event.event_type, **fields)
 
 
 def mask_authentication_error_response(request, response):
