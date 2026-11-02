@@ -1,20 +1,24 @@
 import re
 from unittest.mock import patch
 
+from sqlalchemy import delete, update
+from sqlalchemy.sql import Executable
+
 from .api_lib_policy_common import SSHKEY
 from .base import MyApiTestCase
 
+import privacyidea.api.validate as validate_module
 from privacyidea.lib.clients import create_client
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.remembered_device import (PERSISTENT_COOKIE_NAME, create_remembered_device, user_identity,
-                                               parse_cookie, hash_series_id)
+                                               parse_cookie, hash_series_id, TokenUsability)
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policy import AUTHORIZED, set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import enable_token, get_one_token, init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import RememberedDevice
+from privacyidea.models import RememberedDevice, db
 from privacyidea.models.utils import utc_now
 
 from datetime import timedelta
@@ -458,6 +462,44 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         stored = RememberedDevice.query.filter_by(series_id=series).first()
         self.assertIsNotNone(stored)
         self.assertEqual(2, stored.counter)
+
+    def test_02c_device_changed_by_another_request_during_the_checks(self):
+        # The token checks of a recognition expire the database session, because get_tokens does. The rotation
+        # still starts from the counter the cookie was validated against. So a device that another request
+        # rotates or deletes in the meantime is answered like a later request with the same cookie.
+        client, api_key = create_client("concurrent client", "privacyidea-cp")
+        real_token_usability = validate_module.token_usability
+
+        def change_during_token_checks(statement: Executable) -> patch:
+            def token_usability(user: User) -> TokenUsability:
+                usability = real_token_usability(user)
+                db.session.execute(statement)
+                db.session.commit()
+                return usability
+            return patch.object(validate_module, "token_usability", side_effect=token_usability)
+
+        # Another request rotates the device: this one is a duplicate within the grace window
+        device, cookie = create_remembered_device(self.identity, client.id)
+        series = device.series_id
+        with change_during_token_checks(update(RememberedDevice).where(RememberedDevice.series_id == series)
+                                        .values(counter=2, last_used_at=utc_now())):
+            res = self._recognise(api_key=api_key, cookie=cookie)
+        self.assertEqual([], self._cookie_headers(res))
+        self.assertEqual(2, RememberedDevice.query.filter_by(series_id=series).first().counter)
+        entry = self.find_most_recent_audit_entry(action="*validate/remember_device*")
+        self.assertEqual("remembered device recognised again within the grace window, cookie not rotated",
+                         entry["info"])
+
+        # Another request deletes the device: the cookie is dead
+        device, cookie = create_remembered_device(self.identity, client.id)
+        series = device.series_id
+        with change_during_token_checks(delete(RememberedDevice).where(RememberedDevice.series_id == series)):
+            res = self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+        self.assertTrue(any(header.startswith(f"{PERSISTENT_COOKIE_NAME}=;")
+                            for header in self._cookie_headers(res)), self._cookie_headers(res))
+        entry = self.find_most_recent_audit_entry(action="*validate/remember_device*")
+        self.assertEqual("device not recognised: the cookie matches no remembered device of the user on this "
+                         "client, the cookie is cleared", entry["info"])
 
     def test_03_wrong_client_cookie_not_honoured(self):
         client_a, _ = create_client("client A", "privacyidea-cp")

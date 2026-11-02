@@ -26,7 +26,7 @@ from privacyidea.lib.user import User
 from privacyidea.models import RememberedDevice, db
 from privacyidea.models.utils import utc_now
 
-from sqlalchemy import update
+from sqlalchemy import delete, update
 
 import hashlib
 from datetime import datetime, timedelta, timezone
@@ -299,20 +299,32 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.assertEqual(1, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)
 
     def test_rotation_refuses_a_counter_another_request_moved(self):
-        # rotate_device writes from the counter it validated. If another request moved the device in the
-        # meantime, this one rotates nothing and says so, instead of overwriting that request's cookie.
+        # rotate_device writes from the counter it validated, also after the request expired the session (the
+        # commit below does). If another request moved the device in the meantime, this one rotates nothing and
+        # says so, instead of overwriting that request's cookie.
         client_id = self._client_id()
         rose = self._identity("rose")
-        device, cookie = create_remembered_device(rose, client_id, ip_address="10.0.0.1")
-        loaded = get_valid_device(cookie, client_id, rose, "10.0.0.1").device
-        db.session.expunge(loaded)
+        _device, cookie = create_remembered_device(rose, client_id, ip_address="10.0.0.1")
+        validated = get_valid_device(cookie, client_id, rose, "10.0.0.1")
         # What a request that rotated the device first leaves behind
         db.session.execute(update(RememberedDevice)
-                           .where(RememberedDevice.series_id == device.series_id)
-                           .values(counter=loaded.counter + 1, last_used_at=utc_now()))
+                           .where(RememberedDevice.series_id == validated.series_id)
+                           .values(counter=validated.counter + 1, last_used_at=utc_now()))
         db.session.commit()
 
-        self.assertIsNone(rotate_device(loaded, "10.0.0.1"))
+        self.assertIsNone(rotate_device(validated, "10.0.0.1"))
+        self.assertEqual(2, RememberedDevice.query.filter_by(series_id=validated.series_id).first().counter)
+
+    def test_rotation_of_a_device_another_request_deleted(self):
+        # A device that another request deleted after the validation is not rotated
+        client_id = self._client_id()
+        ruth = self._identity("ruth")
+        _device, cookie = create_remembered_device(ruth, client_id, ip_address="10.0.0.1")
+        validated = get_valid_device(cookie, client_id, ruth, "10.0.0.1")
+        db.session.execute(delete(RememberedDevice).where(RememberedDevice.series_id == validated.series_id))
+        db.session.commit()
+
+        self.assertIsNone(rotate_device(validated, "10.0.0.1"))
 
     def test_a_cookie_rotated_by_another_request_is_graced_or_reused(self):
         # The same situation through consume_remember_device_cookie: the presented cookie now carries the

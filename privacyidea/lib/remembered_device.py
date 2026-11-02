@@ -291,13 +291,22 @@ def create_remembered_device(identity: UserIdentity, client_id: str, ip_address:
 
 class ValidDevice(NamedTuple):
     """
-    A live device matched by :func:`get_valid_device`.
+    A live device matched by :func:`get_valid_device`, with the stored values that the cookie was validated
+    against.
 
-    ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
-    token) and ``True`` for a tolerated grace-window hit (the caller must
-    **not** rotate).
+    ``is_grace`` is ``False`` for a fresh use (the caller rotates the device with :func:`rotate_device`) and ``True``
+    for a tolerated grace-window hit (the caller must **not** rotate).
+
+    The values are copied from the row when the cookie is validated, because the request can expire the database
+    session before the device is rotated: a commit does, and so does the token lookup of the recognition checks
+    (:func:`~privacyidea.lib.token.get_tokens`). An expired row is read again on the next access, and by then another
+    request can have rotated or deleted it.
     """
-    device: RememberedDevice
+    # The primary key of the device, the digest of the series id
+    series_id: str
+    # The stored counter. For a fresh use it is the counter of the cookie, for a grace-window hit the next one.
+    counter: int
+    expires_at: datetime
     is_grace: bool
 
 
@@ -331,11 +340,11 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
       exists, it has expired or it was not used within ``idle_timeout`` (such a
       device is deleted). A stale counter on an idle device is still a replay,
       see below.
-    * If the presented counter matches the stored one, returns
-      ``(device, False)`` (a fresh use; the caller should rotate it).
+    * If the presented counter matches the stored one, returns a
+      :class:`ValidDevice` with ``is_grace=False`` (a fresh use; the caller should rotate it).
     * If the presented counter is the immediately-previous one and the request
-      arrives within the grace window from the same source IP, returns
-      ``(device, True)`` - a tolerated concurrent/duplicate request. The caller
+      arrives within the grace window from the same source IP, returns a
+      :class:`ValidDevice` with ``is_grace=True`` - a tolerated concurrent/duplicate request. The caller
       must **not** rotate in this case (it converges on the current token).
     * Any other counter mismatch is treated as replay (stolen cookie): the whole
       series is deleted and an ``AuthError`` is raised.
@@ -363,7 +372,7 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
     :param idle_timeout: if given, a device whose last recognition (or, if it was
         never recognised, its creation) lies further back than this is no longer valid
     :return: a :class:`MissReason` if there is no live device for this cookie
-        (malformed, unknown, expired or idle); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
+        (malformed, unknown, expired or idle); otherwise a :class:`ValidDevice` whose
         ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
         token) and ``True`` for a tolerated grace-window hit (the caller must
         **not** rotate - it converges on the current token)
@@ -408,9 +417,7 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
         # being kept alive indefinitely (which would defeat rotation).
         log.debug(f"Remembered device for client {client_id!r}: accepting previous "
                   f"counter within the grace window.")
-        return ValidDevice(device, True)
-
-    return ValidDevice(device, False)
+    return ValidDevice(device.series_id, device.counter, device.expires_at, is_grace)
 
 
 def _is_within_grace(device: RememberedDevice, counter: int, client_ip: str) -> bool:
@@ -437,26 +444,23 @@ class RotatedDevice(NamedTuple):
     expires_at: datetime | None
 
 
-def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> RotatedDevice | None:
+def rotate_device(device: ValidDevice, client_ip: str | None = None) -> RotatedDevice | None:
     """
     Rotate a validated device: bump the counter, refresh ``last_used_at`` and
     return the new counter plus its expiry. The device stores only the digest of the
     series id, so the caller builds the new cookie value from the presented cookie.
 
-    The counter is moved with a single conditional UPDATE from the value this request validated, so of
+    The counter is moved with a single conditional UPDATE from the counter this request validated, so of
     several requests presenting the same cookie at the same moment only one rotates it. The others get
-    ``None`` and are answered as a later request with the previous cookie is.
+    ``None`` and are answered as a later request with the previous cookie is. A device that another request
+    deleted after the validation is not rotated either.
 
-    :param device: a device returned by :func:`get_valid_device`
+    :param device: a fresh use returned by :func:`get_valid_device`
     :param client_ip: the source of this request, recorded as where the device was last seen
-    :return: a :class:`RotatedDevice` ``(counter, expires_at)``, or None if another request rotated it first
+    :return: a :class:`RotatedDevice` ``(counter, expires_at)``, or None if another request rotated or deleted
+        the device first
     """
-    # Read what is needed before the commit: it expires the instance, and the attributes would be
-    # reloaded from a row another request may already have moved.
-    stored_series_id = device.series_id
-    presented_counter = device.counter
-    expires_at = device.expires_at
-    values = {"counter": presented_counter + 1, "last_used_at": utc_now()}
+    values = {"counter": device.counter + 1, "last_used_at": utc_now()}
     if client_ip:
         # Follow the device as it moves. The grace window compares the presented request's source
         # against this, and a device that keeps the address it was first registered from would stop
@@ -467,15 +471,15 @@ def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> Rot
     # MariaDB >= 11.6.2 does not refuse it with 1020.
     db.session.commit()
     statement = (update(RememberedDevice)
-                 .where(RememberedDevice.series_id == stored_series_id,
-                        RememberedDevice.counter == presented_counter)
+                 .where(RememberedDevice.series_id == device.series_id,
+                        RememberedDevice.counter == device.counter)
                  .values(**values)
                  .execution_options(synchronize_session=False))
     rotated = db.session.execute(statement).rowcount == 1
     db.session.commit()
     if not rotated:
         return None
-    return RotatedDevice(presented_counter + 1, expires_at)
+    return RotatedDevice(device.counter + 1, device.expires_at)
 
 
 class RememberStatus(str, enum.Enum):
@@ -571,11 +575,12 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         return ConsumeResult(RememberStatus.REFUSED, None, None, refusal)
     if result.is_grace:
         return ConsumeResult(RememberStatus.GRACE, None, None)
-    rotated = rotate_device(result.device, client_ip)
+    rotated = rotate_device(result, client_ip)
     if rotated is None:
         # Another request rotated the device between the validation above and the rotation, so this one
         # presents what is now the previous counter. Validate once more and answer it the way a later
-        # request with that cookie is answered: tolerated within the grace window, reuse otherwise.
+        # request with that cookie is answered: tolerated within the grace window, reuse otherwise. If the
+        # other request deleted the device, the cookie is dead.
         try:
             again = get_valid_device(cookie_value, client_id, identity, client_ip, idle_timeout)
         except AuthError:
