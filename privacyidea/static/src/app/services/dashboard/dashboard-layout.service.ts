@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
+import { effect, inject, Injectable, signal, untracked, WritableSignal } from "@angular/core";
 import { DASHBOARD_COLUMNS, WidgetInstance, WidgetOptions, WidgetSettings, WidgetTypeId } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
@@ -75,6 +75,22 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   constructor() {
     this.loadLayout();
+    // The service outlives the session, so the layout follows the session: it is dropped when the session ends
+    // and the stored layout of whoever logs in next is loaded.
+    effect(() => {
+      const authenticated = this.auth.isAuthenticated();
+      untracked(() => {
+        if (authenticated === this.sessionActive) {
+          return;
+        }
+        this.sessionActive = authenticated;
+        if (authenticated) {
+          this.loadLayout();
+        } else {
+          this.resetSession();
+        }
+      });
+    });
   }
 
   public beginEdit(): void {
@@ -143,7 +159,11 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     const allowed = this.widgets().filter((widget) => this.isWidgetTypeAllowed(widget.type));
     if (allowed.length !== this.widgets().length) {
       this.widgets.set(allowed);
-      this.persistIfLive();
+      // Before the stored layout arrived this prunes the default one, and flagging that as a change would let it
+      // overwrite the stored layout once it is loaded.
+      if (this.loaded) {
+        this.persistIfLive();
+      }
     }
   }
 
@@ -203,9 +223,26 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   private snapshot: WidgetInstance[] | null = null;
   private loaded = false;
   private changedWhileLoading = false;
+  private sessionActive = this.auth.isAuthenticated();
+  // Counts the sessions, so a response to a load from an earlier one is dropped.
+  private session = 0;
+
+  private resetSession(): void {
+    this.session++;
+    this.snapshot = null;
+    this.loaded = false;
+    this.changedWhileLoading = false;
+    this.editMode.set(false);
+    this.insertRow.set(0);
+    this.widgets.set(this.reconcilePinned(this.defaultWidgets()));
+  }
 
   private loadLayout(): void {
+    const session = this.session;
     this.persistence.load().subscribe((stored) => {
+      if (session !== this.session) {
+        return;
+      }
       this.loaded = true;
       // A layout the user changed while the request was in flight wins over the
       // stored one and is written back, so the change is not silently dropped.
@@ -213,7 +250,12 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
         this.persist();
         return;
       }
-      this.widgets.set(stored ? this.reconcilePinned(stored) : this.allowedDefaultLayout());
+      // Widgets this admin may not use stay out of view; the stored layout keeps them until the admin changes it.
+      this.widgets.set(
+        stored
+          ? this.reconcilePinned(stored).filter((widget) => this.isWidgetTypeAllowed(widget.type))
+          : this.allowedDefaultLayout()
+      );
     });
   }
 

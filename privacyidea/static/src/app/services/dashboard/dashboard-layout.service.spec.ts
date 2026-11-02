@@ -615,4 +615,42 @@ describe("DashboardLayoutService", () => {
       expect(service.widgets()).toHaveLength(before);
     });
   });
+
+  describe("session change", () => {
+    const own = (id: string): WidgetInstance => ({ id, type: "events", x: 2, y: 3, cols: 8, rows: 5 });
+
+    it("should load the stored layout of the next session after the session ended", () => {
+      build([own("first")]);
+      expect(service.widgets()).toContainEqual(own("first"));
+
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      expect(service.widgets()).not.toContainEqual(own("first"));
+
+      persistence.save([own("second")]).subscribe();
+      auth.isAuthenticated.set(true);
+      TestBed.tick();
+      expect(service.widgets()).toContainEqual(own("second"));
+      expect(service.widgets()).not.toContainEqual(own("first"));
+    });
+
+    it("should leave edit mode when the session ends", () => {
+      build();
+      service.beginEdit();
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      expect(service.editMode()).toBe(false);
+      expect(service.hasPendingChanges()).toBe(false);
+    });
+
+    it("should not overwrite the stored layout with a layout pruned before it was loaded", () => {
+      build([own("second")]);
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      auth.isAuthenticated.set(true);
+      service.pruneForbiddenWidgets();
+      TestBed.tick();
+      expect(stored()).toEqual([own("second")]);
+    });
+  });
 });
