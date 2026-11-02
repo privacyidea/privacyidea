@@ -568,56 +568,6 @@ class PolicyClass:
                 log.debug("Policies after matching {!s}={!s}: {!s}".format(
                     searchkey, searchvalue, [p.get('name') for p in reduced_policies]))
 
-        # We need to act individually on the resolver key word
-        # We either match the resolver exactly or, only if the check_all_resolvers flag in the policy is set,
-        # a resolver of the realm with a lower priority than the user's resolver that also contains the user.
-        if resolver is not None:
-            new_policies = []
-            user_resolvers = []
-            for policy in reduced_policies:
-                if policy.get("check_all_resolvers"):
-                    if realm and user:
-                        # The user's resolver and the resolvers of the realm ranked below it, in priority order.
-                        # A resolver ranked above can not hold another possible resolver of the user.
-                        if not user_resolvers:
-                            realm_resolvers = get_ordered_resolvers(realm)
-                            if resolver in realm_resolvers:
-                                user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
-                            else:
-                                user_resolvers = [resolver]
-                        for reso in user_resolvers:
-                            value_found, value_excluded = self._search_value(
-                                policy.get("resolver"), reso)
-                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
-                            # A listed resolver only counts if the user is contained in it.
-                            if value_found and not value_excluded:
-                                key = ResolverLogin(resolver=reso, login=user)
-                                if key not in self._resolver_membership:
-                                    try:
-                                        self._resolver_membership[key] = (reso == resolver
-                                                                          or _user_in_resolver(user, reso))
-                                    except Exception as error:
-                                        log.error(f"Could not check if the user {user!r} is contained in the "
-                                                  f"resolver {reso!r} of the policy {policy.get('name')!r} with "
-                                                  f"check_all_resolvers: {error}")
-                                        raise
-                                if self._resolver_membership[key]:
-                                    new_policies.append(policy)
-                                    break
-                elif not policy.get("resolver"):
-                    # We also find the policies with no distinct information
-                    # about the request value
-                    new_policies.append(policy)
-                else:
-                    value_found, value_excluded = self._search_value(
-                        policy.get("resolver"), resolver)
-                    if value_found and not value_excluded:
-                        new_policies.append(policy)
-
-            reduced_policies = new_policies
-            log.debug("Policies after matching resolver={!s}: {!s}".format(
-                resolver, [p.get('name') for p in reduced_policies]))
-
         # Match the privacyIDEA node
         if pinode is not None:
             new_policies = []
@@ -681,6 +631,58 @@ class PolicyClass:
             reduced_policies = new_policies
             log.debug("Policies after matching client={!s}: {!s}".format(
                 client, [p.get('name') for p in reduced_policies]))
+
+        # We need to act individually on the resolver key word
+        # We either match the resolver exactly or, only if the check_all_resolvers flag in the policy is set,
+        # a resolver of the realm with a lower priority than the user's resolver that also contains the user.
+        # This filter runs last, because check_all_resolvers can ask the user store. A policy that another filter
+        # removes does not cause a request to the user store.
+        if resolver is not None:
+            new_policies = []
+            user_resolvers = []
+            for policy in reduced_policies:
+                if policy.get("check_all_resolvers"):
+                    if realm and user:
+                        # The user's resolver and the resolvers of the realm ranked below it, in priority order.
+                        # A resolver ranked above can not hold another possible resolver of the user.
+                        if not user_resolvers:
+                            realm_resolvers = get_ordered_resolvers(realm)
+                            if resolver in realm_resolvers:
+                                user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
+                            else:
+                                user_resolvers = [resolver]
+                        for reso in user_resolvers:
+                            value_found, value_excluded = self._search_value(
+                                policy.get("resolver"), reso)
+                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
+                            # A listed resolver only counts if the user is contained in it.
+                            if value_found and not value_excluded:
+                                key = ResolverLogin(resolver=reso, login=user)
+                                if key not in self._resolver_membership:
+                                    try:
+                                        self._resolver_membership[key] = (reso == resolver
+                                                                          or _user_in_resolver(user, reso))
+                                    except Exception as error:
+                                        log.error(f"Could not check if the user {user!r} is contained in the "
+                                                  f"resolver {reso!r} of the policy {policy.get('name')!r} with "
+                                                  f"check_all_resolvers: {error}")
+                                        raise
+                                if self._resolver_membership[key]:
+                                    new_policies.append(policy)
+                                    break
+                elif not policy.get("resolver"):
+                    # We also find the policies with no distinct information
+                    # about the request value
+                    new_policies.append(policy)
+                else:
+                    value_found, value_excluded = self._search_value(
+                        policy.get("resolver"), resolver)
+                    if value_found and not value_excluded:
+                        new_policies.append(policy)
+
+            reduced_policies = new_policies
+            log.debug("Policies after matching resolver={!s}: {!s}".format(
+                resolver, [p.get('name') for p in reduced_policies]))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))

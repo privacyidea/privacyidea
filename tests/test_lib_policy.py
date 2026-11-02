@@ -1259,6 +1259,35 @@ class PolicyTestCase(MyTestCase):
             delete_resolver("reso1")
             delete_resolver("reso2")
 
+    def test_21b_check_all_resolvers_asks_user_store_after_other_filters(self):
+        # reso1 (prio 1) contains selfservice and cornelius, reso2 (prio 2) contains cornelius and root.
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1}, {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAllClient", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, client="10.0.0.0/8", action=f"{PolicyAction.TOKENTYPE}=totp")
+        set_policy(name="checkAllAgent", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, user_agents="privacyidea-cp", action=f"{PolicyAction.TOKENTYPE}=hotp")
+        user = User("selfservice", "test_realm")
+        try:
+            # The client and the user agent remove both policies, so reso2 is not asked.
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("unreachable")):
+                policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                                        user=user.login, client="192.168.1.5", user_agent="PAM")
+            self.assertListEqual([], policies)
+
+            # A policy that the client filter keeps still asks reso2.
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("unreachable")):
+                self.assertRaises(ResolverError, PolicyClass().match_policies, scope=SCOPE.AUTHZ,
+                                  realm=user.realm, resolver=user.resolver, user=user.login, client="10.0.0.1",
+                                  user_agent="PAM")
+        finally:
+            delete_policy("checkAllClient")
+            delete_policy("checkAllAgent")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
+
     def test_22_non_ascii_user(self):
         set_policy(name="polnonascii",
                    action=f"enrollHOTP, {PolicyAction.OTPPINMINLEN}=4",
