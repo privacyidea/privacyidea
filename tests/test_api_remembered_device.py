@@ -320,7 +320,8 @@ class PersistentCookieValidateTestCase(MyApiTestCase):
                       "actions", action_detail())
         self.assertNotIn("storing it failed", action_detail())
 
-        with patch("privacyidea.api.validate._resolve_persistent_cookie", side_effect=RuntimeError("database gone")):
+        with patch("privacyidea.api.lib.postpolicy._resolve_persistent_cookie",
+                   side_effect=RuntimeError("database gone")):
             self._check(api_key)
         self.assertIn("remembered device not issued: storing it failed", action_detail())
 
