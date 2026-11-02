@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
+import { Subject } from "rxjs";
 import { TestBed } from "@angular/core/testing";
 import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
@@ -632,6 +633,19 @@ describe("DashboardLayoutService", () => {
       TestBed.tick();
       expect(service.widgets()).toContainEqual(own("second"));
       expect(service.widgets()).not.toContainEqual(own("first"));
+    });
+
+    it("should drop a load that finishes after the session ended", () => {
+      const late = new Subject<WidgetInstance[] | null>();
+      persistence = TestBed.inject(DashboardPersistenceService);
+      jest.spyOn(persistence, "load").mockReturnValueOnce(late);
+      service = TestBed.inject(DashboardLayoutService);
+
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      late.next([own("ended")]);
+
+      expect(service.widgets()).not.toContainEqual(own("ended"));
     });
 
     it("should leave edit mode when the session ends", () => {

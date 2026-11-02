@@ -248,4 +248,17 @@ describe("UserSettingsService", () => {
     service.getSettings().subscribe();
     respondWith({});
   });
+
+  it("should not cache a response that arrives after clearCache", () => {
+    service.getSettings().subscribe();
+    const late = httpMock.expectOne("/user/settings");
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(service.settings()).toBeNull();
+    service.getSettings().subscribe();
+    respondWith({ theme: "light" });
+    expect(service.settings()).toEqual({ theme: "light" });
+  });
 });
