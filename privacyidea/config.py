@@ -22,6 +22,7 @@ import secrets
 import string
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 log = logging.getLogger(__name__)
 
@@ -321,10 +322,12 @@ class DockerConfig:
         PI_DB_PASSWORD = db_password
 
         if all(x in os.environ for x in [ConfigKey.DB_USER, ConfigKey.DB_HOST]) and PI_DB_PASSWORD:
+            # User and password are percent-encoded, so that characters like "@", ":" or "/" in them do not end
+            # them early; SQLAlchemy decodes them again.
             SQLALCHEMY_DATABASE_URI = "{}://{}:{}@{}{}/{}{}".format(
                 os.getenv(ConfigKey.DB_DRIVER, 'mysql+pymysql'),
-                os.getenv(ConfigKey.DB_USER),
-                PI_DB_PASSWORD,
+                quote(os.getenv(ConfigKey.DB_USER), safe=""),
+                quote(PI_DB_PASSWORD, safe=""),
                 os.getenv(ConfigKey.DB_HOST),
                 f":{os.getenv(ConfigKey.DB_PORT)}" if ConfigKey.DB_PORT in os.environ else "",
                 os.getenv(ConfigKey.DB_NAME, ""),
