@@ -3686,8 +3686,20 @@ class PolicyMatchTestCase(MyTestCase):
         self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_corny).policies(),
                          {"no_condition", "realm4", "resolver3"})
 
+        # The container of the token is used for container conditions
+        set_policy(name="smartphone", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        container = find_container_by_serial(init_container({"type": "smartphone"})["container_serial"])
+        container.add_token(token_hans)
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_hans).policies(),
+                         {"no_condition", "realm4", "hans", "resolver1", "smartphone"})
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_no_user).policies(),
+                         {"no_condition"})
+        container.delete()
+
         # Clean up
-        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1"])
+        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1", "smartphone"])
         token_corny.delete_token()
         token_hans.delete_token()
         token_no_user.delete_token()
