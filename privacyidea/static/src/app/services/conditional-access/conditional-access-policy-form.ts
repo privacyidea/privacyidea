@@ -101,14 +101,11 @@ export interface ConditionalAccessPolicyFormModel {
   reset_counters_on_enforce: boolean | null;
 }
 
-// The whole number the text holds, or null for empty text and for anything else.
+// The whole number the text holds, written as plain digits with an optional minus sign, or null for empty text and for
+// anything else: an exponent, a plus sign, a hex prefix and a fraction are not whole numbers here.
 export function parseWholeNumber(text: string): number | null {
   const trimmed = text.trim();
-  if (trimmed === "") {
-    return null;
-  }
-  const parsed = Number(trimmed);
-  return Number.isInteger(parsed) ? parsed : null;
+  return /^-?\d+$/.test(trimmed) ? Number(trimmed) : null;
 }
 
 // The form model of a stage. A stage without a message is off; one holding an empty message is on but not written yet.

@@ -455,6 +455,32 @@ describe("SystemConfigComponent", () => {
     });
   });
 
+  describe("a half-typed timeout of an unticked AutoResync", () => {
+    const typeTimeout = (value: string) => component.model.update((model) => ({ ...model, AutoResyncTimeout: value }));
+
+    it("is not written while the setting was never stored", async () => {
+      await loadConfig({ DefaultOtpLen: "8" });
+      typeTimeout("abc");
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).not.toHaveProperty("AutoResyncTimeout");
+    });
+
+    it("leaves the stored value in place", async () => {
+      await loadConfig({ AutoResyncTimeout: "300" });
+      typeTimeout("abc");
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual(expect.objectContaining({ AutoResyncTimeout: "300" }));
+    });
+
+    it("still blocks the save while AutoResync is ticked, where the form validates it", () => {
+      component.model.update((model) => ({ ...model, AutoResync: true, AutoResyncTimeout: "abc" }));
+
+      expect(component.canSave()).toBe(false);
+    });
+  });
+
   describe("editing", () => {
     it("writes a typed value to the model and marks the field dirty", async () => {
       expect(component.systemConfigForm.DefaultSyncWindow().dirty()).toBe(false);

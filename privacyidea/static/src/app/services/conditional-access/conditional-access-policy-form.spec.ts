@@ -66,13 +66,12 @@ describe("conditional-access-policy-form", () => {
       ["5", 5],
       [" 12 ", 12],
       ["0", 0],
-      ["-3", -3],
-      ["1e2", 100]
+      ["-3", -3]
     ])("reads %j as %d", (text, expected) => {
       expect(parseWholeNumber(text)).toBe(expected);
     });
 
-    it.each(["", "   ", "abc", "1.5", "NaN", "Infinity"])("reads %j as no whole number", (text) => {
+    it.each(["", "   ", "abc", "1.5", "NaN", "Infinity", "1e2", "+5", "0x10", "1_000"])("reads %j as no whole number", (text) => {
       expect(parseWholeNumber(text)).toBeNull();
     });
   });

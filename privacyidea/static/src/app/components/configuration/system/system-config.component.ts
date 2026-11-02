@@ -270,6 +270,13 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
         body[key] = model[key];
       }
     }
+    // A disabled field is not validated, so a half-typed timeout of an unticked AutoResync is not written: the saved
+    // value stays, or the setting stays unset.
+    const timeout = model.AutoResyncTimeout;
+    if (!model.AutoResync && timeout !== "" && !WHOLE_NUMBER_PATTERN.test(timeout)) {
+      if (this.storedKeys.has("AutoResyncTimeout")) body["AutoResyncTimeout"] = this.savedModel().AutoResyncTimeout;
+      else delete body["AutoResyncTimeout"];
+    }
     return body;
   }
 
