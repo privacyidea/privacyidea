@@ -645,12 +645,14 @@ class PolicyClass:
                     if realm and user:
                         # The user's resolver and the resolvers of the realm ranked below it, in priority order.
                         # A resolver ranked above can not hold another possible resolver of the user.
+                        # If the user's resolver is not in the list of the realm, for example because it is pinned
+                        # to another node, its rank is unknown and all resolvers of the realm are checked.
                         if not user_resolvers:
                             realm_resolvers = get_ordered_resolvers(realm)
                             if resolver in realm_resolvers:
                                 user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
                             else:
-                                user_resolvers = [resolver]
+                                user_resolvers = [resolver] + realm_resolvers
                         for reso in user_resolvers:
                             value_found, value_excluded = self._search_value(
                                 policy.get("resolver"), reso)

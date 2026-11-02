@@ -1288,6 +1288,36 @@ class PolicyTestCase(MyTestCase):
             delete_resolver("reso1")
             delete_resolver("reso2")
 
+    def test_21c_check_all_resolvers_user_resolver_pinned_to_another_node(self):
+        # reso1 (prio 1, pinned to another node) contains cornelius, reso2 (prio 2) contains cornelius and root.
+        other_node = "8e4272a9-9037-40df-8aa3-976e4a04b5a8"
+        this_node = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        db.session.add_all([NodeName(id=other_node, name="otherNode"), NodeName(id=this_node, name="thisNode")])
+        db.session.commit()
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1, "node": other_node},
+                                 {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=totp")
+        try:
+            with mock.patch.dict(self.app.config, {"PI_NODE_UUID": this_node}):
+                self.assertListEqual(["reso2"], get_ordered_resolvers("test_realm"))
+                # A token owner stored with reso1 is checked against all resolvers of the realm.
+                expected_matches = {"cornelius": ["checkAll"], "selfservice": []}
+                for login, expected in expected_matches.items():
+                    with self.subTest(login=login):
+                        policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm="test_realm",
+                                                                resolver="reso1", user=login)
+                        self.assertListEqual(expected, [policy["name"] for policy in policies])
+        finally:
+            delete_policy("checkAll")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
+            NodeName.query.filter(NodeName.id.in_([other_node, this_node])).delete()
+            db.session.commit()
+
     def test_22_non_ascii_user(self):
         set_policy(name="polnonascii",
                    action=f"enrollHOTP, {PolicyAction.OTPPINMINLEN}=4",
