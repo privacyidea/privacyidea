@@ -44,7 +44,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
                                    convert_token_objects_to_dicts, init_token)
-from privacyidea.lib.user import User, get_user_from_param
+from privacyidea.lib.user import User
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
@@ -746,9 +746,15 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         for token_info in template_tokens:
             token = None
             user = User()
-            # If the user flag is set, the token is assigned to the container owner: set the full user information in
-            # the enroll information
-            if token_info.get("user"):
+            if user_role == "user" and request_user_original:
+                # Users are always assigned to the tokens, only admins can create tokens without a user
+                user = request_user_original
+                token_info["user"] = user.login
+                token_info["realm"] = user.realm
+                token_info["resolver"] = user.resolver
+            elif token_info.get("user"):
+                # If the user flag is set, the token is assigned to the container owner: set the full user information
+                # in the enroll information
                 if container_owner:
                     token_info["user"] = container_owner.login
                     token_info["realm"] = container_owner.realm
@@ -759,23 +765,19 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 else:
                     del token_info["user"]
                 user = container_owner
-            elif user_role == "user" and request.User:
-                # Users are always assigned to the tokens, only admins can create tokens without a user
-                user = request.User
-                token_info["user"] = user.login
-                token_info["realm"] = user.realm
-                token_info["resolver"] = user.resolver
             elif token_info.get("user") is not None:
                 del token_info["user"]
 
             # The pre-policy decorator functions require a request object containing the enroll information.
             # Hence, we need to clear the data in the request object from the previous token and set the new enroll
             # information for the current token. The policy conditions on the request data and the user are evaluated
-            # against the current token as in a token enrollment request.
+            # against the current token as in a token enrollment request. The user object of the token is used as it
+            # is, so that no user store lookup can stop the creation of the remaining tokens. A token without a user
+            # is checked against the realm it gets, if any.
             request.all_data = {}
             request.all_data.update(token_info)
             g.request_data = copy.deepcopy(token_info)
-            request.User = get_user_from_param(token_info)
+            request.User = user or User(realm=token_info.get("realm", ""))
             g.policies = {}
 
             # Pre-policy checks

@@ -9,11 +9,11 @@ from flask import g, request
 from privacyidea.lib.container import (create_container_template, get_template_obj,
                                        create_container_tokens_from_template)
 from privacyidea.lib.container import (init_container, find_container_by_serial)
-from privacyidea.lib.error import UserError
+from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.token import (get_tokens_from_serial_or_user,
@@ -875,7 +875,7 @@ class APIContainerTemplate(APIContainerTest):
             g.request_data = copy.deepcopy(request_data)
             g.policies = {"container_policy": "value"}
             g.logged_in_user = {"role": "admin", "username": "admin", "realm": ""}
-            with mock.patch("privacyidea.lib.container.get_user_from_param", side_effect=UserError("unavailable")):
+            with mock.patch("privacyidea.lib.container.User", side_effect=UserError("unavailable")):
                 with self.assertRaises(UserError):
                     create_container_tokens_from_template(container_serial, [{"type": "hotp", "genkey": True,
                                                                               "user": True}], request, "admin")
@@ -886,3 +886,65 @@ class APIContainerTemplate(APIContainerTest):
             self.assertDictEqual({"container_policy": "value"}, g.policies)
 
         find_container_by_serial(container_serial).delete()
+
+    def test_23_create_container_with_template_user_store_not_available(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True},
+                                                           {"type": "totp", "genkey": True, "user": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+        user_store_lookup = User._get_user_from_userstore
+
+        def lookup_user(user_object: User) -> None:
+            # The user store fails while the first template token is enrolled
+            if getattr(request, "all_data", {}).get("type") == "hotp":
+                raise ResolverError("The user store is not available")
+            user_store_lookup(user_object)
+
+        with mock.patch.object(User, "_get_user_from_userstore", autospec=True, side_effect=lookup_user):
+            result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        # The error is only logged for the first token and the remaining token is created for the container owner
+        self.assertEqual(1, len(result["result"]["value"]["tokens"]))
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("totp", tokens[0].get_tokentype())
+        self.assertEqual(hans, tokens[0].user)
+
+        container.delete()
+        [token.delete_token() for token in tokens]
+
+    def test_24_create_container_tokens_from_template_for_user_without_container_owner(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
+        template_tokens = [{"type": "hotp", "genkey": True, "user": True}, {"type": "totp", "genkey": True}]
+        request_data = {"type": "generic", "user": "hans", "realm": self.realm1}
+
+        with self.app.test_request_context("/container/init", method="POST"):
+            request.all_data = copy.deepcopy(request_data)
+            request.User = hans
+            g.request_data = copy.deepcopy(request_data)
+            g.policies = {}
+            g.client_ip = "127.0.0.1"
+            g.serial = None
+            g.audit_object = self.audit_object
+            g.policy_object = PolicyClass()
+            g.logged_in_user = {"role": "user", "username": "hans", "realm": self.realm1,
+                                "resolver": self.resolvername1}
+            create_container_tokens_from_template(container_serial, template_tokens, request, "user")
+
+        # All tokens of a user are assigned to the user, also if the container has no owner and independent of the
+        # user flag
+        container = find_container_by_serial(container_serial)
+        tokens = container.get_tokens()
+        self.assertSetEqual({"hotp", "totp"}, {token.get_tokentype() for token in tokens})
+        for token in tokens:
+            self.assertEqual(hans, token.user)
+
+        container.delete()
+        [token.delete_token() for token in tokens]
