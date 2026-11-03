@@ -293,8 +293,8 @@ export class ContentService implements ContentServiceInterface {
     return this.routePath() === path;
   }
 
-  // The array form of router.navigate encodes "(" and ")", which navigateByUrl with encodeURIComponent leaves in
-  // the URL where the router reads them as outlet syntax. The signals follow the resulting URL.
+  // The array form of router.navigate keeps each key a single, encoded path segment. The signals follow the
+  // resulting URL.
   tokenSelected(serial: string): void {
     this.router.navigate([ROUTE_PATHS.TOKENS_DETAILS, serial]);
   }
