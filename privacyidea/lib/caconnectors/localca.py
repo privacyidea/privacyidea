@@ -40,6 +40,17 @@ import traceback
 
 log = logging.getLogger(__name__)
 
+
+def _posix(path):
+    """
+    Return the path with forward slashes for the use in an openssl command line.
+
+    The command line is split with ``shlex.split``, which takes the backslashes of a Windows path for escape
+    characters. OpenSSL understands the forward slashes on Windows. Nothing changes where the separator already is
+    a forward slash.
+    """
+    return str(path).replace(os.sep, "/") if path else path
+
 CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
           "-extensions {extension} -days {days} -in {csrfile} -out {" \
           "certificate} -batch"
@@ -308,7 +319,7 @@ class LocalCAConnector(BaseCAConnector):
         self.template_file = self.config.get(ATTR.TEMPLATE_FILE)
         self.workingdir = self.config.get(ATTR.WORKING_DIR)
         if self.template_file and self.workingdir:
-            if not self.template_file.startswith("/"):
+            if not os.path.isabs(self.template_file):
                 self.template_file = self.workingdir + "/" + self.template_file
         self.templates = self.get_templates()
 
@@ -367,10 +378,10 @@ class LocalCAConnector(BaseCAConnector):
         certificatedir = options.get(ATTR.CERT_DIR,
                                      self.config.get(ATTR.CERT_DIR, ""))
         if workingdir:
-            if not csrdir.startswith("/"):
+            if not os.path.isabs(csrdir):
                 # No absolut path
                 csrdir = workingdir + "/" + csrdir
-            if not certificatedir.startswith("/"):
+            if not os.path.isabs(certificatedir):
                 certificatedir = workingdir + "/" + certificatedir
 
         if template_name:
@@ -390,11 +401,11 @@ class LocalCAConnector(BaseCAConnector):
             f.write(csr)
 
         # TODO: use the template name to set the days and the extension!
-        cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
-                             days=days, config=config, extension=extension,
-                             csrfile=os.path.join(csrdir, csr_filename),
-                             certificate=os.path.join(certificatedir,
-                                                      certificate_filename))
+        cmd = CA_SIGN.format(cakey=_posix(self.cakey), cacert=_posix(self.cacert),
+                             days=days, config=_posix(config), extension=extension,
+                             csrfile=_posix(os.path.join(csrdir, csr_filename)),
+                             certificate=_posix(os.path.join(certificatedir,
+                                                             certificate_filename)))
         # run the command
         args = shlex.split(cmd)
         # the command is configured by the administrator: CA key, CA cert, number of days, the config file
@@ -449,9 +460,9 @@ class LocalCAConnector(BaseCAConnector):
         serial = cert_obj.serial_number
         serial_hex = int_to_hex(serial)
         filename = serial_hex + ".pem"
-        cmd = CA_REVOKE.format(cakey=self.cakey, cacert=self.cacert,
-                               config=self.config.get(ATTR.OPENSSL_CNF),
-                               certificate="/".join(p for p in [self.config.get(ATTR.CERT_DIR), filename] if p),
+        cmd = CA_REVOKE.format(cakey=_posix(self.cakey), cacert=_posix(self.cacert),
+                               config=_posix(self.config.get(ATTR.OPENSSL_CNF)),
+                               certificate=_posix("/".join(p for p in [self.config.get(ATTR.CERT_DIR), filename] if p)),
                                reason=reason)
         workingdir = self.config.get(ATTR.WORKING_DIR)
         args = shlex.split(cmd)
@@ -482,7 +493,7 @@ class LocalCAConnector(BaseCAConnector):
         ret = None
         # Check if we need to create a new CRL
         if check_validity:
-            if crl.startswith("/"):
+            if os.path.isabs(crl):
                 full_path_crl = crl
             else:
                 full_path_crl = workingdir + "/" + crl
@@ -497,9 +508,9 @@ class LocalCAConnector(BaseCAConnector):
                 create_new_crl = False
 
         if create_new_crl:
-            cmd = CA_GENERATE_CRL.format(cakey=self.cakey, cacert=self.cacert,
-                                         config=self.config.get(ATTR.OPENSSL_CNF),
-                                         CRL=crl)
+            cmd = CA_GENERATE_CRL.format(cakey=_posix(self.cakey), cacert=_posix(self.cacert),
+                                         config=_posix(self.config.get(ATTR.OPENSSL_CNF)),
+                                         CRL=_posix(crl))
             args = shlex.split(cmd)
             # The command is configured by the admin: CA key, CA cert, config file and CRL location
             p = Popen(args, stdout=PIPE, stderr=PIPE, cwd=workingdir, universal_newlines=True)  # nosec B603
@@ -549,7 +560,7 @@ class LocalCAConnector(BaseCAConnector):
             directory = input("In which directory do you want to create "
                               f"the CA [{config.directory!s}]: ")
             config.directory = directory or config.directory
-            if not config.directory.startswith("/"):
+            if not os.path.isabs(config.directory):
                 config.directory = os.path.abspath(config.directory)
 
             keysize = input("What should be the keysize of the CA (2048/4096/8192)"
@@ -642,7 +653,7 @@ def _init_ca(config):
     import stat
     os.chmod(f"{config.directory!s}/cakey.pem",
              stat.S_IRUSR | stat.S_IWUSR)
-    command = f"openssl genrsa -out {config.directory!s}/cakey.pem {config.keysize!s}"
+    command = f"openssl genrsa -out {_posix(config.directory)!s}/cakey.pem {config.keysize!s}"
     print("Running command...")
     print(command)
     args = shlex.split(command)
