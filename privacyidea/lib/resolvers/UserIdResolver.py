@@ -52,6 +52,7 @@ Defines the rough interface for a UserId Resolver
 import logging
 
 from privacyidea.lib import lazy_gettext
+from privacyidea.lib.error import ResolverTransportError
 
 log = logging.getLogger(__name__)
 
@@ -217,7 +218,8 @@ class UserIdResolver:
         can answer for several users in one request should override this.
 
         A user the user store could not answer for is reported instead of raising, so that one failing
-        user does not cost the whole batch.
+        user does not cost the whole batch. A user store that could not be reached at all is asked only
+        once, the remaining users are reported without a request of their own.
 
         :param user_ids: IDs of the users in the resolver
         :param unresolvable_ids: If given, the IDs that can not be looked up at all are added to it. Their
@@ -225,10 +227,11 @@ class UserIdResolver:
                                  not exist.
         :return: dictionary mapping each user ID to its login name
         """
-        login_map = {}
+        login_map: dict = {}
         # dict.fromkeys drops duplicate IDs, so a user that several tokens share is only looked up
         # once even though the result would be the same
-        for user_id in dict.fromkeys(user_ids):
+        distinct_user_ids: list = list(dict.fromkeys(user_ids))
+        for position, user_id in enumerate(distinct_user_ids):
             try:
                 login_map[user_id] = self.lookup_username(user_id)
             except Exception as lookup_error:
@@ -236,6 +239,17 @@ class UserIdResolver:
                 login_map[user_id] = ""
                 if unresolvable_ids is not None:
                     unresolvable_ids.add(user_id)
+                if isinstance(lookup_error, ResolverTransportError):
+                    # An answered request, even a failed one, says nothing about the users that were not
+                    # asked about yet, while an unreachable user store answers none of them
+                    remaining_ids: list = distinct_user_ids[position + 1:]
+                    log.error(f"The user store can not be reached, the remaining {len(remaining_ids)} "
+                              f"users of this batch are not looked up")
+                    for remaining_id in remaining_ids:
+                        login_map[remaining_id] = ""
+                        if unresolvable_ids is not None:
+                            unresolvable_ids.add(remaining_id)
+                    break
         return login_map
 
     def _usernames_via_user_info_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:

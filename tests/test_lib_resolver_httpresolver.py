@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 import mock
 import pytest
+import requests
 import responses
 from requests.exceptions import SSLError
 
@@ -872,6 +873,52 @@ class HTTPResolverTestCase(MyTestCase):
                 with self.assertRaises(ResolverError, msg=f"status {status}") as error:
                     resolver.lookup_username("1234")
                 self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+    def test_06c_usernames_batch_stops_after_a_transport_error(self) -> None:
+        # A user store that can not be reached answers no request at all, so a batch must not pay the
+        # full timeout of a request for every one of its owners
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        user_ids = ["8001", "8002", "8001", "8003"]
+        distinct_user_ids = {"8001", "8002", "8003"}
+        transport_errors = [requests.exceptions.ConnectionError("connection refused"),
+                            requests.exceptions.ReadTimeout("read timed out"),
+                            requests.exceptions.ConnectTimeout("connection timed out"),
+                            requests.exceptions.ConnectionError("failed to resolve 'userstore.example.org'")]
+        for transport_error in transport_errors:
+            unresolvable_ids = set()
+            with responses.RequestsMock(assert_all_requests_are_fired=False) as mocked_responses:
+                for user_id in distinct_user_ids:
+                    mocked_responses.add(responses.GET, f"https://example.com/users/{user_id}",
+                                         body=transport_error)
+                login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+                requests_sent = len(mocked_responses.calls)
+
+            self.assertEqual(1, requests_sent, f"{transport_error!r}")
+            # Only the cost changes, the verdict stays the one of a user store that did not answer
+            self.assertSetEqual(distinct_user_ids, unresolvable_ids, f"{transport_error!r}")
+            self.assertDictEqual({user_id: "" for user_id in distinct_user_ids}, login_map,
+                                 f"{transport_error!r}")
+
+    def test_06d_usernames_batch_keeps_asking_after_a_status_error(self) -> None:
+        # A user store that answers with a status is reachable, so one failed request says nothing about
+        # the users the batch did not ask about yet. Reporting them unasked would mark them as orphaned.
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        user_ids = ["8101", "8102", "8101", "8103"]
+        distinct_user_ids = {"8101", "8102", "8103"}
+        for status in [401, 403, 429, 503]:
+            unresolvable_ids = set()
+            with responses.RequestsMock() as mocked_responses:
+                for user_id in distinct_user_ids:
+                    mocked_responses.add(responses.GET, f"https://example.com/users/{user_id}", status=status,
+                                         body="""{"error": "failure"}""")
+                login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+                requests_sent = len(mocked_responses.calls)
+
+            self.assertEqual(len(distinct_user_ids), requests_sent, f"status {status}")
+            self.assertSetEqual(distinct_user_ids, unresolvable_ids, f"status {status}")
+            self.assertDictEqual({user_id: "" for user_id in distinct_user_ids}, login_map, f"status {status}")
 
     @responses.activate
     def test_07_get_user_id(self):

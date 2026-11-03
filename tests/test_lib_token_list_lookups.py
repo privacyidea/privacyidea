@@ -12,6 +12,7 @@ from datetime import datetime
 from itertools import product
 
 import mock
+import requests
 import responses
 from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
@@ -1116,3 +1117,33 @@ class OrphanedTokenTestCase(MyTestCase):
         # Every owner of the resolver reports why it could not be loaded, not what the failed load left behind
         self.assertIn("the resolver configuration is broken", messages, messages)
         self.assertNotIn("NoneType", messages, messages)
+
+    def test_19_a_user_store_that_can_not_be_reached_is_asked_once(self) -> None:
+        user_ids = ["21", "22", "23"]
+        serials = {f"DEADSTORE{user_id}" for user_id in user_ids}
+        for user_id in user_ids:
+            token = init_token({"type": "spass", "serial": f"DEADSTORE{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanhttp",
+                       realmname="orphanhttprealm").save()
+        tokens = get_tokens(serial_wildcard="DEADSTORE*")
+        self.assertEqual(3, len(tokens), tokens)
+
+        def orphaned_serials_of_an_unreachable_store(orphaned_on_error: bool) -> tuple[set[str], int]:
+            with responses.RequestsMock(assert_all_requests_are_fired=False) as mocked_responses:
+                mocked_responses.add(responses.GET, "http://localhost:8080/get-data",
+                                     body=requests.exceptions.ConnectionError("connection refused"))
+                return get_orphaned_serials(tokens, orphaned_on_error), len(mocked_responses.calls)
+
+        try:
+            orphaned, requests_of_the_orphaning_run = orphaned_serials_of_an_unreachable_store(True)
+            kept, requests_of_the_keeping_run = orphaned_serials_of_an_unreachable_store(False)
+        finally:
+            for user_id in user_ids:
+                remove_token(f"DEADSTORE{user_id}")
+
+        # A user store that can not be reached costs one request for the whole chunk, while both
+        # verdicts stay the ones of a store that did not answer
+        self.assertSetEqual(serials, orphaned)
+        self.assertSetEqual(set(), kept)
+        self.assertEqual(1, requests_of_the_orphaning_run)
+        self.assertEqual(1, requests_of_the_keeping_run)
