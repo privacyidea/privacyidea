@@ -20,7 +20,7 @@ import { Component, input } from "@angular/core";
 import { FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatFormField, MatInput } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
@@ -35,7 +35,6 @@ import { CustomAttributeDraft } from "./custom-attribute-draft";
     MatIcon,
     MatFormField,
     MatInput,
-    MatLabel,
     MatSelectModule,
     DetailsCardComponent,
     DetailFieldRowComponent
