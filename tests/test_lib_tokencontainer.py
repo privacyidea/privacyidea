@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 import mock
+import responses
 from sqlalchemy import select
 
 from privacyidea.lib.challenge import get_challenges, delete_challenges
@@ -37,6 +38,8 @@ from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pa
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError,
                                    ResolverError)
+from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, Challenge, db
@@ -2972,3 +2975,32 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
 
         container.delete()
         orphan.delete()
+
+    def test_04_is_orphaned_with_a_failing_user_store(self) -> None:
+        save_resolver({"resolver": "staffstore",
+                       "type": "httpresolver",
+                       "endpoint": "https://staff.example.org/users",
+                       "method": "GET",
+                       "requestMapping": """{"id": "{userid}"}""",
+                       "responseMapping": """{"username": "{data.login}"}""",
+                       "hasSpecialErrorHandler": False})
+        set_realm("staffrealm", [{"name": "staffstore"}])
+        # A cached login name would answer before the user store is asked, so the mocked status would not be seen
+        self.pin_to_database("users")
+        container = find_container_by_serial(init_container({"type": "generic"})["container_serial"])
+        db.session.add(TokenContainerOwner(container_id=container._db_container.id, user_id="4711",
+                                           resolver="staffstore", realm_name="staffrealm"))
+        db.session.commit()
+
+        try:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=503, body="{}")
+                self.assertRaises(ResolverError, container.is_orphaned)
+
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=404, body="{}")
+                self.assertTrue(container.is_orphaned())
+        finally:
+            container.delete()
+            delete_realm("staffrealm")
+            delete_resolver("staffstore")

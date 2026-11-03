@@ -37,7 +37,7 @@ from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
                                    get_tokens_from_serial_or_user)
 from privacyidea.lib.tokenclass import TokenClass, ChallengeSession
-from privacyidea.lib.resolver import get_resolver_type
+from privacyidea.lib.resolver import get_resolver_object, get_resolver_type
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
@@ -440,6 +440,9 @@ class TokenContainerClass:
             user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
             if user.login and user.realm:
                 return False
+            if not user.login and owner.resolver and owner.user_id:
+                # An empty login name can also mean the user store did not answer, only lookup_username tells them apart
+                get_resolver_object(owner.resolver).lookup_username(owner.user_id)
         return True
 
     def get_states(self) -> list[str]:

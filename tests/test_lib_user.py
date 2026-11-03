@@ -7,6 +7,7 @@ import logging
 from typing import Any
 
 import mock
+import responses
 from testfixtures import log_capture, LogCapture
 
 from privacyidea.config import TestingConfig
@@ -1569,6 +1570,43 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         # Cleanup
         db.session.execute(delete(InternalUserAttribute))
         db.session.commit()
+
+    def test_find_orphaned_unreachable_http_user_store(self) -> None:
+        """A user store that fails to answer is not the same as a deleted user:
+        the row is only reported with orphaned_on_error, while a 404 means the
+        user is really gone and is reported either way."""
+        from privacyidea.lib.user import find_orphaned_internal_attributes
+        endpoint = "https://users.example.org/get-user"
+        resolver_name = "orphanattrhttp"
+        realm_name = "orphanattrhttprealm"
+        save_resolver({"resolver": resolver_name,
+                       "type": "httpresolver",
+                       "endpoint": endpoint,
+                       "method": "GET",
+                       "requestMapping": """{"id": "{userid}"}""",
+                       "responseMapping": """{"username": "{data.the_username}"}""",
+                       "hasSpecialErrorHandler": False})
+        set_realm(realm_name, [{"name": resolver_name}])
+        realm_id = get_realm_id(realm_name)
+        row = ("http-uid-1", resolver_name, realm_id)
+        db.session.add(InternalUserAttribute(user_id=row[0], resolver=resolver_name,
+                                             realm_id=realm_id, Key="k", Value="v"))
+        db.session.commit()
+        try:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, endpoint, status=503, body="{}")
+                self.assertNotIn(row, find_orphaned_internal_attributes(orphaned_on_error=False))
+                self.assertIn(row, find_orphaned_internal_attributes(orphaned_on_error=True))
+
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, endpoint, status=404, body="{}")
+                self.assertIn(row, find_orphaned_internal_attributes(orphaned_on_error=False))
+                self.assertIn(row, find_orphaned_internal_attributes(orphaned_on_error=True))
+        finally:
+            db.session.execute(delete(InternalUserAttribute))
+            db.session.commit()
+            delete_realm(realm_name)
+            delete_resolver(resolver_name)
 
 
 class HidePasswordInDebugLogTestCase(OverrideConfigTestCase):
