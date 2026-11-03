@@ -39,7 +39,7 @@ import redis as redis_lib
 
 from privacyidea.lib.cache.user import (_covered_user_info, _segment, _ttl_seconds, cached_user_id, cached_user_info,
                                         cached_username, flush_user_cache, invalidate_resolver, invalidate_user,
-                                        read_cached_username, write_cached_usernames)
+                                        read_cached_usernames, write_cached_usernames)
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.user import User
@@ -200,12 +200,12 @@ class UserCacheUnitTestCase(MyTestCase):
 
     def test_07_without_redis_no_username_is_read(self) -> None:
         with user_cache_in_store(None):
-            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
+            self.assertEqual({}, read_cached_usernames(RESOLVER_NAME, ["1000"]))
 
     def test_08_without_redis_no_usernames_are_written(self) -> None:
         with user_cache_in_store(None):
             write_cached_usernames(RESOLVER_NAME, {"1000": "alice"})
-            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
+            self.assertEqual({}, read_cached_usernames(RESOLVER_NAME, ["1000"]))
 
 
 @pytest.mark.skipif(not _TEST_REDIS_URL,
@@ -492,10 +492,10 @@ class UserCacheRedisTestCase(_RealRedisBase):
     def test_20_a_cached_username_is_read_without_the_resolver(self) -> None:
         resolver = FakeResolver()
         with user_cache_in_store(self._real_client):
-            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
+            self.assertEqual({}, read_cached_usernames(RESOLVER_NAME, ["1000"]))
             cached_username(resolver, RESOLVER_NAME, "1000")
-            self.assertEqual("alice", read_cached_username(RESOLVER_NAME, "1000"))
-            self.assertIsNone(read_cached_username(RESOLVER_NAME, ""))
+            self.assertEqual({"1000": "alice"}, read_cached_usernames(RESOLVER_NAME, ["1000"]))
+            self.assertEqual({}, read_cached_usernames(RESOLVER_NAME, [""]))
         self.assertEqual(["1000"], resolver.username_calls)
 
     def test_21_usernames_are_written_in_one_round_trip(self) -> None:
@@ -504,9 +504,8 @@ class UserCacheRedisTestCase(_RealRedisBase):
                               wraps=self._real_client.pipeline) as pipeline:
                 write_cached_usernames(RESOLVER_NAME, {"1000": "alice", "1001": "bob", "1002": "", "": "nobody"})
             self.assertEqual(1, pipeline.call_count)
-            self.assertEqual("alice", read_cached_username(RESOLVER_NAME, "1000"))
-            self.assertEqual("bob", read_cached_username(RESOLVER_NAME, "1001"))
-            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1002"))
+            self.assertEqual({"1000": "alice", "1001": "bob"},
+                             read_cached_usernames(RESOLVER_NAME, ["1000", "1001", "1002"]))
         # Encrypted, expiring and indexed for the resolver like an entry written by cached_username
         login_keys = {f"pi:user:v1:login:{RESOLVER_NAME}:1000", f"pi:user:v1:login:{RESOLVER_NAME}:1001"}
         self.assertSetEqual(login_keys, set(self._real_client.scan_iter(match="pi:user:v1:login:*")))
@@ -527,6 +526,42 @@ class UserCacheRedisTestCase(_RealRedisBase):
             with patch("privacyidea.lib.cache.user.encryptPassword", side_effect=HSMException("HSM not ready")):
                 write_cached_usernames(RESOLVER_NAME, {"1000": "alice"})
         self.assertEqual([], list(self._real_client.scan_iter(match="pi:user:*")))
+
+    def test_23_usernames_are_read_in_one_round_trip(self) -> None:
+        with user_cache_in_store(self._real_client):
+            write_cached_usernames(RESOLVER_NAME, {"4100": "auditor", "4101": "operator"})
+            with (patch.object(type(self._real_client), "mget", wraps=self._real_client.mget) as mget,
+                  patch.object(type(self._real_client), "get", wraps=self._real_client.get) as get,
+                  patch.object(type(self._real_client), "srem", wraps=self._real_client.srem) as srem):
+                logins = read_cached_usernames(RESOLVER_NAME, ["4100", "4101", "4102", "4103", "", None])
+                self.assertEqual({"4100": "auditor", "4101": "operator"}, logins)
+                self.assertEqual(1, mget.call_count, mget.call_args_list)
+                self.assertEqual(0, get.call_count, get.call_args_list)
+                # The names of the entries that are gone leave the resolver's index with one command
+                self.assertEqual(1, srem.call_count, srem.call_args_list)
+
+                # A user ID the caller has nothing to ask about costs no command at all
+                self.assertEqual({}, read_cached_usernames(RESOLVER_NAME, ["", None]))
+                self.assertEqual({}, read_cached_usernames(RESOLVER_NAME, []))
+                self.assertEqual(1, mget.call_count, mget.call_args_list)
+        login_keys = {f"pi:user:v1:login:{RESOLVER_NAME}:4100", f"pi:user:v1:login:{RESOLVER_NAME}:4101"}
+        self.assertSetEqual(login_keys, self._real_client.smembers(f"pi:user:v1:index:{RESOLVER_NAME}"))
+
+    def test_24_an_entry_that_cannot_be_decrypted_is_dropped_from_the_batch(self) -> None:
+        from privacyidea.lib.cache import user as user_cache
+        corrupt_key = f"pi:user:v1:login:{RESOLVER_NAME}:4200"
+        with user_cache_in_store(self._real_client):
+            write_cached_usernames(RESOLVER_NAME, {"4200": "helpdesk", "4201": "approver"})
+            # Written under a different encryption key, or simply damaged
+            self._real_client.set(corrupt_key, "not decryptable")
+            with patch.object(user_cache, "_unlink", wraps=user_cache._unlink) as unlink:
+                self.assertEqual({"4201": "approver"}, read_cached_usernames(RESOLVER_NAME, ["4200", "4201"]))
+            self.assertEqual(1, unlink.call_count, unlink.call_args_list)
+            self.assertIn(corrupt_key, unlink.call_args.args[2])
+        # It was dropped rather than left to fail on every later read
+        self.assertFalse(self._real_client.exists(corrupt_key))
+        self.assertSetEqual({f"pi:user:v1:login:{RESOLVER_NAME}:4201"},
+                            self._real_client.smembers(f"pi:user:v1:index:{RESOLVER_NAME}"))
 
     def test_16_logins_cannot_reach_another_resolvers_keyspace(self):
         # A login built to look like a key separator must stay inside its own

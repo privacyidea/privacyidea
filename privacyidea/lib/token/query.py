@@ -15,7 +15,7 @@ from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql import ColumnElement, Select
 
 from privacyidea.lib import _
-from privacyidea.lib.cache.user import read_cached_username, write_cached_usernames
+from privacyidea.lib.cache.user import read_cached_usernames, write_cached_usernames
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -665,8 +665,10 @@ def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
             log.error(f"The user cache of the resolver {resolver_name!r} can not be read: {cache_error!s}")
             log.debug(traceback.format_exc())
             db.session.rollback()
+        uncached_user_ids = [user_id for user_id in user_ids if not cached_logins.get(user_id)]
+        cached_logins.update(read_cached_usernames(resolver_name, uncached_user_ids))
         for user_id in user_ids:
-            login = cached_logins.get(user_id) or read_cached_username(resolver_name, user_id)
+            login = cached_logins.get(user_id)
             if login:
                 login_by_owner[(resolver_name, user_id)] = login
     return login_by_owner

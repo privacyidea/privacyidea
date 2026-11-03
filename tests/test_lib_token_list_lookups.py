@@ -111,6 +111,28 @@ def count_containing(statements, fragment):
     return len([statement for statement in statements if fragment in statement])
 
 
+class CountingRedisClient:
+    """
+    A Redis client that answers every read of the Redis user cache as a miss and counts the commands
+    it is sent, so a test can tell a batched read from one command per user.
+
+    Only the commands the user cache sends are implemented, and a write is accepted without storing
+    anything, since a run that reads only misses never reads a value back.
+    """
+
+    def __init__(self) -> None:
+        self.get = mock.Mock(return_value=None)
+        self.mget = mock.Mock(side_effect=self._mget)
+        self.srem = mock.Mock(return_value=0)
+        self.unlink = mock.Mock(return_value=0)
+        self.pipeline = mock.Mock(side_effect=lambda *args, **kwargs: mock.MagicMock())
+
+    @staticmethod
+    def _mget(*args: object) -> list[None]:
+        keys = args[0] if len(args) == 1 and not isinstance(args[0], str) else args
+        return [None] * len(list(keys))
+
+
 class TokenListLookupTestCase(MyTestCase):
     """
     All tests of this class work on the tokens enrolled in setUpClass, and scope their queries to
@@ -674,7 +696,6 @@ class TokenListLookupTestCase(MyTestCase):
             set_tokengroups("LIST01", [])
             delete_tokengroup("listgroup")
 
-
 class RealmIdsTestCase(MyTestCase):
 
     def test_01_get_realm_ids(self):
@@ -919,11 +940,12 @@ class OrphanedTokenTestCase(MyTestCase):
 
     def test_11_owners_in_the_redis_user_cache_are_not_looked_up(self) -> None:
         tokens = get_tokens(serial="ORPHUNREACHABLE")
-        with (mock.patch.object(token_query, "read_cached_username", return_value="cachedhttpuser") as read_cached,
+        with (mock.patch.object(token_query, "read_cached_usernames",
+                                return_value={"1": "cachedhttpuser"}) as read_cached,
               mock.patch.object(HTTPResolver, "lookup_username",
                                 side_effect=ResolverError("not reachable")) as http_lookup_username):
             self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=True))
-        read_cached.assert_called_once_with("orphanhttp", "1")
+        read_cached.assert_called_once_with("orphanhttp", ["1"])
         self.assertEqual(0, http_lookup_username.call_count, http_lookup_username.call_args_list)
 
     @ldap3mock.activate
@@ -1023,3 +1045,26 @@ class OrphanedTokenTestCase(MyTestCase):
             remove_token("PADDEDUSERID")
             delete_realm("orphansqlrealm")
             delete_resolver("orphansql")
+
+    @ldap3mock.activate
+    def test_17_the_redis_user_cache_is_read_in_one_round_trip(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        for user_id in range(4):
+            token = init_token({"type": "spass", "serial": f"BULKREAD{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=str(user_id), resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial_wildcard="BULKREAD*")
+        self.assertEqual(4, len(tokens), tokens)
+
+        client = CountingRedisClient()
+        try:
+            with mock.patch("privacyidea.lib.cache.user._cache_client", return_value=client):
+                self.assertSetEqual(set(), get_orphaned_serials(tokens))
+        finally:
+            for user_id in range(4):
+                remove_token(f"BULKREAD{user_id}")
+
+        # One command per resolver and chunk of owners, not one per owner
+        self.assertEqual(0, client.get.call_count, client.get.call_args_list)
+        self.assertEqual(1, client.mget.call_count, client.mget.call_args_list)
+        self.assertEqual(1, client.srem.call_count, client.srem.call_args_list)
