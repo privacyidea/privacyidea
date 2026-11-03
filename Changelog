@@ -8,6 +8,8 @@ Version 3.14.1
   * The token janitors no longer treat tokens of an HTTP, Keycloak or Entra ID resolver as orphaned when the user
     store answers with an error other than 404. As for LDAP and SQL, `--orphaned-on-error` decides. Before, an
     outage could make `find --orphaned true delete` delete all tokens of that user store (#1653)
+  * The token list marks a token owner whose user ID the LDAP or SQL batch lookup can not search for as
+    `**resolver error**`, instead of showing it as a user without a login name (#1653)
 
 Version 3.14, 2026-10-08
 

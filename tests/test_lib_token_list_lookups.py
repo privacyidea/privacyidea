@@ -194,6 +194,31 @@ class TokenListLookupTestCase(MyTestCase):
         self.assertEqual(1, len([name for name in usernames.values() if name == "**resolver error**"]), usernames)
 
     @ldap3mock.activate
+    def test_04a_an_id_the_batch_can_not_search_for_is_marked(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        trim_user_id = LDAPResolver._trim_user_id
+
+        def failing_trim_user_id(resolver: LDAPResolver, user_id: str) -> str:
+            # Like an objectGUID that is no UUID: the batch reports it instead of searching for it
+            if user_id == "7":
+                raise ValueError("badly formed hexadecimal UUID string")
+            return trim_user_id(resolver, user_id)
+
+        with mock.patch.object(LDAPResolver, "_trim_user_id", autospec=True, side_effect=failing_trim_user_id):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        tokens_by_serial = {token["serial"]: token for token in result["tokens"]}
+        marked_token = tokens_by_serial["LIST07"]
+        self.assertEqual("**resolver error**", marked_token["username"], marked_token)
+        self.assertEqual("", marked_token["user_realm"], marked_token)
+        self.assertNotIn("user_editable", marked_token, marked_token)
+
+        resolved_token = tokens_by_serial["LIST00"]
+        self.assertEqual("user00", resolved_token["username"], resolved_token)
+        self.assertEqual("ldaprealm", resolved_token["user_realm"], resolved_token)
+        self.assertIn("user_editable", resolved_token, resolved_token)
+
+    @ldap3mock.activate
     def test_05_an_owner_without_a_resolver_is_marked(self):
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
 
