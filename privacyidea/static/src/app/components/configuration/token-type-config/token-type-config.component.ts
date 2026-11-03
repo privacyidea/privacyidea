@@ -59,7 +59,6 @@ import {
 import {
   isOmittedWhenEmpty,
   isQuestionKey,
-  systemConfigDiffers,
   toSystemConfig,
   toTokenTypeConfigModel,
   TokenTypeConfigModel,
@@ -78,6 +77,7 @@ import { SystemService, SystemServiceInterface } from "@services/system/system.s
 import { touchAll } from "@utils/form-state.utils";
 import { forkJoin, lastValueFrom } from "rxjs";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { recordsEqual } from "@utils/record.utils";
 
 @Component({
   selector: "app-token-type-config",
@@ -157,7 +157,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     const prevRequired = this.requiredAnswers ?? newRequired;
     this.requiredAnswers = newRequired;
     const reconciled = this.reconcileQuestions(values, newRequired < prevRequired);
-    if (!systemConfigDiffers(reconciled, values)) return;
+    if (recordsEqual(reconciled, values)) return;
 
     const backend = this.systemService.systemConfig() ?? {};
     Object.keys(backend).forEach((key) => {
@@ -180,7 +180,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   hasChanges = computed(() => {
     const original = this.systemConfig();
     if (this.pendingDeletes().size > 0) return true;
-    return systemConfigDiffers(toSystemConfig(this.formData(), original), withoutEmptyDefaulted(original));
+    return !recordsEqual(toSystemConfig(this.formData(), original), withoutEmptyDefaulted(original));
   });
 
   systemConfig = this.systemService.systemConfig;

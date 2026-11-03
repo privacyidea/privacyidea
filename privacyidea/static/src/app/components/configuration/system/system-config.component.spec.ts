@@ -494,6 +494,26 @@ describe("SystemConfigComponent", () => {
       expect(lastSavedBody()).not.toHaveProperty("AutoResyncTimeout");
     });
 
+    it("shows the stored value again after the save and leaves no unsaved changes", async () => {
+      await loadConfig({ AutoResyncTimeout: "300" });
+      typeTimeout("12a");
+      component.saveSystemConfig();
+      await flush();
+
+      expect(component.model().AutoResyncTimeout).toBe("300");
+      expect(component.hasChanges()).toBe(false);
+    });
+
+    it("empties the field after the save while the setting was never stored", async () => {
+      await loadConfig({ DefaultOtpLen: "8" });
+      typeTimeout("12a");
+      component.saveSystemConfig();
+      await flush();
+
+      expect(component.model().AutoResyncTimeout).toBe("");
+      expect(component.hasChanges()).toBe(false);
+    });
+
     it("still blocks the save while AutoResync is ticked, where the form validates it", () => {
       component.model.update((model) => ({ ...model, AutoResync: true, AutoResyncTimeout: "abc" }));
 

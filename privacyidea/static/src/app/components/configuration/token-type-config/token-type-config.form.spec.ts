@@ -34,7 +34,6 @@ import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import {
   isQuestionKey,
   panelCompleteness,
-  systemConfigDiffers,
   toSystemConfig,
   toTokenTypeConfigModel,
   TOKEN_TYPE_CONFIG_KEYS,
@@ -121,18 +120,6 @@ describe("token type config form", () => {
           [REMOTE_VERIFY_SSL]: "true"
         });
       });
-    });
-  });
-
-  describe("systemConfigDiffers", () => {
-    it("is false for equal configs", () => {
-      expect(systemConfigDiffers({ a: "1" }, { a: "1" })).toBe(false);
-    });
-
-    it("is true for a different value, a missing key and an extra key", () => {
-      expect(systemConfigDiffers({ a: "2" }, { a: "1" })).toBe(true);
-      expect(systemConfigDiffers({ a: "1" }, { a: "1", b: "2" })).toBe(true);
-      expect(systemConfigDiffers({ a: "1", b: "2" }, { a: "1" })).toBe(true);
     });
   });
 

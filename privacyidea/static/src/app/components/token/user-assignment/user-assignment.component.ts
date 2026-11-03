@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, input, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, signal, untracked } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -78,9 +78,22 @@ export class UserAssignmentComponent {
   readonly onlyAddToRealmForm = form(this.onlyAddToRealm, (f) => {
     disabled(f, () => !!this.userFilter());
   });
-  readonly valid = computed(() => this.realmForm().valid() && this.userFilterForm().valid());
+  // A disabled user field is not validated, so a required user is checked here as well.
+  readonly valid = computed(
+    () =>
+      this.realmForm().valid() &&
+      this.userFilterForm().valid() &&
+      (!this.required() || !!this.userService.selectedUser())
+  );
 
   constructor() {
+    // A type that does not offer "Only add to the realm" must not keep it from another type: it would keep the user
+    // field disabled and send the flag along.
+    effect(() => {
+      if (!this.showOnlyAddToRealm()) {
+        untracked(() => this.onlyAddToRealm.set(false));
+      }
+    });
     effect(() => {
       const users = this.userService.selectionFilteredUsers();
       const filter = this.userFilter();

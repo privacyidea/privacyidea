@@ -108,7 +108,18 @@ describe("SelectedUserAssignDialogComponent", () => {
       component.model.update((m) => ({ ...m, userText: "typed" }));
       expect(kinds(component.form.userText)).toEqual([ERR.required]);
       component.selectedUser.set(testUser);
+      component.model.update((m) => ({ ...m, userText: "testuser" }));
       expect(kinds(component.form.userText)).toEqual([]);
+    });
+
+    it("does not count a chosen user once the text names someone else", () => {
+      fillValid();
+      expect(component.form().valid()).toBe(true);
+
+      component.model.update((m) => ({ ...m, userText: "bob" }));
+
+      expect(kinds(component.form.userText)).toEqual([ERR.required]);
+      expect(component.form().valid()).toBe(false);
     });
 
     it("reports a PIN mismatch only on the repeated PIN", () => {
@@ -206,12 +217,22 @@ describe("SelectedUserAssignDialogComponent", () => {
       expect(userService.selectionFilter()).toBe("");
     });
 
-    it("onUserFilterInput forwards the filter and clears the selection when it is empty", () => {
+    it("onUserFilterInput forwards the filter and keeps the selection while the text names the chosen user", () => {
       component.selectedUser.set(testUser);
-      component.onUserFilterInput("tes");
-      expect(userService.selectionFilter()).toBe("tes");
+      component.onUserFilterInput("testuser");
+      expect(userService.selectionFilter()).toBe("testuser");
       expect(component.selectedUser()).toBe(testUser);
+    });
 
+    it("onUserFilterInput clears the selection once the text names someone else", () => {
+      component.selectedUser.set(testUser);
+      component.onUserFilterInput("bob");
+      expect(userService.selectionFilter()).toBe("bob");
+      expect(component.selectedUser()).toBeNull();
+    });
+
+    it("onUserFilterInput clears the selection when the text is emptied", () => {
+      component.selectedUser.set(testUser);
       component.onUserFilterInput("");
       expect(component.selectedUser()).toBeNull();
     });

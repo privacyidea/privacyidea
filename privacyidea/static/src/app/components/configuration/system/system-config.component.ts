@@ -176,29 +176,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
   }
 
   saveSystemConfig(): void {
-    if (!this.canSave()) {
-      void touchAll(this.systemConfigForm);
-      return;
-    }
-    const body = this.saveBody();
-    this.systemService.saveSystemConfig(body).subscribe({
-      next: (response) => {
-        if (response.result?.status) {
-          this.markSaved(body);
-          this.notificationService.success(
-            $localize`:@@systemConfig.systemConfigurationSaved:System configuration saved successfully.`
-          );
-        } else {
-          this.notificationService.error(
-            $localize`:@@systemConfig.failedSaveSystem:Failed to save system configuration.`
-          );
-        }
-      },
-      error: (error) => {
-        console.error("Error saving system configuration:", error);
-        this.notificationService.error($localize`:@@systemConfig.errorSavingSystem:Error saving system configuration.`);
-      }
-    });
+    void this._saveAndReturn();
   }
 
   private _saveAndReturn(): Promise<boolean> {
@@ -223,7 +201,8 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
             resolve(false);
           }
         },
-        error: () => {
+        error: (error) => {
+          console.error("Error saving system configuration:", error);
           this.notificationService.error(
             $localize`:@@systemConfig.errorSavingSystem:Error saving system configuration.`
           );
@@ -284,7 +263,8 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
 
   /**
    * Records what the backend now holds: the written settings. A setting that was not written, like a half-typed
-   * timeout of an unticked AutoResync, keeps its saved value, so the next save does not write it either.
+   * timeout of an unticked AutoResync, goes back to its saved value in the form, so the page shows what is stored and
+   * has no unsaved changes left.
    */
   private markSaved(body: Record<string, string | boolean>): void {
     const saved: Record<string, string | boolean> = { ...this.model() };
@@ -297,6 +277,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
       }
     }
     this.savedModel.set(saved as unknown as SystemConfigModel);
+    this.model.set({ ...(saved as unknown as SystemConfigModel) });
   }
 
   deleteUserCache(): void {

@@ -47,6 +47,7 @@ import {
 } from "@services/sms-gateway/sms-gateway.service";
 import { ERR, identifierName } from "@utils/form-rules.utils";
 import { clearField, hasError, touchAll } from "@utils/form-state.utils";
+import { recordsEqual } from "@utils/record.utils";
 
 interface KeyValueRow {
   key: string;
@@ -157,10 +158,11 @@ export class NewSmsGatewayComponent implements OnDestroy {
       this.initForm();
     });
 
+    // The provider decides which stored options are its parameters, so nothing is split before the list is loaded.
     effect(() => {
-      const providers = this.providers();
+      const loaded = this.smsGatewayService.smsProvidersResource.hasValue();
       const { module } = this.providerSelection();
-      if (providers && module) {
+      if (loaded && module) {
         untracked(() => this.onProviderChange(module));
       }
     });
@@ -259,10 +261,10 @@ export class NewSmsGatewayComponent implements OnDestroy {
     return (
       // A value set by the component is not a change; a typed value is one until it equals the loaded value again.
       (this.smsForm().dirty() && !this.smsModelEqual(this.smsModel(), this.initialSmsModel)) ||
-      !this.recordsEqual(this.customOptions, this.initialCustomOptions) ||
-      !this.recordsEqual(this.customHeaders, this.initialCustomHeaders) ||
-      !this.recordsEqual(this.optionSecrets, this.initialOptionSecrets) ||
-      !this.recordsEqual(this.headerSecrets, this.initialHeaderSecrets) ||
+      !recordsEqual(this.customOptions, this.initialCustomOptions) ||
+      !recordsEqual(this.customHeaders, this.initialCustomHeaders) ||
+      !recordsEqual(this.optionSecrets, this.initialOptionSecrets) ||
+      !recordsEqual(this.headerSecrets, this.initialHeaderSecrets) ||
       this.isDraftFilled(this.optionDraft()) ||
       this.isDraftFilled(this.headerDraft())
     );
@@ -277,17 +279,8 @@ export class NewSmsGatewayComponent implements OnDestroy {
       a.name === b.name &&
       a.providermodule === b.providermodule &&
       a.description === b.description &&
-      this.recordsEqual(a.parameters, b.parameters)
+      recordsEqual(a.parameters, b.parameters)
     );
-  }
-
-  private recordsEqual<T extends object>(a: T, b: T): boolean {
-    const aKeys = Object.keys(a) as (keyof T)[];
-    const bKeys = Object.keys(b) as (keyof T)[];
-    if (aKeys.length !== bKeys.length) {
-      return false;
-    }
-    return aKeys.every((key) => a[key] === b[key]);
   }
 
   providerEntries(): { key: string; value: SmsProvider }[] {

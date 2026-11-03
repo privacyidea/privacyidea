@@ -126,7 +126,9 @@ describe("NewSmsGatewayComponent", () => {
   const setProviders = (providers: SmsProviders) =>
     providersValueSignal(smsGatewayServiceMock).set(MockPiResponse.fromValue(providers));
 
-  const setup = async (options: { name?: string; gateways?: SmsGateway[]; providers?: SmsProviders } = {}) => {
+  const setup = async (
+    options: { name?: string; gateways?: SmsGateway[]; providers?: SmsProviders; providersLoaded?: boolean } = {}
+  ) => {
     await TestBed.configureTestingModule({
       imports: [NewSmsGatewayComponent],
       providers: [
@@ -149,7 +151,11 @@ describe("NewSmsGatewayComponent", () => {
     router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
 
-    setProviders(options.providers ?? { mod1: { parameters: { p1: { description: "desc1" } } } });
+    if (options.providersLoaded === false) {
+      providersValueSignal(smsGatewayServiceMock).set(undefined);
+    } else {
+      setProviders(options.providers ?? { mod1: { parameters: { p1: { description: "desc1" } } } });
+    }
     smsGatewayServiceMock.smsGateways.set(options.gateways ?? []);
 
     fixture = TestBed.createComponent(NewSmsGatewayComponent);
@@ -1145,6 +1151,30 @@ describe("NewSmsGatewayComponent", () => {
         optional_p: "stored-optional"
       });
       expect(component.hasChanges).toBe(false);
+    });
+
+    it("keeps the provider parameters out of the custom options when the gateway list arrives first", async () => {
+      await setup({ name: "edit-gw", gateways: [existingGateway], providersLoaded: false });
+      expect(component.optionRows).toEqual([]);
+
+      setProviders(requiredProviders);
+      await flush(fixture);
+
+      expect(component.optionRows.map((row) => row.key)).toEqual(["extra"]);
+      expect(component.hasChanges).toBe(false);
+    });
+
+    it("saves an edited parameter when the gateway list arrived before the providers", async () => {
+      await setup({ name: "edit-gw", gateways: [existingGateway], providersLoaded: false });
+      setProviders(requiredProviders);
+      await flush(fixture);
+
+      await typeInto(fixture, "required_p", "edited");
+      await component.save();
+
+      expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalledWith(
+        expect.objectContaining({ "option.required_p": "edited", "option.extra": "custom-val" })
+      );
     });
 
     it("fills the form once the gateway list arrives", async () => {

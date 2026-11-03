@@ -189,11 +189,28 @@ describe("UserAssignmentComponent", () => {
       expect(component.valid()).toBe(true);
     });
 
-    it("does not validate the disabled user input when only the realm is added", () => {
-      fixture.componentRef.setInput("required", true);
+    it("is valid with only the realm while no user is required", () => {
       component.onlyAddToRealmChange(true);
       expect(component.userFilterForm().disabled()).toBe(true);
       expect(component.valid()).toBe(true);
+    });
+
+    it("still requires a user while the user input is disabled", () => {
+      fixture.componentRef.setInput("required", true);
+      component.onlyAddToRealmChange(true);
+      expect(component.userFilterForm().disabled()).toBe(true);
+      expect(component.valid()).toBe(false);
+    });
+
+    it("drops only adding to the realm when a type no longer offers it, which enables the user input", () => {
+      component.onlyAddToRealmChange(true);
+      fixture.detectChanges();
+
+      fixture.componentRef.setInput("showOnlyAddToRealm", false);
+      fixture.detectChanges();
+
+      expect(component.onlyAddToRealm()).toBe(false);
+      expect(component.userFilterForm().disabled()).toBe(false);
     });
 
     it("disables the checkbox field while a user name is typed", () => {

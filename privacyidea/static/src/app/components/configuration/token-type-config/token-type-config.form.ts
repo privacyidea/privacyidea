@@ -175,12 +175,6 @@ export function withoutEmptyDefaulted(config: Record<string, string>): Record<st
   );
 }
 
-/** True when the two system configs differ in a key or a value. */
-export function systemConfigDiffers(current: Record<string, string>, original: Record<string, string>): boolean {
-  const keys = Object.keys(current);
-  return keys.length !== Object.keys(original).length || keys.some((key) => current[key] !== original[key]);
-}
-
 /**
  * True when an earlier question of the questionnaire has the same text. The enrollment answers a question by its
  * text, so a repeated question could not be answered separately; the later one is flagged.

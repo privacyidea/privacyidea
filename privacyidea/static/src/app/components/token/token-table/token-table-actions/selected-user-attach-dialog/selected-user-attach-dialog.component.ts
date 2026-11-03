@@ -70,7 +70,8 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
 
-  // The user text is the autocomplete input. A user counts as chosen only through `selectedUser`.
+  // The user text is the autocomplete input. A user counts as chosen only through `selectedUser`, and only while the
+  // text still shows that user.
   readonly model = signal({
     realm: this.userService.selectedUserRealm(),
     userText: this.userService.selectionUsernameFilter(),
@@ -83,7 +84,7 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
   readonly form = form(this.model, (f) => {
     required(f.realm);
     markRequired(f.userText);
-    validate(f.userText, () => (this.selectedUser() ? [] : [{ kind: ERR.required }]));
+    validate(f.userText, (ctx) => (this.selectedUser()?.username === ctx.value() ? [] : [{ kind: ERR.required }]));
     // The PIN fields only exist when setting a PIN is allowed, so only then can they mismatch.
     applyWhen(
       f,
@@ -117,7 +118,8 @@ export class SelectedUserAssignDialogComponent extends AbstractDialogComponent<
 
   onUserFilterInput(value: string): void {
     this.userService.selectionFilter.set(value);
-    if (!value) {
+    // A user picked earlier no longer counts once the text names someone else.
+    if (value !== this.selectedUser()?.username) {
       this.selectedUser.set(null);
     }
   }
