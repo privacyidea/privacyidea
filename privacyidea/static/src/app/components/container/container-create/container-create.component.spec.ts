@@ -212,7 +212,7 @@ describe("ContainerCreateComponent", () => {
     expect(wizardFixture.componentInstance).toBeTruthy();
   });
 
-  it("non-QR create: navigates and sets containerSerial", () => {
+  it("non-QR create: opens the container details", () => {
     containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
 
     const regSpy = jest.spyOn(component as unknown as ComponentPrivates, "registerContainer");
@@ -228,7 +228,6 @@ describe("ContainerCreateComponent", () => {
     );
     expect(regSpy).not.toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_DETAILS, "C-001"]);
-    expect(containerServiceMock.containerSerial()).toBe("C-001");
   });
 
   it("createContainer: forces empty user and still sets realm when onlyAddToRealm is enabled", () => {
@@ -337,7 +336,7 @@ describe("ContainerCreateComponent", () => {
     component.createContainer();
 
     expect(notificationService.error).toHaveBeenCalledWith("Container creation failed. No container serial returned.");
-    expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
+    expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 
   it("QR path (smartphone): calls registerContainer", async () => {
