@@ -3458,6 +3458,30 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue(success, desc)
         self.assertEqual("RANDOM", create_serverpool.call_args.kwargs["strategy"])
 
+    def test_56_persistent_serverpool_per_strategy(self):
+        # Resolvers that differ only in the strategy must not share a persistent server pool, so that a changed
+        # strategy takes effect without a restart.
+        config = {"LDAPURI": "ldap://server1, ldap://server2",
+                  "LDAPBASE": "o=test",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_PERSISTENT": "true"}
+        first_resolver = LDAPResolver()
+        first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+        random_resolver = LDAPResolver()
+        random_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "RANDOM"})
+        other_first_resolver = LDAPResolver()
+        other_first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+
+        first_pool = first_resolver.get_serverpool_instance()
+        random_pool = random_resolver.get_serverpool_instance()
+
+        self.assertEqual("FIRST", first_pool.strategy)
+        self.assertEqual("RANDOM", random_pool.strategy)
+        self.assertIs(first_pool, other_first_resolver.get_serverpool_instance())
+
 
 class BaseResolverTestCase(MyTestCase):
 
