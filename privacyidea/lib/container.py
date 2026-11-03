@@ -26,8 +26,7 @@ from datetime import timezone, datetime
 from collections.abc import Generator
 
 from flask import g
-from sqlalchemy import func, select, and_, false
-from sqlalchemy.orm import aliased
+from sqlalchemy import func, select, and_, false, true
 from sqlalchemy.sql import Select
 
 from privacyidea.api.lib.utils import send_result
@@ -214,12 +213,11 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     :return: sql query
     """
     stmt = select(TokenContainer)
-    realm1 = aliased(Realm)
     if user:
         realm_db = None
         if user.realm:
             realm_db = db.session.execute(
-                select(realm1).where(func.lower(realm1.name) == user.realm.lower())
+                select(Realm).where(func.lower(Realm.name) == user.realm.lower())
             ).scalar_one_or_none()
         if user.realm and not realm_db:
             # No user can be in a realm that does not exist: like every other filter, an unknown value
@@ -233,17 +231,18 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                 raise UserError("The user can not be found in any resolver in this realm!")
             # The realm, the resolver and the user id are applied independently, so that the containers of
             # all users of a realm can be listed without specifying a username.
-            stmt = stmt.join(TokenContainer.owners)
+            owner_conditions = []
             if realm_db:
-                stmt = stmt.where(TokenContainerOwner.realm_id == realm_db.id)
+                owner_conditions.append(TokenContainerOwner.realm_id == realm_db.id)
             if user.resolver:
                 if "*" in user.resolver:
-                    stmt = stmt.where(TokenContainerOwner.resolver.ilike(
+                    owner_conditions.append(TokenContainerOwner.resolver.ilike(
                         convert_wildcard_to_sql_like(user.resolver), escape=SQL_LIKE_ESCAPE))
                 else:
-                    stmt = stmt.where(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
+                    owner_conditions.append(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
             if user.uid:
-                stmt = stmt.where(TokenContainerOwner.user_id == user.uid)
+                owner_conditions.append(TokenContainerOwner.user_id == user.uid)
+            stmt = stmt.where(TokenContainer.owners.any(and_(true(), *owner_conditions)))
 
     if serial and serial.strip("*"):
         if "*" in serial:
@@ -271,9 +270,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             stmt = stmt.where(TokenContainer.tokens.any(Token.serial.ilike(
                 convert_wildcard_to_sql_like(token_serial), escape=SQL_LIKE_ESCAPE)))
         else:
-            stmt = stmt.join(TokenContainer.tokens, isouter=True).where(
-                func.upper(Token.serial) == token_serial.upper()
-            )
+            stmt = stmt.where(TokenContainer.tokens.any(func.upper(Token.serial) == token_serial.upper()))
 
     if realm and realm.strip("*"):
         if "*" in realm:
@@ -475,8 +472,6 @@ def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[Toke
     last_id = None
     while True:
         page_query = sql_query if last_id is None else sql_query.where(TokenContainer.id > last_id)
-        # A join of the filter can return a container in several rows, so a page can hold fewer containers than
-        # pagesize: only an empty page ends the iteration.
         db_containers = db.session.scalars(page_query.limit(pagesize)).unique().all()
         if not db_containers:
             break

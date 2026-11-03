@@ -13,6 +13,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import TokenContainerOwner
 from .base import MyTestCase, PWFILE, PWFILE2
 
 
@@ -81,9 +82,9 @@ class ContainerQueryFilterTestCase(MyTestCase):
         self.assertNotIn("hiddenkey", token["info"], token)
 
 
-class ContainerRealmPaginationTestCase(MyTestCase):
+class ContainerPaginationTestCase(MyTestCase):
     """
-    A container in several realms is counted and paged once, however many of its realms match the realm conditions.
+    A container is counted and paged once, however many of its realms or owners match the filters.
     """
 
     serial_wildcard = "QP*"
@@ -98,14 +99,21 @@ class ContainerRealmPaginationTestCase(MyTestCase):
                                ("QP_C", [cls.realm1])]:
             init_container({"type": "generic", "container_serial": serial})
             set_container_realms(serial, realms, allowed_realms=None)
+        user = User("cornelius", cls.realm1, cls.resolvername1)
+        assign_user("QP_A", user)
+        assign_user("QP_B", user)
+        # The database does not prevent a second owner row, only assign_user does
+        TokenContainerOwner(container_serial="QP_A", resolver=user.resolver,
+                            user_id=user.uid, realm_id=user.realm_id).save()
 
-    def assert_paged_once(self, **filters: Any) -> None:
+    def assert_paged_once(self, expected_pages: list[list[str]] | None = None, **filters: Any) -> None:
+        expected_pages = expected_pages or [["QP_A", "QP_B"], ["QP_C"]]
         pages = []
-        for page in (1, 2):
+        for page in range(1, len(expected_pages) + 1):
             result = get_all_containers(serial=self.serial_wildcard, page=page, pagesize=2, **filters)
-            self.assertEqual(3, result["count"], result)
+            self.assertEqual(sum(len(serials) for serials in expected_pages), result["count"], result)
             pages.append([container.serial for container in result["containers"]])
-        self.assertListEqual([["QP_A", "QP_B"], ["QP_C"]], pages)
+        self.assertListEqual(expected_pages, pages)
 
     def test_01_allowed_realms(self):
         self.assert_paged_once(allowed_realms=[self.realm1, self.realm2])
@@ -115,3 +123,7 @@ class ContainerRealmPaginationTestCase(MyTestCase):
 
     def test_03_realm_wildcard_and_allowed_realms(self):
         self.assert_paged_once(realm="realm*", allowed_realms=[self.realm1, self.realm2])
+
+    def test_04_user_with_two_owner_rows(self):
+        self.assert_paged_once([["QP_A", "QP_B"]], user=User("cornelius", self.realm1, self.resolvername1))
+        self.assert_paged_once([["QP_A", "QP_B"]], user=User(realm=self.realm1))
