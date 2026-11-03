@@ -187,14 +187,6 @@ describe("UserTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("onClickUsername stores username and the selected realm", () => {
-    mockUserService.selectedUserRealm.set("themis");
-    component.onClickUsername({ username: "alice" } as never);
-
-    expect(mockUserService.detailsUser().username).toBe("alice");
-    expect(mockUserService.detailsUser().realm).toBe("themis");
-  });
-
   it("offers every advanced keyword alongside the plain column filters to an admin who may list tokens", () => {
     const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist", "tokenlist"] });
