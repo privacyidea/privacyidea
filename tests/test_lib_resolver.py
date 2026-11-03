@@ -3423,6 +3423,66 @@ class LDAPResolverTestCase(MyTestCase):
         mail_resolver.multivalueattributes.append("email")
         self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
 
+    def test_54_saved_serverpool_strategy_is_used_for_the_server_pool(self):
+        save_resolver({"resolver": "strategy_resolver",
+                       "type": "ldapresolver",
+                       "LDAPURI": "ldap://server1, ldap://server2",
+                       "LDAPBASE": "o=test",
+                       "LOGINNAMEATTRIBUTE": "cn",
+                       "LDAPSEARCHFILTER": "(cn=*)",
+                       "USERINFO": '{"username": "cn"}',
+                       "UIDTYPE": "DN",
+                       "SERVERPOOL_STRATEGY": "FIRST"})
+
+        self.assertEqual("FIRST", get_resolver_config("strategy_resolver").get("SERVERPOOL_STRATEGY"))
+        resolver = get_resolver_object("strategy_resolver")
+        self.assertEqual("FIRST", resolver.get_serverpool_instance().strategy)
+        delete_resolver("strategy_resolver")
+
+    @ldap3mock.activate
+    def test_55_testconnection_uses_serverpool_strategy(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {"LDAPURI": "ldap://localhost",
+                  "LDAPBASE": "o=test",
+                  "BINDDN": "cn=manager,ou=example,o=test",
+                  "BINDPW": "ldaptest",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_STRATEGY": "RANDOM"}
+
+        with mock.patch.object(LDAPResolver, "create_serverpool",
+                               wraps=LDAPResolver.create_serverpool) as create_serverpool:
+            success, desc = LDAPResolver.testconnection(params)
+
+        self.assertTrue(success, desc)
+        self.assertEqual("RANDOM", create_serverpool.call_args.kwargs["strategy"])
+
+    def test_56_persistent_serverpool_per_strategy(self):
+        # Resolvers that differ only in the strategy must not share a persistent server pool, so that a changed
+        # strategy takes effect without a restart.
+        config = {"LDAPURI": "ldap://server1, ldap://server2",
+                  "LDAPBASE": "o=test",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_PERSISTENT": "true"}
+        first_resolver = LDAPResolver()
+        first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+        random_resolver = LDAPResolver()
+        random_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "RANDOM"})
+        other_first_resolver = LDAPResolver()
+        other_first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+
+        first_pool = first_resolver.get_serverpool_instance()
+        random_pool = random_resolver.get_serverpool_instance()
+
+        self.assertEqual("FIRST", first_pool.strategy)
+        self.assertEqual("RANDOM", random_pool.strategy)
+        self.assertIs(first_pool, other_first_resolver.get_serverpool_instance())
+
 
 class BaseResolverTestCase(MyTestCase):
 
