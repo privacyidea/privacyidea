@@ -276,26 +276,17 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
             )
 
     if realm and realm.strip("*"):
-        # Correctly join with the aliased Realm table
-        stmt = stmt.join(TokenContainer.realms.of_type(realm1), isouter=True)
-
         if "*" in realm:
-            # Use the input parameter 'realm' for the wildcard filter
-            stmt = stmt.where(realm1.name.ilike(
-                convert_wildcard_to_sql_like(realm), escape=SQL_LIKE_ESCAPE))
+            stmt = stmt.where(TokenContainer.realms.any(Realm.name.ilike(
+                convert_wildcard_to_sql_like(realm), escape=SQL_LIKE_ESCAPE)))
         else:
-            # Use the input parameter 'realm' for the exact match filter
-            stmt = stmt.where(func.lower(realm1.name) == realm.lower())
+            stmt = stmt.where(TokenContainer.realms.any(func.lower(Realm.name) == realm.lower()))
 
-    # Use separate alias for each join to avoid conflicts
-    realm_alias_allowed = aliased(Realm)
     # An empty list means the caller is allowed no realm at all, which is not the same as None
     # ("every realm"): it has to match nothing rather than lift the restriction.
     if allowed_realms is not None:
         allowed_realms = [r.lower() for r in allowed_realms]
-        stmt = stmt.join(TokenContainer.realms.of_type(realm_alias_allowed), isouter=True).where(
-            func.lower(realm_alias_allowed.name).in_(allowed_realms)
-        )
+        stmt = stmt.where(TokenContainer.realms.any(func.lower(Realm.name).in_(allowed_realms)))
 
     if resolver and resolver.strip("*"):
         if "*" in resolver:

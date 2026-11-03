@@ -79,3 +79,39 @@ class ContainerQueryFilterTestCase(MyTestCase):
         token = create_container_dict([container], logged_in_user_role="admin", hide_token_info=["hiddenkey"])[0][
             "tokens"][0]
         self.assertNotIn("hiddenkey", token["info"], token)
+
+
+class ContainerRealmPaginationTestCase(MyTestCase):
+    """
+    A container in several realms is counted and paged once, however many of its realms match the realm conditions.
+    """
+
+    serial_wildcard = "QP*"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        save_resolver({"resolver": cls.resolvername1, "type": "passwdresolver", "fileName": PWFILE})
+        set_realm(cls.realm1, [{"name": cls.resolvername1}])
+        set_realm(cls.realm2, [{"name": cls.resolvername1}])
+        for serial, realms in [("QP_A", [cls.realm1, cls.realm2]), ("QP_B", [cls.realm1, cls.realm2]),
+                               ("QP_C", [cls.realm1])]:
+            init_container({"type": "generic", "container_serial": serial})
+            set_container_realms(serial, realms, allowed_realms=None)
+
+    def assert_paged_once(self, **filters: Any) -> None:
+        pages = []
+        for page in (1, 2):
+            result = get_all_containers(serial=self.serial_wildcard, page=page, pagesize=2, **filters)
+            self.assertEqual(3, result["count"], result)
+            pages.append([container.serial for container in result["containers"]])
+        self.assertListEqual([["QP_A", "QP_B"], ["QP_C"]], pages)
+
+    def test_01_allowed_realms(self):
+        self.assert_paged_once(allowed_realms=[self.realm1, self.realm2])
+
+    def test_02_realm_wildcard(self):
+        self.assert_paged_once(realm="realm*")
+
+    def test_03_realm_wildcard_and_allowed_realms(self):
+        self.assert_paged_once(realm="realm*", allowed_realms=[self.realm1, self.realm2])
