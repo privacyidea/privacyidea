@@ -308,6 +308,6 @@ export class ContentService implements ContentServiceInterface {
   }
 
   machineResolverSelected(resolverName: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(resolverName));
+    this.router.navigate([ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, resolverName]);
   }
 }

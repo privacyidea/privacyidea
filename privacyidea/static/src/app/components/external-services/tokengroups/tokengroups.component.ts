@@ -146,7 +146,7 @@ export class TokengroupsComponent {
   }
 
   onEditTokengroup(group: Tokengroup): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS, group.groupname]);
   }
 
   deleteSelected(): void {

@@ -226,7 +226,7 @@ export class EventComponent {
   }
 
   onEditEventHandler(eventHandler: EventHandler) {
-    this.router.navigateByUrl(ROUTE_PATHS.EVENTS_DETAILS + eventHandler.id);
+    this.router.navigate([ROUTE_PATHS.EVENTS_DETAILS, eventHandler.id]);
   }
 
   onCreateNewEventHandler() {

@@ -19,6 +19,7 @@
 import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentService } from "./content.service";
 
 @Component({ template: "" })
@@ -65,5 +66,27 @@ describe("ContentService with the real router", () => {
     service.navigateContainerDetails(serial);
     await settle();
     expect(service.containerSerial()).toBe(serial);
+  });
+
+  // Every details route that takes its key as the last path segment, whichever page opens it.
+  const detailsPaths = Object.entries(ROUTE_PATHS)
+    .filter(([name, path]) => name.endsWith("_DETAILS") && path.endsWith("/"))
+    .map(([name, path]) => [name, path] as const);
+
+  it("finds details routes to check", () => {
+    expect(detailsPaths.length).toBeGreaterThan(10);
+  });
+
+  describe.each(detailsPaths)("%s", (_name, path) => {
+    it.each(["plain", "a(b)", "A#1", "a?b", "a/b", "a;x=1", "100%", "a b/ü"])(
+      "opens the details page of %s with the array form of router.navigate",
+      async (key) => {
+        await router.navigate([path, key]);
+        const segments = router.parseUrl(router.url).root.children["primary"].segments;
+        expect(segments[segments.length - 1].path).toBe(key);
+        expect(router.parseUrl(router.url).fragment).toBeNull();
+        expect(router.parseUrl(router.url).queryParams).toEqual({});
+      }
+    );
   });
 });

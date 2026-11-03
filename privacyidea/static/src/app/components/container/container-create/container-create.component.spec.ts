@@ -227,7 +227,7 @@ describe("ContainerCreateComponent", () => {
       })
     );
     expect(regSpy).not.toHaveBeenCalled();
-    expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringMatching("/containers/details/C-001"));
+    expect(routerMock.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_DETAILS, "C-001"]);
     expect(containerServiceMock.containerSerial()).toBe("C-001");
   });
 

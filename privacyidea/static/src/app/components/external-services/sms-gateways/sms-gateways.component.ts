@@ -148,7 +148,7 @@ export class SmsGatewaysComponent {
   }
 
   onEditGateway(gateway: SmsGateway): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS, gateway.name]);
   }
 
   deleteSelected(): void {
