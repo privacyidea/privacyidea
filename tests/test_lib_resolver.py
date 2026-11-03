@@ -194,6 +194,7 @@ class SQLResolverTestCase(MyTestCase):
     def tearDownClass(cls):
         # Remove temporary work directory
         shutil.rmtree(cls.parameters["Server"])
+        super().tearDownClass()
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
