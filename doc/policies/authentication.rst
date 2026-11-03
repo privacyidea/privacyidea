@@ -395,8 +395,9 @@ are processed. Meaning the parameters ``user``, ``pass`` and ``realm`` can be
 modified prior to authentication. If ``user`` or ``realm`` is modified, the user object of the request is
 created again from the modified parameters.
 
-.. note:: This policy is applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck` and
-    :http:get:`/machine/authitem`, not to ``/validate/triggerchallenge`` or ``/auth``.
+.. note:: This policy is applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck`,
+    :http:post:`/validate/remember_device` and :http:get:`/machine/authitem`, not to
+    ``/validate/triggerchallenge`` or ``/auth``.
 
     If the policy :ref:`policy_set_realm` is set, this policy is only applied for ``user`` and ``pass``
     parameters. Policies with the ``realm`` parameter are ignored.

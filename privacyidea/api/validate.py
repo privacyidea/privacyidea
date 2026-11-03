@@ -1433,6 +1433,8 @@ def get_capabilities():
 
 
 @validate_blueprint.route('/remember_device', methods=['POST'])
+@prepolicy(set_realm, request=request)
+@prepolicy(mangle, request=request)
 def check_remember_device():
     """
     Recognition endpoint for the persistent "remember device" cookie.
@@ -1445,7 +1447,8 @@ def check_remember_device():
     beforehand is the client's responsibility.
 
     Requires an identified API client (``X-API-Key`` -> ``g.client_id``) and the
-    ``user``/``realm`` the cookie was issued for. The cookie is bound to that
+    ``user``/``realm`` the cookie was issued for. The ``setrealm`` and ``mangle``
+    policies rewrite them as on ``/validate/check``. The cookie is bound to that
     exact user and client, so it can never be replayed for another account or a
     different client. A stale counter is treated as theft: the whole series is
     invalidated and the cookie cleared. Recognition is only offered when the

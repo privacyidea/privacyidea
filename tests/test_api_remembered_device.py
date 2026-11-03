@@ -963,3 +963,27 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
         self.assertEqual("device not recognised: no remember_device policy applies to the user",
                          self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
+
+    def test_14_mangle_rewrites_the_user_as_at_the_login(self):
+        client, api_key = create_client("mangle client", "privacyidea-cp")
+        device, cookie = create_remembered_device(self.identity, client.id)
+        self._recognise(api_key=api_key, cookie=cookie, user="x-cornelius", expect_value=False)
+
+        set_policy("strip_prefix", scope=SCOPE.AUTH, action=rf"{PolicyAction.MANGLE}=user/^x-(.*)$/\1/")
+        self.addCleanup(delete_policy, "strip_prefix")
+        self._recognise(api_key=api_key, cookie=cookie, user="x-cornelius")
+        self.assertEqual(2, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)
+
+    def test_15_setrealm_rewrites_the_realm_as_at_the_login(self):
+        self.setUp_user_realm2()
+        realm2_user = User(login="cornelius", realm=self.realm2)
+        init_token({"type": "spass", "pin": "test", "serial": "SPASS_RECOGNISE_REALM2"}, user=realm2_user)
+        self.addCleanup(remove_token, "SPASS_RECOGNISE_REALM2")
+        client, api_key = create_client("setrealm client", "privacyidea-cp")
+        device, cookie = create_remembered_device(user_identity(realm2_user), client.id)
+        self._recognise(api_key=api_key, cookie=cookie, expect_value=False)
+
+        set_policy("to_realm2", scope=SCOPE.AUTHZ, action=f"{PolicyAction.SETREALM}={self.realm2}", realm=self.realm1)
+        self.addCleanup(delete_policy, "to_realm2")
+        self._recognise(api_key=api_key, cookie=cookie)
+        self.assertEqual(2, RememberedDevice.query.filter_by(series_id=device.series_id).first().counter)

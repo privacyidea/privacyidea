@@ -146,7 +146,8 @@ This policy is checked before the user authenticates.
 The realm of the user matching this policy will be set to
 the realm in this action.
 
-This policy is only applied to :http:post:`/validate/check` and :http:post:`/validate/radiuscheck`.
+This policy is only applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck` and
+:http:post:`/validate/remember_device`.
 
 Priorities are not evaluated for ``setrealm``: if the matching policies name more than one realm, the request fails
 with "Conflicting policies exist". If an authentication :ref:`policy_set_realm` policy matched, ``setrealm`` is not
