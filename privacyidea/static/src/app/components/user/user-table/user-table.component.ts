@@ -158,6 +158,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
   // has_tokens tells who owns a token, so the backend only answers it for an administrator who may list tokens.
@@ -285,10 +286,6 @@ export class UserTableComponent implements OnDestroy {
   onFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.filterInput?.nativeElement.focus();
-  }
-
-  onClickUsername(user: UserData): void {
-    this.userService.detailsUser.set({ username: user.username, realm: this.userService.selectedUserRealm() });
   }
 
   // Keeps users where every term matches at least one column (AND across terms, OR across columns).

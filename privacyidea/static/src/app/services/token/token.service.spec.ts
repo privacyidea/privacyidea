@@ -1480,6 +1480,15 @@ describe("TokenService", () => {
       expect(tokenService.userTokenResource.value()).toBeUndefined();
     });
 
+    it("sends no request while the details user is empty", () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/");
+      contentServiceMock.detailsUser.set({ username: "", realm: "" });
+      TestBed.tick();
+
+      // Another token resource may load the unfiltered list; the user's tokens must not be requested.
+      TestBed.inject(HttpTestingController).expectNone((r) => r.url === "/token/" && r.params.has("user"));
+    });
+
     it("should do request if route is USER_DETAILS", async () => {
       const realm = "test-realm";
       const user = "alice";

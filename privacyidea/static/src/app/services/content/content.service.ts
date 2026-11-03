@@ -22,14 +22,14 @@ import { NavigationEnd, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { filter, map, pairwise, startWith } from "rxjs";
 
-// A hand-typed or truncated URL can carry malformed percent-encoding; keep the raw text instead of throwing
-// inside a signal computation.
-function safeDecode(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
+// The decoded first path segment below a details route, or "" when the URL names none. The router has already
+// parsed the URL, so its percent-encoding is valid and matrix parameters (";x=1") are not part of the segment.
+function detailsSegment(url: string, prefix: string): string {
+  if (!url.startsWith(prefix)) {
+    return "";
   }
+  const encoded = url.slice(prefix.length).split(/[?#;/]/)[0];
+  return encoded ? decodeURIComponent(encoded) : "";
 }
 
 export interface DetailsUser {
@@ -133,9 +133,9 @@ export class ContentService implements ContentServiceInterface {
     });
     return params;
   });
-  // The URL is the only state a reload or a browser back/forward navigation keeps, so the shown user and token
-  // are read from it on their details pages. Off those pages the previous value is kept: other flows (enrollment
-  // polling, lost token, self-service assignment) set it there.
+  // The URL is the only state a reload or a browser back/forward navigation keeps, so the shown user, token and
+  // container are read from it on their details pages. Flows on other pages (enrollment polling) set tokenSerial
+  // there, so it keeps its value off the details page.
   detailsUser: WritableSignal<DetailsUser> = linkedSignal<string, DetailsUser>({
     source: this.routeUrl,
     computation: (url, previous) => {
@@ -143,15 +143,7 @@ export class ContentService implements ContentServiceInterface {
       if (!url.startsWith(prefix)) {
         return previous?.value ?? { username: "", realm: "" };
       }
-      const encoded = url.slice(prefix.length).split(/[?#]/)[0];
-      if (!encoded) {
-        return previous?.value ?? { username: "", realm: "" };
-      }
-      const query = url.includes("?") ? url.slice(url.indexOf("?") + 1).split("#")[0] : "";
-      return {
-        username: safeDecode(encoded),
-        realm: new URLSearchParams(query).get("realm") ?? ""
-      };
+      return { username: detailsSegment(url, prefix), realm: this.queryParams()["realm"] ?? "" };
     }
   });
   tokenSerial: WritableSignal<string> = linkedSignal({
@@ -160,23 +152,18 @@ export class ContentService implements ContentServiceInterface {
       if (!url.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
         return previous?.value ?? "";
       }
-      const encoded = url.slice(ROUTE_PATHS.TOKENS_DETAILS.length).split(/[?#]/)[0];
-      return encoded ? safeDecode(encoded) : (previous?.value ?? "");
+      return detailsSegment(url, ROUTE_PATHS.TOKENS_DETAILS) || (previous?.value ?? "");
     }
   });
   containerSerial: WritableSignal<string> = linkedSignal({
     source: this.routeUrl,
     computation: (url, previous) => {
-      if (url.startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
-        // Read the serial from the URL itself rather than carrying the previous value forward: a
-        // browser back/forward navigation changes routeUrl without ever going through
-        // navigateContainerDetails, whose explicit .set() is the only place that used to update this.
-        // Falling back to "previous" left the signal stuck at "" once a back-then-forward passed
-        // through a route this branch does not match, forever short-circuiting the details resource.
-        const encoded = url.slice(ROUTE_PATHS.CONTAINERS_DETAILS.length).split(/[?#]/)[0];
-        return encoded ? decodeURIComponent(encoded) : (previous?.value ?? "");
+      if (!url.startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
+        return "";
       }
-      return "";
+      // Read the serial from the URL itself: a browser back/forward navigation changes routeUrl without
+      // ever going through navigateContainerDetails.
+      return detailsSegment(url, ROUTE_PATHS.CONTAINERS_DETAILS) || (previous?.value ?? "");
     }
   });
   onLogin = computed(() => this.matchesPath(ROUTE_PATHS.LOGIN));
@@ -306,21 +293,18 @@ export class ContentService implements ContentServiceInterface {
     return this.routePath() === path;
   }
 
+  // The array form of router.navigate encodes "(" and ")", which navigateByUrl with encodeURIComponent leaves in
+  // the URL where the router reads them as outlet syntax. The signals follow the resulting URL.
   tokenSelected(serial: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent(serial));
-    this.tokenSerial.set(serial);
+    this.router.navigate([ROUTE_PATHS.TOKENS_DETAILS, serial]);
   }
 
   navigateContainerDetails(containerSerial: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_DETAILS + encodeURIComponent(containerSerial));
-    this.containerSerial.set(containerSerial);
+    this.router.navigate([ROUTE_PATHS.CONTAINERS_DETAILS, containerSerial]);
   }
 
   userSelected(username: string, realm: string): void {
-    this.router.navigateByUrl(
-      ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`
-    );
-    this.detailsUser.set({ username, realm: realm ?? "" });
+    this.router.navigate([ROUTE_PATHS.USERS_DETAILS, username], { queryParams: { realm: realm ?? "" } });
   }
 
   machineResolverSelected(resolverName: string): void {
