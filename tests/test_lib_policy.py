@@ -3580,7 +3580,7 @@ class ConditionHandleMissingDataTestCase(MyTestCase):
 class PolicyMatchTestCase(MyTestCase):
     def setUp(self):
         """ create some policies """
-        MyTestCase.setUpClass()
+        self.set_up_database()
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy(name="pol1",
@@ -3957,6 +3957,7 @@ class PolicyMatchTestCase(MyTestCase):
     @classmethod
     def tearDownClass(cls):
         delete_all_policies()
+        super().tearDownClass()
 
 
 class PolicyTemplateTestCase(MyTestCase):
