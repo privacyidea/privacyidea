@@ -71,6 +71,7 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
 import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { filter, firstValueFrom } from "rxjs";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsRememberedDevicesComponent } from "./user-details-remembered-devices/user-details-remembered-devices.component";
 import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-details-lock-dialog.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
 import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
@@ -97,6 +98,7 @@ import { exactMatch, withUser } from "@utils/filter.utils";
     NgClass,
     NgTemplateOutlet,
     UserDetailsContainerTableComponent,
+    UserDetailsRememberedDevicesComponent,
     MatSelectModule,
     MatTooltip,
     RouterLink,
@@ -129,7 +131,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   readonly labels: Record<string, string> = {
     username: $localize`:@@common.username:Username`,
-    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    givenname: $localize`:@@user.givenNameLabel:Given Name`,
     surname: $localize`:@@user.surname:Surname`,
     email: $localize`:@@common.email:Email`,
     phone: $localize`:@@user.phone:Phone`,
@@ -443,7 +445,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
           title: $localize`:@@common.resetUserLock:Reset User Lock`,
           items: [`${lockStatus.username}@${lockStatus.realm}`],
           itemType: "user",
-          confirmAction: { label: $localize`:@@user.resetLock:Reset lock`, value: true, type: "confirm" }
+          confirmAction: { label: $localize`:@@user.resetLock:Reset Lock`, value: true, type: "confirm" }
         }
       })
       .afterClosed()

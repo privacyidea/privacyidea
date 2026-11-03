@@ -170,7 +170,7 @@ export class ApiClientsComponent {
           items: [client.display_name],
           itemType: "api-client",
           confirmAction: {
-            label: $localize`:@@apiClient.rotateKey:Rotate key`,
+            label: $localize`:@@apiClient.rotateKey:Rotate Key`,
             value: true,
             type: "destruct"
           }

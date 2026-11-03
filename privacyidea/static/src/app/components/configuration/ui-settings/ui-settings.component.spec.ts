@@ -184,7 +184,7 @@ describe("UISettingsComponent", () => {
       .statusColorLevels;
 
     expect(levels.map((level) => level.value)).toEqual(["aaa", "aa", "a"]);
-    expect(host().querySelector("mat-select[aria-label='Status colors']")).toBeTruthy();
+    expect(host().querySelector("mat-select[aria-label='Status Colors']")).toBeTruthy();
   });
 
   it("should toggle the pending-request list", () => {

@@ -26,7 +26,7 @@
   <mat-form-field
     appearance="fill"
     class="pin-field">
-    <mat-label i18n="@@common.pinOptional">PIN (optional)</mat-label>
+    <mat-label i18n="@@common.pinOptional">PIN (Optional)</mat-label>
     <input
       (input)="pin.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
@@ -60,7 +60,7 @@
   <mat-form-field
     appearance="fill"
     class="pin-field">
-    <mat-label i18n="@@common.pinRepeat">PIN (repeat)</mat-label>
+    <mat-label i18n="@@common.pinRepeat">PIN (Repeat)</mat-label>
     <input
       (input)="pinRepeat.set($event.target['value'])"
       [type]="hidePin() ? 'password' : 'text'"
