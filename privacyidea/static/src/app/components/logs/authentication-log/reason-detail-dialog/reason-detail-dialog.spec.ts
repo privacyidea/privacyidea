@@ -115,7 +115,7 @@ describe("ReasonDetailDialog", () => {
       policies: []
     });
 
-    expect(headings()).toEqual(["Tokens used for this attempt"]);
+    expect(headings()).toEqual(["Tokens Used for This Attempt"]);
     expect(rows()).toEqual([["OATH0001", "WRONG_OTP"]]);
   });
 
@@ -131,7 +131,7 @@ describe("ReasonDetailDialog", () => {
       "PASSWORD_FAIL"
     );
 
-    expect(headings()).toEqual(["Tokens used for this attempt", "Other tokens of the user"]);
+    expect(headings()).toEqual(["Tokens Used for This Attempt", "Other Tokens of the User"]);
     // No token records a finding for a wrong password, so the used ones are listed as serials and the event type
     // says what came of them.
     expect(serials()).toEqual(["OATH0001"]);

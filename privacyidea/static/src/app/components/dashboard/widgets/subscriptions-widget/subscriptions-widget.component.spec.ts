@@ -263,7 +263,7 @@ describe("SubscriptionsWidgetComponent", () => {
     const headers = Array.from(fixture.nativeElement.querySelectorAll("th")).map((th) =>
       (th as HTMLElement).textContent?.trim()
     );
-    expect(headers).toEqual(["Application", "Expires", "Versions", "Current version"]);
+    expect(headers).toEqual(["Application", "Expires", "Versions", "Current Version"]);
     // The dots would only repeat what the expiry column already shows.
     expect(fixture.nativeElement.querySelector(".status-dot")).toBeNull();
 
