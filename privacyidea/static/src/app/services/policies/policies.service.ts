@@ -72,6 +72,14 @@ export function policyNameCollides(policies: PolicyDetail[], name: string, ownNa
   return policies.some((p) => p.name !== ownName && p.name.toLowerCase() === folded);
 }
 
+/**
+ * Whether the policy has check_all_resolvers set without naming a resolver. The server matches such a policy for no
+ * user, so it must not be saved.
+ */
+export function checkAllResolversWithoutResolver(policy: Partial<PolicyDetail>): boolean {
+  return !!policy.check_all_resolvers && !policy.resolver?.length;
+}
+
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
   active: boolean;
