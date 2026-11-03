@@ -49,7 +49,11 @@ Defines the rough interface for a UserId Resolver
 - for SQL the unique index ( what's the right name here (tm))
 
 """
+import logging
+
 from privacyidea.lib import lazy_gettext
+
+log = logging.getLogger(__name__)
 
 # The message of the error a resolver raises when the user store failed to answer the lookup of a login name. It
 # reaches unauthenticated clients, so it is the same for every resolver and names neither the user store nor its error,
@@ -208,18 +212,31 @@ class UserIdResolver:
         """
         Return the login names of several users at once.
 
-        The default implementation loops over :py:func:`getUsername`, which for some resolvers is
+        The default implementation loops over :py:func:`lookup_username`, which for some resolvers is
         considerably cheaper than reading the full user information of every user. A resolver that
         can answer for several users in one request should override this.
 
+        A user the user store could not answer for is reported instead of raising, so that one failing
+        user does not cost the whole batch.
+
         :param user_ids: IDs of the users in the resolver
-        :param unresolvable_ids: If given, the IDs that can not be looked up at all are added to it, see
-                                 :py:func:`get_user_info_batch`. Their login name in the result is "".
+        :param unresolvable_ids: If given, the IDs that can not be looked up at all are added to it. Their
+                                 login name in the result is "", so they do not read like a user that does
+                                 not exist.
         :return: dictionary mapping each user ID to its login name
         """
+        login_map = {}
         # dict.fromkeys drops duplicate IDs, so a user that several tokens share is only looked up
         # once even though the result would be the same
-        return {user_id: self.getUsername(user_id) for user_id in dict.fromkeys(user_ids)}
+        for user_id in dict.fromkeys(user_ids):
+            try:
+                login_map[user_id] = self.lookup_username(user_id)
+            except Exception as lookup_error:
+                log.error(f"The login name of the user {user_id!r} can not be looked up: {lookup_error!s}")
+                login_map[user_id] = ""
+                if unresolvable_ids is not None:
+                    unresolvable_ids.add(user_id)
+        return login_map
 
     def _usernames_via_user_info_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """

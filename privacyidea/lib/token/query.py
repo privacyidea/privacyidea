@@ -23,8 +23,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.resolver import get_resolver_class, get_resolver_list, get_resolver_object
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.usercache import add_many_to_cache, get_cached_usernames
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
@@ -631,17 +630,6 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
     return ResolvedOwnerLogins(login_by_owner, editable_by_resolver, unresolvable_owners)
 
 
-def _uses_default_batch_lookup(resolver_type: str | None) -> bool:
-    """
-    Whether the resolvers of the given type use the default batch lookup, which asks for each user on its own.
-
-    :param resolver_type: The type of the resolver, e.g. "httpresolver"
-    :return: False also for an unknown type
-    """
-    resolver_class = get_resolver_class(resolver_type) if resolver_type else None
-    return resolver_class is not None and resolver_class.get_usernames_batch is UserIdResolver.get_usernames_batch
-
-
 def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
     """
     Return the login names the user caches hold for the given owners. As for a ``User`` built from a
@@ -705,8 +693,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     does not exist in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
     If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
     read from the database is not orphaned, since it is not known to have an owner at all. An owner the
-    user cache holds is not looked up in the user store. The owners of a resolver without a batch lookup
-    of its own are looked up on their own. The login names looked up in the user stores are written to
+    user cache holds is not looked up in the user store. A resolver without a batch lookup of its own asks
+    its user store for one owner at a time. The login names looked up in the user stores are written to
     the user caches, as a ``User`` built for each owner would have done.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
@@ -734,28 +722,9 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     cached_login_by_owner = _get_cached_logins(list(owners_to_resolve.values()))
     uncached_owners = [owner for owner in owners_to_resolve.values()
                        if (owner.resolver, owner.user_id) not in cached_login_by_owner]
-    # The batch lookup of a resolver without one of its own asks getUsername for each user, which for some
-    # resolvers answers "" also for a user store that failed. Their owners are only looked up on their own below.
-    single_lookup_owner_keys = dict.fromkeys(
-        (owner.resolver, owner.user_id) for owner in uncached_owners
-        if _uses_default_batch_lookup(resolvers.get(owner.resolver, {}).get("type")))
-    resolved = _resolve_owner_logins([owner for owner in uncached_owners
-                                      if (owner.resolver, owner.user_id) not in single_lookup_owner_keys])
+    resolved = _resolve_owner_logins(uncached_owners)
     login_by_owner = resolved.login_by_owner | cached_login_by_owner
     unresolvable_owners = set(resolved.unresolvable_owners)
-    resolver_by_name = {}
-    for owner_key in single_lookup_owner_keys:
-        resolver_name, user_id = owner_key
-        try:
-            if resolver_name not in resolver_by_name:
-                # A resolver that failed to load is not loaded again for each of its other owners
-                resolver_by_name[resolver_name] = None
-                resolver_by_name[resolver_name] = get_resolver_object(resolver_name)
-            login_by_owner[owner_key] = resolver_by_name[resolver_name].lookup_username(user_id)
-        except Exception as user_error:
-            log.error(f"User information can not be retrieved: {user_error!s}")
-            log.debug(traceback.format_exc())
-            unresolvable_owners.add(owner_key)
 
     for token_id, owner in owners_to_resolve.items():
         owner_key = (owner.resolver, owner.user_id)

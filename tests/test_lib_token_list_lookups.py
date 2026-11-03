@@ -696,6 +696,31 @@ class TokenListLookupTestCase(MyTestCase):
             set_tokengroups("LIST01", [])
             delete_tokengroup("listgroup")
 
+    def test_19_an_owner_of_a_user_store_that_does_not_answer_is_marked(self) -> None:
+        save_resolver({**HTTP_PARAMS, "resolver": "listhttp",
+                       "endpoint": "http://userstore.example.org/get-user"})
+        set_realm("listhttprealm", [{"name": "listhttp"}])
+        token = init_token({"type": "spass", "serial": "LISTHTTPOWNER"})
+        TokenOwner(token_id=token.token.id, user_id="4711", resolver="listhttp",
+                   realmname="listhttprealm").save()
+        try:
+            # A user store that fails to answer must not read like a login name the list does not know,
+            # so that token is marked instead of shown without a user
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "http://userstore.example.org/get-user",
+                                     status=503, body="{}")
+                result = get_tokens_paginate(serial="LISTHTTPOWNER", psize=1, page=1)
+        finally:
+            remove_token("LISTHTTPOWNER")
+            delete_realm("listhttprealm")
+            delete_resolver("listhttp")
+
+        marked_token = result["tokens"][0]
+        self.assertEqual("**resolver error**", marked_token["username"], marked_token)
+        self.assertEqual("", marked_token["user_realm"], marked_token)
+        self.assertNotIn("user_editable", marked_token, marked_token)
+
+
 class RealmIdsTestCase(MyTestCase):
 
     def test_01_get_realm_ids(self):
@@ -809,7 +834,7 @@ class OrphanedTokenTestCase(MyTestCase):
         # asked at all.
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertIn("ORPHDELETEDUSER", orphaned_serials)
-        # The HTTP resolver has no batch lookup of its own, so its user is only asked on its own
+        # The HTTP resolver has no batch lookup of its own, so its user is asked through lookup_username
         self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
         self.assertEqual(1, http_lookup_username.call_count)
         self.assertNotIn("ORPHUNREACHABLE", orphaned_serials)
@@ -892,7 +917,7 @@ class OrphanedTokenTestCase(MyTestCase):
                                side_effect=ResolverError("user store not reachable")) as http_lookup_username:
             orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
 
-        # The HTTP resolver has no batch lookup of its own, so each of the two users is asked once on its own
+        # The HTTP resolver has no batch lookup of its own, so each of the two users is asked exactly once
         self.assertEqual(2, http_lookup_username.call_count, http_lookup_username.call_args_list)
         self.assertSetEqual({f"DOWNSTORE{i}" for i in range(6)}, orphaned_serials)
 
@@ -1068,3 +1093,26 @@ class OrphanedTokenTestCase(MyTestCase):
         self.assertEqual(0, client.get.call_count, client.get.call_args_list)
         self.assertEqual(1, client.mget.call_count, client.mget.call_args_list)
         self.assertEqual(1, client.srem.call_count, client.srem.call_args_list)
+
+    def test_18_a_resolver_that_can_not_be_loaded_is_reported_with_its_cause(self) -> None:
+        for user_id in range(2):
+            token = init_token({"type": "spass", "serial": f"BROKENRESO{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=str(user_id), resolver="orphanhttp",
+                       realmname="orphanhttprealm").save()
+        tokens = get_tokens(serial_wildcard="BROKENRESO*")
+        self.assertEqual(2, len(tokens), tokens)
+
+        try:
+            with (mock.patch.object(token_query, "get_resolver_object",
+                                    side_effect=Exception("the resolver configuration is broken")),
+                  self.assertLogs("privacyidea.lib.token.query", level="ERROR") as logs):
+                orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error=True)
+        finally:
+            for user_id in range(2):
+                remove_token(f"BROKENRESO{user_id}")
+
+        self.assertSetEqual({"BROKENRESO0", "BROKENRESO1"}, orphaned_serials)
+        messages = "\n".join(logs.output)
+        # Every owner of the resolver reports why it could not be loaded, not what the failed load left behind
+        self.assertIn("the resolver configuration is broken", messages, messages)
+        self.assertNotIn("NoneType", messages, messages)

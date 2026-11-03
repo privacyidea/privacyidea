@@ -3471,7 +3471,7 @@ class BaseResolverTestCase(MyTestCase):
         self.assertDictEqual({}, resolver.get_user_info_batch([]))
 
     def test_02_get_usernames_batch(self):
-        # The login names go through getUsername, which for several resolvers is cheaper than
+        # The login names go through lookup_username, which for several resolvers is cheaper than
         # reading the full user information
         resolver = UserIdResolver()
         with mock.patch.object(UserIdResolver, "getUsername",
@@ -3488,6 +3488,36 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(2, mock_get_username.call_count)
 
         self.assertDictEqual({}, resolver.get_usernames_batch([]))
+
+    def test_02a_get_usernames_batch_reports_a_user_store_that_does_not_answer(self) -> None:
+        # The login names go through lookup_username, which tells a user that does not exist from a user
+        # store that did not answer. The ID of such a user is reported instead of raising, so that one
+        # failing user does not cost the whole batch.
+        resolver = UserIdResolver()
+        unanswered_user_id = "2"
+
+        def lookup_username(user_id: str) -> str:
+            if user_id == unanswered_user_id:
+                raise ResolverError(str(USER_LOOKUP_FAILED))
+            return f"user{user_id}"
+
+        unresolvable_ids = set()
+        with mock.patch.object(UserIdResolver, "lookup_username",
+                               side_effect=lookup_username) as mock_lookup_username:
+            login_map = resolver.get_usernames_batch(["1", unanswered_user_id, "3"],
+                                                     unresolvable_ids=unresolvable_ids)
+
+        self.assertDictEqual({"1": "user1", unanswered_user_id: "", "3": "user3"}, login_map)
+        self.assertSetEqual({unanswered_user_id}, unresolvable_ids)
+        # Every ID is asked exactly once, so a reported ID does not cost a second pass
+        self.assertEqual(3, mock_lookup_username.call_count, mock_lookup_username.call_args_list)
+
+    def test_02b_get_usernames_batch_without_a_set_to_report_to(self) -> None:
+        resolver = UserIdResolver()
+        with mock.patch.object(UserIdResolver, "lookup_username",
+                               side_effect=ResolverError(str(USER_LOOKUP_FAILED))):
+            login_map = resolver.get_usernames_batch(["1"])
+        self.assertDictEqual({"1": ""}, login_map)
 
 
 class ResolverTestCase(MyTestCase):
