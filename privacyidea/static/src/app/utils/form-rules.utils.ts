@@ -37,7 +37,8 @@ export const ERR = {
   max: "max",
   parse: "parse",
   pinMismatch: "pinMismatch",
-  nameTaken: "nameTaken"
+  nameTaken: "nameTaken",
+  duplicate: "duplicate"
 } as const;
 
 /**

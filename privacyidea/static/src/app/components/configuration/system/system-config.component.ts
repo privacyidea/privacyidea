@@ -180,10 +180,11 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
       void touchAll(this.systemConfigForm);
       return;
     }
-    this.systemService.saveSystemConfig(this.saveBody()).subscribe({
+    const body = this.saveBody();
+    this.systemService.saveSystemConfig(body).subscribe({
       next: (response) => {
         if (response.result?.status) {
-          this.markSaved();
+          this.markSaved(body);
           this.notificationService.success(
             $localize`:@@systemConfig.systemConfigurationSaved:System configuration saved successfully.`
           );
@@ -205,11 +206,12 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
       void touchAll(this.systemConfigForm);
       return Promise.resolve(false);
     }
+    const body = this.saveBody();
     return new Promise<boolean>((resolve) => {
-      this.systemService.saveSystemConfig(this.saveBody()).subscribe({
+      this.systemService.saveSystemConfig(body).subscribe({
         next: (response) => {
           if (response.result?.status) {
-            this.markSaved();
+            this.markSaved(body);
             this.notificationService.success(
               $localize`:@@systemConfig.systemConfigurationSaved:System configuration saved successfully.`
             );
@@ -280,12 +282,21 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
     return body;
   }
 
-  private markSaved(): void {
-    const model = this.model();
-    SYSTEM_CONFIG_KEYS.filter((key) => model[key] !== EMPTY_SYSTEM_CONFIG[key]).forEach((key) =>
-      this.storedKeys.add(key)
-    );
-    this.savedModel.set({ ...model });
+  /**
+   * Records what the backend now holds: the written settings. A setting that was not written, like a half-typed
+   * timeout of an unticked AutoResync, keeps its saved value, so the next save does not write it either.
+   */
+  private markSaved(body: Record<string, string | boolean>): void {
+    const saved: Record<string, string | boolean> = { ...this.model() };
+    for (const key of SYSTEM_CONFIG_KEYS) {
+      if (key in body) {
+        this.storedKeys.add(key);
+        saved[key] = body[key];
+      } else if (!this.storedKeys.has(key)) {
+        saved[key] = EMPTY_SYSTEM_CONFIG[key];
+      }
+    }
+    this.savedModel.set(saved as unknown as SystemConfigModel);
   }
 
   deleteUserCache(): void {

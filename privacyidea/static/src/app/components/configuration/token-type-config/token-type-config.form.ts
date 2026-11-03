@@ -181,6 +181,20 @@ export function systemConfigDiffers(current: Record<string, string>, original: R
   return keys.length !== Object.keys(original).length || keys.some((key) => current[key] !== original[key]);
 }
 
+/**
+ * True when an earlier question of the questionnaire has the same text. The enrollment answers a question by its
+ * text, so a repeated question could not be answered separately; the later one is flagged.
+ */
+function repeatsEarlierQuestion(values: Record<string, string>, key: string, text: string): boolean {
+  const trimmed = text.trim();
+  if (trimmed === "") return false;
+  for (const other of Object.keys(values).filter(isQuestionKey)) {
+    if (other === key) return false;
+    if ((values[other] ?? "").trim() === trimmed) return true;
+  }
+  return false;
+}
+
 /** True when `text` holds something other than whitespace. */
 function isFilled(text: string | undefined): boolean {
   return (text ?? "").trim() !== "";
@@ -208,7 +222,7 @@ function requireWhenPanelFilled(
  * and key (a pair, the URL defaults to YubiCloud) once either is filled, and the TiQR registration server and logo
  * URL (the others default) once any TiQR entry is filled. The DayPassword entries and the number of answers
  * default in the backend, so they have no rule. The number of answers must be a whole number. A question of the
- * questionnaire must hold text as soon as its slot exists.
+ * questionnaire must hold text as soon as its slot exists, and no two questions may have the same text.
  */
 export const tokenTypeConfigSchema: SchemaFn<TokenTypeConfigModel> = (path) => {
   requireWhenPanelFilled(path.values, YUBICO_CREDENTIAL_KEYS, YUBICO_CREDENTIAL_KEYS);
@@ -217,6 +231,11 @@ export const tokenTypeConfigSchema: SchemaFn<TokenTypeConfigModel> = (path) => {
   applyEach(path.values, (value) => {
     metadata(value, REQUIRED, (ctx) => isQuestionKey(ctx.key()));
     validate(value, (ctx) => (isQuestionKey(ctx.key()) && !isFilled(ctx.value()) ? [{ kind: ERR.required }] : []));
+    validate(value, (ctx) =>
+      isQuestionKey(ctx.key()) && repeatsEarlierQuestion(ctx.valueOf(path.values), ctx.key(), ctx.value())
+        ? [{ kind: ERR.duplicate }]
+        : []
+    );
   });
 };
 

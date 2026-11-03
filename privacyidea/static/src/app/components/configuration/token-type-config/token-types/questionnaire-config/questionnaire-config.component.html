@@ -79,6 +79,9 @@
             @if (hasError(config().values[key], ERR.required)) {
               <mat-error i18n="@@tokenTypeConfig.questionMustNot">Question must not be empty.</mat-error>
             }
+            @if (hasError(config().values[key], ERR.duplicate)) {
+              <mat-error i18n="@@tokenTypeConfig.questionDuplicate">This question already exists.</mat-error>
+            }
           </mat-form-field>
           <button
             (click)="deleteEntry(key)"

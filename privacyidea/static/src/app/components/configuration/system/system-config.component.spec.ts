@@ -474,6 +474,26 @@ describe("SystemConfigComponent", () => {
       expect(lastSavedBody()).toEqual(expect.objectContaining({ AutoResyncTimeout: "300" }));
     });
 
+    it("is not written by a second save either, where the stored value stays", async () => {
+      await loadConfig({ AutoResyncTimeout: "300" });
+      typeTimeout("abc");
+      component.saveSystemConfig();
+      await flush();
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).toEqual(expect.objectContaining({ AutoResyncTimeout: "300" }));
+    });
+
+    it("is not written by a second save either, where the setting was never stored", async () => {
+      await loadConfig({ DefaultOtpLen: "8" });
+      typeTimeout("abc");
+      component.saveSystemConfig();
+      await flush();
+      component.saveSystemConfig();
+
+      expect(lastSavedBody()).not.toHaveProperty("AutoResyncTimeout");
+    });
+
     it("still blocks the save while AutoResync is ticked, where the form validates it", () => {
       component.model.update((model) => ({ ...model, AutoResync: true, AutoResyncTimeout: "abc" }));
 

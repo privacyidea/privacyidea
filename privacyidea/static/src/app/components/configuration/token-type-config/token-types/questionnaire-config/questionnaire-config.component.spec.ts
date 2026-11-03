@@ -178,6 +178,28 @@ describe("QuestionnaireConfigComponent", () => {
   });
 
   describe("question inputs", () => {
+    it("flags the later of two questions with the same text", async () => {
+      await create({ ...filledConfig(), "question.question.2": "  Q1 " });
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual(["This question already exists."]);
+      expect(configForm.form.values["question.question.1"]().invalid()).toBe(false);
+      expect(configForm.form.values["question.question.2"]().invalid()).toBe(true);
+      expect(configForm.form().valid()).toBe(false);
+    });
+
+    it("accepts the questions again once the repeated one is changed", async () => {
+      await create({ ...filledConfig(), "question.question.2": "Q1" });
+      await touchAll(configForm.form);
+      await flush();
+
+      await type(questionInputs()[1], "Another question");
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+
     it("shows the error of an empty question once the form is touched", async () => {
       await create({ ...filledConfig(), "question.question.2": "" });
       expect(errors()).toEqual([]);
