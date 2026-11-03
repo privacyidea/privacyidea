@@ -1389,6 +1389,14 @@ describe("ContainerService", () => {
       flushPending();
     });
 
+    it("does not load while the details user is empty", () => {
+      userServiceMock.detailsUser.set({ username: "", realm: "" });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/");
+      TestBed.tick();
+      httpMock.expectNone((r) => r.url === "/container/");
+      flushPending();
+    });
+
     it("omits realm when selectedUserRealm is empty", () => {
       userServiceMock.selectedUserRealm.set("");
       contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
