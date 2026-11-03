@@ -20,7 +20,7 @@ from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.realm import delete_realm, set_realm
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.resolvers.HTTPResolver import HTTPResolver
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver
 from privacyidea.lib.token import (convert_token_objects_to_dicts, get_orphaned_serials, get_tokens,
@@ -65,6 +65,16 @@ HTTP_PARAMS = {"resolver": "orphanhttp",
                "requestMapping": """{"id": "{userid}"}""",
                "responseMapping": """{"username": "{data.the_username}"}""",
                "hasSpecialErrorHandler": False}
+
+SQL_PARAMS = {"resolver": "orphansql",
+              "type": "sqlresolver",
+              "Driver": "sqlite",
+              "Server": "/tests/testdata/",
+              "Database": "testuser.sqlite",
+              "Table": "users",
+              "Encoding": "utf8",
+              "Map": '{"username": "username", "userid": "id", "email": "email", '
+                     '"surname": "name", "givenname": "givenname", "password": "password"}'}
 
 
 @contextmanager
@@ -995,3 +1005,21 @@ class OrphanedTokenTestCase(MyTestCase):
         statements_after_the_inserts = statements[insert_indexes[-1] + 1:]
         self.assertEqual([], [statement for statement in statements_after_the_inserts
                               if statement.lstrip().upper().startswith("SELECT")], statements)
+
+    def test_16_sql_owner_with_a_padded_user_id(self) -> None:
+        save_resolver(SQL_PARAMS)
+        set_realm("orphansqlrealm", [{"name": "orphansql"}])
+        token = init_token({"type": "spass", "serial": "PADDEDUSERID"})
+        TokenOwner(token_id=token.token.id, user_id="0003", resolver="orphansql",
+                   realmname="orphansqlrealm").save()
+        try:
+            # An integer userid column matches a padded ID, so the owner does exist in the user store
+            self.assertEqual("cornelius", User(resolver="orphansql", realm="orphansqlrealm", uid="0003").login)
+
+            tokens = get_tokens(serial="PADDEDUSERID")
+            for orphaned_on_error in [True, False]:
+                self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error), orphaned_on_error)
+        finally:
+            remove_token("PADDEDUSERID")
+            delete_realm("orphansqlrealm")
+            delete_resolver("orphansql")

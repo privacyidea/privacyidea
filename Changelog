@@ -10,6 +10,9 @@ Version 3.14.1
     outage could make `find --orphaned true delete` delete all tokens of that user store (#1653)
   * The token list marks a token owner whose user ID the LDAP or SQL batch lookup can not search for as
     `**resolver error**`, instead of showing it as a user without a login name (#1653)
+  * A SQL resolver with an integer user ID column no longer loses a user whose stored ID is written with
+    leading zeros when several users are looked up at once. The token list shows such an owner with their
+    login name again, and the token janitors no longer report their tokens as orphaned (#1653)
 
 Version 3.14, 2026-10-08
 

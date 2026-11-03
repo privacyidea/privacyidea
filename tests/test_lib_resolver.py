@@ -798,6 +798,28 @@ class SQLResolverTestCase(MyTestCase):
         self.assertDictEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
         self.assertEqual(resolver.getUsername("3"), login_map["3"], login_map)
 
+    def test_13g_get_usernames_batch_with_a_padded_user_id(self) -> None:
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        padded_user_id = "0003"
+
+        # An integer userid column matches a padded ID, so a single lookup finds the user
+        self.assertEqual("cornelius", resolver.getUsername(padded_user_id))
+
+        # The batch has to map the row back to the ID it was asked for, not to the one the column holds
+        unresolvable_ids = set()
+        login_map = resolver.get_usernames_batch([padded_user_id], unresolvable_ids=unresolvable_ids)
+        self.assertDictEqual({padded_user_id: "cornelius"}, login_map)
+        self.assertSetEqual(set(), unresolvable_ids)
+
+        # Both spellings of the ID point at the same row, and one answer may not displace the other
+        login_map = resolver.get_usernames_batch(["3", padded_user_id])
+        self.assertDictEqual({"3": "cornelius", padded_user_id: "cornelius"}, login_map)
+
+        # A user ID without a row still maps to the empty string
+        login_map = resolver.get_usernames_batch([padded_user_id, "04242"])
+        self.assertDictEqual({padded_user_id: "cornelius", "04242": ""}, login_map)
+
     def test_13a_get_user_info_batch_propagates_a_db_error(self):
         resolver = SQLResolver()
         resolver.loadConfig(self.parameters)
