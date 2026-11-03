@@ -265,13 +265,14 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         iterable = [get_tokens(tokentype=tokentype,
                                active=active,
                                assigned=assigned)]
+    found_label = "Candidates" if orphaned is not None else "Tokens found"
     for tokenobj_list in iterable:
         filtered_list = []
         sys.stderr.write("++ Creating token object list.\n")
         tok_count = 0
         tok_found = 0
         for token_obj in tokenobj_list:
-            sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r')
+            sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} {found_label}\r')
             sys.stderr.flush()
             tok_count += 1
             if last_auth and token_obj.check_last_auth_newer(last_auth):
