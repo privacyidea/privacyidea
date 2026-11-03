@@ -18,6 +18,7 @@
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_realms
+from privacyidea.lib.remembered_device import parse_device_duration
 
 """
 This defines functions to evaluate the value for each action.
@@ -39,6 +40,18 @@ def check_realm_list(realms: str):
     if invalid_realms:
         raise ParameterError(f"The following realms do not exist: {invalid_realms}!")
 
+def check_device_duration(value: str) -> None:
+    """
+    Evaluates if the value is a duration of a remember-device policy action, like 30d, 8h or 90m. A number without a
+    unit counts as days.
+
+    :param value: The value of the action
+    """
+    if parse_device_duration(value) is None:
+        raise ParameterError(f"{value!r} is not a positive duration like 30d, 8h or 90m (units s, m, h, d and y)!")
+
 EVALUATOR_FUNCTIONS = {
     PolicyAction.REALMDROPDOWN: check_realm_list,
+    PolicyAction.REMEMBER_DEVICE_VALIDITY: check_device_duration,
+    PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT: check_device_duration,
 }
