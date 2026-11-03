@@ -18,11 +18,12 @@ from click.testing import Result
 from testfixtures import Comparison, compare, OutputCapture
 from contextlib import contextmanager
 
-from privacyidea.app import (ENV_KEY, create_app, create_docker_app,
+from privacyidea.app import (ENV_KEY, PrivacyIDEARequest, create_app, create_docker_app,
                              _setup_database_engine_options)
 from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db
+from .base import MyApiTestCase
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -460,3 +461,65 @@ class DbUpgradeCommandTestCase(unittest.TestCase):
         self.assertEqual(0, result.exit_code, result.output)
         self.flask_migrate_upgrade.assert_called_once_with(directory=None, sql=True, tag=None, x_arg=(),
                                                            revision="base:head")
+
+
+class UrlencodedBodySizeTestCase(MyApiTestCase):
+    """
+    The app answers a urlencoded body that is larger than MAX_FORM_MEMORY_SIZE with 413 when it parses the form.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+
+    def post_urlencoded(self, path: str, size: int, headers: dict[str, str] | None = None) -> flask.Response:
+        prefix = "user=cornelius&pass="
+        body = prefix + "x" * (size - len(prefix))
+        with self.app.test_request_context(path, method="POST", data=body, headers=headers,
+                                           content_type="application/x-www-form-urlencoded"):
+            return self.app.full_dispatch_request()
+
+    def test_01_request_class(self) -> None:
+        self.assertIs(self.app.request_class, PrivacyIDEARequest)
+
+    def test_02_configured_limit(self) -> None:
+        limit = self.app.config["MAX_FORM_MEMORY_SIZE"]
+        self.assertEqual(200, self.post_urlencoded("/validate/check", limit).status_code)
+        self.assertEqual(413, self.post_urlencoded("/validate/check", limit + 1).status_code)
+
+    def test_03_changed_limit(self) -> None:
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": 1000}):
+            self.assertEqual(200, self.post_urlencoded("/validate/check", 1000).status_code)
+            self.assertEqual(413, self.post_urlencoded("/validate/check", 1001).status_code)
+
+    def test_04_no_limit(self) -> None:
+        size = self.app.config["MAX_FORM_MEMORY_SIZE"] + 1
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": None}):
+            self.assertEqual(200, self.post_urlencoded("/validate/check", size).status_code)
+
+    def test_05_other_content_types(self) -> None:
+        body = json.dumps({"user": "cornelius", "pass": "x" * 1000})
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": 1000}):
+            with self.app.test_request_context("/validate/check", method="POST", data=body,
+                                               content_type="application/json"):
+                self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def test_06_limit_after_authentication(self) -> None:
+        # The endpoints that require a login check the auth token before they parse the form.
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": 1000}):
+            self.assertEqual(401, self.post_urlencoded("/token/init", 1001).status_code)
+            self.assertEqual(413, self.post_urlencoded("/token/init", 1001, {"Authorization": self.at}).status_code)
+
+
+class DockerAppRequestClassTestCase(unittest.TestCase):
+
+    def test_01_request_class(self) -> None:
+        class FactoryStopped(Exception):
+            pass
+
+        # The Docker factory also reads the pi.cfg of the machine the test runs on.
+        with (mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")),
+              mock.patch("privacyidea.app._check_config", side_effect=FactoryStopped) as check_config):
+            with self.assertRaises(FactoryStopped):
+                create_docker_app()
+        self.assertIs(check_config.call_args.args[0].request_class, PrivacyIDEARequest)
