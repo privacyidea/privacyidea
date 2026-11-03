@@ -106,7 +106,7 @@
             [disableRipple]="true"
             i18n-matTooltip="@@conditionalAccess.toggleDryRunEvaluate"
             matTooltip="Toggle Dry Run (evaluate but do not enforce)">
-            <span i18n="@@common.dryRun2">Dry run</span>
+            <span i18n="@@common.dryRun2">Dry Run</span>
           </mat-slide-toggle>
           @if (countFloorStillBites()) {
             <span
@@ -126,7 +126,7 @@
             appearance="fill"
             class="input-width-xl"
             subscriptSizing="dynamic">
-            <mat-label i18n="@@conditionalAccess.startTemplate">Start from template</mat-label>
+            <mat-label i18n="@@conditionalAccess.startTemplate">Start from Template</mat-label>
             <mat-select
               [value]="selectedTemplateKey()"
               (selectionChange)="applyTemplate($event.value)">
@@ -233,7 +233,7 @@
         <mat-form-field
           appearance="fill"
           class="input-width-s">
-          <mat-label i18n="@@conditionalAccess.timeWindow">Time window</mat-label>
+          <mat-label i18n="@@conditionalAccess.timeWindow">Time Window</mat-label>
           <input
             matInput
             type="number"
@@ -274,7 +274,7 @@
           appearance="fill"
           class="input-width-xl margin-bottom-32"
           subscriptSizing="dynamic">
-          <mat-label i18n="@@conditionalAccess.trackedEventTypes2">Tracked event types</mat-label>
+          <mat-label i18n="@@conditionalAccess.trackedEventTypes2">Tracked Event Types</mat-label>
           <mat-select
             required
             multiple
