@@ -1147,3 +1147,27 @@ class OrphanedTokenTestCase(MyTestCase):
         self.assertSetEqual(set(), kept)
         self.assertEqual(1, requests_of_the_orphaning_run)
         self.assertEqual(1, requests_of_the_keeping_run)
+
+    @ldap3mock.activate
+    def test_20_is_orphaned_decides_like_the_batch(self):
+        """A single token and a whole chunk have to reach the same verdict, so both can not drift apart."""
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        # The fixture has no owner without a user ID, which the batch decides about without a lookup
+        for serial, user_id in [("PARITYNOUSERID", None), ("PARITYEMPTYUSERID", "")]:
+            token = init_token({"type": "spass", "serial": serial})
+            TokenOwner(token_id=token.token.id, user_id=user_id, resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        try:
+            tokens = get_tokens(serial_wildcard=self.serial_wildcard) + get_tokens(serial_wildcard="PARITY*")
+            self.assertEqual(11, len(tokens), tokens)
+
+            with mock.patch.object(HTTPResolver, "_get_user", side_effect=Exception("not reachable")):
+                for orphaned_on_error in [True, False]:
+                    orphaned_serials = get_orphaned_serials(tokens, orphaned_on_error)
+                    for token in tokens:
+                        serial = token.token.serial
+                        self.assertEqual(serial in orphaned_serials, token.is_orphaned(orphaned_on_error),
+                                         f"{serial} with orphaned_on_error={orphaned_on_error}")
+        finally:
+            for serial in ["PARITYNOUSERID", "PARITYEMPTYUSERID"]:
+                remove_token(serial)
