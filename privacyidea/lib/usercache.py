@@ -23,7 +23,7 @@ import datetime
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.realm import get_ordered_resolvers
 from privacyidea.models import UserCache, db
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, insert, select
 
 log = logging.getLogger(__name__)
 EXPIRATION_SECONDS = "UserCacheExpiration"
@@ -129,6 +129,26 @@ def add_to_cache(username, used_login, resolver, user_id):
         log.debug(f'Adding record to cache: ({username!r}, {used_login!r}, {resolver!r}, {user_id!r}, {timestamp!r})')
         record = UserCache(username, used_login, resolver, user_id, timestamp)
         record.save()
+
+
+def add_many_to_cache(resolver: str, login_by_user_id: dict[str, str]) -> None:
+    """
+    Add the login names of several users of one resolver to the user cache with one insert and one commit,
+    if the user cache is enabled. As for a ``User`` built from a resolver and a user ID, the login name is
+    also the used login.
+
+    :param resolver: The name of the resolver
+    :param login_by_user_id: The login name by user ID. Empty login names and user IDs are not added.
+    """
+    records = [{"username": login, "used_login": login, "resolver": resolver, "user_id": user_id}
+               for user_id, login in login_by_user_id.items() if login and user_id]
+    if not records or not is_cache_enabled():
+        return
+    timestamp = datetime.datetime.now()
+    for record in records:
+        record["timestamp"] = timestamp
+    db.session.execute(insert(UserCache), records)
+    db.session.commit()
 
 
 def retrieve_latest_entry(filter_condition):

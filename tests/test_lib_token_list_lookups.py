@@ -16,7 +16,7 @@ import responses
 from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
-from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.config import get_from_config, set_privacyidea_config
 from privacyidea.lib.container import add_token_to_container, find_container_by_serial, init_container
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.realm import delete_realm, set_realm
@@ -902,3 +902,71 @@ class OrphanedTokenTestCase(MyTestCase):
             self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=False))
         # A failed query leaves the session unusable until it is rolled back
         rollback.assert_called_once_with()
+
+    @ldap3mock.activate
+    def test_13_looked_up_owners_are_written_to_the_user_caches(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        try:
+            with (mock.patch.object(HTTPResolver, "lookup_username", return_value="httpuser") as http_lookup_username,
+                  mock.patch.object(token_query, "write_cached_usernames",
+                                    wraps=token_query.write_cached_usernames) as write_redis):
+                first_run = get_orphaned_serials(tokens)
+                with count_ldap_searches() as search_filters:
+                    second_run = get_orphaned_serials(tokens)
+            cached_logins = {(entry.resolver, entry.user_id): entry.username
+                             for entry in db.session.scalars(select(UserCache))}
+        finally:
+            delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+
+        # As a User built for each owner did, the first run fills the user caches, so the second one only asks the
+        # user store for the user it does not know, and decides the same
+        self.assertSetEqual(first_run, second_run)
+        self.assertEqual(1, len(search_filters), search_filters)
+        self.assertIn("(oid=99)", search_filters[0], search_filters)
+        self.assertEqual(1, http_lookup_username.call_count, http_lookup_username.call_args_list)
+        # Once per resolver in the first run, the second run looks nothing up
+        self.assertEqual(2, write_redis.call_count, write_redis.call_args_list)
+        self.assertEqual("httpuser", cached_logins[("orphanhttp", "1")])
+        self.assertTrue({"user00", "user01", "user02"}.issubset(cached_logins.values()), cached_logins)
+        # A user the user store does not know is not cached
+        self.assertNotIn(("orphanldap", "99"), cached_logins)
+
+    @ldap3mock.activate
+    def test_14_a_user_cache_that_can_not_be_written_is_skipped(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
+                  if token.token.serial in {"ORPHEXISTS0", "ORPHDELETEDUSER"}]
+        with (mock.patch.object(token_query, "add_many_to_cache", side_effect=Exception("lock wait timeout")),
+              mock.patch.object(db.session, "rollback", wraps=db.session.rollback) as rollback):
+            self.assertSetEqual({"ORPHDELETEDUSER"}, get_orphaned_serials(tokens, orphaned_on_error=False))
+        rollback.assert_called_once_with()
+
+    @ldap3mock.activate
+    def test_15_the_user_caches_are_written_after_the_verdicts(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        tokens = get_tokens(serial_wildcard=self.serial_wildcard)
+        previous_expiration = get_from_config(EXPIRATION_SECONDS, 0)
+        # Without an enabled user cache nothing is written and nothing is committed, so the run would
+        # read every owner from the identity map whether the caches are written first or last
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        try:
+            with (mock.patch.object(HTTPResolver, "lookup_username", return_value="httpuser"),
+                  count_statements() as statements):
+                orphaned_serials = get_orphaned_serials(tokens)
+        finally:
+            delete_user_cache()
+            set_privacyidea_config(EXPIRATION_SECONDS, previous_expiration)
+
+        self.assertSetEqual({"ORPHDELETEDUSER", "ORPHDELETEDRESOLVER", "ORPHNOREALM", "ORPHNORESOLVER"},
+                            orphaned_serials)
+        insert_indexes = [index for index, statement in enumerate(statements)
+                          if "INSERT INTO usercache" in statement]
+        self.assertTrue(insert_indexes, statements)
+        # The commit of the last insert expires every owner and token that was already read, so nothing
+        # may be read after it
+        statements_after_the_inserts = statements[insert_indexes[-1] + 1:]
+        self.assertEqual([], [statement for statement in statements_after_the_inserts
+                              if statement.lstrip().upper().startswith("SELECT")], statements)

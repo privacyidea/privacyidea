@@ -6,6 +6,7 @@ The lib.usercache.py only depends on the database model
 from contextlib import contextmanager
 
 from mock import patch
+from sqlalchemy import select
 
 from privacyidea.lib.error import UserError
 from tests import ldap3mock
@@ -17,7 +18,7 @@ from privacyidea.lib.user import (User, get_username, create_user)
 from privacyidea.lib.usercache import (get_cache_time,
                                        cache_username, delete_user_cache, create_filter,
                                        EXPIRATION_SECONDS, retrieve_latest_entry, is_cache_enabled,
-                                       get_cached_usernames)
+                                       get_cached_usernames, add_many_to_cache)
 from privacyidea.lib.config import set_privacyidea_config
 from datetime import timedelta
 from datetime import datetime
@@ -559,6 +560,27 @@ class UserCacheTestCase(PristineSqliteFixtures, MyTestCase):
 
             set_privacyidea_config(EXPIRATION_SECONDS, 0)
             self.assertDictEqual({}, get_cached_usernames("reso1", ["uid1"]))
+        finally:
+            set_privacyidea_config(EXPIRATION_SECONDS, 600)
+            delete_user_cache()
+
+    def test_17_add_many_to_cache(self) -> None:
+        set_privacyidea_config(EXPIRATION_SECONDS, 600)
+        delete_user_cache()
+        try:
+            with patch.object(db.session, "commit", wraps=db.session.commit) as commit:
+                add_many_to_cache("reso1", {"uid1": "alice", "uid2": "bob", "uid3": "", "": "nobody"})
+            # One commit for all entries, not one per user
+            self.assertEqual(1, commit.call_count)
+            self.assertDictEqual({"uid1": "alice", "uid2": "bob"},
+                                 get_cached_usernames("reso1", ["uid1", "uid2", "uid3"]))
+            # Like a User built from a resolver and a user ID, the login name is the used login as well
+            entry = retrieve_latest_entry(create_filter(resolver="reso1", user_id="uid1"))
+            self.assertEqual("alice", entry.used_login)
+
+            set_privacyidea_config(EXPIRATION_SECONDS, 0)
+            add_many_to_cache("reso1", {"uid4": "carol"})
+            self.assertEqual(2, len(db.session.scalars(select(UserCache)).all()))
         finally:
             set_privacyidea_config(EXPIRATION_SECONDS, 600)
             delete_user_cache()

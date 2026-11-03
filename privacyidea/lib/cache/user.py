@@ -330,6 +330,39 @@ def read_cached_username(resolver_name: str, user_id: str) -> str | None:
     return _read(client, resolver_name, _LOGIN_KEY.format(_segment(resolver_name), _segment(user_id)))
 
 
+def write_cached_usernames(resolver_name: str, login_by_user_id: dict[str, str]) -> None:
+    """
+    Store the login names of several users of one resolver with one round trip, like
+    :py:func:`cached_username` stores the login name of a single user after asking the resolver.
+    Nothing here may raise, see :py:func:`_write`.
+
+    :param resolver_name: The name of the resolver
+    :param login_by_user_id: The login name by user ID. Empty login names and user IDs are not stored.
+    """
+    client = _cache_client()
+    entries = {_LOGIN_KEY.format(_segment(resolver_name), _segment(user_id)): login
+               for user_id, login in login_by_user_id.items() if login and user_id not in (None, "")}
+    if client is None or not entries:
+        return
+    ttl = _ttl_seconds()
+    index_key = _INDEX_KEY.format(_segment(resolver_name))
+    try:
+        ciphertexts = {key: encryptPassword(login) for key, login in entries.items()}
+    except Exception as error:
+        log.warning(f"Could not encrypt the user cache entries, they were not cached: {error}")
+        return
+    try:
+        pipe = client.pipeline()
+        for key, ciphertext in ciphertexts.items():
+            pipe.set(key, ciphertext, ex=ttl)
+        pipe.sadd(index_key, *ciphertexts)
+        pipe.expire(index_key, ttl, nx=True)
+        pipe.expire(index_key, ttl, gt=True)
+        pipe.execute()
+    except redis_lib.exceptions.RedisError as error:
+        _disable_redis(error)
+
+
 def cached_user_info(resolver, resolver_name: str, user_id: str, attributes: list[str] = None) -> dict:
     """
     Return the attributes of ``user_id`` in the given resolver, from the cache

@@ -39,7 +39,7 @@ import redis as redis_lib
 
 from privacyidea.lib.cache.user import (_covered_user_info, _segment, _ttl_seconds, cached_user_id, cached_user_info,
                                         cached_username, flush_user_cache, invalidate_resolver, invalidate_user,
-                                        read_cached_username)
+                                        read_cached_username, write_cached_usernames)
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.user import User
@@ -200,6 +200,11 @@ class UserCacheUnitTestCase(MyTestCase):
 
     def test_07_without_redis_no_username_is_read(self) -> None:
         with user_cache_in_store(None):
+            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
+
+    def test_08_without_redis_no_usernames_are_written(self) -> None:
+        with user_cache_in_store(None):
+            write_cached_usernames(RESOLVER_NAME, {"1000": "alice"})
             self.assertIsNone(read_cached_username(RESOLVER_NAME, "1000"))
 
 
@@ -492,6 +497,36 @@ class UserCacheRedisTestCase(_RealRedisBase):
             self.assertEqual("alice", read_cached_username(RESOLVER_NAME, "1000"))
             self.assertIsNone(read_cached_username(RESOLVER_NAME, ""))
         self.assertEqual(["1000"], resolver.username_calls)
+
+    def test_21_usernames_are_written_in_one_round_trip(self) -> None:
+        with user_cache_in_store(self._real_client, ttl=60):
+            with patch.object(type(self._real_client), "pipeline",
+                              wraps=self._real_client.pipeline) as pipeline:
+                write_cached_usernames(RESOLVER_NAME, {"1000": "alice", "1001": "bob", "1002": "", "": "nobody"})
+            self.assertEqual(1, pipeline.call_count)
+            self.assertEqual("alice", read_cached_username(RESOLVER_NAME, "1000"))
+            self.assertEqual("bob", read_cached_username(RESOLVER_NAME, "1001"))
+            self.assertIsNone(read_cached_username(RESOLVER_NAME, "1002"))
+        # Encrypted, expiring and indexed for the resolver like an entry written by cached_username
+        login_keys = {f"pi:user:v1:login:{RESOLVER_NAME}:1000", f"pi:user:v1:login:{RESOLVER_NAME}:1001"}
+        self.assertSetEqual(login_keys, set(self._real_client.scan_iter(match="pi:user:v1:login:*")))
+        for key in login_keys:
+            self.assertNotIn("alice", self._real_client.get(key))
+            self.assertGreater(self._real_client.ttl(key), 0)
+            self.assertLessEqual(self._real_client.ttl(key), 60)
+        self.assertSetEqual(login_keys, self._real_client.smembers(f"pi:user:v1:index:{RESOLVER_NAME}"))
+        self.assertGreater(self._real_client.ttl(f"pi:user:v1:index:{RESOLVER_NAME}"), 0)
+
+    def test_22_failing_to_write_usernames_does_not_raise(self) -> None:
+        with user_cache_in_store(self._real_client):
+            with patch.object(type(self._real_client), "pipeline",
+                              side_effect=redis_lib.exceptions.ConnectionError("gone")):
+                write_cached_usernames(RESOLVER_NAME, {"1000": "alice"})
+        with user_cache_in_store(self._real_client):
+            from privacyidea.lib.error import HSMException
+            with patch("privacyidea.lib.cache.user.encryptPassword", side_effect=HSMException("HSM not ready")):
+                write_cached_usernames(RESOLVER_NAME, {"1000": "alice"})
+        self.assertEqual([], list(self._real_client.scan_iter(match="pi:user:*")))
 
     def test_16_logins_cannot_reach_another_resolvers_keyspace(self):
         # A login built to look like a key separator must stay inside its own

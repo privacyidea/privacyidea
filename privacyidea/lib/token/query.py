@@ -15,7 +15,7 @@ from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql import ColumnElement, Select
 
 from privacyidea.lib import _
-from privacyidea.lib.cache.user import read_cached_username
+from privacyidea.lib.cache.user import read_cached_username, write_cached_usernames
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -26,7 +26,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_class, get_resolver_list, get_resolver_object
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.usercache import get_cached_usernames
+from privacyidea.lib.usercache import add_many_to_cache, get_cached_usernames
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
 from privacyidea.lib.user import User
@@ -672,6 +672,28 @@ def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
     return login_by_owner
 
 
+def _write_back_logins(login_by_owner: dict[tuple[str, str], str]) -> None:
+    """
+    Write the login names that were looked up in the user stores to both user caches, with one insert
+    and one Redis round trip per resolver, as a ``User`` built for each owner would have cached them.
+
+    :param login_by_owner: The login name keyed by (resolver name, user ID). Empty login names are skipped.
+    """
+    login_by_user_id_by_resolver = {}
+    for (resolver_name, user_id), login in login_by_owner.items():
+        if login:
+            login_by_user_id_by_resolver.setdefault(resolver_name, {})[user_id] = login
+    for resolver_name, login_by_user_id in login_by_user_id_by_resolver.items():
+        write_cached_usernames(resolver_name, login_by_user_id)
+        try:
+            add_many_to_cache(resolver_name, login_by_user_id)
+        except Exception as cache_error:
+            # A user cache that can not be written only costs the lookups it would have saved later
+            log.error(f"The user cache of the resolver {resolver_name!r} can not be written: {cache_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+
+
 def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = True) -> set[str]:
     """
     Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
@@ -682,7 +704,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
     If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
     read from the database is not orphaned, since it is not known to have an owner at all. An owner the
     user cache holds is not looked up in the user store. The owners of a resolver without a batch lookup
-    of its own are looked up on their own.
+    of its own are looked up on their own. The login names looked up in the user stores are written to
+    the user caches, as a ``User`` built for each owner would have done.
 
     :param tokens: The token objects to check, e.g. one chunk of the token janitor
     :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
@@ -740,6 +763,8 @@ def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = Tru
             orphaned = not login_by_owner.get(owner_key) or not owner.realm
         if orphaned:
             orphaned_serials.add(token_by_id[token_id].token.serial)
+    _write_back_logins({owner_key: login for owner_key, login in login_by_owner.items()
+                        if owner_key not in cached_login_by_owner})
     return orphaned_serials
 
 
