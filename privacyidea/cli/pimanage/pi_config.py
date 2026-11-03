@@ -317,7 +317,10 @@ def resolver_create_internal(ctx, name):
         click.secho(f"Invalid database URI: {sqluri}", fg="red")
         ctx.exit(2)
     elif len(hostparts) == 1:
-        host = hostparts[0] or "/"
+        # An empty host is stored as "/", because the SQL resolver puts a "/" between the host and the database.
+        # A SQLite URI with a Windows path ("sqlite:///C:/dir/pi.sqlite") needs an empty host instead.
+        is_windows_path = database[1:2] == ":" and database[:1].isalpha()
+        host = hostparts[0] or ("" if is_windows_path else "/")
     elif len(hostparts) == 2:
         host = hostparts[1] or "/"
         # split hostname and password
