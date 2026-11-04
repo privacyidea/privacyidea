@@ -935,7 +935,7 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
         self._recognise(api_key=api_key, expect_value=False)
         self.assertEqual("device not recognised: no cookie presented",
                          self.find_most_recent_audit_entry(action="*validate/remember_device*")["info"])
-        for presented, reason in (("no counter", "the cookie is malformed"),
+        for presented, reason in (("nocounter", "the cookie is malformed"),
                                   ("doesnotexist:1", "the cookie matches no remembered device of the user on this "
                                                      "client")):
             self._recognise(api_key=api_key, cookie=presented, expect_value=False)
