@@ -142,6 +142,34 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(component.canSave()).toBe(true);
   });
 
+  it("canSave returns false while check_all_resolvers is set without a resolver", () => {
+    component.addPolicyEdit({ name: "ValidName", resolver: ["resolver1"], check_all_resolvers: true });
+    expect(component.canSave()).toBe(true);
+    component.addPolicyEdit({ resolver: [] });
+    expect(component.canSave()).toBe(false);
+    component.addPolicyEdit({ check_all_resolvers: false });
+    expect(component.canSave()).toBe(true);
+  });
+
+  it("shows why Save is disabled next to the button while check_all_resolvers is set without a resolver", () => {
+    const saveReason = (): HTMLElement | null => fixture.nativeElement.querySelector("#save-blocked-reason");
+    const saveButton = (): HTMLButtonElement =>
+      Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll(".sticky-controls button")).find((button) =>
+        button.textContent?.includes("Save")
+      )!;
+
+    component.addPolicyEdit({ name: "ValidName", resolver: ["resolver1"], check_all_resolvers: true });
+    fixture.detectChanges();
+    expect(saveReason()).toBeNull();
+    expect(saveButton().getAttribute("aria-describedby")).toBeNull();
+
+    component.addPolicyEdit({ resolver: [] });
+    fixture.detectChanges();
+    expect(saveReason()?.textContent).toContain("Check all possible resolvers of a user");
+    expect(saveButton().disabled).toBe(true);
+    expect(saveButton().getAttribute("aria-describedby")).toBe("save-blocked-reason");
+  });
+
   const mockPanel = (): MockPanel => fixture.debugElement.query(By.directive(MockPanel)).componentInstance;
 
   describe("name collision", () => {

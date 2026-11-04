@@ -84,20 +84,20 @@ const SMTP_TEXT_HINT = $localize`:@@conditionalAccess.typeNameListingServers:Typ
 const EMAIL_FIELDS: readonly EmailField[] = [
   {
     key: "smtp_identifier",
-    label: $localize`:@@conditionalAccess.smtpServer:SMTP server`,
+    label: $localize`:@@conditionalAccess.smtpServer:SMTP Server`,
     kind: "smtp",
     hint: $localize`:@@conditionalAccess.configuredSmtpServerSends:The configured SMTP server that sends the email.`
   },
   {
     key: "recipient_group",
-    label: $localize`:@@conditionalAccess.recipientGroup:Recipient group`,
+    label: $localize`:@@conditionalAccess.recipientGroup:Recipient Group`,
     kind: "text",
     onlyAdmin: true,
     hint: $localize`:@@conditionalAccess.adminGroupNotifyE:Admin group to notify, e.g. internal_admins.`
   },
   {
     key: "mimetype",
-    label: $localize`:@@conditionalAccess.mimeType:MIME type`,
+    label: $localize`:@@conditionalAccess.mimeType:MIME Type`,
     kind: "select",
     options: ["plain", "html"]
   },

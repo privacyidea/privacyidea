@@ -30,7 +30,7 @@ import { DialogAction } from "@models/dialog";
   styleUrl: "./free-tier-dialog.component.scss"
 })
 export class FreeTierDialogComponent extends AbstractDialogComponent<void, void> {
-  readonly dialogTitle = $localize`:@@welcome.addedValuePrivacyidea:The added value of privacyIDEA Enterprise Edition`;
+  readonly dialogTitle = $localize`:@@welcome.addedValuePrivacyidea:The Added Value of privacyIDEA Enterprise Edition`;
   readonly dialogActions: DialogAction<"okay">[] = [
     {
       type: "confirm",

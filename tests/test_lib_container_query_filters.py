@@ -13,6 +13,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
+from privacyidea.models import TokenContainerOwner
 from .base import MyTestCase, PWFILE, PWFILE2
 
 
@@ -79,3 +80,98 @@ class ContainerQueryFilterTestCase(MyTestCase):
         token = create_container_dict([container], logged_in_user_role="admin", hide_token_info=["hiddenkey"])[0][
             "tokens"][0]
         self.assertNotIn("hiddenkey", token["info"], token)
+
+
+class ContainerPaginationTestCase(MyTestCase):
+    """
+    A container is counted and paged once, however many of its realms or owners match the filters.
+    """
+
+    serial_wildcard = "QP*"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        save_resolver({"resolver": cls.resolvername1, "type": "passwdresolver", "fileName": PWFILE})
+        set_realm(cls.realm1, [{"name": cls.resolvername1}])
+        set_realm(cls.realm2, [{"name": cls.resolvername1}])
+        for serial, realms in [("QP_A", [cls.realm1, cls.realm2]), ("QP_B", [cls.realm1, cls.realm2]),
+                               ("QP_C", [cls.realm1])]:
+            init_container({"type": "generic", "container_serial": serial})
+            set_container_realms(serial, realms, allowed_realms=None)
+        user = User("cornelius", cls.realm1, cls.resolvername1)
+        assign_user("QP_A", user)
+        assign_user("QP_B", user)
+        # The database does not prevent a second owner row, only assign_user does
+        TokenContainerOwner(container_serial="QP_A", resolver=user.resolver,
+                            user_id=user.uid, realm_id=user.realm_id).save()
+
+    def assert_paged_once(self, expected_pages: list[list[str]] | None = None, **filters: Any) -> None:
+        if expected_pages is None:
+            expected_pages = [["QP_A", "QP_B"], ["QP_C"]]
+        pages = []
+        for page in range(1, len(expected_pages) + 1):
+            result = get_all_containers(serial=self.serial_wildcard, page=page, pagesize=2, **filters)
+            self.assertEqual(sum(len(serials) for serials in expected_pages), result["count"], result)
+            pages.append([container.serial for container in result["containers"]])
+        self.assertListEqual(expected_pages, pages)
+
+    def test_01_allowed_realms(self):
+        self.assert_paged_once(allowed_realms=[self.realm1, self.realm2])
+
+    def test_02_realm_wildcard(self):
+        self.assert_paged_once(realm="realm*")
+
+    def test_03_realm_wildcard_and_allowed_realms(self):
+        self.assert_paged_once(realm="realm*", allowed_realms=[self.realm1, self.realm2])
+
+    def test_04_user_with_two_owner_rows(self):
+        self.assert_paged_once([["QP_A", "QP_B"]], user=User("cornelius", self.realm1, self.resolvername1))
+        self.assert_paged_once([["QP_A", "QP_B"]], user=User(realm=self.realm1))
+
+    def test_05_the_container_id_orders_equal_sort_values(self):
+        # All containers have the same type, so only the id gives the pages a fixed order
+        self.assert_paged_once(sortby="type")
+        self.assert_paged_once([["QP_C", "QP_B"], ["QP_A"]], sortby="type", sortdir="desc")
+
+
+class ContainerOwnerFilterTestCase(MyTestCase):
+    """
+    The database allows several owners for one container: the user filter and the resolver filter apply to the same
+    owner.
+    """
+
+    serial_wildcard = "QO*"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        save_resolver({"resolver": cls.resolvername1, "type": "passwdresolver", "fileName": PWFILE})
+        save_resolver({"resolver": cls.resolvername3, "type": "passwdresolver", "fileName": PWFILE2})
+        set_realm(cls.realm1, [{"name": cls.resolvername1}])
+        set_realm(cls.realm2, [{"name": cls.resolvername3}])
+        init_container({"type": "generic", "container_serial": "QO_TWO_OWNERS"})
+        assign_user("QO_TWO_OWNERS", User("cornelius", cls.realm1, cls.resolvername1))
+        # assign_user refuses a second owner, so the second owner row is written directly
+        franzi = User("franzi", cls.realm2, cls.resolvername3)
+        TokenContainerOwner(container_serial="QO_TWO_OWNERS", resolver=franzi.resolver, user_id=franzi.uid,
+                            realm_id=franzi.realm_id).save()
+
+    def serials(self, **filters: Any) -> set[str]:
+        return {container.serial
+                for container in get_all_containers(serial=self.serial_wildcard, **filters)["containers"]}
+
+    def test_01_each_owner_matches_its_own_realm_and_resolver(self):
+        self.assertSetEqual({"QO_TWO_OWNERS"}, self.serials(resolver=self.resolvername3))
+        self.assertSetEqual({"QO_TWO_OWNERS"}, self.serials(user=User(realm=self.realm1), resolver=self.resolvername1))
+        self.assertSetEqual({"QO_TWO_OWNERS"}, self.serials(user=User(realm=self.realm2), resolver="*3"))
+        self.assertSetEqual({"QO_TWO_OWNERS"},
+                            self.serials(user=User("franzi", self.realm2, self.resolvername3),
+                                         resolver=self.resolvername3))
+
+    def test_02_no_owner_matches_the_realm_of_one_owner_and_the_resolver_of_the_other(self):
+        self.assertSetEqual(set(), self.serials(user=User(realm=self.realm1), resolver=self.resolvername3))
+        self.assertSetEqual(set(), self.serials(user=User(realm=self.realm2), resolver=self.resolvername1))
+        self.assertSetEqual(set(), self.serials(user=User(realm=self.realm1), resolver="*3"))
+        self.assertSetEqual(set(), self.serials(user=User("cornelius", self.realm1, self.resolvername1),
+                                                resolver=self.resolvername3))

@@ -69,6 +69,15 @@ describe("MultiSelectOnlyComponent", () => {
       fixture.detectChanges();
       expect(component.triggerValue()).toBe("");
     });
+
+    it("should show the hint below the select and describe the select with it", () => {
+      expect(fixture.nativeElement.querySelector("mat-hint")).toBeNull();
+      fixture.componentRef.setInput("hint", "Only some items");
+      fixture.detectChanges();
+      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint");
+      expect(hint.textContent!.trim()).toBe("Only some items");
+      expect(fixture.nativeElement.querySelector("mat-select").getAttribute("aria-describedby")).toContain(hint.id);
+    });
   });
 
   describe("Single Selection (Toggle)", () => {
