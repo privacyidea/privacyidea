@@ -1171,3 +1171,44 @@ class OrphanedTokenTestCase(MyTestCase):
         finally:
             for serial in ["PARITYNOUSERID", "PARITYEMPTYUSERID"]:
                 remove_token(serial)
+
+    def test_21_the_fallback_of_a_failing_batch_tells_an_unreachable_store_from_a_deleted_user(self) -> None:
+        tokens = get_tokens(serial="ORPHUNREACHABLE")
+        # A resolver whose batch lookup raises, like one that does not know the unresolvable_ids parameter
+        with (mock.patch.object(HTTPResolver, "get_usernames_batch",
+                                side_effect=TypeError("unexpected keyword argument 'unresolvable_ids'")),
+              mock.patch.object(HTTPResolver, "getUsername", return_value="") as http_get_username,
+              mock.patch.object(HTTPResolver, "lookup_username",
+                                side_effect=ResolverError("not reachable")) as http_lookup_username):
+            # The fallback asks the user store the way the batch does, so a store that can not be reached
+            # leaves the decision to orphaned_on_error instead of reading like a user that was deleted
+            self.assertSetEqual(set(), get_orphaned_serials(tokens, orphaned_on_error=False))
+            self.assertSetEqual({"ORPHUNREACHABLE"}, get_orphaned_serials(tokens, orphaned_on_error=True))
+
+        self.assertEqual(0, http_get_username.call_count, http_get_username.call_args_list)
+        self.assertEqual(2, http_lookup_username.call_count, http_lookup_username.call_args_list)
+
+    @ldap3mock.activate
+    def test_22_the_redis_user_cache_is_read_and_written_in_chunks(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        for user_id in range(4):
+            token = init_token({"type": "spass", "serial": f"CHUNKCACHE{user_id}"})
+            TokenOwner(token_id=token.token.id, user_id=str(user_id), resolver="orphanldap",
+                       realmname="orphanldaprealm").save()
+        tokens = get_tokens(serial_wildcard="CHUNKCACHE*")
+        self.assertEqual(4, len(tokens), tokens)
+
+        client = CountingRedisClient()
+        chunked = token_query._chunked
+        try:
+            with (mock.patch.object(token_query, "_chunked", lambda items: chunked(items, size=2)),
+                  mock.patch("privacyidea.lib.cache.user._cache_client", return_value=client)):
+                self.assertSetEqual(set(), get_orphaned_serials(tokens))
+        finally:
+            for user_id in range(4):
+                remove_token(f"CHUNKCACHE{user_id}")
+
+        # Redis runs one command at a time, so neither the read nor the write of a whole run may grow
+        # into a single command over every owner, which would block every authentication while it runs
+        self.assertEqual(2, client.mget.call_count, client.mget.call_args_list)
+        self.assertEqual(2, client.pipeline.call_count, client.pipeline.call_args_list)

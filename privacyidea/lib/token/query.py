@@ -612,13 +612,15 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
             unresolvable_owners.update((resolver_name, user_id) for user_id in unresolvable_ids)
         except Exception as batch_error:
             # A failing batch must not cost the whole page. Fall back to looking the users of this
-            # resolver up one by one, so that only the ones that keep failing are marked.
+            # resolver up one by one, so that only the ones that keep failing are marked. The single
+            # lookup is lookup_username, the one the batch uses as well, so that a user store which
+            # can not be reached is marked instead of reading like a user that does not exist.
             log.error(f"User information can not be retrieved in one batch: {batch_error!s}")
             log.debug(traceback.format_exc())
             login_map = {}
             for user_id in user_ids:
                 try:
-                    login_map[user_id] = resolver.getUsername(user_id)
+                    login_map[user_id] = resolver.lookup_username(user_id)
                 except Exception as user_error:
                     log.error(f"User information can not be retrieved: {user_error!s}")
                     log.debug(traceback.format_exc())
@@ -654,7 +656,10 @@ def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
             log.debug(traceback.format_exc())
             db.session.rollback()
         uncached_user_ids = [user_id for user_id in user_ids if not cached_logins.get(user_id)]
-        cached_logins.update(read_cached_usernames(resolver_name, uncached_user_ids))
+        # Redis runs one command at a time, so the read is split like the query above: a single
+        # MGET over every owner of a run would hold up every authentication while it runs
+        for chunk in _chunked(uncached_user_ids):
+            cached_logins.update(read_cached_usernames(resolver_name, chunk))
         for user_id in user_ids:
             login = cached_logins.get(user_id)
             if login:
@@ -665,7 +670,8 @@ def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
 def _write_back_logins(login_by_owner: dict[tuple[str, str], str]) -> None:
     """
     Write the login names that were looked up in the user stores to both user caches, with one insert
-    and one Redis round trip per resolver, as a ``User`` built for each owner would have cached them.
+    per resolver and one Redis round trip per chunk, as a ``User`` built for each owner would have
+    cached them.
 
     :param login_by_owner: The login name keyed by (resolver name, user ID). Empty login names are skipped.
     """
@@ -674,7 +680,10 @@ def _write_back_logins(login_by_owner: dict[tuple[str, str], str]) -> None:
         if login:
             login_by_user_id_by_resolver.setdefault(resolver_name, {})[user_id] = login
     for resolver_name, login_by_user_id in login_by_user_id_by_resolver.items():
-        write_cached_usernames(resolver_name, login_by_user_id)
+        # One Redis round trip per chunk, like the read, so that neither the pipeline of writes nor
+        # the index it extends grows with the number of owners a run looked up
+        for chunk in _chunked(list(login_by_user_id)):
+            write_cached_usernames(resolver_name, {user_id: login_by_user_id[user_id] for user_id in chunk})
         try:
             add_many_to_cache(resolver_name, login_by_user_id)
         except Exception as cache_error:
