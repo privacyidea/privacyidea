@@ -179,8 +179,8 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     """
     Generates a sql query to filter containers by the given parameters.
 
-    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
-        independently, hence a user object carrying only a realm lists the containers of all users of that
+    :param user: container owner, optional. The realm, the resolver and the user id of the user only apply if
+        they are set, hence a user object carrying only a realm lists the containers of all users of that
         realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
         and therefore does not filter at all. Since only assigned containers have an owner, a user object
         never matches an unassigned container, and neither does a realm that does not exist. Raises a
@@ -193,14 +193,15 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
         wildcard), optional
     :param realm: realm name to filter by (case-insensitive and allows '*' as wildcard), optional
     :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
-        empty list if none is), optional.
-        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
-        container is returned.
+        empty list if none is), optional. A container matches if one of its realms is in the list. This condition
+        is independent of the realm filter: a container in the realms A and B matches the realm "A" with the
+        allowed realms ["B"].
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as
         wildcard), optional
     :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param assigned: True if the container is assigned to a user, False if not, optional
-    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional. If a user is
+        given too, the user and the resolver must match the same owner of the container.
     :param info: The info dictionary in the format {key: value} of length 1, optional
         Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
     :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
@@ -213,6 +214,9 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     :return: sql query
     """
     stmt = select(TokenContainer)
+    # The conditions of the user filter and of the resolver filter apply to the same owner, because a container can
+    # have several owners in the database. None means that the query does not filter by the owner.
+    owner_conditions = None
     if user:
         realm_db = None
         if user.realm:
@@ -229,7 +233,7 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                 # the resolver of the user may be used as a fallback filter, because the query would then
                 # return the containers of all users of that realm or resolver.
                 raise UserError("The user can not be found in any resolver in this realm!")
-            # The realm, the resolver and the user id are applied independently, so that the containers of
+            # The realm, the resolver and the user id only apply if they are set, so that the containers of
             # all users of a realm can be listed without specifying a username.
             owner_conditions = []
             if realm_db:
@@ -242,7 +246,18 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
                     owner_conditions.append(func.lower(TokenContainerOwner.resolver) == user.resolver.lower())
             if user.uid:
                 owner_conditions.append(TokenContainerOwner.user_id == user.uid)
-            stmt = stmt.where(TokenContainer.owners.any(and_(true(), *owner_conditions)))
+
+    if resolver and resolver.strip("*"):
+        if owner_conditions is None:
+            owner_conditions = []
+        if "*" in resolver:
+            owner_conditions.append(TokenContainerOwner.resolver.ilike(
+                convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE))
+        else:
+            owner_conditions.append(func.lower(TokenContainerOwner.resolver) == resolver.lower())
+
+    if owner_conditions is not None:
+        stmt = stmt.where(TokenContainer.owners.any(and_(true(), *owner_conditions)))
 
     if serial and serial.strip("*"):
         if "*" in serial:
@@ -284,17 +299,6 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     if allowed_realms is not None:
         allowed_realms = [r.lower() for r in allowed_realms]
         stmt = stmt.where(TokenContainer.realms.any(func.lower(Realm.name).in_(allowed_realms)))
-
-    if resolver and resolver.strip("*"):
-        if "*" in resolver:
-            stmt = stmt.where(TokenContainer.owners.any(
-                TokenContainerOwner.resolver.ilike(
-                    convert_wildcard_to_sql_like(resolver), escape=SQL_LIKE_ESCAPE)
-            ))
-        else:
-            stmt = stmt.where(TokenContainer.owners.any(
-                func.lower(TokenContainerOwner.resolver) == resolver.lower()
-            ))
 
     if template and template.strip("*"):
         if "*" in template:
@@ -371,10 +375,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
     else:
         sort_col = sortby
 
+    # Containers with the same value in the sort column are ordered by their id. Without a fixed order, the database
+    # can order them differently for each page, and a container then appears on two pages or on none.
     if sortdir == "desc":
-        stmt = stmt.order_by(sort_col.desc())
+        stmt = stmt.order_by(sort_col.desc(), TokenContainer.id.desc())
     else:
-        stmt = stmt.order_by(sort_col.asc())
+        stmt = stmt.order_by(sort_col.asc(), TokenContainer.id.asc())
     # print("----------------------------- CREATE CONTAINER QUERY -----------------------------")
     # from sqlalchemy.dialects import postgresql
     # print(stmt.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
@@ -397,8 +403,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     the next or previous page. If page and pagesize are both smaller than 0, no pagination is used.
     The containers are filtered by the given parameters.
 
-    :param user: container owner, optional. The realm, the resolver and the user id of the user are applied
-        independently, hence a user object carrying only a realm lists the containers of all users of that
+    :param user: container owner, optional. The realm, the resolver and the user id of the user only apply if
+        they are set, hence a user object carrying only a realm lists the containers of all users of that
         realm. Note that a user object with only a resolver is empty (User.is_empty ignores the resolver)
         and therefore does not filter at all. Since only assigned containers have an owner, a user object
         never matches an unassigned container, and neither does a realm that does not exist. Raises a
@@ -411,14 +417,15 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
         as wildcard), optional
     :param realm: name of the realm the container is assigned to (case-insensitive and allows '*' as wildcard), optional
     :param allowed_realms: list of realms the user is allowed to see (None if all realms are allowed and an
-        empty list if none is), optional.
-        If realms and allowed_realms are given, the intersection of both lists is used. If there is no intersection, no
-        container is returned.
+        empty list if none is), optional. A container matches if one of its realms is in the list. This condition
+        is independent of the realm filter: a container in the realms A and B matches the realm "A" with the
+        allowed realms ["B"].
     :param template: The name of the template the container was created with (case-sensitive and allows '*' as wildcard)
         , optional
     :param description: The description of the container (case-insensitive and allows '*' as wildcard), optional
     :param assigned: True if the container is assigned to a user, False otherwise, optional
-    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional
+    :param resolver: The resolver of the user (case-insensitive and allows '*' as wildcard), optional. If a user is
+        given too, the user and the resolver must match the same owner of the container.
     :param info: The info dictionary in the format {key: value} of length 1, optional
         Both key and value can contain '*' as wildcard. key is case-sensitive, value is case-insensitive.
     :param last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
@@ -446,7 +453,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, sql_query, "containers")
     else:  # No pagination
-        ret["containers"] = db.session.scalars(sql_query).unique().all()
+        ret["containers"] = db.session.scalars(sql_query).all()
 
     container_list = [create_container_from_db_object(db_container) for db_container in ret["containers"]]
     ret["containers"] = container_list
@@ -472,12 +479,15 @@ def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[Toke
     last_id = None
     while True:
         page_query = sql_query if last_id is None else sql_query.where(TokenContainer.id > last_id)
-        db_containers = db.session.scalars(page_query.limit(pagesize)).unique().all()
+        db_containers = db.session.scalars(page_query.limit(pagesize)).all()
         if not db_containers:
             break
         last_id = db_containers[-1].id
         containers = [create_container_from_db_object(db_container) for db_container in db_containers]
         yield [container for container in containers if container]
+        # The query returns each container in one row, so a page that is not full is the last page
+        if len(db_containers) < pagesize:
+            break
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Select,
@@ -498,7 +508,7 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
 
     offset = (page - 1) * pagesize
     paginated_query = sql_query.limit(pagesize).offset(offset)
-    db_objects = db.session.scalars(paginated_query).unique().all()
+    db_objects = db.session.scalars(paginated_query).all()
 
     # Get total count
     count_query = select(func.count()).select_from(sql_query.subquery())

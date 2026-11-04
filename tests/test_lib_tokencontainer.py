@@ -2966,7 +2966,7 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
         for serial in serials:
             find_container_by_serial(serial).delete()
 
-    def test_02_generator_yields_a_container_matched_by_several_rows_once(self):
+    def test_02_generator_yields_a_container_in_several_realms_once(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         serials = []
@@ -2975,7 +2975,7 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
             set_container_realms(serial, [self.realm1, self.realm2], allowed_realms=None)
             serials.append(serial)
 
-        # The realm wildcard matches both realms of each container, so the query returns every container twice
+        # The realm wildcard matches both realms of each container, but each container is yielded once
         visited_serials = [container.serial
                            for containers in get_container_generator(pagesize=1, realm="realm*")
                            for container in containers]
