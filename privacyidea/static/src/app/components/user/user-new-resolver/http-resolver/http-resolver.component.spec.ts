@@ -273,7 +273,7 @@ describe("HttpResolverComponent", () => {
 
       expect(component.model().hasSpecialErrorHandler).toBe(true);
       expect(component.model().Editable).toBe(false);
-      expect(fixture.nativeElement.textContent).toContain("Response contains (JSON Format)");
+      expect(fixture.nativeElement.textContent).toContain("Response Contains (JSON Format)");
       expect(component.getValue()).toEqual(expect.objectContaining({ hasSpecialErrorHandler: true, Editable: false }));
     });
 

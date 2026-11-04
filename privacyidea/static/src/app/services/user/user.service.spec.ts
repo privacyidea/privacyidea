@@ -606,6 +606,16 @@ describe("UserService", () => {
   });
 
   describe("editableAttributesResource / attributePolicy", () => {
+    it("sends no user or attribute request while the details user is empty", () => {
+      contentServiceMock.onUserDetails = signal(true);
+      contentServiceMock.detailsUser.set({ username: "", realm: "" });
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url.includes("/user/editable_attributes"));
+      httpMock.expectNone((r) => r.url.includes("/user/attribute"));
+      httpMock.expectNone((r) => r.url.includes("/user/internal_attribute"));
+    });
+
     it("attributePolicy falls back to default when resource empty", () => {
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
     });
@@ -707,6 +717,15 @@ describe("UserService", () => {
       await Promise.resolve();
 
       expect(userService.userResource.value()).toBeUndefined();
+    });
+
+    it("sends no request on user details while the details user is empty and the role is admin", () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/");
+      contentServiceMock.onUserDetails = signal(true);
+      userService.detailsUser.set({ username: "", realm: "" });
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/user/");
     });
 
     it("should do request if route is USER_DETAILS", async () => {

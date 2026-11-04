@@ -48,6 +48,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
+  checkAllResolversWithoutResolver,
   hasUnescapedComma,
   PolicyDetail,
   PolicyService,
@@ -123,6 +124,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
     );
   });
+  readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.editedPolicy()));
   readonly canSave = computed(
     () =>
       this.savingName() === null &&
@@ -130,7 +132,8 @@ export class PolicyEditPageComponent implements OnDestroy {
       !!this.editedPolicy().name?.trim() &&
       /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
       !this.nameTaken() &&
-      !Object.values(this.editedPolicy().action ?? {}).some(hasUnescapedComma)
+      !Object.values(this.editedPolicy().action ?? {}).some(hasUnescapedComma) &&
+      !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>
     this.mode() === "edit"
@@ -276,7 +279,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`:@@common.discardChanges:Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard Changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }

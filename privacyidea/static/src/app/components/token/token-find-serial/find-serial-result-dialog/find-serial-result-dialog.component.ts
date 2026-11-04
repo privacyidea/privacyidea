@@ -17,11 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 
 export interface GetSerialResultDialogData {
@@ -41,7 +40,7 @@ export class FindSerialResultDialogComponent extends AbstractDialogComponent<
   GetSerialResultDialogData,
   GetSerialResultDialogReturn
 > {
-  readonly router = inject(Router);
+  readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   action: DialogAction<GetSerialResultDialogReturn> = {
@@ -52,7 +51,7 @@ export class FindSerialResultDialogComponent extends AbstractDialogComponent<
 
   onClickSerial() {
     const serial = this.data.foundSerial;
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
+    this.contentService.tokenSelected(serial);
     this.dialogService.closeAllDialogs();
   }
 

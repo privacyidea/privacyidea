@@ -141,10 +141,10 @@
                       @if (element[column.key]) {
                         <app-copyable [copyText]="element[column.key]">
                           <a
-                            (click)="onClickUsername(element)"
                             [appTruncationTooltip]="element[column.key]"
                             class="cell-truncate"
-                            routerLink="/users/details/{{ element.username }}">
+                            [routerLink]="[ROUTE_PATHS.USERS_DETAILS, element.username]"
+                            [queryParams]="{ realm: userService.selectedUserRealm() }">
                             {{ element[column.key] }}
                           </a>
                         </app-copyable>

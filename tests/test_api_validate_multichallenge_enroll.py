@@ -165,6 +165,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertEqual("Please scan the QR code and enter the OTP value!", detail.get("messages")[0])
             serial = detail.get("serial")
         self.reset_flask_g()
+        # The enrollment challenge is logged as a challenge step, not as the completed login
+        audit_entry = self.find_most_recent_audit_entry(action='POST /validate/check')
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, audit_entry["authentication"], audit_entry)
+        self.assertEqual(0, audit_entry["success"], audit_entry)
 
         # 3. scan the qrcode / Get the OTP value
         token_obj = get_tokens(serial=serial)[0]

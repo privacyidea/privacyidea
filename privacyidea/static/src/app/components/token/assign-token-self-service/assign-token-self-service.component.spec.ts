@@ -18,10 +18,9 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { Router } from "@angular/router";
 import { ContentService } from "@services/content/content.service";
 import { TokenService } from "@services/token/token.service";
-import { MockContentService, MockRouter, MockTokenService } from "@testing/mock-services";
+import { MockContentService, MockTokenService } from "@testing/mock-services";
 import { of } from "rxjs";
 import { AssignTokenSelfServiceComponent } from "./assign-token-self-service.component";
 
@@ -30,14 +29,12 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
   let component: AssignTokenSelfServiceComponent;
 
   let tokenService: MockTokenService;
-  let routerMock: MockRouter;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AssignTokenSelfServiceComponent],
       providers: [
         provideHttpClient(),
-        { provide: Router, useClass: MockRouter },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService }
       ]
@@ -46,7 +43,6 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     fixture = TestBed.createComponent(AssignTokenSelfServiceComponent);
     component = fixture.componentInstance;
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    routerMock = TestBed.inject(Router) as unknown as MockRouter;
     tokenService.assignUser.mockReturnValue(of(null));
 
     fixture.detectChanges();
@@ -60,7 +56,7 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     expect(component).toBeTruthy();
   });
 
-  it("assignUserToToken: calls service, navigates to details, and updates tokenSerial", () => {
+  it("assignUserToToken: calls service, opens the token details", () => {
     const serial = "TKN-123";
     const pin = "1234";
 
@@ -77,8 +73,6 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
       pin
     });
 
-    expect(routerMock.navigateByUrl).toHaveBeenCalledTimes(1);
-    expect(routerMock.navigateByUrl).toHaveBeenCalledWith(expect.stringContaining(serial));
-    expect(tokenService.tokenSerial()).toBe(serial);
+    expect(TestBed.inject(ContentService).tokenSelected).toHaveBeenCalledWith(serial);
   });
 });

@@ -207,7 +207,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
 
   editableAttributesResource = httpResource<PiResponse<UserAttributePolicy>>(() => {
     // Only load editable user attributes on the user details page.
-    if (!this.onAttributesPage()) {
+    if (!this.onAttributesPage() || !this.attributeOwner().username) {
       return undefined;
     }
 
@@ -255,7 +255,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
 
   userAttributesResource = httpResource<PiResponse<Record<string, AttributeValue>>>(() => {
     // Only load user attributes on the user details page.
-    if (!this.onAttributesPage()) {
+    if (!this.onAttributesPage() || !this.attributeOwner().username) {
       return undefined;
     }
 
@@ -283,7 +283,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
     // Only load internal attributes on the user details page, and only for
     // admins that hold the get_user_internal_attributes right (self-service
     // users never do, as it's an admin-only policy).
-    if (!this.contentService.onUserDetails()) {
+    if (!this.contentService.onUserDetails() || !this.detailsUser().username) {
       return undefined;
     }
     if (!this.authService.actionAllowed("get_user_internal_attributes")) {
@@ -419,6 +419,10 @@ export class UserService extends FilterableTableService implements UserServiceIn
     }
     // Only load user details on the user details page for admins and always for users.
     if (!this.contentService.onUserDetails() && this.authService.role() !== "user") {
+      return undefined;
+    }
+    // An admin's user details page names its user in the URL; without one there is nothing to request.
+    if (this.contentService.onUserDetails() && !this.detailsUser().username) {
       return undefined;
     }
 
