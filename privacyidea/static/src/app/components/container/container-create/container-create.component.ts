@@ -302,8 +302,7 @@ export class ContainerCreateComponent implements OnInit, OnDestroy {
   }
 
   protected onCreationSuccess(serial: string) {
-    this.containerService.containerSerial.set(serial);
-    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_DETAILS + serial);
+    this.router.navigate([ROUTE_PATHS.CONTAINERS_DETAILS, serial]);
   }
 
   protected registerContainer(serial: string, regenerate = false) {

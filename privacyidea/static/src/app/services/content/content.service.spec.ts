@@ -31,6 +31,7 @@ describe("ContentService", () => {
     url: string;
     events: Subject<NavigationEnd>;
     navigateByUrl: jest.Mock<Promise<boolean>, [string]>;
+    navigate: jest.Mock<Promise<boolean>, [unknown[], { queryParams?: Record<string, string> }?]>;
   };
 
   const emitNav = (url: string) => {
@@ -45,6 +46,14 @@ describe("ContentService", () => {
       events: events$,
       navigateByUrl: jest.fn(async (url: string) => {
         emitNav(url);
+        return true;
+      }),
+      // Stands in for the router: joins the commands like router.navigate does and emits the resulting URL.
+      navigate: jest.fn(async (commands: unknown[], extras?: { queryParams?: Record<string, string> }) => {
+        const [base, ...rest] = commands as string[];
+        const path = [base.replace(/\/$/, ""), ...rest.map((segment) => encodeURIComponent(segment))].join("/");
+        const query = extras?.queryParams ? "?" + new URLSearchParams(extras.queryParams).toString() : "";
+        emitNav(path + query);
         return true;
       })
     };
@@ -344,7 +353,7 @@ describe("ContentService", () => {
       emitNav("/containers");
       service.tokenSelected("SER1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(mockRouter.navigate).toHaveBeenCalledWith([ROUTE_PATHS.TOKENS_DETAILS, "SER1"]);
       expect(service.tokenSerial()).toBe("SER1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
       expect(service.previousUrl()).toBe("/containers");
@@ -356,7 +365,9 @@ describe("ContentService", () => {
       emitNav("/tokens");
       service.userSelected("alice", "themis");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(mockRouter.navigate).toHaveBeenCalledWith([ROUTE_PATHS.USERS_DETAILS, "alice"], {
+        queryParams: { realm: "themis" }
+      });
       expect(service.detailsUser().username).toBe("alice");
       expect(service.detailsUser().realm).toBe("themis");
     });
@@ -365,7 +376,9 @@ describe("ContentService", () => {
       emitNav("/tokens");
       service.userSelected("alice", undefined as unknown as string);
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=");
+      expect(mockRouter.navigate).toHaveBeenCalledWith([ROUTE_PATHS.USERS_DETAILS, "alice"], {
+        queryParams: { realm: "" }
+      });
       expect(service.detailsUser().realm).toBe("");
     });
   });
@@ -375,18 +388,14 @@ describe("ContentService", () => {
       emitNav("/tokens");
       service.navigateContainerDetails("C1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_DETAILS + "C1");
+      expect(mockRouter.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_DETAILS, "C1"]);
       expect(service.containerSerial()).toBe("C1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.CONTAINERS_DETAILS + "C1");
       expect(service.previousUrl()).toBe("/tokens");
     });
 
     it("recovers the serial from the URL after a browser back then forward", () => {
-      // A back/forward pair only ever fires NavigationEnd (real popstate navigation, not
-      // navigateContainerDetails), so nothing ever calls containerSerial.set() again. Before this
-      // was fixed, the details branch below carried the previous value forward instead of reading
-      // the URL, and the intervening "back" to another route had already reset that previous value
-      // to "" - so "forward" landed back on the details route with the serial stuck empty forever.
+      // A back/forward pair only ever fires NavigationEnd, never navigateContainerDetails.
       service.navigateContainerDetails("C1");
       expect(service.containerSerial()).toBe("C1");
 
@@ -395,6 +404,87 @@ describe("ContentService", () => {
 
       emitNav(ROUTE_PATHS.CONTAINERS_DETAILS + "C1"); // forward
       expect(service.containerSerial()).toBe("C1");
+    });
+  });
+
+  describe("detailsUser from the URL", () => {
+    it("is set by navigating to the details URL without userSelected()", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+    });
+
+    it("decodes an encoded login", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent("a b/ü@x") + "?realm=r%201");
+      expect(service.detailsUser()).toEqual({ username: "a b/ü@x", realm: "r 1" });
+    });
+
+    it("is empty on a details URL without a login and takes the realm of that URL", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/?realm=other");
+      expect(service.detailsUser()).toEqual({ username: "", realm: "other" });
+    });
+
+    it("ignores matrix parameters of the login segment", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice;x=1?realm=themis");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+    });
+
+    it("is empty before any details URL was opened", () => {
+      emitNav("/tokens");
+      expect(service.detailsUser()).toEqual({ username: "", realm: "" });
+      expect(service.tokenSerial()).toBe("");
+    });
+
+    it("gives an empty realm when the query parameter is missing", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "" });
+    });
+
+    it("restores the user after a browser back then forward", () => {
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser().username).toBe("alice");
+      emitNav("/tokens");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/bob?realm=other");
+      expect(service.detailsUser()).toEqual({ username: "bob", realm: "other" });
+      emitNav(ROUTE_PATHS.USERS_DETAILS + "/alice?realm=themis");
+      expect(service.detailsUser()).toEqual({ username: "alice", realm: "themis" });
+    });
+  });
+
+  describe("tokenSerial from the URL", () => {
+    it("is set by navigating to the details URL without tokenSelected()", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(service.tokenSerial()).toBe("SER1");
+    });
+
+    it("decodes an encoded serial", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent("A/B 1"));
+      expect(service.tokenSerial()).toBe("A/B 1");
+    });
+
+    it("keeps the previous serial on a details URL without a serial", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(service.tokenSerial()).toBe("SER1");
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS);
+      expect(service.tokenSerial()).toBe("SER1");
+    });
+
+    it("keeps a value set by another flow off the details page", () => {
+      emitNav("/tokens/enrollment");
+      service.tokenSerial.set("ENROLL1");
+      emitNav("/tokens");
+      expect(service.tokenSerial()).toBe("ENROLL1");
+    });
+
+    it("restores the serial after a browser back then forward", () => {
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      emitNav("/tokens");
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER2");
+      expect(service.tokenSerial()).toBe("SER2");
+      emitNav(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
+      expect(service.tokenSerial()).toBe("SER1");
     });
   });
 
