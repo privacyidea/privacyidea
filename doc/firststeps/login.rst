@@ -40,7 +40,8 @@ See :ref:`pimanage_admin`. The administrator just logs in with his username.
    (e.g. ``username@adminrealm``). For them, a ``login_mode`` policy with the
    value ``privacyIDEA`` requires a token at the login, unless an
    authentication policy such as ``passthru`` or ``passOnNoToken`` matches
-   them. See :ref:`faq_admins` how to set this up.
+   them. See :ref:`faq_admins` how to set this up. Keep local administrators for the
+   first setup and for recovery work only.
 
 
 Login for normal users

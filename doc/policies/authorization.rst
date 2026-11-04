@@ -101,6 +101,9 @@ number.
 This is checked after the authentication request, so a valid OTP value will be
 used up, even if the user was not authorized with this request.
 
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
+
 .. note:: Combining this with the client IP
    you can use this to allow remote access to
    sensitive areas only with hardware tokens
@@ -132,6 +135,9 @@ Example::
    action = last_auth/^2018.*/
 
 This would mean the tokeninfo field needs to start with "2018".
+
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
 
 .. versionadded:: 2.22
 
@@ -189,6 +195,9 @@ the authentication request failed.
 If this action is set and the user authenticated successfully
 this additional information will not be returned.
 
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
+
 .. _policy_no_detail_on_fail:
 
 no_detail_on_fail
@@ -206,6 +215,9 @@ the authentication request failed.
 
 If this action is set and the user fails to authenticate
 this additional information will not be returned.
+
+privacyIDEA does not check the realm, resolver and user of this policy: a policy for one
+realm also applies to the users of other realms. See :ref:`policy_condition_checks`.
 
 .. note:: This policy does **not** mask an error message configured for
    :ref:`conditional_access`. Such a message exists only because an
