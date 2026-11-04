@@ -65,6 +65,14 @@ describe("UserDetailsSelfServiceComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("removes its pending-changes registrations when it is destroyed", () => {
+    expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+
+    fixture.destroy();
+
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalledTimes(1);
+  });
+
   describe("editing the own user data", () => {
     const ownData: UserData = {
       username: "alice",
@@ -116,6 +124,21 @@ describe("UserDetailsSelfServiceComponent", () => {
       expect(fixture.nativeElement.querySelector("app-user-details-edit")).not.toBeNull();
     });
 
+    it("offers only the standard attributes the own record contains", () => {
+      allowUpdate();
+      userServiceMock.user.set({
+        username: "alice",
+        givenname: "Alice",
+        email: "alice@example.org",
+        editable: true
+      } as UserData);
+      fixture.detectChanges();
+      editButton()!.click();
+
+      expect(component.editableFields()).toEqual(["givenname", "email"]);
+      expect(Object.keys(component.editedUserData())).toEqual(["username", "givenname", "email"]);
+    });
+
     it("saves the edited data for the own account and leaves edit mode", async () => {
       allowUpdate();
       userServiceMock.user.set(ownData);
@@ -129,6 +152,22 @@ describe("UserDetailsSelfServiceComponent", () => {
       expect(userServiceMock.editUser).toHaveBeenCalledWith("res1", { username: "alice", givenname: "Alicia" });
       expect(userServiceMock.userResource.reload).toHaveBeenCalled();
       expect(component.editMode()).toBe(false);
+    });
+
+    it("stays in edit mode with the edited data when saving fails", async () => {
+      allowUpdate();
+      userServiceMock.user.set(ownData);
+      userServiceMock.editUser.mockReturnValue(of(false));
+      fixture.detectChanges();
+      editButton()!.click();
+      component.onUpdateEditedUser({ username: "alice", givenname: "Alicia" });
+
+      const saved = await component.saveEdit();
+
+      expect(saved).toBe(false);
+      expect(userServiceMock.userResource.reload).not.toHaveBeenCalled();
+      expect(component.editMode()).toBe(true);
+      expect(component.editedUserData()).toEqual({ username: "alice", givenname: "Alicia" });
     });
 
     it("sends only the changed fields and keeps a multi-value attribute untouched", async () => {
