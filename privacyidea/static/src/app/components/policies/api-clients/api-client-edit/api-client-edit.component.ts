@@ -26,7 +26,7 @@ import { MatSelectModule } from "@angular/material/select";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ApiClientIssuedKeyBannerComponent } from "@components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component";
 import { ApiClientRememberedDevicesComponent } from "@components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -133,7 +133,7 @@ export class ApiClientEditComponent implements OnDestroy {
       // (e.g. navigating directly from one client's detail page to another's),
       // so a plaintext key just issued for the previous client must not linger.
       this.apiClientService.dismissIssuedKey();
-      const id = params.get("id");
+      const id = params.get(ROUTE_PARAMS.ID);
       this.isEditMode.set(!!id);
       this.editClientId.set(id);
       this.apiClientForm().reset();

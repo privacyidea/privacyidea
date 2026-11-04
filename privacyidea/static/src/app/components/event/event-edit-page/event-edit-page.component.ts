@@ -39,7 +39,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTab, MatTabGroup } from "@angular/material/tabs";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
@@ -158,7 +158,7 @@ export class EventEditPageComponent implements OnDestroy {
   constructor() {
     // Determine new vs edit mode from route
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const id = params.get("id");
+      const id = params.get(ROUTE_PARAMS.ID);
       if (id) {
         this.isNewEvent.set(false);
         this.editEventId = id;

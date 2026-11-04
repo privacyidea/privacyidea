@@ -16,6 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+/**
+ * The names of the route parameters that carry the key of a details page. `admin.routes.ts` declares them
+ * and the details pages read them, so both use these constants.
+ */
+export const ROUTE_PARAMS = {
+  ID: "id",
+  NAME: "name",
+  IDENTIFIER: "identifier"
+} as const;
+
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   PASSWORD_RECOVERY: "/recover",

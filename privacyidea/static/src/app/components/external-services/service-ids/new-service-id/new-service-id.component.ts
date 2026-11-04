@@ -27,7 +27,7 @@ import { MatIconModule } from "@angular/material/icon";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -76,7 +76,7 @@ export class NewServiceIdComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const serviceName = params.get("name");
+      const serviceName = params.get(ROUTE_PARAMS.NAME);
       if (serviceName) {
         this.isEditMode.set(true);
         this.editServiceName = serviceName;

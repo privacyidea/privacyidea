@@ -30,7 +30,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -439,7 +439,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const id = params.get("id");
+      const id = params.get(ROUTE_PARAMS.ID);
       if (id) {
         this.isNewPolicy.set(false);
         this.editPolicyId = id;
