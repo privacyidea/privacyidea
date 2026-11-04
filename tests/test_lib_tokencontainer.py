@@ -42,6 +42,7 @@ from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, Challenge, db
 from .base import MyTestCase
+from .test_lib_token_list_lookups import count_containing, count_statements
 
 
 class TokenContainerManagementTestCase(MyTestCase):
@@ -2981,6 +2982,20 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
                            for container in containers]
 
         self.assertListEqual(serials, visited_serials)
+        for serial in serials:
+            find_container_by_serial(serial).delete()
+
+    def test_02b_generator_sends_no_query_after_a_page_that_is_not_full(self):
+        serials = [init_container({"type": "generic", "description": "last page test"})["container_serial"]
+                   for _ in range(3)]
+
+        with count_statements() as statements:
+            pages = [[container.serial for container in containers]
+                     for containers in get_container_generator(pagesize=2, description="last page test")]
+
+        self.assertListEqual([serials[:2], serials[2:]], pages)
+        # The second page holds one container, so it is the last page: one page query for each of the two pages
+        self.assertEqual(2, count_containing(statements, "ORDER BY tokencontainer.id"))
         for serial in serials:
             find_container_by_serial(serial).delete()
 
