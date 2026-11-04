@@ -36,7 +36,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
                                    convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE, reload_db,
-                                   get_version, get_version_number, validate_path_identifier)
+                                   get_version, get_version_number, validate_path_identifier,
+                                   check_stored_secret_settings)
 from privacyidea.lib.params import require_in
 from privacyidea.lib import utils as privacyidea_utils
 from privacyidea.lib.utils import check_module_allowed
@@ -1352,3 +1353,26 @@ class ValidatePathIdentifierTestCase(MyTestCase):
         validate_path_identifier("send_test_email2", "SMTP server", reserved=("send_test_email",))
         validate_path_identifier("Send_Test_Email", "SMTP server", reserved=("send_test_email",))
         validate_path_identifier("send_test_email", "RADIUS server", reserved=("test_request",))
+
+
+class CheckStoredSecretSettingsTestCase(MyTestCase):
+    saved_settings = {"server": "1.2.3.4", "port": 1812}
+
+    def test_unchanged_settings(self):
+        check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
+                                     {"server": "1.2.3.4", "port": 1812}, "secret", "save")
+        # None means that the setting is not changed
+        check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
+                                     {"server": None, "port": None}, "secret", "save")
+
+    def test_changed_settings(self):
+        with self.assertRaises(ParameterError) as cm:
+            check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
+                                         {"server": "5.6.7.8", "port": 1645}, "secret", "test")
+        self.assertEqual("The settings server, port differ from the saved RADIUS server 'radius1'. "
+                         "Enter the secret to test the changed settings.", cm.exception.message)
+        with self.assertRaises(ParameterError) as cm:
+            check_stored_secret_settings("SMTP server", "mail1", {"server": "mail.example.com", "port": 25},
+                                         {"server": "mail.example.com", "port": 587}, "password", "save")
+        self.assertEqual("The settings port differ from the saved SMTP server 'mail1'. "
+                         "Enter the password to save the changed settings.", cm.exception.message)

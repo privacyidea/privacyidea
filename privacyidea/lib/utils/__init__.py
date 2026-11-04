@@ -966,6 +966,30 @@ def validate_path_identifier(identifier: str, kind: str, reserved: tuple[str, ..
                              f"for a route of its own.")
 
 
+def check_stored_secret_settings(kind: str, identifier: str, saved_settings: dict, requested_settings: dict,
+                                 secret_name: str, action: str) -> None:
+    """
+    Make sure that a stored secret is used only with the connection settings it was saved with.
+
+    A client that never received the secret sends the ``__CENSORED__`` placeholder instead, which means "use the
+    stored secret". The stored secret is used only if the request keeps the settings that define where and as whom
+    the secret is used. A requested value of ``None`` means that the setting is not changed.
+
+    :param kind: the kind of definition, used in the error message (e.g. "RADIUS server")
+    :param identifier: the identifier of the saved definition
+    :param saved_settings: the saved values of the connection settings
+    :param requested_settings: the requested values of the same settings
+    :param secret_name: the name of the secret, used in the error message (e.g. "secret")
+    :param action: what the secret is needed for, used in the error message (e.g. "save")
+    :raises ParameterError: if a requested setting differs from the saved one
+    """
+    changed = [key for key, value in requested_settings.items()
+               if value is not None and value != saved_settings.get(key)]
+    if changed:
+        raise ParameterError(f"The settings {', '.join(changed)} differ from the saved {kind} '{identifier}'. "
+                             f"Enter the {secret_name} to {action} the changed settings.")
+
+
 def int_to_hex(serial):
     """
     Converts a string with an integer to a hexstring.

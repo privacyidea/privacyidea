@@ -2,14 +2,17 @@
 This test file tests the lib/radiusserver.py
 """
 import logging
+from unittest import mock
+
 from testfixtures import LogCapture
 import pyrad
 
 from .base import MyTestCase
+from privacyidea.lib.crypto import CENSORED, decryptPassword
 from privacyidea.lib.error import ConfigAdminError, ParameterError, PrivacyIDEAError
 from privacyidea.lib.radiusserver import (add_radius, delete_radius,
                                           get_radiusservers, get_radius,
-                                          test_radius)
+                                          list_radiusservers, test_radius, RADIUSServer)
 from . import radiusmock
 DICT_FILE = "tests/testdata/dictionary"
 
@@ -226,3 +229,76 @@ class RADIUSServerTestCase(MyTestCase):
         self.assertNotIn("test_request", servers)
         delete_radius("good")
         delete_radius("after")
+
+    def test_censored_secret_keeps_the_stored_secret_for_the_saved_server(self):
+        add_radius("censored1", server="1.2.3.4", port=1812, secret="radsecret", dictionary=DICT_FILE)
+        self.addCleanup(delete_radius, "censored1")
+        add_radius("censored1", server="1.2.3.4", port=1812, secret=CENSORED, dictionary=DICT_FILE,
+                   description="new")
+        stored = list_radiusservers()["censored1"]
+        self.assertEqual("radsecret", stored["secret"])
+        self.assertEqual("new", stored["description"])
+        # The port is compared as a number
+        add_radius("censored1", server="1.2.3.4", port="1812", secret=CENSORED, dictionary=DICT_FILE)
+        self.assertEqual("radsecret", list_radiusservers()["censored1"]["secret"])
+
+    def test_censored_secret_needs_the_saved_server_and_port(self):
+        add_radius("censored2", server="1.2.3.4", port=1812, secret="radsecret", dictionary=DICT_FILE,
+                   description="old")
+        self.addCleanup(delete_radius, "censored2")
+        for field, change in [("server", {"server": "5.6.7.8"}), ("port", {"port": 1645})]:
+            with self.subTest(field=field):
+                settings = {"server": "1.2.3.4", "port": 1812, **change}
+                with self.assertRaises(ParameterError) as cm:
+                    add_radius("censored2", secret=CENSORED, dictionary=DICT_FILE, description="new", **settings)
+                self.assertIn(f"The settings {field} differ from the saved RADIUS server 'censored2'",
+                              cm.exception.message)
+                self.assertIn("Enter the secret to save", cm.exception.message)
+        stored = list_radiusservers()["censored2"]
+        self.assertEqual("1.2.3.4", stored["server"])
+        self.assertEqual(1812, stored["port"])
+        self.assertEqual("old", stored["description"])
+        self.assertEqual("radsecret", stored["secret"])
+
+        # With the secret entered again, server and port can change
+        add_radius("censored2", server="5.6.7.8", port=1645, secret="radsecret", dictionary=DICT_FILE)
+        stored = list_radiusservers()["censored2"]
+        self.assertEqual("5.6.7.8", stored["server"])
+        self.assertEqual(1645, stored["port"])
+        self.assertEqual("radsecret", stored["secret"])
+
+    def test_test_radius_uses_the_stored_secret_only_for_the_saved_server(self):
+        add_radius("censored3", server="1.2.3.4", port=1812, secret="radsecret", dictionary=DICT_FILE)
+        self.addCleanup(delete_radius, "censored3")
+        with mock.patch.object(RADIUSServer, "request", autospec=True, return_value=None) as request:
+            test_radius("censored3", server="1.2.3.4", secret=CENSORED, user="user", password="password",
+                        port=1812, dictionary=DICT_FILE)
+            self.assertEqual("radsecret", decryptPassword(request.call_args.args[0].config.secret))
+
+            for field, change in [("server", {"server": "5.6.7.8"}), ("port", {"port": 1645})]:
+                with self.subTest(field=field):
+                    settings = {"server": "1.2.3.4", "port": 1812, **change}
+                    with self.assertRaises(ParameterError) as cm:
+                        test_radius("censored3", secret=CENSORED, user="user", password="password",
+                                    dictionary=DICT_FILE, **settings)
+                    self.assertIn(f"The settings {field} differ from the saved RADIUS server 'censored3'",
+                                  cm.exception.message)
+                    self.assertIn("Enter the secret to test", cm.exception.message)
+            self.assertEqual(1, request.call_count)
+
+            # Without a saved definition of this name, the placeholder is the secret
+            test_radius("notSaved", server="5.6.7.8", secret=CENSORED, user="user", password="password",
+                        dictionary=DICT_FILE)
+            self.assertEqual(CENSORED, decryptPassword(request.call_args.args[0].config.secret))
+
+    def test_import_with_censored_secret_needs_the_saved_server(self):
+        from privacyidea.lib.radiusserver import import_radiusserver
+        add_radius("censored4", server="1.2.3.4", port=1812, secret="radsecret", dictionary=DICT_FILE)
+        self.addCleanup(delete_radius, "censored4")
+        with self.assertRaises(ConfigAdminError) as cm:
+            import_radiusserver({"censored4": {"server": "5.6.7.8", "port": 1812, "secret": CENSORED,
+                                               "dictionary": DICT_FILE}})
+        self.assertIn("The settings server differ from the saved RADIUS server 'censored4'", cm.exception.message)
+        stored = list_radiusservers()["censored4"]
+        self.assertEqual("1.2.3.4", stored["server"])
+        self.assertEqual("radsecret", stored["secret"])

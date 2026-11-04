@@ -31,11 +31,11 @@ from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
-from privacyidea.lib.error import ConfigAdminError, ParameterError
+from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
-from privacyidea.lib.utils import fetch_one_resource, to_unicode, validate_path_identifier
+from privacyidea.lib.utils import check_stored_secret_settings, fetch_one_resource, to_unicode, validate_path_identifier
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMTPServer as SMTPServerDB, db
 
@@ -386,10 +386,7 @@ def check_censored_password(identifier: str, saved: dict, action: str, server: s
     saved_settings = {"server": saved.get("server"), "port": saved.get("port"),
                       "username": saved.get("username") or "", "tls": bool(saved.get("tls"))}
     requested = {"server": server, "port": port, "username": username, "tls": tls}
-    changed = [key for key, value in requested.items() if value is not None and value != saved_settings[key]]
-    if changed:
-        raise ParameterError(f"The settings {', '.join(changed)} differ from the saved SMTP server "
-                             f"'{identifier}'. Enter the password to {action} the changed settings.")
+    check_stored_secret_settings("SMTP server", identifier, saved_settings, requested, "password", action)
 
 
 def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",

@@ -48,7 +48,7 @@ from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
 from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
-from privacyidea.lib.utils import fetch_one_resource, to_bytes, validate_path_identifier
+from privacyidea.lib.utils import check_stored_secret_settings, fetch_one_resource, to_bytes, validate_path_identifier
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
@@ -226,6 +226,23 @@ def list_radiusservers(identifier=None, server=None):
     return res
 
 
+def _check_stored_secret_settings(saved_server: RADIUSServerDB, action: str, server: str | None,
+                                  port: int | str | None) -> None:
+    """
+    Make sure that the stored secret of a RADIUS server is used only with its saved server and port.
+
+    :param saved_server: the saved RADIUS server definition
+    :param action: what the secret is needed for, used in the error message (e.g. "save")
+    :param server: the requested server, ``None`` if it is not changed
+    :param port: the requested port, ``None`` if it is not changed
+    :raises ParameterError: if server or port differ from the saved definition
+    """
+    saved_settings = {"server": saved_server.server, "port": saved_server.port}
+    requested_settings = {"server": server, "port": None if port is None else int(port)}
+    check_stored_secret_settings("RADIUS server", saved_server.identifier, saved_settings, requested_settings,
+                                 "secret", action)
+
+
 @log_with(log)
 def add_radius(identifier: str, server: str = None, secret: str = None,
                port: int = 1812, description: str = "",
@@ -241,7 +258,8 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
         As the identifier is unique, providing an identifier will return a
         list with either one or no radius server
     :param server: The FQDN or IP address of the RADIUS server
-    :param secret: The RADIUS secret
+    :param secret: The RADIUS secret. ``__CENSORED__`` keeps the stored secret, but only if server and port
+        stay the same.
     :param port: the radius port
     :param description: Human readable description of the RADIUS server
         definition
@@ -250,6 +268,7 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
     :param timeout: Timeout in seconds for the RADIUS request
     :param options: Additional options for the RADIUS server
     :return: The Id of the database object
+    :raises ParameterError: if the secret is ``__CENSORED__`` and server or port differ from the saved definition
     """
     # POST /radiusserver/test_request is the test endpoint, not the server of that name
     validate_path_identifier(identifier, "RADIUS server", reserved=("test_request",))
@@ -257,6 +276,7 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
 
     encrypted_secret = encryptPassword(secret)
     if secret == CENSORED and existing_server:
+        _check_stored_secret_settings(existing_server, "save", server=server, port=port)
         encrypted_secret = existing_server.secret
 
     if len(encrypted_secret) > 255:
@@ -302,7 +322,8 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     :type identifier: basestring
     :param server: The FQDN or IP address of the RADIUS server
     :type server: basestring
-    :param secret: The RADIUS secret
+    :param secret: The RADIUS secret. ``__CENSORED__`` uses the stored secret of the definition *identifier*, but
+        only if server and port match the definition.
     :type secret: str
     :param user: the username to send
     :param password: the password to send
@@ -315,6 +336,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     :param timeout: Timeout in seconds for the RADIUS request
     :param options: Additional options for the RADIUS server
     :return: The result of the access request
+    :raises ParameterError: if the secret is ``__CENSORED__`` and server or port differ from the saved definition
     """
     result = False
     # Check if the secret is censored. If it is, we can assume a configuration exists and use its secret
@@ -322,10 +344,12 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
     if secret == CENSORED:
         try:
             rad_serv = fetch_one_resource(RADIUSServerDB, identifier=identifier)
-            encrypted_secret = rad_serv.secret
         except ResourceNotFoundError:
             # Maybe __CENSORED__ is the secret?
             pass
+        else:
+            _check_stored_secret_settings(rad_serv, "test", server=server, port=port)
+            encrypted_secret = rad_serv.secret
     if len(encrypted_secret) > 255:
         raise PrivacyIDEAError("The RADIUS secret is too long")
     # Create a (temporary) RADIUS Server database object in order to initialize the RADUISServer object
