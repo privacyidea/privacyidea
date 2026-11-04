@@ -633,6 +633,38 @@ describe("LoginComponent", () => {
     });
   });
 
+  describe("Restart login button", () => {
+    const restartButton = (): HTMLButtonElement | null => fixture.nativeElement.querySelector(".reset-btn");
+
+    it("is hidden until the one-time password is asked for", () => {
+      fixture.detectChanges();
+      expect(restartButton()).toBeNull();
+    });
+
+    it("sits below the login button and is named by its visible text", () => {
+      component.showOtpField.set(true);
+      fixture.detectChanges();
+
+      const buttons = Array.from(fixture.nativeElement.querySelectorAll(".login-buttons > button")) as HTMLElement[];
+      expect(buttons).toHaveLength(2);
+      expect(buttons[0].classList).toContain("login-btn");
+      expect(buttons[1]).toBe(restartButton());
+      expect(restartButton()?.textContent).toContain("Restart Login");
+      expect(restartButton()?.hasAttribute("aria-label")).toBe(false);
+    });
+
+    it("returns to the first login step", () => {
+      component.showOtpField.set(true);
+      fixture.detectChanges();
+
+      restartButton()?.click();
+      fixture.detectChanges();
+
+      expect(component.showOtpField()).toBe(false);
+      expect(restartButton()).toBeNull();
+    });
+  });
+
   describe("Remote user login", () => {
     it("should show remote user login button when remote_user is set", () => {
       configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });

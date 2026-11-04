@@ -153,7 +153,7 @@
           </mat-form-field>
         }
 
-        <div class="login-actions margin-top-16">
+        <div class="login-buttons margin-top-16">
           <button
             [disabled]="isLoginButtonDisabled()"
             aria-label="Login Button"
@@ -169,13 +169,11 @@
           @if (showOtpField()) {
             <button
               (click)="resetLogin()"
-              aria-label="Start Over"
               class="reset-btn"
               extended
-              i18n-aria-label="@@login.startOver"
               mat-fab
               type="button">
-              <span i18n="Reset button text@@common.reset">Reset</span>
+              <span i18n="Restart login button text@@login.restartLogin">Restart Login</span>
               <mat-icon iconPositionEnd>replay</mat-icon>
             </button>
           }
