@@ -29,7 +29,14 @@ import {
   EnrollmentArgs,
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
-import { DEFAULT_OTP_LENGTH, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import {
+  DEFAULT_OTP_LENGTH,
+  TOTP_HASHLIB,
+  TOTP_HASHLIB_POLICY,
+  TOTP_OTP_LENGTH_POLICY,
+  TOTP_TIME_STEP,
+  TOTP_TIME_STEP_POLICY
+} from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
@@ -90,17 +97,19 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
   otpKey = signal<string>("");
   defaultOtpLength = computed(
     () =>
-      parseInt(this.authService.rightsWithValues()[TOTP_OTP_LENGTH] ?? "", 10) ||
+      parseInt(this.authService.rightsWithValues()[TOTP_OTP_LENGTH_POLICY] ?? "", 10) ||
       parseInt(this.systemService.systemConfig()[DEFAULT_OTP_LENGTH], 10) ||
       6
   );
   defaultHashAlgorithm = computed(
     () =>
-      this.authService.rightsWithValues()[TOTP_HASHLIB] || this.systemService.systemConfig()[TOTP_HASHLIB] || "sha1"
+      this.authService.rightsWithValues()[TOTP_HASHLIB_POLICY] ||
+      this.systemService.systemConfig()[TOTP_HASHLIB] ||
+      "sha1"
   );
   defaultTimeStep = computed(
     () =>
-      parseInt(this.authService.rightsWithValues()[TOTP_TIME_STEP] ?? "", 10) ||
+      parseInt(this.authService.rightsWithValues()[TOTP_TIME_STEP_POLICY] ?? "", 10) ||
       parseInt(this.systemService.systemConfig()[TOTP_TIME_STEP], 10) ||
       30
   );
@@ -135,17 +144,17 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
 
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[TOTP_OTP_LENGTH]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[TOTP_OTP_LENGTH_POLICY]);
   });
 
   hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[TOTP_HASHLIB]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[TOTP_HASHLIB_POLICY]);
   });
 
   timeStepForm = form(this.timeStep, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[TOTP_TIME_STEP]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[TOTP_TIME_STEP_POLICY]);
   });
 
   constructor() {
@@ -173,9 +182,10 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
     effect(() => {
       const data = this.enrollmentData();
       if (data) {
-        this.generateOnServer.set(data.generateOnServer ?? true);
-        this.otpLength.set(data.otpLength ?? 6);
-        this.hashAlgorithm.set(data.hashAlgorithm ?? "sha1");
+        // Only the values the data contains, so that the presets of policy and system config stay otherwise.
+        if (data.generateOnServer !== undefined) this.generateOnServer.set(data.generateOnServer);
+        if (data.otpLength) this.otpLength.set(data.otpLength);
+        if (data.hashAlgorithm) this.hashAlgorithm.set(data.hashAlgorithm);
         if (data.timeStep) this.timeStep.set(data.timeStep);
         if (data.twoStepInit) this.twoStepEnabled.set(data.twoStepInit);
         if (data.otpKey) this.otpKey.set(data.otpKey);

@@ -294,7 +294,9 @@ class LocalConfigClass:
         # reduce the dictionary to only public keys!
         reduced_config = {}
         for ckey, cvalue in self.config.items():
-            if role == "admin" or cvalue.get("Type") == "public" or ckey.endswith(".identifier"):
+            # PUBLIC_SYSTEM_SETTINGS also covers entries saved before the setting became public and still have no type
+            if (role == "admin" or cvalue.get("Type") == "public" or ckey.endswith(".identifier")
+                    or ckey in PUBLIC_SYSTEM_SETTINGS):
                 reduced_config[ckey] = self.config[ckey]
         if not reduced_config and role == "admin":
             reduced_config = self.config

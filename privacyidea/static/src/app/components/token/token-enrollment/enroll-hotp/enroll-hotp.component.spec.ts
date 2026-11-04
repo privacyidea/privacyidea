@@ -21,7 +21,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HotpApiPayloadMapper } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
+import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
@@ -76,7 +76,7 @@ describe("EnrollHotpComponent", () => {
 
   it("Uses policy values for hashlib and otplen", () => {
     createAndInit();
-    authService.rightsWithValues.set({ [HOTP_HASHLIB]: "sha256", [HOTP_OTP_LENGTH]: "8" });
+    authService.rightsWithValues.set({ hotp_hashlib: "sha256", hotp_otplen: "8" });
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -125,16 +125,44 @@ describe("EnrollHotpComponent", () => {
     createAndInit();
     component.hashAlgorithm.set("sha512");
     component.otpLength.set(8);
-    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "6" });
+    // The preset must change, otherwise the linked signals do not recompute at all.
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "10" });
     fixture.detectChanges();
 
     expect(component.hashAlgorithm()).toBe("sha512");
     expect(component.otpLength()).toBe(8);
   });
 
+  it("keeps the presets when enrollment data without these values arrives later", () => {
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha512", [DEFAULT_OTP_LENGTH]: "8" });
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", { type: "hotp", description: "live-check-rollover" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.otpLength()).toBe(8);
+    expect(component.generateOnServer()).toBe(true);
+  });
+
+  it("applies the values the enrollment data contains", () => {
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "hotp",
+      generateOnServer: false,
+      otpLength: 8,
+      hashAlgorithm: "sha256"
+    });
+    fixture.detectChanges();
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.otpLength()).toBe(8);
+  });
+
   it("keeps the policy values over a system config that loads later", () => {
     createAndInit();
-    authService.rightsWithValues.set({ [HOTP_HASHLIB]: "sha256", [HOTP_OTP_LENGTH]: "6" });
+    authService.rightsWithValues.set({ hotp_hashlib: "sha256", hotp_otplen: "6" });
     fixture.detectChanges();
     systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha512", [DEFAULT_OTP_LENGTH]: "8" });
     fixture.detectChanges();

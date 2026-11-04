@@ -24,7 +24,12 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { HotpApiPayloadMapper, HotpEnrollmentData } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
-import { DEFAULT_OTP_LENGTH, HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
+import {
+  DEFAULT_OTP_LENGTH,
+  HOTP_HASHLIB,
+  HOTP_HASHLIB_POLICY,
+  HOTP_OTP_LENGTH_POLICY
+} from "@constants/token.constants";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -71,13 +76,15 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
   otpKey = signal<string>("");
   defaultOtpLength = computed(
     () =>
-      parseInt(this.authService.rightsWithValues()[HOTP_OTP_LENGTH] ?? "", 10) ||
+      parseInt(this.authService.rightsWithValues()[HOTP_OTP_LENGTH_POLICY] ?? "", 10) ||
       parseInt(this.systemService.systemConfig()[DEFAULT_OTP_LENGTH], 10) ||
       6
   );
   defaultHashAlgorithm = computed(
     () =>
-      this.authService.rightsWithValues()[HOTP_HASHLIB] || this.systemService.systemConfig()[HOTP_HASHLIB] || "sha1"
+      this.authService.rightsWithValues()[HOTP_HASHLIB_POLICY] ||
+      this.systemService.systemConfig()[HOTP_HASHLIB] ||
+      "sha1"
   );
   // A preset that changes later (the system config loads after the dialog opened) does not overwrite a user's choice.
   otpLength = linkedSignal<number, number>({
@@ -106,12 +113,12 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
 
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_OTP_LENGTH]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_OTP_LENGTH_POLICY]);
   });
 
   hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_HASHLIB]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[HOTP_HASHLIB_POLICY]);
   });
 
   constructor() {
@@ -139,9 +146,10 @@ export class EnrollHotpComponent extends EnrollTokenBase<HotpEnrollmentData> {
     effect(() => {
       const data = this.enrollmentData();
       if (data) {
-        this.generateOnServer.set(data.generateOnServer ?? true);
-        this.otpLength.set(data.otpLength ?? 6);
-        this.hashAlgorithm.set(data.hashAlgorithm ?? "sha1");
+        // Only the values the data contains, so that the presets of policy and system config stay otherwise.
+        if (data.generateOnServer !== undefined) this.generateOnServer.set(data.generateOnServer);
+        if (data.otpLength) this.otpLength.set(data.otpLength);
+        if (data.hashAlgorithm) this.hashAlgorithm.set(data.hashAlgorithm);
         if (data.twoStepInit) this.twoStepEnabled.set(data.twoStepInit);
         if (data.otpKey) this.otpKey.set(data.otpKey);
       }

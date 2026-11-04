@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { DEFAULT_OTP_LENGTH, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import { DEFAULT_OTP_LENGTH, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
@@ -72,7 +72,7 @@ describe("EnrollTotpComponent", () => {
   });
 
   it("Uses policy values for hashlib, otplen, and time step", () => {
-    authService.rightsWithValues.set({ [TOTP_HASHLIB]: "sha512", [TOTP_OTP_LENGTH]: "8", [TOTP_TIME_STEP]: "45" });
+    authService.rightsWithValues.set({ totp_hashlib: "sha512", totp_otplen: "8", totp_timestep: "45" });
     fixture = TestBed.createComponent(EnrollTotpComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -116,7 +116,8 @@ describe("EnrollTotpComponent", () => {
     component.hashAlgorithm.set("sha512");
     component.timeStep.set(60);
     component.otpLength.set(8);
-    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "30", [DEFAULT_OTP_LENGTH]: "6" });
+    // Every preset must change, otherwise the linked signals do not recompute at all.
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "90", [DEFAULT_OTP_LENGTH]: "10" });
     fixture.detectChanges();
 
     expect(component.hashAlgorithm()).toBe("sha512");
@@ -124,8 +125,38 @@ describe("EnrollTotpComponent", () => {
     expect(component.otpLength()).toBe(8);
   });
 
+  it("keeps the presets when enrollment data without these values arrives later", () => {
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha512", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture = TestBed.createComponent(EnrollTotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    fixture.componentRef.setInput("enrollmentData", { type: "totp", description: "live-check-rollover" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.timeStep()).toBe(60);
+    expect(component.otpLength()).toBe(8);
+    expect(component.generateOnServer()).toBe(true);
+  });
+
+  it("applies the values the enrollment data contains", () => {
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "totp",
+      generateOnServer: false,
+      otpLength: 8,
+      hashAlgorithm: "sha256",
+      timeStep: 60
+    });
+    fixture.detectChanges();
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.timeStep()).toBe(60);
+    expect(component.otpLength()).toBe(8);
+  });
+
   it("keeps the policy values over a system config that loads later", () => {
-    authService.rightsWithValues.set({ [TOTP_HASHLIB]: "sha512", [TOTP_OTP_LENGTH]: "6", [TOTP_TIME_STEP]: "30" });
+    authService.rightsWithValues.set({ totp_hashlib: "sha512", totp_otplen: "6", totp_timestep: "30" });
     fixture.detectChanges();
     systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
     fixture.detectChanges();

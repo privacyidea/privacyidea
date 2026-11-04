@@ -19,16 +19,24 @@
 
 export const DEFAULT_OTP_LENGTH = "DefaultOtpLen";
 
+// The system config keys (e.g. "hotp.hashlib") differ from the policy actions, which the backend prefixes with the
+// token type (e.g. "hotp_hashlib") and which the rights from the auth response carry.
+
 // TOTP Token
 export const TOTP_HASHLIB = "totp.hashlib";
 export const TOTP_OTP_LENGTH = "totp.otplen";
 export const TOTP_TIME_STEP = "totp.timeStep";
 export const TOTP_TIME_WINDOW = "totp.timeWindow";
 export const TOTP_TIME_SHIFT = "totp.timeShift";
+export const TOTP_HASHLIB_POLICY = "totp_hashlib";
+export const TOTP_OTP_LENGTH_POLICY = "totp_otplen";
+export const TOTP_TIME_STEP_POLICY = "totp_timestep";
 
 // HOTP Token
 export const HOTP_HASHLIB = "hotp.hashlib";
 export const HOTP_OTP_LENGTH = "hotp.otplen";
+export const HOTP_HASHLIB_POLICY = "hotp_hashlib";
+export const HOTP_OTP_LENGTH_POLICY = "hotp_otplen";
 
 // Daypassword Token
 export const DAYPASSWORD_HASHLIB = "daypassword.hashlib";
