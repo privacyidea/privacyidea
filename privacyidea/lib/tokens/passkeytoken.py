@@ -39,6 +39,7 @@ from webauthn.registration.verify_registration_response import VerifiedRegistrat
 
 from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, Error, PolicyError
@@ -647,6 +648,7 @@ class PasskeyTokenClass(TokenClass):
             # TODO this vvv is horrible
             return True, message, transaction_id, challenge_details
         else:
+            self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.TOKEN_NOT_APPLICABLE
             return False, "", transactionid, {}
 
     @log_with(log)

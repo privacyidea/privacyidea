@@ -26,6 +26,7 @@ from webauthn.helpers.cose import COSEAlgorithmIdentifier
 from webauthn.helpers.structs import AttestationConveyancePreference
 
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
@@ -908,3 +909,12 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         registration_request.token.update(registration_request.registration_response)
         self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
         remove_token(serial=registration_request.token.get_serial())
+
+    def test_27_no_challenge_without_trigger_by_pin(self):
+        token = self._create_token()
+        self.addCleanup(remove_token, serial=token.get_serial())
+
+        created, _message, _transaction_id, _details = token.create_challenge(options={})
+
+        self.assertFalse(created)
+        self.assertEqual(AuthEventReason.TOKEN_NOT_APPLICABLE, token.auth_details[AUTH_EVENT_REASON_KEY])

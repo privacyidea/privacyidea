@@ -635,6 +635,55 @@ class _AuthLogContractTests(_ContractHost):
                                         serials={self.serial, self.second_serial}, transaction_id=transaction_id,
                                         endpoint=self.endpoint_path)
 
+    def test_a_trigger_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
+        # increase_failcounter_on_challenge raises the failcounter before the challenge is created; at maxfail - 1 the
+        # trigger itself makes the token unusable, so no challenge is created although the PIN matched.
+        self._enable_challenge_response()
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_cr")
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        response = self._authenticate(self.pin)
+
+        self._assert_failed(response)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={self.serial},
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
+                                        endpoint=self.endpoint_path)
+
+    def test_an_undelivered_challenge_logs_challenge_trigger_fail(self):
+        remove_token(self.serial)
+        delivery_failures = {
+            "gateway raises": {"side_effect": Exception("gateway unavailable")},
+            "gateway refuses": {"return_value": (False, "")},
+        }
+        tokens = {
+            "sms": ({"type": "sms", "phone": "+491234567"}, "SmsTokenClass._send_sms"),
+            "email": ({"type": "email", "email": "cornelius@example.com"}, "EmailTokenClass._compose_email"),
+        }
+        for (token_type, (params, sender)), (failure, mock_args) in itertools.product(tokens.items(),
+                                                                                       delivery_failures.items()):
+            with self.subTest(token_type=token_type, failure=failure):
+                token = init_token({**params, "pin": self.pin}, user=self.user)
+                self._clear_log()
+                with mock.patch(f"privacyidea.lib.tokens.{token_type}token.{sender}", **mock_args):
+                    response = self._authenticate(self.pin)
+
+                self._assert_failed(response)
+                entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+                assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                                serials={token.get_serial()},
+                                                reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                                reasons={token.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                                endpoint=self.endpoint_path)
+                remove_token(token.get_serial())
+
     def test_the_row_lists_every_reason_while_every_token_keeps_its_own(self):
         # Two tokens, unusable for two different reasons. The row carries both - each is a separate piece of advice
         # for the admin and each is filterable on its own - in the order AuthEventReason declares them, which is what

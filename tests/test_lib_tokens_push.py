@@ -26,6 +26,7 @@ from testfixtures import LogCapture
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.crypto import encryptPassword, geturandom
 from privacyidea.lib.error import ConfigAdminError, ValidateError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
@@ -419,6 +420,7 @@ class PushTokenTestCase(MyTestCase):
 
         self.assertFalse(success)
         self.assertListEqual([], get_challenges(serial=token.get_serial()))
+        self.assertEqual(AuthEventReason.CHALLENGE_NOT_DELIVERED, token.auth_details[AUTH_EVENT_REASON_KEY])
 
     def test_02e_gateway_exception_uses_polling_fallback_and_records_metrics(self):
         token = self._create_push_token()

@@ -5,6 +5,7 @@
 import json
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -219,8 +220,15 @@ def check_user_pass(user: User, passw: str, options: dict | None = None) -> tupl
     return res, reply_dict
 
 
+@dataclass(frozen=True)
+class UnchallengedToken:
+    """A token that got no challenge from :func:`create_challenges_from_tokens`, and why, if the token named it."""
+    token: TokenClass
+    reason: AuthEventReason | None
+
+
 def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict,
-                                  options: dict | None = None) -> None:
+                                  options: dict | None = None) -> list[UnchallengedToken]:
     """
     Get a list of active tokens and create challenges for these tokens.
     The reply_dict is modified accordingly. The transaction_id and
@@ -229,7 +237,7 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     :param token_list: The list of the token objects, that can do challenge response
     :param reply_dict: The dictionary that is passed to the API response
     :param options: Additional options. Passed from the upper layer
-    :return: None
+    :return: The tokens that got no challenge, because check_all refused them or creating the challenge failed
     """
     options = options or {}
     options["push_triggered"] = False
@@ -237,9 +245,12 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
+    unchallenged = []
     for token in token_list:
         # Check if the max auth is succeeded
-        if token.check_all(message_list):
+        if not token.check_all(message_list):
+            unchallenged.append(UnchallengedToken(token, token.auth_details.get(AUTH_EVENT_REASON_KEY)))
+        else:
             challenge_created, message, new_transaction_id, challenge_info = token.create_challenge(
                 transactionid=transaction_id, options=options)
 
@@ -286,6 +297,8 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
 
                 reply_dict["multi_challenge"].append(challenge_info)
                 reply_dict.update(challenge_info)  # FIXME: This is deprecated and should be removed one day
+            else:
+                unchallenged.append(UnchallengedToken(token, token.auth_details.get(AUTH_EVENT_REASON_KEY)))
 
     if message_list:
         unique_messages = set(message_list)
@@ -295,6 +308,7 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
     reply_dict["transaction_ids"] = [challenge.get("transaction_id") for challenge in
                                      reply_dict.get("multi_challenge", [])]
+    return unchallenged
 
 
 def weigh_token_type(token_obj: TokenClass) -> int:
@@ -736,8 +750,15 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 token_obj.check_reset_failcount()
                 if is_true(options.get("increase_failcounter_on_challenge")):
                     token_obj.inc_failcount()
-            create_challenges_from_tokens(active_challenge_token, reply_dict, options)
-            request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
+            unchallenged = create_challenges_from_tokens(active_challenge_token, reply_dict, options)
+            if reply_dict["multi_challenge"]:
+                request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
+            else:
+                for unchallenged_token in unchallenged:
+                    _note_event(request_events, event_serials, AuthEventType.CHALLENGE_TRIGGER_FAIL,
+                                unchallenged_token.token)
+                    if unchallenged_token.reason:
+                        token_reasons[unchallenged_token.token.get_serial()] = str(unchallenged_token.reason)
 
     elif pin_matching_token_list:
         # We did not find a valid token and no challenge.

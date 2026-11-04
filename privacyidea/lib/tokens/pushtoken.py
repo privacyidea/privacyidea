@@ -1632,6 +1632,8 @@ class PushTokenClass(TokenClass):
 
         reply_dict.update({"attributes": {"hideResponseInput": client_mode != ClientMode.INTERACTIVE},
                            "client_mode": client_mode})
+        if not challenge_created:
+            self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_NOT_DELIVERED
         return challenge_created, message, transactionid, reply_dict
 
     @check_token_locked

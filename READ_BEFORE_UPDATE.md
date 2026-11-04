@@ -262,6 +262,13 @@
   `authentication` `REJECT` instead of `CHALLENGE`, in the audit log as well. Event handler conditions on
   `result_authentication` are matched accordingly.
 
+* **A challenge trigger that creates no challenge is logged as a failure** — At `/validate/check` and `/auth`, a
+  request whose PIN matched but for which no token got a challenge is logged as `CHALLENGE_TRIGGER_FAIL` instead of
+  `CHALLENGE_TRIGGERED`. The reasons name why: `CHALLENGE_NOT_DELIVERED` if the SMS, email or push message could not
+  be sent, or the token state if the trigger itself made the token unusable, e.g. `TOKEN_FAILCOUNT_EXCEEDED` with
+  `increase_failcounter_on_challenge`. A conditional-access policy that counts failures now counts these requests as
+  well.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

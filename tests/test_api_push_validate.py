@@ -2635,8 +2635,11 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
         self.assertListEqual([], res.json["detail"]["multi_challenge"])
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
-        assert_authentication_log_entry(auth_log_entries.all[0], user=user, endpoint='/validate/check')
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/check')
 
         remove_token(self.serial_push)
         delete_policy("push_config")

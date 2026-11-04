@@ -117,9 +117,12 @@ Failure
      the challenge response was wrong or expired, or the transaction ID is unknown. A passkey or WebAuthn answer
      that does not verify is one too.
    ``CHALLENGE_TRIGGER_FAIL``
-     ``/validate/initialize`` could not create the passkey challenge, for
-     example because the :ref:`policy_webauthn_enroll_relying_party_id` policy
-     is missing.
+     a challenge was asked for but none could be created. At ``/validate/check``
+     and ``/auth`` the PIN matched, but no token got a challenge; the reasons
+     name why, for example ``CHALLENGE_NOT_DELIVERED`` or a token state such as
+     ``TOKEN_FAILCOUNT_EXCEEDED``. ``/validate/initialize`` could not create the
+     passkey challenge, for example because the
+     :ref:`policy_webauthn_enroll_relying_party_id` policy is missing.
    ``CHALLENGE_DECLINED``
      a challenge was rejected out of band, for example a push notification
      declined in the authenticator app, without the app saying why. Either it is
@@ -260,6 +263,10 @@ The credentials
      a client whose OTP list is out of sync with the server.
 
 Challenge-response
+   ``CHALLENGE_NOT_DELIVERED``
+     the challenge could not be sent: the SMS or email gateway failed, or a
+     push token has no push gateway or its push gateway failed while polling is
+     not allowed.
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
    ``CHALLENGE_UNKNOWN_TRANSACTION``

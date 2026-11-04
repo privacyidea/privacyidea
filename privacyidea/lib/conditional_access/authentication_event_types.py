@@ -302,6 +302,9 @@ class AuthEventReason(str, Enum):
     WRONG_OTP = "WRONG_OTP"
 
     # --- challenge-response --------------------------------------------------------------------------------------
+    # The challenge could not be sent to the user: the SMS or email gateway failed, or a push token has no push
+    # gateway or its push gateway failed while polling is not allowed.
+    CHALLENGE_NOT_DELIVERED = "CHALLENGE_NOT_DELIVERED"
     # The response did not match the challenge.
     CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
     # The transaction the response names holds no challenge for this token: already consumed, belonging to another
