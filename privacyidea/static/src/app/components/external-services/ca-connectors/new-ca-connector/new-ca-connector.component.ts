@@ -189,8 +189,7 @@ export class NewCaConnectorComponent implements OnDestroy {
 
   private loadData(connector: CaConnector | null): void {
     const connectorData = connector?.data || {};
-    const asString = (v: CaConnectorConfigValue): string =>
-      v === undefined || v === null || v === "" ? "" : String(v);
+    const asString = (v: CaConnectorConfigValue): string => (v === undefined || v === null || v === "" ? "" : String(v));
     this.caConnectorModel.set({
       connectorname: connector?.connectorname || "",
       type: connector?.type || "local",
