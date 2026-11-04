@@ -139,7 +139,7 @@ from privacyidea.lib.policies.helper import check_auth_time_limit, check_max_aut
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token)
+                                   check_otp, get_one_token, trigger_challenges)
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -1632,9 +1632,10 @@ def trigger_challenge():
     :ref:`policy_triggerchallenge`. The request must carry a valid
     ``PI-Authorization`` header.
 
-    If the AUTHZ-scope ``increase_failcounter_on_challenge`` policy
-    is active, the fail counter is incremented on every matching
-    token before the challenges are created.
+    Only tokens that are not revoked, active and usable (failcounter, authentication counters, validity period,
+    completed enrollment) are challenged, as at ``/validate/check``. If the AUTH-scope
+    ``increase_failcounter_on_challenge`` policy is active, the fail counter of these tokens is incremented before
+    the challenges are created.
 
     :jsonparam user: user the challenges should be created for.
     :jsonparam realm: realm of the user; defaults to the default
@@ -1746,26 +1747,21 @@ def trigger_challenge():
     options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
-    tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
-    # Only use the tokens that are allowed to do challenge
-    challenge_response_token = [token for token in tokens if "challenge" in token.mode]
-    if is_true(options.get("increase_failcounter_on_challenge")):
-        for token in challenge_response_token:
-            token.inc_failcount()
-    create_challenges_from_tokens(challenge_response_token, details, options)
-    triggered_challenges = len(details.get("multi_challenge"))
-
-    event_type = AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN
-    # Record every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as
-    # only the last challenge it created.
+    tokens = get_tokens(serial=serial, user=user, tokentype=token_type)
+    trigger = trigger_challenges(tokens, details, options)
+    triggered_challenges = len(details["multi_challenge"])
+    # Every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as only the
+    # last challenge it created.
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
     log_authentication(
-        event_type,
+        trigger.event_type,
         request,
         user=user,
-        serial=",".join(challenge_serials) or None,
+        serial=",".join(trigger.serials) or None,
         transaction_id=details.get("transaction_id"),
+        reasons=trigger.reasons or None,
+        reason_detail=build_reason_detail(reasons=trigger.token_reasons),
     )
 
     r = send_result(triggered_challenges, rid=2, details=details)

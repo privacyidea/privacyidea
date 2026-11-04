@@ -37,7 +37,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               auth_lastauth,
                                               auth_cache,
                                               reset_all_user_tokens, force_challenge_response)
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import AuthenticationMode, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, create_tag_dict,
                                    redacted_phone_number, redacted_email)
@@ -392,6 +392,70 @@ def _record_reason(token_reasons: dict[str, str], token: TokenClass,
     serial = token.get_serial()
     if overwrite or serial not in token_reasons:
         token_reasons[serial] = str(reason)
+
+
+@dataclass(frozen=True)
+class ChallengeTrigger:
+    """The classification of :func:`trigger_challenges` for the authentication log."""
+    event_type: AuthEventType
+    # The tokens the event is about: the challenged ones, or for CHALLENGE_TRIGGER_FAIL the ones that got none
+    serials: list[str]
+    # The reasons explaining a failed event, in vocabulary order
+    reasons: list[AuthEventReason]
+    # What each token was found to be, keyed by serial
+    token_reasons: dict[str, str]
+
+
+def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: dict) -> ChallengeTrigger:
+    """
+    Create challenges for the usable challenge-response tokens of *token_list*, as /validate/triggerchallenge does.
+
+    Like :func:`check_token_list`, a token is only used if it is not revoked, active and passes ``check_all``, and only
+    those tokens get their failcounter increased by ``increase_failcounter_on_challenge``. Every token left out records
+    why.
+
+    :param token_list: The tokens of the user or serial of the request
+    :param reply_dict: The details of the response, which get the challenges, see
+        :func:`create_challenges_from_tokens`
+    :param options: The request options passed to the tokens
+    :return: The event, serials and reasons for the authentication log
+    """
+    token_reasons: dict[str, str] = {}
+    tokens = _keep_usable(token_list, token_reasons, lambda token: not (token.is_revoked() or token.is_locked()),
+                          AuthEventReason.TOKEN_REVOKED)
+    tokens = _keep_usable(tokens, token_reasons, lambda token: token.is_active(), AuthEventReason.TOKEN_DISABLED)
+    usable_tokens = []
+    messages = []
+    for token in tokens:
+        token.check_reset_failcount()
+        if token.check_all(messages):
+            usable_tokens.append(token)
+        else:
+            _record_reason(token_reasons, token)
+    challenge_tokens = _keep_usable(usable_tokens, token_reasons,
+                                    lambda token: AuthenticationMode.CHALLENGE in token.mode,
+                                    AuthEventReason.TOKEN_NO_CHALLENGE_MODE)
+    if is_true(options.get("increase_failcounter_on_challenge")):
+        for token in challenge_tokens:
+            token.inc_failcount()
+
+    unchallenged = create_challenges_from_tokens(challenge_tokens, reply_dict, options)
+    if reply_dict["multi_challenge"]:
+        return ChallengeTrigger(AuthEventType.CHALLENGE_TRIGGERED,
+                                [challenge["serial"] for challenge in reply_dict["multi_challenge"]], [], {})
+    if challenge_tokens:
+        for unchallenged_token in unchallenged:
+            if unchallenged_token.reason:
+                token_reasons[unchallenged_token.token.get_serial()] = str(unchallenged_token.reason)
+        serials = [unchallenged_token.token.get_serial() for unchallenged_token in unchallenged]
+        return ChallengeTrigger(AuthEventType.CHALLENGE_TRIGGER_FAIL, serials,
+                                order_request_reasons(token_reasons[serial] for serial in serials
+                                                      if serial in token_reasons),
+                                token_reasons)
+    if token_list:
+        return ChallengeTrigger(AuthEventType.NO_USABLE_TOKEN, [], order_request_reasons(token_reasons.values()),
+                                token_reasons)
+    return ChallengeTrigger(AuthEventType.NO_TOKEN, [], [], {})
 
 
 @log_with(log, hide_args=[1])

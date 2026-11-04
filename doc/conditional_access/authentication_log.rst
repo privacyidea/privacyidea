@@ -103,13 +103,10 @@ Failure
      ``/validate/`` endpoints and ``/auth``. A conditional access policy cannot count it.
    ``NO_TOKEN``
      the user exists but has no token. It is also recorded for a passkey answer whose serial or credential ID matches
-     no token, or a token of another user than the one named in the request, and at ``/validate/triggerchallenge``
-     whenever no challenge was triggered - also when the user has tokens, but none that is active, not revoked, not
-     locked and able to do challenge-response. A user whose only token is disabled therefore gets ``NO_TOKEN`` there,
-     not ``NO_USABLE_TOKEN``.
+     no token, or a token of another user than the one named in the request.
    ``NO_USABLE_TOKEN``
      the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
-     over the failcount.
+     over the failcount. At ``/validate/triggerchallenge`` also when none of them has a challenge mode.
    ``INVALID_TOKEN_TYPE``
      the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
@@ -118,7 +115,8 @@ Failure
      that does not verify is one too.
    ``CHALLENGE_TRIGGER_FAIL``
      a challenge was asked for but none could be created. At ``/validate/check``
-     and ``/auth`` the PIN matched, but no token got a challenge; the reasons
+     and ``/auth`` the PIN matched, and at ``/validate/triggerchallenge`` a
+     usable challenge token was found, but no token got a challenge; the reasons
      name why, for example ``CHALLENGE_NOT_DELIVERED`` or a token state such as
      ``TOKEN_FAILCOUNT_EXCEEDED``. ``/validate/initialize`` could not create the
      passkey challenge, for example because the
@@ -224,6 +222,9 @@ The state of a token
    ``TOKEN_NOT_APPLICABLE``
      the token excluded itself from this request, for example an
      application-specific password whose service does not match.
+   ``TOKEN_NO_CHALLENGE_MODE``
+     the token type has no challenge mode, so ``/validate/triggerchallenge``
+     can not create a challenge for it, for example a simple pass token.
 
 A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
