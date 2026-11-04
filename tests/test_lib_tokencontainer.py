@@ -2737,6 +2737,22 @@ class TokenContainerTemplateTestCase(MyTestCase):
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
+    def test_16b_the_template_id_orders_equal_sort_values(self):
+        # The names are not in alphabetical order, so that only the id gives this order
+        names = ["tie_c", "tie_a", "tie_b"]
+        for name in names:
+            create_container_template(container_type="generic", template_name=name, options={})
+
+        # All templates have the same type, so only the id gives the pages a fixed order
+        for sortdir, expected_names in [("asc", names), ("desc", names[::-1])]:
+            pages = [[template["name"] for template in get_templates_by_query(sortby="container_type", sortdir=sortdir,
+                                                                              page=page, pagesize=2)["templates"]]
+                     for page in [1, 2]]
+            self.assertListEqual([expected_names[:2], expected_names[2:]], pages, sortdir)
+
+        for name in names:
+            get_template_obj(name).delete()
+
     def test_17_compare_templates(self):
         # same templates but different order of entries
         template_a = {"template_options": {"tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha1"},

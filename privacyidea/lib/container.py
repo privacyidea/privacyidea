@@ -1680,10 +1680,12 @@ def get_templates_by_query(name: str = None, container_type: str = None, default
     else:
         sort_col = sortby
 
+    # Templates with the same value in the sort column are ordered by their id, so that every page query sees the
+    # same order and no template appears on two pages or on none.
     if sortdir == "desc":
-        stmt = stmt.order_by(sort_col.desc())
+        stmt = stmt.order_by(sort_col.desc(), TokenContainerTemplate.id.desc())
     else:
-        stmt = stmt.order_by(sort_col.asc())
+        stmt = stmt.order_by(sort_col.asc(), TokenContainerTemplate.id.asc())
 
     if page > 0 or pagesize > 0:
         ret = create_pagination(page, pagesize, stmt, "templates")
