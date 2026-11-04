@@ -39,10 +39,8 @@
 
         <button
           (click)="remoteLogin()"
-          aria-label="Remote Login Button"
           class="login-btn margin-bottom-8"
           extended
-          i18n-aria-label="@@login.remoteLoginButton"
           mat-fab>
           <span i18n="@@login.logIn">Log In</span>
           <mat-icon iconPositionEnd>login</mat-icon>
@@ -51,10 +49,8 @@
         @if (!forceRemoteUser()) {
           <button
             (click)="useRemoteLogin.set(false)"
-            aria-label="Login with credentials Button"
             class="passkey-btn"
             extended
-            i18n-aria-label="@@login.loginCredentialsButton"
             mat-fab>
             <span i18n="@@login.loginCredentials">Login with Credentials</span>
           </button>
@@ -73,15 +69,17 @@
         class="login-form gap-16"
         i18n-aria-label="@@login.loginForm">
         <div class="login-message-container">
-          @if (authMessage().length > 0) {
-            <div class="login-message">
-              @for (msg of authMessage(); track msg) {
-                <p class="login-message-header">{{ msg }}</p>
-              }
-            </div>
-          }
+          <div
+            class="login-message"
+            role="status">
+            @for (msg of authMessage(); track msg) {
+              <p class="login-message-header">{{ msg }}</p>
+            }
+          </div>
           @if (errorMessage()) {
-            <div class="error-message">
+            <div
+              class="error-message"
+              role="alert">
               <p>{{ errorMessage() }}</p>
             </div>
           }
@@ -156,10 +154,8 @@
         <div class="login-buttons margin-top-16">
           <button
             [disabled]="isLoginButtonDisabled()"
-            aria-label="Login Button"
             class="login-btn"
             extended
-            i18n-aria-label="@@login.loginButton"
             mat-fab
             type="submit">
             <span i18n="Login button text@@login.logIn">Log In</span>
@@ -182,10 +178,8 @@
         @if (webAuthnTriggered()) {
           <button
             (click)="webAuthnLogin()"
-            aria-label="WebAuthn Button"
             class="reset-btn margin-top-16"
             extended
-            i18n-aria-label="@@login.webauthnButton"
             mat-fab
             type="button">
             <span i18n="WebAuthn button text@@common.webauthn">WebAuthn</span>
@@ -197,10 +191,8 @@
         <div class="passkey-form margin-top-16">
           <button
             (click)="passkeyLogin()"
-            aria-label="Passkey Button"
             class="passkey-btn margin-top-16"
             extended
-            i18n-aria-label="@@login.passkeyButton"
             mat-fab
             type="submit">
             <span i18n="Passkey button text@@login.logPasskey">Log In With Passkey</span>

@@ -46,6 +46,9 @@ import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-we
 import { of, throwError } from "rxjs";
 import { LoginComponent } from "./login.component";
 
+const visibleText = (button: HTMLElement): string =>
+  button.textContent?.replace(button.querySelector("mat-icon")?.textContent ?? "", "").trim() ?? "";
+
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
@@ -633,6 +636,53 @@ describe("LoginComponent", () => {
     });
   });
 
+  describe("Accessible names and messages", () => {
+    const textButtons = (): HTMLButtonElement[] =>
+      (Array.from(fixture.nativeElement.querySelectorAll("button")) as HTMLButtonElement[]).filter((button) =>
+        visibleText(button)
+      );
+
+    it("names the Log In and passkey buttons by their visible text", () => {
+      configService.config.set({ ...configService.config(), passkey_login: "show" });
+      fixture.detectChanges();
+
+      expect(textButtons().map(visibleText)).toEqual(["Log In", "Log In With Passkey"]);
+      expect(textButtons().filter((button) => button.hasAttribute("aria-label"))).toEqual([]);
+    });
+
+    it("names the WebAuthn button by its visible text", () => {
+      component.showOtpField.set(true);
+      component.webAuthnTriggered.set(mockWebAuthnSignRequest("credential-key-1"));
+      fixture.detectChanges();
+
+      const webAuthnButton = textButtons().find((button) => button.textContent?.includes("WebAuthn"));
+      expect(webAuthnButton).toBeDefined();
+      expect(webAuthnButton?.hasAttribute("aria-label")).toBe(false);
+    });
+
+    it("announces the authentication messages in a status region that is present before they arrive", () => {
+      fixture.detectChanges();
+      const status = fixture.nativeElement.querySelector(".login-message[role=status]") as HTMLElement;
+      expect(status).not.toBeNull();
+      expect(status.textContent?.trim()).toBe("");
+
+      component.authMessage.set(["Please enter OTP"]);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".login-message[role=status]")).toBe(status);
+      expect(status.textContent).toContain("Please enter OTP");
+    });
+
+    it("shows a login error as an alert", () => {
+      component.errorMessage.set("Invalid credentials");
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".error-message[role=alert]")?.textContent).toContain(
+        "Invalid credentials"
+      );
+    });
+  });
+
   describe("Restart login button", () => {
     const restartButton = (): HTMLButtonElement | null => fixture.nativeElement.querySelector(".reset-btn");
 
@@ -666,12 +716,15 @@ describe("LoginComponent", () => {
   });
 
   describe("Remote user login", () => {
+    const buttonWithText = (text: string): HTMLButtonElement | null =>
+      (Array.from(fixture.nativeElement.querySelectorAll("button")) as HTMLButtonElement[]).find(
+        (button) => visibleText(button) === text
+      ) ?? null;
+
     it("should show remote user login button when remote_user is set", () => {
       configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });
       fixture.detectChanges();
-      const btn = fixture.debugElement.query(By.css("button[aria-label='Remote Login Button']"));
-      expect(btn).toBeTruthy();
-      expect(btn.nativeElement.textContent).toContain("Log In");
+      expect(buttonWithText("Log In")).not.toBeNull();
     });
 
     it("should call remoteLogin and authenticate with remote_user", () => {
@@ -679,8 +732,7 @@ describe("LoginComponent", () => {
       fixture.detectChanges();
       const authSpy = jest.spyOn(authService, "authenticate").mockReturnValue(of({ result: { status: true } }));
       const remoteLoginSpy = jest.spyOn(component, "remoteLogin");
-      const btn = fixture.debugElement.query(By.css("button[aria-label='Remote Login Button']"));
-      btn.nativeElement.click();
+      buttonWithText("Log In")?.click();
       fixture.detectChanges();
       expect(remoteLoginSpy).toHaveBeenCalled();
       expect(authSpy).toHaveBeenCalledWith({ username: "testuser" });
@@ -698,22 +750,18 @@ describe("LoginComponent", () => {
       configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });
       fixture.detectChanges();
       expect(component.useRemoteLogin()).toBe(true);
-      let btn = fixture.debugElement.query(By.css("button[aria-label='Login with credentials Button']"));
-      btn.nativeElement.click();
+      buttonWithText("Login with Credentials")?.click();
       fixture.detectChanges();
 
       expect(component.useRemoteLogin()).toBe(false);
-      btn = fixture.debugElement.query(By.css("button[aria-label='Login with credentials Button']"));
-      expect(btn).toBeNull();
-      const loginBtn = fixture.debugElement.query(By.css("button[aria-label='Login Button']"));
-      expect(loginBtn).toBeTruthy();
+      expect(buttonWithText("Login with Credentials")).toBeNull();
+      expect(fixture.nativeElement.querySelector("form .login-btn")).not.toBeNull();
     });
 
     it("should hide login with credentials button if forceRemoteUser is true", () => {
       configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: true });
       fixture.detectChanges();
-      const btn = fixture.debugElement.query(By.css("button[aria-label='Login with credentials Button']"));
-      expect(btn).toBeNull();
+      expect(buttonWithText("Login with Credentials")).toBeNull();
     });
   });
 });
