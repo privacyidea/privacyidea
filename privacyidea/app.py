@@ -35,18 +35,21 @@ import sys
 import time
 import uuid
 from pathlib import Path, PurePath
-from typing import Any
+from typing import IO, Any
 
 import click
 import flask_migrate.cli
 import sqlalchemy as sa
 import yaml
 from alembic.runtime.migration import MigrationContext
-from flask import Flask, current_app, jsonify, request, redirect
+from flask import Flask, Request, current_app, jsonify, request, redirect
 from flask.cli import with_appcontext
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
+from werkzeug.datastructures import FileStorage, MultiDict
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.formparser import FormDataParser
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
@@ -146,6 +149,32 @@ babel = Babel()
 # But since the logging system is not configured properly, the message might not
 # end up in the place as defined in the logging configuration
 log = logging.getLogger(__name__)
+
+
+class UrlencodedSizeLimitFormDataParser(FormDataParser):
+    """
+    Form data parser that also limits the size of an ``application/x-www-form-urlencoded`` body.
+
+    Werkzeug applies ``max_form_memory_size`` only to the text parts of a ``multipart/form-data`` body. This
+    parser also applies it to a urlencoded body: if the ``Content-Length`` of the body is larger than the limit,
+    it raises ``413 Request Entity Too Large`` before it reads the body. Flask takes the limit from the
+    configuration value ``MAX_FORM_MEMORY_SIZE``. ``None`` turns the check off.
+    """
+
+    def parse(self, stream: IO[bytes], mimetype: str, content_length: int | None,
+              options: dict[str, str] | None = None
+              ) -> tuple[IO[bytes], MultiDict[str, str], MultiDict[str, FileStorage]]:
+        if (mimetype == "application/x-www-form-urlencoded" and self.max_form_memory_size is not None
+                and content_length is not None and content_length > self.max_form_memory_size):
+            raise RequestEntityTooLarge()
+        return super().parse(stream, mimetype, content_length, options)
+
+
+class PrivacyIDEARequest(Request):
+    """
+    The request class of both application factories.
+    """
+    form_data_parser_class = UrlencodedSizeLimitFormDataParser
 
 
 def _register_spa_fallback(app: Flask) -> None:
@@ -538,6 +567,7 @@ def create_app(config_name="development",
     """
     app = Flask(__name__, static_folder=DefaultConfigValues.STATIC_FOLDER,
                 template_folder=DefaultConfigValues.TEMPLATE_FOLDER)
+    app.request_class = PrivacyIDEARequest
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = not silent
 
@@ -666,6 +696,7 @@ def create_docker_app():
     files via docker-compose.
     """
     app = Flask(__name__)
+    app.request_class = PrivacyIDEARequest
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
