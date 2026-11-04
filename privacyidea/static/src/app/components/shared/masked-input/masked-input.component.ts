@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, signal } from "@angular/core";
+import { Component, computed, input, signal } from "@angular/core";
 import { FieldTree, FormField } from "@angular/forms/signals";
 import { MatIconButton } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
@@ -37,6 +37,12 @@ export class MaskedInputComponent {
   hint = input("");
   error = input("");
   masked = signal(true);
+  toggleLabel = computed(() => {
+    const label = this.label();
+    return this.masked()
+      ? $localize`:@@common.showValue:Show ${label}:label:`
+      : $localize`:@@common.hideValue:Hide ${label}:label:`;
+  });
 
   toggleMasked(): void {
     this.masked.update((masked) => !masked);
