@@ -335,6 +335,14 @@ class MyTestCase(unittest.TestCase):
         cls.app_context.push()
         # First in the list, so it runs before the handlers of the app put their values on g
         cls.app.before_request_funcs.setdefault(None, []).insert(0, _start_request_with_empty_g)
+        cls.set_up_database()
+
+    @classmethod
+    def set_up_database(cls) -> None:
+        """
+        Empty the database, then add the configuration timestamp and the test admin. A test class that needs this
+        state for every test calls it in setUp.
+        """
         _reset_database()
 
         # save the current timestamp to the database to avoid hanging cached data

@@ -130,7 +130,7 @@ export class PolicyPanelEditComponent {
       const confirm = await this.dialogService.confirm({
         title: $localize`:@@policy.changePolicyScope:Change Policy Scope`,
         message: $localize`:@@policy.changingPolicy:Changing the policy scope will remove all currently added actions. Do you want to proceed?`,
-        confirmButtonText: $localize`:@@policy.yesChangeScope:Yes, change scope`
+        confirmButtonText: $localize`:@@policy.yesChangeScope:Yes, Change Scope`
       });
 
       if (!confirm) return;

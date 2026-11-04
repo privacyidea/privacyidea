@@ -7,6 +7,9 @@
 
 .api-client-page-container {
   @include styles.main-component-style;
+  // Wide enough for display name, client type and status on one line, so the page does not start out narrow
+  // and widen once the first remembered device is listed.
+  min-width: min(calc(var(--input-width-xxl) + 2 * 16px), calc(100vw - 4 * 16px));
   display: flex;
   flex-direction: column;
 }

@@ -59,11 +59,22 @@
       <button
         (click)="onSave()"
         [disabled]="!canSave()"
+        [attr.aria-describedby]="checkAllResolversWithoutResolver() ? 'save-blocked-reason' : null"
         class="action-button-primary button-width-s"
         mat-stroked-button>
         <mat-icon>save</mat-icon>
         <span i18n="@@common.save">Save</span>
       </button>
+      <!-- The name errors show below the name field, which is always visible. This reason belongs to the conditions
+           tab, so the header repeats it next to the Save button. -->
+      @if (checkAllResolversWithoutResolver()) {
+        <p
+          id="save-blocked-reason"
+          class="save-blocked-reason"
+          i18n="@@policy.saveNeedsResolverForCheckAllResolvers">
+          Select a resolver on the Conditions tab, or clear "Check all possible resolvers of a user".
+        </p>
+      }
 
       <!-- Shown only once the header reaches the field in the actions tab: until then it sits there,
            above the two panels it filters. Hidden rather than left out, so the header keeps its

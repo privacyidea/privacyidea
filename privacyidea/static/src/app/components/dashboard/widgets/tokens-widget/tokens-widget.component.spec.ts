@@ -144,7 +144,7 @@ describe("TokensWidgetComponent", () => {
     expect(labels).toContain("Software");
     expect(labels).toContain("Unassigned Hardware");
     expect(labels).toContain("Unassigned Software");
-    expect(labels).toContain("Users with tokens");
+    expect(labels).toContain("Users with Tokens");
   });
 
   it("should display the fetched counts", () => {
@@ -545,8 +545,8 @@ describe("TokensWidgetComponent", () => {
       const labels = Array.from(fixture2.nativeElement.querySelectorAll("td:first-child")).map((td) =>
         (td as Element).textContent?.trim()
       );
-      expect(labels).not.toContain("Users with tokens");
-      expect(labels).not.toContain("Users without tokens");
+      expect(labels).not.toContain("Users with Tokens");
+      expect(labels).not.toContain("Users without Tokens");
       fixture2.destroy();
     });
 
@@ -554,7 +554,7 @@ describe("TokensWidgetComponent", () => {
       const links = Array.from(fixture.nativeElement.querySelectorAll("a")) as HTMLAnchorElement[];
       const userLinks = links.filter((link) => link.textContent?.includes("Users "));
 
-      expect(userLinks.map((link) => link.textContent?.trim())).toEqual(["Users with tokens", "Users without tokens"]);
+      expect(userLinks.map((link) => link.textContent?.trim())).toEqual(["Users with Tokens", "Users without Tokens"]);
       expect(userLinks.every((link) => link.search === "?realm=realm1")).toBe(true);
     });
 

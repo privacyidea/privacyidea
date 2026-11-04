@@ -483,8 +483,8 @@ export class ContainerService extends FilterableTableService implements Containe
       return undefined;
     }
 
-    // This resource is specific to the user details page
-    if (!this.contentService.onUserDetails()) {
+    // This resource is specific to the user details page, which names its user in the URL
+    if (!this.contentService.onUserDetails() || !this.userService.detailsUser().username) {
       return undefined;
     }
 

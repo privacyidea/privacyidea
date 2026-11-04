@@ -1363,7 +1363,8 @@ class IdResolver(UserIdResolver):
                             get_info,
                             repr(self.tls_context),  # this is the string representation of the TLS context
                             self.serverpool_rounds,
-                            self.serverpool_skip)
+                            self.serverpool_skip,
+                            self.serverpool_strategy)
         if pool_description not in pools:
             log.debug(f"Creating a persistent server pool instance for {pool_description!r} ...")
             # Create a suitable instance of ``LockingServerPool``

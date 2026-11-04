@@ -453,7 +453,7 @@ export class AuthenticationLog {
     const fromIso = this.authenticationLogService.timestampFrom();
     const toIso = this.authenticationLogService.timestampTo();
     if (!fromIso && !toIso) {
-      return $localize`:@@authLog.dateRange:Date range`;
+      return $localize`:@@authLog.dateRange:Date Range`;
     }
     if (fromIso) {
       const now = Date.now();
