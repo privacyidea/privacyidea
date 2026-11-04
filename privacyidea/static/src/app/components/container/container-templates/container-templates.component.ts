@@ -123,7 +123,7 @@ const UNSORTED: Sort = { active: "", direction: "" };
     TableStateComponent,
     RouterLink,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
@@ -293,6 +293,6 @@ export class ContainerTemplatesComponent {
 
   onClickTemplateName(template: ContainerTemplate): void {
     if (!template.name) return;
-    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + template.name);
+    this.router.navigate([ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS, template.name]);
   }
 }

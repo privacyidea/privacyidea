@@ -91,10 +91,10 @@ describe("PeriodicTaskComponent", () => {
   });
 
   it("onEditTask navigates to the task-details route by name", () => {
-    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const spy = jest.spyOn(router, "navigate").mockResolvedValue(true);
     const task: PeriodicTask = { ...EMPTY_PERIODIC_TASK, name: "my-task", id: 7 };
     component.onEditTask(task);
-    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS + "my-task");
+    expect(spy).toHaveBeenCalledWith([ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS, "my-task"]);
   });
 
   it("toggleActive enables the task when activate=true", () => {

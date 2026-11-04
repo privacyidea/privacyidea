@@ -155,9 +155,10 @@ describe("ApiClientsComponent", () => {
   });
 
   it("should navigate to the edit page when editing a client", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const client = apiClientServiceMock.apiClients()[0];
     component.onEditApiClient(client);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + client.id);
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS, client.id]);
   });
 
   it("should navigate to the create page", () => {

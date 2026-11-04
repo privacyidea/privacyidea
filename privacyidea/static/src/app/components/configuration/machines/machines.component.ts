@@ -109,9 +109,9 @@ export class MachinesComponent {
   });
 
   openDetailsDialog(machine: Machine): void {
-    this.router.navigateByUrl(
-      ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
-    );
+    this.router.navigate([ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS, machine.id], {
+      queryParams: { resolver: machine.resolver_name }
+    });
   }
 
   onFilterInput(value: string): void {
