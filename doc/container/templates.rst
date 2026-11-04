@@ -22,8 +22,14 @@ information during the rollout, e.g. the Questionnaire token.
 Additionally, one can set a default template for each container type. This template is preselected when creating a new
 container of this type.
 
-For each token in the template, you can choose whether it is assigned to the container owner. This setting is only
-applied to admin users. For normal users, all tokens of the template are always assigned to them.
+For each token in the template, you can choose whether it is assigned to the container owner (*Assign to user*). This
+setting is only applied to admin users. For normal users, all tokens of the template are always assigned to them. If
+*Assign to user* is selected but the container has no owner, the token gets no user, only the first realm of the
+container, if it has one. A token without *Assign to user* gets neither a user nor a realm.
+
+The enrollment policies are checked for each token as for a single token enrollment: against the user and the realm the
+token gets, not against the user of the container. Hence, an administrator whose policies are restricted to certain
+realms can not create a token without *Assign to user*.
 
 During the creation of a container, the user can edit the template in place. However, these changes are only applied to
 the container and do not change the template itself. If the template is not changed, the container will be

@@ -55,6 +55,8 @@ import {
   MockUserService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockApiClientService } from "@testing/mock-services/mock-api-client-service";
+import { ApiClientService } from "@services/api-client/api-client.service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 
 describe("UserDetailsComponent", () => {
@@ -106,6 +108,7 @@ describe("UserDetailsComponent", () => {
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
         { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService },
         { provide: ContainerService, useClass: MockContainerService },
+        { provide: ApiClientService, useClass: MockApiClientService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },

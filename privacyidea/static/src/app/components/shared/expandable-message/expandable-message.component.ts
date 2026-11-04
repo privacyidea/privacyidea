@@ -46,7 +46,7 @@ let nextId = 0;
 export class ExpandableMessageComponent {
   readonly text = input.required<string | null>();
   readonly expandLabel = input<string>($localize`:@@common.showFullMessage:Show the full message`);
-  readonly collapseLabel = input<string>($localize`:@@user.showLess:Show less`);
+  readonly collapseLabel = input<string>($localize`:@@user.showLess:Show Less`);
 
   readonly textId = `expandable-message-${nextId++}`;
 
