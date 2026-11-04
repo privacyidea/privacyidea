@@ -40,8 +40,8 @@ export class MaskedInputComponent {
   toggleLabel = computed(() => {
     const label = this.label();
     return this.masked()
-      ? $localize`:@@common.showValue:Show ${label}:label:`
-      : $localize`:@@common.hideValue:Hide ${label}:label:`;
+      ? $localize`:@@common.showNamedValue:Show ${label}:label:`
+      : $localize`:@@common.hideNamedValue:Hide ${label}:label:`;
   });
 
   toggleMasked(): void {
