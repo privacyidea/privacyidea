@@ -25,6 +25,8 @@ from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
 from privacyidea.lib.authcache import _hash_password
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
@@ -66,6 +68,7 @@ from .base import MyApiTestCase, force_expire_challenges
 from .test_lib_tokencontainer import MockSmartphone
 
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
+from .authlog_utils import assert_authentication_log, clear_authentication_log
 
 
 class MultiChallenge(MyApiTestCase):
@@ -721,17 +724,21 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
                            user=User("cornelius", self.realm1))
         token.set_next_pin_change(diff="-1d")
         set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
+        clear_authentication_log()
 
     def tearDown(self) -> None:
         delete_policy("via_validate")
         for serial in (self.serial, self.other_serial):
             if get_tokens(serial=serial):
                 remove_token(serial)
+        clear_authentication_log()
         super().tearDown()
 
     def _check(self, password: str, transaction_id: str | None = None, user: str = "cornelius",
-               service_id: str | None = None) -> dict:
-        data = {"user": user, "realm": self.realm1, "pass": password}
+               service_id: str | None = None, serial: str | None = None) -> dict:
+        """Send /validate/check with the user, or with the serial if one is given."""
+        data = {"serial": serial} if serial else {"user": user, "realm": self.realm1}
+        data["pass"] = password
         if transaction_id:
             data["transaction_id"] = transaction_id
         if service_id:
@@ -743,17 +750,31 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertEqual(200, response.status_code, response.json)
         return response.json
 
-    def _enter_new_pin(self, new_pin: str = "newpin1") -> tuple[str, str]:
+    def _enter_new_pin(self, new_pin: str = "newpin1", otp_index: int = 0,
+                       serial: str | None = None) -> tuple[str, str]:
         """Authenticate and enter the new PIN. Returns the transaction IDs of both challenges."""
-        result = self._check("test" + self.valid_otp_values[0])
+        result = self._check("test" + self.valid_otp_values[otp_index], serial=serial)
         self.assertEqual("Please enter a new PIN", result["detail"]["message"], result)
         first = result["detail"]["transaction_id"]
-        result = self._check(new_pin, first)
+        result = self._check(new_pin, first, serial=serial)
         self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
         return first, result["detail"]["transaction_id"]
 
     def _pin_is(self, pin: str) -> bool:
         return get_one_token(serial=self.serial).token.check_pin(pin)
+
+    def _restart_pin_change(self) -> None:
+        """Set the PIN back to "test" and make the PIN change due again."""
+        token = get_one_token(serial=self.serial)
+        token.set_pin("test")
+        token.set_next_pin_change(diff="-1d")
+
+    def _assert_last_log_entry(self, event_type: AuthEventType, reason: AuthEventReason | None,
+                               serial: str | None) -> None:
+        entry = get_authentication_logs()[-1]
+        self.assertEqual(str(event_type), entry.event_type)
+        self.assertEqual([str(reason)] if reason else [], [row.reason for row in entry.reasons])
+        self.assertEqual(serial, entry.serial)
 
     def test_01_each_challenge_is_answered_once(self):
         first, second = self._enter_new_pin()
@@ -787,6 +808,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("Token is disabled", result["detail"]["message"], result)
         self.assertTrue(self._pin_is("test"))
+        self._assert_last_log_entry(AuthEventType.NO_USABLE_TOKEN, AuthEventReason.TOKEN_DISABLED, self.serial)
 
     def test_04_a_wrong_confirmation_counts_as_a_failed_attempt_and_ends_the_change(self):
         _first, second = self._enter_new_pin()
@@ -795,11 +817,15 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("PINs do not match", result["detail"]["message"], result)
         self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+        self._assert_last_log_entry(AuthEventType.CHALLENGE_ANSWERED_FAIL, AuthEventReason.CHALLENGE_WRONG_RESPONSE,
+                                    self.serial)
 
         # The confirmation can not be given again, the PIN change starts over with the next authentication
         result = self._check("newpin1", second)
         self.assertFalse(result["result"]["value"], result)
         self.assertTrue(self._pin_is("test"))
+        self._assert_last_log_entry(AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                    AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, self.serial)
 
     def test_05_a_challenge_of_another_users_token_is_refused(self):
         init_token({"type": "hotp", "serial": self.other_serial, "otpkey": self.otpkey, "pin": "other"},
@@ -810,6 +836,8 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         result = self._check("whatever", first, user="selfservice")
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
+        self._assert_last_log_entry(AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                    AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, None)
 
         # The challenge stays open for the owner of the token
         result = self._check("newpin1", first)
@@ -892,6 +920,63 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
         self.assertNotIn("version", result)
         self.assertNotIn("versionnumber", result)
+
+    def test_12_each_step_of_the_pin_change_is_logged(self):
+        for otp_index, serial in enumerate((None, self.serial)):
+            with self.subTest(serial=serial):
+                self._restart_pin_change()
+                clear_authentication_log()
+                first, second = self._enter_new_pin(otp_index=otp_index, serial=serial)
+                result = self._check("newpin1", second, serial=serial)
+                self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+
+                # The login and the first answer each trigger a challenge, the confirmation completes the
+                # authentication. The three requests are one attempt.
+                entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                     AuthEventType.CHALLENGE_CONTINUED,
+                                                     AuthEventType.LOGIN_SUCCESS])
+                self.assertEqual([self.serial] * 3, [entry.serial for entry in entries.all])
+                self.assertEqual([[]] * 3, [[row.reason for row in entry.reasons] for entry in entries.all])
+
+    def test_13_the_authentication_counts_when_the_new_pin_is_confirmed(self):
+        # The last authentication that the maximum allows starts a PIN change. A PIN change that is not finished
+        # does not count, the confirmation of the new PIN counts the authentication.
+        for otp_index, counter in enumerate(("count_auth", "count_auth_success")):
+            with self.subTest(counter=counter):
+                self._restart_pin_change()
+                token = get_one_token(serial=self.serial)
+                for name in ("count_auth", "count_auth_success"):
+                    getattr(token, f"set_{name}")(0)
+                    getattr(token, f"set_{name}_max")(0)
+                getattr(token, f"set_{counter}")(9)
+                getattr(token, f"set_{counter}_max")(10)
+
+                _first, second = self._enter_new_pin(otp_index=otp_index)
+                self.assertEqual(9, getattr(get_one_token(serial=self.serial), f"get_{counter}")())
+
+                result = self._check("newpin1", second)
+                self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+                self.assertTrue(self._pin_is("newpin1"))
+                self.assertEqual(10, getattr(get_one_token(serial=self.serial), f"get_{counter}")())
+
+    def test_14_a_pin_change_follows_the_answer_to_a_challenge(self):
+        set_policy("challenge_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self.addCleanup(delete_policy, "challenge_hotp")
+        result = self._check("test")
+        self.assertEqual("CHALLENGE", result["result"]["authentication"], result)
+
+        result = self._check(self.valid_otp_values[0], result["detail"]["transaction_id"])
+        self.assertEqual("Please enter a new PIN", result["detail"]["message"], result)
+        self.assertEqual(0, get_one_token(serial=self.serial).get_count_auth_success())
+        result = self._check("newpin1", result["detail"]["transaction_id"])
+        self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+        result = self._check("newpin1", result["detail"]["transaction_id"])
+        self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+        self.assertEqual(1, get_one_token(serial=self.serial).get_count_auth_success())
+
+        # The correct answer to the challenge continues with the challenge for the new PIN
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_CONTINUED,
+                                   AuthEventType.CHALLENGE_CONTINUED, AuthEventType.LOGIN_SUCCESS])
 
 
 class LastUsedTokenTypeWriteTestCase(MyApiTestCase):

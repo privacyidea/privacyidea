@@ -259,6 +259,11 @@
   answered once and only while it is valid, and the token has to be usable like for any other authentication (not
   disabled, below its fail counter, within its validity period). A confirmation that does not match the new PIN counts
   as a failed authentication and ends the PIN change. The PIN change starts again with the next login.
+  The authentication that starts the PIN change does not count for the authentication counters of the token
+  (`count_auth`, `count_auth_success`). The confirmation of the new PIN counts it. In the authentication log, the
+  steps of a PIN change are `CHALLENGE_TRIGGERED`, `CHALLENGE_CONTINUED` and `LOGIN_SUCCESS`. A refused answer has
+  the event type and the reason of its failure, for example `CHALLENGE_ANSWERED_FAIL` with
+  `CHALLENGE_WRONG_RESPONSE` for a confirmation that does not match.
 
 * **The PIN policies check the PIN that is stored.** `otp_pin_minlength`, `otp_pin_maxlength` and `otp_pin_contents`
   check `pin` for `/token/init`, `/token/assign` and container templates, and `otppin` for `/token/setpin`, an empty

@@ -680,6 +680,11 @@ class PinPolicyEndpointTestCase(MyApiTestCase):
             response = self.app.full_dispatch_request()
             return response.status_code, response.json
 
+    def _assert_refused_by_pin_policy(self, status: int, result: dict, minimum_length: int) -> None:
+        """The request is refused by the PIN policy otp_pin_minlength and not by another policy."""
+        self.assertEqual(403, status, result)
+        self.assertEqual(f"The minimum OTP PIN length is {minimum_length}", result["result"]["error"]["message"])
+
     def _user_authorization(self) -> str:
         self.authenticate_selfservice_user()
         return self.at_user
@@ -690,10 +695,10 @@ class PinPolicyEndpointTestCase(MyApiTestCase):
 
         status, result = self._post("/token/init", {"type": "hotp", "genkey": 1, "pin": "12", "serial": "ROLL1",
                                                     "rollover": "1"}, authorization)
-        self.assertEqual(403, status, result)
+        self._assert_refused_by_pin_policy(status, result, 8)
         status, result = self._post("/token/init", {"type": "hotp", "otpkey": self.otpkey, "pin": "12",
                                                     "serial": "VERIFY1", "verify": "123456"}, authorization)
-        self.assertEqual(403, status, result)
+        self._assert_refused_by_pin_policy(status, result, 8)
         # Without a PIN the rollover is not checked against the PIN policies
         status, result = self._post("/token/init", {"type": "hotp", "genkey": 1, "serial": "ROLL2",
                                                     "rollover": "1"}, authorization)
@@ -708,18 +713,18 @@ class PinPolicyEndpointTestCase(MyApiTestCase):
         # /token/init and /token/assign store "pin"
         status, result = self._post("/token/init", {"type": "hotp", "genkey": 1, "serial": "INIT1", "pin": "12",
                                                     "otppin": "Compliant123"}, authorization)
-        self.assertEqual(403, status, result)
+        self._assert_refused_by_pin_policy(status, result, 8)
         init_token({"type": "hotp", "serial": "ASSIGN1", "otpkey": self.otpkey})
         status, result = self._post("/token/assign", {"serial": "ASSIGN1", "user": "cornelius", "realm": self.realm1,
                                                       "pin": "1", "otppin": "Compliant123"}, self.at)
-        self.assertEqual(403, status, result)
+        self._assert_refused_by_pin_policy(status, result, 8)
 
         # /token/setpin stores "otppin", an empty one included
         init_token({"type": "hotp", "serial": "SETPIN1", "otpkey": self.otpkey, "pin": "oldpin123"},
                    user=User("selfservice", self.realm1))
         status, result = self._post("/token/setpin", {"serial": "SETPIN1", "otppin": "", "pin": "Whatever123"},
                                     authorization)
-        self.assertEqual(403, status, result)
+        self._assert_refused_by_pin_policy(status, result, 8)
         self.assertTrue(get_one_token(serial="SETPIN1").token.check_pin("oldpin123"))
         status, result = self._post("/token/setpin", {"serial": "SETPIN1", "otppin": "Compliant123"},
                                     authorization)
@@ -732,9 +737,10 @@ class PinPolicyEndpointTestCase(MyApiTestCase):
         authorization = self._user_authorization()
 
         for token_type in ("spass", "SPASS", "Spass"):
-            status, result = self._post("/token/init", {"type": token_type, "pin": "abc", "serial": "SPASS1"},
-                                        authorization)
-            self.assertEqual(403, status, (token_type, result))
+            with self.subTest(token_type=token_type):
+                status, result = self._post("/token/init", {"type": token_type, "pin": "abc", "serial": "SPASS1"},
+                                            authorization)
+                self._assert_refused_by_pin_policy(status, result, 12)
         status, result = self._post("/token/init", {"type": "SPASS", "pin": "abcdefghijkl", "serial": "SPASS1"},
                                     authorization)
         self.assertEqual(200, status, result)

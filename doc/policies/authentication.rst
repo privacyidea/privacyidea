@@ -531,6 +531,10 @@ this counts as a failed authentication of the token, and the PIN change starts a
 Each of the two challenges can be answered once and only within its validity time, and the token has to be
 usable like for any other authentication.
 
+The authentication that starts the PIN change does not count for the authentication counters of the token
+(``count_auth`` and ``count_auth_success``). The confirmation of the new PIN completes the authentication and counts
+it. A PIN change that the user does not finish does not count.
+
 .. note:: The application must support several consecutive challenge response requests.
 
 .. versionadded:: 3.4
