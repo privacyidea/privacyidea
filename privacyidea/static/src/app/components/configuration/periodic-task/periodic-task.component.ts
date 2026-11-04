@@ -205,7 +205,7 @@ export class PeriodicTaskComponent implements OnInit {
   }
 
   onEditTask(task: PeriodicTask): void {
-    this.router.navigateByUrl(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS + task.name);
+    this.router.navigate([ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS, task.name]);
   }
 
   toggleActive(task: PeriodicTask, activate: boolean): void {

@@ -152,7 +152,7 @@ export class RadiusServersComponent {
   }
 
   onEditServer(server: RadiusServer): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS, server.identifier]);
   }
 
   deleteSelected(): void {
