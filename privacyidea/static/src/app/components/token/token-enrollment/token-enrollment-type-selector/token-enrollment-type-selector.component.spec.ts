@@ -55,6 +55,15 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
   });
 
   describe("token type select", () => {
+    it("is named by its visible Token Type label", () => {
+      const select: HTMLElement = fixture.nativeElement.querySelector("mat-select");
+      const labelId = select.getAttribute("aria-labelledby")?.split(" ")[0] ?? "";
+      const label = fixture.nativeElement.querySelector("mat-form-field label");
+
+      expect(label?.textContent?.trim()).toBe("Token Type");
+      expect(label?.id).toBe(labelId);
+    });
+
     it("renders one option per token type", () => {
       const selectInstance: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
       expect(selectInstance.options.length).toBe(tokenService.tokenTypeOptions().length);

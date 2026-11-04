@@ -34,6 +34,7 @@ import {
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
+import { MatLabel } from "@angular/material/form-field";
 import { MatFormField, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
@@ -83,6 +84,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
     MatButton,
     MatFormField,
     MatIcon,
+    MatLabel,
     MatOption,
     MatSelect,
     MatIconButton,
