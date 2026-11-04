@@ -42,7 +42,6 @@ from privacyidea.lib.challenge import consume_challenge, get_challenges
 from privacyidea.lib import _
 from privacyidea.lib.tokenclass import ClientMode, TokenClass
 from privacyidea.lib.autoresync import LOG_AUTORESYNC_KEY
-from privacyidea.lib.utils import is_true
 
 
 log = logging.getLogger(__name__)
@@ -60,14 +59,16 @@ class CHALLENGE_TYPE:
 def pin_change_via_validate_follows(token: TokenClass, options: dict) -> bool:
     """
     Check if the PIN change via /validate/check follows a successful authentication with the token: the PIN of the
-    token is due for a change and the policy change_pin_via_validate applies to the token.
+    token is due for a change and the policy change_pin_via_validate applies to the token. A registration token
+    deletes itself after the successful authentication, so it does not change its PIN.
 
     :param token: The token of the successful authentication
     :param options: The options of the request, with the request context g
     :return: True if the authentication continues with the PIN change
     """
     g = options.get("g")
-    return bool(g and token.get_tokeninfo("next_pin_change") and token.is_pin_change()
+    return bool(g and token.get_class_type() != "registration" and token.get_tokeninfo("next_pin_change")
+                and token.is_pin_change()
                 and Match.token(g, scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE,
                                 token=token).any())
 
@@ -90,10 +91,25 @@ def _failed_pin_change_reply(message: str, event_type: AuthEventType, reason: Au
     if token:
         serial = token.token.serial
         reply_dict["serial"] = serial
+        reply_dict["type"] = token.token.tokentype
         reply_dict[AUTH_EVENT_SERIALS_KEY] = [serial]
         if reason:
             reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons={serial: str(reason)})
     return reply_dict
+
+
+def _response_did_not_match_reply(token: TokenClass | None = None,
+                                  reason: AuthEventReason = AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION) -> dict:
+    """
+    The reply to an answer whose challenge is not open for the request: the challenge belongs to a token that is not
+    one of the tokens of the request, it expired, or another request answered it already.
+
+    :param token: The token the answer was made for, None if the challenge is not one of the tokens of the request
+    :param reason: The reason of the failure
+    :return: The reply
+    """
+    return _failed_pin_change_reply(_("Response did not match the challenge."), AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                    reason, token)
 
 
 def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
@@ -116,9 +132,10 @@ def _create_challenge(token_obj, challenge_type, message, challenge_data=None):
     reply_dict["message"] = message
     reply_dict["messages"] = [message]
     reply_dict["transaction_id"] = db_challenge.transaction_id
-    # Like a challenge of check_token_list, the reply names the token, so that the audit and the authentication log
-    # name it for a request with a serial as well
+    # Like a challenge of check_token_list, the reply names the token and its type: the audit and the authentication
+    # log name the token for a request with a serial as well, and the authorization policies check the token
     reply_dict["serial"] = token_obj.token.serial
+    reply_dict["type"] = token_obj.token.tokentype
     # TODO: This line is deprecated: Add the information for the old administrative triggerchallenge
     reply_dict["transaction_ids"] = [db_challenge.transaction_id]
 
@@ -176,18 +193,16 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
             # expired nor answered
             token = next((t for t in args[0] if t.token.serial == challenge.serial), None)
             if not token:
-                return False, _failed_pin_change_reply(_("Response did not match the challenge."),
-                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL,
-                                                       AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION)
+                return False, _response_did_not_match_reply()
             if not challenge.is_open():
                 reason = (AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION if challenge.is_valid()
                           else AuthEventReason.CHALLENGE_EXPIRED)
-                return False, _failed_pin_change_reply(_("Response did not match the challenge."),
-                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL, reason, token)
+                return False, _response_did_not_match_reply(token, reason)
             # Like for any other answer to a challenge, the token has to be usable for an authentication: the second
             # answer ends in one. So the policies and the token itself have to allow it for this request, for
             # example for its type and its service_id.
-            from privacyidea.lib.token.auth import check_token_state, keep_tokens_usable_for_request
+            from privacyidea.lib.token.auth import (check_token_state, keep_tokens_usable_for_request,
+                                                    record_successful_authentication)
             token_reasons = {}
             if not keep_tokens_usable_for_request([token], options, token_reasons):
                 return False, _failed_pin_change_reply(_("No suitable token found for authentication."),
@@ -209,9 +224,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     # The PIN change has to be started again, and the attempt counts as a failed one. Only the request
                     # that removes the challenge counts it: another one answered the challenge already.
                     if not consume_challenge(challenge):
-                        return False, _failed_pin_change_reply(_("Response did not match the challenge."),
-                                                               AuthEventType.CHALLENGE_ANSWERED_FAIL,
-                                                               AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token)
+                        return False, _response_did_not_match_reply(token)
                     token.inc_failcount()
                     return False, _failed_pin_change_reply(_("PINs do not match"),
                                                            AuthEventType.CHALLENGE_ANSWERED_FAIL,
@@ -219,9 +232,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                 # Each challenge can be answered once: of several requests with the same answer only the one that
                 # removes the challenge sets the PIN
                 if not consume_challenge(challenge):
-                    return False, _failed_pin_change_reply(_("Response did not match the challenge."),
-                                                           AuthEventType.CHALLENGE_ANSWERED_FAIL,
-                                                           AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token)
+                    return False, _response_did_not_match_reply(token)
                 g = options.get("g")
                 token.challenge_janitor()
                 # Success, set new PIN and return success
@@ -238,11 +249,10 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                     token.remove_tokeninfo("next_pin_change")
                 # The confirmation completes the authentication that started the PIN change: like the last answer
                 # to a challenge in check_token_list, it counts the authentication and resets the fail counter
-                if not is_true(get_from_config(key="no_auth_counter")):
-                    token.inc_count_auth_success()
-                token.reset()
+                record_successful_authentication(token)
                 return True, {"message": _("PIN successfully set."),
                               "serial": token.token.serial,
+                              "type": token.token.tokentype,
                               AUTH_EVENT_TYPE_KEY: AuthEventType.LOGIN_SUCCESS}
             else:
                 # The PIN is presented the first time.
@@ -267,9 +277,7 @@ def generic_challenge_response_reset_pin(wrapped_function, *args, **kwds):
                         g.logged_in_user = request_logged_in_user
                 # The first challenge is used up, the new PIN has to be confirmed with a second one
                 if not consume_challenge(challenge):
-                    return False, _failed_pin_change_reply(_("Response did not match the challenge."),
-                                                           AuthEventType.CHALLENGE_ANSWERED_FAIL,
-                                                           AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, token)
+                    return False, _response_did_not_match_reply(token)
                 reply_dict = _create_challenge(token, CHALLENGE_TYPE.PIN_RESET,
                                                _("Please enter the new PIN again"),
                                                {"pin_hash": pass_hash(args[1])})

@@ -14,10 +14,10 @@ from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.token.auth import record_successful_authentication
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
-from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -98,9 +98,7 @@ def record_fido2_login_success(token: TokenClass) -> None:
     The views call this once the login is accepted. A verified assertion is not yet an accepted login - the
     view can still refuse it - so last_auth is written here and not where the assertion is verified.
     """
-    if not is_true(get_from_config(key="no_auth_counter")):
-        token.inc_count_auth_success()
-    token.reset()
+    record_successful_authentication(token)
     token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 

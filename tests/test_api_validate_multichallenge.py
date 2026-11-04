@@ -735,7 +735,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         super().tearDown()
 
     def _check(self, password: str, transaction_id: str | None = None, user: str = "cornelius",
-               service_id: str | None = None, serial: str | None = None) -> dict:
+               service_id: str | None = None, serial: str | None = None, status_code: int = 200) -> dict:
         """Send /validate/check with the user, or with the serial if one is given."""
         data = {"serial": serial} if serial else {"user": user, "realm": self.realm1}
         data["pass"] = password
@@ -747,7 +747,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
             # The tests share one app context, and /validate/check comes without a logged in user
             g.pop("logged_in_user", None)
             response = self.app.full_dispatch_request()
-        self.assertEqual(200, response.status_code, response.json)
+        self.assertEqual(status_code, response.status_code, response.json)
         return response.json
 
     def _enter_new_pin(self, new_pin: str = "newpin1", otp_index: int = 0,
@@ -977,6 +977,54 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         # The correct answer to the challenge continues with the challenge for the new PIN
         assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.CHALLENGE_CONTINUED,
                                    AuthEventType.CHALLENGE_CONTINUED, AuthEventType.LOGIN_SUCCESS])
+
+    def test_15_a_registration_token_does_not_start_a_pin_change(self):
+        # A registration token deletes itself after the successful authentication, so a new PIN is never used
+        token = init_token({"type": "registration", "serial": self.other_serial, "pin": "reg"},
+                           user=User("cornelius", self.realm1))
+        registration_code = token.get_init_detail()["registrationcode"]
+        token.set_next_pin_change(diff="-1d")
+
+        result = self._check("reg" + registration_code)
+        self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+        self.assertNotIn("transaction_id", result["detail"])
+        self.assertEqual([], get_tokens(serial=self.other_serial))
+        self._assert_last_log_entry(AuthEventType.LOGIN_SUCCESS, None, self.other_serial)
+
+    def test_16_the_authz_tokentype_policy_applies_to_each_step(self):
+        first = self._check("test" + self.valid_otp_values[0])["detail"]["transaction_id"]
+        set_policy("only_totp", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=totp")
+        self.addCleanup(delete_policy, "only_totp")
+
+        # The login and each answer are refused for a token type that the policy does not allow
+        result = self._check("test" + self.valid_otp_values[1], status_code=403)
+        self.assertEqual("Tokentype not allowed for authentication!", result["result"]["error"]["message"], result)
+        result = self._check("newpin1", first, status_code=403)
+        self.assertEqual("Tokentype not allowed for authentication!", result["result"]["error"]["message"], result)
+
+        delete_policy("only_totp")
+        self._restart_pin_change()
+        _first, second = self._enter_new_pin(otp_index=2)
+        set_policy("only_totp", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=totp")
+        result = self._check("newpin1", second, status_code=403)
+        self.assertEqual("Tokentype not allowed for authentication!", result["result"]["error"]["message"], result)
+
+    def test_17_each_step_names_the_token_type(self):
+        result = self._check("test" + self.valid_otp_values[0])
+        self.assertEqual("hotp", result["detail"]["type"], result)
+        self.assertEqual("hotp", self.find_most_recent_audit_entry(action="POST /validate/check")["token_type"])
+        result = self._check("newpin1", result["detail"]["transaction_id"])
+        self.assertEqual("hotp", result["detail"]["type"], result)
+        self.assertEqual("hotp", self.find_most_recent_audit_entry(action="POST /validate/check")["token_type"])
+        result = self._check("newpin1", result["detail"]["transaction_id"])
+        self.assertEqual("ACCEPT", result["result"]["authentication"], result)
+        self.assertEqual("hotp", result["detail"]["type"], result)
+        self.assertEqual("hotp", self.find_most_recent_audit_entry(action="POST /validate/check")["token_type"])
+
+        self._restart_pin_change()
+        result = self._check("otherpin", self._enter_new_pin(otp_index=1)[1])
+        self.assertEqual("PINs do not match", result["detail"]["message"], result)
+        self.assertEqual("hotp", result["detail"]["type"], result)
 
 
 class LastUsedTokenTypeWriteTestCase(MyApiTestCase):

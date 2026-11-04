@@ -164,9 +164,7 @@ def check_otp(serial: str, otpval: str) -> tuple[bool, dict]:
         return False, reply_dict
     res = token_object.check_otp(otpval) >= 0
     if res:
-        if increase_auth_counters:
-            token_object.inc_count_auth_success()
-        token_object.reset()
+        record_successful_authentication(token_object)
         token_object.post_success()
     else:
         token_object.inc_failcount()
@@ -418,6 +416,20 @@ def check_token_state(token: TokenClass) -> TokenState:
     return TokenState(True)
 
 
+def record_successful_authentication(token: TokenClass, count_authentication: bool = True) -> None:
+    """
+    The bookkeeping of the step that completes a successful authentication: count the authentication, unless the
+    no_auth_counter config switches the counters off, and reset the fail counter.
+
+    :param token: The token of the authentication
+    :param count_authentication: False if a later step counts the authentication, for example the confirmation of
+        the PIN change via /validate/check
+    """
+    if count_authentication and not is_true(get_from_config(key="no_auth_counter")):
+        token.inc_count_auth_success()
+    token.reset()
+
+
 def _note_event(request_events: list, event_serials: dict[str, set[str]], event: AuthEventType,
                 token: TokenClass) -> None:
     """
@@ -656,9 +668,6 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             # Check if the max auth is succeeded.
             # We need to set the offsets, since we are in the n+1st authentication.
             if token_obj.check_all(message_list):
-                if increase_auth_counters and not pin_change_follows:
-                    token_obj.inc_count_auth_success()
-
                 # The token is active and the auth counters are ok.
                 res = True
                 if pin_change_follows:
@@ -670,8 +679,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     reply_dict["type"] = token_obj.token.tokentype
                 if reply_dict["type"] != token_obj.token.tokentype:
                     reply_dict["type"] = "undetermined"
-                # reset the failcounter of valid token
-                token_obj.reset()
+                # Count the authentication and reset the failcounter of valid token
+                record_successful_authentication(token_obj, count_authentication=not pin_change_follows)
                 # Run the token post method. e.g. registration token deletes itself.
                 token_obj.post_success()
         if len(valid_token_list) == 1:
@@ -737,8 +746,6 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     pin_change_follows = (not further_challenge_follows
                                           and pin_change_via_validate_follows(token_object, options))
                     res = True
-                    if increase_auth_counters and not pin_change_follows:
-                        token_object.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
                     # If they exist, add next pin and next password change
                     next_pin = token_object.get_tokeninfo("next_pin_change")
@@ -750,6 +757,10 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         reply_dict["next_password_change"] = next_passw
                         reply_dict["password_change"] = token_object.is_pin_change(password=True)
                     if further_challenge_follows:
+                        # Each correct answer counts as a successful authentication, also one that is followed by
+                        # a further challenge
+                        if increase_auth_counters:
+                            token_object.inc_count_auth_success()
                         # The token creates further challenges, so create the new challenge
                         # and new transaction_id
                         create_challenges_from_tokens([token_object], reply_dict, options)
@@ -757,9 +768,9 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         res = False
                         request_events.append(AuthEventType.CHALLENGE_CONTINUED)
                     else:
-                        # This was the last successful challenge, so
+                        # This was the last successful challenge, so count the authentication and
                         # reset the fail counter of the challenge response token
-                        token_object.reset()
+                        record_successful_authentication(token_object, count_authentication=not pin_change_follows)
                         token_object.post_success()
                         if pin_change_follows:
                             reply_dict[PIN_CHANGE_FOLLOWS_KEY] = True
