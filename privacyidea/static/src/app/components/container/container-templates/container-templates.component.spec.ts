@@ -189,10 +189,10 @@ describe("ContainerTemplatesComponent", () => {
   });
   it("should navigate to details route only if row is not a skeleton row", () => {
     const router = TestBed.inject(Router);
-    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const navigateSpy = jest.spyOn(router, "navigate").mockResolvedValue(true);
 
     component.onClickTemplateName(mockTemplates[0]);
-    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS + mockTemplates[0].name);
+    expect(navigateSpy).toHaveBeenCalledWith([ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS, mockTemplates[0].name]);
 
     navigateSpy.mockClear();
     component.onClickTemplateName({ name: "" } as ContainerTemplate);

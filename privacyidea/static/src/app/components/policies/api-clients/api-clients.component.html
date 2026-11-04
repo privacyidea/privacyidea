@@ -74,7 +74,7 @@
       appScrollEdges
       class="table-scroll-region">
       <table
-        aria-label="API clients"
+        aria-label="API Clients"
         i18n-aria-label="@@common.apiClients"
         [dataSource]="apiClientDataSource()"
         class="api-clients-table"
@@ -212,7 +212,7 @@
           i18n="@@apiClient.lastUsed"
           mat-header-cell
           mat-sort-header>
-          Last used
+          Last Used
         </th>
         <td
           *matCellDef="let client"
@@ -235,7 +235,7 @@
             @if (authService.actionAllowed("api_client_rotate")) {
               <button
                 (click)="rotateKey(client)"
-                matTooltip="Rotate key"
+                matTooltip="Rotate Key"
                 i18n-matTooltip="@@apiClient.rotateKey"
                 mat-icon-button>
                 <mat-icon>refresh</mat-icon>

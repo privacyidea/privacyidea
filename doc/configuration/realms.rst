@@ -227,8 +227,9 @@ This affects:
   the user from the highest-priority resolver. The duplicate in the
   lower-priority resolver is suppressed.
 * **Policies**: By default, policies only match the resolver where the
-  user was found (the highest-priority one). See the ``check_all_resolvers``
-  option in :ref:`policies` to also match lower-priority resolvers.
+  user was found (the highest-priority one). See
+  :ref:`Check all possible resolvers of a user <check_all_resolvers>` to also
+  match the lower-priority resolvers that contain the user.
 
 **Example**:
 

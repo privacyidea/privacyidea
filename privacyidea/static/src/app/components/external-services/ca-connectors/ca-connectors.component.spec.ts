@@ -116,10 +116,10 @@ describe("CaConnectorsComponent", () => {
   });
 
   it("should navigate to details route on openEditDialog with connector", () => {
-    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const spy = jest.spyOn(router, "navigate").mockResolvedValue(true);
     const connector = caConnectorServiceMock.caConnectors()[0];
     component.openEditDialog(connector);
-    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS + connector.connectorname);
+    expect(spy).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS, connector.connectorname]);
   });
 
   it("should delete connector after confirmation", () => {
