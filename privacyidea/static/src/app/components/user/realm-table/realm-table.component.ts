@@ -640,7 +640,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   }
 
   onClickResolver(resolverName: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolverName);
+    this.router.navigate([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, resolverName]);
   }
 
   ngOnDestroy(): void {

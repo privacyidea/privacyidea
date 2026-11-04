@@ -152,7 +152,7 @@ export class UserResolversComponent {
   }
 
   onEditResolver(resolver: Resolver): void {
-    this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolver.resolvername);
+    this.router.navigate([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, resolver.resolvername]);
   }
 
   onDeleteResolver(resolver: Resolver): void {

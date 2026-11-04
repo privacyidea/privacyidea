@@ -92,7 +92,7 @@ export class UserDetailsRememberedDevicesComponent {
   });
 
   goToClient(device: RememberedDevice): void {
-    void this.router.navigateByUrl(ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + device.client_id);
+    void this.router.navigate([ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS, device.client_id]);
   }
 
   onPage(event: PageEvent): void {

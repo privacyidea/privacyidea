@@ -112,10 +112,10 @@ describe("RadiusServersComponent", () => {
   });
 
   it("should navigate to details route on onEditServer", () => {
-    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const spy = jest.spyOn(router, "navigate").mockResolvedValue(true);
     const server = radiusServiceMock.radiusServers()[0];
     component.onEditServer(server);
-    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS + server.identifier);
+    expect(spy).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS, server.identifier]);
   });
 
   it("should delete server after confirmation", () => {
