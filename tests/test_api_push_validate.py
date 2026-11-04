@@ -2579,6 +2579,69 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
+    def test_24c_push_without_challenge_is_not_offered(self):
+        """
+        A push token that creates no challenge (no firebase_configuration) is neither offered to the client nor
+        logged as challenged; only the tokens that got a challenge are.
+        """
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        clear_log()
+        self._enroll_push_token()
+        assert_authentication_log([])
+        get_one_token(serial=self.serial_push).remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        hotp = init_token({"type": "hotp", "genkey": 1, "pin": "push_pin"}, user=user)
+        hotp_serial = hotp.get_serial()
+
+        clear_log()
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+        detail = res.json["detail"]
+        self.assertListEqual([hotp_serial], [challenge["serial"] for challenge in detail["multi_challenge"]])
+        self.assertListEqual([], get_challenges(serial=self.serial_push))
+        self.assertEqual(hotp_serial, self.find_most_recent_audit_entry(action="POST /validate/check")["serial"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={hotp_serial},
+                                        transaction_id=detail["transaction_id"], endpoint='/validate/check')
+
+        clear_log()
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"user": "selfservice"}, headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        detail = res.json["detail"]
+        self.assertListEqual([hotp_serial], [challenge["serial"] for challenge in detail["multi_challenge"]])
+        self.assertListEqual([], get_challenges(serial=self.serial_push))
+        self.assertEqual(hotp_serial,
+                         self.find_most_recent_audit_entry(action="POST /validate/triggerchallenge")["serial"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={hotp_serial},
+                                        transaction_id=detail["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+        # Without another challenge token, the trigger is rejected instead of naming a challenge that does not exist
+        remove_token(hotp_serial)
+        clear_log()
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self.assertListEqual([], res.json["detail"]["multi_challenge"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, endpoint='/validate/check')
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("challenge_response")
+
     def test_25_push_answer_challenge_deleted_concurrently(self):
         """
         If the challenge row is deleted concurrently while the smartphone answer is being

@@ -407,6 +407,19 @@ class PushTokenTestCase(MyTestCase):
         with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
             token.create_challenge(options={"g": g, "exception": True})
 
+    def test_02da_challenge_without_gateway_is_not_created(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        success, _message, _transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertFalse(success)
+        self.assertListEqual([], get_challenges(serial=token.get_serial()))
+
     def test_02e_gateway_exception_uses_polling_fallback_and_records_metrics(self):
         token = self._create_push_token()
         self.addCleanup(remove_token, token.get_serial())
@@ -530,7 +543,8 @@ class PushTokenTestCase(MyTestCase):
                     result = res.json.get("result")
                     self.assertTrue(result.get("status"))
                     self.assertFalse(result.get("value"))
-                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    self.assertEqual("REJECT", result.get("authentication"))
+                    self.assertListEqual([], res.json["detail"]["multi_challenge"])
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
@@ -549,7 +563,8 @@ class PushTokenTestCase(MyTestCase):
                     result = res.json.get("result")
                     self.assertTrue(result.get("status"))
                     self.assertFalse(result.get("value"))
-                    self.assertEqual("CHALLENGE", result.get("authentication"))
+                    self.assertEqual("REJECT", result.get("authentication"))
+                    self.assertListEqual([], res.json["detail"]["multi_challenge"])
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)

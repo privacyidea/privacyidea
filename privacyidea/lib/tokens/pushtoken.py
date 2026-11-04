@@ -1482,7 +1482,8 @@ class PushTokenClass(TokenClass):
             return False
         return self.check_pin(passw, user=user, options=options)
 
-    def create_challenge(self, transactionid: str = None, options: dict = None) -> tuple[bool, str, str, dict]:
+    def create_challenge(self, transactionid: str | None = None, options: dict | None = None) -> tuple[
+        bool, str, str | None, dict]:
         """
         This method creates a challenge, which is submitted to the user.
         The submitted challenge will be preserved in the challenge
@@ -1493,14 +1494,15 @@ class PushTokenClass(TokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
-        :type options: dict
         :return: tuple of (bool, message, transactionid, attributes)
-        :rtype: tuple
 
         The return tuple builds up like this:
-        ``bool`` if submit was successful;
+        ``bool`` whether a challenge was created in the challenge table. Without a push gateway configured for the
+        token, or if the push gateway fails while polling is not allowed, there is none;
         ``message`` which is displayed in the JSON response;
         additional challenge ``reply_dict``, which is displayed in the JSON challenges response.
+        :raises ConfigAdminError: if the push gateway of the token does not allow push messages
+        :raises ValidateError: if no challenge could be sent and the option ``exception`` is set
         """
         options = options or {}
         # Depending on the mode we have different default messages
@@ -1549,6 +1551,7 @@ class PushTokenClass(TokenClass):
 
         # Initially we assume there is no error from the push gateway
         res = True
+        challenge_created = False
         push_gateway_identifier = self.get_tokeninfo(PushAction.FIREBASE_CONFIG)
         if push_gateway_identifier:
             challenge = b32encode_and_unicode(geturandom())
@@ -1559,7 +1562,7 @@ class PushTokenClass(TokenClass):
                 notification = _build_mobile_notification(self, options)
                 data["notification"] = {
                     "question": _truncate_with_log(notification["question"], MAX_STORED_QUESTION_LENGTH,
-                                                    "notification question"),
+                                                   "notification question"),
                     "title": _truncate_with_log(notification["title"], MAX_STORED_TITLE_LENGTH,
                                                 "notification title")}
                 data = _fit_notification_to_storage_budget(data)
@@ -1605,13 +1608,14 @@ class PushTokenClass(TokenClass):
 
                 # Create the challenge in the database
                 db_challenge = create_challenge(self.token.serial,
-                                               transaction_id=transactionid,
-                                               challenge=challenge,
-                                               data=data,
-                                               session=options.get("session"),
-                                               validitytime=validity)
+                                                transaction_id=transactionid,
+                                                challenge=challenge,
+                                                data=data,
+                                                session=options.get("session"),
+                                                validitytime=validity)
                 self.challenge_janitor()
                 transactionid = db_challenge.transaction_id
+                challenge_created = True
 
             # If sending the Push message failed, we log a warning
             if not res:
@@ -1628,7 +1632,7 @@ class PushTokenClass(TokenClass):
 
         reply_dict.update({"attributes": {"hideResponseInput": client_mode != ClientMode.INTERACTIVE},
                            "client_mode": client_mode})
-        return True, message, transactionid, reply_dict
+        return challenge_created, message, transactionid, reply_dict
 
     @check_token_locked
     def authenticate(self, passw: str, user: User = None, options: dict = None) -> tuple[bool, int, dict | None]:

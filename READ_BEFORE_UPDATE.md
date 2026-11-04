@@ -255,6 +255,13 @@
   *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
   `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
 
+* **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
+  for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
+  It is now left out of `multi_challenge` and of the serials in the audit and authentication log, instead of being
+  offered with a challenge that does not exist. If it was the only token to trigger a challenge, the response is
+  `authentication` `REJECT` instead of `CHALLENGE`, in the audit log as well. Event handler conditions on
+  `result_authentication` are matched accordingly.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
