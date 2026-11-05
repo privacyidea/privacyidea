@@ -370,9 +370,9 @@ def check_censored_password(identifier: str, saved: dict, action: str, server: s
     Make sure a stored password is only used for the server it was saved for.
 
     A client that never received the password sends the ``__CENSORED__`` placeholder instead, which
-    means "use the stored password". If the request also changes where or as whom the password is
-    sent, the stored password of one server could be pointed at any other host. A value of ``None``
-    means the setting is not changed.
+    means "use the stored password". The stored password is only used if the request keeps the server,
+    the port, the username and the TLS flag of the saved configuration. A value of ``None`` means the
+    setting is not changed.
 
     :param identifier: the identifier of the saved SMTP server
     :param saved: the saved configuration, as returned by ``SMTPServerDB.get()``

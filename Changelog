@@ -3,8 +3,7 @@ Version 3.14.1
   Fixes:
   * The stored password of an SMTP server is only used for the server it was saved for. Saving a
     definition or sending a test email with the censored placeholder is rejected if server, port,
-    username or TLS flag differ from the saved definition, also in "pi-manage config import".
-    Otherwise the stored password could be sent to any other host. (#3544)
+    username or TLS flag differ from the saved definition, also in "pi-manage config import". (#3544)
   * The SMTP server test email reports SMTP, network and TLS errors and invalid parameters with a
     readable message instead of an internal server error. If S/MIME signing fails and "Don't send on
     signing error" is set, it now returns HTTP 400 instead of HTTP 200 with the value false. (#3544)
