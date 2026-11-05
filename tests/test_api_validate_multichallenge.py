@@ -785,10 +785,11 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
 
         # Neither challenge can be answered again
         for transaction_id in (first, second):
-            result = self._check("otherpin", transaction_id)
-            self.assertFalse(result["result"]["value"], result)
-            result = self._check("newpin1", transaction_id)
-            self.assertFalse(result["result"]["value"], result)
+            for pin in ("otherpin", "newpin1"):
+                result = self._check(pin, transaction_id)
+                self.assertFalse(result["result"]["value"], result)
+                self._assert_last_log_entry(AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                            AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, self.serial)
         self.assertTrue(self._pin_is("newpin1"))
 
     def test_02_an_expired_challenge_is_refused(self):
@@ -799,6 +800,8 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
         self.assertTrue(self._pin_is("test"))
+        self._assert_last_log_entry(AuthEventType.CHALLENGE_ANSWERED_FAIL, AuthEventReason.CHALLENGE_EXPIRED,
+                                    self.serial)
 
     def test_03_a_disabled_token_is_refused(self):
         _first, second = self._enter_new_pin()
@@ -842,6 +845,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         # The challenge stays open for the owner of the token
         result = self._check("newpin1", first)
         self.assertEqual("Please enter the new PIN again", result["detail"]["message"], result)
+        self._assert_last_log_entry(AuthEventType.CHALLENGE_CONTINUED, reason=None, serial=self.serial)
 
     def test_06_a_disabled_token_type_is_refused(self):
         _first, second = self._enter_new_pin()
@@ -852,6 +856,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("No suitable token found for authentication.", result["detail"]["message"], result)
         self.assertTrue(self._pin_is("test"))
+        self._assert_last_log_entry(AuthEventType.NO_USABLE_TOKEN, AuthEventReason.TOKEN_TYPE_DISABLED, self.serial)
 
     def test_07_an_application_specific_password_is_refused_for_another_service(self):
         for service_id in ("thunderbird", "evolution"):
@@ -867,6 +872,8 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         result = self._check("newpin1", first, service_id="evolution")
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("No suitable token found for authentication.", result["detail"]["message"], result)
+        self._assert_last_log_entry(AuthEventType.NO_USABLE_TOKEN, AuthEventReason.TOKEN_NOT_APPLICABLE,
+                                    self.other_serial)
 
         # The challenge stays open for the service of the token
         result = self._check("newpin1", first, service_id="thunderbird")
@@ -884,6 +891,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         result = self._check("newpin1", second)
         self.assertTrue(result["result"]["value"], result)
         self.assertTrue(self._pin_is("newpin1"))
+        self._assert_last_log_entry(AuthEventType.LOGIN_SUCCESS, reason=None, serial=self.serial)
 
     def test_09_a_wrong_confirmation_of_an_answered_challenge_does_not_count(self):
         _first, second = self._enter_new_pin()
@@ -893,6 +901,8 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("Response did not match the challenge.", result["detail"]["message"], result)
         self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+        self._assert_last_log_entry(AuthEventType.CHALLENGE_ANSWERED_FAIL,
+                                    AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION, self.serial)
 
     def test_10_a_revoked_token_is_refused(self):
         _first, second = self._enter_new_pin()
@@ -909,6 +919,7 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
         self.assertFalse(result["result"]["value"], result)
         self.assertEqual("Token is revoked", result["detail"]["message"], result)
         self.assertTrue(self._pin_is("test"))
+        self._assert_last_log_entry(AuthEventType.NO_USABLE_TOKEN, AuthEventReason.TOKEN_REVOKED, self.serial)
 
     def test_11_the_answers_keep_the_version_hidden(self):
         set_policy("hide_version", scope=SCOPE.HARDENING, action=PolicyAction.HIDE_VERSION)
