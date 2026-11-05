@@ -27,6 +27,7 @@ import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import {
+  COMMA_UNESCAPING_ACTIONS,
   hasUnescapedComma,
   PolicyActionDetail,
   PolicyService,
@@ -84,6 +85,7 @@ export class PolicyActionItemComponent {
     return this.policyService.actionValueIsValid(detail, actionValue);
   });
   readonly valueHasComma = computed(() => hasUnescapedComma(this.currentAction()?.value));
+  readonly commaCanBeEscaped = computed(() => COMMA_UNESCAPING_ACTIONS.has(this.selectableAction().actionName));
   readonly actionAdd = output<{ name: string; value: string | number | boolean | undefined }>();
 
   currentAction = linkedSignal({

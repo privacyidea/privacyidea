@@ -27,10 +27,17 @@
         [innerHTML]="description | highlight: highlight() : true"></span>
     }
     @if (valueHasComma()) {
-      <span
-        class="detail-error"
-        role="alert"
-        i18n="@@policy.actionValueComma">Commas are not allowed in action values. In a message, write a comma as \,</span>
+      @if (commaCanBeEscaped()) {
+        <span
+          class="detail-error"
+          role="alert"
+          i18n="@@policy.actionValueCommaEscape">Commas are not allowed in action values. Write a comma as \,</span>
+      } @else {
+        <span
+          class="detail-error"
+          role="alert"
+          i18n="@@policy.actionValueComma">Commas are not allowed in action values.</span>
+      }
     }
   </div>
 

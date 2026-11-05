@@ -68,6 +68,22 @@ export function hasUnescapedComma(value: unknown): boolean {
 }
 
 /**
+ * The message actions in which the server turns `\,` back into a comma (the `replace(r"\,", ",")` calls in
+ * tokenclass.py, emailtoken.py, smstoken.py, indexedsecrettoken.py and pushtoken.py). Every other action keeps
+ * the backslash in its value.
+ */
+export const COMMA_UNESCAPING_ACTIONS: ReadonlySet<string> = new Set([
+  "challenge_text",
+  "email_challenge_text",
+  "emailsubject",
+  "emailtext",
+  "indexedsecret_challenge_text",
+  "push_challenge_text",
+  "sms_challenge_text",
+  "smstext"
+]);
+
+/**
  * Whether `name` collides with one of `policies`, ignoring case. `ownName` is the current name of the policy
  * being edited: it never collides with itself, and neither does a name that is left unchanged. A missing name
  * (e.g. from a policy template without one) collides with nothing.
