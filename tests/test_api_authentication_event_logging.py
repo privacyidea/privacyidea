@@ -2062,6 +2062,25 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
                                         serials={self.serial}, transaction_id=res.json["detail"]["transaction_id"],
                                         endpoint='/validate/triggerchallenge')
 
+    def test_triggerchallenge_names_the_token_type_before_the_token_state(self):
+        remove_token(self.serial)
+        revoked = init_token({"serial": "AUTHLOG_SPASS_REVOKED", "type": "spass", "pin": self.pin}, user=self.user)
+        revoke_token(revoked.get_serial())
+        failcount = init_token({"serial": "AUTHLOG_SPASS_FAILCOUNT", "type": "spass", "pin": self.pin}, user=self.user)
+        failcount.token.failcount = failcount.get_max_failcount()
+        failcount.save()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertNotIn("message", res.json["detail"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_NO_CHALLENGE_MODE,
+                                        reasons={revoked.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE,
+                                                 failcount.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE},
+                                        endpoint='/validate/triggerchallenge')
+
     def test_triggerchallenge_without_usable_token_names_the_refusal(self):
         token = get_one_token(serial=self.serial)
         for _ in range(token.get_max_failcount()):

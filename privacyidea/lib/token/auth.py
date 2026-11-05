@@ -411,9 +411,9 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
     """
     Create challenges for the usable challenge-response tokens of *token_list*, as /validate/triggerchallenge does.
 
-    Like :func:`check_token_list`, a token is only used if it is not revoked, active and passes ``check_all``, and only
-    those tokens get their failcounter increased by ``increase_failcounter_on_challenge``. Every token left out records
-    why.
+    A token is only used if a challenge can be triggered for it at all (see :meth:`TokenClass.can_trigger_challenge`),
+    and then, like at :func:`check_token_list`, if it is not revoked, active and passes ``check_all``. Only those tokens
+    get their failcounter increased by ``increase_failcounter_on_challenge``. Every token left out records why.
 
     :param token_list: The tokens of the user or serial of the request
     :param reply_dict: The details of the response, which get the challenges, see
@@ -423,22 +423,23 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
     :return: The event, serials and reasons for the authentication log
     """
     token_reasons: dict[str, str] = {}
-    tokens = _keep_usable(token_list, token_reasons, lambda token: not (token.is_revoked() or token.is_locked()),
+    # The token type decides first: the state of a token that can not be triggered at all does not matter here
+    tokens = _keep_usable(token_list, token_reasons,
+                          lambda token: token.can_trigger_challenge(options),
+                          lambda token: (AuthEventReason.TOKEN_NO_CHALLENGE_MODE
+                                         if AuthenticationMode.CHALLENGE not in token.mode
+                                         else AuthEventReason.TOKEN_NOT_APPLICABLE))
+    tokens = _keep_usable(tokens, token_reasons, lambda token: not (token.is_revoked() or token.is_locked()),
                           AuthEventReason.TOKEN_REVOKED)
     tokens = _keep_usable(tokens, token_reasons, lambda token: token.is_active(), AuthEventReason.TOKEN_DISABLED)
-    usable_tokens = []
+    challenge_tokens = []
     messages = []
     for token in tokens:
         token.check_reset_failcount()
         if token.check_all(messages):
-            usable_tokens.append(token)
+            challenge_tokens.append(token)
         else:
             _record_reason(token_reasons, token)
-    challenge_tokens = _keep_usable(usable_tokens, token_reasons,
-                                    lambda token: token.can_trigger_challenge(options),
-                                    lambda token: (AuthEventReason.TOKEN_NO_CHALLENGE_MODE
-                                                   if AuthenticationMode.CHALLENGE not in token.mode
-                                                   else AuthEventReason.TOKEN_NOT_APPLICABLE))
     if is_true(options.get("increase_failcounter_on_challenge")):
         for token in challenge_tokens:
             token.inc_failcount()
