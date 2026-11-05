@@ -15,9 +15,8 @@ Version 3.14.1
   * A SQL resolver with an integer user ID column no longer loses a user whose stored ID is written with
     leading zeros when several users are looked up at once. The token list shows such an owner with their
     login name again, and the token janitors no longer report their tokens as orphaned (#1653)
-  * `find --orphaned` asks an HTTP, Keycloak or Entra ID user store that can not be reached at all once per
-    resolver and chunk instead of once per token owner. Each of those owners used to pay the full request
-    timeout, so a store that is down no longer stretches the run (#1653)
+  * If an HTTP, Keycloak or Entra ID user store can not be reached at all, `find --orphaned` asks it only once
+    per resolver and chunk. A store that is down then costs at most one request timeout per chunk (#1653)
 
 Version 3.14, 2026-10-08
 
