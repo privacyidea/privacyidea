@@ -924,6 +924,9 @@ class OrphanedTokenTestCase(MyTestCase):
 
     @ldap3mock.activate
     def test_09_failing_ldap_batch_lookup(self):
+        # The first lookups write the found users to the Redis user cache, which would then answer
+        # before the unreachable user store mocked below is asked
+        self.pin_to_database("users")
         ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
         ldap_serials = {"ORPHEXISTS0", "ORPHEXISTS1", "ORPHEXISTS2", "ORPHDELETEDUSER", "ORPHNOREALM"}
         tokens = [token for token in get_tokens(serial_wildcard=self.serial_wildcard)
