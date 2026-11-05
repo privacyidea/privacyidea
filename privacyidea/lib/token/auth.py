@@ -255,14 +255,10 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
                 transactionid=transaction_id, options=options)
 
             if message:
-                # We need to pass the info if a push token has been triggered, so that require presence can reuse the
-                # challenge instead of creating a new one with a different answer
-                # Also check the challenge info if the presence answer is returned to pass it on for tag replacement
+                # Pass the presence answer on for tag replacement
                 additional_tags = {}
-                if token.get_type() == "push":
-                    options["push_triggered"] = True
-                    if "presence_answer" in challenge_info:
-                        additional_tags["presence_answer"] = challenge_info["presence_answer"]
+                if token.get_type() == "push" and "presence_answer" in challenge_info:
+                    additional_tags["presence_answer"] = challenge_info["presence_answer"]
                 # Add the reply to the response
                 message = challenge_text_replace(message, user=token.user, token_obj=token,
                                                  additional_tags=additional_tags)
@@ -294,6 +290,11 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
                 if token_type == "passkey":
                     passkey_nonce = challenge_info["challenge"]
                     options["passkey_nonce"] = passkey_nonce
+
+                # Further push tokens reuse the presence options of this challenge, so every smartphone shows the same
+                # answer
+                if token_type == "push":
+                    options["push_triggered"] = True
 
                 reply_dict["multi_challenge"].append(challenge_info)
                 reply_dict.update(challenge_info)  # FIXME: This is deprecated and should be removed one day

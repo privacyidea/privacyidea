@@ -2239,8 +2239,8 @@ class PushTokenTestCase(MyTestCase):
         self._teardown_notification_token(token, "16f")
 
     def test_16g_code_to_phone_retrigger_without_earlier_challenge(self):
-        # A code_to_phone re-trigger whose transaction has no earlier challenge leaves the
-        # challenge data at None, which the notification must not stumble over.
+        # A code_to_phone challenge after an earlier push challenge of the request builds its
+        # own data, and the notification is stored with it.
         token = self._setup_notification_token("16g")
         serial = token.get_serial()
         set_policy("push_16g_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
@@ -2407,6 +2407,54 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(1, token.check_challenge_response(passw="424242", options=options))
 
         self._teardown_notification_token(token, "16m")
+
+    def test_16n_code_to_phone_challenge_takes_no_data_from_another_transaction(self):
+        # The first push token creates no challenge, so the request has no transaction yet when the second one is
+        # challenged. A confirmed code_to_phone challenge of another token must not lend it its display code.
+        set_policy("push_16n_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        without_gateway = self._create_push_token()
+        without_gateway.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        without_gateway.set_pin("pushpin")
+        without_gateway.add_user(User("cornelius", self.realm1))
+        token = self._setup_notification_token("16n")
+        other = init_token({"type": "spass", "serial": "OTHER16N"})
+        Challenge(other.get_serial(), transaction_id="99998888777766665555",
+                  data={"type": "push", "mode": PushMode.CODE_TO_PHONE, "smartphone_confirmed": True,
+                        "display_code": "424242"}).save()
+
+        transaction_id = self._trigger_challenge()
+
+        stored = get_challenges(serial=token.get_serial(), transaction_id=transaction_id)[0].get_data()
+        self.assertFalse(stored["smartphone_confirmed"])
+        self.assertNotIn("display_code", stored)
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "424242",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+
+        delete_policy("push_16n_code")
+        remove_token(without_gateway.get_serial())
+        remove_token(other.get_serial())
+        self._teardown_notification_token(token, "16n")
+
+    def test_16o_existing_challenge_data_is_read_from_valid_challenges_of_the_transaction(self):
+        token = self._setup_notification_token("16o")
+        serial = token.get_serial()
+        presence_data = {"type": "push", "mode": PushMode.REQUIRE_PRESENCE, "options": ["A", "B"],
+                         "correct_answer": "A"}
+        Challenge(serial, transaction_id="11110000111100001111", data=presence_data).save()
+        Challenge(serial, transaction_id="22220000222200002222", data=presence_data,
+                  expiration=datetime.now() - timedelta(days=1)).save()
+
+        self.assertIsNone(token._get_existing_challenge_data(None, PushMode.REQUIRE_PRESENCE))
+        self.assertIsNone(token._get_existing_challenge_data("22220000222200002222", PushMode.REQUIRE_PRESENCE))
+        self.assertIsNone(token._get_existing_challenge_data("11110000111100001111", PushMode.CODE_TO_PHONE))
+        self.assertDictEqual(presence_data,
+                             token._get_existing_challenge_data("11110000111100001111", PushMode.REQUIRE_PRESENCE))
+
+        self._teardown_notification_token(token, "16o")
 
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):

@@ -1231,14 +1231,20 @@ class PushTokenClass(TokenClass):
             log.debug(f"Conditional-access pre-check could not resolve the owner of token {serial}: {ex!r}")
             return User()
 
-    def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
+    def _get_existing_challenge_data(self, transaction_id: str | None, push_mode: PushMode) -> dict | None:
         """
         Load challenge data for the given transaction and push mode.
 
-        Returns the challenge data dict if a matching push challenge is found, or None.
+        :param transaction_id: The transaction to read; without one there is no challenge to read from
+        :param push_mode: The push mode the challenge must have
+        :return: The data of a valid push challenge of the transaction with this mode, or None
         """
+        if not transaction_id:
+            return None
         challenges = get_challenges(transaction_id=transaction_id)
         for c in challenges:
+            if not c.is_valid():
+                continue
             c_data = c.get_data()
             if c_data.get("type", "") == "push" and c_data.get("mode") == push_mode:
                 return c_data
@@ -1528,14 +1534,12 @@ class PushTokenClass(TokenClass):
             log.warning("Unable to use 'require_presence' policy with 'push_wait'. "
                         "Disabling 'require_presence' policy!")
         elif is_true(code_to_phone_enabled) and not options.get(PushAction.WAIT):
-            if options.get("push_triggered"):
-                data = self._get_existing_challenge_data(transactionid, PushMode.CODE_TO_PHONE)
-            else:
-                data = {
-                    "type": "push",
-                    "mode": PushMode.CODE_TO_PHONE,
-                    "smartphone_confirmed": False,
-                }
+            # Each token's smartphone confirms its own challenge, so nothing is taken over from another one
+            data = {
+                "type": "push",
+                "mode": PushMode.CODE_TO_PHONE,
+                "smartphone_confirmed": False,
+            }
 
             # push_code_to_phone has a different default message
             default_message = _("Please enter the code displayed on your smartphone.")
