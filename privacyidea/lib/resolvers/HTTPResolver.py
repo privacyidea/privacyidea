@@ -31,7 +31,7 @@ from pydash import get
 from requests import Response, HTTPError
 
 from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
-from ..error import ParameterError, ResolverError
+from ..error import ParameterError, ResolverError, ResolverTransportError
 from ..log import log_with
 from ..utils import is_true
 from privacyidea.lib.metrics import track_resolver_op
@@ -98,6 +98,17 @@ def is_request_configured(request_config: dict | None) -> bool:
     :param request_config: the configuration of one request
     """
     return isinstance(request_config, dict) and bool(request_config.get(ENDPOINT))
+
+
+def _lookup_error_class(error: Exception) -> type[ResolverError]:
+    """
+    The error class a failed lookup of a single user raises. It keeps a user store that could not be reached
+    apart from one that answered, while the message stays the same for both, since it reaches unauthenticated
+    clients.
+
+    :param error: the error the request to the user store failed with
+    """
+    return ResolverTransportError if isinstance(error, ResolverTransportError) else ResolverError
 
 
 class HTTPMethod(Enum):
@@ -480,7 +491,8 @@ class HTTPResolver(UserIdResolver):
         except (ResolverError, ValueError) as error:
             # ValueError: the response is not JSON, e.g. the page of a proxy in front of the user store
             log.error(f"Could not look up the user {login_name!r}: {error}")
-            raise ResolverError(str(USER_LOOKUP_FAILED)) from error
+            error_class: type[ResolverError] = _lookup_error_class(error)
+            raise error_class(str(USER_LOOKUP_FAILED)) from error
         user_id = user_info.get("userid", "")
         return user_id
 
@@ -490,6 +502,27 @@ class HTTPResolver(UserIdResolver):
         Returns the username for the given user ID.
         """
         user_info = self.get_user_info(userid, attributes=["username"])
+        user_name = user_info.get("username", "")
+        return user_name
+
+    @track_resolver_op("get_username")
+    def lookup_username(self, user_id: str) -> str:
+        """
+        Returns the username for the given user ID. Unlike :py:func:`getUsername`, which answers an empty string
+        also for a failed request, it raises if the user store could not answer.
+
+        :param user_id: The ID of the user in the user store
+        :return: The username or an empty string if the user does not exist
+        :raises ResolverError: if the user store could not answer the request
+        """
+        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id})
+        try:
+            user_info = self._get_user(user_id, config, ["username"], raise_on_lookup_failure=True)
+        except (ResolverError, ValueError) as error:
+            # ValueError: the response is not JSON, e.g. the page of a proxy in front of the user store
+            log.warning(f"Could not look up the user with the ID {user_id!r}: {error}")
+            error_class: type[ResolverError] = _lookup_error_class(error)
+            raise error_class(str(USER_LOOKUP_FAILED)) from error
         user_name = user_info.get("username", "")
         return user_name
 
@@ -1135,6 +1168,9 @@ class HTTPResolver(UserIdResolver):
             else:
                 response = requests.request(config.method.value, config.endpoint, params=params,
                                             headers=config.headers, timeout=self.timeout, verify=self.tls)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+            log.warning(f"Failed to reach the user store: {error}")
+            raise ResolverTransportError("Failed to reach the user store!") from error
         except Exception as error:
             log.warning(f"Failed to perform HTTP request: {error}")
             raise ResolverError("Failed to perform HTTP request!")

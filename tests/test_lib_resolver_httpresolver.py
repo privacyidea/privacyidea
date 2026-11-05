@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 import mock
 import pytest
+import requests
 import responses
 from requests.exceptions import SSLError
 
@@ -844,6 +845,80 @@ class HTTPResolverTestCase(MyTestCase):
         responses.add(responses.GET, "https://example.com/users/1234", status=200,
                       body="""{"success": false}""")
         self.assertEqual("", resolver.getUsername('1234'))
+
+    def test_06b_lookup_username_user_store_error(self) -> None:
+        # Only a 404 means that the user does not exist, any other error is a user store that failed to answer
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        for status in [401, 403, 500, 503]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://example.com/users/1234", status=status,
+                                     body="""{"error": "failure"}""")
+                with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                    resolver.lookup_username("1234")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+                # getUsername does not tell the failure from a user that does not exist
+                self.assertEqual("", resolver.getUsername("1234"), f"status {status}")
+
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.add(responses.GET, "https://example.com/users/1234", status=404,
+                                 body="""{"error": "not found"}""")
+            self.assertEqual("", resolver.lookup_username("1234"))
+
+        # A proxy in front of the user store answers with a page that is not JSON
+        for status in [200, 502]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://example.com/users/1234", status=status,
+                                     body="<html><body>Bad Gateway</body></html>")
+                with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                    resolver.lookup_username("1234")
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
+    def test_06c_usernames_batch_stops_after_a_transport_error(self) -> None:
+        # A user store that can not be reached answers no request at all, so a batch must not pay the
+        # full timeout of a request for every one of its owners
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        user_ids = ["8001", "8002", "8001", "8003"]
+        distinct_user_ids = {"8001", "8002", "8003"}
+        transport_errors = [requests.exceptions.ConnectionError("connection refused"),
+                            requests.exceptions.ReadTimeout("read timed out"),
+                            requests.exceptions.ConnectTimeout("connection timed out"),
+                            requests.exceptions.ConnectionError("failed to resolve 'userstore.example.org'")]
+        for transport_error in transport_errors:
+            unresolvable_ids = set()
+            with responses.RequestsMock(assert_all_requests_are_fired=False) as mocked_responses:
+                for user_id in distinct_user_ids:
+                    mocked_responses.add(responses.GET, f"https://example.com/users/{user_id}",
+                                         body=transport_error)
+                login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+                requests_sent = len(mocked_responses.calls)
+
+            self.assertEqual(1, requests_sent, f"{transport_error!r}")
+            # Only the cost changes, the verdict stays the one of a user store that did not answer
+            self.assertSetEqual(distinct_user_ids, unresolvable_ids, f"{transport_error!r}")
+            self.assertDictEqual({user_id: "" for user_id in distinct_user_ids}, login_map,
+                                 f"{transport_error!r}")
+
+    def test_06d_usernames_batch_keeps_asking_after_a_status_error(self) -> None:
+        # A user store that answers with a status is reachable, so one failed request says nothing about
+        # the users the batch did not ask about yet. Reporting them unasked would mark them as orphaned.
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.advanced_config)
+        user_ids = ["8101", "8102", "8101", "8103"]
+        distinct_user_ids = {"8101", "8102", "8103"}
+        for status in [401, 403, 429, 503]:
+            unresolvable_ids = set()
+            with responses.RequestsMock() as mocked_responses:
+                for user_id in distinct_user_ids:
+                    mocked_responses.add(responses.GET, f"https://example.com/users/{user_id}", status=status,
+                                         body="""{"error": "failure"}""")
+                login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+                requests_sent = len(mocked_responses.calls)
+
+            self.assertEqual(len(distinct_user_ids), requests_sent, f"status {status}")
+            self.assertSetEqual(distinct_user_ids, unresolvable_ids, f"status {status}")
+            self.assertDictEqual({user_id: "" for user_id in distinct_user_ids}, login_map, f"status {status}")
 
     @responses.activate
     def test_07_get_user_id(self):
@@ -2192,6 +2267,19 @@ class EntraIDResolverTestCase(MyTestCase):
                       )
         self.assertEqual("", resolver.getUsername(user_id))
 
+    def test_10b_lookup_username_user_store_error(self) -> None:
+        # Entra ID answers 202 when it is too busy to process the request
+        resolver = self.set_up_resolver()
+        user_id = "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+        for status in [202, 401, 429, 503]:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}",
+                                     status=status,
+                                     body=json.dumps({"error": {"code": "Failure", "message": "failure"}}))
+                with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                    resolver.lookup_username(user_id)
+                self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
+
     @responses.activate
     def test_11_getUserId(self):
         resolver = self.set_up_resolver()
@@ -3239,6 +3327,17 @@ class KeycloakResolverTestCase(MyTestCase):
                       body='{"error": "User not found", "error_description": "User not found"}')
         username = resolver.getUsername(user_id)
         self.assertEqual("", username)
+
+    @responses.activate
+    def test_12b_lookup_username_user_store_error(self) -> None:
+        resolver = self.set_up_resolver()
+        user_id = "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"
+        for status in [401, 403, 500, 503]:
+            responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}",
+                          status=status, body='{"error": "failure"}')
+            with self.assertRaises(ResolverError, msg=f"status {status}") as error:
+                resolver.lookup_username(user_id)
+            self.assertEqual(USER_LOOKUP_FAILED, error.exception.message)
 
     @responses.activate
     def test_13_getUserId(self):

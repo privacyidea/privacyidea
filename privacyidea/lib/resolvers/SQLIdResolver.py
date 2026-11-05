@@ -307,13 +307,16 @@ class IdResolver (UserIdResolver):
         return userinfo
 
     @track_resolver_op("get_user_info_batch")
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several user IDs with one query per chunk of IDs, instead
         of one query per ID. IDs without a matching row are omitted from the result.
 
         :param user_ids: The user IDs in this resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: Accepted for the common interface, nothing is added to it: an ID the userid column
+                                 can not hold is a user that does not exist, as for :py:func:`get_user_info`
         :return: dictionary mapping each resolved user ID to its user information
         """
         user_info_map = {}
@@ -323,18 +326,20 @@ class IdResolver (UserIdResolver):
 
         for chunk_start in range(0, len(unique_ids), BATCH_QUERY_CHUNK_SIZE):
             chunk = unique_ids[chunk_start:chunk_start + BATCH_QUERY_CHUNK_SIZE]
-            # The rows are mapped back to the requested IDs over the same string conversion the
-            # userid attribute goes through, so an int column matches a string ID.
-            requested_ids = {}
+            # The rows are mapped back to the requested IDs over the spelling the userid column
+            # stores them in, so an int column matches a string ID.
+            requested_ids: dict[str, list[int | str]] = {}
             userid_filters = []
             for user_id in chunk:
                 try:
+                    returned_id = self._normalize_userid(user_id)
                     userid_filters.append(self._get_userid_filter(user_id))
                 except ValueError as error:
                     # e.g. a non-numeric ID against an integer column
                     log.info(f"Skipping user id {user_id!r} in batch lookup: {error}")
                     continue
-                requested_ids[convert_column_to_unicode(user_id)] = user_id
+                # Several requested IDs can name the same row, for example "3" and "0003" against an integer column
+                requested_ids.setdefault(returned_id, []).append(user_id)
             if not userid_filters:
                 continue
 
@@ -356,24 +361,28 @@ class IdResolver (UserIdResolver):
 
             for row in result.mappings():
                 returned_id = convert_column_to_unicode(row.get(userid_column))
-                user_id = requested_ids.get(returned_id)
-                if user_id is None:  # pragma: no cover
+                matching_ids = requested_ids.get(returned_id)
+                if matching_ids is None:
                     log.info(f"Ignoring row with user id {returned_id!r}, which was not searched for.")
                     continue
-                user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
+                for user_id in matching_ids:
+                    user_info_map[user_id] = self._get_user_from_mapped_object(row, attributes)
 
         return user_info_map
 
     @track_resolver_op("get_usernames_batch")
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users with one query per chunk of IDs.
 
         :param user_ids: The user IDs in this resolver
+        :param unresolvable_ids: Accepted for the common interface. An ID the userid column can not hold, e.g. a
+                                 non-numeric ID against an integer column, is a user that does not exist here,
+                                 as for a single lookup, so nothing is added to it.
         :return: dictionary mapping each user ID to its login name. IDs without a matching row are
                  mapped to an empty string, as getUsername does for a single user.
         """
-        return self._usernames_via_user_info_batch(user_ids)
+        return self._usernames_via_user_info_batch(user_ids, unresolvable_ids=unresolvable_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """
@@ -396,6 +405,24 @@ class IdResolver (UserIdResolver):
 
         # otherwise we cast the column to string (in case of postgres UUIDs)
         return cast(column, String).like(escape_sql_like(str(userId)), escape=SQL_LIKE_ESCAPE)
+
+    def _normalize_userid(self, user_id: int | str) -> str:
+        """
+        Return the user ID in the spelling the userid column holds it in, so that a row can be
+        mapped back to the ID it was searched for. This mirrors the comparison
+        :py:func:`_get_userid_filter` builds, and raises the same ValueError for an ID the column
+        can not hold.
+
+        :param user_id: The userid in this resolver
+        :return: the user ID as the userid column returns it
+        """
+        column = self.TABLE.columns[self.map.get("userid")]
+        if isinstance(column.type, String):
+            return str(user_id)
+        elif isinstance(column.type, Integer):
+            return str(int(user_id))
+
+        return convert_column_to_unicode(user_id)
 
     @track_resolver_op("get_username")
     def getUsername(self, userId):
