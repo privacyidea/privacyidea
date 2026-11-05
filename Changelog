@@ -1,5 +1,9 @@
 Version 3.14.1
 
+  Enhancements:
+  * `find --orphaned` of both token janitors looks up the token owners with one batch lookup per resolver and chunk
+    instead of one lookup per token (#1653)
+
   Fixes:
   * The stored password of an SMTP server is only used for the server it was saved for. Saving a
     definition or sending a test email with the censored placeholder is rejected if server, port,
@@ -16,6 +20,18 @@ Version 3.14.1
     if one of them fails. (#3544)
   * WebUI: Changing only a checkbox of an SMTP server now asks for confirmation before leaving the
     page with unsaved changes. (#3544)
+  * If an HTTP, Keycloak or Entra ID user store answers with an error other than 404, `--orphaned-on-error`
+    decides whether the token janitors treat the token, the `user-settings`, the `custom-attributes` and the
+    `internal-attributes` of a user as orphaned, as for LDAP and SQL. `container --orphaned` reports such an
+    error instead of treating the container as orphaned (#1653)
+  * The token list marks a token owner whose login name can not be looked up as `**resolver error**`,
+    instead of showing it as a user without a login name. That covers a user ID the LDAP or SQL batch
+    lookup can not search for and an HTTP, Keycloak or Entra ID user store that fails to answer (#1653)
+  * A SQL resolver with an integer user ID column no longer loses a user whose stored ID is written with
+    leading zeros when several users are looked up at once. The token list shows such an owner with their
+    login name again, and the token janitors no longer report their tokens as orphaned (#1653)
+  * If an HTTP, Keycloak or Entra ID user store can not be reached at all, `find --orphaned` asks it only once
+    per resolver and chunk. A store that is down then costs at most one request timeout per chunk (#1653)
 
 Version 3.14, 2026-10-08
 

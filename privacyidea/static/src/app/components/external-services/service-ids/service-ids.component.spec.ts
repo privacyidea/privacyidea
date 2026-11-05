@@ -111,11 +111,13 @@ describe("ServiceIdsComponent", () => {
   });
 
   it("should navigate to edit page when editing a service ID", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const serviceId = serviceIdServiceMock.serviceIds()[0];
     component.onEditServiceId(serviceId);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename
-    );
+    expect(router.navigate).toHaveBeenCalledWith([
+      ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS,
+      serviceId.servicename
+    ]);
   });
 
   it("should navigate to create page", () => {

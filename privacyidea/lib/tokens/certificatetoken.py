@@ -253,6 +253,7 @@ class CertificateTokenClass(TokenClass):
     """
     using_pin = False
     hKeyRequired = False
+    verifies_login = False
 
     owned_tokeninfo_keys = frozenset({"CA", "certificate", "pkcs12", "pkcs12_password", "privatekey", REQUEST_ID})
 

@@ -23,11 +23,11 @@
   title="Information">
   @if (infoData()[0]; as element) {
     @let info = asInfoMap(element.value);
-    @if (authService.actionAllowed("settokeninfo")) {
+    @if (authService.actionAllowed("settokeninfo") && editButtonsElement(); as buttonsElement) {
       <div class="info-actions-row">
         <app-edit-buttons
           [cancelEdit]="toggleInfoEdit.bind(this)"
-          [element]="asInfoElement(element)"
+          [element]="buttonsElement"
           [isEditingInfo]="isEditingInfo()"
           [isEditingUser]="isEditingUser()"
           [saveEdit]="saveInfo.bind(this)"
@@ -45,10 +45,12 @@
                 <mat-form-field
                   class="info-edit-field input-width-l"
                   subscriptSizing="dynamic">
-                  <textarea
-                    [(ngModel)]="info[key]"
-                    matInput
-                    rows="1"></textarea>
+                  @if (infoForm[key]; as entry) {
+                    <textarea
+                      [formField]="entry"
+                      matInput
+                      rows="1"></textarea>
+                  }
                 </mat-form-field>
               } @else {
                 <span class="info-value-readonly">{{ info[key] }}</span>
@@ -76,21 +78,30 @@
           class="input-width-s"
           subscriptSizing="dynamic">
           <input
-            [(ngModel)]="newInfo().key"
+            [formField]="newInfoForm.key"
             i18n-placeholder="@@common.addNewKey"
             matInput
             placeholder="Add new key" />
+          @if (hasError(newInfoForm.key, ERR.required)) {
+            <mat-error i18n="@@common.infoKeyRequired">Key is required.</mat-error>
+          }
+          @if (hasError(newInfoForm.key, INFO_KEY_EXISTS)) {
+            <mat-error i18n="@@common.infoKeyExists">This key already exists.</mat-error>
+          }
         </mat-form-field>
         <span class="flex ali-center">:</span>
         <mat-form-field
           class="input-width-xl"
           subscriptSizing="dynamic">
           <textarea
-            [(ngModel)]="newInfo().value"
+            [formField]="newInfoForm.value"
             i18n-placeholder="@@common.addNewInfo"
             matInput
             placeholder="Add new info"
             rows="1"></textarea>
+          @if (hasError(newInfoForm.value, ERR.required)) {
+            <mat-error i18n="@@common.infoValueRequired">Value is required.</mat-error>
+          }
         </mat-form-field>
       </div>
     }

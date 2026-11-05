@@ -135,7 +135,7 @@ export class SmtpServersComponent {
   }
 
   onEditServer(server: SmtpServer): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS, server.identifier]);
   }
 
   deleteSelected(): void {

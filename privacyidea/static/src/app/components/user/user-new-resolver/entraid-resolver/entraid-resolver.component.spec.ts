@@ -60,6 +60,20 @@ describe("EntraidResolverComponent", () => {
     fixture.detectChanges();
     expect(component.model().base_url).toBe("https://graph.microsoft.com/v1.0");
     expect(component.model().authority).toBe("https://login.microsoftonline.com/{tenant}");
-    expect(component.configGetUserListModel().endpoint).toBe("/users");
+    expect(component.model().config_get_user_list.endpoint).toBe("/users");
+  });
+
+  it("requires the base URL, tenant, client ID and client secret in its advanced mode", () => {
+    componentRef.setInput("type", "entraidresolver");
+    componentRef.setInput("data", { base_url: "https://graph.microsoft.com/v1.0" });
+    fixture.detectChanges();
+    expect(component.isValid()).toBe(false);
+
+    component.model.update((m) => ({ ...m, tenant: "tenant", client_id: "client" }));
+    expect(component.isValid()).toBe(false);
+
+    component.model.update((m) => ({ ...m, client_secret: "secret" }));
+    expect(component.isValid()).toBe(true);
+    expect(component.isDirty()).toBe(false);
   });
 });

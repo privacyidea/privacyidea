@@ -263,15 +263,12 @@
           class="input-width-l">
           <mat-label i18n="@@machine.tokenSerial">Token Serial</mat-label>
           <input
-            [value]="newTokenSerial()"
-            (input)="onTokenSerialInput($any($event.target).value)"
+            [formField]="attachForm.serial"
             [matAutocomplete]="tokenSerialAuto"
             matInput
             i18n-placeholder="@@machine.serialExample"
             placeholder="e.g. PIHOTP000001" />
-          <mat-autocomplete
-            #tokenSerialAuto="matAutocomplete"
-            (optionSelected)="onTokenSerialInput($event.option.value)">
+          <mat-autocomplete #tokenSerialAuto="matAutocomplete">
             @for (serial of tokenService.filteredTokenOptions(); track serial) {
               <mat-option [value]="serial">{{ serial }}</mat-option>
             }
@@ -282,9 +279,7 @@
           appearance="fill"
           class="input-width-s">
           <mat-label i18n="@@common.application">Application</mat-label>
-          <mat-select
-            [value]="selectedApplication()"
-            (selectionChange)="selectedApplication.set($event.value)">
+          <mat-select [formField]="attachForm.application">
             @for (app of applicationOptions; track app) {
               <mat-option [value]="app">
                 {{ app }}
@@ -294,7 +289,7 @@
         </mat-form-field>
 
         <button
-          [disabled]="!newTokenSerial() || !selectedApplication()"
+          [disabled]="!attachForm().valid()"
           class="action-button-primary button-width-s margin-bottom-16"
           mat-stroked-button
           (click)="attachToken()">

@@ -72,6 +72,38 @@ export function policyNameCollides(policies: PolicyDetail[], name: string, ownNa
   return policies.some((p) => p.name !== ownName && p.name.toLowerCase() === folded);
 }
 
+/**
+ * Whether the policy has check_all_resolvers set without naming a resolver. The server matches such a policy for no
+ * user, so it must not be saved.
+ */
+export function checkAllResolversWithoutResolver(policy: Partial<PolicyDetail>): boolean {
+  return !!policy.check_all_resolvers && !policy.resolver?.length;
+}
+
+/**
+ * Whether `value` is acceptable for `action`, judged by the action's type: a bool is `true` or `false`, an int is
+ * an integer, a str or text is not blank.
+ */
+export function policyActionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
+  if (!action) return false;
+  const actionType = action.type;
+  if (!actionType) return false;
+  if (actionType === "bool" && typeof value === "boolean") return true;
+  if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
+  if (typeof value !== "string") return false;
+
+  if (actionType === "bool") {
+    return value.toLowerCase() === "true" || value.toLowerCase() === "false";
+  } else if (actionType === "int") {
+    return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
+  } else if (actionType === "str") {
+    return value.trim().length > 0;
+  } else if (actionType === "text") {
+    return value.trim().length > 0;
+  }
+  return false;
+}
+
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
   active: boolean;
@@ -119,7 +151,7 @@ export interface SectionOption {
 
 export const SECTION_OPTIONS: SectionOption[] = [
   { key: "HTTP Environment", label: $localize`:@@policy.httpEnvironment:HTTP Environment` },
-  { key: "HTTP Request header", label: $localize`:@@policy.httpRequestHeader:HTTP Request header` },
+  { key: "HTTP Request header", label: $localize`:@@policy.httpRequestHeader:HTTP Request Header` },
   { key: "Request Data", label: $localize`:@@policy.requestData:Request Data` },
   { key: "container", label: $localize`:@@common.container:Container` },
   { key: "container_info", label: $localize`:@@policy.containerInfo:Container Info` },
@@ -602,23 +634,7 @@ export class PolicyService implements PolicyServiceInterface {
   }
 
   actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
-    if (!action) return false;
-    const actionType = action.type;
-    if (!actionType) return false;
-    if (actionType === "bool" && typeof value === "boolean") return true;
-    if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
-    if (typeof value !== "string") return false;
-
-    if (actionType === "bool") {
-      return value.toLowerCase() === "true" || value.toLowerCase() === "false";
-    } else if (actionType === "int") {
-      return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
-    } else if (actionType === "str") {
-      return value.trim().length > 0;
-    } else if (actionType === "text") {
-      return value.trim().length > 0;
-    }
-    return false;
+    return policyActionValueIsValid(action, value);
   }
 
   async saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean> {

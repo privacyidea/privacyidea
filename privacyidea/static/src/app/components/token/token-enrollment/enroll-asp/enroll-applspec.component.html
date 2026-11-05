@@ -19,9 +19,7 @@
 <div class="flex-column">
   @if (!wizard()) {
     <mat-checkbox
-      [checked]="generateOnServer()"
-      [disabled]="authService.checkForceServerGenerateOTPKey('applspec') || disabled()"
-      (change)="generateOnServer.set($event.checked)"
+      [formField]="generateOnServerForm"
       class="server-checkbox"
       i18n="@@token.generateStatic"
       >Generate the static password on the Server</mat-checkbox
@@ -50,7 +48,7 @@
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
-      <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong>.</mat-error>
     </mat-form-field>
   </div>
 </div>

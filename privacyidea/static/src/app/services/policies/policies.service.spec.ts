@@ -28,6 +28,7 @@ import { MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import {
+  checkAllResolversWithoutResolver,
   policyActionMatchesFilter,
   PolicyActionDetail,
   PolicyDetail,
@@ -241,6 +242,24 @@ describe("PolicyService", () => {
       expect(service.actionValueIsValid(intAction, "12.5")).toBeFalsy();
       expect(service.actionValueIsValid(strAction, "Hello")).toBeTruthy();
       expect(service.actionValueIsValid(strAction, "  ")).toBeFalsy();
+    });
+
+    it("should validate action values of every type and kind", () => {
+      const boolAction: PolicyActionDetail = { type: "bool", desc: "test" };
+      const intAction: PolicyActionDetail = { type: "int", desc: "test" };
+      const textAction: PolicyActionDetail = { type: "text", desc: "test" };
+      expect(service.actionValueIsValid(boolAction, true)).toBe(true);
+      expect(service.actionValueIsValid(intAction, 5)).toBe(true);
+      expect(service.actionValueIsValid(intAction, 1.5)).toBe(false);
+      expect(service.actionValueIsValid(intAction, "")).toBe(false);
+      expect(service.actionValueIsValid(boolAction, 1)).toBe(false);
+      expect(service.actionValueIsValid(textAction, "line one\nline two")).toBe(true);
+      expect(service.actionValueIsValid(textAction, " ")).toBe(false);
+      expect(service.actionValueIsValid({ type: "unknown", desc: "test" } as unknown as PolicyActionDetail, "x")).toBe(
+        false
+      );
+      expect(service.actionValueIsValid({ desc: "test" } as unknown as PolicyActionDetail, "x")).toBe(false);
+      expect(service.actionValueIsValid(null as unknown as PolicyActionDetail, "x")).toBe(false);
     });
   });
   describe("saveNewPolicy", () => {
@@ -839,6 +858,15 @@ describe("policyNameCollides", () => {
 
   it("should find nothing in an empty list", () => {
     expect(policyNameCollides([], "helpdesk")).toBe(false);
+  });
+});
+
+describe("checkAllResolversWithoutResolver", () => {
+  it("should only report check_all_resolvers without a resolver", () => {
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: true, resolver: [] })).toBe(true);
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: true })).toBe(true);
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: true, resolver: ["resolver1"] })).toBe(false);
+    expect(checkAllResolversWithoutResolver({ check_all_resolvers: false, resolver: [] })).toBe(false);
   });
 });
 

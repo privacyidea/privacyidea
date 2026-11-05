@@ -84,10 +84,10 @@ describe("PageTitleStrategy", () => {
 
   it("names a new or a record's page after its list", async () => {
     await router.navigateByUrl("/policies/new");
-    expect(strategy.heading()).toBe("Policies - new");
+    expect(strategy.heading()).toBe("Policies - New");
 
     await router.navigateByUrl("/policies/details/hide_welcome");
-    expect(strategy.heading()).toBe("Policies - details");
+    expect(strategy.heading()).toBe("Policies - Details");
   });
 
   it("announces the page when the route changes", async () => {
