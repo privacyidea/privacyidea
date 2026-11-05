@@ -17,17 +17,46 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
+import { POSITIVE_INTEGER_ERROR } from "@utils/duration-unit.utils";
+import { ERR } from "@utils/form-rules.utils";
 import { UserDetailsLockDialogComponent, UserDetailsLockDialogResult } from "./user-details-lock-dialog.component";
 
 describe("UserDetailsLockDialogComponent", () => {
   let component: UserDetailsLockDialogComponent;
   let fixture: ComponentFixture<UserDetailsLockDialogComponent>;
+  let el: HTMLElement;
 
   const dialogRefMock = {
     close: jest.fn()
   } as unknown as jest.Mocked<MatDialogRef<UserDetailsLockDialogComponent, UserDetailsLockDialogResult | null>>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const durationInput = () => el.querySelector("input[type=number]") as HTMLInputElement;
+  const radios = () => Array.from(el.querySelectorAll("input[type=radio]")) as HTMLInputElement[];
+  const typeDuration = async (value: string) => {
+    durationInput().value = value;
+    durationInput().dispatchEvent(new Event("input"));
+    await flush();
+  };
+  const stubBadInput = (badInput: boolean) =>
+    jest.spyOn(durationInput(), "validity", "get").mockReturnValue({ badInput } as ValidityState);
+  const selectTimed = async () => {
+    radios()[1].click();
+    await flush();
+  };
+  const errorTexts = () => Array.from(el.querySelectorAll("mat-error")).map((e) => e.textContent?.trim());
+  const durationKinds = () =>
+    component.lockForm
+      .durationInput()
+      .errors()
+      .map((e) => e.kind);
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -41,56 +70,165 @@ describe("UserDetailsLockDialogComponent", () => {
 
     fixture = TestBed.createComponent(UserDetailsLockDialogComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    el = fixture.nativeElement;
+    await flush();
   });
 
   it("should create and default to a permanent lock", () => {
     expect(component).toBeTruthy();
-    expect(component.mode()).toBe("permanent");
-    expect(component.canConfirm()).toBe(true);
+    expect(component.lockModel().mode).toBe("permanent");
+    expect(component.lockForm().valid()).toBe(true);
+    expect(radios()[0].checked).toBe(true);
   });
 
   it("closes with a null duration for a permanent lock", () => {
     component.onAction("confirm");
+
     expect(dialogRefMock.close).toHaveBeenCalledWith({ durationSeconds: null });
-  });
-
-  // A timed lock has to carry a duration the backend would accept, so the action stays disabled until it does.
-  it("cannot be confirmed until a timed lock has a valid duration", () => {
-    component.mode.set("timed");
-    expect(component.canConfirm()).toBe(false);
-    component.durationInput.set("0");
-    expect(component.canConfirm()).toBe(false);
-    component.durationInput.set("abc");
-    expect(component.canConfirm()).toBe(false);
-    component.durationInput.set("5");
-    expect(component.canConfirm()).toBe(true);
-  });
-
-  it("does not close while the duration is missing", () => {
-    component.mode.set("timed");
-    component.onAction("confirm");
-    expect(dialogRefMock.close).not.toHaveBeenCalled();
-  });
-
-  it("converts the entered duration to seconds using the selected unit", () => {
-    component.mode.set("timed");
-    component.durationInput.set("2");
-    component.durationUnit.set("minutes");
-    component.onAction("confirm");
-    expect(dialogRefMock.close).toHaveBeenCalledWith({ durationSeconds: 120 });
-  });
-
-  it("ignores an action other than confirm", () => {
-    component.onAction("cancel");
-    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
   // The timed controls stay in the layout while permanent is selected (so switching modes does not shift
   // the dialog) and are only disabled; picking "timed" enables them again.
-  it("disables the timed controls while permanent, enabling them for a timed lock", () => {
-    expect(component.durationDisabled()).toBe(true);
-    component.mode.set("timed");
-    expect(component.durationDisabled()).toBe(false);
+  it("disables the timed controls while permanent, enabling them for a timed lock", async () => {
+    const unit = el.querySelector("mat-select") as HTMLElement;
+    expect(durationInput().disabled).toBe(true);
+    expect(unit.getAttribute("aria-disabled")).toBe("true");
+    expect(component.lockForm.durationInput().disabled()).toBe(true);
+    expect(component.lockForm.durationUnit().disabled()).toBe(true);
+
+    await selectTimed();
+
+    expect(component.lockModel().mode).toBe("timed");
+    expect(durationInput().disabled).toBe(false);
+    expect(unit.getAttribute("aria-disabled")).toBe("false");
+  });
+
+  it("shows the selected unit in the select", () => {
+    const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+
+    expect(select.value).toBe("minutes");
+  });
+
+  it("is valid in permanent mode even though the disabled duration is empty", () => {
+    expect(component.lockModel().durationInput).toBeNull();
+    expect(component.lockForm.durationInput().errors()).toEqual([]);
+    expect(component.lockForm().valid()).toBe(true);
+  });
+
+  // A timed lock has to carry a duration the backend would accept, so the action stays disabled until it does.
+  it("cannot be confirmed until a timed lock has a valid duration", async () => {
+    await selectTimed();
+    expect(component.lockForm().valid()).toBe(false);
+    expect(durationKinds()).toEqual([ERR.required]);
+
+    await typeDuration("0");
+    expect(durationKinds()).toEqual([POSITIVE_INTEGER_ERROR]);
+    expect(component.lockForm().valid()).toBe(false);
+
+    await typeDuration("-3");
+    expect(durationKinds()).toEqual([POSITIVE_INTEGER_ERROR]);
+
+    await typeDuration("1.5");
+    expect(durationKinds()).toEqual([POSITIVE_INTEGER_ERROR]);
+
+    await typeDuration("5");
+    expect(durationKinds()).toEqual([]);
+    expect(component.lockForm().valid()).toBe(true);
+    expect(component.dialogActions()[0].disabled).toBe(false);
+  });
+
+  it("writes the typed duration as a number to the model and marks it dirty", async () => {
+    await selectTimed();
+    expect(component.lockForm.durationInput().dirty()).toBe(false);
+
+    await typeDuration("7");
+
+    expect(component.lockModel().durationInput).toBe(7);
+    expect(component.lockForm.durationInput().dirty()).toBe(true);
+  });
+
+  it("keeps the confirm action disabled for a timed lock without a duration", async () => {
+    await selectTimed();
+
+    expect(component.dialogActions()[0].disabled).toBe(true);
+  });
+
+  it("renders the duration messages once the field is touched", async () => {
+    await selectTimed();
+    expect(errorTexts()).toEqual([]);
+
+    durationInput().dispatchEvent(new Event("blur"));
+    await flush();
+    expect(errorTexts()).toEqual(["Duration is required."]);
+
+    await typeDuration("0");
+    expect(errorTexts()).toEqual(["Duration must be a whole number greater than zero."]);
+
+    await typeDuration("3");
+    expect(errorTexts()).toEqual([]);
+  });
+
+  it("reports text the browser cannot read as a number as a parse error and blocks the form", async () => {
+    await selectTimed();
+    stubBadInput(true);
+    await typeDuration("");
+
+    expect(durationKinds()).toContain(ERR.parse);
+    expect(component.lockForm().valid()).toBe(false);
+
+    durationInput().dispatchEvent(new Event("blur"));
+    await flush();
+    expect(errorTexts()).toEqual(["Enter a valid number."]);
+  });
+
+  it("does not close while a timed lock has no valid duration", async () => {
+    await selectTimed();
+
+    component.onAction("confirm");
+
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
+  });
+
+  it("converts the entered duration to seconds using the selected unit", async () => {
+    await selectTimed();
+    await typeDuration("2");
+    component.lockModel.update((m) => ({ ...m, durationUnit: "minutes" }));
+    await flush();
+
+    component.onAction("confirm");
+
+    expect(dialogRefMock.close).toHaveBeenCalledWith({ durationSeconds: 120 });
+  });
+
+  it("takes the unit chosen in the select", async () => {
+    await selectTimed();
+    await typeDuration("3");
+    const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+    select.open();
+    await flush();
+    (document.querySelectorAll("mat-option")[2] as HTMLElement).click();
+    await flush();
+
+    expect(component.lockModel().durationUnit).toBe("hours");
+    component.onAction("confirm");
+    expect(dialogRefMock.close).toHaveBeenCalledWith({ durationSeconds: 10800 });
+  });
+
+  it("ignores a leftover duration once permanent is selected again", async () => {
+    await selectTimed();
+    await typeDuration("5");
+    radios()[0].click();
+    await flush();
+
+    expect(component.lockForm().valid()).toBe(true);
+    component.onAction("confirm");
+
+    expect(dialogRefMock.close).toHaveBeenCalledWith({ durationSeconds: null });
+  });
+
+  it("ignores an action other than confirm", () => {
+    component.onAction("cancel");
+
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 });

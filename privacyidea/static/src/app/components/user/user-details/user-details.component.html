@@ -198,24 +198,19 @@
                     <mat-form-field class="input-width-l">
                       <mat-label i18n="@@user.attributeKey">Attribute Key</mat-label>
                       @if (keyMode() === "select") {
-                        <mat-select
-                          [value]="selectedKey()"
-                          (selectionChange)="selectedKey.set($event.value)">
+                        <mat-select [formField]="attributeForm.selectedKey">
                           @for (k of keyOptions(); track k) {
                             <mat-option [value]="k">{{ k }}</mat-option>
                           }
                           @if (hasWildcardKey()) {
-                            <mat-option
-                              (onSelectionChange)="switchToCustomKey()"
-                              [value]="'__CUSTOM__'">
+                            <mat-option [value]="CUSTOM_KEY_OPTION">
                               <i i18n="@@common.custom">Custom…</i>
                             </mat-option>
                           }
                         </mat-select>
                       } @else {
                         <input
-                          [value]="addKeyInput()"
-                          (input)="addKeyInput.set($event.target['value'])"
+                          [formField]="attributeForm.customKey"
                           i18n-placeholder="@@user.enterKey"
                           matInput
                           placeholder="Enter key" />
@@ -238,15 +233,12 @@
 
                       @if (isValueInput()) {
                         <input
-                          [value]="addValueInput()"
-                          (input)="addValueInput.set($event.target['value'])"
+                          [formField]="attributeForm.customValue"
                           i18n-placeholder="@@user.enterValue"
                           matInput
                           placeholder="Enter value" />
                       } @else {
-                        <mat-select
-                          [value]="selectedValue()"
-                          (selectionChange)="selectedValue.set($event.value)">
+                        <mat-select [formField]="attributeForm.selectedValue">
                           @for (v of valueOptions(); track v) {
                             <mat-option [value]="v">{{ v }}</mat-option>
                           }

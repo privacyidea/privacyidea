@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { EnrollVascoComponent } from "./enroll-vasco.component";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
+import { clickCheckbox } from "@testing/enroll-form-dom";
 
 describe("EnrollVascoComponent", () => {
   let component: EnrollVascoComponent;
@@ -45,5 +46,17 @@ describe("EnrollVascoComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("writes a click on the checkbox to the model and swaps the enabled field", async () => {
+    expect(component.vascoSerialForm().disabled()).toBe(true);
+    expect(component.otpKeyForm().disabled()).toBe(false);
+
+    await clickCheckbox(fixture);
+
+    expect(component.useVascoSerial()).toBe(true);
+    expect(component.useVascoSerialForm().dirty()).toBe(true);
+    expect(component.vascoSerialForm().disabled()).toBe(false);
+    expect(component.otpKeyForm().disabled()).toBe(true);
   });
 });

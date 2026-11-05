@@ -80,6 +80,14 @@ describe("PasswordRecoveryResetComponent", () => {
     expect(platformLocation.search).toBe("?foo=bar");
   });
 
+  it("names the submit button by its visible text", () => {
+    const submit = fixture.nativeElement.querySelector("button[type=submit]") as HTMLButtonElement;
+    expect(submit.textContent?.replace(submit.querySelector("mat-icon")?.textContent ?? "", "").trim()).toBe(
+      "Set Password"
+    );
+    expect(submit.hasAttribute("aria-label")).toBe(false);
+  });
+
   it("disables the submit button until both passwords are given and equal", () => {
     expect(component.isSubmitDisabled()).toBe(true);
     component.password.set("secret");

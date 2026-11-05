@@ -34,9 +34,8 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n="@@token.fileType">File Type</mat-label>
         <mat-select
-          (selectionChange)="fileType.set($event.value)"
-          [panelClass]="'single-column-panel'"
-          [value]="fileType()">
+          [formField]="importForm.fileType"
+          [panelClass]="'single-column-panel'">
           @for (type of Object.keys(fileTypes); track type) {
             <mat-option
               [value]="type"
@@ -48,7 +47,7 @@
       </mat-form-field>
       <button
         (click)="importTokens()"
-        [disabled]="!formValid()"
+        [disabled]="!canImport()"
         class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon>input</mat-icon>
@@ -58,7 +57,7 @@
   </div>
 
   <div class="margin-top-16 margin-left-16">
-    @switch (fileType()) {
+    @switch (importForm.fileType().value()) {
       @case ("aladdin-xml") {
         <div i18n="@@token.hereYouUpload"
           >Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.</div
@@ -109,16 +108,15 @@
           <mat-form-field class="input-width-xl margin-bottom-16">
             <mat-label i18n="@@token.preSharedKey">Pre Shared Key</mat-label>
             <input
-              (input)="preSharedKey.set($any($event.target).value)"
-              [value]="preSharedKey()"
+              [formField]="importForm.preSharedKey"
               i18n-placeholder="@@token.preSharedKeyHex"
               matInput
               placeholder="Pre Shared Key in hex format" />
             <mat-hint i18n="@@token.asValuesEncrypted"
               >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.</mat-hint
             >
-            @if (!preSharedKeyValid()) {
-              <mat-error i18n="@@token.asValuesEncrypted"
+            @if (hasError(importForm.preSharedKey, PSK_LENGTH_ERROR)) {
+              <mat-error i18n="@@token.preSharedKeyLengthError"
                 >As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex
                 string.</mat-error
               >
@@ -129,8 +127,7 @@
           <mat-form-field class="input-width-xl">
             <mat-label i18n="@@common.password">Password</mat-label>
             <input
-              (input)="pskPassword.set($any($event.target).value)"
-              [value]="pskPassword()"
+              [formField]="importForm.pskPassword"
               i18n-placeholder="@@common.password"
               matInput
               placeholder="Password" />
@@ -141,9 +138,7 @@
             <mat-label i18n="@@token.verificationMethod"
               >Verification Method for the Authenticity of Imported Tokens</mat-label
             >
-            <mat-select
-              (selectionChange)="pskValidation.set($event.value)"
-              [value]="pskValidation()">
+            <mat-select [formField]="importForm.pskValidation">
               @for (key of Object.keys(pskValidationOptions); track key) {
                 <mat-option [value]="key">{{ pskValidationOptions[key] }}</mat-option>
               }
@@ -159,8 +154,7 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@token.selectRealmTokens">Select Realm for Tokens</mat-label>
       <mat-select
-        (selectionChange)="selectedRealms.set($event.value)"
-        [value]="selectedRealms()"
+        [formField]="importForm.selectedRealms"
         multiple>
         <!--                <mat-option [value]="'-'"> -</mat-option>-->
         @for (option of realmService.realmOptions(); track option) {

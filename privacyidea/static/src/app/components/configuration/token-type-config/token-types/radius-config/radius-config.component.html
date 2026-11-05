@@ -33,9 +33,7 @@
         class="input-width-m">
         <mat-label i18n="@@tokenTypeConfig.radiusServerConfiguration">RADIUS Server Configuration</mat-label>
         @if (radiusServersListable()) {
-          <mat-select
-            [value]="formData()[RADIUS_SERVER]"
-            (valueChange)="updateFormData(RADIUS_SERVER, $event)">
+          <mat-select [formField]="config().values[RADIUS_SERVER]">
             @for (id of radiusServers(); track id) {
               <mat-option [value]="id">{{ id }}</mat-option>
             }
@@ -43,12 +41,11 @@
         } @else {
           <input
             matInput
-            [value]="formData()[RADIUS_SERVER] ?? ''"
-            (input)="updateFormData(RADIUS_SERVER, $event.target.value)" />
+            [formField]="config().values[RADIUS_SERVER]" />
         }
         <app-clear-button
           matSuffix
-          (clearButtonClick)="clearField(RADIUS_SERVER); $event.stopPropagation()"></app-clear-button>
+          (clearButtonClick)="clearValue(config().values[RADIUS_SERVER]); $event.stopPropagation()"></app-clear-button>
         @if (radiusServersListable()) {
           <mat-hint i18n="@@tokenTypeConfig.selectPredefined"
             >Select a predefined

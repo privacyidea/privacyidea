@@ -287,6 +287,19 @@ body {
       inactive-ripple-color: white
     )
   );
+  // Every button-toggle group is selected in the brand primary, paired with on-primary (~7.6:1 in the light scheme,
+  // ~8:1 in the dark one). Material colours the check mark from the same text token, so check and label match. A
+  // disabled group keeps its selection visible as a muted primary under on-surface text, instead of Material's 12% / 38%
+  // on-surface defaults; button-toggle-colors.spec.ts holds the contrast of both pairs.
+  @include mat.button-toggle-overrides(
+    (
+      shape: var(--border-radius),
+      selected-state-background-color: var(--mat-sys-primary),
+      selected-state-text-color: var(--mat-sys-on-primary),
+      disabled-selected-state-background-color: color-mix(in srgb, var(--mat-sys-primary) 30%, var(--mat-sys-surface)),
+      disabled-selected-state-text-color: var(--mat-sys-on-surface)
+    )
+  );
   @include mat.select-overrides(
     (
       focused-arrow-color: var(--mat-sys-primary-light)
@@ -595,6 +608,10 @@ $status-colors: (
 
 .ali-end {
   align-items: end;
+}
+
+.ali-start {
+  align-items: flex-start;
 }
 
 .align-baseline {

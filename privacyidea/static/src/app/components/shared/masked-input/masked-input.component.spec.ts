@@ -100,28 +100,35 @@ describe("MaskedInputComponent", () => {
     expect(input().classList).not.toContain("masked-input");
   });
 
-  it("should expose the toggle state via aria-pressed and label it", () => {
-    expect(toggleButton().getAttribute("aria-pressed")).toBe("false");
-    expect(toggleButton().getAttribute("aria-label")).toBe("PIN");
+  it("names the toggle by the action it performs, not by the field", () => {
+    expect(toggleButton().getAttribute("aria-label")).toBe("Show PIN");
+    expect(toggleButton().hasAttribute("aria-pressed")).toBe(false);
 
     toggleButton().click();
     fixture.detectChanges();
 
-    expect(toggleButton().getAttribute("aria-pressed")).toBe("true");
+    expect(toggleButton().getAttribute("aria-label")).toBe("Hide PIN");
+  });
+
+  it("names the toggle after the current label", () => {
+    host.label.set("mOTP PIN");
+    fixture.detectChanges();
+
+    expect(toggleButton().getAttribute("aria-label")).toBe("Show mOTP PIN");
   });
 
   it("should use a non-submitting button for the toggle", () => {
     expect(toggleButton().type).toBe("button");
   });
 
-  it("should show the visibility icon matching the masked state", () => {
+  it("shows the icon of the action the toggle performs", () => {
     const icon = () => fixture.nativeElement.querySelector("mat-icon").textContent.trim();
-    expect(icon()).toBe("visibility_off");
+    expect(icon()).toBe("visibility");
 
     component.toggleMasked();
     fixture.detectChanges();
 
-    expect(icon()).toBe("visibility");
+    expect(icon()).toBe("visibility_off");
   });
 
   it("should render the placeholder when one is given", () => {
