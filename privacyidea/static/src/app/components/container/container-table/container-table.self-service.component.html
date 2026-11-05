@@ -97,12 +97,9 @@
                     @if (element.serial) {
                       <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(element.serial)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
                           [appTruncationTooltip]="element.serial"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, element.serial]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                       </app-copyable>
@@ -150,11 +147,7 @@
                     @for (token of element.tokens; track token) {
                       <div class="token-item">
                         @if (containerService.containerBelongsToUser(token.container_serial)) {
-                          <a
-                            (click)="contentService.tokenSelected(token.serial)"
-                            (keydown.enter)="contentService.tokenSelected(token.serial)"
-                            role="button"
-                            tabindex="0">
+                          <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, token.serial]">
                             {{ token.serial }}
                           </a>
                         } @else {

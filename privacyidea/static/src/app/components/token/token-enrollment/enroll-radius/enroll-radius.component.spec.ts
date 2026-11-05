@@ -57,6 +57,26 @@ describe("EnrollRadiusComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  describe("RADIUS token configuration hint", () => {
+    const configLink = (): HTMLAnchorElement | null => fixture.nativeElement.querySelector(".inline-hint a");
+
+    it("links to the RADIUS section of the token configuration with the right to read it", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["configread"] });
+      fixture.detectChanges();
+
+      expect(configLink()?.getAttribute("href")).toBe("/configuration/tokens#radius");
+    });
+
+    it("is hidden without the right to read the configuration", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".inline-hint")).toBeNull();
+    });
+  });
+
   describe("RADIUS server hint", () => {
     const hint = (): HTMLElement => fixture.nativeElement.querySelector("mat-hint");
 

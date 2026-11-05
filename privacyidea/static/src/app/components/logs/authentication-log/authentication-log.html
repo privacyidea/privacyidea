@@ -327,10 +327,9 @@
               } @case ("serial") { @for (serial of splitSerials(element.serial); track serial) {
               <app-copyable [copyText]="serial">
                 <a
-                  (click)="contentService.tokenSelected(serial)"
                   [appTruncationTooltip]="serial"
-                  class="cell-truncate"
-                  routerLink="/token">
+                  [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, serial]"
+                  class="cell-truncate">
                   {{ serial }}
                 </a>
                 <app-filter-value-button
@@ -341,15 +340,10 @@
               } } @case ("username") { @if (element.username) {
               <app-copyable [copyText]="element.username">
                 <a
-                  (click)="contentService.userSelected(element.username, element.realm)"
-                  (keydown.enter)="contentService.userSelected(element.username, element.realm)"
-                  (keydown.space)="
-                            $event.preventDefault(); contentService.userSelected(element.username, element.realm)
-                          "
                   [appTruncationTooltip]="element.username"
-                  class="cell-truncate"
-                  role="button"
-                  tabindex="0">
+                  [queryParams]="{ realm: element.realm ?? '' }"
+                  [routerLink]="[ROUTE_PATHS.USERS_DETAILS, element.username]"
+                  class="cell-truncate">
                   {{ element.username }}
                 </a>
                 <app-filter-value-button

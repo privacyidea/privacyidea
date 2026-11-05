@@ -122,12 +122,7 @@
           } @else if (selfService()) {
             <app-copyable [copyText]="containerSerial()">
               @if (containerService.containerBelongsToUser(containerSerial())) {
-                <a
-                  (click)="contentService.navigateContainerDetails(containerSerial())"
-                  (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                  (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
-                  role="button"
-                  tabindex="0">
+                <a [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, containerSerial()]">
                   {{ containerSerial() }}
                 </a>
               } @else {
@@ -137,12 +132,7 @@
           } @else {
             <div class="flex-row flex-nowrap ali-center">
               @if (containerSerial() !== "") {
-                <a
-                  (click)="contentService.navigateContainerDetails(containerSerial())"
-                  (keydown.enter)="contentService.navigateContainerDetails(containerSerial())"
-                  (keydown.space)="$event.preventDefault(); contentService.navigateContainerDetails(containerSerial())"
-                  role="button"
-                  tabindex="0">
+                <a [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, containerSerial()]">
                   {{ containerSerial() }}
                 </a>
                 <app-copy-button [copyText]="containerSerial()"></app-copy-button>

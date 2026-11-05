@@ -140,10 +140,9 @@
                     @if (element.serial) {
                       <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.tokenSelected(element.serial)"
                           [appTruncationTooltip]="element.serial"
-                          class="cell-truncate"
-                          routerLink="/token">
+                          [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.serial]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                         <app-filter-value-button
@@ -157,10 +156,9 @@
                     @if (element.container_serial) {
                       <app-copyable [copyText]="element.container_serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(element.container_serial)"
                           [appTruncationTooltip]="element.container_serial"
-                          class="cell-truncate"
-                          routerLink="/token">
+                          [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, element.container_serial]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                         <app-filter-value-button
@@ -174,16 +172,9 @@
                     @if (element[column.key]) {
                       <app-copyable [copyText]="element[column.key]">
                         <a
-                          (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                          (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                          (keydown.space)="
-                            $event.preventDefault();
-                            contentService.userSelected(element[column.key], element['user_realm'])
-                          "
                           [appTruncationTooltip]="element[column.key]"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="ROUTE_PATHS.USERS_DETAILS"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                         <app-filter-value-button

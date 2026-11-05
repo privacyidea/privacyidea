@@ -17,18 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
+  @if (!defaultRadiusServerIsSet() && authService.actionAllowed("configread")) {
     <span
       class="inline-hint"
       i18n="@@token.easeEnrollmentRadius"
       >To ease the enrollment of RADIUS tokens you can set default values in the
       <a
-        role="button"
-        tabindex="0"
-        aria-label="Go to RADIUS token configuration"
-        i18n-aria-label="@@token.goRadiusToken"
-        (click)="goToRadiusConfig()"
-        (keydown)="onRadiusConfigKeydown($event)">
+        [routerLink]="ROUTE_PATHS.CONFIGURATION_TOKENTYPES"
+        fragment="radius">
         RADIUS Token Configuration </a
       >!</span
     >

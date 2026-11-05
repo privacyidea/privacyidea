@@ -39,7 +39,6 @@ import {
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RADIUS_SERVER } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 
@@ -75,7 +74,6 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   enrollmentData = input<RadiusEnrollmentData>();
@@ -147,15 +145,5 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  }
-
-  goToRadiusConfig() {
-    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "radius" });
-  }
-
-  onRadiusConfigKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter" || event.key === " ") {
-      this.goToRadiusConfig();
-    }
   }
 }
