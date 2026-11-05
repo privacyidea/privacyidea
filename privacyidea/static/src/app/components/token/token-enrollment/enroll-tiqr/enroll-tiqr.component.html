@@ -18,10 +18,19 @@
 -->
 <div class="flex-column">
   @if (!defaultTiQRIsSet()) {
-    <span
-      i18n="@@token.tiqrTokensWork"
-      class="inline-warning"
-      >For TiQR tokens to work properly you need to set the <a href="#">TiQR Token Config</a>!</span
-    >
+    @if (authService.actionAllowed("configread")) {
+      <span
+        i18n="@@token.tiqrTokensWork"
+        class="inline-warning"
+        >For TiQR tokens to work properly you need to set the
+        <a [routerLink]="ROUTE_PATHS.CONFIGURATION_TOKENTYPES">TiQR Token Config</a>!</span
+      >
+    } @else {
+      <span
+        i18n="@@token.tiqrNotConfigured"
+        class="inline-warning"
+        >TiQR is not configured yet. Please contact your administrator.</span
+      >
+    }
   }
 </div>

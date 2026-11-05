@@ -169,14 +169,7 @@
                   }
                   @default {
                     @if (element.status !== "missing") {
-                      @if (tableUtilsService.isLink(column.key) && element.token[column.key]) {
-                        <a
-                          href="#">
-                          {{ element.token[column.key] }}
-                        </a>
-                      } @else {
-                        <span> {{ element.token[column.key] }} </span>
-                      }
+                      <span> {{ element.token[column.key] }} </span>
                     } @else if (column.key === "tokentype") {
                       <span> {{ element.token.tokentype }} </span>
                     }

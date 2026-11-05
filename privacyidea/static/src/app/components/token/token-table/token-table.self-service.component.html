@@ -183,16 +183,9 @@
                     </button>
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key) && tableUtilsService.getDisplayText(column.key, element)) {
-                      <a
-                        href="#">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </a>
-                    } @else {
-                      <span>
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    }
+                    <span>
+                      {{ tableUtilsService.getDisplayText(column.key, element) }}
+                    </span>
                   }
                 }
               </div>

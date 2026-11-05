@@ -22,6 +22,7 @@ import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
+import { RouterLink } from "@angular/router";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -61,7 +62,8 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
     MatSelect,
     MatHint,
     MatError,
-    FormField
+    FormField,
+    RouterLink
   ],
   templateUrl: "./enroll-radius.component.html",
   providers: [
@@ -74,6 +76,7 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   enrollmentData = input<RadiusEnrollmentData>();
   wizard = input<boolean>(false);

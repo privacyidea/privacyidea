@@ -20,9 +20,11 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideRouter } from "@angular/router";
 import { EnrollTiqrComponent } from "./enroll-tiqr.component";
+import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
-import { MockSystemService, MockTokenService } from "@testing/mock-services";
+import { MockAuthService, MockSystemService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 
 describe("EnrollTiqrComponent", () => {
@@ -35,6 +37,8 @@ describe("EnrollTiqrComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: AuthService, useClass: MockAuthService },
         { provide: SystemService, useClass: MockSystemService },
         { provide: TokenService, useClass: MockTokenService }
       ]
@@ -47,5 +51,28 @@ describe("EnrollTiqrComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("missing TiQR configuration", () => {
+    const warning = (): HTMLElement => fixture.nativeElement.querySelector(".inline-warning");
+
+    const setRights = (rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+
+    it("links to the token type configuration with the right to read the configuration", () => {
+      setRights(["configread"]);
+
+      expect(warning().querySelector("a")?.getAttribute("href")).toBe("/configuration/tokens");
+    });
+
+    it("asks to contact the administrator, without a link, without the right to read the configuration", () => {
+      setRights([]);
+
+      expect(warning().querySelector("a")).toBeNull();
+      expect(warning().textContent).toContain("Please contact your administrator.");
+    });
   });
 });

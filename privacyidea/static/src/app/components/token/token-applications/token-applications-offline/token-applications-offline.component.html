@@ -134,16 +134,9 @@
                   }
                 }
                 @default {
-                  @if (tableUtilsService.isLink(column.key) && element[column.key]) {
-                    <a
-                      href="#">
-                      {{ element[column.key] }}
-                    </a>
-                  } @else {
-                    <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
-                  }
+                  <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                    {{ tableUtilsService.getDisplayText(column.key, element) }}
+                  </span>
                 }
               }
             </div>

@@ -270,14 +270,7 @@
                     }
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key) && element[column.key]) {
-                      <a
-                        href="#">
-                        {{ element[column.key] }}
-                      </a>
-                    } @else {
-                      {{ element[column.key] }}
-                    }
+                    {{ element[column.key] }}
                   }
                 }
               </div>

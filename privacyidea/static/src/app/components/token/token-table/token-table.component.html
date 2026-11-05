@@ -293,16 +293,9 @@
                     }
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key) && tableUtilsService.getDisplayText(column.key, tokenDetails)) {
-                      <a
-                        href="#">
-                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                      </a>
-                    } @else {
-                      <span>
-                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                      </span>
-                    }
+                    <span>
+                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                    </span>
                   }
                 }
               </div>
