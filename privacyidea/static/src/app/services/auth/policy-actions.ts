@@ -156,6 +156,8 @@ export type PolicyAction =
   | "periodictask_read"
   | "smsgateway_write"
   | "smsgateway_read"
+  | "webhook_write"
+  | "webhook_read"
   | "change_pin_on_first_use"
   | "change_pin_every"
   | "change_pin_via_validate"

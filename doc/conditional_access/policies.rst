@@ -263,6 +263,28 @@ Actions
     ``EMAIL_ADMIN`` on a ``source_ip`` policy is not guaranteed to have,
     since that target also applies where no user could be resolved at all.
 
+**WEBHOOK**
+    Fire a configured :ref:`webhook_config`, to notify another system - a SIEM,
+    a ticket queue, a chat channel. Like the email actions it reports rather
+    than restricts, so it never turns a request away and is never shown to a
+    user.
+
+    The action names the webhook; the webhook owns the URL, the method, the
+    headers and the credentials. An optional **payload** overrides the webhook's
+    own default payload and may contain ``{username}``, ``{realm}``,
+    ``{resolver}``, ``{client_ip}``, ``{count}``, ``{threshold}``,
+    ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``.
+
+    ``{email}``, ``{givenname}`` and ``{surname}`` are **not** available here:
+    they are read from the resolver and are fetched only for an email action.
+
+    A stage may carry more than one ``WEBHOOK``, the way it may carry more than
+    one email action - a second one reaches a system the first cannot.
+
+    .. warning:: Delivery is synchronous, so the webhook's timeout is added to
+       the authentication request that tripped the stage. See
+       :ref:`webhook_synchronous`. A dry-run policy never fires it.
+
 Which actions a policy may use depends on its target:
 
 .. list-table::
@@ -273,10 +295,10 @@ Which actions a policy may use depends on its target:
      - Actions
      - Count modes
    * - ``user``
-     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
+     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, WEBHOOK, DENY
      - PER_REQUEST, PER_ATTEMPT
    * - ``source_ip``
-     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
+     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, WEBHOOK, DENY
      - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
 
 .. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy

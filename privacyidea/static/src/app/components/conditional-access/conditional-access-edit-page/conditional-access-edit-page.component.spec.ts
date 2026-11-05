@@ -35,13 +35,15 @@ import { NotificationService } from "@services/notification/notification.service
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
+import { WebhookService } from "@services/webhook/webhook.service";
 import {
   MockAuthService,
   MockConditionalAccessPolicyService,
   MockNotificationService,
   MockPendingChangesService,
   MockRouter,
-  MockSmtpService
+  MockSmtpService,
+  MockWebhookService
 } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { BehaviorSubject } from "rxjs";
@@ -104,6 +106,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: WebhookService, useClass: MockWebhookService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useClass: MockRouter },
         {
@@ -726,6 +729,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: WebhookService, useClass: MockWebhookService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useClass: MockRouter },
         {

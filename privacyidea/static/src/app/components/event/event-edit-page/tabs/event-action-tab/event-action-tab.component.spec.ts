@@ -22,8 +22,10 @@ import { OutputEmitterRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { EventService } from "@services/event/event.service";
+import { WebhookService } from "@services/webhook/webhook.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { MockWebhookService } from "@testing/mock-services/mock-webhook-service";
 import { EventActionOptionValues, EventActionTabComponent } from "./event-action-tab.component";
 
 describe("EventActionTabComponent", () => {
@@ -36,7 +38,8 @@ describe("EventActionTabComponent", () => {
       providers: [
         provideHttpClient(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: EventService, useClass: MockEventService }
+        { provide: EventService, useClass: MockEventService },
+        { provide: WebhookService, useClass: MockWebhookService }
       ]
     }).compileComponents();
 
@@ -107,6 +110,140 @@ describe("EventActionTabComponent", () => {
     const opts = component.actionOptions();
     expect(opts["opt1"].type).toBe("bool");
     expect(opts["opt2"].type).toBe("int");
+  });
+
+  describe("orderedOptionNames", () => {
+    it("follows the order the handler module states, not the one the response carries", () => {
+      // Flask serialises with sort_keys, so the options arrive alphabetically - "webhook" last -
+      // however the handler module writes them. Without the stated order it would show up there.
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.detectChanges();
+
+      expect(component.orderedOptionNames()).toEqual(["webhook", "URL", "content_type", "data", "replace"]);
+    });
+
+    it("renders the fields in that order", () => {
+      // The method alone is not enough: the template has to iterate it. With the template back on
+      // Object.keys() every assertion on orderedOptionNames() still passes while the page shows
+      // "webhook" last, which is the bug this guards.
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.detectChanges();
+
+      const rendered = (Array.from(fixture.nativeElement.querySelectorAll("div.pad-0")) as HTMLElement[]).map(
+        (wrapper) => {
+          const label = wrapper.querySelector("mat-label") ?? wrapper.querySelector("mat-checkbox");
+          return (label?.textContent ?? "").trim();
+        }
+      );
+
+      expect(rendered).toEqual(["webhook", "URL", "content_type", "data", "replace"]);
+    });
+
+    it("gives the payload a textarea at the wider size", () => {
+      // A webhook payload is a JSON document, not a word, so it gets the treatment the
+      // notification handler's message bodies get rather than a one-line input.
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.detectChanges();
+
+      const wrappers = Array.from(fixture.nativeElement.querySelectorAll("div.pad-0")) as HTMLElement[];
+      const payload = wrappers.find((w) => (w.querySelector("mat-label")?.textContent ?? "").trim() === "data");
+
+      expect(payload?.querySelector("textarea")).toBeTruthy();
+      expect(payload?.querySelector("mat-form-field")?.classList).toContain("input-width-xl");
+    });
+
+    it("will not let the handler be saved without a webhook", () => {
+      // The endpoint lives on the webhook and URL is not editable, so a handler saved without one
+      // would have nowhere to post and silently do nothing.
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.componentRef.setInput("options", {});
+      fixture.detectChanges();
+      expect(component.optionsAreValid()).toBe(false);
+
+      component.selectedOptions.update((options) => ({ ...options, webhook: "siem" }));
+      expect(component.optionsAreValid()).toBe(true);
+    });
+
+    it("does not store an empty read-only option", () => {
+      // URL and content_type cannot be set here, so saving them blank would only add rows to the
+      // handler definition that mean "not configured".
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.componentRef.setInput("options", { webhook: "siem", data: "{}" });
+      fixture.detectChanges();
+
+      const emit = component.newOptions.emit as unknown as jest.Mock;
+      const last = emit.mock.calls[emit.mock.calls.length - 1][0] as EventActionOptionValues;
+      expect(Object.keys(last).sort()).toEqual(["data", "replace", "webhook"]);
+    });
+
+    it("passes a stored read-only option through instead of dropping it", () => {
+      // The inline endpoint of a handler the 3.15 upgrade converted. `pi-manage db downgrade`
+      // strips the `webhook` option from every handler, so one that lost its URL on a save here
+      // would come back from a downgrade with no endpoint at all and silently stop posting.
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.componentRef.setInput("options", {
+        webhook: "siem",
+        URL: "https://stored.example.com/hook",
+        data: "{}"
+      });
+      fixture.detectChanges();
+
+      const emit = component.newOptions.emit as unknown as jest.Mock;
+      const last = emit.mock.calls[emit.mock.calls.length - 1][0] as EventActionOptionValues;
+      expect(last["URL"]).toBe("https://stored.example.com/hook");
+      expect(Object.keys(last).sort()).toEqual(["URL", "data", "replace", "webhook"]);
+    });
+
+    it("leaves a module that states no order alone", () => {
+      fixture.componentRef.setInput("action", "add_token_info");
+      fixture.detectChanges();
+
+      expect(component.orderedOptionNames()).toEqual(["key", "value"]);
+    });
+  });
+
+  describe("readonlyDisplayValue", () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput("action", "post_webhook");
+      fixture.componentRef.setInput("options", { URL: "https://stored.example.com/hook" });
+      fixture.detectChanges();
+    });
+
+    it("shows the stored value while no webhook is selected", () => {
+      // A handler still on the inline shape: the URL in the database is where it posts.
+      expect(component.readonlyDisplayValue("URL")).toBe("https://stored.example.com/hook");
+    });
+
+    it("shows the selected webhook's field instead of the stored value", () => {
+      // Selecting a webhook replaces the inline endpoint, so the field has to follow the
+      // selection rather than keep naming an endpoint the handler no longer posts to.
+      const webhookService = TestBed.inject(WebhookService) as unknown as MockWebhookService;
+      webhookService.webhooks.set([
+        {
+          identifier: "siem",
+          url: "https://siem.example.com/hook",
+          content_type: "application/json"
+        } as never
+      ]);
+      component.selectedOptions.update((options) => ({ ...options, webhook: "siem" }));
+
+      expect(component.readonlyDisplayValue("URL")).toBe("https://siem.example.com/hook");
+      expect(component.readonlyDisplayValue("content_type")).toBe("application/json");
+    });
+
+    it("shows nothing when the selected webhook cannot be resolved", () => {
+      // /webhook/ needs webhook_read, and the identifier may name a webhook since deleted. The
+      // stored inline value would name an endpoint this handler does not post to.
+      component.selectedOptions.update((options) => ({ ...options, webhook: "gone" }));
+
+      expect(component.readonlyDisplayValue("URL")).toBe("");
+    });
+
+    it("leaves an editable option alone", () => {
+      component.selectedOptions.update((options) => ({ ...options, data: "{}" }));
+
+      expect(component.readonlyDisplayValue("data")).toBe("{}");
+    });
   });
 
   it("checkOptionVisibility returns true if no visibleIf", () => {

@@ -1,0 +1,25 @@
+@use "styles";
+@use "table";
+
+.webhooks-container {
+  @include styles.main-component-style;
+  @include table.base-table-structure(".webhooks-table", ".webhook-table-filter", ".table-scroll-container");
+  @include table.page-table-state-size;
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.webhook-url {
+  // A webhook URL may embed a path and query; keep the column from stretching the table.
+  max-width: 28rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

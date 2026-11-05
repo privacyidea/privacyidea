@@ -137,6 +137,8 @@ class PolicyAction:
     PERIODICTASKREAD = "periodictask_read"
     SMSGATEWAYWRITE = "smsgateway_write"
     SMSGATEWAYREAD = "smsgateway_read"
+    WEBHOOKWRITE = "webhook_write"
+    WEBHOOKREAD = "webhook_read"
     CHANGE_PIN_FIRST_USE = "change_pin_on_first_use"
     CHANGE_PIN_EVERY = "change_pin_every"
     CHANGE_PIN_VIA_VALIDATE = "change_pin_via_validate"

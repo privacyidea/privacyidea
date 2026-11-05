@@ -14,6 +14,28 @@ $input-focus-outline: theme.$focus-outline;
   height: 32px;
 }
 
+// The webhook form explains most of its fields, and those sentences wrap at the field's width -
+// the timeout hint does so under an input-width-s field, where it would otherwise run under the
+// content type below it. The fields there use subscriptSizing="dynamic" so the subscript takes
+// part in the layout instead of being reserved at one line, and this keeps that box two lines
+// tall, so a field does not change height when its hint is replaced by an error. Same treatment
+// as .ca-priority-field above, which is the same width with the same problem.
+//
+// These selectors match the internals of MatFormField's own template, so they cannot live in the
+// component's stylesheet: emulated encapsulation would scope them to the component's own elements.
+.webhook-form .mat-mdc-form-field-subscript-wrapper {
+  line-height: 16px;
+}
+
+.webhook-form .mat-mdc-form-field-hint-wrapper {
+  // min-height, not height: a fixed one reserves two lines and clips a third, which is the same
+  // overlap it is meant to prevent. This keeps the two-line box that stops a field from changing
+  // height when its hint is replaced by an error, while letting a longer hint have the room it
+  // needs - the sentences here are meant to fit two lines, but none of them may be cut if they
+  // do not.
+  min-height: 32px;
+}
+
 .input {
   height: 40px;
   width: 107px;

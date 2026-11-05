@@ -88,6 +88,25 @@ export interface ActionOptionDetails {
   value?: string[];
   visibleIf?: string;
   visibleValue?: string;
+  /**
+   * Shown, but not editable. The stored value is still sent back unchanged on save, so a handler
+   * configured before the option was frozen keeps working; the WebUI simply stops offering it for
+   * editing. Only the WebUI honours this - the API accepts the option as before.
+   */
+  readonly?: boolean;
+  /**
+   * Names the field of the selected webhook this option mirrors, for a read-only option whose
+   * value comes from there rather than from the handler definition. Only meaningful together
+   * with a ``webhook`` option naming one.
+   */
+  fromWebhook?: string;
+  /**
+   * Where this option appears among the others, lowest first. Needed because the order of the
+   * dict the handler module declares does not survive the response: Flask serialises with
+   * `sort_keys`, so the options arrive alphabetically whatever order they were written in.
+   * Options without it keep that alphabetical order, after the ones that have it.
+   */
+  order?: number;
 }
 
 export type ActionOptions = Record<string, ActionOptionDetails>;
