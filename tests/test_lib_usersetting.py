@@ -8,9 +8,12 @@ does not supply default values (the WebUI owns those).
 """
 from unittest.mock import patch
 
-from sqlalchemy import select
+import responses
+from sqlalchemy import delete, select
 
 from privacyidea.lib.error import ParameterError, UserError
+from privacyidea.lib.realm import delete_realm, get_realm_id, set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.user import User
 from privacyidea.lib.usersetting import (SettingsSubject, SUBJECT_LOCAL_ADMIN, SUBJECT_USER,
                                          KNOWN_SETTING_KEYS, MAX_SETTINGS_BYTES,
@@ -18,7 +21,7 @@ from privacyidea.lib.usersetting import (SettingsSubject, SUBJECT_LOCAL_ADMIN, S
                                          delete_user_settings, validate_user_settings,
                                          find_orphaned_user_settings, delete_orphaned_user_settings,
                                          _select_for_subject)
-from privacyidea.models import UserSetting
+from privacyidea.models import UserSetting, db
 from .base import MyTestCase
 
 
@@ -327,7 +330,7 @@ class UserSettingTestCase(MyTestCase):
                     resolver=self.resolvername1, realm_id=realm_id, settings={"a": 1}).save()
 
         class _BoomResolver:
-            def getUsername(self, uid):
+            def lookup_username(self, uid):
                 raise Exception("resolver unreachable")
 
         # get_resolver_object is imported lazily inside find_orphaned_user_settings,
@@ -372,3 +375,41 @@ class UserSettingTestCase(MyTestCase):
 
         self.assertEqual({"theme": "winner", "locale": "de"}, stored)
         self.assertEqual({"theme": "winner", "locale": "de"}, get_user_settings(subject))
+
+    def test_27_unreachable_http_user_store_is_not_a_deleted_user(self) -> None:
+        # A user store that fails to answer is not the same as a deleted user: the
+        # row counts as orphaned only with orphaned_on_error, while a 404 means the
+        # user is really gone and is reported either way.
+        endpoint = "https://users.example.org/get-user"
+        resolver_name = "settinghttpresolver"
+        realm_name = "settinghttprealm"
+        save_resolver({"resolver": resolver_name,
+                       "type": "httpresolver",
+                       "endpoint": endpoint,
+                       "method": "GET",
+                       "requestMapping": """{"id": "{userid}"}""",
+                       "responseMapping": """{"username": "{data.the_username}"}""",
+                       "hasSpecialErrorHandler": False})
+        set_realm(realm_name, [{"name": resolver_name}])
+        realm_id = get_realm_id(realm_name)
+        UserSetting(subject_type=SUBJECT_USER, user_id="http-uid-1", resolver=resolver_name,
+                    realm_id=realm_id, settings={"theme": "dark"}).save()
+        try:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, endpoint, status=503, body="{}")
+                skipped = {o.user_id for o in find_orphaned_user_settings(orphaned_on_error=False)}
+                self.assertNotIn("http-uid-1", skipped)
+                on_error = {o.user_id for o in find_orphaned_user_settings(orphaned_on_error=True)}
+                self.assertIn("http-uid-1", on_error)
+
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, endpoint, status=404, body="{}")
+                lenient = {o.user_id for o in find_orphaned_user_settings(orphaned_on_error=False)}
+                self.assertIn("http-uid-1", lenient)
+                strict = {o.user_id for o in find_orphaned_user_settings(orphaned_on_error=True)}
+                self.assertIn("http-uid-1", strict)
+        finally:
+            db.session.execute(delete(UserSetting).filter_by(resolver=resolver_name))
+            db.session.commit()
+            delete_realm(realm_name)
+            delete_resolver(resolver_name)

@@ -23,7 +23,7 @@ import datetime
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.realm import get_ordered_resolvers
 from privacyidea.models import UserCache, db
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, delete, insert, select
 
 log = logging.getLogger(__name__)
 EXPIRATION_SECONDS = "UserCacheExpiration"
@@ -131,6 +131,26 @@ def add_to_cache(username, used_login, resolver, user_id):
         record.save()
 
 
+def add_many_to_cache(resolver: str, login_by_user_id: dict[str, str]) -> None:
+    """
+    Add the login names of several users of one resolver to the user cache with one insert and one commit,
+    if the user cache is enabled. As for a ``User`` built from a resolver and a user ID, the login name is
+    also the used login.
+
+    :param resolver: The name of the resolver
+    :param login_by_user_id: The login name by user ID. Empty login names and user IDs are not added.
+    """
+    records = [{"username": login, "used_login": login, "resolver": resolver, "user_id": user_id}
+               for user_id, login in login_by_user_id.items() if login and user_id]
+    if not records or not is_cache_enabled():
+        return
+    timestamp = datetime.datetime.now()
+    for record in records:
+        record["timestamp"] = timestamp
+    db.session.execute(insert(UserCache), records)
+    db.session.commit()
+
+
 def retrieve_latest_entry(filter_condition):
     """
     Return the most recently added entry in the user cache matching the given filter condition, or None.
@@ -143,6 +163,23 @@ def retrieve_latest_entry(filter_condition):
     stmt = stmt.order_by(UserCache.timestamp.desc())
     result = db.session.scalar(stmt)
     return result
+
+
+def get_cached_usernames(resolver: str, user_ids: list[str]) -> dict[str, str]:
+    """
+    Return the login names the user cache holds for the given users of one resolver, with one query. As in
+    :py:func:`user_init`, expired entries do not count and the latest entry of a user wins.
+
+    :param resolver: The name of the resolver
+    :param user_ids: The IDs of the users in the resolver, few enough for one ``IN`` clause
+    :return: The login name by user ID, for the users the user cache holds
+    """
+    if not is_cache_enabled() or not user_ids:
+        return {}
+    stmt = (select(UserCache.user_id, UserCache.username)
+            .where(create_filter(resolver=resolver), UserCache.user_id.in_(user_ids))
+            .order_by(UserCache.timestamp))
+    return {user_id: username for user_id, username in db.session.execute(stmt)}
 
 
 def create_filter(username=None, used_login=None, resolver=None,
