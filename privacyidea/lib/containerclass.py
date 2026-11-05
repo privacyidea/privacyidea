@@ -441,8 +441,10 @@ class TokenContainerClass:
             if user.login and user.realm:
                 return False
             if not user.login and owner.resolver and owner.user_id:
-                # An empty login name can also mean the user store did not answer, only lookup_username tells them apart
-                get_resolver_object(owner.resolver).lookup_username(owner.user_id)
+                # An empty login name can also mean that the user store answered with an error. lookup_username raises
+                # for such an answer, and it returns the login name if the user store answers this time.
+                if get_resolver_object(owner.resolver).lookup_username(owner.user_id) and user.realm:
+                    return False
         return True
 
     def get_states(self) -> list[str]:

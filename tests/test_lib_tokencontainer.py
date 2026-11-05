@@ -3066,6 +3066,14 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
             with responses.RequestsMock() as mocked_responses:
                 mocked_responses.add(responses.GET, "https://staff.example.org/users", status=404, body="{}")
                 self.assertTrue(container.is_orphaned())
+
+            # The first request gets an error and the second one finds the user, for example from two servers behind
+            # a load balancer of which one fails. The user exists, so the container is not orphaned.
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=503, body="{}")
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=200,
+                                     body='{"data": {"login": "alice"}}')
+                self.assertFalse(container.is_orphaned())
         finally:
             container.delete()
             delete_realm("staffrealm")
