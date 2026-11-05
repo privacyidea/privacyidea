@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
+import { Subject } from "rxjs";
 import { TestBed } from "@angular/core/testing";
 import { DASHBOARD_COLUMNS, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
@@ -613,6 +614,70 @@ describe("DashboardLayoutService", () => {
       service.pruneForbiddenWidgets();
 
       expect(service.widgets()).toHaveLength(before);
+    });
+  });
+
+  describe("session change", () => {
+    const own = (id: string): WidgetInstance => ({ id, type: "events", x: 2, y: 3, cols: 8, rows: 5 });
+
+    it("should load the stored layout of the next session after the session ended", () => {
+      build([own("first")]);
+      expect(service.widgets()).toContainEqual(own("first"));
+
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      expect(service.widgets()).not.toContainEqual(own("first"));
+
+      persistence.save([own("second")]).subscribe();
+      auth.isAuthenticated.set(true);
+      TestBed.tick();
+      expect(service.widgets()).toContainEqual(own("second"));
+      expect(service.widgets()).not.toContainEqual(own("first"));
+    });
+
+    it("should drop a load that finishes after the session ended", () => {
+      const late = new Subject<WidgetInstance[] | null>();
+      persistence = TestBed.inject(DashboardPersistenceService);
+      jest.spyOn(persistence, "load").mockReturnValueOnce(late);
+      service = TestBed.inject(DashboardLayoutService);
+
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      late.next([own("ended")]);
+
+      expect(service.widgets()).not.toContainEqual(own("ended"));
+    });
+
+    it("should load the stored layout when a change was made while logged out", () => {
+      build([own("second")]);
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+
+      service.moveWidgetTo(service.widgets()[0].id, 3, 3);
+      auth.isAuthenticated.set(true);
+      TestBed.tick();
+
+      expect(service.widgets()).toContainEqual(own("second"));
+      expect(stored()).toEqual([own("second")]);
+    });
+
+    it("should leave edit mode when the session ends", () => {
+      build();
+      service.beginEdit();
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      expect(service.editMode()).toBe(false);
+      expect(service.hasPendingChanges()).toBe(false);
+    });
+
+    it("should not overwrite the stored layout with a layout pruned before it was loaded", () => {
+      build([own("second")]);
+      auth.isAuthenticated.set(false);
+      TestBed.tick();
+      auth.isAuthenticated.set(true);
+      service.pruneForbiddenWidgets();
+      TestBed.tick();
+      expect(stored()).toEqual([own("second")]);
     });
   });
 });

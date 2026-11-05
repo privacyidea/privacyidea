@@ -248,4 +248,42 @@ describe("UserSettingsService", () => {
     service.getSettings().subscribe();
     respondWith({});
   });
+
+  it("should not cache a response that arrives after clearCache", () => {
+    service.getSettings().subscribe();
+    const late = httpMock.expectOne("/user/settings");
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(service.settings()).toBeNull();
+    service.getSettings().subscribe();
+    respondWith({ theme: "light" });
+    expect(service.settings()).toEqual({ theme: "light" });
+  });
+
+  it("should not hand a response that arrives after clearCache to its subscribers", () => {
+    const received: UserSettings[] = [];
+    service.getSettings().subscribe((settings) => received.push(settings));
+    const late = httpMock.expectOne("/user/settings");
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(received).toEqual([]);
+  });
+
+  it.each([
+    ["setSetting", () => service.setSetting("theme", "dark")],
+    ["setSettings", () => service.setSettings({ theme: "dark" })],
+    ["deleteSetting", () => service.deleteSetting("theme")]
+  ])("should not cache the answer of %s that arrives after clearCache", (_name, write) => {
+    write().subscribe();
+    const late = httpMock.expectOne((request) => request.url.startsWith("/user/settings"));
+
+    service.clearCache();
+    respondWith({ theme: "dark" }, late);
+
+    expect(service.settings()).toBeNull();
+  });
 });
