@@ -40,8 +40,10 @@ export const HOTP_OTP_LENGTH_POLICY = "hotp_otplen";
 
 // Daypassword Token
 export const DAYPASSWORD_HASHLIB = "daypassword.hashlib";
-export const DAYPASSWORD_OTP_LENGTH = "daypassword.otplen";
 export const DAYPASSWORD_TIME_STEP = "daypassword.timeStep";
+export const DAYPASSWORD_HASHLIB_POLICY = "daypassword_hashlib";
+export const DAYPASSWORD_OTP_LENGTH_POLICY = "daypassword_otplen";
+export const DAYPASSWORD_TIME_STEP_POLICY = "daypassword_timestep";
 
 // SMS Token
 export const SMS_GATEWAY = "sms.identifier";
