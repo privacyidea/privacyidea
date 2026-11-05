@@ -658,6 +658,23 @@ class _AuthLogContractTests(_ContractHost):
                                         reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
                                         endpoint=self.endpoint_path)
 
+    def test_a_token_the_trigger_fills_the_failcounter_of_stays_out_of_the_messages(self):
+        self._add_second_token(pin=self.pin)
+        self._enable_challenge_response()
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_cr")
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.second_serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        detail = self._authenticate(self.pin).json["detail"]
+
+        self.assertListEqual([self.serial], [challenge["serial"] for challenge in detail["multi_challenge"]], detail)
+        challenge_message = detail["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], detail["messages"])
+        self.assertEqual(challenge_message, detail["message"])
+
     def test_an_undelivered_challenge_logs_challenge_trigger_fail(self):
         remove_token(self.serial)
         delivery_failures = {
@@ -2102,6 +2119,20 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
         challenge_message = res.json["detail"]["multi_challenge"][0]["message"]
         self.assertListEqual([challenge_message], res.json["detail"]["messages"])
         self.assertEqual(challenge_message, res.json["detail"]["message"])
+
+    def test_triggerchallenge_keeps_a_token_it_fills_the_failcounter_of_out_of_the_messages(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        filled = self._init_hotp("AUTHLOG_FILLED")
+        for _ in range(filled.get_max_failcount() - 1):
+            filled.inc_failcount()
+
+        detail = self._trigger().json["detail"]
+
+        self.assertListEqual([self.serial], [challenge["serial"] for challenge in detail["multi_challenge"]], detail)
+        challenge_message = detail["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], detail["messages"])
+        self.assertEqual(challenge_message, detail["message"])
 
     def test_triggerchallenge_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
         set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)

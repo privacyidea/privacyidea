@@ -228,7 +228,8 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     the messages are added to the reply_dict.
 
     :param token_list: The list of the token objects, that can do challenge response
-    :param reply_dict: The dictionary that is passed to the API response
+    :param reply_dict: The dictionary that is passed to the API response. Why check_all refused a token is only its
+        message if no token got a challenge.
     :param options: Additional options. Passed from the upper layer
     :return: The tokens that got no challenge, because check_all refused them or creating the challenge failed. Each
         records why in its ``auth_details``, if it named a reason.
@@ -239,10 +240,10 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
+    refusals = []
     unchallenged = []
     for token in token_list:
-        # Check if the max auth is succeeded
-        if not token.check_all(message_list):
+        if not token.check_all(refusals):
             unchallenged.append(token)
         else:
             challenge_created, message, new_transaction_id, challenge_info = token.create_challenge(
@@ -295,6 +296,8 @@ def create_challenges_from_tokens(token_list: list[TokenClass], reply_dict: dict
             else:
                 unchallenged.append(token)
 
+    if not reply_dict["multi_challenge"]:
+        message_list.extend(refusals)
     if message_list:
         unique_messages = set(message_list)
         reply_dict["message"] = ", ".join(unique_messages)

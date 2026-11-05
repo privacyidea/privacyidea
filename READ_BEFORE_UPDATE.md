@@ -278,7 +278,8 @@
   is raised; a token that can not get a challenge anyway is no longer counted. A failcounter whose reset timeout
   (`failcounter_clear_timeout`) has passed is reset before the check, as at `/validate/check`. Also as there, why a
   token was refused (e.g. "Failcounter exceeded") is only the response message if no token got a challenge; it is no
-  longer listed in `detail.messages` next to the challenge texts.
+  longer listed in `detail.messages` next to the challenge texts. At `/validate/check` and `/auth` this now also holds
+  for a token whose failcounter the trigger itself raised to the maximum.
 
 ## Update from 3.13 to 3.14
 
