@@ -28,6 +28,7 @@ import { EnrollRemoteComponent } from "./enroll-remote.component";
 import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { MockPrivacyideaServerService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
+import { clickCheckbox } from "@testing/enroll-form-dom";
 
 describe("EnrollRemoteComponent", () => {
   let component: EnrollRemoteComponent;
@@ -193,5 +194,14 @@ describe("EnrollRemoteComponent", () => {
       expect(result!.data.remoteRealm).toBe("realm1");
       expect(result!.data.checkPinLocally).toBe(true);
     });
+  });
+
+  it("writes a click on the checkbox to the model and marks the field dirty", async () => {
+    expect(component.checkPinLocallyForm().dirty()).toBe(false);
+
+    await clickCheckbox(fixture);
+
+    expect(component.checkPinLocally()).toBe(true);
+    expect(component.checkPinLocallyForm().dirty()).toBe(true);
   });
 });

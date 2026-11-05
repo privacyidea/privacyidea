@@ -60,6 +60,7 @@ export class EnrollEmailComponent extends EnrollTokenBase<EmailEnrollmentData> i
   readEmailDynamically = signal<boolean>(false);
   emailAddress = signal<string>("");
 
+  readEmailDynamicallyForm = form(this.readEmailDynamically);
   emailAddressForm = form(this.emailAddress, (f) => {
     required(f);
     validate(f, (ctx) => {

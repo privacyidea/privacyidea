@@ -71,4 +71,14 @@
       </mat-option>
     }
   </mat-select>
+  @if (errorText(); as text) {
+    <mat-hint
+      class="error-hint"
+      role="alert"
+      [id]="errorId()"
+      >{{ text }}</mat-hint
+    >
+  } @else if (hint()) {
+    <mat-hint>{{ hint() }}</mat-hint>
+  }
 </mat-form-field>

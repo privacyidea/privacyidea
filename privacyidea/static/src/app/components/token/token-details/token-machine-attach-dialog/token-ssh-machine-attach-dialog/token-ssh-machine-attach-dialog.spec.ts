@@ -30,6 +30,7 @@ import { Machine, MachineService } from "@services/machine/machine.service";
 import { UserData, UserService } from "@services/user/user.service";
 import { MockApplicationService, MockMachineService, MockUserService } from "@testing/mock-services";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { clearOverlays, flushFixture, matSelectAt, pickOption, typeInto } from "@testing/enroll-form-dom";
 
 describe("TokenSshMachineAssignDialogComponent", () => {
   let component: TokenSshMachineAssignDialogComponent;
@@ -232,6 +233,38 @@ describe("TokenSshMachineAssignDialogComponent", () => {
         resolver_name: "R"
       });
       expect(component.selectedMachineForm().valid()).toBe(true);
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes the typed user to the model, marks the field dirty and filters the users", async () => {
+      const userInput = fixture.nativeElement.querySelectorAll("input")[1] as HTMLInputElement;
+      expect(component.selectedUserForm().dirty()).toBe(false);
+
+      await typeInto(fixture, userInput, "bo");
+
+      expect(component.selectedUserValue()).toBe("bo");
+      expect(component.selectedUserForm().dirty()).toBe(true);
+      expect(component.filteredUsers()).toEqual(["bob"]);
+    });
+
+    it("renders the user error once the field was touched and is empty", async () => {
+      const userInput = fixture.nativeElement.querySelectorAll("input")[1] as HTMLInputElement;
+      expect(fixture.nativeElement.textContent).not.toContain("User is required");
+
+      userInput.dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("User is required");
+    });
+
+    it("writes the picked service ID to the model and marks the field dirty", async () => {
+      await pickOption(fixture, matSelectAt(fixture), 1);
+
+      expect(component.selectedServiceIdValue()).toBe("svc-2");
+      expect(component.selectedServiceIdForm().dirty()).toBe(true);
     });
   });
 });

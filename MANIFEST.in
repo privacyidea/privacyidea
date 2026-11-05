@@ -10,7 +10,7 @@ graft authmodules
 include requirements.txt pyproject.toml
 
 # We need to exclude files at the end otherwise they get included again
-exclude .codespell* .readthedocs.yaml .dockerignore .pep8speaks.yml \
+exclude .readthedocs.yaml .dockerignore .pep8speaks.yml \
   Gruntfile.js pi-manage Procfile
 
 global-exclude *.pyc .git*

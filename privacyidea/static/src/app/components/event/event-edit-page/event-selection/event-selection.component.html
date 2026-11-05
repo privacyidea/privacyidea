@@ -58,11 +58,10 @@
 
       <div class="panel-content">
         <app-clearable-input
-          (clearButtonClick)="searchTerm.set('')"
+          (clearButtonClick)="clearSearch()"
           [showClearButton]="searchTerm() !== ''">
           <input
-            (ngModelChange)="searchTerm.set($event)"
-            [ngModel]="searchTerm()"
+            [formField]="searchForm.search"
             class="search-input"
             clearableInput
             i18n-placeholder="@@event.searchEvents"

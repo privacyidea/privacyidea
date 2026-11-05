@@ -49,12 +49,43 @@ Defines the rough interface for a UserId Resolver
 - for SQL the unique index ( what's the right name here (tm))
 
 """
+import copy
+import functools
+import logging
+from typing import Any
+
+import yaml
+
 from privacyidea.lib import lazy_gettext
+from privacyidea.lib.error import ResolverTransportError
+
+log = logging.getLogger(__name__)
 
 # The message of the error a resolver raises when the user store failed to answer the lookup of a login name. It
 # reaches unauthenticated clients, so it is the same for every resolver and names neither the user store nor its error,
 # which the resolver logs instead. Raised as str: the audit log stores the message and drops an entry with a lazy one.
 USER_LOOKUP_FAILED = lazy_gettext("The user could not be looked up in the user store.")
+
+
+@functools.lru_cache(maxsize=1024)
+def _parse_yaml_text(text: str) -> Any:
+    return yaml.safe_load(text)
+
+
+def parse_config_yaml(text: Any) -> Any:
+    """
+    Parse a YAML value of a resolver configuration, such as the attribute mapping.
+
+    Resolver objects live for one request, so they parse their configuration on every request. Each text is parsed
+    only once per process, because the YAML parser is slow compared to the rest of the configuration. Every call
+    returns its own copy: a resolver changes its parsed mapping, and resolvers with the same text must not share it.
+
+    :param text: The YAML text. Other values, such as a stream, are parsed without the cache.
+    :return: The parsed value
+    """
+    if not isinstance(text, str):
+        return yaml.safe_load(text)
+    return copy.deepcopy(_parse_yaml_text(text))
 
 
 class UserIdResolver:
@@ -152,6 +183,18 @@ class UserIdResolver:
         """
         return "dummy_user_name"
 
+    def lookup_username(self, user_id: str) -> str:
+        """
+        Returns the username for the given user ID like :py:func:`getUsername`, but raises if the user store could
+        not answer, so that an empty username means that the user does not exist. A resolver whose
+        :py:func:`getUsername` also answers an empty string for a failed request overrides this.
+
+        :param user_id: The ID of the user in the resolver
+        :return: The username or an empty string if the user does not exist
+        :raises ResolverError: if the user store could not answer the request
+        """
+        return self.getUsername(user_id)
+
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user information for a given user object
@@ -163,7 +206,8 @@ class UserIdResolver:
         """
         return {}
 
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several users at once.
 
@@ -176,6 +220,10 @@ class UserIdResolver:
 
         :param user_ids: IDs of the users in the resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: If given, a batch implementation that skips an ID it can not search for, where
+                                 a single lookup of that ID raises, adds the ID to it. Such an ID is omitted from
+                                 the result like a user that does not exist. The default implementation raises
+                                 like the single lookup and adds nothing.
         :return: dictionary mapping each resolved user ID to its user information
         """
         user_info_map = {}
@@ -187,22 +235,50 @@ class UserIdResolver:
                 user_info_map[user_id] = user_info
         return user_info_map
 
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users at once.
 
-        The default implementation loops over :py:func:`getUsername`, which for some resolvers is
+        The default implementation loops over :py:func:`lookup_username`, which for some resolvers is
         considerably cheaper than reading the full user information of every user. A resolver that
         can answer for several users in one request should override this.
 
+        A user the user store could not answer for is reported instead of raising, so that one failing
+        user does not cost the whole batch. A user store that could not be reached at all is asked only
+        once, the remaining users are reported without a request of their own.
+
         :param user_ids: IDs of the users in the resolver
+        :param unresolvable_ids: If given, the IDs that can not be looked up at all are added to it. Their
+                                 login name in the result is "", so they do not read like a user that does
+                                 not exist.
         :return: dictionary mapping each user ID to its login name
         """
+        login_map: dict = {}
         # dict.fromkeys drops duplicate IDs, so a user that several tokens share is only looked up
         # once even though the result would be the same
-        return {user_id: self.getUsername(user_id) for user_id in dict.fromkeys(user_ids)}
+        distinct_user_ids: list = list(dict.fromkeys(user_ids))
+        for position, user_id in enumerate(distinct_user_ids):
+            try:
+                login_map[user_id] = self.lookup_username(user_id)
+            except Exception as lookup_error:
+                log.error(f"The login name of the user {user_id!r} can not be looked up: {lookup_error!s}")
+                login_map[user_id] = ""
+                if unresolvable_ids is not None:
+                    unresolvable_ids.add(user_id)
+                if isinstance(lookup_error, ResolverTransportError):
+                    # An answered request, even a failed one, says nothing about the users that were not
+                    # asked about yet, while an unreachable user store answers none of them
+                    remaining_ids: list = distinct_user_ids[position + 1:]
+                    log.error(f"The user store can not be reached, the remaining {len(remaining_ids)} "
+                              f"users of this batch are not looked up")
+                    for remaining_id in remaining_ids:
+                        login_map[remaining_id] = ""
+                        if unresolvable_ids is not None:
+                            unresolvable_ids.add(remaining_id)
+                    break
+        return login_map
 
-    def _usernames_via_user_info_batch(self, user_ids: list) -> dict:
+    def _usernames_via_user_info_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Shared :py:func:`get_usernames_batch` body for a resolver whose :py:func:`get_user_info_batch`
         is the real batched implementation: read just the username attribute of each user through
@@ -210,9 +286,11 @@ class UserIdResolver:
         single user.
 
         :param user_ids: IDs of the users in the resolver
+        :param unresolvable_ids: see :py:func:`get_user_info_batch`
         :return: dictionary mapping each user ID to its login name
         """
-        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"])
+        user_info_map = self.get_user_info_batch(user_ids, attributes=["username"],
+                                                 unresolvable_ids=unresolvable_ids)
         return {user_id: user_info_map.get(user_id, {}).get("username", "") for user_id in user_ids}
 
     def get_available_info_keys(self) -> list[str]:

@@ -27,7 +27,7 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 import { AuthData, AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import {
   MockAuthService,
   MockDialogService,
@@ -36,6 +36,18 @@ import {
 } from "@testing/mock-services";
 import { BehaviorSubject, of } from "rxjs";
 import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
+
+const flush = async (fixture: ComponentFixture<unknown>) => {
+  fixture.detectChanges();
+  await fixture.whenStable();
+  fixture.detectChanges();
+};
+
+const certificateCheckbox = (fixture: ComponentFixture<unknown>): HTMLInputElement =>
+  fixture.nativeElement.querySelector("mat-checkbox input") as HTMLInputElement;
+
+const saveButton = (fixture: ComponentFixture<unknown>): HTMLButtonElement =>
+  fixture.nativeElement.querySelector("button.action-button-primary") as HTMLButtonElement;
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
@@ -106,7 +118,12 @@ describe("NewPrivacyideaServerComponent", () => {
 
   it.each(["test_request", ".", ".."])("rejects the reserved identifier %p", (identifier) => {
     component.privacyideaModel.update((m) => ({ ...m, identifier, url: "http://test" }));
-    expect(component.privacyideaForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+    expect(
+      component.privacyideaForm
+        .identifier()
+        .errors()
+        .some((e) => e.kind === "reservedName")
+    ).toBe(true);
     expect(component.privacyideaForm().valid()).toBe(false);
     expect(component.canSave).toBe(false);
   });
@@ -184,9 +201,10 @@ describe("NewPrivacyideaServerComponent", () => {
       jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     });
 
-    it("should open SaveAndExit dialog when there are changes", () => {
+    it("should open SaveAndExit dialog when there are changes", async () => {
       mockDialogRef.afterClosed.mockReturnValue(of(undefined));
-      component.privacyideaForm.description().markAsDirty();
+      certificateCheckbox(fixture).click();
+      await flush(fixture);
       component.onCancel();
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SaveAndExitDialogComponent })
@@ -266,5 +284,99 @@ describe("NewPrivacyideaServerComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe("NewPrivacyideaServerComponent bound controls", () => {
+  let component: NewPrivacyideaServerComponent;
+  let fixture: ComponentFixture<NewPrivacyideaServerComponent>;
+  let serviceMock: MockPrivacyideaServerService;
+
+  const existing: PrivacyideaServer = {
+    id: "1",
+    name: "pi-1",
+    identifier: "pi-1",
+    url: "https://pi.example.com",
+    tls: true,
+    description: ""
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [NewPrivacyideaServerComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ identifier: "pi-1" })) } }
+      ]
+    }).compileComponents();
+    serviceMock = TestBed.inject(PrivacyideaServerService) as unknown as MockPrivacyideaServerService;
+    serviceMock.remoteServerOptions.set([existing]);
+    fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
+    component = fixture.componentInstance;
+    await flush(fixture);
+  });
+
+  it("keeps Save disabled while nothing changed", () => {
+    expect(component.hasChanges).toBe(false);
+    expect(saveButton(fixture).disabled).toBe(true);
+  });
+
+  it("writes the certificate checkbox to the model and marks the form dirty", async () => {
+    expect(certificateCheckbox(fixture).checked).toBe(true);
+    certificateCheckbox(fixture).click();
+    await flush(fixture);
+    expect(component.privacyideaModel().tls).toBe(false);
+    expect(component.privacyideaForm.tls().dirty()).toBe(true);
+    expect(component.hasChanges).toBe(true);
+  });
+
+  it("enables Save when only the certificate checkbox changed", async () => {
+    certificateCheckbox(fixture).click();
+    await flush(fixture);
+    expect(component.privacyideaForm().valid()).toBe(true);
+    expect(saveButton(fixture).disabled).toBe(false);
+  });
+
+  it("shows a model change in the checkbox", async () => {
+    component.privacyideaModel.update((m) => ({ ...m, tls: false }));
+    await flush(fixture);
+    expect(certificateCheckbox(fixture).checked).toBe(false);
+  });
+
+  it("keeps the checkbox edit when the server list is reloaded", async () => {
+    certificateCheckbox(fixture).click();
+    await flush(fixture);
+
+    serviceMock.remoteServerOptions.set([{ ...existing, tls: true, url: "https://other.example.com" }]);
+    await flush(fixture);
+
+    expect(component.privacyideaModel().tls).toBe(false);
+    expect(component.privacyideaModel().url).toBe("https://pi.example.com");
+  });
+
+  it("re-initializes from a reloaded list while the form is pristine", async () => {
+    serviceMock.remoteServerOptions.set([{ ...existing, url: "https://other.example.com" }]);
+    await flush(fixture);
+    expect(component.privacyideaModel().url).toBe("https://other.example.com");
+    expect(component.hasChanges).toBe(false);
+  });
+
+  it("marks the form dirty when a clear button empties a field", async () => {
+    const clear = fixture.nativeElement
+      .querySelector('input[placeholder="https://pi17.example.com/"]')
+      .closest("app-clearable-input")
+      .querySelector("button") as HTMLButtonElement;
+    clear.click();
+    await flush(fixture);
+    expect(component.privacyideaModel().url).toBe("");
+    expect(component.privacyideaForm.url().dirty()).toBe(true);
+    expect(component.privacyideaForm().valid()).toBe(false);
+    expect(saveButton(fixture).disabled).toBe(true);
   });
 });

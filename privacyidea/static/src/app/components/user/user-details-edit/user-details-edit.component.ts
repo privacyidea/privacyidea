@@ -26,23 +26,28 @@ import {
   linkedSignal,
   output,
   signal,
+  untracked,
   WritableSignal
 } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { EditUserData, UserData } from "@services/user/user.service";
 
+/** The editable values keyed by attribute name. The `username` key carries the user's name and has no input. */
+type UserAttributeValues = Record<string, string>;
+
 @Component({
   selector: "app-user-details-edit",
-  imports: [MatFormField, MatInput, MatLabel],
+  imports: [FormField, MatFormField, MatInput, MatLabel],
   templateUrl: "./user-details-edit.component.html",
   styleUrl: "./user-details-edit.component.scss"
 })
 export class UserDetailsEditComponent {
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
-  // Store the latest user data to preserve edits
-  private lastUserData = signal<EditUserData | null>(null);
+  // The latest values the user typed; a re-seed of the model starts from them so edits survive an attribute change
+  private lastUserData = signal<UserAttributeValues | null>(null);
   resolver = input.required<string>();
   initialUserData = input<UserData>();
   updateData = output<EditUserData>();
@@ -51,27 +56,31 @@ export class UserDetailsEditComponent {
     // Remove 'username' and 'userid' from the list of attributes
     return attributes.filter((attribute) => attribute !== "username" && attribute !== "userid");
   });
-  protected newUserData: WritableSignal<EditUserData> = linkedSignal(() => {
-    const attributes = this.resolverService.userAttributes();
-    const previousData = this.lastUserData() || this.initialUserData();
-    const newData: EditUserData = { username: previousData?.username || "" };
-    for (const attribute of attributes) {
-      // Preserve existing value for attributes that remain, else initialize with empty string
-      newData[attribute] = previousData?.[attribute] ?? "";
+  protected newUserData: WritableSignal<UserAttributeValues> = linkedSignal({
+    source: () => ({ attributes: this.resolverService.userAttributes(), initial: this.initialUserData() }),
+    computation: ({ attributes, initial }) => {
+      const previousData: Record<string, unknown> | undefined = untracked(this.lastUserData) ?? initial;
+      const newData: UserAttributeValues = { username: String(previousData?.["username"] || "") };
+      for (const attribute of attributes) {
+        // Preserve existing value for attributes that remain, else initialize with empty string
+        newData[attribute] = String(previousData?.[attribute] ?? "");
+      }
+      return newData;
     }
-    return newData;
   });
+  protected readonly userForm = form(this.newUserData);
 
   constructor() {
     effect(() => {
       this.resolverService.selectedResolverName.set(this.resolver());
     });
-  }
-
-  setNewUserData(attribute: string, value: string) {
-    const updated = { ...this.newUserData(), [attribute]: value };
-    this.newUserData.set(updated);
-    this.lastUserData.set(updated);
-    this.updateData.emit(this.newUserData());
+    effect(() => {
+      const values = this.newUserData();
+      if (!this.userForm().dirty()) return;
+      untracked(() => {
+        this.lastUserData.set(values);
+        this.updateData.emit({ ...values, username: values["username"] });
+      });
+    });
   }
 }

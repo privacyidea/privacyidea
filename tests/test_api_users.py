@@ -1315,6 +1315,36 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             delete_realm("excludedrealm")
             delete_resolver("excluded_pw")
 
+    def test_26_create_user_with_admin_policies(self):
+        """An admin with a policy for the realm of the resolver creates a user, and a resolver outside it is refused."""
+        self.setUp_user_realms()
+        resolver = "sql_adduser_policy"
+        realm = "adduserrealm"
+        sql_parameters = dict(self.parameters, resolver=resolver, type="sqlresolver", Editable=True)
+        self.assertTrue(save_resolver(sql_parameters) > 0)
+        set_realm(realm, [{"name": resolver}])
+        set_policy("admin_adduser", scope=SCOPE.ADMIN, action=PolicyAction.ADDUSER, realm=realm)
+        try:
+            with self.app.test_request_context("/user/", method="POST",
+                                               data={"user": "policyuser", "resolver": resolver,
+                                                     "password": "Test1234!"},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(User(login="policyuser", realm=realm).exist())
+
+            with self.app.test_request_context("/user/", method="POST",
+                                               data={"user": "policyuser2", "resolver": self.resolvername1},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+        finally:
+            with suppress(Exception):
+                User(login="policyuser", realm=realm).delete()
+            delete_policy("admin_adduser")
+            delete_realm(realm)
+            delete_resolver(resolver)
+
 
 class UserListScopeTestCase(MyApiTestCase):
     """

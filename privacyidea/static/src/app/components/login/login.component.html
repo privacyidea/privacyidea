@@ -21,55 +21,26 @@
   class="login-container"
   i18n-aria-label="@@login.loginContainer">
   <div class="login-scroll">
-    @if (customLogo()) {
-      <img
-        alt=""
-        class="custom-logo"
-        height="307"
-        ngSrc="{{ customLogo() }}"
-        ngSrcset="1x"
-        width="307" />
-    } @else {
-      <img
-        alt=""
-        class="logo"
-        height="307"
-        ngSrc="assets/privacyIDEA1.png"
-        ngSrcset="1x"
-        sizes="(max-width: 307px) 100vw, 307px"
-        width="307" />
-
-      <img
-        alt="privacyIDEA Authentication System"
-        class="logo-text"
-        height="109"
-        ngSrc="assets/logo-text.png"
-        ngSrcset="1x"
-        sizes="(max-width: 575px) 100vw, 575px"
-        width="575" />
-    }
+    <app-login-logo />
 
     @if (useRemoteLogin()) {
       <div class="login-form">
         <h3
           class="margin-bottom-16 text-center"
-          i18n="@@login.loginAs"
-          >Login as {{ remoteUser() }}</h3
-        >
+          i18n="@@login.loginAs">Login as {{ remoteUser() }}
+        </h3>
 
         <p
           class="margin-top-0 margin-bottom-32"
-          i18n="@@login.youAuthenticated"
-          >You are authenticated by the web server as user <strong>{{ remoteUser() }}</strong
-          >. You may log in as this user to privacyIDEA without any further credentials.</p
-        >
+          i18n="@@login.youAuthenticated">You are authenticated by the web server as user
+          <strong>{{ remoteUser() }}</strong>. You may log in as this user to privacyIDEA without any further
+          credentials.
+        </p>
 
         <button
           (click)="remoteLogin()"
-          aria-label="Remote Login Button"
           class="login-btn margin-bottom-8"
           extended
-          i18n-aria-label="@@login.remoteLoginButton"
           mat-fab>
           <span i18n="@@login.logIn">Log In</span>
           <mat-icon iconPositionEnd>login</mat-icon>
@@ -78,10 +49,8 @@
         @if (!forceRemoteUser()) {
           <button
             (click)="useRemoteLogin.set(false)"
-            aria-label="Login with credentials Button"
             class="passkey-btn"
             extended
-            i18n-aria-label="@@login.loginCredentialsButton"
             mat-fab>
             <span i18n="@@login.loginCredentials">Login with Credentials</span>
           </button>
@@ -100,36 +69,26 @@
         class="login-form gap-16"
         i18n-aria-label="@@login.loginForm">
         <div class="login-message-container">
-          @if (authMessage().length > 0) {
-            <div class="login-message">
-              @for (msg of authMessage(); track msg) {
-                <p class="login-message-header">{{ msg }}</p>
-              }
-            </div>
-          }
+          <div
+            class="login-message"
+            role="status">
+            @for (msg of authMessage(); track msg) {
+              <p class="login-message-header">{{ msg }}</p>
+            }
+          </div>
           @if (errorMessage()) {
-            <div class="error-message">
+            <div
+              class="error-message"
+              role="alert">
               <p>{{ errorMessage() }}</p>
             </div>
           }
         </div>
 
         @if (realms().length > 0) {
-          <mat-form-field>
-            <mat-label i18n="@@common.realm">Realm</mat-label>
-            <mat-select
-              (selectionChange)="realm.set($event.value)"
-              [value]="realm()">
-              @for (realmOption of realms(); track realmOption) {
-                <mat-option [value]="realmOption">{{ realmOption }}</mat-option>
-              }
-            </mat-select>
-            @if (realm() !== "") {
-              <app-clear-button
-                (clearButtonClick)="clearRealmSelection($event)"
-                matSuffix></app-clear-button>
-            }
-          </mat-form-field>
+          <app-realm-select
+            [(realm)]="realm"
+            [realms]="realms()" />
         }
 
         @if (!showOtpField()) {
@@ -167,6 +126,16 @@
           </mat-form-field>
         }
 
+        @if (!showOtpField() && passwordResetEnabled()) {
+          <div class="width-100 text-center">
+            <a
+              [routerLink]="passwordRecoveryPath"
+              class="password-reset-link margin-top-16"
+              i18n="@@login.resetPassword">Reset Password
+            </a>
+          </div>
+        }
+
         @if (showOtpField()) {
           <mat-form-field
             appearance="outline"
@@ -182,13 +151,11 @@
           </mat-form-field>
         }
 
-        <div class="login-actions margin-top-16">
+        <div class="login-buttons margin-top-16">
           <button
             [disabled]="isLoginButtonDisabled()"
-            aria-label="Login Button"
             class="login-btn"
             extended
-            i18n-aria-label="@@login.loginButton"
             mat-fab
             type="submit">
             <span i18n="Login button text@@login.logIn">Log In</span>
@@ -198,13 +165,11 @@
           @if (showOtpField()) {
             <button
               (click)="resetLogin()"
-              aria-label="Start Over"
               class="reset-btn"
               extended
-              i18n-aria-label="@@login.startOver"
               mat-fab
               type="button">
-              <span i18n="Reset button text@@common.reset">Reset</span>
+              <span i18n="Restart login button text@@login.restartLogin">Restart Login</span>
               <mat-icon iconPositionEnd>replay</mat-icon>
             </button>
           }
@@ -213,10 +178,8 @@
         @if (webAuthnTriggered()) {
           <button
             (click)="webAuthnLogin()"
-            aria-label="WebAuthn Button"
             class="reset-btn margin-top-16"
             extended
-            i18n-aria-label="@@login.webauthnButton"
             mat-fab
             type="button">
             <span i18n="WebAuthn button text@@common.webauthn">WebAuthn</span>
@@ -228,10 +191,8 @@
         <div class="passkey-form margin-top-16">
           <button
             (click)="passkeyLogin()"
-            aria-label="Passkey Button"
             class="passkey-btn margin-top-16"
             extended
-            i18n-aria-label="@@login.passkeyButton"
             mat-fab
             type="submit">
             <span i18n="Passkey button text@@login.logPasskey">Log In With Passkey</span>

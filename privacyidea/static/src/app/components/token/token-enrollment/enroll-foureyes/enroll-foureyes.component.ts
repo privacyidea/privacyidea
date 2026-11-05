@@ -33,6 +33,8 @@ import {
 } from "@components/token/token-enrollment/enroll-token-base";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR, requiredNonEmptyArray } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   type: "4eyes";
@@ -67,6 +69,14 @@ export class EnrollFoureyesComponent extends EnrollTokenBase<FourEyesEnrollmentD
     required(f);
     disabled(f, () => this.disabled());
   });
+
+  requiredTokensOfRealmsForm = form(this.requiredTokensOfRealms, (f) => {
+    requiredNonEmptyArray(f);
+    disabled(f, () => this.disabled());
+  });
+
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
 
   realmOptions = this.realmService.realmOptions;
 
@@ -103,7 +113,8 @@ export class EnrollFoureyesComponent extends EnrollTokenBase<FourEyesEnrollmentD
       this.separatorForm().markAsTouched();
       return null;
     }
-    if (this.requiredTokensOfRealms().length === 0) {
+    if (!this.requiredTokensOfRealmsForm().valid()) {
+      this.requiredTokensOfRealmsForm().markAsTouched();
       return null;
     }
 

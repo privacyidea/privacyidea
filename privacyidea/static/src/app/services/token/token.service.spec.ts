@@ -501,6 +501,26 @@ describe("TokenService", () => {
     jest.useRealTimers();
   });
 
+  describe("tokenDetailResource", () => {
+    it("requests the token of the details URL", () => {
+      contentServiceMock.onTokenDetails = signal(true);
+      contentServiceMock.tokenSerial.set("SER1");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("serial")).toBe("SER1");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends no request while the serial is empty", () => {
+      contentServiceMock.onTokenDetails = signal(true);
+      contentServiceMock.tokenSerial.set("");
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === "/token/");
+    });
+  });
+
   describe("token filter -> tokenResource request params", () => {
     it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
@@ -1458,6 +1478,15 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(tokenService.userTokenResource.value()).toBeUndefined();
+    });
+
+    it("sends no request while the details user is empty", () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/");
+      contentServiceMock.detailsUser.set({ username: "", realm: "" });
+      TestBed.tick();
+
+      // Another token resource may load the unfiltered list; the user's tokens must not be requested.
+      TestBed.inject(HttpTestingController).expectNone((r) => r.url === "/token/" && r.params.has("user"));
     });
 
     it("should do request if route is USER_DETAILS", async () => {

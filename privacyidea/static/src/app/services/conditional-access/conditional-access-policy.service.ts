@@ -54,6 +54,7 @@ export type AuthEventType =
   | "ENROLLMENT_CANCELED_FAIL"
   | "ENROLLMENT_FAIL"
   | "UNKNOWN_FAIL_REASON"
+  | "POST_AUTHENTICATION_FAIL"
   | "DEVICE_TOKEN_REUSED"
   | "SUSPENDED_API_KEY_USED"
   | "OFFLINE_REFILL_SUCCESS"
@@ -124,6 +125,11 @@ export interface ConditionalAccessStageAction {
   // when true it keeps firing while the count stays at or above the threshold.
   retrigger_above_threshold?: boolean;
 }
+
+// The actions that state a standing verdict instead of reacting to a failure count. They are the only ones a
+// stage may carry at threshold 0, where they then apply to every request the policy covers - mirroring
+// DECISION_ACTIONS and _validate_threshold_for_actions in lib/conditional_access/policy.py.
+export const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
 
 export interface ConditionalAccessPolicyStage {
   id?: number;

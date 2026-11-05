@@ -47,13 +47,15 @@
           @if (actionValues.length === 0) {
             <p i18n="@@policy.noValuesAvailable">No values available.</p>
           } @else if (actionValues.length < 3) {
-            <app-selector-buttons
+            <app-toggle-group
               #selectorComponent
               class="flex-1"
-              [initialValue]="currentAction().value"
               [values]="actionValues"
               [labels]="valueLabels()"
-              (selected)="updateSelectedActionValue($event ?? '')" />
+              [groupLabel]="valueLabel()"
+              [hideSelectionIndicator]="true"
+              [value]="selectedValue()"
+              (valueChange)="updateSelectedActionValue($event ?? '')" />
           } @else {
             <mat-form-field
               appearance="fill"
@@ -62,7 +64,7 @@
               <mat-select
                 #selectElement
                 [aria-label]="valueLabel()"
-                [value]="currentAction().value"
+                [value]="selectedValue()"
                 (selectionChange)="updateSelectedActionValue($event.value)">
                 @for (option of valueOptions(); track option.value) {
                   <mat-option [value]="option.value">{{ option.label }}</mat-option>
@@ -74,32 +76,48 @@
       } @else {
         @switch (selectableAction().detail.type) {
           @case ("str") {
-            <input
-              #inputElement
-              [attr.aria-label]="valueLabel()"
-              type="text"
-              class="action-value-input flex-2"
-              [value]="currentAction().value"
-              (input)="updateSelectedActionValue($any($event.target).value)"
-              (keydown.enter)="onEnter()" />
+            <mat-form-field
+              appearance="fill"
+              class="flex-1"
+              subscriptSizing="dynamic">
+              <input
+                #inputElement
+                matInput
+                [attr.aria-label]="valueLabel()"
+                type="text"
+                [formField]="textField"
+                (keydown.enter)="onEnter()" />
+            </mat-form-field>
           }
           @case ("int") {
-            <input
-              #inputElement
-              [attr.aria-label]="valueLabel()"
-              type="number"
-              class="action-value-input flex-2"
-              [value]="currentAction().value"
-              (input)="updateSelectedActionValue(+$any($event.target).value)"
-              (keydown.enter)="onEnter()" />
+            <mat-form-field
+              appearance="fill"
+              class="flex-1"
+              subscriptSizing="dynamic">
+              <input
+                #inputElement
+                matInput
+                [attr.aria-label]="valueLabel()"
+                type="number"
+                [formField]="valueForm"
+                (keydown.enter)="onEnter()" />
+            </mat-form-field>
           }
           @case ("text") {
-            <textarea
-              #inputElement
-              [attr.aria-label]="valueLabel()"
-              class="action-value-textarea flex-2"
-              [value]="currentAction().value"
-              (input)="updateSelectedActionValue($any($event.target).value)"></textarea>
+            <mat-form-field
+              appearance="fill"
+              class="flex-1"
+              subscriptSizing="dynamic">
+              <!-- The autosize measures 15px per line while the field renders 24px lines, so 8 measured rows are 5 rendered rows. -->
+              <textarea
+                #inputElement
+                matInput
+                cdkTextareaAutosize
+                [cdkAutosizeMinRows]="1"
+                [cdkAutosizeMaxRows]="8"
+                [attr.aria-label]="valueLabel()"
+                [formField]="textField"></textarea>
+            </mat-form-field>
           }
         }
       }
@@ -111,7 +129,7 @@
         #buttonElement
         mat-icon-button
         [attr.aria-label]="addLabel()"
-        [disabled]="!inputIsValid()"
+        [disabled]="!valueForm().valid()"
         (click)="$event.stopPropagation(); addAction()">
         <mat-icon>add</mat-icon>
       </button>

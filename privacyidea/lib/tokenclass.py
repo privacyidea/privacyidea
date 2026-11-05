@@ -85,7 +85,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
-from sqlalchemy import select, delete, update
+from sqlalchemy import ColumnElement, select, delete, update
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AUTH_EVENT_REASON_KEY, AuthEventReason,
@@ -113,7 +113,6 @@ from .error import (TokenAdminError,
 from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
-from .resolver import get_resolver_type
 from .user import (User)
 from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Token, Tokengroup, TokenCredentialIdHash)
@@ -152,6 +151,24 @@ class ClientMode:
     WEBAUTHN = 'webauthn'
 
 
+def lock_token_row(condition: ColumnElement[bool]) -> None:
+    """
+    Lock the row of the token that matches the condition until the end of the transaction, so that a read, compare
+    and write on the token or its token info is not interleaved with the one of another request.
+
+    :param condition: The condition that selects the token, e.g. ``Token.id == token_id``
+    """
+    if db.session.get_bind().dialect.name == "sqlite":
+        # SQLite has no row locks and drops FOR UPDATE. A write takes the lock of the whole database and holds it
+        # until the commit, so the transaction starts with one that changes nothing.
+        db.session.execute(update(Token).where(condition).values(id=Token.id)
+                           .execution_options(synchronize_session=False))
+    else:
+        # Only the id is selected: the eagerly loaded relations of the whole entity would turn the statement into an
+        # outer join, which PostgreSQL refuses to lock.
+        db.session.execute(select(Token.id).where(condition).with_for_update())
+
+
 class TokenClass:
     # Class properties
     using_pin = True
@@ -160,6 +177,9 @@ class TokenClass:
     client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # Whether the token can verify a login. A token that only stores a key or a certificate for another purpose sets
+    # this to False.
+    verifies_login = True
     # Whether check_challenge_response removes the challenge it accepted. A class that keeps the answered challenge
     # because has_further_challenge still has to read it sets this to False; check_token_list then consumes the
     # challenge for it once no further challenge follows.
@@ -467,33 +487,19 @@ class TokenClass:
             self.token.save()
         return user_object
 
-    def is_orphaned(self, orphaned_on_error=True):
+    def is_orphaned(self, orphaned_on_error: bool = True) -> bool:
         """
         Return True if the token is orphaned.
 
         An orphaned token means, that it has a user assigned, but the user
-        does not exist in the user store (anymore)
+        does not exist in the user store (anymore). It decides exactly like
+        :py:func:`privacyidea.lib.token.get_orphaned_serials`, which the token janitors use.
 
+        :param orphaned_on_error: Whether the token is orphaned if its owner can not be looked up
         :return: True / False
-        :rtype: bool
         """
-        orphaned = False
-        owner = self.token.first_owner
-        if owner:
-            if owner.resolver and not get_resolver_type(owner.resolver):
-                # The resolver of the owner was deleted, so the user can not exist any more. This is certain, unlike
-                # an error of the user store, which orphaned_on_error decides about.
-                return True
-            try:
-                if not self.user or not self.user.login or not self.user.realm:
-                    # The token is assigned, but the username does not resolve
-                    orphaned = True
-            except Exception:
-                # If any other resolving error occurs, we also assume the
-                # token to be orphaned per default, You can change this with
-                # the parameter orphaned_on_error.
-                orphaned = orphaned_on_error
-        return orphaned
+        from privacyidea.lib.token import get_orphaned_serials
+        return self.token.serial in get_orphaned_serials([self], orphaned_on_error)
 
     def get_user_displayname(self):
         """
@@ -1269,7 +1275,7 @@ class TokenClass:
         # with outer joins. The save() below commits and releases the lock.
         token_id = self.token.id
         db.session.commit()
-        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        lock_token_row(Token.id == token_id)
         db.session.refresh(self.token)
         if self.token.failcount < self.token.maxfail:
             self.token.failcount = (self.token.failcount + 1)
@@ -1297,6 +1303,14 @@ class TokenClass:
 
     def get_sync_window(self):
         return self.token.sync_window
+
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync, so that a challenge can ask for it.
+
+        :return: True if the next OTP value can still complete an autoresync of the token
+        """
+        return False
 
     # hashlib algorithms:
     # http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib

@@ -48,6 +48,7 @@ from privacyidea.lib.container import (
 from privacyidea.lib.error import ParameterError, ResolverError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.event import EventConfiguration, delete_event, set_event
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, set_policy
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
@@ -77,10 +78,11 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import NodeName, Token, db
 from privacyidea.models.token import TokenOwner
 
-from .base import PWFILE2, MyApiTestCase
+from .base import PWFILE2, MyApiTestCase, clock_moved_forward
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import CERTIFICATE, REQUEST
 
@@ -1538,7 +1540,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
-            self.assertTrue(result["value"], 2)
+            self.assertDictEqual({"count_success": 2, "failed": [], "unauthorized": []}, result["value"])
 
         # Check that it worked
         tokens = get_tokens_from_serial_or_user(None, user)
@@ -3573,6 +3575,8 @@ class APITokenTestCase(MyApiTestCase):
         smtp_inst.sendmail.return_value = {"user@example.com": (200, 'OK')}
 
         set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(PolicyAction.VERIFY_ENROLLMENT))
+        # The verification is not bound to the validity time of the sent value
+        set_privacyidea_config("email.validtime", 1)
         set_policy("email_challenge_text", scope=SCOPE.AUTH,
                    action=f"email_{PolicyAction.CHALLENGETEXT}=ENTER EMAIL TOKEN")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollEMAIL"])
@@ -3597,13 +3601,14 @@ class APITokenTestCase(MyApiTestCase):
             # Check the token rollout state
             self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
-        # Now run the second step: verify enrollment and test again
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "type": "email",
-                                                 "verify": self.valid_otp_values[1]},
-                                           headers={'Authorization': self.at}):
+        # Now run the second step after the validity time: verify enrollment and test again
+        with (clock_moved_forward(2),
+              self.app.test_request_context('/token/init',
+                                            method='POST',
+                                            data={"serial": serial,
+                                                  "type": "email",
+                                                  "verify": self.valid_otp_values[1]},
+                                            headers={'Authorization': self.at})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -3616,6 +3621,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("email_challenge_text")
         remove_token(serial=serial)
+        delete_privacyidea_config("email.validtime")
         delete_policy("enroll")
 
     @mock.patch("privacyidea.lib.smsprovider.HttpSMSProvider.requests",
@@ -3636,6 +3642,8 @@ class APITokenTestCase(MyApiTestCase):
                      "phone": "{phone}"})
 
         set_privacyidea_config("sms.identifier", smsgw_id)
+        # The verification is not bound to the validity time of the sent value
+        set_privacyidea_config("sms.providerTimeout", 1)
         set_policy("verify_toks1", scope=SCOPE.ENROLL,
                    action="{0!s}=sms".format(PolicyAction.VERIFY_ENROLLMENT))
         sms_text = "YOUR SMS TOKEN: {otp}"
@@ -3668,13 +3676,14 @@ class APITokenTestCase(MyApiTestCase):
             # Check the token rollout state
             self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
-        # Now run the second step: verify enrollment and test again
-        with self.app.test_request_context('/token/init',
-                                           method='POST',
-                                           data={"serial": serial,
-                                                 "type": "sms",
-                                                 "verify": self.valid_otp_values[1]},
-                                           headers={'Authorization': self.at}):
+        # Now run the second step after the validity time: verify enrollment and test again
+        with (clock_moved_forward(2),
+              self.app.test_request_context('/token/init',
+                                            method='POST',
+                                            data={"serial": serial,
+                                                  "type": "sms",
+                                                  "verify": self.valid_otp_values[1]},
+                                            headers={'Authorization': self.at})):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -3687,6 +3696,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("verify_toks1")
         delete_policy("smstext")
         delete_smsgateway(smsgw_id)
+        delete_privacyidea_config("sms.providerTimeout")
         delete_policy("enroll")
 
     def test_43_init_verify_index_token(self):
@@ -4338,7 +4348,7 @@ class APITokenTestCase(MyApiTestCase):
                     self.assertEqual(404, res.status_code, res.json)
                     self.assertEqual(601, res.json["result"]["error"]["code"], res.json)
 
-            self.assertEqual("", other_token.token.description)
+            self.assert_empty_string(other_token.token.description)
             self.assertTrue(other_token.token.active)
             self.assertTrue(token_exist(other_token.get_serial()))
 
@@ -4715,7 +4725,7 @@ class API00TokenPerformance(MyApiTestCase):
                                                                 "otp2": "123454"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code, 404)
+            self.assertEqual(404, res.status_code)
             result = res.json.get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
@@ -4906,6 +4916,28 @@ class APIDetermineUserFromSerialForPolicies(MyApiTestCase):
 
         remove_token(serial)
         delete_policy(polname)
+
+    def test_02_disabling_token_check_all_resolvers(self):
+        # realm4: resolver1 (prio 1) contains selfservice and cornelius, reso3 (prio 2) contains cornelius and root.
+        # A policy with check_all_resolvers only applies to owners who are contained in one of its resolvers.
+        self.setUp_user_realm4_with_2_resolvers()
+        set_policy("helpdesk_reso3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm4,
+                   resolver=self.resolvername3, check_all_resolvers=True)
+        try:
+            expected_status = {"selfservice": 403, "cornelius": 200, "root": 200}
+            for login, expected in expected_status.items():
+                with self.subTest(login=login):
+                    serial = f"SPASS_{login}"
+                    init_token({"type": "spass", "serial": serial}, user=User(login, self.realm4))
+                    try:
+                        with self.app.test_request_context("/token/disable", method="POST", data={"serial": serial},
+                                                           headers={"Authorization": self.at}):
+                            res = self.app.full_dispatch_request()
+                        self.assertEqual(expected, res.status_code, res.json)
+                    finally:
+                        remove_token(serial)
+        finally:
+            delete_policy("helpdesk_reso3")
 
 
 class APIRolloutState(MyApiTestCase):
@@ -5706,7 +5738,7 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("radius.user"))
         # The audit names the entries that were written, so an entry dropped for this token is not in it
         audit_entry = self.find_most_recent_audit_entry(action='POST /token/set')
-        self.assertNotIn("radius.user", audit_entry.get('action_detail', ''), audit_entry)
+        self.assertNotIn("radius.user", audit_entry.get('action_detail') or '', audit_entry)
 
         # A key no token type declares settable is not a token info parameter at all: the endpoint
         # can not tell it apart from an unrelated parameter, so it is ignored rather than refused
@@ -6114,7 +6146,7 @@ class APITokenListNodeTestCase(MyApiTestCase):
             entries = res.json["result"]["value"]["auditdata"]
             self.assertEqual(1, len(entries), entries)
             entry = entries[0]
-            self.assertEqual("", entry["user"], entry)
+            self.assert_empty_string(entry["user"], entry)
             info = entry["info"]
             self.assertIn(f"The owner of the token {serial} can not be looked up", info, info)
             self.assertIn("Error performing bind operation: unreachable", info, info)
@@ -6227,7 +6259,7 @@ class APIEmptyParameterValuesTestCase(MyApiTestCase):
         token = get_one_token(serial="EMPTY01")
         self.assertEqual([], get_realms_of_token("EMPTY01"))
         self.assertEqual([], token.token.tokengroup_list)
-        self.assertEqual("", token.get_tokeninfo("note"))
+        self.assert_empty_string(token.get_tokeninfo("note"))
 
         remove_token("EMPTY01")
         delete_tokengroup("emptygroup")
@@ -6591,4 +6623,90 @@ class TokenImportRealmTestCase(MyApiTestCase):
         self.assertEqual(2, res.json["result"]["value"]["n_imported"])
         self.assertEqual(User("cornelius", self.realm1), get_one_token(serial="IMPNEW1").user)
         self.assertEqual(self.file_key, self._key("IMPPOOL1"))
+
+
+class HideTokeninfoPerTokenTestCase(MyApiTestCase):
+    """
+    hide_tokeninfo restricted to a realm also applies in the lists that are not filtered by a user or realm: per token
+    by its owner and its realms.
+    """
+    serials = ("HIDEOWN", "HIDEUNASSIGNED", "HIDEREALM3")
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        init_token({"type": "hotp", "genkey": True, "serial": "HIDEOWN"}, user=User("cornelius", self.realm1))
+        init_token({"type": "hotp", "genkey": True, "serial": "HIDEUNASSIGNED"})
+        set_realms("HIDEUNASSIGNED", [self.realm1])
+        init_token({"type": "hotp", "genkey": True, "serial": "HIDEREALM3"}, user=User("root", self.realm3))
+        for serial in self.serials:
+            add_tokeninfo(serial, "secretinfo", "x")
+        self.container_serial = init_container({"type": "generic"})["container_serial"]
+        add_token_to_container(self.container_serial, "HIDEOWN")
+        set_policy("admin_list", scope=SCOPE.ADMIN, action=f"{PolicyAction.TOKENLIST}, {PolicyAction.CONTAINER_LIST}")
+        set_policy("admin_hide", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo")
+
+    def tearDown(self) -> None:
+        delete_container_by_serial(self.container_serial)
+        for serial in self.serials:
+            remove_token(serial)
+        delete_policy("admin_list")
+        delete_policy("admin_hide")
+        super().tearDown()
+
+    def get_value(self, path: str) -> dict:
+        with self.app.test_request_context(path, method="GET", headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]
+
+    def secretinfo_shown(self, path: str) -> dict[str, bool]:
+        return {token["serial"]: "secretinfo" in token["info"] for token in self.get_value(path)["tokens"]
+                if token["serial"] in self.serials}
+
+    def test_01_token_list(self):
+        expected = {"HIDEOWN": False, "HIDEUNASSIGNED": False, "HIDEREALM3": True}
+        with mock.patch("privacyidea.api.lib.policyhelper.resolve_token_owner") as resolve_owner:
+            self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
+        # The owners are matched by what the token list contains, without asking the user store again
+        resolve_owner.assert_not_called()
+        shown_in_realm1 = self.secretinfo_shown(f"/token/?realm={self.realm1}")
+        self.assertIn("HIDEOWN", shown_in_realm1)
+        self.assertDictEqual(dict.fromkeys(shown_in_realm1, False), shown_in_realm1)
+        self.assertDictEqual({"HIDEOWN": False}, self.secretinfo_shown("/token/?serial=HIDEOWN"))
+        self.assertDictEqual({"HIDEREALM3": True}, self.secretinfo_shown("/token/?serial=HIDEREALM3"))
+
+    def test_02_container_list(self):
+        containers = self.get_value("/container/")["containers"]
+        tokens = [token for container in containers if container["serial"] == self.container_serial
+                  for token in container["tokens"]]
+        self.assertListEqual(["HIDEOWN"], [token["serial"] for token in tokens])
+        self.assertNotIn("secretinfo", tokens[0]["info"])
+
+    def test_03_condition_on_the_user_attributes_of_the_owner(self):
+        for email, expected in (("user@localhost.localdomain",
+                                 {"HIDEOWN": False, "HIDEUNASSIGNED": False, "HIDEREALM3": True}),
+                                ("someone@else.example",
+                                 {"HIDEOWN": True, "HIDEUNASSIGNED": False, "HIDEREALM3": True})):
+            with self.subTest(email=email):
+                set_policy("admin_hide", scope=SCOPE.ADMIN, realm=self.realm1,
+                           action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo",
+                           conditions=[(ConditionSection.USERINFO, "email", PrimaryComparators.EQUALS, email, True)])
+                # The condition is evaluated for the owner; a token without owner has no user attributes, and the
+                # policy applies to it by its realm
+                self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
+
+    def test_04_policy_for_the_owner_of_a_token_in_more_than_one_realm(self):
+        set_realms("HIDEOWN", [self.realm1, self.realm3])
+        # A policy for cornelius without a realm applies to the token of cornelius in every realm of the token. A
+        # policy for cornelius of realm3 does not apply to the token of cornelius of realm1, although the token is in
+        # realm3 as well.
+        for policy_realm, expected in (("", {"HIDEOWN": False, "HIDEUNASSIGNED": True, "HIDEREALM3": True}),
+                                       (self.realm3, {"HIDEOWN": True, "HIDEUNASSIGNED": True, "HIDEREALM3": True})):
+            with self.subTest(policy_realm=policy_realm):
+                set_policy("admin_hide", scope=SCOPE.ADMIN, realm=policy_realm, user="cornelius",
+                           action=f"{PolicyAction.HIDE_TOKENINFO}=secretinfo")
+                self.assertDictEqual(expected, self.secretinfo_shown("/token/"))
 

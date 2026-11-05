@@ -120,7 +120,7 @@
           <h4
             class="settings-item-label margin-8"
             i18n="@@uiSettings.statusColors"
-            >Status colors</h4
+            >Status Colors</h4
           >
           <mat-form-field
             class="input-width-l margin-left-16"
@@ -128,7 +128,7 @@
             <mat-select
               (selectionChange)="selectStatusColors($event.value)"
               [value]="statusColors()"
-              aria-label="Status colors"
+              aria-label="Status Colors"
               i18n-aria-label="@@uiSettings.statusColors">
               @for (level of statusColorLevels; track level.value) {
                 <mat-option [value]="level.value">{{ level.label }}</mat-option>
@@ -201,7 +201,7 @@
             [items]="lightSourceDialItems"
             [selected]="lightSource()"
             groupName="light-source"
-            legend="Light source"
+            legend="Light Source"
             i18n-legend="@@uiSettings.lightSource2"
             (pick)="selectLightSource($event)" />
         </div>

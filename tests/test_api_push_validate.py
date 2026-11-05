@@ -1000,7 +1000,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             # This fails since the wrong presence_answer was given
             self.assertFalse(res.json.get("result").get("value"), res.json)
         # A rejected answer records no outcome, so the audit entry stays empty
-        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
+        self.assert_empty_string(self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id, endpoint='/ttype/push')
@@ -2618,7 +2618,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
                 self.assertFalse(res.json["result"]["value"], res.json)
 
         # The answer was rolled back, so the audit log must not claim an outcome
-        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
+        self.assert_empty_string(self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,

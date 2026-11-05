@@ -18,7 +18,7 @@
  **/
 import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -30,6 +30,8 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 
 interface TokengroupFormModel {
@@ -64,10 +66,13 @@ export class NewTokengroupComponent implements OnDestroy {
   tokengroupModel = signal<TokengroupFormModel>({ ...EMPTY_TOKENGROUP_FORM });
 
   tokengroupForm = form(this.tokengroupModel, (f) => {
-    required(f.groupname);
-    pattern(f.groupname, /^[a-zA-Z0-9._-]*$/);
+    identifierName(f.groupname);
     disabled(f.groupname, () => this.isEditMode());
   });
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);

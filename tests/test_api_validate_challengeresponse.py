@@ -167,10 +167,11 @@ class AChallengeResponse(MyApiTestCase):
                           "otpkey": self.otpkey})
         set_pin(self.serial_email, "pin")
 
-        toks = get_tokens(user=User("selfservice", self.realm1))
+        # get_tokens() has no defined order, so the tokens are told apart by serial
+        toks = {token.get_serial(): token for token in get_tokens(user=User("selfservice", self.realm1))}
         self.assertEqual(len(toks), 2)
-        self.assertFalse(toks[0].token.active)
-        self.assertTrue(toks[1].token.active)
+        self.assertFalse(toks[self.serial].token.active)
+        self.assertTrue(toks[self.serial_email].token.active)
 
         # Now we create a challenge with two tokens
         with self.app.test_request_context('/validate/check',
@@ -1012,9 +1013,9 @@ class AChallengeResponse(MyApiTestCase):
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual("transaction_id: 123456", entry["action_detail"])
         self.assertEqual("status: pending", entry["info"])
-        self.assertEqual("", entry["serial"])
+        self.assert_empty_string(entry["serial"])
         # Instead of None the "user" entry is now (v3.11.3) an empty string
-        self.assertEqual("", entry["user"])
+        self.assert_empty_string(entry["user"])
 
         # polling the transaction returns false, because no challenge has been answered
         with self.app.test_request_context("/validate/polltransaction", method="GET",
@@ -1047,7 +1048,7 @@ class AChallengeResponse(MyApiTestCase):
         entry = self.find_most_recent_audit_entry(action="*/validate/polltransaction*")
         self.assertEqual(f"transaction_id: {old_transaction_id}", entry["action_detail"])
         self.assertEqual("status: pending", entry["info"])
-        self.assertEqual("", entry["serial"])
+        self.assert_empty_string(entry["serial"])
         self.assertFalse(entry["success"])
 
         # Mark one challenge as answered (backend-agnostic: set_otp_status +

@@ -49,15 +49,13 @@
     appearance="fill"
     class="input-width-l">
     <mat-label i18n="@@common.serviceId">Service ID</mat-label>
-    <mat-select
-      [value]="selectedServiceIdValue()"
-      (selectionChange)="selectedServiceIdValue.set($event.value)">
+    <mat-select [formField]="selectedServiceIdForm">
       @for (serviceId of availableServiceIds(); track serviceId) {
         <mat-option [value]="serviceId">{{ serviceId }}</mat-option>
       }
     </mat-select>
     @if (selectedServiceIdForm().touched() && !selectedServiceIdForm().valid()) {
-      <mat-error i18n="@@token.serviceIdRequiredError">Service ID is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 
@@ -69,17 +67,14 @@
       matInput
       type="text"
       [matAutocomplete]="userAuto"
-      [value]="selectedUserValue()"
-      (input)="selectedUserValue.set($any($event.target).value)" />
-    <mat-autocomplete
-      #userAuto="matAutocomplete"
-      (optionSelected)="selectedUserValue.set($event.option.value)">
+      [formField]="selectedUserForm" />
+    <mat-autocomplete #userAuto="matAutocomplete">
       @for (user of filteredUsers(); track user) {
         <mat-option [value]="user">{{ user }}</mat-option>
       }
     </mat-autocomplete>
     @if (selectedUserForm().touched() && !selectedUserForm().valid()) {
-      <mat-error i18n="@@token.userRequiredError">User is <strong>required</strong>.</mat-error>
+      <mat-error i18n="@@token.userRequired">User is <strong>required</strong>.</mat-error>
     }
   </mat-form-field>
 </app-dialog-wrapper>

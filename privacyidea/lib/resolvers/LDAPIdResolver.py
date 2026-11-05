@@ -26,6 +26,7 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import binascii
+import copy
 import datetime
 import functools
 import hashlib
@@ -54,7 +55,7 @@ from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
+from .UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
@@ -743,7 +744,8 @@ class IdResolver(UserIdResolver):
         return user_info
 
     @track_resolver_op("get_user_info_batch")
-    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None) -> dict:
+    def get_user_info_batch(self, user_ids: list, attributes: list[str] = None,
+                            unresolvable_ids: set | None = None) -> dict:
         """
         Return the user information for several user IDs with one LDAP search per chunk of IDs,
         instead of one search per ID.
@@ -756,10 +758,12 @@ class IdResolver(UserIdResolver):
 
         :param user_ids: The user IDs in this resolver
         :param attributes: list of attribute names to be returned for each user. If None, all attributes are returned.
+        :param unresolvable_ids: If given, the IDs that can not be searched for, like an objectGUID that is no UUID,
+                                 are added to it. A single lookup of such an ID raises.
         :return: dictionary mapping each resolved user ID to its user information
         """
         if self.uidtype.lower() == "dn":
-            return super().get_user_info_batch(user_ids, attributes=attributes)
+            return super().get_user_info_batch(user_ids, attributes=attributes, unresolvable_ids=unresolvable_ids)
 
         user_info_map = {}
         ids_to_search = []
@@ -791,6 +795,8 @@ class IdResolver(UserIdResolver):
                     search_uid = to_unicode(self._trim_user_id(user_id))
                 except ValueError as error:
                     log.info(f"Skipping user id {user_id!r} in batch lookup: {error}")
+                    if unresolvable_ids is not None:
+                        unresolvable_ids.add(user_id)
                     continue
                 # RFC4515-escape the user id (see _getDN); objectGUID is already byte-escaped.
                 if self.uidtype != "objectGUID":
@@ -861,15 +867,17 @@ class IdResolver(UserIdResolver):
         return user_info_map
 
     @track_resolver_op("get_usernames_batch")
-    def get_usernames_batch(self, user_ids: list) -> dict:
+    def get_usernames_batch(self, user_ids: list, unresolvable_ids: set | None = None) -> dict:
         """
         Return the login names of several users with one LDAP search per chunk of IDs.
 
         :param user_ids: The user IDs in this resolver
+        :param unresolvable_ids: If given, the IDs that can not be searched for, like an objectGUID that is no UUID,
+                                 are added to it. Their login name in the result is "".
         :return: dictionary mapping each user ID to its login name. IDs without a matching LDAP
                  object are mapped to an empty string, as getUsername does for a single user.
         """
-        return self._usernames_via_user_info_batch(user_ids)
+        return self._usernames_via_user_info_batch(user_ids, unresolvable_ids=unresolvable_ids)
 
     def get_available_info_keys(self) -> list[str]:
         """
@@ -1192,12 +1200,12 @@ class IdResolver(UserIdResolver):
         self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.loginname_attribute = [la.strip() for la in config.get("LOGINNAMEATTRIBUTE", "").split(",")]
         self.searchfilter = config.get("LDAPSEARCHFILTER")
-        userinfo = config.get("USERINFO", "{}")
-        self.userinfo = yaml.safe_load(userinfo)
+        self.map = parse_config_yaml(config.get("USERINFO", "{}"))
+        # Only the user info gets the login name attribute, the map keeps the configured one
+        self.userinfo = copy.copy(self.map)
         self.userinfo["username"] = self.loginname_attribute[0]
         multivalueattributes = config.get("MULTIVALUEATTRIBUTES") or '["mobile"]'
-        self.multivalueattributes = yaml.safe_load(multivalueattributes)
-        self.map = yaml.safe_load(userinfo)
+        self.multivalueattributes = parse_config_yaml(multivalueattributes)
         self.uidtype = config.get("UIDTYPE", "DN")
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
@@ -1362,7 +1370,8 @@ class IdResolver(UserIdResolver):
                             get_info,
                             repr(self.tls_context),  # this is the string representation of the TLS context
                             self.serverpool_rounds,
-                            self.serverpool_skip)
+                            self.serverpool_skip,
+                            self.serverpool_strategy)
         if pool_description not in pools:
             log.debug(f"Creating a persistent server pool instance for {pool_description!r} ...")
             # Create a suitable instance of ``LockingServerPool``

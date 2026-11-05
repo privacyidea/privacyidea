@@ -9,16 +9,21 @@ import sys
 import tempfile
 import unittest
 import flask
+import flask_migrate.cli
 import inspect
 import logging
 import mock
+import sqlalchemy as sa
+from click.testing import Result
 from testfixtures import Comparison, compare, OutputCapture
 from contextlib import contextmanager
 
-from privacyidea.app import (ENV_KEY, create_app, create_docker_app,
+from privacyidea.app import (ENV_KEY, PrivacyIDEARequest, create_app, create_docker_app,
                              _setup_database_engine_options)
 from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.models import db
+from .base import MyApiTestCase
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -347,9 +352,174 @@ class DockerConfigSecretKeyTestCase(unittest.TestCase):
                 "PLAIN-VALUE")
 
 
+class DockerConfigDatabaseUriTestCase(unittest.TestCase):
+    """
+    DockerConfig builds the database URI from the PI_DB_* variables, with user and
+    password percent-encoded, so that SQLAlchemy reads them back unchanged whatever
+    characters they contain.
+
+    Evaluated at import time, so each case runs in a fresh subprocess, as in
+    DockerConfigSecretKeyTestCase.
+    """
+    _DB_ENV = ("PI_DB_USER", "PI_DB_PASSWORD", "PI_DB_PASSWORD_FILE", "PI_DB_HOST", "PI_DB_PORT", "PI_DB_NAME",
+               "PI_DB_DRIVER", "PI_DB_EXTRA_PARAMS", "SQLALCHEMY_DATABASE_URI", "SQLALCHEMY_DATABASE_URI_FILE")
+    _SCRIPT = ("import sys\n"
+               "import privacyidea.config as c\n"
+               "sys.stdout.write(c.DockerConfig.SQLALCHEMY_DATABASE_URI)\n")
+
+    def _docker_database_uri(self, extra_env: dict[str, str]) -> str:
+        env = {key: value for key, value in os.environ.items() if key not in self._DB_ENV}
+        env.update({"PI_DB_HOST": "db.example.org", "PI_DB_NAME": "pi"}, **extra_env)
+        result = subprocess.run([sys.executable, "-c", self._SCRIPT],
+                                env=env, cwd=dirname, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        return result.stdout
+
+    def test_01_special_characters_in_user_and_password(self):
+        from sqlalchemy.engine import make_url
+        uri = make_url(self._docker_database_uri({"PI_DB_USER": "pi@site", "PI_DB_PASSWORD": "p@ss:w/rd%?#"}))
+        self.assertEqual("pi@site", uri.username)
+        self.assertEqual("p@ss:w/rd%?#", uri.password)
+        self.assertEqual("db.example.org", uri.host)
+        self.assertEqual("pi", uri.database)
+
+    def test_02_url_safe_password_is_kept_as_is(self):
+        uri = self._docker_database_uri({"PI_DB_USER": "pi", "PI_DB_PASSWORD": "Ab0-_x", "PI_DB_PORT": "3307"})
+        self.assertEqual("mysql+pymysql://pi:Ab0-_x@db.example.org:3307/pi", uri)
+
+
 class DockerConfigEngineRegistryTestCase(unittest.TestCase):
 
     def test_01_shared_engine_registry(self):
         # The Docker image keeps one database engine with a connection pool per process for the audit log and the
         # SQL resolvers
         self.assertEqual("shared", config["docker"].PI_ENGINE_REGISTRY_CLASS)
+
+
+class DbUpgradeCommandTestCase(unittest.TestCase):
+    """
+    "pi-manage db upgrade" stops on a database without schema revision stamp. Otherwise it passes its parameters on
+    to the upgrade command of Flask-Migrate, which a mock replaces here. Each test has its own SQLite database.
+    """
+
+    def setUp(self) -> None:
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.database = os.path.join(directory.name, "pi.sqlite")
+        config_class = type("Config", (TestingConfig,), {"SQLALCHEMY_DATABASE_URI": f"sqlite:///{self.database}"})
+        with mock.patch.dict("privacyidea.config.config", {"testing": config_class}), isolated_config_file():
+            self.app = create_app(config_name="testing", silent=True)
+        self.addCleanup(self.dispose_engine)
+        upgrade_patcher = mock.patch.object(flask_migrate.cli.upgrade, "callback")
+        self.flask_migrate_upgrade = upgrade_patcher.start()
+        self.addCleanup(upgrade_patcher.stop)
+
+    def dispose_engine(self) -> None:
+        with self.app.app_context():
+            db.engine.dispose()
+
+    def run_sql(self, *statements: str) -> None:
+        with self.app.app_context(), db.engine.begin() as connection:
+            for statement in statements:
+                connection.execute(sa.text(statement))
+
+    def invoke(self, *arguments: str) -> Result:
+        # The command runs in the active app context. Without the context of this app, it would use an app that an
+        # earlier test left active.
+        with self.app.app_context():
+            return self.app.test_cli_runner().invoke(args=["db", *arguments])
+
+    def test_01_stamped_database(self):
+        self.run_sql("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)",
+                     "INSERT INTO alembic_version (version_num) VALUES ('d3a4b5c6e7f8')")
+        result = self.invoke("upgrade")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.flask_migrate_upgrade.assert_called_once_with(directory=None, sql=False, tag=None, x_arg=(),
+                                                           revision="head")
+
+    def test_02_tables_without_stamp(self):
+        with self.app.app_context():
+            db.create_all()
+        result = self.invoke("upgrade")
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn(f"The database sqlite:///{self.database} has no schema revision stamp", result.output)
+        self.assertIn("stamp the database with 'pi-manage db stamp head'", result.output)
+        self.assertIn("If an older version created the tables, stamp the database with the newest revision of that "
+                      "version.", result.output)
+        self.flask_migrate_upgrade.assert_not_called()
+
+    def test_03_empty_database(self):
+        result = self.invoke("upgrade")
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("create the tables with 'pi-manage setup create_tables'", result.output)
+        self.assertNotIn("stamp the database", result.output)
+        self.flask_migrate_upgrade.assert_not_called()
+
+    def test_04_sql_output_of_a_database_without_stamp(self):
+        """With --sql the command only prints the SQL, so it does not read the stamp."""
+        result = self.invoke("upgrade", "--sql", "base:head")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.flask_migrate_upgrade.assert_called_once_with(directory=None, sql=True, tag=None, x_arg=(),
+                                                           revision="base:head")
+
+
+class UrlencodedBodySizeTestCase(MyApiTestCase):
+    """
+    The app answers a urlencoded body that is larger than MAX_FORM_MEMORY_SIZE with 413 when it parses the form.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+
+    def post_urlencoded(self, path: str, size: int, headers: dict[str, str] | None = None) -> flask.Response:
+        prefix = "user=cornelius&pass="
+        body = prefix + "x" * (size - len(prefix))
+        with self.app.test_request_context(path, method="POST", data=body, headers=headers,
+                                           content_type="application/x-www-form-urlencoded"):
+            return self.app.full_dispatch_request()
+
+    def test_01_request_class(self) -> None:
+        self.assertIs(self.app.request_class, PrivacyIDEARequest)
+
+    def test_02_configured_limit(self) -> None:
+        limit = self.app.config["MAX_FORM_MEMORY_SIZE"]
+        self.assertEqual(200, self.post_urlencoded("/validate/check", limit).status_code)
+        self.assertEqual(413, self.post_urlencoded("/validate/check", limit + 1).status_code)
+
+    def test_03_changed_limit(self) -> None:
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": 1000}):
+            self.assertEqual(200, self.post_urlencoded("/validate/check", 1000).status_code)
+            self.assertEqual(413, self.post_urlencoded("/validate/check", 1001).status_code)
+
+    def test_04_no_limit(self) -> None:
+        size = self.app.config["MAX_FORM_MEMORY_SIZE"] + 1
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": None}):
+            self.assertEqual(200, self.post_urlencoded("/validate/check", size).status_code)
+
+    def test_05_other_content_types(self) -> None:
+        body = json.dumps({"user": "cornelius", "pass": "x" * 1000})
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": 1000}):
+            with self.app.test_request_context("/validate/check", method="POST", data=body,
+                                               content_type="application/json"):
+                self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def test_06_limit_after_authentication(self) -> None:
+        # The endpoints that require a login check the auth token before they parse the form.
+        with mock.patch.dict(self.app.config, {"MAX_FORM_MEMORY_SIZE": 1000}):
+            self.assertEqual(401, self.post_urlencoded("/token/init", 1001).status_code)
+            self.assertEqual(413, self.post_urlencoded("/token/init", 1001, {"Authorization": self.at}).status_code)
+
+
+class DockerAppRequestClassTestCase(unittest.TestCase):
+
+    def test_01_request_class(self) -> None:
+        class FactoryStopped(Exception):
+            pass
+
+        # The Docker factory also reads the pi.cfg of the machine the test runs on.
+        with (mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")),
+              mock.patch("privacyidea.app._check_config", side_effect=FactoryStopped) as check_config):
+            with self.assertRaises(FactoryStopped):
+                create_docker_app()
+        self.assertIs(check_config.call_args.args[0].request_class, PrivacyIDEARequest)

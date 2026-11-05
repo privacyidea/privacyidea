@@ -528,7 +528,7 @@ def _audit_rejection(reason: str, user: User | None = None, as_administrator: bo
 
     The identity is named here too, because the one the gate decided on is not always the one ``before_request``
     logged: a serial-only or credential-id request resolves the token owner
-    (:func:`~privacyidea.api.validate._conditional_access_identity`), and the smartphone's ``/ttype/push`` answer
+    (:func:`~privacyidea.api.lib.policyhelper.get_request_identity`), and the smartphone's ``/ttype/push`` answer
     carries no user parameter at all. An empty one is not logged, so a rejection with no identity to name leaves
     whatever the request itself was made under.
 
