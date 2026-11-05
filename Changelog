@@ -7,8 +7,9 @@ Version 3.14.1
   * The SMTP server test email reports SMTP, network and TLS errors and invalid parameters with a
     readable message instead of an internal server error. If S/MIME signing fails and "Don't send on
     signing error" is set, it now returns HTTP 400 instead of HTTP 200 with the value false. (#3544)
-  * Saving an SMTP server rejects ports outside 1-65535 and senders with line breaks or non-ASCII
-    characters, which made every email sent through the server fail. (#3544)
+  * Saving an SMTP server, also with "pi-manage config import", rejects ports outside 1-65535,
+    timeouts outside 1-3600 seconds, server URLs without a host name and senders with line breaks
+    or non-ASCII characters, which made every email sent through the server fail. (#3544)
   * SMTP and RADIUS servers whose identifier contains "/", "\" or control characters, is "." or "..",
     or equals a route of the API ("send_test_email", "test_request") are rejected, because they could
     not be updated through the API afterwards. "pi-manage config import" now imports the other servers

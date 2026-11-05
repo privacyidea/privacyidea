@@ -31,7 +31,7 @@ from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.error import ConfigAdminError, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.queue import job, wrap_job, has_job_queue
@@ -70,6 +70,59 @@ def parse_server_address(server: str, port) -> tuple[str, str | None, int]:
     # missing we add one.
     url = urlparse(server if "//" in server else f"//{server}", scheme="smtp")
     return url.scheme, url.hostname, url.port or int(port)
+
+
+def check_number(value, name: str, minimum: int, maximum: int) -> int:
+    """
+    Convert a numeric setting to an int and check its range.
+
+    :param value: the value, an int or a string
+    :param name: the name of the setting, used in the error message
+    :param minimum: the smallest allowed value
+    :param maximum: the largest allowed value
+    :return: the value as int
+    :raises ParameterError: if the value is not a whole number between minimum and maximum
+    """
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        raise ParameterError(f"The {name} must be a number, not {value!r}.")
+    if not minimum <= number <= maximum:
+        raise ParameterError(f"The {name} must be between {minimum} and {maximum}, not {number}.")
+    return number
+
+
+def check_server_address(server: str, port) -> tuple[str, int]:
+    """
+    Determine host and port with :func:`parse_server_address` and make sure an email can be sent to them.
+
+    :param server: the server as configured
+    :param port: the configured port, used if the server URL does not contain one
+    :return: the host name and the port
+    :raises ParameterError: if the server URL has no host name or no valid port
+    """
+    try:
+        _scheme, host, port = parse_server_address(server, port)
+    except ValueError:
+        raise ParameterError(f"The port in the server {server!r} must be a number between 1 and 65535.")
+    if not host:
+        raise ParameterError(f"The server {server!r} does not contain a host name.")
+    return host, port
+
+
+def check_email_address(address: str, name: str) -> None:
+    """
+    Reject an email address that can not be put into the message header or the SMTP envelope.
+
+    :param address: the email address
+    :param name: the name of the setting, used in the error message
+    :raises ParameterError: if the address contains control characters or non-ASCII characters
+    """
+    if any(ord(character) < 32 or ord(character) == 127 for character in address):
+        raise ParameterError(f"The {name} must not contain line breaks or other control characters.")
+    if not address.isascii():
+        raise ParameterError(f"The {name} {address!r} contains non-ASCII characters. "
+                             f"privacyIDEA can only send emails from and to ASCII addresses.")
 
 
 def _get_mail_debug_level():
@@ -410,10 +463,20 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
         server, port, username and tls stay the same.
     :return: The Id of the database object
     :raises ParameterError: if the password is ``__CENSORED__`` and server, port, username or
-        tls differ from the saved configuration
+        tls differ from the saved configuration, or if server, port, timeout or sender can not be
+        used to send an email
     """
     # POST /smtpserver/send_test_email is the test endpoint, not the server of that name
     validate_path_identifier(identifier, "SMTP server", reserved=("send_test_email",))
+    # A definition that can not be used to send an email is not saved. None keeps the stored value.
+    if port is not None:
+        port = check_number(port, "port", 1, 65535)
+    if timeout is not None:
+        timeout = check_number(timeout, "timeout", 1, 3600)
+    if server is not None:
+        check_server_address(server, port if port is not None else 25)
+    if sender:
+        check_email_address(sender, "sender")
 
     stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
     smtp_server = db.session.execute(stmt).scalar_one_or_none()

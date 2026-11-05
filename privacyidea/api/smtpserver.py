@@ -42,14 +42,14 @@ from flask import g
 
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
                                         delete_smtpserver, send_or_enqueue_email, replace_censored_secrets,
-                                        parse_server_address)
+                                        check_number, check_server_address, check_email_address)
 from .lib.utils import (send_result)
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..lib.crypto import censor_dict
-from ..lib.error import ConfigAdminError, ParameterError
+from ..lib.error import ConfigAdminError
 from ..lib.utils import is_true
 
 #: SMTP server fields that must never be returned in clear text by the API.
@@ -62,47 +62,13 @@ smtpserver_blueprint = Blueprint('smtpserver_blueprint', __name__)
 
 def _parse_number(value, name: str, default: int, minimum: int, maximum: int) -> int:
     """
-    Parse a numeric request parameter.
+    Parse a numeric request parameter, see :func:`check_number`.
 
     :raises ParameterError: if the value is not a whole number between minimum and maximum
     """
     if value in (None, ""):
         return default
-    try:
-        number = int(value)
-    except (TypeError, ValueError):
-        raise ParameterError(f"The {name} must be a number, not {value!r}.")
-    if not minimum <= number <= maximum:
-        raise ParameterError(f"The {name} must be between {minimum} and {maximum}, not {number}.")
-    return number
-
-
-def _server_address(server: str, port: int) -> tuple[str, int]:
-    """
-    Determine host and port with :func:`parse_server_address`, which the sending code uses as well.
-
-    :raises ParameterError: if the server URL has no host name or no valid port
-    """
-    try:
-        _scheme, host, port = parse_server_address(server, port)
-    except ValueError:
-        raise ParameterError(f"The port in the server {server!r} must be a number between 1 and 65535.")
-    if not host:
-        raise ParameterError(f"The server {server!r} does not contain a host name.")
-    return host, port
-
-
-def _check_email_address(address: str, name: str) -> None:
-    """
-    Reject an email address that can not be put into the message header or the SMTP envelope.
-
-    :raises ParameterError: if the address contains control characters or non-ASCII characters
-    """
-    if any(ord(character) < 32 or ord(character) == 127 for character in address):
-        raise ParameterError(f"The {name} must not contain line breaks or other control characters.")
-    if not address.isascii():
-        raise ParameterError(f"The {name} {address!r} contains non-ASCII characters. "
-                             f"privacyIDEA can only send emails from and to ASCII addresses.")
+    return check_number(value, name, minimum, maximum)
 
 
 def _smtp_reply(error: smtplib.SMTPResponseException) -> str:
@@ -124,7 +90,7 @@ def _describe_smtp_error(error: Exception, server: str, port: int, username: str
     :param timeout: the socket timeout in seconds
     :return: the message
     """
-    host, port = _server_address(server, port)
+    host, port = check_server_address(server, port)
     address = f"{host}:{port}"
     tls_hint = "Check whether port and TLS mode (smtps:// or STARTTLS) match."
 
@@ -225,11 +191,6 @@ def create(identifier=None):
     private_key = get_optional(param, "private_key")
     private_key_password = get_optional(param, "private_key_password")
     certificate = get_optional(param, "certificate")
-
-    # A definition that can not be used to send an email is not saved.
-    _server_address(server, port)
-    if sender:
-        _check_email_address(sender, "sender")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
@@ -359,10 +320,10 @@ def test():
     certificate = get_optional(param, "certificate", default="")
 
     # Reject what smtplib and the email package would fail on with an exception of their own.
-    _server_address(server, port)
-    _check_email_address(recipient, "recipient")
+    check_server_address(server, port)
+    check_email_address(recipient, "recipient")
     if sender:
-        _check_email_address(sender, "sender")
+        check_email_address(sender, "sender")
 
     # The edit dialog sends back the placeholder that GET /smtpserver/ returned for a stored secret
     password, private_key_password = replace_censored_secrets(identifier, password, private_key_password,

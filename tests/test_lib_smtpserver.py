@@ -519,3 +519,38 @@ class SMTPServerExportImportTestCase(MyTestCase):
                                 if server.config.identifier in ("good", "mail/relay", "send_test_email", "after")))
         delete_smtpserver("good")
         delete_smtpserver("after")
+
+    def test_05_settings_that_can_not_send_are_not_saved(self):
+        from privacyidea.lib.smtpserver import import_smtpserver
+        invalid = {"port": ({"port": 99999}, "port must be between 1 and 65535"),
+                   "port_text": ({"port": "abc"}, "port must be a number"),
+                   "timeout": ({"timeout": 0}, "timeout must be between 1 and 3600"),
+                   "server": ({"server": "smtp://"}, "does not contain a host name"),
+                   "server_port": ({"server": "mail.example:99999"}, "must be a number between 1 and 65535"),
+                   "sender": ({"sender": "pi@example.com\r\n"}, "must not contain line breaks"),
+                   "sender_ascii": ({"sender": "pi@exämple.com"}, "contains non-ASCII characters")}
+        for name, (change, message) in invalid.items():
+            with self.subTest(name=name):
+                settings = dict({"server": "mail.example", "sender": "pi@example.com"}, **change)
+                with self.assertRaises(ParameterError) as cm:
+                    add_smtpserver(f"invalid_{name}", **settings)
+                self.assertIn(message, cm.exception.message)
+                # pi-manage config import uses the same checks
+                with self.assertRaises(ConfigAdminError) as cm:
+                    import_smtpserver({f"invalid_{name}": settings})
+                self.assertIn(message, cm.exception.message)
+                self.assertEqual([], get_smtpservers(identifier=f"invalid_{name}"))
+
+        # An existing server is not changed either
+        add_smtpserver("valid", server="mail.example", port=587, sender="pi@example.com", timeout=20)
+        with self.assertRaises(ParameterError):
+            add_smtpserver("valid", server="mail.example", port=99999)
+        stored = get_smtpserver("valid").config
+        self.assertEqual(587, stored.port)
+        self.assertEqual(20, stored.timeout)
+        # A port given as string, e.g. from an import file, is stored as number
+        add_smtpserver("valid", server="mail.example", port="465", timeout="30")
+        stored = get_smtpserver("valid").config
+        self.assertEqual(465, stored.port)
+        self.assertEqual(30, stored.timeout)
+        delete_smtpserver("valid")
