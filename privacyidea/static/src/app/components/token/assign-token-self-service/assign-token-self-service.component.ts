@@ -17,10 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, signal } from "@angular/core";
+import { form, validate } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -29,6 +31,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 @Component({
   selector: "app-attach-token-self-service",
   imports: [
+    EnrollmentPinComponent,
     MatError,
     MatFormField,
     MatLabel,
@@ -46,16 +49,24 @@ export class AssignTokenSelfServiceComponent {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   tokenSerial = this.tokenService.tokenSerial;
   selectedToken = signal("");
-  setPinValue = signal("");
-  repeatPinValue = signal("");
+  setPin = signal("");
+  repeatPin = signal("");
+  setPinForm = form(this.setPin);
+  repeatPinForm = form(this.repeatPin, (f) => {
+    validate(f, (ctx) => (ctx.value() !== this.setPin() ? [{ kind: "pinMismatch" }] : []));
+  });
 
   assignUserToToken() {
+    if (!this.repeatPinForm().valid()) {
+      this.repeatPinForm().markAsTouched();
+      return;
+    }
     this.tokenService
       .assignUser({
         tokenSerial: this.selectedToken(),
         username: "",
         realm: "",
-        pin: this.setPinValue()
+        pin: this.setPin()
       })
       .subscribe({
         next: () => {

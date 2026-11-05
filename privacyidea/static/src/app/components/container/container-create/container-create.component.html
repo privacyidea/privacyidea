@@ -32,6 +32,7 @@
     [appStickyHeader]="scrollContainer">
     <div class="sticky-controls ali-center">
       <mat-form-field class="input-width-xl type-select">
+        <mat-label i18n="@@common.containerType">Container Type</mat-label>
         <mat-select
           (selectionChange)="containerService.selectedContainerType.set($event.value)"
           [panelClass]="'single-column-panel'"

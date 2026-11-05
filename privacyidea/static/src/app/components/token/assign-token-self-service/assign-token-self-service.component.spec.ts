@@ -61,7 +61,8 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     const pin = "1234";
 
     component.selectedToken.set(serial);
-    component.setPinValue.set(pin);
+    component.setPin.set(pin);
+    component.repeatPin.set(pin);
 
     component.assignUserToToken();
 
@@ -74,5 +75,57 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     });
 
     expect(TestBed.inject(ContentService).tokenSelected).toHaveBeenCalledWith(serial);
+  });
+
+  describe("PIN check", () => {
+    const pinInputs = (): HTMLInputElement[] =>
+      Array.from(fixture.nativeElement.querySelectorAll("app-enrollment-pin input")) as HTMLInputElement[];
+    const type = (input: HTMLInputElement, value: string) => {
+      input.value = value;
+      input.dispatchEvent(new Event("input"));
+      input.dispatchEvent(new Event("blur"));
+    };
+
+    beforeEach(() => component.selectedToken.set("TKN-123"));
+
+    it("does not assign the token and shows an error if the PINs differ", () => {
+      type(pinInputs()[0], "1234");
+      type(pinInputs()[1], "4321");
+
+      component.assignUserToToken();
+      fixture.detectChanges();
+
+      expect(tokenService.assignUser).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector("app-enrollment-pin mat-error")?.textContent).toContain(
+        "PINs do not match."
+      );
+    });
+
+    it("shows the mismatch on submit even if the repeat field was never touched", () => {
+      component.setPin.set("1234");
+
+      component.assignUserToToken();
+      fixture.detectChanges();
+
+      expect(tokenService.assignUser).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.querySelector("app-enrollment-pin mat-error")?.textContent).toContain(
+        "PINs do not match."
+      );
+    });
+
+    it("assigns the token with the PIN once both PINs match", () => {
+      type(pinInputs()[0], "1234");
+      type(pinInputs()[1], "1234");
+
+      component.assignUserToToken();
+
+      expect(tokenService.assignUser).toHaveBeenCalledWith(expect.objectContaining({ pin: "1234" }));
+    });
+
+    it("assigns the token without a PIN if both PIN fields are empty", () => {
+      component.assignUserToToken();
+
+      expect(tokenService.assignUser).toHaveBeenCalledWith(expect.objectContaining({ pin: "" }));
+    });
   });
 });
