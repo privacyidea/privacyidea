@@ -79,10 +79,12 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               user_is_owner,
                                               UserAttributes,
-                                              get_container_user_attributes)
+                                              get_container_user_attributes,
+                                              get_request_identity)
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
                                       log_authentication)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
+from privacyidea.lib.conditional_access.request_context import confirm_attempt_for_serials
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -1616,9 +1618,10 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
+    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUDIT_DOWNLOAD,
+                                         PolicyAction.AUTHENTICATION_LOG_READ):
         # For an admin, realm/user only filter the log and must not drive the policy match, since the realm restriction
-        # is enforced separately (audit: allowed_audit_realm decorator; authentication log:
+        # is enforced separately (audit: get_admin_audit_params; authentication log:
         # get_policy_visibility_scopes), so they are cleared here. For a user reading their own log, realm/username come
         # from their own identity (determine_logged_in_userparams) and are kept so a realm/resolver-scoped user-scope
         # policy still matches - the user only ever sees their own entries anyway.
@@ -2225,7 +2228,12 @@ def api_key_required(request=None, action=None):
         future release. The X-API-Key API clients feature is intended to replace
         them; it does not yet cover this use case.
     """
-    user_object = request.User
+    # Without any such policy the user does not matter. Listed regardless of the conditions, which can not be
+    # evaluated without the user.
+    if not g.policy_object.list_policies(scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, active=True):
+        return True
+    # A request that names only a serial or a credential id is matched for the owner of the token
+    user_object = get_request_identity(request)
 
     # Get the policies
     action = Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.APIKEY, user_object=user_object).policies()
@@ -2248,8 +2256,7 @@ def api_key_required(request=None, action=None):
 
         role = g.logged_in_user.get("role")
         if role != ROLE.VALIDATE:
-            raise PolicyError("A correct JWT was passed, but it was no API "
-                              "key.")
+            raise PolicyError("A correct JWT was passed, but it was no API key.")
 
     # If everything went fine, we call the original function
     return True
@@ -2350,10 +2357,10 @@ def pushtoken_validate(request, action):
     :param action:
     :return:
     """
-    user_object = request.User
-    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT,
-                         user_object=user_object if user_object else None) \
-        .action_values(unique=True, allow_white_space_in_action=True)
+    # Without a user only the policies without a user, realm or resolver match, as for the other pre-policies. A
+    # request that names only a serial matches them again for the token owner.
+    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT, user_object=request.User).action_values(
+        unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
         request.all_data[PushAction.WAIT] = int(list(waiting)[0])
     else:
@@ -2471,59 +2478,42 @@ def webauthntoken_request(request, action):
 
     # If this is a WebAuthn token, or an authentication request for no particular token.
     if scope:
-        actions = WebAuthnTokenClass.get_class_info('policy').get(scope)
-        actions.update(WebAuthnTokenClass.get_class_info('policy').get(SCOPE.AUTHZ))
-        if FIDO2PolicyAction.TIMEOUT in actions:
-            timeout_policies = Match \
-                .user(g,
-                      scope=scope,
-                      action=FIDO2PolicyAction.TIMEOUT,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=True)
-            timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
+        user_object = request.User if hasattr(request, 'User') else None
+        timeout_policies = Match.user(g, scope=scope, action=FIDO2PolicyAction.TIMEOUT,
+                                      user_object=user_object).action_values(unique=True)
+        timeout = int(list(timeout_policies)[0]) if timeout_policies else DEFAULT_TIMEOUT
 
-            request.all_data[FIDO2PolicyAction.TIMEOUT] \
-                = timeout * 1000
+        request.all_data[FIDO2PolicyAction.TIMEOUT] = timeout * 1000
 
-        if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in actions:
-            user_verification_requirement_policies = Match \
-                .user(g,
-                      scope=scope,
-                      action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=True)
-            user_verification_requirement = list(user_verification_requirement_policies)[0] \
-                if user_verification_requirement_policies \
-                else DEFAULT_USER_VERIFICATION_REQUIREMENT
-            if user_verification_requirement not in USER_VERIFICATION_LEVELS:
-                raise PolicyError(
-                    "{!s} must be one of {!s}"
-                    .format(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                            ", ".join(USER_VERIFICATION_LEVELS)))
+        user_verification_requirement_policies = Match.user(
+            g, scope=scope, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+            user_object=user_object).action_values(unique=True)
+        user_verification_requirement = (list(user_verification_requirement_policies)[0]
+                                         if user_verification_requirement_policies
+                                         else DEFAULT_USER_VERIFICATION_REQUIREMENT)
+        if user_verification_requirement not in USER_VERIFICATION_LEVELS:
+            raise PolicyError(
+                "{!s} must be one of {!s}"
+                .format(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
+                        ", ".join(USER_VERIFICATION_LEVELS)))
 
-            request.all_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] \
-                = user_verification_requirement
+        request.all_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] = user_verification_requirement
 
-        if FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST in actions:
-            allowed_aaguids_pols = Match \
-                .user(g,
-                      scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
-                      action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
-                      user_object=request.User if hasattr(request, 'User') else None) \
-                .action_values(unique=False,
-                               allow_white_space_in_action=True)
-            allowed_aaguids = set(
-                aaguid
-                for allowed_aaguid_pol in allowed_aaguids_pols
-                for aaguid in allowed_aaguid_pol.split()
-            )
+        allowed_aaguids_pols = Match.user(
+            g, scope=SCOPE.AUTHZ if scope == SCOPE.AUTH else scope,
+            action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+            user_object=user_object).action_values(unique=False, allow_white_space_in_action=True)
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
 
-            if allowed_aaguids:
-                request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] \
-                    = list(allowed_aaguids)
-            elif scope == SCOPE.AUTH:
-                # Only a policy restricts the authenticators that may authenticate
-                request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
+        if allowed_aaguids:
+            request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] = list(allowed_aaguids)
+        elif scope == SCOPE.AUTH:
+            # Only a policy restricts the authenticators that may authenticate
+            request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
 
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
 
@@ -3294,6 +3284,32 @@ def disabled_token_types(request, action):
     return True
 
 
+def rerun_user_dependent_prepolicies(request: Request, options: dict | None = None) -> None:
+    """
+    Match the pre-policies that depend on the user again, for a request whose user is only known after the
+    pre-policies ran, e.g. the owner of the token named by serial or credential id.
+
+    The pre-policies that rewrite the user (set_realm, mangle) are not run again, nor the ones an endpoint sets up
+    differently (pushtoken_validate, pushtoken_disable_wait).
+
+    :param request: The request object with the user to match the policies for in request.User
+    :param options: A copy of request.all_data taken before, which gets the same changes, including the parameters a
+        pre-policy removes
+    """
+    previous = dict(request.all_data)
+    increase_failcounter_on_challenge(request, None)
+    webauthntoken_request(request, None)
+    webauthntoken_authz(request, None)
+    disabled_token_types(request, None)
+    load_challenge_text(request, None)
+    fido2_auth(request, None)
+    if options is not None:
+        for key in previous.keys() - request.all_data.keys():
+            options.pop(key, None)
+        options.update({key: value for key, value in request.all_data.items()
+                        if key not in previous or previous[key] != value})
+
+
 def auth_timelimit(request, action):
     """
     This decorator retrieves the auth timelimit from the policies and adds it to the request data.
@@ -3338,7 +3354,13 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, reasons=[reason])
+        transaction_id = get_optional(request.all_data, "transaction_id")
+        if transaction_id and not local_admin and user.exist():
+            # A refused answer is still a step of the attempt of the challenge it answers, as in the token layer. A
+            # user who does not exist owns no token, so the challenge is someone else's.
+            confirm_attempt_for_serials(token.token.serial for token in get_tokens(user=user))
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, transaction_id=transaction_id,
+                           reasons=[reason])
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

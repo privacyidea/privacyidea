@@ -158,7 +158,7 @@ export class ApiClientsComponent {
   }
 
   onEditApiClient(client: ApiClient): void {
-    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + client.id);
+    this.router.navigate([ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS, client.id]);
   }
 
   rotateKey(client: ApiClient): void {
@@ -170,7 +170,7 @@ export class ApiClientsComponent {
           items: [client.display_name],
           itemType: "api-client",
           confirmAction: {
-            label: $localize`:@@apiClient.rotateKey:Rotate key`,
+            label: $localize`:@@apiClient.rotateKey:Rotate Key`,
             value: true,
             type: "destruct"
           }

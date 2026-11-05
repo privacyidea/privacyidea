@@ -137,7 +137,7 @@ export class ServiceIdsComponent {
   }
 
   onEditServiceId(serviceId: ServiceId): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
+    this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS, serviceId.servicename]);
   }
 
   deleteSelected(): void {

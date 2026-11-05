@@ -230,13 +230,19 @@ class TestMultipleUserToken(MyTestCase):
                     'privacyidea.lib.user', 'INFO',
                     'User <cornelius.resolver1@realm1> failed to authenticate.'),
                 (
+                    'privacyidea.lib.user', 'INFO',
+                    "User <cornelius.resolver1@realm1> failed to authenticate from request cache."))
+            # The tokens of a user have no fixed order, so s1 is skipped before or after the check from the cache,
+            # but always after the direct password check
+            lc.check_present(
+                (
+                    'privacyidea.lib.user', 'INFO',
+                    'User <cornelius.resolver1@realm1> failed to authenticate.'),
+                (
                     'privacyidea.lib.token.auth',
                     'INFO',
                     'Skipping authentication try for token s1 because policy '
-                    'force_challenge_response is set.'),
-                (
-                    'privacyidea.lib.user', 'INFO',
-                    "User <cornelius.resolver1@realm1> failed to authenticate from request cache."))
+                    'force_challenge_response is set.'))
             # We now have two password checks in the resolver, one failed (with OTP) and one successful
             resolver_logs = [x for x in lc.records if x.msg == "user uid 1000 failed to authenticate"]
             self.assertEqual(1, len(resolver_logs), resolver_logs)

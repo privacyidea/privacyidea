@@ -88,11 +88,11 @@ class MachineResolverTestCase(MyTestCase):
         self.assertEqual("filename", file_config.Key)
         self.assertEqual("somefile", file_config.Value)
         self.assertEqual("string", file_config.Type)
-        self.assertEqual("", file_config.Description)
+        self.assert_empty_string(file_config.Description)
         self.assertEqual("unknown_param", unknown_config.Key)
         self.assertEqual("xyz", unknown_config.Value)
-        self.assertEqual("", unknown_config.Type)
-        self.assertEqual("", unknown_config.Description)
+        self.assert_empty_string(unknown_config.Type)
+        self.assert_empty_string(unknown_config.Description)
 
         # update the resolver
         mr_obj = save_resolver({"name": "testresolver",
@@ -128,12 +128,12 @@ class MachineResolverTestCase(MyTestCase):
         self.assertEqual("pw", pw_config.Key)
         self.assertNotEqual("secretöö", pw_config.Value)   # encrypted in DB
         self.assertEqual("password", pw_config.Type)
-        self.assertEqual("", pw_config.Description)
+        self.assert_empty_string(pw_config.Description)
         # previously set config is still there
         self.assertEqual("unknown_param", unknown_config.Key)
         self.assertEqual("xyz", unknown_config.Value)
-        self.assertEqual("", unknown_config.Type)
-        self.assertEqual("", unknown_config.Description)
+        self.assert_empty_string(unknown_config.Type)
+        self.assert_empty_string(unknown_config.Description)
 
         # wrong machine resolver definitions
         # missing value with type

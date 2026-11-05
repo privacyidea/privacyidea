@@ -24,7 +24,11 @@ This directory contains the migration test suite for privacyIDEA.
 
 **Only when the migration's `upgrade()` or `downgrade()` transforms existing
 row data** — i.e. it contains SQL DML (`UPDATE`, `INSERT`, `DELETE`) or ORM
-session writes against pre-existing rows.
+session writes against pre-existing rows — **or when it creates several schema
+objects one after the other**, e.g. a table and then its indexes. The generic
+running-again test only repeats a migration on its complete result; a stop
+between two of these statements needs `_upgrade_failing_after` in a test of its
+own (see `test_migration_c8d9e0f1a2b3.py`).
 
 ### What `test_migrations.py` already covers (no extra test needed)
 
@@ -34,6 +38,7 @@ session writes against pre-existing rows.
 | **Schema equivalence** | Any gap between migration output and ORM models | `test_schema_matches_models_after_upgrade_to_head` — uses Alembic's `compare_metadata` |
 | **Reversibility** | `downgrade()` crashing | `test_migrations_since_start_revision_are_reversible` |
 | **Data survival** | Rows deleted from tables that survive a downgrade | `test_downgrade_does_not_destroy_data_in_surviving_tables` |
+| **Running again** | `upgrade()` failing or changing the schema or row counts when it runs again on its own result (after a failure midway or a stamp set back by hand) | `test_each_migration_runs_again_on_its_own_result` — known exceptions are listed in `NOT_RERUNNABLE_REVISIONS` |
 
 ### What requires a dedicated test
 
@@ -62,6 +67,8 @@ the above.  Examples:
    | `_fetch_scalar(engine, query, params)` | Runs a query and returns the first column of the first row |
    | `_upgrade(target=None)` | Runs `alembic upgrade` to `REVISION` (or `target`) |
    | `_downgrade(target=None)` | Runs `alembic downgrade` to `PARENT_REVISION` (or `target`) |
+   | `_upgrade_failing_after(pattern)` | Runs the upgrade to `REVISION` but stops it right after the first statement matching the regular expression, leaving what it did so far committed |
+   | `_set_stamp_back_to_parent()` | Sets the stamp back to `PARENT_REVISION` without undoing the migration |
    | `_engine()` | Returns a fresh `create_engine(DB_URL)` — caller must `.dispose()` |
 
 4. **Mark** the module with `pytest.mark.migration` so the CI workflow picks it up.
@@ -70,6 +77,8 @@ the above.  Examples:
    - The happy path: `upgrade()` rewrites the right rows
    - Idempotent rows: rows that are already in the target shape are untouched
    - Unrelated rows: rows with different keys/tables are untouched
+   - Running again: after `_upgrade_failing_after(...)` at each step of the data conversion, or after
+     `_set_stamp_back_to_parent()`, a second `_upgrade()` succeeds and converts nothing twice
    - Downgrade: `downgrade()` correctly reverts the change
    - Round-trip: upgrade → downgrade leaves unrelated rows unchanged
 

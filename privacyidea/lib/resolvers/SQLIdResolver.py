@@ -31,11 +31,10 @@ The file is tested in tests/test_lib_resolver.py
 """
 
 import logging
-import yaml
 import binascii
 import re
 
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_, or_,
                         create_engine, select, insert, delete, update, RowMapping)
@@ -586,7 +585,7 @@ class IdResolver (UserIdResolver):
         self._editable = config.get("Editable", False)
         self.password_hash_type = config.get("Password_Hash_Type", "SSHA256")
         usermap = config.get('Map', {})
-        self.map = yaml.safe_load(usermap)
+        self.map = parse_config_yaml(usermap)
         self.reverse_map = {v: k for k, v in self.map.items()}
         self.where = config.get('Where', "")
         self.encoding = str(config.get('Encoding') or "latin1")

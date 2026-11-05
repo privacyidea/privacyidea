@@ -56,7 +56,7 @@ describe("route titles", () => {
   });
 
   it("builds the title of a new page and of a record's page from the name of its list", () => {
-    expect(newTitle(PAGE_NAMES.policies)).toBe("Policies - new");
-    expect(detailsTitle(PAGE_NAMES.smtp)).toBe("SMTP servers - details");
+    expect(newTitle(PAGE_NAMES.policies)).toBe("Policies - New");
+    expect(detailsTitle(PAGE_NAMES.smtp)).toBe("SMTP Servers - Details");
   });
 });

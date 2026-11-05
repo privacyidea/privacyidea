@@ -50,9 +50,13 @@ class PasswordTokenTestCase(MyTestCase):
         self.assertTrue(r == -1, r)
 
         # check pin+otp:
-        token.set_pin(self.serial1, "secretpin")
-        r = token.authenticate("secretpin{0!s}".format(self.password))
-        self.assertTrue(r, r)
+        token.set_pin("secretpin")
+        pin_matches, otp_counter, _ = token.authenticate(f"secretpin{self.password}")
+        self.assertTrue(pin_matches)
+        self.assertEqual(0, otp_counter)
+        pin_matches, otp_counter, _ = token.authenticate(f"wrongpin{self.password}")
+        self.assertFalse(pin_matches)
+        self.assertEqual(-1, otp_counter)
 
     def test_03_class_methods(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()

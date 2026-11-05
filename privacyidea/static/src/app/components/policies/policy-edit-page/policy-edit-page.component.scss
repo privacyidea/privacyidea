@@ -17,6 +17,13 @@
   );
 }
 
+// The counterpart of mat-error next to the Save button.
+.save-blocked-reason {
+  margin: 0;
+  font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
+  color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+}
+
 .action-search-field {
   flex: 1 1 var(--input-width-m);
   min-width: var(--input-width-s);

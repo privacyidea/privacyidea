@@ -35,7 +35,7 @@ from privacyidea.lib.error import ValidateError, ParameterError
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policy import TYPE
 from privacyidea.lib.token import get_one_token
-from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenclass import TokenClass, lock_token_row
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.utils import get_computer_name_from_user_agent
 from privacyidea.models import Token, TokenInfo, db
@@ -168,7 +168,7 @@ class MachineApplication(MachineApplicationBase):
         # changed after the transaction's first plain read is refused with 1020.
         token_id = token.token.id
         db.session.commit()
-        db.session.execute(select(Token.id).where(Token.id == token_id).with_for_update())
+        lock_token_row(Token.id == token_id)
         stored = db.session.execute(select(TokenInfo.Value)
                                     .where(TokenInfo.token_id == token_id, TokenInfo.Key == key)
                                     .with_for_update()).scalar_one_or_none()

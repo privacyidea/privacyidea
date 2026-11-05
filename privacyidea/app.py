@@ -25,7 +25,6 @@
 #
 import atexit
 import datetime
-import json
 import logging
 import logging.config
 import os
@@ -35,16 +34,22 @@ import secrets
 import sys
 import time
 import uuid
-from importlib import metadata
-from importlib.metadata import PackageNotFoundError
 from pathlib import Path, PurePath
+from typing import IO, Any
 
+import click
+import flask_migrate.cli
 import sqlalchemy as sa
 import yaml
-from flask import Flask, current_app, jsonify, request, redirect
+from alembic.runtime.migration import MigrationContext
+from flask import Flask, Request, current_app, jsonify, request, redirect
+from flask.cli import with_appcontext
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
+from werkzeug.datastructures import FileStorage, MultiDict
+from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.formparser import FormDataParser
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
@@ -144,6 +149,32 @@ babel = Babel()
 # But since the logging system is not configured properly, the message might not
 # end up in the place as defined in the logging configuration
 log = logging.getLogger(__name__)
+
+
+class UrlencodedSizeLimitFormDataParser(FormDataParser):
+    """
+    Form data parser that also limits the size of an ``application/x-www-form-urlencoded`` body.
+
+    Werkzeug applies ``max_form_memory_size`` only to the text parts of a ``multipart/form-data`` body. This
+    parser also applies it to a urlencoded body: if the ``Content-Length`` of the body is larger than the limit,
+    it raises ``413 Request Entity Too Large`` before it reads the body. Flask takes the limit from the
+    configuration value ``MAX_FORM_MEMORY_SIZE``. ``None`` turns the check off.
+    """
+
+    def parse(self, stream: IO[bytes], mimetype: str, content_length: int | None,
+              options: dict[str, str] | None = None
+              ) -> tuple[IO[bytes], MultiDict[str, str], MultiDict[str, FileStorage]]:
+        if (mimetype == "application/x-www-form-urlencoded" and self.max_form_memory_size is not None
+                and content_length is not None and content_length > self.max_form_memory_size):
+            raise RequestEntityTooLarge()
+        return super().parse(stream, mimetype, content_length, options)
+
+
+class PrivacyIDEARequest(Request):
+    """
+    The request class of both application factories.
+    """
+    form_data_parser_class = UrlencodedSizeLimitFormDataParser
 
 
 def _register_spa_fallback(app: Flask) -> None:
@@ -470,6 +501,47 @@ def _setup_node_configuration(app: Flask):
         log.debug("Finished setting up node names.")
 
 
+def _check_revision_stamp() -> None:
+    """
+    Raise a ClickException if the database has no schema revision stamp. The migrations cannot tell which of them
+    such a database needs: run from the first revision, they would rename and recreate the tables of a current schema.
+    """
+    with db.engine.connect() as connection:
+        if MigrationContext.configure(connection).get_current_heads():
+            return
+        has_tables = sa.inspect(connection).has_table("token")
+    database = db.engine.url.render_as_string(hide_password=True)
+    if has_tables:
+        hints = ["If the tables were created with 'pi-manage setup create_tables --no-stamp' by the installed version, "
+                 "stamp the database with 'pi-manage db stamp head'.",
+                 "If an older version created the tables, stamp the database with the newest revision of that "
+                 "version. The upgrade documentation lists the revisions of the versions before 3.10.",
+                 "Then run the upgrade again."]
+    else:
+        hints = ["If the database is empty, create the tables with 'pi-manage setup create_tables'."]
+    raise click.ClickException("\n  ".join([f"The database {database} has no schema revision stamp, so the "
+                                            "migrations to apply are unknown.",
+                                            "Check that this is the database you expect."] + hints))
+
+
+@with_appcontext
+def _upgrade_if_stamped(**parameters: Any) -> Any:
+    """
+    Run "db upgrade" of Flask-Migrate. Stop on a database without schema revision stamp, unless the command only
+    prints the SQL.
+    """
+    if not parameters.get("sql"):
+        _check_revision_stamp()
+    return flask_migrate.cli.upgrade.callback(**parameters)
+
+
+# "db upgrade" with the parameters of Flask-Migrate, so that "pi-manage db -d <directory> upgrade" works as before.
+# "db stamp" and "db current" stay available for a database without stamp.
+db_upgrade_command = click.Command("upgrade", callback=_upgrade_if_stamped, params=flask_migrate.cli.upgrade.params,
+                                   help=f"{flask_migrate.cli.upgrade.help}\n\n"
+                                        "Stops on a database without schema revision stamp.")
+
+
 def create_app(config_name="development",
                config_file=DefaultConfigValues.CFG_PATH,
                silent=False, initialize_hsm=False) -> Flask:
@@ -495,6 +567,7 @@ def create_app(config_name="development",
     """
     app = Flask(__name__, static_folder=DefaultConfigValues.STATIC_FOLDER,
                 template_folder=DefaultConfigValues.TEMPLATE_FOLDER)
+    app.request_class = PrivacyIDEARequest
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = not silent
 
@@ -561,16 +634,9 @@ def create_app(config_name="development",
     db.init_app(app)
     init_ca_session(app)
 
-    # TODO: This is not necessary except for the pi-manage command line util
-    # Try to get the path of the migration directory from the installed package
-    # TODO: This still does not work with an editable installation if it is not called from the source folder
-    # By default, we assume we are in the source folder
-    migration_dir = "privacyidea/migrations"
-    try:
-        migration_path = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
-        migration_dir = str(migration_path.locate().parent.resolve())
-    except (PackageNotFoundError, IndexError):
-        pass
+    # The migrations are part of the package, next to this module, in a source tree as in an installed or editable
+    # package. The pi-manage db commands use them.
+    migration_dir = str(Path(__file__).resolve().parent / "migrations")
     migrate.init_app(app, db, directory=migration_dir)
     db_command = app.cli.commands.get('db')
     if db_command is not None:
@@ -586,6 +652,8 @@ def create_app(config_name="development",
                 "interpreted as an option. Use '--' to separate them from options:\n"
                 "  pi-manage db downgrade -- -3"
             )
+        # The command group of Flask-Migrate is shared by all apps. Adding the same command again changes nothing.
+        db_command.add_command(db_upgrade_command)
 
     app.jinja_env.filters["versioned"] = versioned_asset
 
@@ -598,13 +666,6 @@ def create_app(config_name="development",
             init_hsm()
 
     _setup_node_configuration(app)
-
-    # SQLAlchemy Oracle dialect does not (yet) support JSON serializers
-    with app.app_context():
-        engine = db.session.get_bind()
-        if engine.name == "oracle":
-            engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
-            engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
     # Eagerly establish the Redis connection so a healthy connect logs Redis cache connected (...)" during startup.
     # A failed connect is not fatal. get_redis() arms the unified retry cooldown (PI_REDIS_RETRY_COOLDOWN seconds)
@@ -635,6 +696,7 @@ def create_docker_app():
     files via docker-compose.
     """
     app = Flask(__name__)
+    app.request_class = PrivacyIDEARequest
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 

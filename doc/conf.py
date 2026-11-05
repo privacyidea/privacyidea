@@ -31,6 +31,13 @@ release: str = im_version("privacyidea")
 # The short X.Y version.
 version: str = ".".join(release.split('.')[:2])
 
+# :read-before-update:`READ_BEFORE_UPDATE.md` links the update notes of the branch or tag these docs are built from,
+# so the docs of a version link the notes of that version. Read the Docs sets the variable, a local build links master.
+read_before_update_ref = os.environ.get("READTHEDOCS_GIT_IDENTIFIER") or "master"
+extlinks = {
+    "read-before-update": (f"https://github.com/privacyidea/privacyidea/blob/{read_before_update_ref}/%s", "%s"),
+}
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -38,7 +45,7 @@ needs_sphinx = '8.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode',
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.imgmath', 'sphinx.ext.viewcode', 'sphinx.ext.extlinks',
               'sphinxcontrib.autohttp.flask',
               'sphinxcontrib.spelling', 'sphinx.ext.todo',
               'pallets_sphinx_themes']

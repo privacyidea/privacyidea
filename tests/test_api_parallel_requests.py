@@ -45,7 +45,7 @@ from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, PushTokenCla
 from privacyidea.lib.tokens.questionnairetoken import QuestionnaireTokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import db, PasswordReset
-from tests.base import MyApiTestCase
+from tests.base import MyApiTestCase, results_of, run_in_parallel
 from tests.test_api_push_validate import PushTokenTestMixin, REGISTRATION_URL
 
 QUESTIONS = {"frage1": "antwort1", "frage2": "antwort2", "frage3": "antwort3"}
@@ -54,30 +54,6 @@ QUESTION_PIN = "pin"
 OTP_KEY = "3132333435363738393031323334353637383930"
 REFILLTOKEN = "ab" * REFILLTOKEN_LENGTH
 HOTP_AT_COUNTER_0 = "755224"
-
-
-def run_in_parallel(app, functions: list) -> list:
-    """Run each function in its own thread and app context; return its result, or "exception: ..." if it raised."""
-    results = [None] * len(functions)
-
-    def run(index: int) -> None:
-        with app.app_context():
-            try:
-                results[index] = functions[index]()
-            except Exception as exception:  # every thread reports back
-                results[index] = f"exception: {exception!r}"[:200]
-            finally:
-                db.session.remove()
-
-    threads = [threading.Thread(target=run, args=(index,)) for index in range(len(functions))]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join(30)
-    # End this thread's transaction, so the assertions read what the requests committed (MariaDB/MySQL
-    # REPEATABLE READ would otherwise keep showing an older snapshot).
-    db.session.rollback()
-    return results
 
 
 def synchronize_after(target, attribute: str, parties: int):
@@ -101,11 +77,6 @@ def synchronize_after(target, attribute: str, parties: int):
         return result
 
     return mock.patch.object(target, attribute, wrapper)
-
-
-def results_of(responses: list) -> list:
-    """The result of each response body, or the exception string of a thread that did not get one."""
-    return [body["result"] if isinstance(body, dict) else body for body in responses]
 
 
 def accepted(results: list) -> int:

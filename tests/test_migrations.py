@@ -21,6 +21,10 @@ migration does. Concretely, it verifies that:
     columns/indexes/foreign-keys/unique-constraints both times. This catches
     downgrades that forget to drop something (or upgrades that don't fully
     restore after one).
+  - Every migration in the window can run again on its own result, as after
+    a failure midway or a revision stamp that was set back, without changing
+    the schema or the row counts (known exceptions in
+    NOT_RERUNNABLE_REVISIONS).
   - A default INSERT succeeds against every model-declared table after
     upgrade-to-head, exercising the auto-PK path. This catches sequence/
     identity misconfigurations and missing NOT NULL defaults that schema-
@@ -66,10 +70,12 @@ from tests.migration_test_utils import (
     START_REVISION,
     drop_all_tables,
     get_alembic_cfg,
+    is_mariadb,
     is_oracle,
     is_postgres,
     load_seed,
     quote_identifier,
+    set_stamp_before,
 )
 
 # Skip these tests if no database URL is provided
@@ -357,9 +363,9 @@ def test_upgrade_to_head_is_noop_when_already_at_head(flask_app):
     Running ``flask db upgrade`` against a database that's already at head
     must be a no-op: the schema must be identical before and after.
 
-    Catches manually-edited migrations whose upgrade() isn't guarded against
-    re-running, or migrations whose alembic_version row gets out of sync with
-    what was actually applied.
+    Alembic runs no migration on a database stamped at head, so this does not
+    run any upgrade() a second time. Whether an upgrade() can run again on its
+    own result is checked by test_each_migration_runs_again_on_its_own_result.
     """
     from flask_migrate import upgrade as flask_upgrade
 
@@ -1077,6 +1083,110 @@ def test_each_migration_survives_round_trip(flask_app):
             f"{current_rev!r} instead of {rev.revision!r}."
         )
         # Leave the DB at rev.revision — the next iteration will upgrade from here.
+
+
+# Revisions whose upgrade() still fails when it runs again on its own result, with the engines on which it fails
+# ("postgresql", "mariadb", "mysql", "oracle"). Each entry is a defect to fix, not an exemption: the test below fails
+# for an entry that no longer fails, so remove the entry together with the fix. Most entries are Oracle only, because
+# Oracle reports an existing table or column with an error that the "already exists" guards of these revisions do not
+# recognise.
+NOT_RERUNNABLE_REVISIONS = {
+    "db6b2ef8100f": {"oracle"},
+    "5741e5dac477": {"oracle"},
+    "69e7817b9863": {"oracle"},
+    "c128c01a5520": {"oracle"},
+    "903a6ed6f6c4": {"oracle"},
+    "5f40baab76ca": {"oracle"},
+    "04c078e29924": {"oracle"},
+    "41ad6c9ada8b": {"mysql", "oracle"},
+    "1c48d4ffb8c3": {"oracle"},
+}
+
+
+def _get_engine_name() -> str:
+    if is_oracle():
+        return "oracle"
+    if is_postgres():
+        return "postgresql"
+    return "mariadb" if is_mariadb() else "mysql"
+
+
+def test_each_migration_runs_again_on_its_own_result(flask_app):
+    """
+    For every migration in the window, set the revision stamp back to its parent right after it ran, without undoing
+    anything, and run it again. The second run must succeed and change neither the schema nor the number of rows of
+    any table.
+
+    An installation gets into this state when a migration fails midway: every statement commits on its own (see
+    migrations/env.py), but alembic only moves the stamp once the migration has finished, so the next upgrade runs the
+    migration again on top of what the failed run left behind. The same happens when an operator sets the stamp back by
+    hand. This test covers the case in which the first run got through completely; per-migration tests stop a
+    migration at a chosen statement with MigrationTestBase._upgrade_failing_after.
+
+    The round-trip test above cannot see any of this: its second upgrade() runs after the downgrade() has undone the
+    first one, so both start from the same state.
+    """
+    from alembic import command
+
+    script = ScriptDirectory.from_config(get_alembic_cfg())
+    revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
+    engine_name = _get_engine_name()
+    expected_failures = {revision for revision, engine_names in NOT_RERUNNABLE_REVISIONS.items()
+                         if engine_name in engine_names}
+
+    load_seed()
+    engine = create_engine(DB_URL)
+    failures: dict[str, str] = {}
+    try:
+        for rev in revisions_in_window:
+            if rev.down_revision is None:
+                continue
+            command.upgrade(get_alembic_cfg(), rev.revision)
+            schema_after_first_run = _get_schema_snapshot(engine)
+            row_counts_after_first_run = _row_counts(engine, set(schema_after_first_run))
+            with engine.connect() as conn:
+                heads_after_first_run = set(MigrationContext.configure(conn).get_current_heads())
+
+            set_stamp_before(engine, rev.revision)
+            try:
+                command.upgrade(get_alembic_cfg(), rev.revision)
+            except Exception as ex:
+                error = str(getattr(ex, "orig", ex)).strip().splitlines()[0]
+                failures[rev.revision] = f"('{rev.doc}') fails: {type(ex).__name__}: {error}"
+                # Continue with the next revision from the database the first run left behind
+                with engine.begin() as conn:
+                    conn.execute(text("DELETE FROM alembic_version"))
+                    for head in heads_after_first_run:
+                        conn.execute(text("INSERT INTO alembic_version (version_num) VALUES (:head)"),
+                                     {"head": head})
+                continue
+
+            schema_after_second_run = _get_schema_snapshot(engine)
+            changed_tables = sorted(table for table in set(schema_after_first_run) | set(schema_after_second_run)
+                                    if schema_after_first_run.get(table) != schema_after_second_run.get(table))
+            if changed_tables:
+                failures[rev.revision] = f"('{rev.doc}') changes the schema of {changed_tables}"
+                continue
+            row_counts_after_second_run = _row_counts(engine, set(schema_after_second_run))
+            changed_counts = {table: (count, row_counts_after_second_run[table])
+                              for table, count in row_counts_after_first_run.items()
+                              if row_counts_after_second_run[table] != count}
+            if changed_counts:
+                failures[rev.revision] = f"('{rev.doc}') changes the row counts {changed_counts}"
+    finally:
+        engine.dispose()
+
+    new_failures = {revision: failure for revision, failure in failures.items() if revision not in expected_failures}
+    assert not new_failures, (
+        "These migrations cannot run again on their own result. Check by reflection whether each schema change is "
+        "still missing before making it, and skip data that is already converted:\n"
+        + "\n".join(f"  {revision} {failure}" for revision, failure in new_failures.items())
+    )
+    fixed = expected_failures - set(failures)
+    assert not fixed, (
+        f"These migrations now run again on their own result on {engine_name}. "
+        f"Remove them from NOT_RERUNNABLE_REVISIONS: {sorted(fixed)}"
+    )
 
 
 def _row_counts(engine, tables: set[str]) -> dict[str, int]:

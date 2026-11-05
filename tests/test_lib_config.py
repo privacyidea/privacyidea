@@ -404,7 +404,26 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(CENSORED, exported["ExpSecret"]["Value"])
         delete_privacyidea_config("ExpSecret")
 
-    def test_12d_import_logs_names_only(self):
+    def test_12d_export_import_skip_instance_internal_keys(self):
+        from privacyidea.lib.config import export_config, import_config
+        # Keys starting with "__" belong to this instance, like the config timestamp or an enckey canary
+        set_privacyidea_config("__test_internal", "this instance")
+        set_privacyidea_config("ExpPlain", "exported")
+        exported = export_config()
+        self.assertNotIn("__test_internal", exported)
+        self.assertNotIn("__timestamp__", exported)
+        self.assertEqual("exported", exported["ExpPlain"]["Value"])
+        self.assertEqual({}, export_config(name="__test_internal"))
+
+        # An export of another instance that still carries such keys does not replace the ones of this instance
+        import_config({"__test_internal": {"Value": "other instance"},
+                       "ExpPlain": {"Value": "imported"}})
+        self.assertEqual("this instance", get_from_config("__test_internal"))
+        self.assertEqual("imported", get_from_config("ExpPlain"))
+        delete_privacyidea_config("__test_internal")
+        delete_privacyidea_config("ExpPlain")
+
+    def test_12e_import_logs_names_only(self):
         from privacyidea.lib.config import import_config
         # The data of an import holds the decrypted secrets, so the log only names the imported entries
         with self.assertLogs("privacyidea.lib.config", level="DEBUG") as captured:
@@ -418,7 +437,7 @@ class ConfigTestCase(MyTestCase):
         self.assertNotIn("imported-secret-value", "\n".join(captured.output))
         delete_privacyidea_config("ImportedSecret")
 
-    def test_12e_get_import_names(self):
+    def test_12f_get_import_names(self):
         from privacyidea.lib.utils.export import get_import_names
         self.assertEqual(["resolver1", "resolver2"], get_import_names({"resolver1": {}, "resolver2": {}}))
         self.assertEqual(["policy1", None], get_import_names([{"name": "policy1"}, {"action": "enroll"}]))

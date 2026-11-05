@@ -26,16 +26,22 @@ import logging
 from dataclasses import dataclass, replace
 from datetime import timedelta, datetime, timezone
 
-from privacyidea.api.lib.utils import report_owner_lookup_error, resolve_token_owner
+from flask import Request
+
+from privacyidea.api.lib.utils import (report_owner_lookup_error, resolve_token_owner, get_optional,
+                                       get_optional_one_of, log_authentication)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined, get_ordered_resolvers
+from privacyidea.lib.remembered_device import parse_device_duration
 from privacyidea.lib.tokens.push_types import PushAction
-from privacyidea.lib.token import get_tokens_from_serial_or_user
+from privacyidea.lib.token import get_one_token, get_token_owner_without_lookup, get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta
@@ -449,10 +455,14 @@ def user_is_owner(logged_in_user: User, owner: User, allow_no_owner: bool = Fals
     return is_owner
 
 
-def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
+def check_last_auth_policy(g, token: TokenClass, user: User | None) -> tuple[bool, list[str]]:
     """
     Check if the last_auth policy is enabled and if the token's last_auth is within the allowed time frame.
 
+    :param g: The global flask object g
+    :param token: The token to check
+    :param user: The user the policies are matched for, usually the token owner. None matches the policies
+        without regard to their realm, resolver and user.
     :return: a ``(result, policies)`` tuple; *policies* names the deciding LASTAUTH policies, and is only
         non-empty when *result* is ``False`` - the caller logs it as the reason detail alongside
         :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventReason.LAST_AUTH_TOO_OLD`,
@@ -461,7 +471,7 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
     if not token:  # pragma: no cover
         log.error("No token provided to check last_auth policy.")
         return False, []
-    last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=None)
+    last_auth_policy = (Match.user(g, scope=SCOPE.AUTHZ, action=PolicyAction.LASTAUTH, user_object=user)
                         .action_values(unique=True, write_to_audit_log=False))
     if len(last_auth_policy) == 1:
         timeframe = list(last_auth_policy)[0]
@@ -475,6 +485,63 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
             return True, []
         return False, last_auth_policy[timeframe]
     return True, []
+
+
+def get_request_identity(request: Request) -> User:
+    """
+    Resolve the user a request of an endpoint that accepts a token instead of a user is for: the user named in the
+    request, else the owner of the token named by ``serial`` or ``credential_id``, else the (empty) request user.
+    Used for ``/validate/check`` and ``/validate/triggerchallenge``, and by the api_key_required pre-policy also for
+    ``/validate/polltransaction``, which names no token and so keeps the request user.
+
+    ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
+    (identified by ``credential_id``) or a serial-only request arrives without a login name, at most with a realm.
+    Checks of the user would be silently skipped for it. Two of them use this identity:
+
+    * The conditional-access pre-check gates on it, so a locked user can not authenticate by credential id or
+      serial, nor an admin trigger a challenge that pushes a prompt to a locked user's phone. The lock is enforced
+      before any token work runs.
+    * The api_key_required pre-policy matches its policies for it.
+
+    Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
+    (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
+    cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
+    resolved, so the IP-block check still applies. That costs a user-scoped check only on a request that cannot
+    authenticate anyway: the authenticating path repeats this lookup without ``silent_fail``
+    (:func:`~privacyidea.lib.token.check_serial_pass`), so a serial that does not resolve to exactly one token
+    raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
+    itself, so an attempt that does reach a token is still counted.
+
+    :param request: The request object
+    :return: the user the request is for
+    :raises ResolverError: if the owner of the token can not be looked up in the user store
+    """
+    if request.User and request.User.login:
+        return request.User
+    credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
+    serial = get_optional(request.all_data, "serial")
+    token = None
+    try:
+        if serial:
+            token = get_one_token(serial=serial, silent_fail=True)
+        elif credential_id:
+            # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
+            # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
+            # practice - a passkey is hashed at enrollment, the second request of a WebAuthn login carries the user -
+            # and not worth a challenge lookup plus otpkey decrypt on every request.
+            token = get_fido2_token_by_credential_id(credential_id)
+    except Exception as ex:
+        log.debug(f"Could not resolve the owner of the token named in the request: {ex!r}")
+    if not token:
+        return request.User
+    try:
+        owner = token.user
+    except Exception:
+        # The request is refused with the error, which has to be logged here as the view never runs
+        log_authentication(AuthEventType.USER_STORE_UNAVAILABLE, request, serial=token.get_serial(),
+                           transaction_id=get_optional_one_of(request.all_data, ["transaction_id", "state"]))
+        raise
+    return owner or request.User
 
 
 def get_login_mode_values(g, user: User) -> dict[str, list[str]]:
@@ -522,3 +589,125 @@ def get_realm_for_authentication(g, username: str, realm: str) -> str:
             g.policies = {PolicyAction.SET_REALM: new_realm}
         return new_realm
     return realm
+
+
+def _is_restricted_to_objects(policy: dict) -> bool:
+    """
+    Whether a policy is restricted to realms, resolvers or users. Only such a policy can apply to some objects of a list
+    and not to others.
+    """
+    return bool(policy.get("realm") or policy.get("resolver") or policy.get("user"))
+
+
+def hide_tokeninfo_per_token(g, token_dicts: list[dict]) -> None:
+    """
+    Remove from each token of a list the token info keys that the hide_tokeninfo policies of the logged-in
+    administrator hide for this token. The policies are matched like an action on the token: against the owner of the
+    token or one of the token realms, so a policy restricted to realms, resolvers or users also applies in a list that
+    is not filtered by a user. The owner is matched by the login, realm and resolver the token list contains; only a
+    policy with a condition on user attributes needs the owner from the user store. For a token without owner,
+    conditions on user attributes are not evaluated. Tokens reduced to their serial are skipped.
+
+    :param g: The global flask object g
+    :param token_dicts: The tokens as returned by the token list, changed in place
+    """
+    if g.logged_in_user.get("role") != "admin":
+        return
+    policies = g.policy_object.list_policies(scope=SCOPE.ADMIN, action=PolicyAction.HIDE_TOKENINFO, active=True)
+    if not any(_is_restricted_to_objects(policy) for policy in policies):
+        # The policies apply to every token alike, so the token list already removed their keys
+        return
+    owner_attributes_needed = any(condition[0] == ConditionSection.USERINFO
+                                  for policy in policies for condition in policy.get("conditions") or [])
+    sections_without_userinfo = [section for section in ConditionSection.get_all_sections()
+                                 if section != ConditionSection.USERINFO]
+    for token_dict in token_dicts:
+        token_info = token_dict.get("info")
+        serial = token_dict.get("serial")
+        if not token_info or not serial:
+            continue
+        if not token_dict.get("resolver"):
+            user_match = {"user": "", "realm": "", "resolver": "",
+                          "extended_condition_check": sections_without_userinfo}
+        elif owner_attributes_needed:
+            user_match = {"user_object": resolve_token_owner(serial)}
+        elif token_dict.get("username") in ("", "**resolver error**", None):
+            # The login of the owner is unknown: only the policies without users or for every user apply to them
+            user_match = {"user_object": get_token_owner_without_lookup(serial),
+                          "extended_condition_check": sections_without_userinfo}
+        else:
+            user_match = {"user": token_dict.get("username") or "", "realm": token_dict.get("user_realm") or "",
+                          "resolver": token_dict["resolver"], "extended_condition_check": sections_without_userinfo}
+        hidden_keys = Match.generic(g, scope=SCOPE.ADMIN, action=PolicyAction.HIDE_TOKENINFO,
+                                    adminuser=g.logged_in_user.get("username"),
+                                    adminrealm=g.logged_in_user.get("realm"),
+                                    additional_realms=list(token_dict.get("realms") or []) or None,
+                                    serial=serial, **user_match).action_values(unique=False)
+        for key in hidden_keys:
+            token_info.pop(key, None)
+            for key_list in ("readonly_info_keys", "undeletable_info_keys", "settable_info_keys"):
+                if key in token_dict.get(key_list, []):
+                    token_dict[key_list].remove(key)
+
+
+def hide_audit_columns_per_entry(g, audit_entries: list[dict]) -> None:
+    """
+    Remove from each audit entry the columns that the hide_audit_columns policies of the logged-in administrator
+    hide for the user, realm and resolver of this entry, so a policy restricted to realms, resolvers or users also
+    applies in an audit list that is not filtered by a user or realm. Conditions on user attributes, tokens and
+    containers are not evaluated for an audit entry.
+
+    :param g: The global flask object g
+    :param audit_entries: The audit entries of the result page, changed in place
+    """
+    if g.logged_in_user.get("role") != "admin":
+        return
+    policies = g.policy_object.list_policies(scope=SCOPE.ADMIN, action=PolicyAction.HIDE_AUDIT_COLUMNS, active=True)
+    if not any(_is_restricted_to_objects(policy) for policy in policies):
+        # The policies apply to every entry alike, so the search already removed their columns
+        return
+    object_sections = (ConditionSection.USERINFO, ConditionSection.TOKEN, ConditionSection.TOKENINFO,
+                       ConditionSection.CONTAINER, ConditionSection.CONTAINER_INFO)
+    request_sections = [section for section in ConditionSection.get_all_sections()
+                        if section not in object_sections]
+    hidden_columns_by_user = {}
+    for entry in audit_entries:
+        entry_user = (entry.get("user") or "", entry.get("realm") or "", entry.get("resolver") or "")
+        if entry_user not in hidden_columns_by_user:
+            hidden_columns_by_user[entry_user] = list(Match.generic(
+                g, scope=SCOPE.ADMIN, action=PolicyAction.HIDE_AUDIT_COLUMNS,
+                user=entry_user[0], realm=entry_user[1], resolver=entry_user[2],
+                adminuser=g.logged_in_user.get("username"), adminrealm=g.logged_in_user.get("realm"),
+                extended_condition_check=request_sections).action_values(unique=False))
+        for column in hidden_columns_by_user[entry_user]:
+            entry.pop(column, None)
+
+
+def name_conflicting_action(action: str, exc: PolicyError) -> PolicyError:
+    """
+    The error for policies of the same priority that set different values for *action*. *exc* names only the
+    policies, and several actions of a remembered device can conflict, so this adds the action.
+    """
+    return PolicyError(f"{action}: {exc.get_description()}")
+
+
+def get_remember_device_duration(g, user: User, action: str) -> timedelta | None:
+    """
+    Return the duration a remember-device policy action (``remember_device_validity`` or
+    ``remember_device_idle_timeout``) sets for *user*, or ``None`` if no policy sets a valid one.
+    Policies of the same priority that set different values raise a PolicyError that names the
+    action, as for every action that takes a single value; saving a policy already refuses a value
+    that is no duration.
+
+    :param g: The global flask object g
+    :param user: The user the policies are matched for
+    :param action: The policy action, in scope auth
+    :return: the duration, or ``None``
+    """
+    try:
+        values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
+    except PolicyError as exc:
+        raise name_conflicting_action(action, exc) from exc
+    if not values:
+        return None
+    return parse_device_duration(list(values)[0])

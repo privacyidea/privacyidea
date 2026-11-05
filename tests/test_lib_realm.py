@@ -328,6 +328,21 @@ class ResolverTestCase(MyTestCase):
         delete_resolver("resolver1")
         delete_resolver("Resolver2")
 
+    def test_30a_import_resolver_with_node_none(self):
+        # A resolver whose node is None in the import data is assigned without a node
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": "/etc/passwd"})
+        import_realms({"realm_none": {"default": False, "resolver": [
+            {"priority": None, "name": self.resolvername1, "type": "passwdresolver", "node": None}]}})
+
+        resolver_list = get_realms("realm_none")["realm_none"]["resolver"]
+        self.assertEqual([self.resolvername1], [resolver.get("name") for resolver in resolver_list])
+        self.assertEqual("", resolver_list[0].get("node"))
+
+        delete_realm("realm_none")
+        delete_resolver(self.resolvername1)
+
     def test_30_delete_realm_warns_about_conditional_access_policies(self):
         from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
                                                                 delete_conditional_access_policy)

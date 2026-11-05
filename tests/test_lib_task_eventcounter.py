@@ -45,15 +45,12 @@ class TaskEventCounterTestCase(MyTestCase):
 
         # The value "2" should be written to the statistics key C1.
         stats = get_values("C1")
-        self.assertTrue(len(stats), 1)
-        self.assertTrue(stats[0][1], 2)
+        self.assertEqual([2], [value for _, value in stats])
 
         # Now we increase the event counter again
         increase("counter1")
 
-        # ..and run the event counter task
+        # ..and run the event counter task: the reset counter adds the value 1
         et.do(params)
         stats = get_values("C1")
-        self.assertTrue(len(stats), 2)
-        self.assertTrue(stats[0][1], 2)
-        self.assertTrue(stats[0][1], 1)
+        self.assertCountEqual([2, 1], [value for _, value in stats])

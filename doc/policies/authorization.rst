@@ -87,6 +87,8 @@ are used for authentication.
 
 .. versionadded:: 3.4
 
+.. _policy_serial:
+
 serial
 ~~~~~~
 
@@ -144,7 +146,8 @@ This policy is checked before the user authenticates.
 The realm of the user matching this policy will be set to
 the realm in this action.
 
-This policy is only applied to :http:post:`/validate/check` and :http:post:`/validate/radiuscheck`.
+This policy is only applied to :http:post:`/validate/check`, :http:post:`/validate/radiuscheck` and
+:http:post:`/validate/remember_device`.
 
 Priorities are not evaluated for ``setrealm``: if the matching policies name more than one realm, the request fails
 with "Conflicting policies exist". If an authentication :ref:`policy_set_realm` policy matched, ``setrealm`` is not
@@ -228,7 +231,9 @@ type: ``bool``
    clients are stored, individually revocable and rotatable — but it does not
    yet cover this ``/validate`` gating use case.
 
-This policy is checked *before* the user is validated.
+This policy is checked *before* the user is validated. A request to
+``/validate/check`` that names only the serial of a token or a FIDO2 credential
+is matched for the owner of the token.
 
 You can create an API key that needs to be passed to use the validate API.
 If an API key is required, but no key is passed, the authentication request
@@ -267,7 +272,11 @@ performed the authentication request is refused, and the OTP value stays valid.
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
+
+While this policy refuses a login, a remembered device (see :ref:`policy_remember_device`) is not recognized either.
+A recognition of a remembered device does not count as a successful authentication.
 
 .. note:: This policy depends on reading the audit log. If you use a
    non-readable audit log like :ref:`logger_audit` this policy will not
@@ -300,7 +309,10 @@ failed authentications were performed the authentication request is refused, and
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
 This policy applies to ``/auth`` and ``/validate/check`` and holds for both admins and users. The policy is
-evaluated before checking the password or OTP value.
+evaluated before checking the password or OTP value. A request that names only the serial of a token, or a FIDO2
+authentication that names no user, is matched for the owner of the token.
+
+While this policy refuses a login, a remembered device (see :ref:`policy_remember_device`) is not recognized either.
 
 .. note:: This policy depends on reading the audit log. If you use a non-readable audit log like :ref:`logger_audit`
     this policy will not work.
@@ -310,6 +322,8 @@ authentications. Hence, if the admin reaches the time limit of failed authentica
 authenticate anymore, and vice versa.
 
 .. versionadded:: 2.8
+
+.. _policy_last_auth:
 
 last_auth
 ~~~~~~~~~
@@ -327,6 +341,18 @@ if the token was not successfully used for 12 hours, 123 days or 2 years.
 The date of the last successful authentication is stored in the ``tokeninfo``
 field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
 passkey authentications).
+
+The policy is matched for the user who authenticates. A request that names only
+the serial of the token, or a FIDO2 credential, is matched for the owner of the
+token.
+
+A login through a remembered device (see :ref:`policy_remember_device`) skips
+the second factor, so it does not use a token and does not update ``last_auth``.
+A user who logs in that way for longer than this time frame is refused at the
+next login with the token. For such users, keep
+:ref:`policy_remember_device_validity` shorter than the time frame of this
+policy: when the validity ends, the user logs in with the token again, which
+updates ``last_auth``.
 
 .. versionadded:: 2.8
 

@@ -150,10 +150,11 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onEditResolver should open dialog", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, "res1"]);
   });
 
   it("onDeleteResolver should delete after confirmation", () => {
