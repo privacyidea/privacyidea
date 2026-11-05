@@ -183,3 +183,81 @@ class TestMigrationA1b2c3d4e5f6(MigrationTestBase):
             assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM challenge") == 0
         finally:
             engine.dispose()
+
+    def _encrypted_column_exists(self) -> bool:
+        engine = self._engine()
+        try:
+            columns = sa_inspect(engine).get_columns("smsgatewayoption")
+            return "encrypted" in {column["name"].lower() for column in columns}
+        finally:
+            engine.dispose()
+
+    def _assert_downgraded(self) -> None:
+        assert not self._encrypted_column_exists()
+        engine = self._engine()
+        try:
+            with engine.connect() as conn:
+                options = dict(conn.execute(
+                    sa.select(SMS_GATEWAY_OPTION.c.Key, SMS_GATEWAY_OPTION.c.Value)
+                    .where(SMS_GATEWAY_OPTION.c.gateway_id == 9001)
+                ).all())
+                heads = {row[0] for row in conn.execute(sa.text("SELECT version_num FROM alembic_version"))}
+            assert options == {"PASSWORD": PLAINTEXT_PASSWORD, "URL": "https://sms.example.com"}
+            assert self._data_column_length(engine) == 512
+            assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM challenge") == 0
+            assert self.REVISION not in heads
+        finally:
+            engine.dispose()
+
+    def test_downgrade_decrypts_the_sms_gateway_options(self, flask_app):
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+
+        self._downgrade()
+
+        self._assert_downgraded()
+
+    @pytest.mark.parametrize("statement_pattern", [
+        r"^UPDATE smsgatewayoption",
+        r"ALTER TABLE smsgatewayoption DROP",
+        r"DELETE FROM challenge",
+        # On Oracle, this is the DROP of the text column, before the new one is added
+        r"ALTER TABLE challenge",
+    ])
+    def test_downgrade_runs_again_after_failing_midway(self, flask_app, statement_pattern):
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+        engine = self._engine()
+        try:
+            self._insert_rows(engine, "challenge", [self._challenge_row(9001, "a" * 10000)])
+        finally:
+            engine.dispose()
+
+        self._downgrade_failing_after(statement_pattern)
+        self._downgrade()
+
+        self._assert_downgraded()
+
+    def test_downgrade_stops_on_an_option_it_cannot_decrypt(self, flask_app):
+        """
+        An option encrypted with another key stops the downgrade before it changes anything: without the Encrypted
+        column, 3.13 would send the encrypted value to the SMS gateway.
+        """
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+        foreign_ciphertext = "00" * 16 + ":" + "11" * 16
+        engine = self._engine()
+        try:
+            with engine.begin() as conn:
+                conn.execute(SMS_GATEWAY_OPTION.insert(), [{
+                    "id": 9003, "gateway_id": 9001, "Key": "SECRET", "Value": foreign_ciphertext, "Type": "option",
+                    "Encrypted": True}])
+        finally:
+            engine.dispose()
+        options_before = self._sms_gateway_options()
+
+        with pytest.raises(RuntimeError, match="SECRET"):
+            self._downgrade()
+
+        assert self._encrypted_column_exists()
+        assert self._sms_gateway_options() == options_before
