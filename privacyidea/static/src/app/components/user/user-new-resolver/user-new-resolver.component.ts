@@ -29,7 +29,7 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ActivatedRoute, Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -130,7 +130,7 @@ export class UserNewResolverComponent implements OnDestroy {
 
   constructor() {
     this._route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      this._resolverService.selectedResolverName.set(params.get("name") || "");
+      this._resolverService.selectedResolverName.set(params.get(ROUTE_PARAMS.NAME) || "");
     });
 
     this._pendingChangesService.registerHasChanges(() => this.hasChanges);
