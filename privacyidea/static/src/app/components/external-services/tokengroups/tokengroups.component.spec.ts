@@ -116,11 +116,10 @@ describe("TokengroupsComponent", () => {
   });
 
   it("should navigate to edit page when editing a group", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const group = tokengroupServiceMock.tokengroups()[0];
     component.onEditTokengroup(group);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname
-    );
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS, group.groupname]);
   });
 
   it("should delete group after confirmation", () => {

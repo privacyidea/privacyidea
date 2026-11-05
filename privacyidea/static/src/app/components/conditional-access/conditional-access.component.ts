@@ -579,7 +579,7 @@ export class ConditionalAccessComponent implements OnDestroy {
   }
 
   onEditPolicy(policy: ConditionalAccessPolicy): void {
-    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + policy.id);
+    this.router.navigate([ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS, policy.id]);
   }
 
   onToggleEnabled(policy: ConditionalAccessPolicy): void {
