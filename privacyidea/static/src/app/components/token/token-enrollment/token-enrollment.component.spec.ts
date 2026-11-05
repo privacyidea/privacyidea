@@ -259,19 +259,13 @@ describe("TokenEnrollmentComponent", () => {
       );
     });
 
-    it("snacks when clickEnroll is not provided", async () => {
-      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+    it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
+      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" });
+      fixture.detectChanges();
+      await fixture.whenStable();
 
-      component.setPin.set("1234");
-      component.repeatPin.set("1234");
-
-      installStrategy(component, undefined);
-
-      await component.enrollToken();
-
-      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
-        "Enrollment action is not available for the selected token type."
-      );
+      expect(component.enrollmentBlockedReason()).not.toBeNull();
+      expect(component.isFormInvalid()).toBe(true);
     });
 
     it("_handleEnrollmentResponse snacks when user is required but missing", () => {

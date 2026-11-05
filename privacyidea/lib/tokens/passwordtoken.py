@@ -116,7 +116,7 @@ class PasswordTokenClass(TokenClass):
                'config': {},
                'user':  [],
                # This tokentype is enrollable in the UI for...
-               'ui_enroll': [],
+               'ui_enroll': ['admin'],
                'policy': {
                    SCOPE.ENROLL: {
                        PolicyAction.MAXTOKENUSER: {

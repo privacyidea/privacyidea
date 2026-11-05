@@ -270,9 +270,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   // A PIN left over from another token type must not block a type whose PIN fields are hidden:
   // the mismatch error has nowhere to show, so the enrollment would fail without a reason.
-  enrollmentBlockedReason = computed<string | null>(
-    () => this.enrollSwitch()?.currentStrategy()?.enrollmentBlockedReason() ?? null
-  );
+  enrollmentBlockedReason = computed<string | null>(() => {
+    const sw = this.enrollSwitch();
+    if (!sw) {
+      return null;
+    }
+    const strategy = sw.currentStrategy();
+    if (strategy === undefined && !!this.tokenService.selectedTokenType()?.key) {
+      return $localize`:@@token.enrollmentUnsupportedType:Enrollment is not available for this token type.`;
+    }
+    return strategy?.enrollmentBlockedReason() ?? null;
+  });
   isFormInvalid = computed(
     () =>
       !this.descriptionForm().valid() ||
