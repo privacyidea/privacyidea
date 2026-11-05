@@ -34,6 +34,14 @@ export class MockRealmService implements RealmServiceInterface {
 
   defaultRealmResolved: Signal<boolean> = computed(() => !this.defaultRealmResource.isLoading());
 
+  noRealm: Signal<boolean> = computed(
+    () =>
+      this.realmResource.hasValue() &&
+      !this.realmResource.isLoading() &&
+      Object.keys(this.realmResource.value()?.result?.value ?? {}).length === 0 &&
+      this.defaultRealmResolved()
+  );
+
   createRealm = jest
     .fn()
     .mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
@@ -53,11 +61,13 @@ export class MockRealmService implements RealmServiceInterface {
 
       const updatedRealms: Realms = { ...current, [realm]: updatedRealm };
       this.realmResource.set(MockPiResponse.fromValue<Realms>(updatedRealms));
-      return of(MockPiResponse.fromValue<{ realm: string; nodeId: string; resolvers: typeof resolvers }>({
-        realm,
-        nodeId,
-        resolvers
-      }));
+      return of(
+        MockPiResponse.fromValue<{ realm: string; nodeId: string; resolvers: typeof resolvers }>({
+          realm,
+          nodeId,
+          resolvers
+        })
+      );
     });
 
   deleteRealm = jest.fn().mockImplementation((realm: string) => {

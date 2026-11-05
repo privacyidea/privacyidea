@@ -246,29 +246,44 @@ security group "Domain Admins".
 
 .. _autocreate_realm:
 
-Autocreate Realm
-................
+Creating the First Realm
+........................
 
 .. index:: realm autocreation
 
-.. figure:: images/ask-create-realm.png
-   :scale: 80%
+If you have a fresh installation, no resolver and no realm is defined.
+The previous WebUI asked at each administrator login whether it should
+automatically create a first realm named ``defrealm`` with a resolver
+``deflocal`` containing all users from ``/etc/passwd``.
 
-If you have a fresh installation, no resolver and no realm is
-defined. To get you up and running faster, the previous WebUI
-asks you whether it should create the first realm for you.
-The current WebUI does not offer this.
+The current WebUI does not offer this anymore, since in most modern
+deployments (e.g. containers) ``/etc/passwd`` only contains system
+accounts that are of no use for enrolling tokens. In addition, the
+automatically created realm ``defrealm`` became the default realm, so
+authentication requests without a realm were resolved against the local
+system accounts, which often caused surprising results.
 
-If you select *Create Realm*, it will create a resolver named ``deflocal``
-that contains all users from ``/etc/passwd`` and a realm named
-``defrealm`` with this very resolver.
+Instead, a dialog appears at each administrator login as long as no
+realm exists and the administrator is allowed to create resolvers. If no
+resolver exists either, the dialog tells the administrator to create a
+resolver first, because a resolver is the source of the users, and offers
+a button *Create resolver* that leads directly to the resolver creation.
+If a resolver already exists, the dialog explains that a realm is needed
+to enroll tokens for users and offers a button *Create realm* that leads
+to the realm management. Nothing is created automatically. Create your
+first resolver and realm pointing to your actual user store (e.g. LDAP,
+Active Directory or SQL) in the WebUI under *Users*.
 
-Thus you can immediately start assigning and enrolling tokens.
+If you still want a realm based on ``/etc/passwd`` for a quick start or
+demo setup, you can create it on the command line:
 
-The dialog is shown at each administrator login as long as no realm
-exists.
+.. code-block:: bash
 
-.. note:: The realm ``defrealm`` will be the default realm.
-   So if you create a new realm manually and want this new
+   echo '{"fileName": "/etc/passwd"}' > deflocal.conf
+   pi-manage config resolver create deflocal passwdresolver deflocal.conf
+   pi-manage config realm create defrealm deflocal
+
+.. note:: The first realm you create will be the default realm.
+   So if you create another realm later and want this new
    realm to be the default realm, you need to set this new
    realm to be default manually.

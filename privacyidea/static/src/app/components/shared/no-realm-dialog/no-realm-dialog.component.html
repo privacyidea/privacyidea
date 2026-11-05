@@ -1,0 +1,20 @@
+<app-dialog-wrapper
+  (actionTriggered)="onDialogAction($event)"
+  [actions]="dialogActions()"
+  [showCloseButton]="false"
+  [title]="dialogTitle">
+  @if (noResolver) {
+    <p
+      class="content"
+      i18n="@@noRealmDialog.noResolver.explanation"
+      >Neither a resolver nor a realm exists yet. A resolver is the source of your users, e.g. LDAP or SQL. Create a
+      resolver first, then a realm that uses it. Realms are needed to enroll tokens for users.</p
+    >
+  } @else {
+    <p
+      class="content"
+      i18n="@@noRealmDialog.explanation"
+      >No realm exists yet. A realm is needed to enroll tokens for users. You can create one in the realm management.</p
+    >
+  }
+</app-dialog-wrapper>

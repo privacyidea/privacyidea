@@ -47,6 +47,7 @@ import { PeriodicTaskService } from "@services/periodic-task/periodic-task.servi
 import { PolicyService } from "@services/policies/policies.service";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { NoRealmDialogService } from "@services/no-realm-dialog/no-realm-dialog.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { ServiceIdService } from "@services/service-id/service-id.service";
@@ -96,6 +97,7 @@ export const routes: Routes = [
       IntegrationsService,
       MachineResolverService,
       MachineService,
+      NoRealmDialogService,
       PendingChangesService,
       PeriodicTaskService,
       PolicyService,
