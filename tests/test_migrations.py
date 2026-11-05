@@ -23,8 +23,7 @@ migration does. Concretely, it verifies that:
     restore after one).
   - Every migration in the window can run again on its own result, as after
     a failure midway or a revision stamp that was set back, without changing
-    the schema or the row counts (known exceptions in
-    NOT_RERUNNABLE_REVISIONS).
+    the schema or the rows (known exceptions in NOT_RERUNNABLE_REVISIONS).
   - A default INSERT succeeds against every model-declared table after
     upgrade-to-head, exercising the auto-PK path. This catches sequence/
     identity misconfigurations and missing NOT NULL defaults that schema-
@@ -38,7 +37,10 @@ migration does. Concretely, it verifies that:
 Tests run against the dialect provided in TEST_DATABASE_URL — MariaDB, MySQL,
 PostgreSQL and Oracle — and use a pre-written seed file per dialect
 (tests/testdata/migrations/) as a complete, on-disk snapshot of the database
-state at START_REVISION. No runtime fixups; the seed is authoritative.
+state at START_REVISION. No runtime fixups; the seed is authoritative. The
+checks at head, running again and the downgrade to a release also start from
+the release seeds: databases that "pi-manage setup create_tables" of a release
+created and its code filled (tools/generate_release_seed.py).
 
 Migrations older than START_REVISION are intentionally not covered: the pin
 exists because nothing in the supported window upgrades from older state,
@@ -62,20 +64,29 @@ import time
 import pytest
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, text, inspect as sa_inspect
+from sqlalchemy import Engine, create_engine, text, inspect as sa_inspect
 from sqlalchemy.exc import OperationalError
 
 from tests.migration_test_utils import (
     DB_URL,
+    RELEASE_HEADS,
+    SEEDS,
     START_REVISION,
+    downgrade_keeping,
     drop_all_tables,
     get_alembic_cfg,
+    insert_minimal_row_into_every_table,
+    insert_rows,
     is_mariadb,
     is_oracle,
     is_postgres,
     load_seed,
     quote_identifier,
+    revisions_up_to,
+    sequences_behind_their_table,
     set_stamp_before,
+    sorted_rows,
+    table_contents,
 )
 
 # Skip these tests if no database URL is provided
@@ -461,7 +472,8 @@ def test_full_downgrade_restores_baseline_schema(flask_app):
             )
 
 
-def test_schema_matches_models_after_upgrade_to_head(flask_app):
+@pytest.mark.parametrize("seed", sorted(SEEDS))
+def test_schema_matches_models_after_upgrade_to_head(flask_app, seed: str):
     """
     After upgrading to head, the database schema must exactly match the
     SQLAlchemy models — not just at the table level, but also columns,
@@ -481,7 +493,7 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     from flask_migrate import upgrade as flask_upgrade
     from privacyidea.models import db
 
-    load_seed()
+    load_seed(SEEDS[seed])
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -667,197 +679,21 @@ def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
     )
 
 
-def _generic_dummy_value(col):
+@pytest.mark.parametrize("seed", sorted(SEEDS))
+def test_default_insert_succeeds_for_every_model_table(flask_app, seed: str):
     """
-    Return a value appropriate for *col*'s SQL type, used by the insert smoke
-    test to populate NOT NULL columns without per-table fixtures. Returns None
-    only for column types we don't know how to fill — caller must skip those.
-    """
-    import datetime as dt
-    from sqlalchemy import (
-        BigInteger, Boolean, Date, DateTime, Float, Integer, Interval,
-        JSON, LargeBinary, Numeric, SmallInteger, String, Text, Time,
-        Unicode, UnicodeText,
-    )
-
-    t = col.type
-    if isinstance(t, (String, Unicode, UnicodeText, Text)):
-        length = getattr(t, "length", None) or 8
-        return "x" * min(length, 8)
-    if isinstance(t, Boolean):
-        return False
-    if isinstance(t, (Integer, BigInteger, SmallInteger)):
-        return 1
-    if isinstance(t, DateTime):
-        return dt.datetime(2000, 1, 1)
-    if isinstance(t, Date):
-        return dt.date(2000, 1, 1)
-    if isinstance(t, Time):
-        return dt.time(0, 0)
-    if isinstance(t, Interval):
-        return dt.timedelta(0)
-    if isinstance(t, (Float, Numeric)):
-        return 0
-    if isinstance(t, LargeBinary):
-        return b"x"
-    if isinstance(t, JSON):
-        return {}
-    return None
-
-
-def _insert_minimal_row_into_every_table() -> list[tuple[str, str]]:
-    """
-    Build a minimal INSERT for every table the SQLAlchemy models declare and run it
-    against the live database. Returns one ``(table, message)`` pair per table whose
-    INSERT failed, so a caller can report them all at once.
-
-    Strategy:
-      - PKs whose default is a Sequence or that are autoincrement are omitted
-        so SQLAlchemy fires its auto-PK path — this is the exact path that
-        breaks when the schema was built without the matching CREATE SEQUENCE /
-        AUTO_INCREMENT / IDENTITY machinery the model expects.
-      - NOT NULL columns without any default get a type-appropriate dummy.
-      - Nullable columns and columns with Python/server defaults are omitted.
-      - FK checks are disabled for the duration so we don't have to insert in
-        dependency order; this is about INSERT mechanics, not referential
-        integrity.
-      - All inserts run inside a single transaction that is rolled back at
-        the end, so no rows leak into the test DB.
-    """
-    from sqlalchemy import Sequence
-    from privacyidea.models import db
-
-    engine = create_engine(DB_URL)
-    is_pg = is_postgres()
-    is_ora = is_oracle()
-    failures: list[tuple[str, str]] = []
-
-    # Oracle has no session-level FK switch like MySQL/Postgres, so disable
-    # every FK constraint up front and re-enable them in the finally. The DDL
-    # auto-commits, but no real rows are ever committed (each insert is rolled
-    # back to a savepoint), so re-enabling validates only the untouched seed
-    # data, which already satisfies every FK.
-    disabled_fks: list[tuple[str, str]] = []
-    if is_ora:
-        with engine.connect() as setup_conn:
-            rows = setup_conn.execute(text(
-                "SELECT table_name, constraint_name FROM user_constraints "
-                "WHERE constraint_type = 'R'"
-            )).fetchall()
-            for tbl, con in rows:
-                setup_conn.execute(text(f'ALTER TABLE "{tbl}" DISABLE CONSTRAINT "{con}"'))
-                disabled_fks.append((tbl, con))
-            setup_conn.commit()
-
-    try:
-        with engine.connect() as conn:
-            outer = conn.begin()
-            try:
-                if is_pg:
-                    conn.execute(text("SET session_replication_role = 'replica'"))
-                elif not is_ora:
-                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
-
-                for table in db.metadata.sorted_tables:
-                    values = {}
-                    skip_reason = None
-                    for col in table.columns:
-                        # A PK column is auto-generated only if it has an
-                        # explicit Sequence/Identity, OR it's the sole integer
-                        # PK with autoincrement not explicitly disabled.
-                        # Composite PKs and string PKs do not auto-generate
-                        # — every member must be filled by the caller.
-                        from sqlalchemy import BigInteger, Integer, SmallInteger
-                        is_sole_int_pk = (
-                            col.primary_key
-                            and len(table.primary_key.columns) == 1
-                            and isinstance(col.type, (Integer, BigInteger, SmallInteger))
-                            and col.autoincrement is not False
-                        )
-                        is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
-                        if is_auto_pk:
-                            continue
-                        # Oracle stores '' as NULL, so a scalar empty-string
-                        # default does not satisfy a NOT NULL column — relying on
-                        # it produces ORA-01400. Fall through to supply a dummy in
-                        # that case instead of trusting the default to fire.
-                        default_is_empty_string = (
-                            col.default is not None
-                            and getattr(col.default, "is_scalar", False)
-                            and col.default.arg == ""
-                        )
-                        skip_for_default = col.default is not None or col.server_default is not None
-                        if is_ora and not col.nullable and default_is_empty_string:
-                            skip_for_default = False
-                        if skip_for_default:
-                            continue
-                        if col.nullable:
-                            continue
-                        val = _generic_dummy_value(col)
-                        if val is None:
-                            skip_reason = f"no dummy generator for column {col.name!r} of type {col.type!r}"
-                            break
-                        values[col.name] = val
-
-                    if skip_reason is not None:
-                        failures.append((table.name, f"SKIPPED: {skip_reason}"))
-                        continue
-
-                    # Oracle has no "INSERT ... DEFAULT VALUES" / empty-column-list
-                    # syntax (ORA-00928). A table whose every column is an auto PK
-                    # or nullable therefore yields an empty value set; supply a
-                    # dummy for one fillable non-PK column so the statement is
-                    # valid (FK checks are disabled, so an FK column is fine).
-                    if is_ora and not values:
-                        for col in table.columns:
-                            is_sole_int_pk = (
-                                col.primary_key
-                                and len(table.primary_key.columns) == 1
-                                and isinstance(col.type, (BigInteger, Integer, SmallInteger))
-                                and col.autoincrement is not False
-                            )
-                            if isinstance(col.default, Sequence) or is_sole_int_pk:
-                                continue
-                            val = _generic_dummy_value(col)
-                            if val is not None:
-                                values[col.name] = val
-                                break
-
-                    sp = conn.begin_nested()
-                    try:
-                        conn.execute(table.insert().values(**values))
-                        sp.rollback()
-                    except Exception as e:
-                        sp.rollback()
-                        first_line = str(e).splitlines()[0] if str(e) else type(e).__name__
-                        failures.append((table.name, first_line))
-            finally:
-                outer.rollback()
-    finally:
-        if disabled_fks:
-            with engine.connect() as teardown_conn:
-                for tbl, con in disabled_fks:
-                    teardown_conn.execute(text(f'ALTER TABLE "{tbl}" ENABLE CONSTRAINT "{con}"'))
-                teardown_conn.commit()
-        engine.dispose()
-
-    return failures
-
-
-def test_default_insert_succeeds_for_every_model_table(flask_app):
-    """
-    Run those INSERTs against a database built the way an upgrade builds it: the
-    pinned seed plus every migration. Catches failures that schema checks cannot —
+    Run those INSERTs against a database built the way an upgrade builds it: a
+    seed plus every migration since. Catches failures that schema checks cannot —
     e.g. a Sequence declared on the model that no migration ever created, an
     Identity column SQLAlchemy can't drive on this dialect, or a NOT NULL column
     whose default isn't actually applied.
     """
     from flask_migrate import upgrade as flask_upgrade
 
-    load_seed()
+    load_seed(SEEDS[seed])
     flask_upgrade()
 
-    failures = _insert_minimal_row_into_every_table()
+    failures = insert_minimal_row_into_every_table()
 
     assert not failures, (
         "INSERT failed for the following model tables after upgrade-to-head. "
@@ -883,7 +719,7 @@ def test_model_created_schema_accepts_a_row_in_every_table(flask_app):
 
     db.create_all()
 
-    failures = _insert_minimal_row_into_every_table()
+    failures = insert_minimal_row_into_every_table()
 
     assert not failures, (
         "INSERT failed for the following model tables in a schema created from the "
@@ -891,6 +727,26 @@ def test_model_created_schema_accepts_a_row_in_every_table(flask_app):
         "write those tables:\n"
         + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
     )
+
+
+@pytest.mark.parametrize("seed", sorted(SEEDS))
+def test_every_sequence_is_ahead_of_its_table_at_head(flask_app, seed: str):
+    """
+    After the upgrade to head, the sequence of every table whose model takes the id from one hands out ids after the
+    highest id of the table, also where rows got their ids elsewhere, e.g. from AUTO_INCREMENT or from a data migration
+    that inserted them without an id (see migration 7e3010cbe03e).
+    """
+    from flask_migrate import upgrade as flask_upgrade
+
+    load_seed(SEEDS[seed])
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    try:
+        behind = sequences_behind_their_table(engine)
+    finally:
+        engine.dispose()
+    assert not behind, f"These sequences hand out ids that exist, as {{table: (next value, highest id)}}: {behind}"
 
 
 def test_all_down_revisions_point_to_existing_revisions():
@@ -1111,11 +967,12 @@ def _get_engine_name() -> str:
     return "mariadb" if is_mariadb() else "mysql"
 
 
-def test_each_migration_runs_again_on_its_own_result(flask_app):
+@pytest.mark.parametrize("seed", sorted(SEEDS))
+def test_each_migration_runs_again_on_its_own_result(flask_app, seed: str):
     """
-    For every migration in the window, set the revision stamp back to its parent right after it ran, without undoing
-    anything, and run it again. The second run must succeed and change neither the schema nor the number of rows of
-    any table.
+    For every migration since the seed, set the revision stamp back to its parent right after it ran, without undoing
+    anything, and run it again. The second run must succeed and change neither the schema nor the contents of any
+    table. From a release seed, the data migrations run again on the rows the release wrote.
 
     An installation gets into this state when a migration fails midway: every statement commits on its own (see
     migrations/env.py), but alembic only moves the stamp once the migration has finished, so the next upgrade runs the
@@ -1129,21 +986,21 @@ def test_each_migration_runs_again_on_its_own_result(flask_app):
     from alembic import command
 
     script = ScriptDirectory.from_config(get_alembic_cfg())
-    revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
+    applied_with_seed = revisions_up_to(SEEDS[seed])
+    revisions_in_window = [rev for rev in reversed(list(script.iterate_revisions("head", START_REVISION)))
+                           if rev.revision not in applied_with_seed]
     engine_name = _get_engine_name()
     expected_failures = {revision for revision, engine_names in NOT_RERUNNABLE_REVISIONS.items()
-                         if engine_name in engine_names}
+                         if engine_name in engine_names and revision not in applied_with_seed}
 
-    load_seed()
+    load_seed(SEEDS[seed])
     engine = create_engine(DB_URL)
     failures: dict[str, str] = {}
     try:
         for rev in revisions_in_window:
-            if rev.down_revision is None:
-                continue
             command.upgrade(get_alembic_cfg(), rev.revision)
             schema_after_first_run = _get_schema_snapshot(engine)
-            row_counts_after_first_run = _row_counts(engine, set(schema_after_first_run))
+            contents_after_first_run = _comparable_contents(engine)
             with engine.connect() as conn:
                 heads_after_first_run = set(MigrationContext.configure(conn).get_current_heads())
 
@@ -1167,12 +1024,11 @@ def test_each_migration_runs_again_on_its_own_result(flask_app):
             if changed_tables:
                 failures[rev.revision] = f"('{rev.doc}') changes the schema of {changed_tables}"
                 continue
-            row_counts_after_second_run = _row_counts(engine, set(schema_after_second_run))
-            changed_counts = {table: (count, row_counts_after_second_run[table])
-                              for table, count in row_counts_after_first_run.items()
-                              if row_counts_after_second_run[table] != count}
-            if changed_counts:
-                failures[rev.revision] = f"('{rev.doc}') changes the row counts {changed_counts}"
+            contents_after_second_run = _comparable_contents(engine)
+            changed_contents = sorted(table for table in contents_after_first_run
+                                      if contents_after_second_run.get(table) != contents_after_first_run[table])
+            if changed_contents:
+                failures[rev.revision] = f"('{rev.doc}') changes the rows of {changed_contents}"
     finally:
         engine.dispose()
 
@@ -1187,6 +1043,14 @@ def test_each_migration_runs_again_on_its_own_result(flask_app):
         f"These migrations now run again on their own result on {engine_name}. "
         f"Remove them from NOT_RERUNNABLE_REVISIONS: {sorted(fixed)}"
     )
+
+
+def _comparable_contents(engine: Engine) -> dict[str, list[dict]]:
+    """The contents of every table (see table_contents), with the OTP keys of SSH key tokens decrypted."""
+    contents = {table: sorted_rows(rows) for table, rows in table_contents(engine).items()}
+    if "token" in contents:
+        contents["token"] = sorted_rows(_with_decrypted_ssh_keys(contents["token"]))
+    return contents
 
 
 def _row_counts(engine, tables: set[str]) -> dict[str, int]:
@@ -1259,3 +1123,169 @@ def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
             f"Data in the 'realm' table was lost during downgrade. "
             f"Expected 'defrealm', got {realm_check!r}."
         )
+
+
+def _release_dataset() -> dict[str, list[dict]]:
+    """
+    Rows in the columns of 3.13.4 that the migrations since 3.13.4 change: a u2f token, tokens with an empty rollout
+    state, internal user attributes, an SMS gateway secret, a request mangler, a challenge and a policy.
+    """
+    token_columns = {"active": True, "revoked": False, "locked": False, "otplen": 6, "maxfail": 10, "failcount": 0,
+                     "count": 0, "count_window": 10, "sync_window": 1000}
+    return {
+        "token": [
+            dict(token_columns, id=9101, serial="U2F9101", tokentype="u2f", rollout_state=""),
+            dict(token_columns, id=9102, serial="HOTP9102", tokentype="hotp", rollout_state=""),
+            dict(token_columns, id=9103, serial="PUSH9103", tokentype="push", rollout_state="enrolled"),
+        ],
+        "tokeninfo": [
+            {"id": 9101, "token_id": 9101, "Key": "appId", "Value": "https://example.com", "Type": "",
+             "Description": ""},
+        ],
+        "customuserattribute": [
+            {"id": 9101, "user_id": "u9101", "resolver": "resolver1", "realm_id": None, "Key": "fido2_user_id",
+             "Value": "fido2-user-id", "Type": ""},
+            {"id": 9102, "user_id": "u9101", "resolver": "resolver1", "realm_id": None,
+             "Key": "last_used_token_privacyidea-cp", "Value": "push", "Type": "pi_internal"},
+            {"id": 9103, "user_id": "u9101", "resolver": "resolver1", "realm_id": None, "Key": "department",
+             "Value": "engineering", "Type": None},
+        ],
+        "smsgateway": [
+            {"id": 9101, "identifier": "round_trip_gateway", "description": "",
+             "providermodule": "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"},
+        ],
+        "smsgatewayoption": [
+            {"id": 9101, "gateway_id": 9101, "Key": "PASSWORD", "Value": "gateway-secret", "Type": "option"},
+            {"id": 9102, "gateway_id": 9101, "Key": "URL", "Value": "https://sms.example.com", "Type": "option"},
+        ],
+        "eventhandler": [
+            {"id": 9101, "name": "round_trip_mangler", "active": True, "ordering": 0, "position": "pre",
+             "event": "token_init", "handlermodule": "RequestMangler", "condition": "", "action": "set"},
+        ],
+        "challenge": [
+            {"id": 9101, "transaction_id": "round_trip_transaction", "data": "", "challenge": "enter otp",
+             "session": "", "serial": "HOTP9102", "received_count": 0, "otp_valid": False},
+        ],
+        "policy": [
+            {"id": 9101, "name": "round_trip_policy", "scope": "admin", "active": True, "priority": 1,
+             "action": "enrollHOTP"},
+        ],
+    }
+
+
+def _with_decrypted_ssh_keys(rows: list[dict]) -> list[dict]:
+    """
+    The token rows with the OTP key of SSH key tokens decrypted. The downgrade of b8c9d0e1f2a3 encrypts the empty OTP
+    key that these tokens had before again, with a new initialisation vector.
+    """
+    import binascii
+
+    from privacyidea.lib.crypto import decrypt
+
+    decrypted_rows = []
+    for row in rows:
+        if row["tokentype"] == "sshkey":
+            otp_key = decrypt(binascii.unhexlify(row["key_enc"]), binascii.unhexlify(row["key_iv"]))
+            row = {column: value for column, value in row.items() if column not in ("key_enc", "key_iv")}
+            row["otp_key"] = otp_key
+        decrypted_rows.append(row)
+    return decrypted_rows
+
+
+def _expected_contents_after_downgrade(release: str, before: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    """
+    The contents of a release's tables after an upgrade to head and a downgrade back: as they were before, apart from
+    what a downgrade does not undo on purpose:
+    - every release: policy actions are compared elsewhere, the u2f actions and the boolean values other than true
+      stay removed (35815effd77c, f8a498439814); request and response manglers keep abort_on_error (ad07c259b5c1); the
+      OTP key of SSH key tokens is compared decrypted (see _with_decrypted_ssh_keys)
+    - 3.13.4: the challenges stay deleted (c3d4e5f6a7b8), an empty rollout state stays 'enrolled' (3cafe2771cdd), and
+      the internal user attributes come back with new ids (7d4e9b2c1a3f)
+    """
+    expected = {}
+    for table, rows in before.items():
+        rows = [dict(row) for row in rows]
+        if table == "policy":
+            rows = [{column: value for column, value in row.items() if column != "action"} for row in rows]
+        if table == "eventhandler":
+            for row in rows:
+                if "abort_on_error" in row and row["handlermodule"] in ("RequestMangler", "ResponseMangler"):
+                    row["abort_on_error"] = True
+        if release == "3.13.4":
+            if table == "challenge":
+                rows = []
+            if table == "token":
+                for row in rows:
+                    if row["rollout_state"] in ("", None):
+                        row["rollout_state"] = "enrolled"
+            if table == "customuserattribute":
+                rows = [{column: value for column, value in row.items() if column != "id"} for row in rows]
+        if table == "token":
+            rows = _with_decrypted_ssh_keys(rows)
+        expected[table] = sorted_rows(rows)
+    return expected
+
+
+def _comparable_contents_after_downgrade(release: str, after: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    comparable = {}
+    for table, rows in after.items():
+        if table == "policy" or (release == "3.13.4" and table == "customuserattribute"):
+            leave_out = "action" if table == "policy" else "id"
+            rows = [{column: value for column, value in row.items() if column != leave_out} for row in rows]
+        if table == "token":
+            rows = _with_decrypted_ssh_keys(rows)
+        comparable[table] = sorted_rows(rows)
+    return comparable
+
+
+@pytest.mark.parametrize("seed", ["v3.9", "release"])
+@pytest.mark.parametrize("release", sorted(RELEASE_HEADS))
+def test_downgrade_returns_the_database_of_a_release(flask_app, release: str, seed: str):
+    """
+    A database of a release, with data for the migrations since that release, is upgraded to head and downgraded
+    back. Its schema and the contents of every table are then as before, apart from the changes that a downgrade does
+    not undo on purpose (see _expected_contents_after_downgrade). The database is either the v3.9 seed upgraded to the
+    release, or the seed of the release itself.
+    """
+    from alembic import command
+
+    release_head = RELEASE_HEADS[release]
+    if seed == "release":
+        load_seed(release_head)
+    else:
+        load_seed()
+        command.upgrade(get_alembic_cfg(), release_head)
+    engine = create_engine(DB_URL)
+    try:
+        inspector = sa_inspect(engine)
+        for table, rows in _release_dataset().items():
+            existing_columns = {column["name"] for column in inspector.get_columns(table)}
+            insert_rows(engine, table, [{column: value for column, value in row.items() if column in existing_columns}
+                                        for row in rows])
+        schema_before = _get_schema_snapshot(engine)
+        contents_before = table_contents(engine)
+    finally:
+        engine.dispose()
+
+    command.upgrade(get_alembic_cfg(), "head")
+    downgrade_keeping(release_head, release_head)
+
+    engine = create_engine(DB_URL)
+    try:
+        schema_after = _get_schema_snapshot(engine)
+        contents_after = table_contents(engine)
+        with engine.connect() as conn:
+            stamps = [row[0] for row in conn.execute(text("SELECT version_num FROM alembic_version"))]
+    finally:
+        engine.dispose()
+
+    assert stamps == [release_head]
+    schema_differences = {table: (schema_before.get(table), schema_after.get(table))
+                          for table in set(schema_before) | set(schema_after)
+                          if schema_before.get(table) != schema_after.get(table)}
+    assert not schema_differences, schema_differences
+    expected = _expected_contents_after_downgrade(release, contents_before)
+    actual = _comparable_contents_after_downgrade(release, contents_after)
+    content_differences = {table: {"expected": expected.get(table), "actual": actual.get(table)}
+                           for table in set(expected) | set(actual) if expected.get(table) != actual.get(table)}
+    assert not content_differences, content_differences
