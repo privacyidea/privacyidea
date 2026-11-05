@@ -83,12 +83,12 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
   configQuestions = computed(() => {
     if (!this.systemService.systemConfigResource.hasValue()) return [];
     const cfg = this.systemService.systemConfigResource.value()?.result?.value || {};
-    return Object.entries(cfg)
+    const questions = Object.entries(cfg)
       .filter(([k]) => k.startsWith(QUESTION_CONFIG_PREFIX))
-      .map(([, v]) => ({ question: String(v) }));
+      .map(([, v]) => String(v));
+    return [...new Set(questions)].map((question) => ({ question }));
   });
 
-  // A list keeps two configured questions with the same text as two separate rows.
   answers = linkedSignal<{ question: string }[], QuestionAnswer[]>({
     source: this.configQuestions,
     computation: (questions, prev) => {
@@ -97,10 +97,7 @@ export class EnrollQuestionComponent extends EnrollTokenBase<QuestionEnrollmentD
     }
   });
 
-  // The payload keys the answers by question text, so questions with the same text are one answer.
-  answeredCount = computed(
-    () => new Set(this.answers().filter((row) => row.answer.trim() !== "").map((row) => row.question)).size
-  );
+  answeredCount = computed(() => this.answers().filter((row) => row.answer.trim() !== "").length);
 
   answersForm = form(this.answers, (f) => {
     validate(f, () => (this.answeredCount() < this.configMinNumberOfAnswers() ? [{ kind: ERR.required }] : []));

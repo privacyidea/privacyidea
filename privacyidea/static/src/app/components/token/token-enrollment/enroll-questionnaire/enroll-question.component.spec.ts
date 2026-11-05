@@ -141,24 +141,32 @@ describe("EnrollQuestionnaireComponent", () => {
     });
   });
 
-  it("keeps two questions with the same text as two rows", async () => {
-    configure(["Pet?", "Pet?"], 1);
-    await flushFixture(fixture);
+  describe("a question configured twice", () => {
+    beforeEach(async () => {
+      configure(["Pet?", "Car?", "Pet?"], 2);
+      await flushFixture(fixture);
+    });
 
-    expect(inputs()).toHaveLength(2);
-    await typeInto(fixture, inputs()[1], "Rex");
-    expect(component.answers().map((row) => row.answer)).toEqual(["", "Rex"]);
-  });
+    it("is asked once", () => {
+      expect(inputs()).toHaveLength(2);
+      expect(component.answers().map((row) => row.question)).toEqual(["Pet?", "Car?"]);
+    });
 
-  it("counts two questions with the same text as one answer, as the payload keys the answers by text", async () => {
-    configure(["Pet?", "Pet?", "Car?"], 3);
-    await flushFixture(fixture);
-    await typeInto(fixture, inputs()[0], "Rex");
-    await typeInto(fixture, inputs()[1], "Rex");
-    await typeInto(fixture, inputs()[2], "Golf");
+    it("sends the one typed answer", async () => {
+      await typeInto(fixture, inputs()[0], "Rex");
+      await typeInto(fixture, inputs()[1], "Golf");
 
-    expect(component.answeredCount()).toBe(2);
-    expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+      const args = component.buildEnrollmentArgs(basicOptions);
+
+      expect(args?.data).toEqual(expect.objectContaining({ answers: { "Pet?": "Rex", "Car?": "Golf" } }));
+    });
+
+    it("counts as one answer", async () => {
+      await typeInto(fixture, inputs()[0], "Rex");
+
+      expect(component.answeredCount()).toBe(1);
+      expect(component.answersForm().valid()).toBe(false);
+    });
   });
 
   it("defaults to five required answers without a configured number", () => {
