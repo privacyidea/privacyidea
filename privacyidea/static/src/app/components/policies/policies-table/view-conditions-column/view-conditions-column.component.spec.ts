@@ -95,6 +95,15 @@ describe("ConditionsTabComponent", () => {
     expect(component.userCaseInsensitive()).toBeTruthy();
   });
 
+  it("should mark the resolvers only if all resolvers of the user are checked", () => {
+    const markers = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".marker-chip"), (chip: Element) => chip.textContent!.trim());
+    expect(markers()).not.toContain("all resolvers of the user");
+    fixture.componentRef.setInput("policy", { ...mockPolicy, check_all_resolvers: true });
+    fixture.detectChanges();
+    expect(markers()).toContain("all resolvers of the user");
+  });
+
   it("should correctly compute selectedPinodes", () => {
     expect(component.selectedPinodes()).toEqual(["node1"]);
   });

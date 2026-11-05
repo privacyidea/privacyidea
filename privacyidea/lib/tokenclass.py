@@ -177,6 +177,9 @@ class TokenClass:
     client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # Whether the token can verify a login. A token that only stores a key or a certificate for another purpose sets
+    # this to False.
+    verifies_login = True
     # Whether check_challenge_response removes the challenge it accepted. A class that keeps the answered challenge
     # because has_further_challenge still has to read it sets this to False; check_token_list then consumes the
     # challenge for it once no further challenge follows.
@@ -1300,6 +1303,14 @@ class TokenClass:
 
     def get_sync_window(self):
         return self.token.sync_window
+
+    def has_pending_autoresync(self) -> bool:
+        """
+        Check if the token waits for the next OTP value of an autoresync, so that a challenge can ask for it.
+
+        :return: True if the next OTP value can still complete an autoresync of the token
+        """
+        return False
 
     # hashlib algorithms:
     # http://www.doughellmann.com/PyMOTW/hashlib/index.html#module-hashlib

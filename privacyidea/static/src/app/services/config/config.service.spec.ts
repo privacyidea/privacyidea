@@ -112,6 +112,7 @@ describe("ConfigService", () => {
     req.flush(mockResponse);
 
     expect(service.config()).toEqual(mockConfig);
+    expect(service.configLoaded()).toBe(true);
     expect(setSpy).toHaveBeenCalledWith("3.8");
   });
 
@@ -139,6 +140,7 @@ describe("ConfigService", () => {
     const req = httpMock.expectOne(environment.proxyUrl + "/config");
     req.flush(null, { status: 500, statusText: "Server Error" });
 
+    expect(service.configLoaded()).toBe(false);
     // Should keep the default config values
     expect(service.config()).toEqual({
       remote_user: "",

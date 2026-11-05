@@ -47,7 +47,12 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  checkAllResolversWithoutResolver,
+  PolicyDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "@services/policies/policies.service";
 import { PolicyActionSearchComponent } from "./policy-action-search/policy-action-search.component";
 import { PolicyPanelEditComponent, PolicyTab } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
 import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-template-picker.component";
@@ -118,13 +123,15 @@ export class PolicyEditPageComponent implements OnDestroy {
       this.policyService.isPolicyNameTaken(name, this.mode() === "edit" ? this.policy().name : null)
     );
   });
+  readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.editedPolicy()));
   readonly canSave = computed(
     () =>
       this.savingName() === null &&
       this.isPolicyEdited() &&
       !!this.editedPolicy().name?.trim() &&
       /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
-      !this.nameTaken()
+      !this.nameTaken() &&
+      !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>
     this.mode() === "edit"
@@ -270,7 +277,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       .openDialog({
         component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`:@@common.discardChanges:Discard changes`,
+          title: $localize`:@@common.discardChanges:Discard Changes`,
           allowSaveExit: this.canSave(),
           saveExitDisabled: !this.canSave()
         }

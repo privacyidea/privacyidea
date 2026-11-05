@@ -78,18 +78,18 @@ describe("WelcomeDialogComponent", () => {
 
     expect(heading()).toBe("Thank you for improving your security!");
     expect(buttonLabels()).toHaveLength(2);
-    expect(buttonLabels()[0]).toContain("Read again");
+    expect(buttonLabels()[0]).toContain("Read Again");
     expect(buttonLabels()[1]).toContain("Dive In!");
   });
 
   it("gives the open source and enterprise steps their own headings", () => {
     component.step.set(1);
     fixture.detectChanges();
-    expect(heading()).toBe("The value of open source");
+    expect(heading()).toBe("The Value of Open Source");
 
     component.step.set(2);
     fixture.detectChanges();
-    expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
+    expect(heading()).toBe("The Added Value of privacyIDEA Enterprise Edition");
     expect(buttonLabels()).toHaveLength(1);
     expect(buttonLabels()[0]).toContain("Next");
   });
@@ -98,7 +98,7 @@ describe("WelcomeDialogComponent", () => {
     component.step.set(3);
     fixture.detectChanges();
 
-    clickButton("Read again");
+    clickButton("Read Again");
     expect(component.step()).toBe(0);
 
     clickButton("Next");

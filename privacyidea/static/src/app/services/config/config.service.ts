@@ -45,6 +45,8 @@ export interface AppConfig {
 
 export interface ConfigServiceInterface {
   config: WritableSignal<AppConfig>;
+  /** True once the server's answer replaced the default values of `config`. */
+  configLoaded: WritableSignal<boolean>;
 
   loadConfig(): void;
 }
@@ -70,6 +72,7 @@ export class ConfigService implements ConfigServiceInterface {
     translation_warning: false,
     passkey_login: "show"
   });
+  configLoaded = signal(false);
 
   loadConfig() {
     // loadConfig() runs at app bootstrap, before authData is populated, so read
@@ -101,6 +104,7 @@ export class ConfigService implements ConfigServiceInterface {
 
         if (data.result?.status && configValue) {
           this.config.set(configValue);
+          this.configLoaded.set(true);
         } else {
           console.error("Failed to load config: Invalid response", data);
           return;

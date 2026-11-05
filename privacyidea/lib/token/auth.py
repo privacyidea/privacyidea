@@ -22,6 +22,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            order_request_reasons, outcome_of,
                                                                            AuthEventOutcome,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY)
+from privacyidea.lib.autoresync import AUTORESYNC_KEY, LOG_AUTORESYNC_KEY
 from privacyidea.lib.config import (get_from_config,
                                     get_inc_fail_count_on_false_pin, SYSCONF)
 from privacyidea.lib.error import (TokenAdminError, Error)
@@ -170,6 +171,7 @@ def check_otp(serial: str, otpval: str) -> tuple[bool, dict]:
         if increase_auth_counters:
             token_object.inc_count_auth()
         reply_dict["message"] = _("OTP verification failed.")
+    _add_autoresync_info(reply_dict, [token_object], serial)
     return res, reply_dict
 
 
@@ -834,7 +836,25 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     if reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE and outcome_serials:
         reply_dict[AUTH_EVENT_SERIALS_KEY] = sorted(outcome_serials)
 
+    _add_autoresync_info(reply_dict, token_object_list, reply_dict.get("serial"))
     return res, reply_dict
+
+
+def _add_autoresync_info(reply_dict: dict, token_list: list[TokenClass], logged_serial: str | None) -> None:
+    """
+    Add the autoresync outcome of the given tokens to the reply for the audit log (see LOG_AUTORESYNC_KEY). The
+    serial is left out if the audit entry already names the token.
+
+    :param reply_dict: The reply of the authentication, changed in place
+    :param token_list: The tokens checked in the authentication
+    :param logged_serial: The serial the audit entry names, if any
+    """
+    autoresync_tokens = [token for token in token_list if AUTORESYNC_KEY in token.auth_details]
+    if len(autoresync_tokens) == 1 and autoresync_tokens[0].get_serial() == logged_serial:
+        reply_dict[LOG_AUTORESYNC_KEY] = f"autoresync {autoresync_tokens[0].auth_details[AUTORESYNC_KEY]}"
+    elif autoresync_tokens:
+        reply_dict[LOG_AUTORESYNC_KEY] = ", ".join(
+            f"autoresync {token.auth_details[AUTORESYNC_KEY]} for {token.get_serial()}" for token in autoresync_tokens)
 
 
 def challenge_text_replace(message: str, user: User | None, token_obj: TokenClass,

@@ -63,7 +63,7 @@ export class SaveAndExitDialogComponent extends AbstractDialogComponent<
     }
   ]);
 
-  title = computed(() => this.data.title || $localize`:@@common.discardChanges:Discard changes`);
+  title = computed(() => this.data.title || $localize`:@@common.discardChanges:Discard Changes`);
   message = computed(
     () =>
       this.data.message ||

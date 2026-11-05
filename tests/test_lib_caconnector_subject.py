@@ -94,6 +94,7 @@ class LocalCASubjectTestCase(MyTestCase):
 
     def test_04_subject_adds_no_openssl_option(self):
         argv_lists = self.sign(make_csr("a\t-config\tb"))
+        self.assertTrue(argv_lists)
         for argv in argv_lists:
             self.assertEqual(1, argv.count("-config"), argv)
 

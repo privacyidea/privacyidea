@@ -1417,13 +1417,13 @@ class AuthGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContra
         self.assertEqual(401, self._auth("testadmin", "testpw", remote_addr=BLOCKED_IP).status_code)
         entry = self.find_most_recent_audit_entry(action="*/auth")
         self.assertEqual("testadmin", entry["administrator"], entry)
-        self.assertEqual("", entry["user"], entry)
+        self.assert_empty_string(entry["user"], entry)
         self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
         # A local database admin lives in no realm, so the entry names none - the same blank the view writes for the
         # login it lets through. The gate logged the realm it had guessed from the login name before it knew this was
         # an admin at all, and the rejection has to undo that rather than leave it standing.
-        self.assertEqual("", entry["realm"], entry)
-        self.assertEqual("", entry["resolver"], entry)
+        self.assert_empty_string(entry["realm"], entry)
+        self.assert_empty_string(entry["resolver"], entry)
 
     def test_a_rejected_admin_realm_login_is_named_as_fully_as_an_accepted_one(self):
         # An admin who *is* a user - one in a superuser realm - keeps the identity columns an ordinary login gets,
@@ -1437,7 +1437,7 @@ class AuthGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContra
             self.app.config["SUPERUSER_REALM"] = []
         entry = self.find_most_recent_audit_entry(action="*/auth")
         self.assertEqual("cornelius", entry["administrator"], entry)
-        self.assertEqual("", entry["user"], entry)
+        self.assert_empty_string(entry["user"], entry)
         self.assertEqual(self.user.realm, entry["realm"], entry)
         self.assertEqual(self.user.resolver, entry["resolver"], entry)
 
@@ -2118,6 +2118,9 @@ class RememberDeviceGateTestCase(_GateContract, _UserGateContract, _PostResponse
         self.addCleanup(delete_policy, "ca_remember")
         client, self.api_key = create_client("ca gate client", "privacyidea-cp")
         _device, self.cookie = create_remembered_device(user_identity(self.user), client.id)
+        # A device is only recognised while the user has a usable token
+        init_token({"type": "spass", "pin": "test", "serial": "SPASS_CA_REMEMBER"}, user=self.user)
+        self.addCleanup(remove_token, "SPASS_CA_REMEMBER")
 
     def _authenticate(self, remote_addr: str | None = None) -> Response:
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}

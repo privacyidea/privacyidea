@@ -1538,7 +1538,7 @@ class APITokenTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json.get("result")
-            self.assertTrue(result["value"], 2)
+            self.assertDictEqual({"count_success": 2, "failed": [], "unauthorized": []}, result["value"])
 
         # Check that it worked
         tokens = get_tokens_from_serial_or_user(None, user)
@@ -4346,7 +4346,7 @@ class APITokenTestCase(MyApiTestCase):
                     self.assertEqual(404, res.status_code, res.json)
                     self.assertEqual(601, res.json["result"]["error"]["code"], res.json)
 
-            self.assertEqual("", other_token.token.description)
+            self.assert_empty_string(other_token.token.description)
             self.assertTrue(other_token.token.active)
             self.assertTrue(token_exist(other_token.get_serial()))
 
@@ -4723,7 +4723,7 @@ class API00TokenPerformance(MyApiTestCase):
                                                                 "otp2": "123454"},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code, 404)
+            self.assertEqual(404, res.status_code)
             result = res.json.get("result")
             # Of course there is no exact token "perf*", it does not match perf001
             self.assertFalse(result["status"])
@@ -4914,6 +4914,28 @@ class APIDetermineUserFromSerialForPolicies(MyApiTestCase):
 
         remove_token(serial)
         delete_policy(polname)
+
+    def test_02_disabling_token_check_all_resolvers(self):
+        # realm4: resolver1 (prio 1) contains selfservice and cornelius, reso3 (prio 2) contains cornelius and root.
+        # A policy with check_all_resolvers only applies to owners who are contained in one of its resolvers.
+        self.setUp_user_realm4_with_2_resolvers()
+        set_policy("helpdesk_reso3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm4,
+                   resolver=self.resolvername3, check_all_resolvers=True)
+        try:
+            expected_status = {"selfservice": 403, "cornelius": 200, "root": 200}
+            for login, expected in expected_status.items():
+                with self.subTest(login=login):
+                    serial = f"SPASS_{login}"
+                    init_token({"type": "spass", "serial": serial}, user=User(login, self.realm4))
+                    try:
+                        with self.app.test_request_context("/token/disable", method="POST", data={"serial": serial},
+                                                           headers={"Authorization": self.at}):
+                            res = self.app.full_dispatch_request()
+                        self.assertEqual(expected, res.status_code, res.json)
+                    finally:
+                        remove_token(serial)
+        finally:
+            delete_policy("helpdesk_reso3")
 
 
 class APIRolloutState(MyApiTestCase):
@@ -5714,7 +5736,7 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("radius.user"))
         # The audit names the entries that were written, so an entry dropped for this token is not in it
         audit_entry = self.find_most_recent_audit_entry(action='POST /token/set')
-        self.assertNotIn("radius.user", audit_entry.get('action_detail', ''), audit_entry)
+        self.assertNotIn("radius.user", audit_entry.get('action_detail') or '', audit_entry)
 
         # A key no token type declares settable is not a token info parameter at all: the endpoint
         # can not tell it apart from an unrelated parameter, so it is ignored rather than refused
@@ -6122,7 +6144,7 @@ class APITokenListNodeTestCase(MyApiTestCase):
             entries = res.json["result"]["value"]["auditdata"]
             self.assertEqual(1, len(entries), entries)
             entry = entries[0]
-            self.assertEqual("", entry["user"], entry)
+            self.assert_empty_string(entry["user"], entry)
             info = entry["info"]
             self.assertIn(f"The owner of the token {serial} can not be looked up", info, info)
             self.assertIn("Error performing bind operation: unreachable", info, info)
@@ -6235,7 +6257,7 @@ class APIEmptyParameterValuesTestCase(MyApiTestCase):
         token = get_one_token(serial="EMPTY01")
         self.assertEqual([], get_realms_of_token("EMPTY01"))
         self.assertEqual([], token.token.tokengroup_list)
-        self.assertEqual("", token.get_tokeninfo("note"))
+        self.assert_empty_string(token.get_tokeninfo("note"))
 
         remove_token("EMPTY01")
         delete_tokengroup("emptygroup")

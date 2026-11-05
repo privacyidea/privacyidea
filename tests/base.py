@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
 import mock
-from flask import Flask
+from flask import Flask, g, request
 from sqlalchemy import Sequence, select, text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
@@ -126,6 +126,13 @@ def skip_unless_admin_lookup_folds_case(testcase):
     if not folds_case:
         testcase.skipTest("the admin lookup matches case-sensitively on this database, so one account cannot be "
                           "reached under a second spelling")
+
+
+def stored_empty_string() -> str | None:
+    """
+    What an empty string written to the database reads back as: ``''``, except on Oracle, which stores it as NULL.
+    """
+    return None if db.engine.dialect.name == "oracle" else ""
 
 
 class FakeFlaskG(object):
@@ -274,6 +281,22 @@ def _reset_database() -> None:
     db.session.commit()
 
 
+def _start_request_with_empty_g() -> None:
+    """
+    Remove everything from ``g`` before the first request of a request context is handled.
+
+    In production, every request has its own app context and with it an empty ``g``. A test class keeps one app
+    context for all its requests. Without this, a handler that does not set a value on ``g`` reads the value of an
+    earlier request. A request context that dispatches several requests keeps ``g`` between them, because some
+    tests send a request again and check what the request context collected.
+    """
+    if request.environ.get("privacyidea.tests.g_emptied"):
+        return
+    request.environ["privacyidea.tests.g_emptied"] = True
+    for key in list(iter(g)):
+        g.pop(key)
+
+
 class MyTestCase(unittest.TestCase):
     app = None
     app_context = None
@@ -310,6 +333,16 @@ class MyTestCase(unittest.TestCase):
         cls.app = create_app(cls.app_config_name, pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
+        # First in the list, so it runs before the handlers of the app put their values on g
+        cls.app.before_request_funcs.setdefault(None, []).insert(0, _start_request_with_empty_g)
+        cls.set_up_database()
+
+    @classmethod
+    def set_up_database(cls) -> None:
+        """
+        Empty the database, then add the configuration timestamp and the test admin. A test class that needs this
+        state for every test calls it in setUp.
+        """
         _reset_database()
 
         # save the current timestamp to the database to avoid hanging cached data
@@ -536,6 +569,12 @@ class MyTestCase(unittest.TestCase):
             role = result.get("value").get("role")
             self.assertTrue(role == "user", result)
             self.assertEqual(result.get("value").get("realm"), "realm1")
+
+    def assert_empty_string(self, value: str | None, msg: str | None = None) -> None:
+        """
+        Assert that *value* is an empty string read from the database, which on Oracle is None.
+        """
+        self.assertEqual(stored_empty_string(), value, msg)
 
     def find_most_recent_audit_entry(self, **filter_data):
         """

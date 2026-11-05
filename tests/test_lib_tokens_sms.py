@@ -608,7 +608,7 @@ class SMSTokenTestCase(MyTestCase):
         # An empty phone number is accepted, e.g. for a user whose user store entry has no mobile number. A missing
         # one is refused.
         token = init_token(param={"serial": "PISM_EMPTY1", "type": "sms", "genkey": 1, "phone": ""})
-        self.assertEqual("", token.get_tokeninfo("phone"))
+        self.assert_empty_string(token.get_tokeninfo("phone"))
         remove_token("PISM_EMPTY1")
 
         with self.assertRaises(ParameterError):

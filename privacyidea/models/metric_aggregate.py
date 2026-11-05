@@ -12,6 +12,7 @@ from sqlalchemy import (BigInteger, DateTime, Float, Integer, Sequence,
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
 from privacyidea.models import db
+from privacyidea.models.utils import keep_empty_string_on_oracle
 
 
 class MetricAggregate(db.Model):
@@ -31,12 +32,12 @@ class MetricAggregate(db.Model):
     # JSON object with sorted keys (compact separators), e.g.
     # ``{"gateway":"firebase","result":"ok"}``. Empty string when no labels.
     # Encoded by ``privacyidea.lib.metrics._labels_key``.
-    labels_key: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    labels_key: Mapped[str] = mapped_column(keep_empty_string_on_oracle(Text()), nullable=False, default="")
     # SHA-256 hex digest of labels_key. Used by the unique constraint so the
     # composite index has a fixed-size column (labels_key itself can grow
     # past MySQL's 3072-byte composite-index limit).
     labels_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
-    node: Mapped[str] = mapped_column(Unicode(255), nullable=False, default="")
+    node: Mapped[str] = mapped_column(keep_empty_string_on_oracle(Unicode(255)), nullable=False, default="")
     # Naive UTC datetime, truncated to the 5-minute window boundary.
     window_start: Mapped[datetime] = mapped_column(DateTime(timezone=False),
                                                    nullable=False, index=True)
