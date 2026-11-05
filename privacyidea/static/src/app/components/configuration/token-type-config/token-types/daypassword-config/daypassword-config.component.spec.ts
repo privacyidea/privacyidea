@@ -17,7 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { DAYPASSWORD_HASHLIB } from "@constants/token.constants";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
+import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
+import { touchAll } from "@utils/form-state.utils";
 import { DaypasswordConfigComponent } from "./daypassword-config.component";
 
 const mockHashLibs = ["sha1", "sha256", "sha512"];
@@ -25,32 +29,102 @@ const mockHashLibs = ["sha1", "sha256", "sha512"];
 describe("DaypasswordConfigComponent", () => {
   let fixture: ComponentFixture<DaypasswordConfigComponent>;
   let component: DaypasswordConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const timeStepInput = () => fixture.nativeElement.querySelector("input") as HTMLInputElement;
+  const errors = () =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error") as NodeListOf<HTMLElement>).map((error) =>
+      error.textContent?.trim()
+    );
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(DaypasswordConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    fixture.componentRef.setInput("hashLibs", mockHashLibs);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DaypasswordConfigComponent]
     }).compileComponents();
-    fixture = TestBed.createComponent(DaypasswordConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    fixture.componentRef.setInput("hashLibs", mockHashLibs);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  afterEach(() => {
+    document.querySelectorAll(".cdk-overlay-container").forEach((container) => (container.innerHTML = ""));
+  });
+
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "sha256";
-    component.updateFormData(DAYPASSWORD_HASHLIB, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [DAYPASSWORD_HASHLIB]: newValue });
+  it("shows the values of the form", async () => {
+    await create({ [DAYPASSWORD_TIME_STEP]: "24h", [DAYPASSWORD_HASHLIB]: "sha256" });
+
+    expect(timeStepInput().value).toBe("24h");
+    expect((fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect).value).toBe("sha256");
   });
 
-  it("should call updateFormData with empty value when clearField is called", () => {
-    jest.spyOn(component, "updateFormData");
-    component.clearField(DAYPASSWORD_HASHLIB);
-    expect(component.updateFormData).toHaveBeenCalledWith(DAYPASSWORD_HASHLIB, "");
+  it("writes the typed time step to the form", async () => {
+    await create();
+
+    timeStepInput().value = "12h";
+    timeStepInput().dispatchEvent(new Event("input"));
+    await flush();
+
+    expect(configForm.model().values[DAYPASSWORD_TIME_STEP]).toBe("12h");
+    expect(configForm.form.values[DAYPASSWORD_TIME_STEP]().dirty()).toBe(true);
+  });
+
+  it("writes the picked hashlib to the form", async () => {
+    await create();
+    const select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+    select.open();
+    await flush();
+
+    (document.querySelectorAll("mat-option")[1] as HTMLElement).click();
+    await flush();
+
+    expect(configForm.model().values[DAYPASSWORD_HASHLIB]).toBe("sha256");
+  });
+
+  it("clears the hashlib through the form and marks the field dirty", async () => {
+    await create({ [DAYPASSWORD_TIME_STEP]: "24h", [DAYPASSWORD_HASHLIB]: "sha256" });
+
+    fixture.debugElement.query(By.css("app-clear-button button")).nativeElement.click();
+    await flush();
+
+    expect(configForm.model().values[DAYPASSWORD_HASHLIB]).toBe("");
+    expect(configForm.form.values[DAYPASSWORD_HASHLIB]().dirty()).toBe(true);
+  });
+
+  describe("default entries", () => {
+    it("is valid and shows no error with only the hashlib chosen", async () => {
+      await create({ [DAYPASSWORD_HASHLIB]: "sha1" });
+
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
+
+    it("is valid and shows no error with only the time step typed", async () => {
+      await create({ [DAYPASSWORD_TIME_STEP]: "24h" });
+
+      await touchAll(configForm.form);
+      await flush();
+
+      expect(errors()).toEqual([]);
+      expect(configForm.form().valid()).toBe(true);
+    });
   });
 });

@@ -352,6 +352,99 @@ describe("RealmTableComponent", () => {
     expect(component.canSubmitNewRealm()).toBe(true);
   });
 
+  describe("create form name", () => {
+    const nameInput = (): HTMLInputElement =>
+      fixture.nativeElement.querySelector(".new-realm-footer-row input[matInput]") as HTMLInputElement;
+    const errorTexts = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".new-realm-footer-row mat-error")).map((e) =>
+        (e as HTMLElement).textContent!.trim()
+      );
+    const kinds = (): string[] =>
+      component
+        .newRealmForm()
+        .errors()
+        .map((e) => e.kind);
+
+    it("reports required for an empty name", () => {
+      expect(kinds()).toEqual(["required"]);
+      expect(component.newRealmForm().valid()).toBe(false);
+    });
+
+    it("reports pattern for characters outside the identifier set, including whitespace", () => {
+      component.newRealmName.set("bad name");
+      expect(kinds()).toEqual(["pattern"]);
+      component.newRealmName.set("  ");
+      expect(kinds()).toEqual(["pattern"]);
+      component.newRealmName.set("ok.Name_1-x");
+      expect(kinds()).toEqual([]);
+      expect(component.newRealmForm().valid()).toBe(true);
+    });
+
+    it("typing in the input updates the model and marks the field dirty", () => {
+      const input = nameInput();
+      input.value = "typedRealm";
+      input.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+
+      expect(component.newRealmName()).toBe("typedRealm");
+      expect(component.newRealmForm().dirty()).toBe(true);
+      expect(component.canSubmitNewRealm()).toBe(true);
+    });
+
+    it("shows the invalid-characters error once the field is touched", () => {
+      const input = nameInput();
+      input.value = "bad name";
+      input.dispatchEvent(new Event("input"));
+      input.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(component.newRealmForm().touched()).toBe(true);
+      expect(errorTexts()).toEqual(["Invalid characters."]);
+    });
+
+    it("shows the required error for a touched empty name", () => {
+      const input = nameInput();
+      input.dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+
+      expect(errorTexts()).toEqual(["Name is required."]);
+    });
+
+    it("shows no error before the field is touched", () => {
+      component.newRealmName.set("bad name");
+      fixture.detectChanges();
+
+      expect(errorTexts()).toEqual([]);
+    });
+
+    it("the Create button is disabled while the name is invalid and enabled once it is valid", () => {
+      const createButton = (): HTMLButtonElement =>
+        fixture.nativeElement.querySelector(".new-realm-footer-row .action-button-primary") as HTMLButtonElement;
+      fixture.detectChanges();
+      expect(createButton().disabled).toBe(true);
+
+      component.newRealmName.set("realm");
+      fixture.detectChanges();
+      expect(createButton().disabled).toBe(false);
+    });
+
+    it("resetCreateForm clears touched and dirty state", () => {
+      const input = nameInput();
+      input.value = "typed";
+      input.dispatchEvent(new Event("input"));
+      input.dispatchEvent(new Event("blur"));
+      expect(component.newRealmForm().touched()).toBe(true);
+
+      component.resetCreateForm();
+      fixture.detectChanges();
+
+      expect(component.newRealmName()).toBe("");
+      expect(component.newRealmForm().touched()).toBe(false);
+      expect(component.newRealmForm().dirty()).toBe(false);
+      expect(errorTexts()).toEqual([]);
+    });
+  });
+
   it("resetCreateForm should clear name and resolvers", () => {
     component.newRealmName.set("realm");
     component.newRealmNodeResolvers.set({ "node-1": [{ name: "res1", priority: 1 }] });

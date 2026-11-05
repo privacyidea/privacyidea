@@ -70,6 +70,15 @@ describe("PolicyScopeEditComponent", () => {
     expect(spy).toHaveBeenCalledWith("admin");
   });
 
+  it("should hint that a scope is needed to save while no scope is chosen", () => {
+    expect(fixture.nativeElement.querySelector("mat-hint")).toBeNull();
+
+    fixture.componentRef.setInput("scope", "");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-hint").textContent.trim()).toBe("Choose a scope to save.");
+  });
+
   it("should disable the select when the scope is locked", () => {
     fixture.componentRef.setInput("disabled", true);
     fixture.detectChanges();

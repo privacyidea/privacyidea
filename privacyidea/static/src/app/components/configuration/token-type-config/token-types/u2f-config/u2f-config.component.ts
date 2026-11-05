@@ -16,29 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, input, output } from "@angular/core";
-
+import { Component, computed, input } from "@angular/core";
+import { FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { TokenTypeConfigForm } from "@components/configuration/token-type-config/token-type-config.form";
 import { U2F_APP_ID } from "@constants/token.constants";
 
 @Component({
   selector: "app-u2f-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, FormField],
   templateUrl: "./u2f-config.component.html"
 })
 export class U2fConfigComponent {
   protected readonly U2F_APP_ID = U2F_APP_ID;
 
-  formData = input.required<Record<string, string | undefined>>();
-  formDataChange = output<Record<string, string | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
 
-  appId = computed(() => this.formData()[U2F_APP_ID] ?? "");
-
-  updateFormData(fieldName: string, value: string): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
+  appId = computed(() => this.config().values[U2F_APP_ID]().value());
 }

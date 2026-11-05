@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, signal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -26,7 +27,15 @@ import { MatSelectModule } from "@angular/material/select";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
-import { DURATION_UNIT_FACTORS, DURATION_UNITS, DurationUnit } from "@utils/duration-unit.utils";
+import {
+  DURATION_UNITS,
+  DurationFormModel,
+  durationRules,
+  POSITIVE_INTEGER_ERROR,
+  selectedDurationSeconds
+} from "@utils/duration-unit.utils";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface UserDetailsLockDialogData {
   username: string;
@@ -44,6 +53,7 @@ export interface UserDetailsLockDialogResult {
   styleUrls: ["./user-details-lock-dialog.component.scss"],
   standalone: true,
   imports: [
+    FormField,
     MatButtonModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -59,37 +69,29 @@ export class UserDetailsLockDialogComponent extends AbstractDialogComponent<
 > {
   // Permanent by default: an admin locking by hand is normally reacting to an incident, so a lock that
   // lifts on its own would be the surprising outcome.
-  readonly mode = signal<"permanent" | "timed">("permanent");
-  readonly durationInput = signal("");
-  readonly durationUnit = signal<DurationUnit>("minutes");
-  readonly durationUnits = DURATION_UNITS;
-
-  readonly durationSeconds = computed<number | null>(() => {
-    const parsed = Number.parseInt(this.durationInput().trim(), 10);
-    return Number.isNaN(parsed) || parsed <= 0 ? null : parsed * DURATION_UNIT_FACTORS[this.durationUnit()];
-  });
-
+  readonly lockModel = signal<DurationFormModel>({ mode: "permanent", durationInput: null, durationUnit: "minutes" });
   // The timed controls stay in the layout while "permanent" is selected so switching modes does not
-  // shift the dialog; they are simply disabled until a timed lock is chosen.
-  readonly durationDisabled = computed<boolean>(() => this.mode() === "permanent");
-
-  // A timed lock needs a duration the backend would accept; a permanent one needs nothing.
-  readonly canConfirm = computed<boolean>(() => this.mode() === "permanent" || this.durationSeconds() !== null);
+  // shift the dialog; the rules disable them until a timed lock is chosen.
+  readonly lockForm = form(this.lockModel, (f) => durationRules(f.mode, f.durationInput, f.durationUnit));
+  readonly durationUnits = DURATION_UNITS;
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly POSITIVE_INTEGER_ERROR = POSITIVE_INTEGER_ERROR;
 
   readonly dialogActions = computed((): DialogAction<string>[] => [
     {
       label: $localize`:@@user.lock:Lock`,
       value: "confirm",
       type: "confirm",
-      disabled: !this.canConfirm(),
+      disabled: !this.lockForm().valid(),
       primary: true
     }
   ]);
 
   onAction(actionValue: string): void {
-    if (actionValue !== "confirm" || !this.canConfirm()) {
+    if (actionValue !== "confirm" || !this.lockForm().valid()) {
       return;
     }
-    this.dialogRef.close({ durationSeconds: this.mode() === "permanent" ? null : this.durationSeconds() });
+    this.dialogRef.close({ durationSeconds: selectedDurationSeconds(this.lockModel()) });
   }
 }

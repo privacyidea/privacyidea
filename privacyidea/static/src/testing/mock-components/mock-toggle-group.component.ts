@@ -17,20 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, input, model } from "@angular/core";
 
 @Component({
-  selector: "app-selector-buttons",
+  selector: "app-toggle-group",
   standalone: true,
   template: ""
 })
-export class MockSelectorButtonsComponent<T> {
-  readonly initialValue = input.required<T | undefined>();
-  readonly values = input.required<T[]>();
-  readonly labels = input<string[] | undefined>(undefined);
-  readonly icons = input<string[] | undefined>(undefined);
-  readonly allowDeselect = input<boolean>(false);
+export class MockToggleGroupComponent<T> {
+  readonly values = input.required<readonly T[]>();
+  readonly labels = input<readonly string[] | undefined>(undefined);
+  readonly groupLabel = input.required<string>();
   readonly disabled = input<boolean>(false);
-  readonly selected = output<T | undefined>();
-  focusFirst = jest.fn();
+  readonly hideSelectionIndicator = input<boolean>(false);
+  readonly value = model<T | undefined>();
+  focus = jest.fn();
 }

@@ -56,6 +56,9 @@ describe("TemplateAddedTokenRowComponent", () => {
     fixture.componentRef.setInput("index", 0);
   });
 
+  const assignCheckbox = (): HTMLInputElement =>
+    fixture.nativeElement.querySelector("mat-checkbox input[type=checkbox]");
+
   describe("Core Functionality", () => {
     it("should create", () => {
       fixture.detectChanges();
@@ -94,18 +97,48 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(spy).toHaveBeenCalledWith(5);
     });
 
-    it("toggleUserAssign updates the userAssign signal without side effects", () => {
+    it("the assign-to-user checkbox writes the userAssign signal and marks its field dirty", () => {
       fixture.detectChanges();
       expect(component.userAssign()).toBe(false);
 
-      component.toggleUserAssign(true);
+      assignCheckbox().click();
+      fixture.detectChanges();
+
       expect(component.userAssign()).toBe(true);
+      expect(component.userAssignField().dirty()).toBe(true);
+    });
+
+    it("the assign-to-user checkbox shows the user flag of the payload", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", user: true });
+      fixture.detectChanges();
+
+      expect(assignCheckbox().checked).toBe(true);
+    });
+
+    it("the assign-to-user checkbox follows a new payload", () => {
+      fixture.detectChanges();
+      assignCheckbox().click();
+      fixture.detectChanges();
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", user: false });
+      fixture.detectChanges();
+
+      expect(component.userAssign()).toBe(false);
+      expect(assignCheckbox().checked).toBe(false);
+    });
+
+    it("clicking the assign-to-user checkbox leaves the expansion panel closed", () => {
+      fixture.detectChanges();
+
+      assignCheckbox().click();
+      fixture.detectChanges();
+
+      expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
     });
 
     it("getCurrentPayload falls back to the input payload (with user flag) when no strategy is available", () => {
       fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
       fixture.detectChanges();
-      component.toggleUserAssign(true);
+      component.userAssign.set(true);
 
       expect(component.getCurrentPayload()).toEqual({ type: "hotp", description: "x", user: true });
     });
@@ -113,7 +146,7 @@ describe("TemplateAddedTokenRowComponent", () => {
     it("getCurrentPayload returns the strategy's mapped payload when valid", () => {
       fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "x" });
       fixture.detectChanges();
-      component.toggleUserAssign(true);
+      component.userAssign.set(true);
 
       const buildEnrollmentArgs = jest.fn().mockReturnValue({
         data: { type: "hotp", customField: "v" },

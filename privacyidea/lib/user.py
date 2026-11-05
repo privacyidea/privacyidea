@@ -1247,7 +1247,7 @@ def _find_orphaned_attributes(model, orphaned_on_error: bool = False) -> list[tu
             orphans.append((user_id, resolver_name, realm_id))
             continue
         try:
-            login = resolver.getUsername(user_id)
+            login = resolver.lookup_username(user_id)
         except Exception:
             if orphaned_on_error:
                 orphans.append((user_id, resolver_name, realm_id))

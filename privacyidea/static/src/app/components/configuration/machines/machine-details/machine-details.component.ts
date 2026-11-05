@@ -18,6 +18,7 @@
  **/
 import { CommonModule } from "@angular/common";
 import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -64,6 +65,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
     MatPaginatorModule,
     MatSelectModule,
     MatAutocompleteModule,
+    FormField,
     CopyButtonComponent,
     CopyableComponent,
     ScrollEdgesDirective,
@@ -89,8 +91,11 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
   dataSource = new MatTableDataSource<TokenApplication>([]);
   displayedColumns: string[] = ["serial", "application", "options", "actions"];
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  newTokenSerial = signal("");
-  selectedApplication = signal<"offline" | "ssh">("offline");
+  readonly attachModel = signal<{ serial: string; application: string }>({ serial: "", application: "" });
+  readonly attachForm = form(this.attachModel, (f) => {
+    required(f.serial);
+    required(f.application);
+  });
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
   editingIds = new Set<number>();
@@ -99,6 +104,10 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
   constructor() {
     this.routeMachineId = this.route.snapshot.paramMap.get("id");
     this.routeResolver = this.route.snapshot.queryParamMap.get("resolver");
+
+    effect(() => {
+      this.tokenService.selectedToken.set(this.attachForm.serial().value());
+    });
 
     effect(() => {
       const machines = this.machineService.machines();
@@ -120,11 +129,6 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
       this.loadTokenApplications();
     }
     this.pendingChangesService.registerHasChanges(() => this.editingIds.size > 0);
-  }
-
-  onTokenSerialInput(value: string): void {
-    this.newTokenSerial.set(value);
-    this.tokenService.selectedToken.set(value);
   }
 
   loadTokenApplications(): void {
@@ -202,20 +206,21 @@ export class MachineDetailsComponent implements OnInit, OnDestroy {
 
   attachToken(): void {
     const machine = this.data();
-    if (!this.newTokenSerial() || !this.selectedApplication() || !machine) {
+    if (!this.attachForm().valid() || !machine) {
       return;
     }
 
+    const { serial, application } = this.attachModel();
     this.machineService
       .postAssignMachineToToken({
-        serial: this.newTokenSerial(),
-        application: this.selectedApplication(),
+        serial,
+        application: application as "ssh" | "offline",
         machineid: machine.id,
         resolver: machine.resolver_name
       })
       .subscribe(() => {
-        this.newTokenSerial.set("");
-        this.selectedApplication.set("offline");
+        this.attachModel.set({ serial: "", application: "" });
+        this.attachForm().reset();
         this.loadTokenApplications();
       });
   }
