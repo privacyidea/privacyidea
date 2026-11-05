@@ -76,17 +76,20 @@ def check_number(value, name: str, minimum: int, maximum: int) -> int:
     """
     Convert a numeric setting to an int and check its range.
 
-    :param value: the value, an int or a string
+    :param value: the value, an int, a float without fraction or a string
     :param name: the name of the setting, used in the error message
     :param minimum: the smallest allowed value
     :param maximum: the largest allowed value
     :return: the value as int
     :raises ParameterError: if the value is not a whole number between minimum and maximum
     """
+    # int() would also accept True as 1 and cut off the fraction of a float
+    if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
+        raise ParameterError(f"The {name} must be a whole number, not {value!r}.")
     try:
         number = int(value)
-    except (TypeError, ValueError):
-        raise ParameterError(f"The {name} must be a number, not {value!r}.")
+    except (TypeError, ValueError, OverflowError):
+        raise ParameterError(f"The {name} must be a whole number, not {value!r}.")
     if not minimum <= number <= maximum:
         raise ParameterError(f"The {name} must be between {minimum} and {maximum}, not {number}.")
     return number

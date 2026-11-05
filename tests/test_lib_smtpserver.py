@@ -523,7 +523,11 @@ class SMTPServerExportImportTestCase(MyTestCase):
     def test_05_settings_that_can_not_send_are_not_saved(self):
         from privacyidea.lib.smtpserver import import_smtpserver
         invalid = {"port": ({"port": 99999}, "port must be between 1 and 65535"),
-                   "port_text": ({"port": "abc"}, "port must be a number"),
+                   "port_text": ({"port": "abc"}, "port must be a whole number"),
+                   "port_fraction": ({"port": 587.9}, "port must be a whole number"),
+                   "port_fraction_text": ({"port": "587.9"}, "port must be a whole number"),
+                   "port_infinite": ({"port": float("inf")}, "port must be a whole number"),
+                   "timeout_bool": ({"timeout": True}, "timeout must be a whole number"),
                    "timeout": ({"timeout": 0}, "timeout must be between 1 and 3600"),
                    "server": ({"server": "smtp://"}, "does not contain a host name"),
                    "server_port": ({"server": "mail.example:99999"}, "must be a number between 1 and 65535"),
@@ -548,6 +552,9 @@ class SMTPServerExportImportTestCase(MyTestCase):
         stored = get_smtpserver("valid").config
         self.assertEqual(587, stored.port)
         self.assertEqual(20, stored.timeout)
+        # A float without fraction is a whole number
+        add_smtpserver("valid", server="mail.example", port=587.0)
+        self.assertEqual(587, get_smtpserver("valid").config.port)
         # A port given as string, e.g. from an import file, is stored as number
         add_smtpserver("valid", server="mail.example", port="465", timeout="30")
         stored = get_smtpserver("valid").config

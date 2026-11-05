@@ -204,8 +204,8 @@ class SMTPServerTestCase(MyApiTestCase):
             ({"server": "127.0.0.1:99999"},
              "The port in the server '127.0.0.1:99999' must be a number between 1 and 65535."),
             ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
-            ({"port": "abc"}, "The port must be a number, not 'abc'."),
-            ({"timeout": "abc"}, "The timeout must be a number, not 'abc'."),
+            ({"port": "abc"}, "The port must be a whole number, not 'abc'."),
+            ({"timeout": "abc"}, "The timeout must be a whole number, not 'abc'."),
             ({"server": "smtp://"}, "The server 'smtp://' does not contain a host name."),
         ]
         for data, expected in cases:
@@ -337,7 +337,7 @@ class SMTPServerTestCase(MyApiTestCase):
             ({"server": "127.0.0.1:99999"},
              "The port in the server '127.0.0.1:99999' must be a number between 1 and 65535."),
             ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
-            ({"port": "abc"}, "The port must be a number, not 'abc'."),
+            ({"port": "abc"}, "The port must be a whole number, not 'abc'."),
             ({"timeout": "0"}, "The timeout must be between 1 and 3600, not 0."),
             ({"sender": "a@example.com\r\nBcc: x@example.com"},
              "The sender must not contain line breaks or other control characters."),
@@ -352,6 +352,29 @@ class SMTPServerTestCase(MyApiTestCase):
 
         from privacyidea.lib.smtpserver import list_smtpservers
         assert list_smtpservers(identifier="invalidserver") == {}
+
+    def test_numbers_in_json_body_must_be_whole_numbers(self):
+        """A JSON float with a fraction and a boolean are rejected as port and timeout."""
+        cases = [({"port": 587.9}, "The port must be a whole number, not 587.9."),
+                 ({"timeout": True}, "The timeout must be a whole number, not True.")]
+        server = {"server": "mail.example.com", "sender": "pi@example.com"}
+        for data, expected in cases:
+            with self.subTest(data=data):
+                with self.app.test_request_context("/smtpserver/jsonserver", method="POST", json=dict(server, **data),
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn(expected, res.json["result"]["error"]["message"])
+                body = dict(server, identifier="jsonserver", recipient="recp@example.com", **data)
+                with mock.patch("smtplib.SMTP.sendmail") as sendmail:
+                    with self.app.test_request_context("/smtpserver/send_test_email", method="POST", json=body,
+                                                       headers={"Authorization": self.at}):
+                        res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn(expected, res.json["result"]["error"]["message"])
+                sendmail.assert_not_called()
+        from privacyidea.lib.smtpserver import list_smtpservers
+        self.assertEqual({}, list_smtpservers(identifier="jsonserver"))
 
     def test_password_not_overwritten_by_censored(self):
         """Updating an SMTP server with __CENSORED__ password must preserve the original."""
