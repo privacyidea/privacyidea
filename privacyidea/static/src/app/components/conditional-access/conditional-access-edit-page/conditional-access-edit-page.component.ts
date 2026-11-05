@@ -366,23 +366,23 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       [ERR.maxLength]: $localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`,
       [ERR.nameTaken]: $localize`:@@conditionalAccess.nameAlreadyUsedBlocker:A policy with this name already exists.`
     });
-    const timeWindowMessage = $localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`;
+    const timeWindowMessage = $localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be a whole number of at least 1 second.`;
     collect(f.time_window_value, {
       [ERR.required]: $localize`:@@conditionalAccess.timeWindowRequired:Time window is required.`,
       [CA_ERR.notInteger]: timeWindowMessage,
       [ERR.parse]: timeWindowMessage,
       [ERR.min]: timeWindowMessage
     });
-    const priorityMessage = $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority is required and must be a whole number of at least 1.`;
+    const priorityMessage = $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority must be a whole number of at least 1.`;
     collect(f.priority, {
-      [ERR.required]: $localize`:@@conditionalAccess.priorityRequired:A priority is required.`,
+      [ERR.required]: $localize`:@@conditionalAccess.priorityRequired:Priority is required.`,
       [CA_ERR.notInteger]: priorityMessage,
       [ERR.parse]: priorityMessage,
       [ERR.min]: priorityMessage,
       [CA_ERR.priorityTaken]: $localize`:@@conditionalAccess.priorityMustUniqueAcross:Priority must be unique across policies.`
     });
     collect(f.counter_types_to_track, {
-      [ERR.required]: $localize`:@@conditionalAccess.selectLeastOneTracked:Select at least one tracked event type.`
+      [ERR.required]: $localize`:@@conditionalAccess.selectLeastOneTracked:At least one tracked event type is required.`
     });
     const stageListKinds = this.stageListErrorKinds();
     const stageRowKinds = this.stageRowErrorKinds();

@@ -44,7 +44,7 @@
         i18n-placeholder="@@policy.monFri918Sat"
         placeholder="Mon-Fri: 9-18, Sat: 10-15" />
       @if (hasError(validTimeField, 'invalidValidTime')) {
-        <mat-error i18n="@@policy.pleaseEnterValidTime">Please enter a valid time format</mat-error>
+        <mat-error i18n="@@policy.pleaseEnterValidTime">Enter a valid time format.</mat-error>
       }
       @if (validTimeSignal() !== "") {
         <app-clear-button
@@ -90,7 +90,7 @@
         }
       </mat-autocomplete>
       @if (hasError(clientField, 'invalidClient')) {
-        <mat-error i18n="@@policy.pleaseEnterValid">Please enter a valid client format</mat-error>
+        <mat-error i18n="@@policy.pleaseEnterValid">Enter a valid client format.</mat-error>
       }
       @if (clientSignal() !== "") {
         <app-clear-button

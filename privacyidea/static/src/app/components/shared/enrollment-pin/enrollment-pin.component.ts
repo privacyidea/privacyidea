@@ -39,6 +39,6 @@ export class EnrollmentPinComponent {
       .errors()
       .some((e) => e.kind === "pinMismatch");
     const touched = this.setPinControl()().touched() || this.repeatPinControl()().touched();
-    return mismatch && touched ? $localize`:@@common.pinsDoNotMatchError:PINs do not match.` : "";
+    return mismatch && touched ? $localize`:@@common.pinsDoNotMatch:PINs do not match.` : "";
   });
 }

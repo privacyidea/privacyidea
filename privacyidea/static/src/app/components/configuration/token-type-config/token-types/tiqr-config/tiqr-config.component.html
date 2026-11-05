@@ -38,7 +38,7 @@
           type="url" />
         @if (hasError(config().values[TIQR_REG_SERVER], ERR.required)) {
           <mat-error i18n="@@tokenTypeConfig.tiqrRegistrationServer"
-            >TiQR Registration Server is <strong>required</strong></mat-error
+            >TiQR Registration Server is <strong>required</strong>.</mat-error
           >
         }
         <mat-hint i18n="@@tokenTypeConfig.registrationServer"
@@ -100,7 +100,7 @@
           placeholder="https://pi.server/static/css/privacyIDEA1.png"
           type="url" />
         @if (hasError(config().values[TIQR_LOGO_URL], ERR.required)) {
-          <mat-error i18n="@@tokenTypeConfig.tiqrLogoUrlRequired">TiQR Logo URL is <strong>required</strong></mat-error>
+          <mat-error i18n="@@tokenTypeConfig.tiqrLogoUrlRequired">TiQR Logo URL is <strong>required</strong>.</mat-error>
         }
         <mat-hint i18n="@@tokenTypeConfig.urlContainsLogo">The URL that contains the logo of the service.</mat-hint>
       </mat-form-field>

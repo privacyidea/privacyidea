@@ -135,13 +135,13 @@ describe("EnrollMotpComponent", () => {
     it("should report the required error once touched", () => {
       component.motpPin.set("");
       component.motpPinForm().markAsTouched();
-      expect(component.motpPinError()).toBe("Password is required");
+      expect(component.motpPinError()).toBe("Password is required.");
     });
 
     it("should report the minlength error once touched", () => {
       component.motpPin.set("abc");
       component.motpPinForm().markAsTouched();
-      expect(component.motpPinError()).toBe("Password must be at least 4 characters long");
+      expect(component.motpPinError()).toBe("Password must be at least 4 characters long.");
     });
 
     it("should be empty for a valid touched pin", () => {

@@ -122,7 +122,7 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
     const isInt = this.actionDetail()?.type === "int";
     if (isInt && unparsable) return $localize`:@@policy.actionValueNotNumber:Enter a valid number.`;
     return isInt && String(this.valueModel()).trim() !== ""
-      ? $localize`:@@policy.actionValueNotInteger:Enter a whole number.`
+      ? $localize`:@@common.enterWholeNumber:Enter a whole number.`
       : $localize`:@@policy.actionValueRequired:Value is required.`;
   });
 

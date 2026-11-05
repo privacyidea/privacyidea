@@ -52,7 +52,7 @@
           }
         </mat-select>
         @if (hasError(smsGatewayForm, ERR.required)) {
-          <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong></mat-error>
+          <mat-error i18n="@@token.smsGatewayRequired">SMS Gateway is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     }
@@ -62,7 +62,7 @@
       <input
         [formField]="phoneNumberForm"
         matInput />
-      <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.phoneNumberRequired">Phone number is <strong>required</strong>.</mat-error>
     </mat-form-field>
   </div>
 </div>

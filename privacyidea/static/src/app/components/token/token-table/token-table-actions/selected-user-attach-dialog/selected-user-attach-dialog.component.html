@@ -25,7 +25,7 @@
     <p
       class="inline-warning"
       i18n="@@token.someTokenAlready"
-      >Some token are already assigned to a user. <br />
+      >Some tokens are already assigned to a user. <br />
       Assigning a token to a user will remove the previous assignment.</p
     >
   }
@@ -40,7 +40,7 @@
         }
       </mat-select>
       @if (hasError(form.realm, ERR.required)) {
-        <mat-error i18n="@@token.userRealmRequired">User Realm is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.userRealmRequired">User Realm is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
     <mat-form-field class="input-width-l">
@@ -65,7 +65,7 @@
         </mat-autocomplete>
       </app-clearable-input>
       @if (hasError(form.userText, ERR.required)) {
-        <mat-error i18n="@@token.userRequired">User is <strong>required</strong></mat-error>
+        <mat-error i18n="@@token.userRequired">User is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
   </div>
