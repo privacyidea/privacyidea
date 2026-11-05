@@ -192,12 +192,7 @@ class TestMigrationA1b2c3d4e5f6(MigrationTestBase):
         finally:
             engine.dispose()
 
-    def test_downgrade_decrypts_the_sms_gateway_options(self, flask_app):
-        self._upgrade_to_parent_with_sms_gateway()
-        self._upgrade()
-
-        self._downgrade()
-
+    def _assert_downgraded(self) -> None:
         assert not self._encrypted_column_exists()
         engine = self._engine()
         try:
@@ -206,9 +201,42 @@ class TestMigrationA1b2c3d4e5f6(MigrationTestBase):
                     sa.select(SMS_GATEWAY_OPTION.c.Key, SMS_GATEWAY_OPTION.c.Value)
                     .where(SMS_GATEWAY_OPTION.c.gateway_id == 9001)
                 ).all())
+                heads = {row[0] for row in conn.execute(sa.text("SELECT version_num FROM alembic_version"))}
+            assert options == {"PASSWORD": PLAINTEXT_PASSWORD, "URL": "https://sms.example.com"}
+            assert self._data_column_length(engine) == 512
+            assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM challenge") == 0
+            assert self.REVISION not in heads
         finally:
             engine.dispose()
-        assert options == {"PASSWORD": PLAINTEXT_PASSWORD, "URL": "https://sms.example.com"}
+
+    def test_downgrade_decrypts_the_sms_gateway_options(self, flask_app):
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+
+        self._downgrade()
+
+        self._assert_downgraded()
+
+    @pytest.mark.parametrize("statement_pattern", [
+        r"^UPDATE smsgatewayoption",
+        r"ALTER TABLE smsgatewayoption DROP",
+        r"DELETE FROM challenge",
+        # On Oracle, this is the DROP of the text column, before the new one is added
+        r"ALTER TABLE challenge",
+    ])
+    def test_downgrade_runs_again_after_failing_midway(self, flask_app, statement_pattern):
+        self._upgrade_to_parent_with_sms_gateway()
+        self._upgrade()
+        engine = self._engine()
+        try:
+            self._insert_rows(engine, "challenge", [self._challenge_row(9001, "a" * 10000)])
+        finally:
+            engine.dispose()
+
+        self._downgrade_failing_after(statement_pattern)
+        self._downgrade()
+
+        self._assert_downgraded()
 
     def test_downgrade_stops_on_an_option_it_cannot_decrypt(self, flask_app):
         """
