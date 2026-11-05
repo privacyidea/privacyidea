@@ -1026,6 +1026,15 @@ class TokenClass:
         """
         return True
 
+    def can_trigger_challenge(self, options: dict) -> bool:
+        """
+        Whether a challenge can be triggered for this token without a PIN, as at /validate/triggerchallenge.
+
+        :param options: The request options
+        :return: True if the token type has a challenge mode
+        """
+        return AuthenticationMode.CHALLENGE in self.mode
+
     @property
     def rollout_state(self):
         return self.token.rollout_state

@@ -270,7 +270,9 @@ class AuthEventReason(str, Enum):
     # A policy disabled this token's whole type for the request (PolicyAction.DISABLED_TOKEN_TYPES).
     TOKEN_TYPE_DISABLED = "TOKEN_TYPE_DISABLED"
     # The token type excluded itself from *this* request (TokenClass.use_for_authentication) - e.g. an
-    # application-specific password whose service_id does not match the one the request names.
+    # application-specific password whose service_id does not match the one the request names - or can not be
+    # triggered at /validate/triggerchallenge (TokenClass.can_trigger_challenge), e.g. a passkey without
+    # passkey_trigger_by_pin.
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
     # The token type has no challenge mode, so no challenge can be triggered for it (e.g. spass, sshkey).
     TOKEN_NO_CHALLENGE_MODE = "TOKEN_NO_CHALLENGE_MODE"

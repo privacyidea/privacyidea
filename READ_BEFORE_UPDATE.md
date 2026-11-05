@@ -269,8 +269,8 @@
   `increase_failcounter_on_challenge`. At `/validate/triggerchallenge` such a request was logged as `NO_TOKEN` and is
   now logged as `CHALLENGE_TRIGGER_FAIL` as well. A trigger there for a user whose tokens are all unusable is logged as
   `NO_USABLE_TOKEN` instead of `NO_TOKEN`, with a reason for each token, among them `TOKEN_NO_CHALLENGE_MODE` for a
-  token type without challenge-response such as a simple pass token. A conditional-access policy that counts failures
-  now counts these requests as well.
+  token type without challenge-response such as a simple pass token, and `TOKEN_NOT_APPLICABLE` for a passkey without
+  `passkey_trigger_by_pin`. A conditional-access policy that counts failures now counts these requests as well.
 
 * **`/validate/triggerchallenge` checks the token state before raising the failcounter** — Like `/validate/check`, it
   now only uses tokens that pass the usual checks: below the failcounter, within the authentication counters and the

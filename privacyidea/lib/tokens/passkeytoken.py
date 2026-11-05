@@ -39,7 +39,6 @@ from webauthn.registration.verify_registration_response import VerifiedRegistrat
 
 from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import EnrollmentError, ParameterError, Error, PolicyError
@@ -648,8 +647,17 @@ class PasskeyTokenClass(TokenClass):
             # TODO this vvv is horrible
             return True, message, transaction_id, challenge_details
         else:
-            self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.TOKEN_NOT_APPLICABLE
             return False, "", transactionid, {}
+
+    def can_trigger_challenge(self, options: dict) -> bool:
+        """
+        A passkey challenge is only triggered with the passkey_trigger_by_pin policy. Otherwise the passkey uses the
+        open challenge of /validate/initialize.
+
+        :param options: The request options
+        :return: True if passkey_trigger_by_pin is set
+        """
+        return bool(options.get(PasskeyAction.EnableTriggerByPIN))
 
     @log_with(log)
     def use_for_authentication(self, options):

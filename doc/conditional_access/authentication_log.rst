@@ -106,7 +106,8 @@ Failure
      no token, or a token of another user than the one named in the request.
    ``NO_USABLE_TOKEN``
      the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
-     over the failcount. At ``/validate/triggerchallenge`` also when none of them has a challenge mode.
+     over the failcount. At ``/validate/triggerchallenge`` also when none of them can be triggered there: a token type
+     without challenge mode, or a passkey without :ref:`policy_passkey_trigger_by_pin`.
    ``INVALID_TOKEN_TYPE``
      the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
@@ -220,8 +221,8 @@ The state of a token
    ``TOKEN_TYPE_DISABLED``
      a policy disabled this token's whole type for the request.
    ``TOKEN_NOT_APPLICABLE``
-     the token excluded itself from this request, for example an
-     application-specific password whose service does not match.
+     the token excluded itself from this request, for example an application-specific password whose service does not
+     match, or a passkey at ``/validate/triggerchallenge`` without :ref:`policy_passkey_trigger_by_pin`.
    ``TOKEN_NO_CHALLENGE_MODE``
      the token type has no challenge mode, so ``/validate/triggerchallenge``
      can not create a challenge for it, for example a simple pass token.

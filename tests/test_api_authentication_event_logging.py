@@ -50,6 +50,7 @@ from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyActio
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.models import Audit, Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
@@ -2095,6 +2096,45 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
                                         serials={sms.get_serial()},
                                         reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
                                         reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                                                 sms.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def _init_passkey(self) -> TokenClass:
+        # Only the token state matters here, the trigger never reaches the credential
+        passkey = init_token({"type": "passkey"}, user=self.user)
+        passkey.token.rollout_state = RolloutState.ENROLLED
+        passkey.token.active = True
+        passkey.save()
+        return passkey
+
+    def test_triggerchallenge_for_passkeys_without_trigger_by_pin_logs_no_usable_token(self):
+        remove_token(self.serial)
+        passkey = self._init_passkey()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_NOT_APPLICABLE,
+                                        reasons={passkey.get_serial(): AuthEventReason.TOKEN_NOT_APPLICABLE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_names_only_the_undelivered_token_next_to_a_passkey(self):
+        remove_token(self.serial)
+        passkey = self._init_passkey()
+        sms = init_token({"type": "sms", "phone": "+491234567", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.smstoken.SmsTokenClass._send_sms",
+                        side_effect=Exception("gateway unavailable")):
+            res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={sms.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={passkey.get_serial(): AuthEventReason.TOKEN_NOT_APPLICABLE,
                                                  sms.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
                                         endpoint='/validate/triggerchallenge')
 

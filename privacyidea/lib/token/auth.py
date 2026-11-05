@@ -434,8 +434,10 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
         else:
             _record_reason(token_reasons, token)
     challenge_tokens = _keep_usable(usable_tokens, token_reasons,
-                                    lambda token: AuthenticationMode.CHALLENGE in token.mode,
-                                    AuthEventReason.TOKEN_NO_CHALLENGE_MODE)
+                                    lambda token: token.can_trigger_challenge(options),
+                                    lambda token: (AuthEventReason.TOKEN_NO_CHALLENGE_MODE
+                                                   if AuthenticationMode.CHALLENGE not in token.mode
+                                                   else AuthEventReason.TOKEN_NOT_APPLICABLE))
     if is_true(options.get("increase_failcounter_on_challenge")):
         for token in challenge_tokens:
             token.inc_failcount()
