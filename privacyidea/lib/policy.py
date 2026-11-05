@@ -170,11 +170,14 @@ Sat, Sun.
 """
 import ast
 import copy
+import functools
 import logging
 import re
 import traceback
+from dataclasses import dataclass
 from datetime import datetime
 from operator import itemgetter
+from types import MappingProxyType
 
 from configobj import ConfigObj
 from netaddr import AddrFormatError
@@ -182,6 +185,7 @@ from sqlalchemy import Text, select
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib.cache.user import cached_user_id
 from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_config_object, get_privacyidea_node,
                                     get_multichallenge_enrollable_types,
@@ -190,7 +194,7 @@ from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundE
 from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms, get_ordered_resolvers
-from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
@@ -207,6 +211,28 @@ from ..models import (Policy, db, save_config_timestamp, PolicyDescription, Poli
 from ..models.policy import parse_action_string
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ResolverLogin:
+    """
+    A login name in a resolver, the key for remembering whether the resolver contains the user.
+    """
+    resolver: str
+    login: str
+
+
+def _user_in_resolver(login: str, resolver_name: str) -> bool:
+    """
+    Check if a user with the given login name is contained in the resolver.
+
+    :param login: The login name of the user
+    :param resolver_name: The name of the resolver
+    :return: True if the resolver knows a user id for the login name
+    :raises ResolverError: if the resolver can not load its config, e.g. because its user store is not reachable
+    """
+    resolver = get_resolver_object(resolver_name)
+    return resolver is not None and cached_user_id(resolver, resolver_name, login) not in (None, "")
 
 
 def check_policy_name(name):
@@ -356,10 +382,13 @@ class PolicyClass:
     config object which contains the current set of policies.
 
     Hence, reloading the request-local config object also reloads the set of policies.
+
+    The object remembers whether a user is contained in a resolver checked for a policy with
+    ``check_all_resolvers``, so that each resolver is asked once per object, i.e. once per request.
     """
 
     def __init__(self):
-        pass
+        self._resolver_membership: dict[ResolverLogin, bool] = {}
 
     @property
     def policies(self):
@@ -544,41 +573,6 @@ class PolicyClass:
                 log.debug("Policies after matching {!s}={!s}: {!s}".format(
                     searchkey, searchvalue, [p.get('name') for p in reduced_policies]))
 
-        # We need to act individually on the resolver key word
-        # We either match the resolver exactly or we match another resolver (
-        # which is not the first resolver) of the user, but only if the
-        # check_all_resolvers flag in the policy is set.
-        if resolver is not None:
-            new_policies = []
-            user_resolvers = []
-            for policy in reduced_policies:
-                if policy.get("check_all_resolvers"):
-                    if realm and user:
-                        # We have a realm and a user, so get all resolvers of that realm
-                        # in priority order to match against the policy's resolver list.
-                        if not user_resolvers:
-                            user_resolvers = get_ordered_resolvers(realm)
-                        for reso in user_resolvers:
-                            value_found, value_excluded = self._search_value(
-                                policy.get("resolver"), reso)
-                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
-                            if value_found and not value_excluded:
-                                new_policies.append(policy)
-                                break
-                elif not policy.get("resolver"):
-                    # We also find the policies with no distinct information
-                    # about the request value
-                    new_policies.append(policy)
-                else:
-                    value_found, value_excluded = self._search_value(
-                        policy.get("resolver"), resolver)
-                    if value_found and not value_excluded:
-                        new_policies.append(policy)
-
-            reduced_policies = new_policies
-            log.debug("Policies after matching resolver={!s}: {!s}".format(
-                resolver, [p.get('name') for p in reduced_policies]))
-
         # Match the privacyIDEA node
         if pinode is not None:
             new_policies = []
@@ -642,6 +636,60 @@ class PolicyClass:
             reduced_policies = new_policies
             log.debug("Policies after matching client={!s}: {!s}".format(
                 client, [p.get('name') for p in reduced_policies]))
+
+        # We need to act individually on the resolver key word
+        # We either match the resolver exactly or, only if the check_all_resolvers flag in the policy is set,
+        # a resolver of the realm with a lower priority than the user's resolver that also contains the user.
+        # This filter runs last, because check_all_resolvers can ask the user store. A policy that another filter
+        # removes does not cause a request to the user store.
+        if resolver is not None:
+            new_policies = []
+            user_resolvers = []
+            for policy in reduced_policies:
+                if policy.get("check_all_resolvers"):
+                    if realm and user:
+                        # The user's resolver and the resolvers of the realm ranked below it, in priority order.
+                        # A resolver ranked above can not hold another possible resolver of the user.
+                        # If the user's resolver is not in the list of the realm, for example because it is pinned
+                        # to another node, its rank is unknown and all resolvers of the realm are checked.
+                        if not user_resolvers:
+                            realm_resolvers = get_ordered_resolvers(realm)
+                            if resolver in realm_resolvers:
+                                user_resolvers = realm_resolvers[realm_resolvers.index(resolver):]
+                            else:
+                                user_resolvers = [resolver] + realm_resolvers
+                        for reso in user_resolvers:
+                            value_found, value_excluded = self._search_value(
+                                policy.get("resolver"), reso)
+                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
+                            # A listed resolver only counts if the user is contained in it.
+                            if value_found and not value_excluded:
+                                key = ResolverLogin(resolver=reso, login=user)
+                                if key not in self._resolver_membership:
+                                    try:
+                                        self._resolver_membership[key] = (reso == resolver
+                                                                          or _user_in_resolver(user, reso))
+                                    except Exception as error:
+                                        log.error(f"Could not check if the user {user!r} is contained in the "
+                                                  f"resolver {reso!r} of the policy {policy.get('name')!r} with "
+                                                  f"check_all_resolvers: {error}")
+                                        raise
+                                if self._resolver_membership[key]:
+                                    new_policies.append(policy)
+                                    break
+                elif not policy.get("resolver"):
+                    # We also find the policies with no distinct information
+                    # about the request value
+                    new_policies.append(policy)
+                else:
+                    value_found, value_excluded = self._search_value(
+                        policy.get("resolver"), resolver)
+                    if value_found and not value_excluded:
+                        new_policies.append(policy)
+
+            reduced_policies = new_policies
+            log.debug("Policies after matching resolver={!s}: {!s}".format(
+                resolver, [p.get('name') for p in reduced_policies]))
 
         if sort_by_priority:
             reduced_policies = sorted(reduced_policies, key=itemgetter("priority"))
@@ -989,7 +1037,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of MENUs to be displayed
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         role = logged_in_user.get("role")
         user_rights = self.ui_get_rights(role,
                                          logged_in_user.get("realm"),
@@ -997,12 +1044,9 @@ class PolicyClass:
                                          client,
                                          user_agent)
         main_menus = []
-        static_rights = get_static_policy_definitions(role)
-        enroll_rights = get_dynamic_policy_definitions(role)
-        static_rights.update(enroll_rights)
+        action_menus = get_policy_action_menus(role)
         for r in user_rights:
-            menus = static_rights.get(r, {}).get("mainmenu", [])
-            main_menus.extend(menus)
+            main_menus.extend(action_menus.get(r, ()))
 
         main_menus = list(set(main_menus))
         return main_menus
@@ -1023,7 +1067,6 @@ class PolicyClass:
         :param user_agent: The user agent of the request
         :return: A list of actions
         """
-        from privacyidea.lib.token import get_dynamic_policy_definitions
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
@@ -1066,8 +1109,7 @@ class PolicyClass:
             # We do not have any policies in this scope, so we return all
             # possible actions in this scope.
             log.debug("No policies defined, so we set all rights.")
-            rights = get_static_policy_definitions(scope)
-            rights.update(get_dynamic_policy_definitions(scope))
+            rights = get_policy_action_menus(scope)
         rights = list(rights)
         log.debug(f"returning the admin rights: {rights!s}")
         return rights
@@ -1285,11 +1327,11 @@ def validate_actions(scope: str, action: str | dict) -> bool:
     action_keys = list(actions.keys())
 
     raw_actions = remove_wildcards_and_negations(action_keys)
-    invalid_actions = list(set(raw_actions) - allowed_actions)
+    invalid_actions = sorted(set(raw_actions) - allowed_actions)
 
     if len(invalid_actions) > 0:
         log.error(f"The following actions are not valid for scope '{scope}': {invalid_actions}")
-        raise ParameterError(f"Invalid actions {invalid_actions}!")
+        raise ParameterError(f"Invalid actions for scope '{scope}': {invalid_actions}!")
 
     # Evaluate the action values
     for action_key, action_value in actions.items():
@@ -1353,11 +1395,11 @@ def validate_values(values: str | list | None, allowed_values: list, name: str) 
         if isinstance(values, str):
             values = values.replace(" ", "").split(",")
         elif not isinstance(values, list):
-            raise ParameterError(f"Invalid {name.capitalize()} type '{type(values)}'!")
+            raise ParameterError(f"Invalid {name} type '{type(values)}'!")
         values = remove_wildcards_and_negations(values)
-        undefined_values = list(set(values) - set(allowed_values))
+        undefined_values = sorted(set(values) - set(allowed_values))
         if undefined_values:
-            raise ParameterError(f"Undefined {name.capitalize()}: {undefined_values}!")
+            raise ParameterError(f"Undefined {name}: {undefined_values}!")
     return True
 
 
@@ -2804,10 +2846,19 @@ def get_static_policy_definitions(scope=None):
                           "by an identified API client (the X-API-Key header): without one, no "
                           "cookie is issued and the recognition endpoint returns 401.")},
             PolicyAction.REMEMBER_DEVICE_VALIDITY: {
-                'type': 'int',
-                'desc': _("How many days a 'remember this device' cookie stays valid "
-                          "(default 30 if unset). Scope it with a realm/user condition to give "
-                          "different lifetimes, e.g. a shorter one for admins than for users.")},
+                'type': 'str',
+                'desc': _("How long a 'remember this device' cookie stays valid after it is issued, "
+                          "like 30d, 8h or 90m. A number without a unit counts as days. The default "
+                          "is 30d. Recognizing the device does not extend it. Scope it with a "
+                          "realm/user condition to give different lifetimes, e.g. a shorter one for "
+                          "admins than for users.")},
+            PolicyAction.REMEMBER_DEVICE_IDLE_TIMEOUT: {
+                'type': 'str',
+                'desc': _("A remembered device that is not recognized for this long, like 7d or 4h, "
+                          "is no longer recognized and needs a new login with the second factor. "
+                          "Each recognition starts it again, but the device never stays longer than "
+                          "its remember_device_validity. A number without a unit counts as days. If "
+                          "unset, a device stays recognized until its remember_device_validity ends.")},
             PolicyAction.REMEMBER_DEVICE_MAX_DEVICES: {
                 'type': 'int',
                 'desc': _("Maximum number of remembered devices a single user may have per API "
@@ -3435,6 +3486,23 @@ def get_static_policy_definitions(scope=None):
     return ret
 
 
+@functools.lru_cache(maxsize=2)
+def get_policy_action_menus(scope: str) -> MappingProxyType:
+    """
+    Return the WebUI main menus of every policy action in the scope, in the order of the policy definitions.
+
+    The action names and their menus come from the code, the token classes and the token types that pi.cfg allows to
+    enroll (PI_ENABLE_TOKEN_TYPE_ENROLLMENT). These change only when the process restarts, so the menus are built once
+    per scope and process. The full policy definitions are not cached: they also hold database entries like the SMTP
+    servers, and descriptions in the language of the request.
+
+    :param scope: SCOPE.ADMIN or SCOPE.USER
+    :return: A read-only mapping from the action name to a tuple of main menus
+    """
+    return MappingProxyType({action: tuple(definition.get("mainmenu", []))
+                             for action, definition in _action_definitions_for_scope(scope).items()})
+
+
 def get_action_values_from_options(scope, action, options):
     """
     This function is used in the library level to fetch policy action values
@@ -3780,14 +3848,15 @@ class Match:
         """
         Match active policies with a scope, an action and a token object.
         The client IP is matched implicitly.
-        From the token object we try to determine the user as the owner and the token realms.
+        From the token object we try to determine the user as the owner, the token realms and the container of the
+        token.
         The default is an empty user object and an empty realm list to avoid matching policies with any user and realm
         condition.
 
         :param g: context object
         :param scope: the policy scope. SCOPE.ADMIN cannot be passed, ``admin`` must be used instead.
         :param action: the policy action
-        :param token: The token where the user object or the realm should match.
+        :param token: The token where the user object, the realm or the container should match.
         :rtype: Match
         """
         if token:
@@ -3795,12 +3864,16 @@ class Match:
             realms = token.get_realms()
             # serial is required for the extended condition checks (TODO: allow passing the token object)
             serial = token.get_serial()
+            containers = token.token.container
+            container_serial = containers[0].serial if containers else None
         else:
             log.debug("No token available. Matching policies without user and realm.")
             owner = User()
             realms = None
             serial = None
-        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial)
+            container_serial = None
+        return cls.generic(g, scope=scope, action=action, user_object=owner, additional_realms=realms, serial=serial,
+                           container_serial=container_serial)
 
     @classmethod
     def admin(cls, g, action: str, user_obj: User = None, serial: str = None, container_serial: str = None) -> "Match":

@@ -39,6 +39,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined, get_ordered_resolvers
+from privacyidea.lib.remembered_device import parse_device_duration
 from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.token import get_one_token, get_token_owner_without_lookup, get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
@@ -680,3 +681,33 @@ def hide_audit_columns_per_entry(g, audit_entries: list[dict]) -> None:
                 extended_condition_check=request_sections).action_values(unique=False))
         for column in hidden_columns_by_user[entry_user]:
             entry.pop(column, None)
+
+
+def name_conflicting_action(action: str, exc: PolicyError) -> PolicyError:
+    """
+    The error for policies of the same priority that set different values for *action*. *exc* names only the
+    policies, and several actions of a remembered device can conflict, so this adds the action.
+    """
+    return PolicyError(f"{action}: {exc.get_description()}")
+
+
+def get_remember_device_duration(g, user: User, action: str) -> timedelta | None:
+    """
+    Return the duration a remember-device policy action (``remember_device_validity`` or
+    ``remember_device_idle_timeout``) sets for *user*, or ``None`` if no policy sets a valid one.
+    Policies of the same priority that set different values raise a PolicyError that names the
+    action, as for every action that takes a single value; saving a policy already refuses a value
+    that is no duration.
+
+    :param g: The global flask object g
+    :param user: The user the policies are matched for
+    :param action: The policy action, in scope auth
+    :return: the duration, or ``None``
+    """
+    try:
+        values = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user).action_values(unique=True)
+    except PolicyError as exc:
+        raise name_conflicting_action(action, exc) from exc
+    if not values:
+        return None
+    return parse_device_duration(list(values)[0])

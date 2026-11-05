@@ -137,7 +137,7 @@ export class CaConnectorsComponent {
 
   openEditDialog(connector?: CaConnector): void {
     if (connector) {
-      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS + connector.connectorname);
+      this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS, connector.connectorname]);
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW);
     }

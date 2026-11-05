@@ -183,6 +183,10 @@ class AuthEventType(str, Enum):
     ENROLLMENT_FAIL = "ENROLLMENT_FAIL"
     # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
+    # The request was classified as a success or a pending challenge, but still ended in an error response, e.g.
+    # raised by a post-policy. An error after a failed authentication keeps the failure's own type. The error message
+    # is recorded in the other info.
+    POST_AUTHENTICATION_FAIL = "POST_AUTHENTICATION_FAIL"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
     # These three classify a request the conditional-access pre-check turned away, which is why none of them is ever
@@ -270,9 +274,15 @@ class AuthEventReason(str, Enum):
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
 
     # --- authorization, i.e. a policy or the server configuration refusing the request ---------------------------
-    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The next three are
-    # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The others below are
+    # authorization decisions too, each naming the specific policy or limit that refused it; this one is the plain deny.
     AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
+    # The type of the token used is not one the tokentype policy allows (PolicyAction.TOKENTYPE).
+    TOKENTYPE_NOT_ALLOWED = "TOKENTYPE_NOT_ALLOWED"
+    # The serial of the token used does not match the serial policy (PolicyAction.SERIAL).
+    SERIAL_NOT_ALLOWED = "SERIAL_NOT_ALLOWED"
+    # A tokeninfo field of the token used does not match the tokeninfo policy (PolicyAction.TOKENINFO).
+    TOKENINFO_MISMATCH = "TOKENINFO_MISMATCH"
     # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
     AUTH_MAX_FAIL = "AUTH_MAX_FAIL"
     # The user made too many *successful* authentications inside the policy's time limit (auth_max_success).
@@ -425,6 +435,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
+    AuthEventType.POST_AUTHENTICATION_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
@@ -577,8 +588,8 @@ class RestrictionCause(str, Enum):
 
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
-# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
-# SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
+# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
+# DEVICE_TOKEN_REUSED, SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
 # reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The
 # CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
 # classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
@@ -621,6 +632,9 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON,
+    # Never reduced against anything either: it is assigned on the way out of the request, by reclassifying the event
+    # the request already staged (see record_post_authentication_failure in api/before_after.py).
+    AuthEventType.POST_AUTHENTICATION_FAIL,
     # Neither of these is produced by a token flow at all - they come from the remembered-device and API-client
     # layers respectively - so, like the three above, they are listed only to satisfy the invariant that every
     # trackable type has a rank, and reduce_request_events never sees one. SUSPENDED_API_KEY_USED is not even

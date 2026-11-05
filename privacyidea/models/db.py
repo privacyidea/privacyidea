@@ -20,7 +20,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, Sequence, event, inspect, text, types as sqltypes
+from sqlalchemy import Column, Integer, Sequence, event, inspect, select, text, types as sqltypes
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.engine import Connection, Engine
 from sqlalchemy.ext.compiler import compiles
@@ -196,19 +196,29 @@ def sequence_id_column(op, sequence_name):  # pragma: no cover
 
 def restart_sequence_past_max(op, table_name, sequence_name):  # pragma: no cover
     """Advance ``sequence_name`` past ``MAX(id)`` in ``table_name`` on backends
-    that support sequences; a no-op elsewhere.
+    that support sequences; a no-op elsewhere, and for a sequence that does not exist.
 
     Covers the table-already-exists case where the sequence (newly created or
     pre-existing) would otherwise hand out a value ``<= MAX(id)`` and cause a
-    duplicate-PK error on the next insert. Uses :func:`build_restart_sequence_sql`
+    duplicate-PK error on the next insert, and rows that took their id from the
+    column default instead of the sequence. Uses :func:`build_restart_sequence_sql`
     so MariaDB gets the Galera-required ``INCREMENT BY 0``.
+
+    The sequence is only restarted when its next value is not above ``MAX(id)``,
+    which uses up one value of the sequence. A sequence that is in step or ahead
+    keeps its position, so the ids that a writer which still runs during the
+    upgrade took from it are not handed out again. ``MAX(id)`` is read first: a
+    row that such a writer inserts in between has an id below that next value.
 
     ``table_name`` and ``sequence_name`` must be trusted, code-defined
     identifiers — they are interpolated verbatim.
     """
     bind = op.get_bind()
-    if bind.dialect.supports_sequences:
-        max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0  # nosec B608
+    if not bind.dialect.supports_sequences or not sequence_exists(bind, sequence_name):
+        return
+    max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0  # nosec B608
+    next_id = bind.execute(select(Sequence(sequence_name).next_value())).scalar()
+    if next_id <= max_id:
         op.execute(build_restart_sequence_sql(sequence_name, max_id + 1, bind.dialect.name))
 
 

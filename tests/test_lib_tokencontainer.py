@@ -42,6 +42,7 @@ from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, Challenge, db
 from .base import MyTestCase
+from .test_lib_token_list_lookups import count_containing, count_statements
 
 
 class TokenContainerManagementTestCase(MyTestCase):
@@ -299,13 +300,15 @@ class TokenContainerManagementTestCase(MyTestCase):
     def test_15_delete_container_by_id(self):
         # Fail
         self.assertRaises(ParameterError, delete_container_by_id, None)
-        self.assertRaises(ResourceNotFoundError, delete_container_by_id, 11)
 
         # Success
         container = find_container_by_serial(self.yubikey_serial)
         container_id = container._db_container.id
         result = delete_container_by_id(container_id)
         self.assertEqual(container_id, result)
+
+        # Fail: the container is already deleted
+        self.assertRaises(ResourceNotFoundError, delete_container_by_id, container_id)
 
     def test_16_delete_container_by_serial(self):
         # Fail
@@ -2734,6 +2737,22 @@ class TokenContainerTemplateTestCase(MyTestCase):
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
+    def test_16b_the_template_id_orders_equal_sort_values(self):
+        # The names are not in alphabetical order, so that only the id gives this order
+        names = ["tie_c", "tie_a", "tie_b"]
+        for name in names:
+            create_container_template(container_type="generic", template_name=name, options={})
+
+        # All templates have the same type, so only the id gives the pages a fixed order
+        for sortdir, expected_names in [("asc", names), ("desc", names[::-1])]:
+            pages = [[template["name"] for template in get_templates_by_query(sortby="container_type", sortdir=sortdir,
+                                                                              page=page, pagesize=2)["templates"]]
+                     for page in [1, 2]]
+            self.assertListEqual([expected_names[:2], expected_names[2:]], pages, sortdir)
+
+        for name in names:
+            get_template_obj(name).delete()
+
     def test_17_compare_templates(self):
         # same templates but different order of entries
         template_a = {"template_options": {"tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha1"},
@@ -2964,7 +2983,7 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
         for serial in serials:
             find_container_by_serial(serial).delete()
 
-    def test_02_generator_yields_a_container_matched_by_several_rows_once(self):
+    def test_02_generator_yields_a_container_in_several_realms_once(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         serials = []
@@ -2973,12 +2992,26 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
             set_container_realms(serial, [self.realm1, self.realm2], allowed_realms=None)
             serials.append(serial)
 
-        # The realm wildcard matches both realms of each container, so the query returns every container twice
+        # The realm wildcard matches both realms of each container, but each container is yielded once
         visited_serials = [container.serial
                            for containers in get_container_generator(pagesize=1, realm="realm*")
                            for container in containers]
 
         self.assertListEqual(serials, visited_serials)
+        for serial in serials:
+            find_container_by_serial(serial).delete()
+
+    def test_02b_generator_sends_no_query_after_a_page_that_is_not_full(self):
+        serials = [init_container({"type": "generic", "description": "last page test"})["container_serial"]
+                   for _ in range(3)]
+
+        with count_statements() as statements:
+            pages = [[container.serial for container in containers]
+                     for containers in get_container_generator(pagesize=2, description="last page test")]
+
+        self.assertListEqual([serials[:2], serials[2:]], pages)
+        # The second page holds one container, so it is the last page: one page query for each of the two pages
+        self.assertEqual(2, count_containing(statements, "ORDER BY tokencontainer.id"))
         for serial in serials:
             find_container_by_serial(serial).delete()
 
