@@ -143,6 +143,19 @@ tA==
 -----END CERTIFICATE REQUEST-----"""
 
 
+def start_mock_request() -> None:
+    """
+    Give ``g`` the request-local state that ``get_before_request_config()`` gives every real request.
+
+    The app context, and with it ``g``, lives for the whole test class. A mocked request must not see the token
+    owners that an earlier request resolved: a new token can get the serial of a deleted token, and its policy
+    checks then use the owner of the deleted token.
+    """
+    g.policy_object = PolicyClass()
+    g.token_owners = {}
+    g.token_owner_errors = {}
+
+
 class PrePolicyHelperMixin:
     """Mock-request helper methods shared across PrePolicy* split test cases."""
 
@@ -189,7 +202,7 @@ class PrePolicyHelperMixin:
         req = Request(env)
         req.all_data = {"serial": token_serial}
         req.User = User()
-        g.policy_object = PolicyClass()
+        start_mock_request()
         return req, token
 
     def mock_container_request(self, role, container_type="generic"):
@@ -240,7 +253,7 @@ class PrePolicyHelperMixin:
                                 "resolver": self.resolvername3,
                                 "role": "user"}
             req.User = User(login="root", realm=self.realm3, resolver=self.resolvername3)
-        g.policy_object = PolicyClass()
+        start_mock_request()
 
         return req, container
 
@@ -267,7 +280,7 @@ class PrePolicyHelperMixin:
         req = Request(env)
         req.all_data = {'user': 'cornelius', 'realm': self.realm4}
         req.User = User("cornelius", self.realm4)
-        g.policy_object = PolicyClass()
+        start_mock_request()
 
         return req
 
@@ -306,6 +319,6 @@ class PrePolicyHelperMixin:
         req = Request(env)
         req.all_data = {"container_serial": container_serial}
         req.User = User()
-        g.policy_object = PolicyClass()
+        start_mock_request()
 
         return req, container

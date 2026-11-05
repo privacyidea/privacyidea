@@ -18,7 +18,9 @@
  **/
 import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { provideRouter, Router } from "@angular/router";
+import { ActivatedRouteSnapshot, provideRouter, Route, Router } from "@angular/router";
+import { routes as adminRoutes } from "@app/admin.routes";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ContentService } from "./content.service";
 
 @Component({ template: "" })
@@ -26,6 +28,17 @@ class DummyComponent {}
 
 // Runs the navigation helpers through the real router, so the URLs they produce are parsed the way the app
 // parses them.
+// The real admin routes without their pages, guards and resolvers, so the paths and parameters are the app's own while
+// no page is created.
+const withoutPages = (routes: Route[]): Route[] =>
+  routes.map((route) => ({
+    path: route.path,
+    pathMatch: route.pathMatch,
+    redirectTo: route.redirectTo,
+    ...(route.children ? { children: withoutPages(route.children) } : {}),
+    ...(route.redirectTo === undefined && !route.children ? { component: DummyComponent } : {})
+  }));
+
 const settle = () => new Promise((resolve) => setTimeout(resolve));
 
 describe("ContentService with the real router", () => {
@@ -34,15 +47,7 @@ describe("ContentService with the real router", () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      providers: [
-        ContentService,
-        provideRouter([
-          { path: "users/details/:username", component: DummyComponent },
-          { path: "tokens/details/:serial", component: DummyComponent },
-          { path: "containers/details/:serial", component: DummyComponent },
-          { path: "**", component: DummyComponent }
-        ])
-      ]
+      providers: [ContentService, provideRouter(withoutPages(adminRoutes))]
     });
     service = TestBed.inject(ContentService);
     router = TestBed.inject(Router);
@@ -65,5 +70,32 @@ describe("ContentService with the real router", () => {
     service.navigateContainerDetails(serial);
     await settle();
     expect(service.containerSerial()).toBe(serial);
+  });
+
+  // Every details route in ROUTE_PATHS, whichever page opens it.
+  const detailsPaths = Object.entries(ROUTE_PATHS)
+    .filter(([name]) => name.endsWith("_DETAILS"))
+    .map(([name, path]) => [name, path] as const);
+
+  it("finds details routes to check", () => {
+    expect(detailsPaths.length).toBeGreaterThan(10);
+  });
+
+  const leaf = (route: ActivatedRouteSnapshot): ActivatedRouteSnapshot =>
+    route.firstChild ? leaf(route.firstChild) : route;
+
+  describe.each(detailsPaths)("%s", (_name, path) => {
+    it.each(["plain", "a(b)", "A#1", "a?b", "a/b", "a;x=1", "100%", "a b/ü"])(
+      "opens the details route with the key %s as its single parameter",
+      async (key) => {
+        // A path that matches no route of admin.routes.ts makes the navigation reject.
+        await expect(router.navigate([path, key])).resolves.toBe(true);
+        const tree = router.parseUrl(router.url);
+        expect(tree.fragment).toBeNull();
+        expect(tree.queryParams).toEqual({});
+        const { paramMap } = leaf(router.routerState.snapshot.root);
+        expect(paramMap.keys.map((name) => paramMap.get(name))).toEqual([key]);
+      }
+    );
   });
 });

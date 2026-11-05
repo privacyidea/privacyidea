@@ -16,26 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="button-row">
-  @for (value of values(); track $index) {
-    <button
-      #btn
-      type="button"
-      class="button-item"
-      [class.selected-button]="selectedValue() === value"
-      [class.last-button]="$index === values().length - 1"
-      (click)="selectValue(value)"
-      [disabled]="disabled()"
-      matTooltip="{{ labels()?.[$index] || value }}"
-      [matTooltipDisabled]="!isOverflowing(labelEl)">
-      @if (icons()?.[$index]; as icon) {
-        <mat-icon class="button-icon">{{ icon }}</mat-icon>
-      }
-      <span
-        #labelEl
-        class="button-label">
-        {{ labels()?.[$index] || value }}
-      </span>
-    </button>
-  }
-</div>
+@if (incomplete()) {
+  <span class="panel-incomplete">
+    <mat-icon aria-hidden="true">error</mat-icon>
+    <span i18n="@@tokenTypeConfig.panelIncomplete">Incomplete</span>
+  </span>
+}

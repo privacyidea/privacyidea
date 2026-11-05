@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, model } from "@angular/core";
+import { Component, computed, input } from "@angular/core";
+import { disabled, FieldTree, FormField, SchemaPathTree } from "@angular/forms/signals";
 import { MatFormField, MatHint } from "@angular/material/form-field";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -32,16 +33,26 @@ export interface UserGroupsModel {
   endpoint: string;
 }
 
+/**
+ * Rules of the user groups form: the groups fields are disabled while the groups retrieval is not active.
+ */
+export function userGroupsRules(path: SchemaPathTree<UserGroupsModel>): void {
+  for (const field of [path.pi_user_groups_key, path.user_groups_attribute, path.method, path.endpoint]) {
+    disabled(field, (ctx) => !ctx.valueOf(path.active));
+  }
+}
+
 @Component({
   selector: "app-http-groups-attribute",
-  imports: [MatFormField, MatHint, MatInput, MatLabel, MatOption, MatSelect, MatSlideToggle, MatTooltip],
+  imports: [FormField, MatFormField, MatHint, MatInput, MatLabel, MatOption, MatSelect, MatSlideToggle, MatTooltip],
   templateUrl: "./http-groups-attribute.component.html",
   styleUrl: "./http-groups-attribute.component.scss"
 })
 export class HttpGroupsAttributeComponent {
-  model = model.required<UserGroupsModel>();
+  /** The slice of the parent form this component edits. */
+  field = input.required<FieldTree<UserGroupsModel>>();
   readonly slideToggleTooltipSignal = computed(() =>
-    this.model().active
+    this.field().active().value()
       ? $localize`:@@resolver.disableUserGroups:Disable user groups retrieval`
       : $localize`:@@resolver.enableUserGroups:Enable user groups retrieval`
   );

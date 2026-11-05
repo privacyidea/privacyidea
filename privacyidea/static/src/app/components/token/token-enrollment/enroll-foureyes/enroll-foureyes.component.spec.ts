@@ -24,6 +24,8 @@ import { EnrollFoureyesComponent } from "./enroll-foureyes.component";
 import { RealmService } from "@services/realm/realm.service";
 import { MockRealmService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
+import { clearOverlays, flushFixture, matSelectAt } from "@testing/enroll-form-dom";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 describe("EnrollFoureyesComponent", () => {
   let component: EnrollFoureyesComponent;
@@ -80,6 +82,56 @@ describe("EnrollFoureyesComponent", () => {
       expect(component.separator()).toBe("|");
       expect(component.requiredTokensOfRealms()).toEqual([]);
       expect(component.tokensByRealm).toEqual(new Map());
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    beforeEach(async () => {
+      (TestBed.inject(RealmService) as unknown as MockRealmService).realmOptions.set(["realm1", "realm2"]);
+      await flushFixture(fixture);
+    });
+
+    it("writes the picked realms to the model and marks the field dirty", async () => {
+      const select = matSelectAt(fixture);
+      select.open();
+      await flushFixture(fixture);
+      (select.panel.nativeElement.querySelectorAll("mat-option")[1] as HTMLElement).click();
+      await flushFixture(fixture);
+
+      expect(component.requiredTokensOfRealms()).toEqual(["realm2"]);
+      expect(component.requiredTokensOfRealmsForm().dirty()).toBe(true);
+    });
+
+    it("refuses the build without a realm and renders the required error", async () => {
+      expect(component.buildEnrollmentArgs({ type: "4eyes" } as TokenEnrollmentData)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(component.requiredTokensOfRealmsForm().touched()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain("At least one realm is required");
+    });
+
+    it("builds the arguments once a realm is selected", () => {
+      component.requiredTokensOfRealms.set(["realm1"]);
+
+      expect(component.buildEnrollmentArgs({ type: "4eyes" } as TokenEnrollmentData)).not.toBeNull();
+    });
+
+    it("requires one token of a realm that has no count of its own", () => {
+      component.requiredTokensOfRealms.set(["realm1", "realm2"]);
+      component.setTokenCount("realm2", 3);
+
+      const args = component.buildEnrollmentArgs({ type: "4eyes" } as TokenEnrollmentData);
+
+      expect(args?.data).toEqual(
+        expect.objectContaining({
+          requiredTokenOfRealms: [
+            { realm: "realm1", tokens: 1 },
+            { realm: "realm2", tokens: 3 }
+          ]
+        })
+      );
     });
   });
 });

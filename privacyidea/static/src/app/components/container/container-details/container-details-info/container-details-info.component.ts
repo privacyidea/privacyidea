@@ -16,15 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, input, linkedSignal, model, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, model, WritableSignal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatIconButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { MatFormField } from "@angular/material/form-field";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
+import {
+  INFO_KEY_EXISTS,
+  InfoEntry,
+  infoEntryRules
+} from "@components/shared/details-shared/field-editing/info-entry.rules";
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 import { forkJoin, Observable, switchMap } from "rxjs";
 
 export interface ContainerInfoDetail<T = unknown> {
@@ -36,14 +44,7 @@ export interface ContainerInfoDetail<T = unknown> {
 @Component({
   selector: "app-container-details-info",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatIconButton,
-    MatIcon,
-    MatDivider,
-    EditButtonsComponent
-  ],
+  imports: [MatFormFieldModule, MatInput, FormField, MatIconButton, MatIcon, MatDivider, EditButtonsComponent],
   templateUrl: "./container-details-info.component.html",
   styleUrl: "./container-details-info.component.scss"
 })
@@ -52,6 +53,9 @@ export class ContainerDetailsInfoComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly Object = Object;
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly INFO_KEY_EXISTS = INFO_KEY_EXISTS;
   private readonly hiddenInfoKeys = ["registration_state"];
   containerSerial = this.containerService.containerSerial;
   infoData = input.required<ContainerInfoDetail[]>();
@@ -59,15 +63,34 @@ export class ContainerDetailsInfoComponent {
   isAnyEditingOrRevoked = input.required<boolean>();
   isEditingInfo = model.required<boolean>();
   isEditingUser = input.required<boolean>();
-  newInfo: WritableSignal<{ key: string; value: string }> = linkedSignal({
+  newInfo: WritableSignal<InfoEntry> = linkedSignal({
     source: this.isEditingInfo,
     computation: () => {
       return { key: "", value: "" };
     }
   });
+  protected readonly newInfoForm = form(this.newInfo, (path) => {
+    infoEntryRules(path, () => Object.keys(this.asMap(this.infoData()[0]?.value)));
+  });
+  /** The values shown in edit mode. A copy of the stored info, so cancelling discards the typed text. */
+  readonly draftInfo: WritableSignal<Record<string, string>> = linkedSignal({
+    source: () => ({ editing: this.isEditingInfo(), element: this.infoData()[0] }),
+    computation: ({ element }) => ({ ...this.asMap(element?.value) })
+  });
+  /** Whether the entries may be saved: the "add" row is empty or complete and names a new key. */
+  readonly canSave = computed(() => !this.isEditingInfo() || this.newInfoForm().valid());
+  /** The info element for the edit buttons, which disable Save while the "add" row is incomplete. */
+  protected readonly editButtonsElement = computed(() => {
+    const element = this.infoData()[0] as ContainerInfoDetail<Record<string, string>> | undefined;
+    return element ? { ...element, valid: this.canSave } : undefined;
+  });
 
   protected asMap(value: unknown): Record<string, string> {
-    return value as Record<string, string>;
+    return (value ?? {}) as Record<string, string>;
+  }
+
+  setInfoValue(key: string, value: string): void {
+    this.draftInfo.update((draft) => ({ ...draft, [key]: value }));
   }
 
   displayInfoKeys(value: Record<string, unknown>): string[] {
@@ -76,17 +99,27 @@ export class ContainerDetailsInfoComponent {
 
   toggleInfoEdit(): void {
     this.isEditingInfo.update((b) => !b);
-    this.newInfo.set({ key: "", value: "" });
+    this.newInfoForm().reset({ key: "", value: "" });
   }
 
-  saveInfo(element: ContainerInfoDetail<Record<string, string>>): void {
-    if (this.newInfo().key.trim() !== "" && this.newInfo().value.trim() !== "") {
-      element.value[this.newInfo().key] = this.newInfo().value;
+  saveInfo(): void {
+    if (!this.canSave()) {
+      this.newInfoForm.key().markAsTouched();
+      this.newInfoForm.value().markAsTouched();
+      return;
     }
-    const requests = this.containerService.setContainerInfos(this.containerSerial(), element.value);
+    const { key, value } = this.newInfo();
+    const entries = { ...this.draftInfo() };
+    if (key.trim() !== "" && value.trim() !== "") {
+      entries[key.trim()] = value;
+    }
+    // The card shows the saved values at once; the reload after the requests replaces them with the stored ones.
+    const stored = this.infoData()[0];
+    if (stored) Object.assign(this.asMap(stored.value), entries);
+    const requests = this.containerService.setContainerInfos(this.containerSerial(), entries);
     forkJoin(requests).subscribe({
       next: () => {
-        this.newInfo.set({ key: "", value: "" });
+        this.newInfoForm().reset({ key: "", value: "" });
         this.containerService.containerDetailsResource.reload();
       }
     });

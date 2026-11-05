@@ -32,10 +32,8 @@
       class="header-row sticky-header">
       <div class="action-buttons">
         <mat-slide-toggle
-          (change)="updateEventHandler('active', $event.checked)"
-          [checked]="editEvent().active"
           [disableRipple]="true"
-          [disabled]="!authService.actionAllowed('eventhandling_write')"
+          [formField]="editForm.active"
           i18n-matTooltip="@@common.toggleActiveStatus"
           matTooltip="Toggle Active Status">
           @if (editEvent().active) {
@@ -75,22 +73,17 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.name">Name</mat-label>
           <app-clearable-input
-            (clearButtonClick)="updateEventHandler('name', '')"
+            (clearButtonClick)="clearName()"
             [showClearButton]="!!editEvent().name">
             <input
-              (blur)="nameTouched.set(true)"
-              (input)="updateEventHandler('name', $any($event.target).value)"
-              [appErrorState]="showNameError()"
-              [disabled]="!eventLoaded()"
-              [value]="editEvent().name"
+              [formField]="editForm.name"
               matInput
-              required
               type="text" />
           </app-clearable-input>
-          @if (showNameError() && editEvent().name === "") {
+          @if (hasError(editForm.name, ERR.required)) {
             <mat-error i18n="@@common.nameRequired">Name is <strong>required</strong>.</mat-error>
           }
-          @if (showNameError() && editEvent().name !== "") {
+          @if (hasError(editForm.name, ERR.pattern)) {
             <mat-error i18n="@@event.nameContainsInvalid"
               >Name contains <strong>invalid characters</strong>. Only alphanumeric characters, spaces, dots,
               underscores and hyphens are allowed.</mat-error
@@ -99,30 +92,23 @@
         </mat-form-field>
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@event.handlerModule">Handler Module</mat-label>
-          <mat-select
-            (selectionChange)="setNewHandlerModule($event.value)"
-            [appErrorState]="showHandlerModuleError()"
-            [value]="eventService.selectedHandlerModule()"
-            [disabled]="!isNewEvent()"
-            required>
+          <mat-select [formField]="editForm.handlermodule">
             @for (module of eventService.eventHandlerModules(); track module) {
               <mat-option [value]="module">{{ module }}</mat-option>
             }
           </mat-select>
-          <mat-error i18n="@@event.selectingHandler"
-            >Selecting a handler module is <strong>required</strong>.</mat-error
-          >
+          @if (hasError(editForm.handlermodule, ERR.required)) {
+            <mat-error i18n="@@event.selectingHandler"
+              >Selecting a handler module is <strong>required</strong>.</mat-error
+            >
+          }
         </mat-form-field>
       </div>
 
       <div class="two-col-grid margin-bottom-32">
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@event.position">Position</mat-label>
-          <mat-select
-            (selectionChange)="updateEventHandler('position', $event.value)"
-            [appErrorState]="showPositionError()"
-            [value]="editEvent().position"
-            required>
+          <mat-select [formField]="editForm.position">
             @for (position of eventService.modulePositions(); track position) {
               <mat-option [value]="position">{{ position }}</mat-option>
             }
@@ -130,28 +116,35 @@
           <mat-hint i18n="@@event.whetherAction"
             >Whether the action should be taken before (pre) or after (post) the actual event.</mat-hint
           >
-          <mat-error i18n="@@event.selectingPosition">Selecting a position is <strong>required</strong>.</mat-error>
+          @if (hasError(editForm.position, ERR.required)) {
+            <mat-error i18n="@@event.selectingPosition">Selecting a position is <strong>required</strong>.</mat-error>
+          }
         </mat-form-field>
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.ordering">Ordering</mat-label>
           <input
-            (input)="updateEventHandler('ordering', +$any($event.target).value)"
-            [appErrorState]="showOrderingError()"
-            [value]="editEvent().ordering"
+            [formField]="editForm.ordering"
             matInput
-            required
             type="number" />
           <mat-hint i18n="@@event.eventHandlersLower"
             >Event handlers with lower ordering number are executed first.</mat-hint
           >
-          <mat-error i18n="@@event.orderingRequired">Ordering is <strong>required</strong>.</mat-error>
+          @if (hasError(editForm.ordering, ERR.required) && !hasError(editForm.ordering, ERR.parse)) {
+            <mat-error i18n="@@event.orderingRequired">Ordering is <strong>required</strong>.</mat-error>
+          }
+          @if (hasError(editForm.ordering, ERR.parse)) {
+            <mat-error i18n="@@event.orderingNotANumber">Enter a <strong>valid number</strong>.</mat-error>
+          }
+          @if (hasError(editForm.ordering, ORDERING_RANGE)) {
+            <mat-error i18n="@@event.orderingOutOfRange"
+              >Ordering must be a <strong>whole number</strong> between 0 and {{ MAX_ORDERING }}.</mat-error
+            >
+          }
         </mat-form-field>
       </div>
 
       <div class="margin-bottom-32">
-        <mat-slide-toggle
-          (change)="setAbortOnError($event.checked)"
-          [checked]="abortOnError()">
+        <mat-slide-toggle [formField]="editForm.abort_on_error">
           <span i18n="@@event.abortRequestIf">Abort the request if the handler fails</span>
         </mat-slide-toggle>
         <p

@@ -18,7 +18,6 @@
  **/
 
 import { Component, inject, Input, input, output, WritableSignal } from "@angular/core";
-import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
@@ -35,7 +34,6 @@ import { TokenDetails } from "@services/token/token.service";
   selector: "app-token-details-actions",
   standalone: true,
   imports: [
-    FormsModule,
     MatButtonModule,
     MatDivider,
     MatIconModule,
@@ -50,8 +48,6 @@ import { TokenDetails } from "@services/token/token.service";
 })
 export class TokenDetailsActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  @Input() setPinValue!: WritableSignal<string>;
-  @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
   @Input() passkeyTestResult!: WritableSignal<{
     kind: "success" | "warning";

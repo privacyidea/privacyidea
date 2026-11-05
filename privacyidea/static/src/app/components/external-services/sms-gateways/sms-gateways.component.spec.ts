@@ -107,9 +107,10 @@ describe("SmsGatewaysComponent", () => {
   });
 
   it("should navigate to edit page when editing a gateway", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const gateway = smsGatewayServiceMock.smsGateways()[0];
     component.onEditGateway(gateway);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS, gateway.name]);
   });
 
   it("should only select the gateways left by the filter", async () => {

@@ -20,68 +20,79 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { WebauthnConfigComponent } from "@components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component";
 import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 
 describe("WebauthnConfigComponent", () => {
   let fixture: ComponentFixture<WebauthnConfigComponent>;
   let component: WebauthnConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const input = () => fixture.nativeElement.querySelector("input") as HTMLInputElement;
+  const warnings = () =>
+    Array.from(fixture.nativeElement.querySelectorAll(".alert-warning") as NodeListOf<HTMLElement>).map((warning) =>
+      warning.textContent?.trim()
+    );
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(WebauthnConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [WebauthnConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(WebauthnConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "/etc/privacyidea/trusted_attestation_roots";
-    component.updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [WEBAUTHN_TRUST_ANCHOR_DIR]: newValue });
+  it("shows the trust_anchor_dir of the form", async () => {
+    await create({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "/etc/privacyidea/test_path" });
+
+    expect(input().value).toBe("/etc/privacyidea/test_path");
+    expect(component.trustAnchorDir()).toBe("/etc/privacyidea/test_path");
   });
 
-  it("should display current formData value for trust_anchor_dir", () => {
-    const testPath = "/etc/privacyidea/test_path";
-    const testData = {
-      [WEBAUTHN_TRUST_ANCHOR_DIR]: testPath
-    };
-    fixture.componentRef.setInput("formData", testData);
-    fixture.detectChanges();
+  it("writes the typed trust_anchor_dir to the form", async () => {
+    await create();
 
-    expect(component.formData()[WEBAUTHN_TRUST_ANCHOR_DIR]).toEqual(testPath);
+    input().value = "/etc/privacyidea/trusted_attestation_roots";
+    input().dispatchEvent(new Event("input"));
+    await flush();
+
+    expect(configForm.model().values[WEBAUTHN_TRUST_ANCHOR_DIR]).toBe("/etc/privacyidea/trusted_attestation_roots");
+    expect(component.trustAnchorDir()).toBe("/etc/privacyidea/trusted_attestation_roots");
   });
 
-  it("should handle empty trust_anchor_dir value", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "";
-    component.updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "" });
+  it("renders an empty input and no warning when the key is missing", async () => {
+    await create();
+    expect(input().value).toBe("");
+    expect(warnings()).toEqual([]);
   });
 
-  it("renders an empty input and no warning when the key is missing", () => {
-    const input: HTMLInputElement = fixture.nativeElement.querySelector("input");
-    expect(input.value).toBe("");
-    expect(fixture.nativeElement.querySelectorAll(".alert-warning").length).toBe(0);
-  });
+  it("warns about a relative path and about a trailing slash", async () => {
+    await create({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "relative/path/" });
 
-  it("warns about a relative path and about a trailing slash", () => {
-    fixture.componentRef.setInput("formData", { [WEBAUTHN_TRUST_ANCHOR_DIR]: "relative/path/" });
-    fixture.detectChanges();
-
-    const warnings = Array.from(
-      fixture.nativeElement.querySelectorAll(".alert-warning") as NodeListOf<HTMLElement>
-    ).map((warning) => warning.textContent?.trim());
-
-    expect(warnings).toEqual([
+    expect(warnings()).toEqual([
       "The trust_anchor_dir must be an absolute path.",
       'The trust_anchor_dir must not end with a "/".'
     ]);
+  });
+
+  it("keeps the form valid while a warning shows", async () => {
+    await create({ [WEBAUTHN_TRUST_ANCHOR_DIR]: "relative/path/" });
+    expect(configForm.form().valid()).toBe(true);
   });
 });

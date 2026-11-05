@@ -35,6 +35,7 @@
       <div class="enroll-button-container margin-left-auto">
         <button
           (click)="assignUserToToken()"
+          [disabled]="!canAssign()"
           class="action-button-primary button-width-m margin-left-auto"
           mat-stroked-button>
           <mat-icon>person_add</mat-icon>
@@ -54,40 +55,15 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@token.enterSerial">Enter Serial</mat-label>
       <input
-        [value]="selectedToken()"
-        (input)="selectedToken.set($any($event.target).value)"
-        matInput
-        required />
-      <mat-error i18n="@@token.serialRequired">Serial is <strong>required</strong></mat-error>
+        [formField]="serialForm.serial"
+        matInput />
+      @if (hasError(serialForm.serial, ERR.required)) {
+        <mat-error i18n="@@token.serialRequired">Serial is <strong>required</strong>.</mat-error>
+      }
     </mat-form-field>
 
-    <div class="flex-column gap-8">
-      <h4 i18n="@@common.setPin">Set PIN</h4>
-      <input
-        class="hidden-input"
-        type="text" />
-      <input
-        class="hidden-input"
-        type="password" />
-      <div class="flex-column">
-        <mat-form-field class="input-width-s">
-          <mat-label i18n="@@common.pin">PIN</mat-label>
-          <input
-            [value]="setPinValue()"
-            (input)="setPinValue.set($any($event.target).value)"
-            [type]="'password'"
-            matInput />
-        </mat-form-field>
-
-        <mat-form-field class="input-width-s">
-          <mat-label i18n="@@common.repeatPin">Repeat PIN</mat-label>
-          <input
-            [value]="repeatPinValue()"
-            (input)="repeatPinValue.set($any($event.target).value)"
-            [type]="'password'"
-            matInput />
-        </mat-form-field>
-      </div>
-    </div>
+    <app-enrollment-pin
+      [setPinControl]="setPinForm"
+      [repeatPinControl]="repeatPinForm" />
   </div>
 </div>

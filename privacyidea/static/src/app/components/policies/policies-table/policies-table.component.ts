@@ -279,7 +279,7 @@ export class PoliciesTableComponent {
 
   async editPolicy(policy: PolicyDetail): Promise<void> {
     if (!policy.name) return;
-    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_DETAILS + policy.name);
+    this.router.navigate([ROUTE_PATHS.POLICIES_DETAILS, policy.name]);
   }
 }
 

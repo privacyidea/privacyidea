@@ -16,11 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
+import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
-import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
 
@@ -64,21 +63,60 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should call registerContainer with correct arguments when onRegister is called", () => {
-      // Mock the child component and its properties
-      component.registrationConfigComponent = {
-        userStorePassphrase: signal(true),
-        passphrasePrompt: signal("prompt"),
-        passphraseResponse: signal("response")
-      } as ContainerRegistrationConfigComponent;
+      component.registration.set({ prompt: "prompt", response: "response", repeat: "response", store: false });
 
       component.onRegister();
-      expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "response", component.data.rollover);
+      expect(mockRegisterContainer).toHaveBeenCalledWith(false, "prompt", "response", component.data.rollover);
     });
 
-    it("should disable Register button when validInput is false", () => {
-      component.onValidInputChange(false);
+    it("should pass the user store flag on", () => {
+      component.registration.set({ prompt: "prompt", response: "", repeat: "", store: true });
+
+      component.onRegister();
+      expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "", component.data.rollover);
+    });
+
+    it("should enable Register button for an empty registration", () => {
+      expect(component.getAction().disabled).toBe(false);
+    });
+
+    it("should disable Register button when the passphrases do not match", () => {
+      component.registration.set({ prompt: "prompt", response: "foo", repeat: "bar", store: false });
       fixture.detectChanges();
       expect(component.getAction().disabled).toBe(true);
+    });
+
+    it("should not register and should touch the fields when the registration is invalid", () => {
+      component.registration.set({ prompt: "prompt", response: "foo", repeat: "bar", store: false });
+
+      component.onRegister();
+
+      expect(mockRegisterContainer).not.toHaveBeenCalled();
+      expect(component.form.repeat().touched()).toBe(true);
+    });
+
+    it("should allow the user store passphrase for a container with an owner", () => {
+      expect(component.form.store().disabled()).toBe(false);
+    });
+  });
+
+  describe("Container without owner", () => {
+    it("should not allow the user store passphrase", async () => {
+      await TestBed.configureTestingModule({
+        imports: [ContainerRegistrationInitDialogComponent],
+        providers: [
+          {
+            provide: MAT_DIALOG_DATA,
+            useValue: { rollover: false, containerHasOwner: false, registerContainer: jest.fn() }
+          },
+          { provide: MatDialogRef, useClass: MockMatDialogRef }
+        ],
+        schemas: [NO_ERRORS_SCHEMA]
+      }).compileComponents();
+      fixture = TestBed.createComponent(ContainerRegistrationInitDialogComponent);
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance.form.store().disabled()).toBe(true);
     });
   });
 
@@ -122,19 +160,14 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should call registerContainer with correct arguments when onRegister is called", () => {
-      // Mock the child component and its properties
-      component.registrationConfigComponent = {
-        userStorePassphrase: signal(true),
-        passphrasePrompt: signal("prompt"),
-        passphraseResponse: signal("response")
-      } as ContainerRegistrationConfigComponent;
+      component.registration.set({ prompt: "prompt", response: "response", repeat: "response", store: false });
 
       component.onRegister();
-      expect(mockRegisterContainer).toHaveBeenCalledWith(true, "prompt", "response", true);
+      expect(mockRegisterContainer).toHaveBeenCalledWith(false, "prompt", "response", true);
     });
 
-    it("should disable Rollover button when validInput is false", () => {
-      component.onValidInputChange(false);
+    it("should disable Rollover button when the registration is invalid", () => {
+      component.registration.set({ prompt: "prompt", response: "", repeat: "", store: false });
       fixture.detectChanges();
       expect(component.getAction().disabled).toBe(true);
     });
