@@ -69,7 +69,7 @@ describe("UserDetailsRememberedDevicesComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: UserService, useClass: MockUserService },
-        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
+        { provide: Router, useValue: { navigate: jest.fn() } }
       ]
     }).compileComponents();
 
@@ -231,9 +231,9 @@ describe("UserDetailsRememberedDevicesComponent", () => {
   });
 
   it("should open the API client of a device", () => {
-    const router = TestBed.inject(Router) as unknown as { navigateByUrl: jest.Mock };
+    const router = TestBed.inject(Router) as unknown as { navigate: jest.Mock };
     component.goToClient(device);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + "client1");
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS, "client1"]);
   });
 
   it("should load nothing without the remembered_device_list right", async () => {

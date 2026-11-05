@@ -1689,9 +1689,12 @@ class EntraIDResolverTestCase(MyTestCase):
         # Invalid authority
         config = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value, CLIENT_SECRET: "secret",
                   TENANT: "organization"}
-        # invalid when checking authority
-        with pytest.raises(ParameterError, match="Invalid Authorization"):
-            EntraIDResolver().loadConfig(config)
+        # The OIDC discovery of MSAL fails for an unknown tenant
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.get("https://login.microsoftonline.com/organization/v2.0/.well-known/openid-configuration",
+                                 status=400, json={"error": "invalid_tenant"})
+            with pytest.raises(ParameterError, match="Invalid Authorization"):
+                EntraIDResolver().loadConfig(config)
 
         # Missing parameters
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",

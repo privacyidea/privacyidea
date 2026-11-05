@@ -728,12 +728,13 @@ describe("RealmTableComponent", () => {
   });
 
   it("onClickResolver should redirect to resolver details page", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const resolver = { resolvername: "res1", type: "ldapresolver" } as unknown as Resolver;
     resolverService.setResolvers([resolver]);
 
     component.onClickResolver("res1");
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.USERS_RESOLVERS_DETAILS, "res1"]);
   });
 
   it("onClickResolver should do nothing if resolver not found", () => {

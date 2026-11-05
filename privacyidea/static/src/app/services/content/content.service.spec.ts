@@ -273,7 +273,11 @@ describe("ContentService", () => {
       {
         name: "onApiClients",
         read: (s) => s.onApiClients(),
-        urls: [ROUTE_PATHS.POLICIES_API_CLIENTS, ROUTE_PATHS.POLICIES_API_CLIENTS_NEW, ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + "client1"]
+        urls: [
+          ROUTE_PATHS.POLICIES_API_CLIENTS,
+          ROUTE_PATHS.POLICIES_API_CLIENTS_NEW,
+          ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS + "client1"
+        ]
       }
     ];
 
@@ -493,7 +497,7 @@ describe("ContentService", () => {
       emitNav("/tokens");
       service.machineResolverSelected("hosts 1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + "hosts%201");
+      expect(mockRouter.navigate).toHaveBeenCalledWith([ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, "hosts 1"]);
     });
   });
 });

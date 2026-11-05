@@ -161,16 +161,17 @@ describe("PoliciesTableComponent", () => {
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     jest.spyOn(mockDialogService, "openDialog").mockReturnValue({
       afterClosed: () => of(null)
     } as unknown as MatDialogRef<never, never>);
 
     component.editPolicy(mockPolicies[0]);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_DETAILS + mockPolicies[0].name);
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.POLICIES_DETAILS, mockPolicies[0].name]);
 
     jest.clearAllMocks();
     component.editPolicy({ name: "" } as PolicyDetail);
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it("should filter items", () => {
