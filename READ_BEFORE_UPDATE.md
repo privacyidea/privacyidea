@@ -232,7 +232,7 @@
   owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
   matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
   The user still matches only together with the realm of the user. Admin policies of this kind allow their actions
-  on more tokens and containers. The `change_pin_first_use` and `change_pin_every` policies of this kind apply to
+  on more tokens and containers. The `change_pin_on_first_use` and `change_pin_every` policies of this kind apply to
   more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
   case-insensitive names.
 
