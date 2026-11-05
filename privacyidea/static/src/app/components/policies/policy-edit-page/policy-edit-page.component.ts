@@ -49,6 +49,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   checkAllResolversWithoutResolver,
+  hasUnescapedComma,
   PolicyDetail,
   PolicyService,
   PolicyServiceInterface
@@ -131,6 +132,7 @@ export class PolicyEditPageComponent implements OnDestroy {
       !!this.editedPolicy().name?.trim() &&
       /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
       !this.nameTaken() &&
+      !Object.values(this.editedPolicy().action ?? {}).some(hasUnescapedComma) &&
       !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>

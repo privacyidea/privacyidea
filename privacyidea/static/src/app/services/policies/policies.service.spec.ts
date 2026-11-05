@@ -29,6 +29,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "@testing/mock-services/mock-notification-service";
 import {
   checkAllResolversWithoutResolver,
+  hasUnescapedComma,
   policyActionMatchesFilter,
   PolicyActionDetail,
   PolicyDetail,
@@ -840,6 +841,36 @@ describe("policyNameCollides", () => {
 
   it("should find nothing in an empty list", () => {
     expect(policyNameCollides([], "helpdesk")).toBe(false);
+  });
+});
+
+// The server splits the actions at every comma that no backslash precedes: re.split(r'(?<!\\),', action)
+describe("hasUnescapedComma", () => {
+  it("should find a comma without a backslash before it", () => {
+    expect(hasUnescapedComma("Hello, World")).toBe(true);
+    expect(hasUnescapedComma(",leading")).toBe(true);
+    expect(hasUnescapedComma("trailing,")).toBe(true);
+  });
+
+  it("should accept commas escaped with a backslash", () => {
+    expect(hasUnescapedComma("Hello\\, World")).toBe(false);
+    expect(hasUnescapedComma("a\\,b\\,c")).toBe(false);
+  });
+
+  it("should find an unescaped comma next to an escaped one", () => {
+    expect(hasUnescapedComma("a\\,,b")).toBe(true);
+  });
+
+  it("should find nothing in values without a comma", () => {
+    expect(hasUnescapedComma("")).toBe(false);
+    expect(hasUnescapedComma("live-check-value")).toBe(false);
+  });
+
+  it("should find nothing in values that are no string", () => {
+    expect(hasUnescapedComma(8)).toBe(false);
+    expect(hasUnescapedComma(true)).toBe(false);
+    expect(hasUnescapedComma(null)).toBe(false);
+    expect(hasUnescapedComma(undefined)).toBe(false);
   });
 });
 

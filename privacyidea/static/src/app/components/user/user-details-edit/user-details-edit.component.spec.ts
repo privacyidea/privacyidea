@@ -87,6 +87,23 @@ describe("UserDetailsEditComponent", () => {
     expect(component.attributes()).toEqual(["email", "surname"]);
   });
 
+  it("edits the given fields instead of the resolver mapping and does not select the resolver", () => {
+    mockResolverService.selectedResolverName.set("");
+    const ownFixture = TestBed.createComponent(UserDetailsEditComponent);
+    ownFixture.componentRef.setInput("resolver", "testresolver");
+    ownFixture.componentRef.setInput("initialUserData", testUserData);
+    ownFixture.componentRef.setInput("fields", ["givenname", "mobile"]);
+    ownFixture.detectChanges();
+
+    expect(ownFixture.componentInstance.attributes()).toEqual(["givenname", "mobile"]);
+    expect(ownFixture.componentInstance["newUserData"]()).toEqual({
+      username: "testuser",
+      givenname: "User",
+      mobile: ""
+    });
+    expect(mockResolverService.selectedResolverName()).toBe("");
+  });
+
   it("should set selectedResolverName on resolver input", () => {
     fixture.componentRef.setInput("resolver", "anotherresolver");
     fixture.detectChanges();
