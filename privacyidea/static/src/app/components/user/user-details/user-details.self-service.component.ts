@@ -61,13 +61,12 @@ export class UserDetailsSelfServiceComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(() => this.editIsDirty() || this.attributeDraft.hasChanges());
-    this.pendingChangesService.registerValidChanges(() => {
-      if (this.editMode()) return true;
-      return this.attributeDraft.hasValidChanges();
-    });
-    this.pendingChangesService.registerSave(() => {
-      if (this.editMode()) return this.saveEdit();
-      return this.attributeDraft.save();
+    this.pendingChangesService.registerValidChanges(
+      () => !this.attributeDraft.hasChanges() || this.attributeDraft.hasValidChanges()
+    );
+    this.pendingChangesService.registerSave(async () => {
+      if (this.editMode() && !(await this.saveEdit())) return false;
+      return !this.attributeDraft.hasChanges() || this.attributeDraft.save();
     });
   }
 

@@ -205,6 +205,37 @@ describe("UserDetailsSelfServiceComponent", () => {
       expect(userServiceMock.editUser).toHaveBeenCalledWith("res1", { username: "alice", givenname: "Alicia" });
     });
 
+    it("saves the own data and a pending custom attribute edit on save and exit", async () => {
+      allowUpdate();
+      userServiceMock.user.set(ownData);
+      userServiceMock.editUser.mockReturnValue(of(true));
+      fixture.detectChanges();
+      const save = (pendingChangesService.registerSave as jest.Mock).mock.calls[0][0] as () => Promise<boolean>;
+
+      editButton()!.click();
+      component.onUpdateEditedUser({ username: "alice", givenname: "Alicia" });
+      component.attributeDraft.startEdit("department", "finance");
+
+      expect(await save()).toBe(true);
+      expect(userServiceMock.editUser).toHaveBeenCalledWith("res1", { username: "alice", givenname: "Alicia" });
+      expect(userServiceMock.setUserAttribute).toHaveBeenCalledWith("department", "finance");
+      expect(component.attributeDraft.editingKey()).toBeNull();
+    });
+
+    it("does not count changed own data as valid while a custom attribute edit is empty", () => {
+      allowUpdate();
+      userServiceMock.user.set(ownData);
+      fixture.detectChanges();
+      const validChanges = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+
+      editButton()!.click();
+      component.onUpdateEditedUser({ username: "alice", givenname: "Alicia" });
+      expect(validChanges()).toBe(true);
+
+      component.attributeDraft.startEdit("department", "");
+      expect(validChanges()).toBe(false);
+    });
+
     it("asks before leaving the page with a typed own custom attribute", () => {
       const hasChanges = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
       const validChanges = (pendingChangesService.registerValidChanges as jest.Mock).mock

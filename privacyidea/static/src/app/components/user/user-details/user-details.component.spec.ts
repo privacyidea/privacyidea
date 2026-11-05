@@ -561,6 +561,29 @@ describe("UserDetailsComponent", () => {
       expect(component.editMode()).toBe(false);
     });
 
+    it("pending-changes save saves the user data and a pending custom attribute edit", async () => {
+      const fn = getSaveFn();
+      component.editUser();
+      component.onUpdateEditedUser({ ...component.editedUserData(), email: "changed@example.com" });
+      component.attributeDraft.startEdit("department", "finance");
+      userServiceMock.editUser = jest.fn().mockReturnValue(of(true));
+
+      const result = await fn();
+
+      expect(result).toBe(true);
+      expect(userServiceMock.editUser).toHaveBeenCalled();
+      expect(userServiceMock.setUserAttribute).toHaveBeenCalledWith("department", "finance");
+      expect(component.attributeDraft.editingKey()).toBeNull();
+    });
+
+    it("pending-changes validChanges is false in edit mode while a custom attribute edit is empty", () => {
+      const fn = getValidChangesFn();
+      component.editUser();
+      component.attributeDraft.startEdit("department", "");
+
+      expect(fn()).toBe(false);
+    });
+
     it("pending-changes save resolves false when editUser fails in edit mode", async () => {
       const fn = getSaveFn();
       component.editUser();
@@ -641,8 +664,6 @@ describe("UserDetailsComponent", () => {
     it("validChanges requires both key and value", () => {
       const fn = getValidChangesFn();
       component.attributeDraft.keyMode.set("input");
-      expect(fn()).toBe(false);
-
       component.attributeDraft.addKeyInput.set("key");
       expect(fn()).toBe(false);
 
@@ -661,7 +682,9 @@ describe("UserDetailsComponent", () => {
       expect(result).toBe(true);
     });
 
-    it("save resolves false when key or value missing", async () => {
+    it("save resolves false when the value is missing", async () => {
+      component.attributeDraft.keyMode.set("input");
+      component.attributeDraft.addKeyInput.set("key");
       const fn = getSaveFn();
       const setSpy = jest.spyOn(userServiceMock, "setUserAttribute");
       const result = await fn();
