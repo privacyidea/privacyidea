@@ -2412,12 +2412,18 @@ class PushTokenTestCase(MyTestCase):
         # The first push token creates no challenge, so the request has no transaction yet when the second one is
         # challenged. A confirmed code_to_phone challenge of another token must not lend it its display code.
         set_policy("push_16n_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        self.addCleanup(delete_policy, "push_16n_code")
         without_gateway = self._create_push_token()
+        self.addCleanup(remove_token, without_gateway.get_serial())
         without_gateway.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
         without_gateway.set_pin("pushpin")
         without_gateway.add_user(User("cornelius", self.realm1))
         token = self._setup_notification_token("16n")
+        self.addCleanup(delete_policy, "push_16n_text")
+        self.addCleanup(delete_policy, "push_16n_enroll")
+        self.addCleanup(remove_token, token.get_serial())
         other = init_token({"type": "spass", "serial": "OTHER16N"})
+        self.addCleanup(remove_token, other.get_serial())
         Challenge(other.get_serial(), transaction_id="99998888777766665555",
                   data={"type": "push", "mode": PushMode.CODE_TO_PHONE, "smartphone_confirmed": True,
                         "display_code": "424242"}).save()
@@ -2433,11 +2439,6 @@ class PushTokenTestCase(MyTestCase):
             res = self.app.full_dispatch_request()
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
-
-        delete_policy("push_16n_code")
-        remove_token(without_gateway.get_serial())
-        remove_token(other.get_serial())
-        self._teardown_notification_token(token, "16n")
 
     def test_16o_existing_challenge_data_is_read_from_valid_challenges_of_the_transaction(self):
         token = self._setup_notification_token("16o")
