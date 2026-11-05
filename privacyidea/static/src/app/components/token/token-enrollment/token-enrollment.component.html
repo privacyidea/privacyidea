@@ -90,6 +90,15 @@
               </app-clearable-input>
               <mat-label i18n="@@common.containerSerial">Container Serial</mat-label>
               <mat-autocomplete #containerAuto="matAutocomplete">
+                @if (authService.actionAllowed("container_create")) {
+                  <mat-option
+                    class="create-container-option"
+                    [value]="selectedContainer()"
+                    (onSelectionChange)="$event.isUserInput && openContainerCreateDialog()">
+                    <mat-icon>add</mat-icon>
+                    <span i18n="@@container.createNewContainerOption">Create new container</span>
+                  </mat-option>
+                }
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }

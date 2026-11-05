@@ -102,6 +102,15 @@
                   matInput />
               </app-clearable-input>
               <mat-autocomplete #containerAuto="matAutocomplete">
+                @if (containerCreatable()) {
+                  <mat-option
+                    class="create-container-option"
+                    [value]="containerInput()"
+                    (onSelectionChange)="$event.isUserInput && openContainerCreateDialog()">
+                    <mat-icon>add</mat-icon>
+                    <span i18n="@@container.createNewContainerOption">Create new container</span>
+                  </mat-option>
+                }
                 @for (option of containerService.containersForTokenType(); track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }

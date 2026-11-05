@@ -47,10 +47,15 @@ import {
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
 import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  ContainerCreateDialogComponent,
+  ContainerCreateDialogData
+} from "@components/container/container-create-dialog/container-create-dialog.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
@@ -159,6 +164,7 @@ export class CustomDateAdapter extends NativeDateAdapter {
     EnrollTokenTypeSwitchComponent,
     EnrollmentPinComponent,
     MatError,
+    MatIcon,
     TokenEnrollmentTypeSelectorComponent
   ],
   providers: [
@@ -550,6 +556,33 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       void touchAll(assignment.realmForm);
       void touchAll(assignment.userFilterForm);
     }
+  }
+
+  protected containerCreateDialogData(): ContainerCreateDialogData {
+    const username = this.userAssignmentComponent()?.onlyAddToRealm()
+      ? ""
+      : (this.userService.selectedUser()?.username ?? "");
+    return {
+      username: username || undefined,
+      userRealm: username ? (this.userService.selectedUserRealm() ?? "") : undefined,
+      checkUserAssignment: true
+    };
+  }
+
+  protected openContainerCreateDialog(): void {
+    this.dialogService
+      .openDialog({
+        component: ContainerCreateDialogComponent,
+        data: this.containerCreateDialogData()
+      })
+      .afterClosed()
+      .subscribe((serial) => {
+        if (serial) {
+          this.selectedContainer.set(serial);
+          // A value set from code leaves the field pristine, so it is marked dirty for the pending-changes guard.
+          this.selectedContainerForm().markAsDirty();
+        }
+      });
   }
 
   protected lastStepDialogIsDismissable(): boolean {

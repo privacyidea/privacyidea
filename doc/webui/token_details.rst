@@ -218,7 +218,9 @@ Add to Container
 ----------------
 
 A token can be added to a container in the token details view and during the enrollment by selecting an existing
-container. Creating a new container at this point is only possible in the previous WebUI.
+container. The *Create new container* entry at the top of the container selection opens a dialog for a basic container
+creation: It allows defining the container type, setting a description, and optionally assigning the token owner to
+the new container. After the creation, the new container is preselected.
 
 Remove from Container
 ---------------------

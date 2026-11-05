@@ -1,0 +1,16 @@
+.container-type-hint {
+  --container-type-hint-lines: 3;
+  --container-type-hint-line-height: var(--mat-sys-body-large-line-height, 1.5rem);
+  margin-top: 8px;
+  font-size: 1rem;
+  line-height: var(--container-type-hint-line-height);
+  // Reserve the room of the longest list (all token types, 3 lines) so the dialog height stays constant.
+  min-height: calc(var(--container-type-hint-lines) * var(--container-type-hint-line-height));
+}
+
+// The dialog panel shrink-wraps its content, so pin the form to one field width.
+// Otherwise the dialog follows the selected option text and the hint line.
+.container-create-form {
+  width: var(--input-width-xl);
+  max-width: 100%;
+}

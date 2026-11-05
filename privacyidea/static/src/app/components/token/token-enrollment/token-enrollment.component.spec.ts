@@ -27,6 +27,7 @@ import {
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import { ContainerCreateDialogComponent } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
@@ -904,6 +905,44 @@ describe("TokenEnrollmentComponent", () => {
       expect(verifySpy).toHaveBeenCalledTimes(1);
       expect(successSpy).toHaveBeenCalledTimes(1);
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("openContainerCreateDialog()", () => {
+    it("passes the selected user to the dialog and preselects the created container", () => {
+      userService.selectedUser.set({ username: "alice" } as unknown as UserData);
+      userService.selectedUserRealm.set("realm1");
+
+      (component as unknown as { openContainerCreateDialog: () => void }).openContainerCreateDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: ContainerCreateDialogComponent,
+          data: { username: "alice", userRealm: "realm1", checkUserAssignment: true }
+        })
+      );
+      const dialogRef = dialogServiceMock.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+      dialogRef.close("CONT-NEW");
+
+      expect(component.selectedContainer()).toBe("CONT-NEW");
+      expect(component.isDirty()).toBe(true);
+    });
+
+    it("passes no user to the dialog when none is selected and keeps the selection on cancel", () => {
+      userService.selectedUser.set(null);
+      component.selectedContainer.set("CONT-OLD");
+
+      (component as unknown as { openContainerCreateDialog: () => void }).openContainerCreateDialog();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { username: undefined, userRealm: undefined, checkUserAssignment: true }
+        })
+      );
+      const dialogRef = dialogServiceMock.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+      dialogRef.close(undefined);
+
+      expect(component.selectedContainer()).toBe("CONT-OLD");
     });
   });
 

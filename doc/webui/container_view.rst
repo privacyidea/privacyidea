@@ -187,9 +187,10 @@ After a successful registration, the tokens are automatically added during synch
 
    *Container Created With Registration*
 
-On the user details page, *Create New Container* opens this page with the user preselected. In the previous WebUI, a
-basic container creation, which allows defining the container type, setting a description, and assigning the token
-owner to the container, is also possible on the token details page and during the enrollment of a new token.
+On the user details page, *Create New Container* opens this page with the user preselected. On the token details page
+and during the enrollment of a new token, the *Create new container* entry in the container selection opens a dialog
+for a basic container creation, which allows defining the container type, setting a description, and assigning the
+token owner to the container.
 
 
 Templates
