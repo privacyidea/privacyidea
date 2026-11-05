@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, inject, input, output, signal } from "@angular/core";
 
+import { form, FormField, required } from "@angular/forms/signals";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -42,11 +43,33 @@ import {
   SECTION_OPTIONS,
   SectionOptionKey
 } from "@services/policies/policies.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
+
+/** The fields of the condition form. `""` stands for an option that is not chosen yet. */
+interface ConditionModel {
+  section: SectionOptionKey | "";
+  key: string;
+  comparator: ComparatorOptionKey | "";
+  value: string;
+  active: boolean;
+  handleMissingData: HandleMissingDataOptionKey | "";
+}
+
+const emptyCondition = (): ConditionModel => ({
+  section: "",
+  key: "",
+  comparator: "",
+  value: "",
+  active: true,
+  handleMissingData: "condition_is_false"
+});
 
 @Component({
   selector: "app-edit-additional-conditions",
   standalone: true,
   imports: [
+    FormField,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
@@ -113,14 +136,19 @@ export class EditAdditionalConditionsComponent {
   readonly COMPARATOR_OPTIONS = COMPARATOR_OPTIONS;
   readonly HANDLE_MISSING_DATA_OPTIONS = HANDLE_MISSING_DATA_OPTIONS;
 
-  // Form Signals - Typed using the provided keys
-  readonly conditionSection = linkedSignal<boolean, SectionOptionKey | "">({
-    source: () => true,
-    computation: () => ""
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+
+  readonly condition = signal<ConditionModel>(emptyCondition());
+  readonly conditionForm = form(this.condition, (f) => {
+    required(f.section);
+    required(f.comparator);
+    required(f.handleMissingData);
+    requiredNonBlank(f.key);
   });
+
   readonly availableKeys = computed<string[]>(() => {
-    const section = this.conditionSection();
-    const currentKey = this.conditionKey();
+    const { section, key: currentKey } = this.condition();
     if (section === "token") {
       return this.TOKEN_KEYS.filter((key) => key.includes(currentKey));
     } else if (section === "container") {
@@ -128,80 +156,38 @@ export class EditAdditionalConditionsComponent {
     }
     return [];
   });
-  readonly conditionKey = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
-  readonly conditionComparator = linkedSignal<boolean, ComparatorOptionKey | "">({
-    source: () => true,
-    computation: () => ""
-  });
-  readonly conditionValue = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
-  readonly conditionActive = linkedSignal<boolean, boolean>({ source: () => true, computation: () => true });
-  readonly conditionHandleMissingData = linkedSignal<boolean, HandleMissingDataOptionKey | "">({
-    source: () => true,
-    computation: () => "condition_is_false"
-  });
 
   readonly additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);
 
-  readonly canSaveCondition = computed(
-    () =>
-      !!this.conditionSection() &&
-      !!this.conditionComparator() &&
-      !!this.conditionHandleMissingData() &&
-      !!this.conditionKey().trim()
-  );
+  readonly canSaveCondition = computed(() => this.conditionForm().valid());
 
-  readonly isFormDirty = computed(() => {
-    if (!this.showAddConditionForm()) return false;
-    const index = this.editIndex();
-    if (index !== null) {
-      const original = this.additionalConditions()[index];
-      if (!original) return false;
-      return (
-        this.conditionSection() !== original[0] ||
-        this.conditionKey() !== original[1] ||
-        this.conditionComparator() !== original[2] ||
-        this.conditionValue() !== original[3] ||
-        this.conditionActive() !== original[4] ||
-        this.conditionHandleMissingData() !== original[5]
-      );
-    }
-    return (
-      this.conditionSection() !== "" ||
-      this.conditionKey() !== "" ||
-      this.conditionComparator() !== "" ||
-      this.conditionValue() !== "" ||
-      this.conditionActive() !== true ||
-      this.conditionHandleMissingData() !== "condition_is_false"
-    );
-  });
+  /** The open form holds input that was typed or chosen since it was opened or loaded. */
+  readonly isFormDirty = computed(() => this.showAddConditionForm() && this.conditionForm().dirty());
 
   startEditCondition(condition: AdditionalCondition, index: number) {
     this.editIndex.set(index);
     this.showAddConditionForm.set(true);
-
-    this.conditionSection.set(condition[0]);
-    this.conditionKey.set(condition[1]);
-    this.conditionComparator.set(condition[2]);
-    this.conditionValue.set(condition[3]);
-    this.conditionActive.set(condition[4]);
-    this.conditionHandleMissingData.set(condition[5]);
+    this._loadForm({
+      section: condition[0],
+      key: condition[1],
+      comparator: condition[2],
+      value: condition[3],
+      active: condition[4],
+      handleMissingData: condition[5]
+    });
   }
 
   saveCondition() {
-    const section = this.conditionSection();
-    const comparator = this.conditionComparator();
-    const missingData = this.conditionHandleMissingData();
-    const key = this.conditionKey().trim();
+    if (!this.canSaveCondition()) return;
 
-    if (!section || !comparator || !missingData || !key) return;
-
+    const { section, key, comparator, value, active, handleMissingData } = this.condition();
     const condition: AdditionalCondition = [
-      section,
-      key,
-      comparator,
-      this.conditionValue(),
-      this.conditionActive(),
-      missingData
+      section as SectionOptionKey,
+      key.trim(),
+      comparator as ComparatorOptionKey,
+      value,
+      active,
+      handleMissingData as HandleMissingDataOptionKey
     ];
 
     const currentConditions = [...this.additionalConditions()];
@@ -247,12 +233,13 @@ export class EditAdditionalConditionsComponent {
   private _resetForm() {
     this.editIndex.set(null);
     this.showAddConditionForm.set(false);
-    this.conditionSection.set("");
-    this.conditionKey.set("");
-    this.conditionComparator.set("");
-    this.conditionValue.set("");
-    this.conditionActive.set(true);
-    this.conditionHandleMissingData.set("condition_is_false");
+    this._loadForm(emptyCondition());
+  }
+
+  /** Fills the form with `values` and leaves it untouched and unmodified. */
+  private _loadForm(values: ConditionModel) {
+    this.condition.set(values);
+    this.conditionForm().reset();
   }
 
   updateActiveState(index: number, active: boolean) {
@@ -265,7 +252,7 @@ export class EditAdditionalConditionsComponent {
     this.policyEdit.emit({ conditions });
 
     if (this.editIndex() === index) {
-      this.conditionActive.set(active);
+      this.condition.update((condition) => ({ ...condition, active }));
     }
   }
 

@@ -20,7 +20,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ElementRef, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { of, throwError } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
@@ -145,14 +144,19 @@ describe("TokenDetailsComponent", () => {
       {
         keyMap: { key: "description", label: "Description", group: "assignment" },
         value: "some description",
-        isEditing: signal(true)
+        isEditing: signal(false)
       }
     ]);
+    jest.spyOn(component["authService"], "actionAllowed").mockReturnValue(true);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.details-card--description button[aria-label="Edit"]').click();
     fixture.detectChanges();
 
     const textarea = fixture.nativeElement.querySelector(".details-card--description textarea");
     expect(textarea).toBeTruthy();
     expect(textarea.getAttribute("rows")).toBe("3");
+    expect(component.isAnyEditingOrRevoked()).toBe(true);
   });
 
   it("resetFailCount calls service and reloads", () => {
@@ -161,23 +165,6 @@ describe("TokenDetailsComponent", () => {
     component.resetFailCount();
     expect(tokenSvc.resetFailCount).toHaveBeenCalledWith("Mock serial");
     expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("saveTokenEdit('description') calls saveTokenDetail and toggles editing off", () => {
-    const el: EditableElement = {
-      keyMap: { key: "description" },
-      value: "newdesc",
-      isEditing: signal(true)
-    };
-
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.saveTokenEdit(el);
-
-    expect(tokenSvc.saveTokenDetail).toHaveBeenCalledWith("Mock serial", "description", "newdesc");
-    expect(reloadSpy).toHaveBeenCalled();
-    expect(el.isEditing()).toBe(false);
   });
 
   it("isEditableElement defers to policy: true/false", () => {
@@ -207,13 +194,14 @@ describe("TokenDetailsComponent", () => {
     // all false
     expect(component.isAnyEditingOrRevoked()).toBe(false);
 
-    // mark an element editing
-    const detail = component.tokenDetailData()[0];
-    detail.isEditing.set(true);
+    // an inline field in edit mode
+    const editing = signal(true);
+    const handle = { isEditing: editing, save: jest.fn(), cancel: jest.fn() };
+    component["editRegistry"].register(handle);
     expect(component.isAnyEditingOrRevoked()).toBe(true);
 
     // reset, set revoked
-    detail.isEditing.set(false);
+    editing.set(false);
     component.tokenIsRevoked.set(true);
     expect(component.isAnyEditingOrRevoked()).toBe(true);
 
@@ -532,41 +520,75 @@ describe("TokenDetailsComponent", () => {
     consoleSpy.mockRestore();
   });
 
-  it("cancelTokenEdit on a generic key reloads the resource", () => {
-    const reloadSpy = tokenSvc.tokenDetailResource.reload as jest.Mock;
-    reloadSpy.mockClear();
-
-    component.cancelTokenEdit({
-      keyMap: { key: "description" },
-      value: "",
-      isEditing: signal(true)
-    } as EditableElement);
-
-    expect(reloadSpy).toHaveBeenCalled();
-  });
-
   it("showTokenAuditLog sets the audit filter with the token serial", () => {
     const auditSvc = TestBed.inject(AuditService) as unknown as MockAuditService;
     component["showTokenAuditLog"]();
     expect(auditSvc.activeFilter().value).toBe("serial: Mock serial");
   });
 
-  it("saveAllInlineEdits saves editing rows and open user/info edits", async () => {
-    const row = component.tokenDetailData()[0];
-    row.isEditing.set(true);
-    const saveTokenEditSpy = jest.spyOn(component, "saveTokenEdit").mockReturnValue(undefined);
+  it("saveAllInlineEdits saves the editing fields and open user/info edits", async () => {
+    const handle = { isEditing: signal(true), save: jest.fn(), cancel: jest.fn() };
+    component["editRegistry"].register(handle);
 
     component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsComponent["userChild"];
     component.isEditingUser.set(true);
 
-    component.infoChild = { saveInfo: jest.fn() } as unknown as TokenDetailsComponent["infoChild"];
+    component.infoChild = { canSave: signal(true), saveInfo: jest.fn() } as unknown as TokenDetailsComponent["infoChild"];
     component.isEditingInfo.set(true);
 
     await expect(component.saveAllInlineEdits()).resolves.toBe(true);
 
-    expect(saveTokenEditSpy).toHaveBeenCalledWith(row);
+    expect(handle.save).toHaveBeenCalled();
     expect(component.userChild!.saveUser).toHaveBeenCalled();
     expect(component.infoChild!.saveInfo).toHaveBeenCalledWith(component.infoData()[0]);
+  });
+
+  describe("validity of the inline edits", () => {
+    const registerInvalidField = () => {
+      const handle = { isEditing: signal(true), valid: signal(false), save: jest.fn(), cancel: jest.fn() };
+      component["editRegistry"].register(handle);
+      return handle;
+    };
+
+    it("saveAllInlineEdits saves nothing while an inline field is invalid", async () => {
+      const handle = registerInvalidField();
+      component.userChild = { saveUser: jest.fn() } as unknown as TokenDetailsComponent["userChild"];
+      component.isEditingUser.set(true);
+
+      await expect(component.saveAllInlineEdits()).resolves.toBe(false);
+
+      expect(handle.save).not.toHaveBeenCalled();
+      expect(component.userChild!.saveUser).not.toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits saves nothing while the info 'add' row is incomplete", async () => {
+      const handle = { isEditing: signal(true), save: jest.fn(), cancel: jest.fn() };
+      component["editRegistry"].register(handle);
+      component.infoChild = {
+        canSave: signal(false),
+        saveInfo: jest.fn()
+      } as unknown as TokenDetailsComponent["infoChild"];
+      component.isEditingInfo.set(true);
+
+      await expect(component.saveAllInlineEdits()).resolves.toBe(false);
+
+      expect(handle.save).not.toHaveBeenCalled();
+      expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
+    });
+
+    it("reports the validity to the pending changes service", () => {
+      const pending = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      const validChanges = (pending.registerValidChanges as jest.Mock).mock.calls.at(-1)![0] as () => boolean;
+      const hasChanges = (pending.registerHasChanges as jest.Mock).mock.calls.at(-1)![0] as () => boolean;
+
+      expect(validChanges()).toBe(true);
+      expect(hasChanges()).toBe(false);
+
+      registerInvalidField();
+
+      expect(validChanges()).toBe(false);
+      expect(hasChanges()).toBe(true);
+    });
   });
 
   it("saveAllInlineEdits turns off info editing when no info element exists", async () => {

@@ -20,97 +20,102 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { RemoteConfigComponent } from "@components/configuration/token-type-config/token-types/remote-config/remote-config.component";
 import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "@constants/token.constants";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 
 describe("RemoteConfigComponent", () => {
   let fixture: ComponentFixture<RemoteConfigComponent>;
   let component: RemoteConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const serverInput = () => fixture.nativeElement.querySelector("mat-form-field input") as HTMLInputElement;
+  const checkbox = () => fixture.nativeElement.querySelector("input[type=checkbox]") as HTMLInputElement;
+
+  const create = async (config: Record<string, string> = {}) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(RemoteConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RemoteConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(RemoteConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should emit formDataChange when updateFormData is called", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "https://remote.privacyidea.server";
-    component.updateFormData(REMOTE_SERVER, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [REMOTE_SERVER]: newValue });
+  it("shows the remote server of the form", async () => {
+    await create({ [REMOTE_SERVER]: "https://test.privacyidea.server" });
+    expect(serverInput().value).toBe("https://test.privacyidea.server");
   });
 
-  it("should preserve existing formData when updating remote server", () => {
-    const initialData = {
-      [REMOTE_VERIFY_SSL]: true,
-      [REMOTE_SERVER]: "https://old.server.com"
-    };
-    fixture.componentRef.setInput("formData", initialData);
-    fixture.detectChanges();
+  it("writes the typed remote server to the form and keeps the SSL flag", async () => {
+    await create({ [REMOTE_VERIFY_SSL]: "True", [REMOTE_SERVER]: "https://old.server.com" });
 
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "https://new.server.com";
-    component.updateFormData(REMOTE_SERVER, newValue);
+    serverInput().value = "https://new.server.com";
+    serverInput().dispatchEvent(new Event("input"));
+    await flush();
 
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({
-      ...initialData,
-      [REMOTE_SERVER]: newValue
+    expect(configForm.model().values[REMOTE_SERVER]).toBe("https://new.server.com");
+    expect(configForm.model().verifySsl).toBe(true);
+    expect(configForm.form.values[REMOTE_SERVER]().dirty()).toBe(true);
+  });
+
+  describe("verify SSL checkbox", () => {
+    it("is checked for a backend value of True and 1", async () => {
+      await create({ [REMOTE_VERIFY_SSL]: "True" });
+      expect(checkbox().checked).toBe(true);
+      await create({ [REMOTE_VERIFY_SSL]: "1" });
+      expect(checkbox().checked).toBe(true);
+    });
+
+    it("is unchecked for a backend value of False and 0 and when the backend has none", async () => {
+      await create({ [REMOTE_VERIFY_SSL]: "False" });
+      expect(checkbox().checked).toBe(false);
+      await create({ [REMOTE_VERIFY_SSL]: "0" });
+      expect(checkbox().checked).toBe(false);
+      await create();
+      expect(checkbox().checked).toBe(false);
+    });
+
+    it("writes the boolean to the form and marks the field dirty", async () => {
+      await create();
+
+      checkbox().click();
+      await flush();
+
+      expect(configForm.model().verifySsl).toBe(true);
+      expect(configForm.form.verifySsl().dirty()).toBe(true);
+
+      checkbox().click();
+      await flush();
+
+      expect(configForm.model().verifySsl).toBe(false);
+    });
+
+    it("follows a change of the model", async () => {
+      await create();
+
+      configForm.model.update((model) => ({ ...model, verifySsl: true }));
+      await flush();
+
+      expect(checkbox().checked).toBe(true);
     });
   });
 
-  it("should display current formData values", () => {
-    const testData = {
-      [REMOTE_SERVER]: "https://test.privacyidea.server",
-      [REMOTE_VERIFY_SSL]: true
-    };
-    fixture.componentRef.setInput("formData", testData);
-    fixture.detectChanges();
-
-    expect(component.formData()[REMOTE_SERVER]).toEqual("https://test.privacyidea.server");
-    expect(component.formData()[REMOTE_VERIFY_SSL]).toEqual(true);
-  });
-
-  it("should handle empty remote server value", () => {
-    jest.spyOn(component.formDataChange, "emit");
-    const newValue = "";
-    component.updateFormData(REMOTE_SERVER, newValue);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [REMOTE_SERVER]: "" });
-  });
-
-  it("should handle boolean values for verify SSL checkbox", () => {
-    jest.spyOn(component.formDataChange, "emit");
-
-    component.updateFormData(REMOTE_VERIFY_SSL, false);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [REMOTE_VERIFY_SSL]: false });
-
-    component.updateFormData(REMOTE_VERIFY_SSL, true);
-    expect(component.formDataChange.emit).toHaveBeenCalledWith({ [REMOTE_VERIFY_SSL]: true });
-  });
-
-  it("should correctly compute verifySSL signal for strings", () => {
-    fixture.componentRef.setInput("formData", { [REMOTE_VERIFY_SSL]: "0" });
-    fixture.detectChanges();
-    expect(component.verifySSL()).toBe(false);
-
-    fixture.componentRef.setInput("formData", { [REMOTE_VERIFY_SSL]: "1" });
-    fixture.detectChanges();
-    expect(component.verifySSL()).toBe(true);
-  });
-
-  it("should correctly compute verifySSL signal for booleans", () => {
-    fixture.componentRef.setInput("formData", { [REMOTE_VERIFY_SSL]: true });
-    fixture.detectChanges();
-    expect(component.verifySSL()).toBe(true);
-
-    fixture.componentRef.setInput("formData", { [REMOTE_VERIFY_SSL]: false });
-    fixture.detectChanges();
-    expect(component.verifySSL()).toBe(false);
+  it("has no rule that blocks the form", async () => {
+    await create();
+    expect(configForm.form().valid()).toBe(true);
   });
 });

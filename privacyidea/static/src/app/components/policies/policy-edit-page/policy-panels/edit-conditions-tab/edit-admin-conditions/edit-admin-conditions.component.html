@@ -33,43 +33,12 @@
     (selectionChange)="selectAdminRealm($event)">
   </app-multi-select-only>
 
-  <div class="admin-list-wrapper">
-    <div class="admin-list">
-      @for (admin of selectedAdmins(); track admin) {
-        <div class="admin-chip-edit">
-          <span [title]="admin">{{ admin }}</span>
-          <button
-            mat-icon-button
-            (click)="removeAdmin(admin)"
-            class="remove-admin-btn">
-            <mat-icon class="remove-admin-icon">close</mat-icon>
-          </button>
-        </div>
-      }
-    </div>
-  </div>
-
-  <div class="admin-input-container">
-    <mat-form-field
-      subscriptSizing="dynamic"
-      class="input-width-l"
-      appearance="outline">
-      <mat-label i18n="@@policy.adminName">Admin Name</mat-label>
-      <input
-        matInput
-        [formField]="adminField"
-        #adminInput
-        (keyup.enter)="addAdmin(adminSignal())" />
-      @if (adminField().errors().some(e => e.kind === 'includesComma')) {
-        <mat-error i18n="@@policy.adminMustNotContain">Admin must not contain commas.</mat-error>
-      }
-    </mat-form-field>
-
-    <button
-      mat-icon-button
-      [disabled]="!adminSignal().trim() || adminField().errors().length > 0"
-      (click)="addAdmin(adminSignal())">
-      <mat-icon>add</mat-icon>
-    </button>
-  </div>
+  <app-chip-list-input
+    fieldClass="input-width-xl"
+    label="Admin Name"
+    i18n-label="@@policy.adminName"
+    gridLabel="Admin users"
+    i18n-gridLabel="@@policy.adminUsersGrid"
+    [values]="selectedAdmins()"
+    (valuesChange)="updatePolicy({ adminuser: $event })" />
 </div>

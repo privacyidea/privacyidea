@@ -19,6 +19,8 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
+import { MatSelect } from "@angular/material/select";
 import { MatDialogRef } from "@angular/material/dialog";
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -43,6 +45,7 @@ import {
 } from "@testing/mock-services";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { touchAll } from "@utils/form-state.utils";
 import { of, Subject } from "rxjs";
 import { ApiClientEditComponent } from "./api-client-edit.component";
 
@@ -281,6 +284,74 @@ describe("ApiClientEditComponent", () => {
     fixture.detectChanges();
 
     expect(component.apiClientModel().display_name).toBe("Typed By Admin");
+  });
+
+  describe("form fields", () => {
+    const nativeElement = (): HTMLElement => fixture.nativeElement;
+    const allowAdding = () => {
+      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["api_client_add"] });
+      fixture.detectChanges();
+    };
+    const clientTypeSelect = () => fixture.debugElement.query(By.directive(MatSelect)).componentInstance as MatSelect;
+
+    it("should write a picked client type to the model and mark the field dirty", async () => {
+      await setup();
+      expect(component.apiClientForm.client_type().dirty()).toBe(false);
+
+      clientTypeSelect().open();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      (document.querySelectorAll("mat-option")[0] as HTMLElement).click();
+      fixture.detectChanges();
+
+      const firstOption = (
+        TestBed.inject(IntegrationsService) as unknown as MockIntegrationsService
+      ).apiClientIntegrations()[0];
+      expect(component.apiClientModel().client_type).toBe(firstOption.id);
+      expect(component.apiClientForm.client_type().dirty()).toBe(true);
+      expect(component.hasChanges).toBe(true);
+    });
+
+    it("should render the required errors after touching every field", async () => {
+      await setup();
+      allowAdding();
+      expect(nativeElement().querySelector("mat-error")).toBeNull();
+
+      await touchAll(component.apiClientForm);
+      fixture.detectChanges();
+
+      const errors = Array.from(nativeElement().querySelectorAll("mat-error")).map((el) => el.textContent);
+      expect(errors).toHaveLength(2);
+      expect(errors[0]).toContain("Display name is required");
+      expect(errors[1]).toContain("Client type is required");
+    });
+
+    it("should clear the display name through the clear button and mark it dirty", async () => {
+      await setup();
+      allowAdding();
+      component.apiClientModel.update((m) => ({ ...m, display_name: "My Client" }));
+      fixture.detectChanges();
+
+      (nativeElement().querySelector("app-clear-button button") as HTMLElement).click();
+      fixture.detectChanges();
+
+      expect(component.apiClientModel().display_name).toBe("");
+      expect(component.apiClientForm.display_name().dirty()).toBe(true);
+    });
+
+    it("should show the label of the client type as a disabled read-only field in edit mode", async () => {
+      await setupEditMode();
+      apiClientServiceMock.apiClients.update((clients) =>
+        clients.map((client) => ({ ...client, client_type: "privacyidea-keycloak" }))
+      );
+      fixture.detectChanges();
+
+      expect(component.apiClientModel().client_type).toBe("privacyidea-keycloak");
+      const input = nativeElement().querySelector<HTMLInputElement>("input[disabled]:not([placeholder])");
+      expect(input?.value).toBe("Keycloak");
+      expect(component.apiClientForm.client_type().disabled()).toBe(true);
+    });
   });
 
   describe("rotateKey", () => {

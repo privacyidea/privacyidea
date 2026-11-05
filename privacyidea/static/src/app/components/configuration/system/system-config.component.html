@@ -40,9 +40,9 @@
           </button>
           @if (hasConfigWritePermission()) {
             <button
-              [disabled]="!authService.actionAllowed('configwrite')"
               class="action-button-primary button-width-m"
               mat-stroked-button
+              [disabled]="!canSave()"
               (click)="saveSystemConfig()">
               <mat-icon>save</mat-icon>
               <span i18n="@@common.save">Save</span>
@@ -53,8 +53,7 @@
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
-          [checked]="params().splitAtSign"
-          (change)="updateParam('splitAtSign', $event.checked)"
+          [formField]="systemConfigForm.splitAtSign"
           i18n="@@systemConfig.useSignSplitUsername"
           >Use &#64; sign to split the username and the realm</mat-checkbox
         >
@@ -63,8 +62,7 @@
       <div class="flex-row full-width-grid-column gap-16 ali-center">
         <div class="form-group">
           <mat-checkbox
-            [checked]="params().IncFailCountOnFalsePin"
-            (change)="updateParam('IncFailCountOnFalsePin', $event.checked)"
+            [formField]="systemConfigForm.IncFailCountOnFalsePin"
             i18n="@@systemConfig.increaseFailcounter"
             >Increase the failcounter <br />
             if the wrong PIN was entered</mat-checkbox
@@ -74,18 +72,19 @@
         <mat-form-field class="margin-left-auto input-width-s">
           <mat-label i18n="@@systemConfig.clearFailcounter">Clear Failcounter</mat-label>
           <input
-            [value]="params().failcounter_clear_timeout ?? ''"
-            (input)="updateParam('failcounter_clear_timeout', $any($event.target).value)"
+            [formField]="systemConfigForm.failcounter_clear_timeout"
             matInput
             placeholder="0" />
           <mat-hint i18n="@@systemConfig.timeMinutes">Time in minutes.</mat-hint>
+          @if (hasError(systemConfigForm.failcounter_clear_timeout, ERR.pattern)) {
+            <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+          }
         </mat-form-field>
       </div>
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
-          [checked]="params().no_auth_counter"
-          (change)="updateParam('no_auth_counter', $event.checked)"
+          [formField]="systemConfigForm.no_auth_counter"
           i18n="@@systemConfig.doNotUseAuthentication"
           >Do not use an authentication counter per token</mat-checkbox
         >
@@ -93,8 +92,7 @@
 
       <div class="form-group margin-bottom-16">
         <mat-checkbox
-          [checked]="params().PrependPin"
-          (change)="updateParam('PrependPin', $event.checked)"
+          [formField]="systemConfigForm.PrependPin"
           i18n="@@systemConfig.prependPinFront"
           >Prepend the PIN in front of the OTP value. Otherwise it will be post pended</mat-checkbox
         >
@@ -103,8 +101,7 @@
       <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-16">
         <div class="form-group">
           <mat-checkbox
-            [checked]="params().AutoResync"
-            (change)="updateParam('AutoResync', $event.checked)"
+            [formField]="systemConfigForm.AutoResync"
             i18n="@@systemConfig.automaticResync"
             >Automatic resync during authentication</mat-checkbox
           >
@@ -113,12 +110,13 @@
         <mat-form-field class="margin-left-auto input-width-s">
           <mat-label i18n="@@systemConfig.autoResync">Auto Resync</mat-label>
           <input
-            [value]="params().AutoResyncTimeout ?? ''"
-            [disabled]="!params().AutoResync"
-            (input)="updateParam('AutoResyncTimeout', $any($event.target).value)"
+            [formField]="systemConfigForm.AutoResyncTimeout"
             matInput
             placeholder="300" />
           <mat-hint i18n="@@systemConfig.timeoutSeconds">Timeout in seconds.</mat-hint>
+          @if (hasError(systemConfigForm.AutoResyncTimeout, ERR.pattern)) {
+            <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -127,11 +125,13 @@
           <mat-form-field class="input-width-l">
             <mat-label i18n="@@systemConfig.userCacheExpiration">User Cache Expiration</mat-label>
             <input
-              [value]="params().UserCacheExpiration ?? ''"
-              (input)="updateParam('UserCacheExpiration', $any($event.target).value)"
+              [formField]="systemConfigForm.UserCacheExpiration"
               matInput
               placeholder="0" />
             <mat-hint i18n="@@systemConfig.timeSeconds">Time in seconds.</mat-hint>
+            @if (hasError(systemConfigForm.UserCacheExpiration, ERR.pattern)) {
+              <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+            }
           </mat-form-field>
 
           <button
@@ -147,13 +147,11 @@
           <mat-form-field class="input-width-l">
             <mat-label i18n="@@systemConfig.overrideAuthorization">Override Authorization Clients</mat-label>
             <app-clearable-input
-              (clearButtonClick)="updateParam('OverrideAuthorizationClient', '')"
-              [showClearButton]="!!params().OverrideAuthorizationClient">
+              (clearButtonClick)="clearField(systemConfigForm.OverrideAuthorizationClient, '')"
+              [showClearButton]="!!systemConfigForm.OverrideAuthorizationClient().value()">
               <input
-                [value]="params().OverrideAuthorizationClient ?? ''"
-                (input)="updateParam('OverrideAuthorizationClient', $any($event.target).value)"
+                [formField]="systemConfigForm.OverrideAuthorizationClient"
                 matInput
-                name="OverrideAuthorizationClient"
                 placeholder="127.0.0.1, 10.0.0.8" />
             </app-clearable-input>
             <mat-hint i18n="@@systemConfig.theseClientIp"
@@ -163,17 +161,15 @@
 
           <mat-form-field class="input-width-l">
             <mat-label i18n="@@systemConfig.smtpServerPassword">SMTP Server for Password Recovery</mat-label>
-            <mat-select
-              [value]="params()['recovery.identifier']"
-              (selectionChange)="updateParam('recovery.identifier', $event.value)">
+            <mat-select [formField]="systemConfigForm['recovery.identifier']">
               @for (identifier of smtpIdentifiers(); track identifier) {
                 <mat-option [value]="identifier">{{ identifier }}</mat-option>
               }
             </mat-select>
-            @if (params()["recovery.identifier"]) {
+            @if (systemConfigForm["recovery.identifier"]().value()) {
               <app-clear-button
                 matSuffix
-                (clearButtonClick)="updateParam('recovery.identifier', ''); $event.stopPropagation()"
+                (clearButtonClick)="clearField(systemConfigForm['recovery.identifier'], ''); $event.stopPropagation()"
                 i18n-toolTipText="@@common.clearInput"
                 toolTipText="Clear Input" />
             }
@@ -199,28 +195,34 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@common.otpLength">OTP Length</mat-label>
               <input
-                [value]="params()['DefaultOtpLen'] ?? ''"
-                (input)="updateParam('DefaultOtpLen', $any($event.target).value)"
+                [formField]="systemConfigForm.DefaultOtpLen"
                 matInput
                 placeholder="6" />
+              @if (hasError(systemConfigForm.DefaultOtpLen, ERR.pattern)) {
+                <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@common.countWindow">Count Window</mat-label>
               <input
-                [value]="params()['DefaultCountWindow'] ?? ''"
-                (input)="updateParam('DefaultCountWindow', $any($event.target).value)"
+                [formField]="systemConfigForm.DefaultCountWindow"
                 matInput
                 placeholder="10" />
+              @if (hasError(systemConfigForm.DefaultCountWindow, ERR.pattern)) {
+                <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@systemConfig.maxFailcount">Max Failcount</mat-label>
               <input
-                [value]="params()['DefaultMaxFailCount'] ?? ''"
-                (input)="updateParam('DefaultMaxFailCount', $any($event.target).value)"
+                [formField]="systemConfigForm.DefaultMaxFailCount"
                 matInput
                 placeholder="10" />
+              @if (hasError(systemConfigForm.DefaultMaxFailCount, ERR.pattern)) {
+                <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+              }
             </mat-form-field>
           </div>
 
@@ -228,20 +230,24 @@
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@common.syncWindow">Sync Window</mat-label>
               <input
-                [value]="params()['DefaultSyncWindow'] ?? ''"
-                (input)="updateParam('DefaultSyncWindow', $any($event.target).value)"
+                [formField]="systemConfigForm.DefaultSyncWindow"
                 matInput
                 placeholder="1000" />
+              @if (hasError(systemConfigForm.DefaultSyncWindow, ERR.pattern)) {
+                <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field class="input-width-s">
               <mat-label i18n="@@systemConfig.challengeValidity">Challenge Validity</mat-label>
               <input
-                [value]="params()['DefaultChallengeValidityTime'] ?? ''"
-                (input)="updateParam('DefaultChallengeValidityTime', $any($event.target).value)"
+                [formField]="systemConfigForm.DefaultChallengeValidityTime"
                 matInput
                 placeholder="120" />
               <mat-hint i18n="@@systemConfig.timeSeconds">Time in seconds.</mat-hint>
+              @if (hasError(systemConfigForm.DefaultChallengeValidityTime, ERR.pattern)) {
+                <mat-error i18n="@@systemConfig.wholeNumber">Enter a <strong>whole number</strong>.</mat-error>
+              }
             </mat-form-field>
           </div>
         </div>

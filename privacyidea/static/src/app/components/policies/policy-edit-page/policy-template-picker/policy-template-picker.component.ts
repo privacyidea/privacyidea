@@ -35,7 +35,7 @@ import {
 export class PolicyTemplatePickerComponent {
   readonly policyTemplatesService: PolicyTemplatesServiceInterface = inject(PolicyTemplatesService);
 
-  readonly currentPriority = input<number>(1);
+  readonly currentPriority = input<number | null>(1);
   readonly templateApplied = output<Partial<PolicyDetail>>();
 
   readonly isExpanded = signal(false);

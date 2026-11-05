@@ -14,6 +14,24 @@
   // it stands in for, not the unrelated 44rem default.
   @include table.page-table-state-size(table.table-width(checkbox, m, s, s, xl, s, s, s, s, s, m));
 
+  // The self-service list has no filter row, so the card follows its table instead of the admin
+  // filter row's floor: the title and paginator sit directly above the columns, and the loading and
+  // empty panel is as wide as the six always-present columns (serial m, type s, description xl,
+  // container m, active s, fail counter s).
+  &.token-table-layout--self-service {
+    min-width: 0;
+    width: fit-content;
+    @include table.page-table-state-size(table.fixed-table-width(m, s, xl, m, s, s));
+
+    // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+    // of holding it steady; fixed makes the header row's declared widths authoritative.
+    .token-table {
+      table-layout: fixed;
+      width: auto;
+    }
+    @include table.scroll-region-fits-table;
+  }
+
   .realm-break {
     margin-top: 3px;
   }

@@ -57,7 +57,6 @@ export class EditActionTabComponent {
   /** Top of the tab content, where the search field sits; the page compares it with its header. */
   readonly searchAnchor = viewChild.required<ElementRef<HTMLElement>>("searchAnchor");
   readonly searchField = viewChild.required(PolicyActionSearchComponent);
-
   readonly selectedAction: WritableSignal<{ name: string; value: string | boolean } | null> = linkedSignal({
     source: () => ({
       scope: this.policy().scope

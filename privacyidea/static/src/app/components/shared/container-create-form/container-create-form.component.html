@@ -34,9 +34,7 @@
 <mat-form-field class="input-width-xl margin-top-16">
   <mat-label i18n="@@common.description">Description</mat-label>
   <textarea
-    [value]="description()"
-    (input)="description.set($any($event.target).value)"
-    maxlength="80"
+    [formField]="descriptionField()"
     i18n-placeholder="@@common.enterDescription"
     matInput
     placeholder="Enter description"
@@ -49,8 +47,7 @@
     <mat-form-field [class]="templateFieldClass()">
       <mat-label i18n="@@container.template">Template</mat-label>
       <mat-select
-        [value]="selectedTemplate()"
-        (selectionChange)="selectedTemplate.set($event.value)"
+        [formField]="templateForm"
         [compareWith]="compareTemplates">
         @for (option of templateOptions(); track option) {
           <mat-option [value]="option">{{ option.name }}</mat-option>
@@ -80,8 +77,8 @@
 @if (showRegistration()) {
   <h4 i18n="@@container.registration">Registration</h4>
   <mat-checkbox
-    [checked]="generateQRCode()"
-    (change)="generateQRCode.set($event.checked); registrationSettings.expanded = false">
+    [formField]="generateQRCodeForm"
+    (change)="registrationSettings.expanded = false">
     <span i18n="@@container.generateQrCode">Generate a QR code to register the container on a smartphone.</span>
   </mat-checkbox>
   <mat-accordion>
@@ -92,15 +89,7 @@
       <mat-expansion-panel-header>
         <mat-panel-title i18n="@@container.optionalSettings">Optional Settings</mat-panel-title>
       </mat-expansion-panel-header>
-      <app-container-registration-config
-        (validInputChange)="validInputChange.emit($event)"
-        [containerHasOwner]="containerHasOwner()"
-        [passphrasePrompt]="passphrasePrompt()"
-        (passphrasePromptChange)="passphrasePrompt.set($event)"
-        [passphraseResponse]="passphraseResponse()"
-        (passphraseResponseChange)="passphraseResponse.set($event)"
-        [userStorePassphrase]="userStorePassphrase()"
-        (userStorePassphraseChange)="userStorePassphrase.set($event)"></app-container-registration-config>
+      <app-container-registration-config [registration]="registration()"></app-container-registration-config>
     </mat-expansion-panel>
   </mat-accordion>
 }

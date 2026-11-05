@@ -23,12 +23,14 @@ import { By } from "@angular/platform-browser";
 import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
+import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
 import { EditActionTabComponent } from "./edit-action-tab.component";
 
 @Component({
   selector: "app-added-actions-list",
   template: "",
-  standalone: true
+  standalone: true,
+  providers: [{ provide: AddedActionsListComponent, useExisting: forwardRef(() => MockAddedActionsListComponent) }]
 })
 class MockAddedActionsListComponent {
   isEditMode = input.required<boolean>();
