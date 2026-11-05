@@ -624,6 +624,29 @@ class SMTPServerTestCase(MyApiTestCase):
         self.assertEqual("other.example", stored["server"])
         self.assertEqual("newsecret", stored["password"])
 
+    def test_change_settings_of_server_without_password(self):
+        """A server without authentication has no password to enter, so its settings can always be changed."""
+        add_smtpserver("noauth", server="mail.example.com", port=25, username="", password="")
+        self.addCleanup(delete_smtpserver, "noauth")
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        body = self._listed_definition("noauth")
+        self.assertEqual("", body["password"])
+        # An empty password and the placeholder (sent by older clients) both keep the empty password
+        for password, port in (("", 587), (CENSORED, 465)):
+            with self.subTest(password=password):
+                body.update(password=password, port=port)
+                value, logins = self._send_censored_test_email(dict(body, identifier="noauth",
+                                                                    recipient="recp@example.com"))
+                self.assertTrue(value)
+                self.assertEqual([], logins)
+                with self.app.test_request_context("/smtpserver/noauth", method="POST", json=body,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                stored = list_smtpservers(identifier="noauth")["noauth"]
+                self.assertEqual(port, stored["port"])
+                self.assertEqual("", stored["password"])
+
 def _write_smime_key_and_certificate(directory: str, key_password: str) -> tuple[str, str]:
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "privacyidea@local")])

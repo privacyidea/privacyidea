@@ -372,7 +372,7 @@ def check_censored_password(identifier: str, saved: dict, action: str, server: s
     A client that never received the password sends the ``__CENSORED__`` placeholder instead, which
     means "use the stored password". The stored password is only used if the request keeps the server,
     the port, the username and the TLS flag of the saved configuration. A value of ``None`` means the
-    setting is not changed.
+    setting is not changed. If no password is stored, any setting can be changed.
 
     :param identifier: the identifier of the saved SMTP server
     :param saved: the saved configuration, as returned by ``SMTPServerDB.get()``
@@ -383,6 +383,8 @@ def check_censored_password(identifier: str, saved: dict, action: str, server: s
     :param tls: the requested TLS flag
     :raises ParameterError: if one of the settings differs from the saved configuration
     """
+    if not saved.get("password") or decryptPassword(saved["password"]) == "":
+        return
     saved_settings = {"server": saved.get("server"), "port": saved.get("port"),
                       "username": saved.get("username") or "", "tls": bool(saved.get("tls"))}
     requested = {"server": server, "port": port, "username": username, "tls": tls}

@@ -76,7 +76,8 @@ This only works as long as the *server*, the *port*, the *username* and the
 *TLS flag* stay the same. If you change one of them, you have to enter the
 password again before you can save the definition or send a test email.
 Otherwise privacyIDEA rejects the request with an error naming the changed
-settings.
+settings. A definition without a password is not affected: its password
+field is empty and all settings can be changed.
 
 .. versionchanged:: 3.14.1 The stored password is only kept or used if server,
    port, username and TLS flag are unchanged.

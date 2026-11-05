@@ -257,7 +257,8 @@ def list_smtpservers_api():
     ``certificate``.
 
     Secret values are not returned in clear text: ``password`` and
-    ``private_key_password`` are replaced by the placeholder ``__CENSORED__``.
+    ``private_key_password`` are replaced by the placeholder ``__CENSORED__``
+    if they are set. An empty secret is returned as an empty string.
     (``private_key`` holds the *path* to the S/MIME key file, not key material,
     so it is returned unchanged.) When updating a server, submit ``__CENSORED__``
     for a secret to keep its stored value, an empty string to clear it, or a new
@@ -269,9 +270,10 @@ def list_smtpservers_api():
     :status 200: dict of definitions in ``result.value``.
     """
     res = list_smtpservers()
-    # Do not expose secrets in the API response
+    # Do not expose secrets in the API response. An empty secret is returned as it is, so that a client does not
+    # send the placeholder back for a server without authentication.
     for identifier, data in res.items():
-        res[identifier] = censor_dict(data, SMTPSERVER_SECRET_KEYS)
+        res[identifier] = censor_dict(data, [key for key in SMTPSERVER_SECRET_KEYS if data.get(key)])
     g.audit_object.log({'success': True})
     return send_result(res)
 
