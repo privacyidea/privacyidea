@@ -3,7 +3,8 @@ Test for migration 7e3010cbe03e
 v3.14.1: Move every id sequence past the highest id of its table
 
 upgrade()   — moves every sequence that is behind the highest id of its table to the id after it; a sequence that is
-              further ahead stays. Nothing on MySQL.
+              further ahead stays. Nothing on MySQL. On Oracle, this includes the sequences that c7f1a2b3d4e5 sets as
+              default of the id column of the container tables.
 downgrade() — leaves the sequences where they are
 
 That no sequence is behind its table at head, from every seed, is checked by
@@ -13,10 +14,11 @@ test_every_sequence_is_ahead_of_its_table_at_head in test_migrations.py.
 import os
 
 import pytest
-from sqlalchemy import Engine
+from sqlalchemy import Engine, text
 
 from privacyidea.models.db import build_restart_sequence_sql
-from tests.migration_test_utils import MigrationTestBase, insert_rows, next_sequence_value, sequences_behind_their_table
+from tests.migration_test_utils import (MigrationTestBase, insert_rows, is_oracle, next_sequence_value,
+                                        quote_identifier, sequences_behind_their_table)
 
 pytestmark = [
     pytest.mark.migration,
@@ -115,5 +117,42 @@ class TestMigration7e3010cbe03e(MigrationTestBase):
         engine = self._engine()
         try:
             assert self._next_policy_id(engine) > highest_id
+        finally:
+            engine.dispose()
+
+    @pytest.mark.skipif(not is_oracle(), reason="Only Oracle gets a sequence as default of the container ids")
+    def test_upgrade_moves_a_container_default_sequence_that_is_behind(self, flask_app):
+        """
+        On an Oracle database whose container tables had no identity, c7f1a2b3d4e5 makes a sequence the default of the
+        id column. A row with an id ahead of that sequence must not block the next insert after the upgrade.
+        """
+        default_column = quote_identifier("default")
+        engine = self._engine()
+        try:
+            self._load_seed_and_upgrade_to_parent(engine)
+            with engine.connect() as conn:
+                conn.execute(text("ALTER TABLE tokencontainertemplate MODIFY (id DROP IDENTITY)"))
+                highest_id = conn.execute(text("SELECT COALESCE(MAX(id), 0) FROM tokencontainertemplate")).scalar() + 10
+                conn.execute(text("CREATE SEQUENCE tokencontainertemplate_seq START WITH 1"))
+                conn.execute(text("ALTER TABLE tokencontainertemplate "
+                                  "MODIFY (id DEFAULT tokencontainertemplate_seq.nextval)"))
+                conn.execute(text(f"INSERT INTO tokencontainertemplate (id, options, name, container_type, "
+                                  f"{default_column}) VALUES (:id, '', 'ahead_of_the_sequence', 'generic', 0)"),
+                             {"id": highest_id})
+                conn.commit()
+        finally:
+            engine.dispose()
+
+        self._upgrade()
+
+        engine = self._engine()
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(f"INSERT INTO tokencontainertemplate (options, name, container_type, "
+                                  f"{default_column}) VALUES ('', 'after_the_upgrade', 'generic', 0)"))
+                new_id = conn.execute(text("SELECT id FROM tokencontainertemplate "
+                                           "WHERE name = 'after_the_upgrade'")).scalar()
+                conn.commit()
+            assert new_id > highest_id
         finally:
             engine.dispose()
