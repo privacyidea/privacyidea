@@ -54,7 +54,7 @@ from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import (sanity_name_check, get_data_from_params,
                                    is_true)
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from .config import (get_resolver_types, get_resolver_classes, get_config_object)
 from .crypto import encryptPassword, CENSORED
 from .error import ConfigAdminError
@@ -507,7 +507,7 @@ def import_resolver(data, name=None):
     #  given data. We could use "pretestresolver() / testconnection()" (which
     #  doesn't check the input) or "loadConfig()" (which also doesn't check the
     #  parameter, at least for LDAP/SQL-resolver).
-    log.debug(f'Import resolver config: {data!s}')
+    log.debug(f'Import resolver config: {get_import_names(data, "resolvername")}')
 
     # Check for old style export type where resolvers were given as a list
     if isinstance(data, list):

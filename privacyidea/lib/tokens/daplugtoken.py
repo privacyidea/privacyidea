@@ -200,7 +200,8 @@ class DaplugTokenClass(HotpTokenClass):
         res = HotpTokenClass.check_otp_exist(self, otp, window)
         return res
 
-    @log_with(log)
+    # The result is the OTP
+    @log_with(log, log_exit=False)
     def get_otp(self, current_time=None):
         res = HotpTokenClass.get_otp(self, current_time)
         # returns (1, -1, '755224', '755224-1')

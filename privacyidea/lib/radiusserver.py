@@ -49,7 +49,7 @@ from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_bytes
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
 log = logging.getLogger(__name__)
@@ -377,7 +377,7 @@ def export_radiusserver(name=None, censor=False):
 @register_import('radiusserver')
 def import_radiusserver(data, name=None):
     """Import radiusserver configuration"""
-    log.debug(f'Import radiusserver config: {data!s}')
+    log.debug(f'Import radiusserver config: {get_import_names(data)}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue

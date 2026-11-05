@@ -201,6 +201,18 @@ class EntraIDResolver(HTTPResolver):
                                                     AUTHORITY: "string"})
         return descriptor
 
+    @classmethod
+    def get_config_for_documentation(cls, config: dict) -> dict:
+        """
+        In addition to the settings of the HTTP resolver, the Entra ID resolver is documented by the kind of client
+        credential it authenticates with, a secret or a certificate.
+        """
+        documented = super().get_config_for_documentation(config)
+        credential_types = {credential_type.value for credential_type in ClientCredentialType}
+        if config.get(CLIENT_CREDENTIAL_TYPE) in credential_types:
+            documented["client_credential_type"] = config.get(CLIENT_CREDENTIAL_TYPE)
+        return documented
+
     @staticmethod
     def getResolverDescriptor() -> dict:
         """

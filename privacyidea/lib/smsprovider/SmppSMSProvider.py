@@ -51,7 +51,7 @@ class SmppSMSProvider(ISMSProvider):
             raise SMSError(-1, "Missing smsgateway definition!")
 
         phone = self._mangle_phone(phone, self.smsgateway.option_dict)
-        log.debug(f"submitting message {message!r} to {phone!s}")
+        log.debug("submitting a message")
 
         smsc_host = self.smsgateway.option_dict.get("SMSC_HOST")
         smsc_port = self.smsgateway.option_dict.get("SMSC_PORT")
