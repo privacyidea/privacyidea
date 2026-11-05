@@ -209,6 +209,20 @@ describe("ContainerCreateComponent", () => {
     expect(wizardFixture.componentInstance).toBeTruthy();
   });
 
+  it.each([
+    ["admin", () => fixture],
+    ["self-service", () => TestBed.createComponent(ContainerCreateSelfServiceComponent)]
+  ])("names the container type select by its visible label (%s)", (_, createFixture) => {
+    const typeFixture = createFixture();
+    typeFixture.detectChanges();
+    const select: HTMLElement = typeFixture.nativeElement.querySelector(".type-select mat-select");
+    const labelId = select.getAttribute("aria-labelledby")?.split(" ")[0] ?? "";
+    const label = typeFixture.nativeElement.querySelector(".type-select label");
+
+    expect(label?.textContent?.trim()).toBe("Container Type");
+    expect(label?.id).toBe(labelId);
+  });
+
   it("non-QR create: opens the container details", () => {
     containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
 

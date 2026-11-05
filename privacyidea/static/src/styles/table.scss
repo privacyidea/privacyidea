@@ -305,6 +305,26 @@ $checkbox-column-width: 72px;
   @return unquote("calc(-32px + #{$expr})");
 }
 
+// What .table-scroll-region adds around a fixed-layout table: the reserved scrollbar gutter (15px) and
+// the table's own 1px border.
+$scroll-region-chrome: 16px;
+
+// Width of a table whose columns are held at their declared tiers (table-layout: fixed): the
+// header-chrome floor only exists because an auto layout grows a narrow sortable column past its tier,
+// so applying it here would size the placeholder wider than the table it stands in for. The result is the
+// scroll region's width, which is what the page card wraps (scroll-region-fits-table).
+@function fixed-table-width($sizes...) {
+  $expr: "0px";
+  @each $size in $sizes {
+    @if $size == checkbox {
+      $expr: "#{$expr} + #{$checkbox-column-width}";
+    } @else {
+      $expr: "#{$expr} + var(--column-width-#{$size})";
+    }
+  }
+  @return unquote("calc(#{$expr} + #{$scroll-region-chrome})");
+}
+
 @mixin base-table-structure(
   $table-class: ".table",
   $filter-class: ".table-filter",
