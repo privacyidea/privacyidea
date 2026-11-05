@@ -218,7 +218,9 @@ def downgrade():
     # of it, so it starts after the highest id.
     restart_sequence_past_max(op, 'customuserattribute', OLD_SEQUENCE_NAME)
 
-    # A downgrade that failed after copying some rows back copies only the others when it runs again
+    # A downgrade that failed after copying some rows back copies only the others when it runs again. A
+    # last_used_token_<agent> row that the upgrade did not move counts as copied back too, whatever its Type: the
+    # releases before keep one row per user and key, and their User.set_attribute fails on a second one.
     copied_back = {
         (row.user_id, row.resolver, row.realm_id, row.Key) for row in conn.execute(
             sa.select(old.c.user_id, old.c.resolver, old.c.realm_id, old.c.Key)

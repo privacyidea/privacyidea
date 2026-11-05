@@ -340,3 +340,32 @@ class TestMigration7d4e9b2c1a3f(MigrationTestBase):
         engine = self._engine()
         assert self._fetch_custom_value(engine, "u1", "department") == "engineering"
         engine.dispose()
+
+    def test_downgrade_keeps_one_row_per_key_next_to_a_custom_attribute(self, flask_app):
+        """
+        3.14 lets an administrator set a custom attribute last_used_token_<agent>. If the same user also has an
+        internal entry for that agent, the downgrade keeps the custom attribute and does not add a second row for the
+        key: the releases before read the row of a key with scalar_one_or_none().
+        """
+        engine = self._engine()
+        self._load_seed_and_upgrade_to_parent(engine)
+        engine.dispose()
+        self._upgrade()
+        engine = self._engine()
+        custom_id = self._fetch_scalar(engine, "SELECT COALESCE(MAX(id), 0) FROM customuserattribute") + 1
+        internal_id = self._fetch_scalar(engine, "SELECT COALESCE(MAX(id), 0) FROM internaluserattribute") + 1
+        self._insert_rows(engine, "customuserattribute", [{
+            "id": custom_id, "user_id": "u1", "resolver": "resolver1", "realm_id": None,
+            "Key": "last_used_token_app-a", "Value": "set-by-admin", "Type": None}])
+        self._insert_rows(engine, "internaluserattribute", [{
+            "id": internal_id, "user_id": "u1", "resolver": "resolver1", "realm_id": None,
+            "Key": "last_used_token", "Value": json.dumps({"app-a": "push", "app-b": "hotp"})}])
+        engine.dispose()
+
+        self._downgrade()
+
+        engine = self._engine()
+        assert self._fetch_custom_count(engine, "u1", "last_used_token_app-a") == 1
+        assert self._fetch_custom_value(engine, "u1", "last_used_token_app-a") == "set-by-admin"
+        assert self._fetch_custom_value(engine, "u1", "last_used_token_app-b") == "hotp"
+        engine.dispose()
