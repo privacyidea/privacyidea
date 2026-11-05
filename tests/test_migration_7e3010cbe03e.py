@@ -36,7 +36,7 @@ def _policy(name: str, **columns: object) -> dict:
 
 class TestMigration7e3010cbe03e(MigrationTestBase):
     REVISION = "7e3010cbe03e"
-    PARENT_REVISION = "4b810261d282"
+    PARENT_REVISION = "4aec628f7ef2"
 
     def _skip_without_sequences(self, engine: Engine) -> None:
         with engine.connect() as conn:

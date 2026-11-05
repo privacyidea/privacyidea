@@ -12,7 +12,7 @@ already further ahead stays where it is. MySQL has no sequences and is not chang
 sequences where they are.
 
 Revision ID: 7e3010cbe03e
-Revises: 4b810261d282
+Revises: 4aec628f7ef2
 Create Date: 2026-10-23 10:00:00.000000
 
 """
@@ -22,7 +22,7 @@ from alembic import op
 from privacyidea.models.db import restart_sequence_past_max
 
 revision = '7e3010cbe03e'
-down_revision = '4b810261d282'
+down_revision = '4aec628f7ef2'
 branch_labels = None
 depends_on = None
 
