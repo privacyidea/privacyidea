@@ -3,7 +3,7 @@ Downgrade test for migration c128c01a5520
 v3.11: Added token container template table and a 'template' column in the token container table.
 
 downgrade() — drops the foreign key of tokencontainer.template_id under the name the database has for it, then the
-              column and the tokencontainertemplate table
+              column and the tokencontainertemplate table. It skips the foreign key when the database has none.
 
 A database imported from another database engine can carry the foreign key under another name than the one upgrade()
 gives it.
@@ -65,3 +65,29 @@ class TestMigrationC128c01a5520(MigrationTestBase):
             assert "template_id" not in {column["name"].lower() for column in inspector.get_columns("tokencontainer")}
         finally:
             engine.dispose()
+
+    def _assert_downgraded(self) -> None:
+        engine = self._engine()
+        try:
+            inspector = sa_inspect(engine)
+            assert "tokencontainertemplate" not in {name.lower() for name in inspector.get_table_names()}
+            assert "template_id" not in {column["name"].lower() for column in inspector.get_columns("tokencontainer")}
+        finally:
+            engine.dispose()
+
+    def test_downgrade_runs_again_after_stopping_behind_the_foreign_key_drop(self, flask_app, capsys):
+        engine = self._engine()
+        try:
+            self._load_seed_and_upgrade_to_parent(engine)
+        finally:
+            engine.dispose()
+        self._upgrade()
+        self._downgrade_failing_after(r"ALTER TABLE tokencontainer DROP (FOREIGN KEY|CONSTRAINT)")
+        capsys.readouterr()
+
+        self._downgrade()
+
+        output = capsys.readouterr().out
+        assert "Foreign key 'template_id' already removed." in output
+        assert "Could not remove" not in output
+        self._assert_downgraded()

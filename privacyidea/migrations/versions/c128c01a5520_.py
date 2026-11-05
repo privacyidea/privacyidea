@@ -68,9 +68,12 @@ def downgrade():
              if fk['referred_table'] == 'tokencontainertemplate'
              and fk['constrained_columns'] == ['template_id']
              and fk['name']),
-            'tokencontainertemplate_id',
+            None,
         )
-        if migration_context.dialect.name in ['sqlite']:
+        if fk_name is None:
+            # A downgrade that stopped after it dropped the foreign key runs again from here
+            print("Foreign key 'template_id' already removed.")
+        elif migration_context.dialect.name in ['sqlite']:
             with op.batch_alter_table("tokencontainer") as batch_op:
                 batch_op.drop_constraint(fk_name, type_="foreignkey")
         else:
