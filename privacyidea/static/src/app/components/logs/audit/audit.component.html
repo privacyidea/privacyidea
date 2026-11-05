@@ -35,8 +35,6 @@
               [appFilterAutocomplete]="auditService.apiFilterKeys"
               (input)="auditService.handleFilterInput($event)"
               [value]="auditService.filterDraft().value"
-              aria-label="Filter Input"
-              i18n-aria-label="@@common.filterInput"
               i18n-placeholder="@@audit.exampleQueryAction"
               matInput
               placeholder="Example query: 'action: GET success: false'" />

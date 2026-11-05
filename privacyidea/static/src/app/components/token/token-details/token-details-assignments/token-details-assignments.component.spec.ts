@@ -236,6 +236,20 @@ describe("TokenDetailsAssignmentsComponent", () => {
     expect(internals.tokengroupField.isEditing()).toBe(false);
   });
 
+  it.each([
+    ["admin", false],
+    ["self-service", true]
+  ])("names the %s container link by the serial it shows", (_, selfService) => {
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    fixture.componentRef.setInput("selfService", selfService);
+    fixture.componentRef.setInput("tokenDetails", mockTokenDetails({ container_serial: "CONT-1" }));
+    fixture.detectChanges();
+
+    const link: HTMLElement = fixture.nativeElement.querySelector(".container-serial-row a");
+    expect(link.hasAttribute("aria-label")).toBe(false);
+    expect(link.textContent?.trim()).toBe("CONT-1");
+  });
+
   describe("container input", () => {
     const input = (): HTMLInputElement | null => fixture.nativeElement.querySelector(".container-serial-row input");
 

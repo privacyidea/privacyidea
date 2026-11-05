@@ -259,8 +259,7 @@ describe("AuditComponent (template rendering)", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
-    const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
+  const showRows = (rows: AuditData[]) =>
     mockAuditService.auditResource.value.set({
       detail: undefined,
       id: 0,
@@ -279,6 +278,9 @@ describe("AuditComponent (template rendering)", () => {
         status: true
       }
     });
+
+  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
+    showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
     fixture.detectChanges();
 
     const startdateColumnIndex = component.columnKeysMap.findIndex((c) => c.key === "startdate");
@@ -287,5 +289,19 @@ describe("AuditComponent (template rendering)", () => {
 
     expect(cellText).toContain("2026-01-15 10:00:00");
     expect(cellText).not.toContain("2026-01-15T10:00:00");
+  });
+
+  it.each([
+    ["admin", AuditComponent],
+    ["self-service", AuditSelfServiceComponent]
+  ])("names the %s filter input by its visible label", (_, componentType) => {
+    showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
+    const filterFixture = TestBed.createComponent<AuditComponent>(componentType);
+    filterFixture.detectChanges();
+    const element: HTMLElement = filterFixture.nativeElement;
+    const input = element.querySelector<HTMLInputElement>(".mat-mdc-form-field input")!;
+
+    expect(input.hasAttribute("aria-label")).toBe(false);
+    expect(element.querySelector(`label[for="${input.id}"]`)?.textContent).toContain("Filter Audit Log");
   });
 });

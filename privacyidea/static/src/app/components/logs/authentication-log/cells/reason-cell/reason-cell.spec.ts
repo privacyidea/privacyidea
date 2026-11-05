@@ -179,10 +179,11 @@ describe("ReasonCell", () => {
     expect(button.getAttribute("aria-label")).toBe(component.detailLabel);
   });
 
-  it("names what the placeholder link opens too, since its own text does not say", () => {
+  it("names the placeholder link by its visible text", () => {
     fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
     fixture.detectChanges();
 
-    expect(placeholder()?.getAttribute("aria-label")).toBe(component.detailLabel);
+    expect(placeholder()?.hasAttribute("aria-label")).toBe(false);
+    expect(placeholder()?.textContent?.trim()).toBe("see details");
   });
 });

@@ -34,8 +34,6 @@
               [appRefocusAfterReload]="authenticationLogService.authenticationLogResource.isLoading()"
               (input)="authenticationLogService.handleFilterInput($event)"
               [value]="authenticationLogService.authenticationLogFilter().value"
-              aria-label="Filter Input"
-              i18n-aria-label="@@common.filterInput"
               i18n-placeholder="@@authLog.exampleQueryUsernameAlice"
               matInput
               placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
@@ -429,13 +427,9 @@
         }
         <tr
           *matHeaderRowDef="visibleColumnKeys(); sticky: true"
-          aria-label="Header Row"
-          i18n-aria-label="@@authLog.headerRow"
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: visibleColumnKeys()"
-          aria-label="Data Row"
-          i18n-aria-label="@@authLog.dataRow"
           mat-row></tr>
         <tr *matNoDataRow>
           <td [attr.colspan]="visibleColumnKeys().length">
