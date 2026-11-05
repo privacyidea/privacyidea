@@ -49,7 +49,7 @@ from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import check_stored_secret_settings, fetch_one_resource, to_bytes, validate_path_identifier
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, import_entries)
 from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 
 log = logging.getLogger(__name__)
@@ -410,8 +410,7 @@ def import_radiusserver(data, name=None):
     raised after all servers have been processed.
     """
     log.debug(f'Import radiusserver config: {data!s}')
-    imported = []
-    failed = {}
+    entries = []
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
@@ -424,19 +423,5 @@ def import_radiusserver(data, name=None):
         legacy_secret = res_data.pop("password", None)
         if legacy_secret is not None and "secret" not in res_data:
             res_data["secret"] = legacy_secret
-        try:
-            rid = add_radius(res_name, **res_data)
-        except Exception as e:
-            # Leave the session usable for the next server
-            db.session.rollback()
-            log.warning(f'Could not import radiusserver "{res_name!s}": {e!s}')
-            failed[res_name] = e
-            continue
-        imported.append(res_name)
-        log.info(f'Import of radiusserver "{res_name!s}" finished,'
-                 f' id: {rid!s}')
-
-    if failed:
-        failure_summary = ', '.join(f'"{n}" ({e!s})' for n, e in failed.items())
-        raise ConfigAdminError(f"Could not import the following RADIUS servers: "
-                               f"{failure_summary}. Successfully imported: {imported}.")
+        entries.append((res_name, res_data))
+    import_entries(entries, lambda res_name, res_data: add_radius(res_name, **res_data), "RADIUS servers")

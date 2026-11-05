@@ -1376,3 +1376,32 @@ class CheckStoredSecretSettingsTestCase(MyTestCase):
                                          {"server": "mail.example.com", "port": 587}, "password", "save")
         self.assertEqual("The settings port differ from the saved SMTP server 'mail1'. "
                          "Enter the password to save the changed settings.", cm.exception.message)
+
+
+class ImportEntriesTestCase(MyTestCase):
+
+    def test_01_all_entries_imported(self):
+        from privacyidea.lib.utils.export import import_entries
+        imported = import_entries([("a", {"id": 1}), ("b", {"id": 2})], lambda name, data: data["id"], "things")
+        self.assertEqual(["a", "b"], imported)
+
+    def test_02_failed_entry_does_not_stop_the_others(self):
+        from privacyidea.lib.error import ConfigAdminError
+        from privacyidea.lib.utils.export import import_entries
+
+        def import_entry(name, data):
+            if name == "bad":
+                raise ParameterError("not valid")
+            return 1
+
+        with mock.patch("privacyidea.lib.utils.export.db.session.rollback") as rollback:
+            with self.assertRaises(ConfigAdminError) as cm:
+                import_entries([("bad", {}), ("good", {})], import_entry, "things")
+        rollback.assert_called_once()
+        self.assertIn('Could not import the following things: "bad" (', cm.exception.message)
+        self.assertIn("not valid", cm.exception.message)
+        self.assertIn("Successfully imported: ['good'].", cm.exception.message)
+
+        # The caller can choose the exception
+        with self.assertRaises(PolicyError):
+            import_entries([("bad", {})], import_entry, "policies", error_class=PolicyError)
