@@ -684,6 +684,24 @@ class _AuthLogContractTests(_ContractHost):
                                                 endpoint=self.endpoint_path)
                 remove_token(token.get_serial())
 
+    def test_an_undelivered_challenge_outranks_a_wrong_pin_of_another_token(self):
+        hotp = get_one_token(serial=self.serial)
+        hotp.set_pin("other-pin")
+        hotp.save()
+        email = init_token({"type": "email", "email": "cornelius@example.com", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.emailtoken.EmailTokenClass._compose_email",
+                        side_effect=Exception("gateway unavailable")):
+            response = self._authenticate(self.pin)
+
+        self._assert_failed(response)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={email.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={email.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint=self.endpoint_path)
+
     def test_the_row_lists_every_reason_while_every_token_keeps_its_own(self):
         # Two tokens, unusable for two different reasons. The row carries both - each is a separate piece of advice
         # for the admin and each is filterable on its own - in the order AuthEventReason declares them, which is what

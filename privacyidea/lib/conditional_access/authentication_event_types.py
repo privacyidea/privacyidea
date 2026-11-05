@@ -593,7 +593,7 @@ class RestrictionCause(str, Enum):
 
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
-# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
+# handful - INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, POST_AUTHENTICATION_FAIL,
 # DEVICE_TOKEN_REUSED, SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
 # reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The
 # CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
@@ -615,6 +615,8 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.CHALLENGE_DECLINED,
     # Lowest of the three declines: the user abandoning their own attempt says least about the request.
     AuthEventType.CHALLENGE_CANCELLED,
+    # A token whose challenge could not be created still matched the first factor, so the request was meant for it.
+    AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.ENROLLMENT_CANCELED_FAIL,
     AuthEventType.ENROLLMENT_FAIL,
     AuthEventType.MFA_FAIL,
@@ -630,11 +632,10 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.LOGIN_NAME_NOT_UNIQUE,
     # Refused before any token flow ran as well, and is the only event of its request.
     AuthEventType.USER_STORE_UNAVAILABLE,
-    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: both describe the *request* the
+    # Ranked lowest of the real failures, above the UNKNOWN_FAIL_REASON fallback: it describes the *request* the
     # endpoint refused rather than an outcome one of the request's tokens reached, so whenever a token did reach one it
-    # is the better classification. In practice neither reduces against anything - the endpoints that emit them
-    # classify a request with a single event - and they are listed here because every non-enforcement type must be.
-    AuthEventType.CHALLENGE_TRIGGER_FAIL,
+    # is the better classification. In practice it reduces against nothing - the endpoint that emits it classifies a
+    # request with a single event - and it is listed here because every non-enforcement type must be.
     AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON,
     # Never reduced against anything either: it is assigned on the way out of the request, by reclassifying the event
