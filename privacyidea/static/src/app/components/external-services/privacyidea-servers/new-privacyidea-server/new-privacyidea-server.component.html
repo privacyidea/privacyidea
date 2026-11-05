@@ -72,23 +72,23 @@
           class="input-width-l">
           <mat-label i18n="@@common.identifier">Identifier</mat-label>
           <app-clearable-input
-            (clearButtonClick)="privacyideaModel.update(m => ({...m, identifier: ''}))"
+            (clearButtonClick)="clearField(privacyideaForm.identifier, '')"
             [showClearButton]="!isEditMode() && !!privacyideaModel().identifier">
             <input
               [formField]="privacyideaForm.identifier"
               matInput
               placeholder="myRemotePrivacyIDEAServer" />
           </app-clearable-input>
-          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'required')) {
+          @if (hasError(privacyideaForm.identifier, ERR.required)) {
             <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
           }
-          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'pattern')) {
+          @if (hasError(privacyideaForm.identifier, ERR.pattern)) {
             <mat-error i18n="@@common.identifierContains"
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
               and hyphens are allowed.</mat-error
             >
           }
-          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'reservedName')) {
+          @if (hasError(privacyideaForm.identifier, ERR.reservedName)) {
             <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ privacyideaForm.identifier().value() }}".</mat-error>
           }
           <mat-hint i18n="@@piServer.uniqueIdentifying"
@@ -101,14 +101,14 @@
           class="input-width-l">
           <mat-label i18n="@@piServer.urlPrivacyidea">URL of the privacyIDEA Server</mat-label>
           <app-clearable-input
-            (clearButtonClick)="privacyideaModel.update(m => ({...m, url: ''}))"
+            (clearButtonClick)="clearField(privacyideaForm.url, '')"
             [showClearButton]="!!privacyideaModel().url">
             <input
               [formField]="privacyideaForm.url"
               matInput
               placeholder="https://pi17.example.com/" />
           </app-clearable-input>
-          @if (privacyideaForm.url().errors().some(e => e.kind === 'required')) {
+          @if (hasError(privacyideaForm.url, ERR.required)) {
             <mat-error i18n="@@piServer.urlPrivacyideaServer"
               >URL of the privacyIDEA Server is <strong>required</strong></mat-error
             >
@@ -118,9 +118,7 @@
       </div>
 
       <div class="margin-top-16">
-        <mat-checkbox
-          [checked]="privacyideaModel().tls"
-          (change)="privacyideaModel.update(m => ({...m, tls: $event.checked}))">
+        <mat-checkbox [formField]="privacyideaForm.tls">
           <span i18n="@@piServer.verifyCertificate">Verify the Certificate</span>
         </mat-checkbox>
         <p
@@ -136,7 +134,7 @@
         class="input-width-xl margin-top-16">
         <mat-label i18n="@@common.description">Description</mat-label>
         <app-clearable-input
-          (clearButtonClick)="privacyideaModel.update(m => ({...m, description: ''}))"
+          (clearButtonClick)="clearField(privacyideaForm.description, '')"
           [showClearButton]="!!privacyideaModel().description">
           <textarea
             [formField]="privacyideaForm.description"
@@ -152,7 +150,7 @@
             class="input-width-l">
             <mat-label i18n="@@common.user">User</mat-label>
             <app-clearable-input
-              (clearButtonClick)="privacyideaModel.update(m => ({...m, username: ''}))"
+              (clearButtonClick)="clearField(privacyideaForm.username, '')"
               [showClearButton]="!!privacyideaModel().username">
               <input
                 [formField]="privacyideaForm.username"
@@ -165,7 +163,7 @@
             class="input-width-l">
             <mat-label i18n="@@common.password">Password</mat-label>
             <app-clearable-input
-              (clearButtonClick)="privacyideaModel.update(m => ({...m, password: ''}))"
+              (clearButtonClick)="clearField(privacyideaForm.password, '')"
               [showClearButton]="!!privacyideaModel().password">
               <input
                 autocomplete="new-password"

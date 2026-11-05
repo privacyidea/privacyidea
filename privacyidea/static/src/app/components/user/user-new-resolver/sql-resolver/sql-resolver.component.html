@@ -24,14 +24,14 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@resolver.driver">Driver</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Driver: '' }))"
+            (clearButtonClick)="clearField(sqlForm.Driver, '')"
             [showClearButton]="!!model().Driver">
             <input
               [formField]="sqlForm.Driver"
               matInput
               placeholder="mysql+pymysql" />
           </app-clearable-input>
-          @if (sqlForm.Driver().errors().some(e => e.kind === 'required') && sqlForm.Driver().touched()) {
+          @if (hasError(sqlForm.Driver, ERR.required)) {
             <mat-error i18n="@@resolver.driverRequired">Driver is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
@@ -39,7 +39,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@resolver.database">Database</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Database: '' }))"
+            (clearButtonClick)="clearField(sqlForm.Database, '')"
             [showClearButton]="!!model().Database">
             <input
               [formField]="sqlForm.Database"
@@ -53,14 +53,14 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@resolver.server">Server</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Server: '' }))"
+            (clearButtonClick)="clearField(sqlForm.Server, '')"
             [showClearButton]="!!model().Server">
             <input
               [formField]="sqlForm.Server"
               matInput
               placeholder="127.0.0.1" />
           </app-clearable-input>
-          @if (sqlForm.Server().errors().some(e => e.kind === 'required') && sqlForm.Server().touched()) {
+          @if (hasError(sqlForm.Server, ERR.required)) {
             <mat-error i18n="@@resolver.serverRequired">Server is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
@@ -83,7 +83,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.user">User</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, User: '' }))"
+            (clearButtonClick)="clearField(sqlForm.User, '')"
             [showClearButton]="!!model().User">
             <input
               [formField]="sqlForm.User"
@@ -95,7 +95,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.password">Password</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Password: '' }))"
+            (clearButtonClick)="clearField(sqlForm.Password, '')"
             [showClearButton]="!!model().Password">
             <input
               [formField]="sqlForm.Password"
@@ -108,8 +108,7 @@
 
       <div class="flex-column">
         <mat-checkbox
-          (change)="model.update(m => ({ ...m, Editable: $event.checked }))"
-          [checked]="model().Editable"
+          [formField]="sqlForm.Editable"
           i18n="@@resolver.editUserStoreSql"
           >Edit user store</mat-checkbox
         >
@@ -123,8 +122,7 @@
           <mat-form-field class="input-width-xl margin-bottom-16">
             <mat-label i18n="@@resolver.passwordHashEditable">Password Hash for Editable Users</mat-label>
             <mat-select
-              (selectionChange)="model.update(m => ({ ...m, Password_Hash_Type: $event.value }))"
-              [value]="model().Password_Hash_Type"
+              [formField]="sqlForm.Password_Hash_Type"
               placeholder="">
               <mat-option value="PHPASS"> PHPASS </mat-option>
               <mat-option value="SHA"> SHA </mat-option>
@@ -176,14 +174,14 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@resolver.table">Table</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Table: '' }))"
+            (clearButtonClick)="clearField(sqlForm.Table, '')"
             [showClearButton]="!!model().Table">
             <input
               [formField]="sqlForm.Table"
               matInput
               placeholder="Users" />
           </app-clearable-input>
-          @if (sqlForm.Table().errors().some(e => e.kind === 'required') && sqlForm.Table().touched()) {
+          @if (hasError(sqlForm.Table, ERR.required)) {
             <mat-error i18n="@@resolver.tableRequired">Table is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
@@ -195,7 +193,9 @@
             matInput
             placeholder="500"
             type="number" />
-          @if (sqlForm.Limit().errors().some(e => e.kind === 'required') && sqlForm.Limit().touched()) {
+          @if (hasError(sqlForm.Limit, ERR.parse)) {
+            <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
+          } @else if (hasError(sqlForm.Limit, ERR.required)) {
             <mat-error i18n="@@resolver.limitRequired">Limit is <strong>required</strong>.</mat-error>
           }
         </mat-form-field>
@@ -207,7 +207,7 @@
           [formField]="sqlForm.Map"
           matInput
           placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'></textarea>
-        @if (sqlForm.Map().errors().some(e => e.kind === 'required') && sqlForm.Map().touched()) {
+        @if (hasError(sqlForm.Map, ERR.required)) {
           <mat-error i18n="@@resolver.mappingRequired">Mapping is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
@@ -216,7 +216,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@resolver.connectionParameters">Connection Parameters</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, conParams: '' }))"
+            (clearButtonClick)="clearField(sqlForm.conParams, '')"
             [showClearButton]="!!model().conParams">
             <input
               [formField]="sqlForm.conParams"
@@ -227,7 +227,7 @@
         <mat-form-field class="input-width-l">
           <mat-label i18n="@@resolver.databaseEncoding">Database Encoding</mat-label>
           <app-clearable-input
-            (clearButtonClick)="model.update(m => ({ ...m, Encoding: '' }))"
+            (clearButtonClick)="clearField(sqlForm.Encoding, '')"
             [showClearButton]="!!model().Encoding">
             <input
               [formField]="sqlForm.Encoding"
@@ -239,7 +239,7 @@
       <mat-form-field class="input-width-xl">
         <mat-label i18n="@@resolver.whereStatement">Where Statement</mat-label>
         <app-clearable-input
-          (clearButtonClick)="model.update(m => ({ ...m, Where: '' }))"
+          (clearButtonClick)="clearField(sqlForm.Where, '')"
           [showClearButton]="!!model().Where">
           <input
             [formField]="sqlForm.Where"
@@ -254,6 +254,9 @@
             [formField]="sqlForm.poolSize"
             matInput
             type="number" />
+          @if (hasError(sqlForm.poolSize, ERR.parse)) {
+            <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
@@ -262,6 +265,9 @@
             [formField]="sqlForm.poolTimeout"
             matInput
             type="number" />
+          @if (hasError(sqlForm.poolTimeout, ERR.parse)) {
+            <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field class="input-width-s">
@@ -270,6 +276,9 @@
             [formField]="sqlForm.poolRecycle"
             matInput
             type="number" />
+          @if (hasError(sqlForm.poolRecycle, ERR.parse)) {
+            <mat-error i18n="@@resolver.numberInvalid">Enter a <strong>valid number</strong>.</mat-error>
+          }
         </mat-form-field>
       </div>
     </div>

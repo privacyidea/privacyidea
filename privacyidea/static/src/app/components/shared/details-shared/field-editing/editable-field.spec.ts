@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
+import { Component, signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DetailsEditRegistry } from "./details-edit-registry.service";
 import { EditableField, EditableFieldOptions, injectEditableField } from "./editable-field";
@@ -130,5 +130,63 @@ describe("injectEditableField", () => {
     field.cancel();
     expect(field.isEditing()).toBe(false);
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  describe("validity", () => {
+    it("is valid and exposes the channel on the edit buttons element by default", () => {
+      const { field } = createField({ onCommit: async () => undefined });
+      expect(field.valid()).toBe(true);
+      expect(field.editButtonsElement.valid?.()).toBe(true);
+    });
+
+    it("reports a field that is editing an invalid value through the registry", () => {
+      const valid = signal(false);
+      const { field } = createField({ valid, onCommit: async () => undefined });
+      expect(registry.anyInvalid()).toBe(false);
+
+      field.toggle();
+      expect(field.editButtonsElement.valid?.()).toBe(false);
+      expect(registry.anyInvalid()).toBe(true);
+
+      valid.set(true);
+      expect(registry.anyInvalid()).toBe(false);
+    });
+
+    it("refuses to commit an invalid value, keeps edit mode open and calls onInvalid", async () => {
+      const onCommit = jest.fn(async () => undefined);
+      const onInvalid = jest.fn();
+      const { field } = createField({ valid: signal(false), onInvalid, onCommit });
+      field.toggle();
+
+      await field.commit();
+
+      expect(onCommit).not.toHaveBeenCalled();
+      expect(onInvalid).toHaveBeenCalledTimes(1);
+      expect(field.isEditing()).toBe(true);
+    });
+
+    it("refuses to commit an invalid value without an onInvalid hook", async () => {
+      const onCommit = jest.fn(async () => undefined);
+      const { field } = createField({ valid: signal(false), onCommit });
+      field.toggle();
+
+      await field.commit();
+
+      expect(onCommit).not.toHaveBeenCalled();
+      expect(field.isEditing()).toBe(true);
+    });
+
+    it("commits once the value is valid", async () => {
+      const valid = signal(false);
+      const onCommit = jest.fn(async () => undefined);
+      const { field } = createField({ valid, onCommit });
+      field.toggle();
+      valid.set(true);
+
+      await field.commit();
+
+      expect(onCommit).toHaveBeenCalledTimes(1);
+      expect(field.isEditing()).toBe(false);
+    });
   });
 });

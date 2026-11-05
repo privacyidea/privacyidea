@@ -18,8 +18,7 @@
 -->
 <div class="flex-column">
   <mat-checkbox
-    [checked]="checkPinLocally()"
-    (change)="checkPinLocally.set($event.checked)"
+    [formField]="checkPinLocallyForm"
     class="margin-bottom-16"
     i18n="@@token.checkPinLocally"
     >Check the PIN locally</mat-checkbox

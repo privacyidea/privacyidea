@@ -84,17 +84,13 @@ describe("ContainerDetailsInfoComponent", () => {
   });
 
   it("saveInfo adds key/value if provided, calls setContainerInfos, resets newInfo, turns off edit, and reloads", () => {
-    const el = component.infoData()[0] as ContainerInfoDetail<Record<string, string>>;
-    expect(el.value).toEqual({ a: "1" });
-
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "b", value: "2" });
 
     (containerService.setContainerInfos as jest.Mock).mockReturnValue(of({}));
 
-    component.saveInfo(el);
+    component.saveInfo();
 
-    expect(el.value).toEqual({ a: "1", b: "2" });
     expect(containerService.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1", b: "2" });
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
@@ -102,15 +98,13 @@ describe("ContainerDetailsInfoComponent", () => {
   });
 
   it("saveInfo without new pair still calls setContainerInfos and reloads", () => {
-    const el = component.infoData()[0] as ContainerInfoDetail<Record<string, string>>;
     component.isEditingInfo.set(true);
     component.newInfo.set({ key: "", value: "" });
 
     (containerService.setContainerInfos as jest.Mock).mockReturnValue(of({}));
 
-    component.saveInfo(el);
+    component.saveInfo();
 
-    expect(el.value).toEqual({ a: "1" });
     expect(containerService.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1" });
     expect(component.isEditingInfo()).toBe(false);
     expect(containerService.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
@@ -124,5 +118,217 @@ describe("ContainerDetailsInfoComponent", () => {
     expect(containerService.deleteInfo).toHaveBeenCalledWith("CONT-7", "a");
     expect(component.isEditingInfo()).toBe(true);
     expect(containerService.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
+  });
+
+  describe("editing the stored values", () => {
+    const field = (): HTMLTextAreaElement => fixture.nativeElement.querySelector(".info-edit-field textarea");
+    const readOnlyText = (): string => fixture.nativeElement.querySelector(".info-value").textContent.trim();
+    const typeValue = (value: string): void => {
+      field().value = value;
+      field().dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+    };
+
+    it("shows the stored values in the editor", () => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      fixture.detectChanges();
+
+      expect(field().value).toBe("1");
+    });
+
+    it("keeps typed text in the draft and leaves the stored info alone", () => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      fixture.detectChanges();
+
+      typeValue("changed");
+
+      expect(component.draftInfo()).toEqual({ a: "changed" });
+      expect((component.infoData()[0].value as Record<string, string>)["a"]).toBe("1");
+    });
+
+    it("discards the typed text when editing is cancelled", () => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      fixture.detectChanges();
+      typeValue("changed");
+
+      component.toggleInfoEdit();
+      fixture.detectChanges();
+
+      expect(readOnlyText()).toBe("1");
+      expect(component.draftInfo()).toEqual({ a: "1" });
+
+      component.toggleInfoEdit();
+      fixture.detectChanges();
+      expect(field().value).toBe("1");
+    });
+
+    it("saves the typed text", () => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      fixture.detectChanges();
+      typeValue("changed");
+      (containerService.setContainerInfos as jest.Mock).mockReturnValue(of({}));
+
+      component.saveInfo();
+
+      expect(containerService.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "changed" });
+      expect(component.infoData()[0].value).toEqual({ a: "changed" });
+    });
+
+    it("starts from the reloaded values", () => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      fixture.detectChanges();
+      typeValue("changed");
+
+      fixture.componentRef.setInput("infoData", [makeInfoEl({ a: "2" })] as unknown as ContainerInfoDetail[]);
+      fixture.detectChanges();
+
+      expect(component.draftInfo()).toEqual({ a: "2" });
+    });
+  });
+
+  describe("the 'add' row", () => {
+    const field = (selector: string): HTMLInputElement =>
+      fixture.nativeElement.querySelector(`.info-add-row ${selector}`);
+
+    const type = (selector: string, value: string): void => {
+      const el = field(selector);
+      el.value = value;
+      el.dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+    };
+
+    const kinds = (name: "key" | "value"): string[] => {
+      const field = component["newInfoForm"][name];
+      return field()
+        .errors()
+        .map((error) => error.kind);
+    };
+
+    const setRights = (): void => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: ["container_info"]
+      });
+    };
+
+    const startEditing = (): void => {
+      fixture.componentRef.setInput("isEditingInfo", true);
+      fixture.detectChanges();
+    };
+
+    it("takes typed text into the model", () => {
+      startEditing();
+
+      type("input", "b");
+      type("textarea", "2");
+
+      expect(component.newInfo()).toEqual({ key: "b", value: "2" });
+    });
+
+    it("accepts an empty row", () => {
+      startEditing();
+
+      expect(component.canSave()).toBe(true);
+    });
+
+    it("requires a value once a key is typed and a key once a value is typed", () => {
+      startEditing();
+
+      type("input", "b");
+      expect(kinds("value")).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
+
+      type("input", "");
+      type("textarea", "2");
+      expect(kinds("key")).toEqual(["required"]);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("rejects a key the info already holds", () => {
+      startEditing();
+
+      type("input", " a ");
+      type("textarea", "2");
+
+      expect(kinds("key")).toEqual(["keyExists"]);
+      expect(component.canSave()).toBe(false);
+    });
+
+    it("shows the errors once the inputs were left", () => {
+      startEditing();
+      type("input", "a");
+      type("textarea", "");
+      field("input").dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(".info-add-row mat-error").textContent).toContain("already exists");
+
+      type("input", "b");
+      field("textarea").dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(".info-add-row mat-error").textContent).toContain(
+        "Value is required."
+      );
+
+      type("input", "");
+      type("textarea", "2");
+      field("input").dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector(".info-add-row mat-error").textContent).toContain("Key is required.");
+    });
+
+    it("disables Save while the row is incomplete", () => {
+      setRights();
+      fixture.componentRef.setInput("isAnyEditingOrRevoked", true);
+      startEditing();
+      const save = (): HTMLButtonElement => fixture.nativeElement.querySelector('button[aria-label="Save"]');
+
+      expect(save().disabled).toBe(false);
+
+      type("input", "b");
+      expect(save().disabled).toBe(true);
+
+      type("textarea", "2");
+      expect(save().disabled).toBe(false);
+    });
+
+    it("saveInfo sends nothing and touches both inputs while the row is invalid", () => {
+      startEditing();
+      type("input", "b");
+
+      component.saveInfo();
+
+      expect(containerService.setContainerInfos).not.toHaveBeenCalled();
+      expect(component["newInfoForm"].key().touched()).toBe(true);
+      expect(component["newInfoForm"].value().touched()).toBe(true);
+      expect(component.isEditingInfo()).toBe(true);
+    });
+
+    it("saveInfo stores the key trimmed", () => {
+      startEditing();
+      type("input", " b ");
+      type("textarea", "2");
+      (containerService.setContainerInfos as jest.Mock).mockReturnValue(of({}));
+
+      component.saveInfo();
+
+      expect(containerService.setContainerInfos).toHaveBeenCalledWith("CONT-7", { a: "1", b: "2" });
+    });
+
+    it("clears the row when editing is toggled off", () => {
+      startEditing();
+      type("input", "b");
+      type("textarea", "2");
+
+      component.toggleInfoEdit();
+
+      expect(component.newInfo()).toEqual({ key: "", value: "" });
+      expect(component["newInfoForm"]().dirty()).toBe(false);
+    });
+
+    it("canSave is true outside of editing even if the row holds text", () => {
+      component.newInfo.set({ key: "b", value: "" });
+
+      expect(component.canSave()).toBe(true);
+    });
   });
 });

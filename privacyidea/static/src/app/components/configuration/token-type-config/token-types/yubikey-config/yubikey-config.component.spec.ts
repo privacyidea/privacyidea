@@ -19,102 +19,184 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { YubikeyConfigComponent } from "@components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component";
+import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 
 const mockYubikeyApiIds = ["yubikey.apiid.1", "yubikey.apiid.2", "yubikey.apiid.3"];
+const mockConfig = () => ({ "yubikey.apiid.1": "apiKey1", "yubikey.apiid.2": "apiKey2", "yubikey.apiid.3": "apiKey3" });
 
 describe("YubikeyConfigComponent", () => {
   let fixture: ComponentFixture<YubikeyConfigComponent>;
   let component: YubikeyConfigComponent;
+  let configForm: ReturnType<typeof createTokenTypeConfigForm>;
+
+  const flush = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const idInput = () => fixture.nativeElement.querySelector('input[placeholder="Client ID"]') as HTMLInputElement;
+  const keyInput = () => fixture.nativeElement.querySelector('input[placeholder="API Key"]') as HTMLInputElement;
+  const generateCheckbox = () => fixture.nativeElement.querySelector("mat-checkbox input") as HTMLInputElement;
+  const addButton = () => fixture.nativeElement.querySelector("button.action-button-secondary") as HTMLButtonElement;
+  const errors = () =>
+    Array.from(fixture.nativeElement.querySelectorAll("mat-error") as NodeListOf<HTMLElement>).map((error) =>
+      error.textContent?.trim()
+    );
+  const type = async (element: HTMLInputElement, value: string) => {
+    element.value = value;
+    element.dispatchEvent(new Event("input"));
+    await flush();
+  };
+
+  const create = async (config: Record<string, string> = mockConfig(), apiIds: string[] = mockYubikeyApiIds) => {
+    configForm = createTokenTypeConfigForm(config);
+    fixture = TestBed.createComponent(YubikeyConfigComponent);
+    fixture.componentRef.setInput("config", configForm.form);
+    fixture.componentRef.setInput("yubikeyApiIds", apiIds);
+    component = fixture.componentInstance;
+    await flush();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [YubikeyConfigComponent],
       providers: [provideRouter([])]
     }).compileComponents();
-    fixture = TestBed.createComponent(YubikeyConfigComponent);
-    fixture.componentRef.setInput("formData", {});
-    fixture.componentRef.setInput("yubikeyApiIds", mockYubikeyApiIds);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it("should create", () => {
+  it("should create", async () => {
+    await create();
     expect(component).toBeTruthy();
   });
 
-  it("should display current formData values", () => {
-    const testData = {
-      "yubikey.apiid.1": "apiKey1",
-      "yubikey.apiid.2": "apiKey2",
-      "yubikey.apiid.3": "apiKey3"
-    };
-    fixture.componentRef.setInput("formData", testData);
-    fixture.detectChanges();
+  it("lists the API IDs with the keys of the form", async () => {
+    await create();
 
-    expect(component.formData()["yubikey.apiid.1"]).toEqual("apiKey1");
-    expect(component.formData()["yubikey.apiid.2"]).toEqual("apiKey2");
-    expect(component.formData()["yubikey.apiid.3"]).toEqual("apiKey3");
+    const rows = Array.from(fixture.nativeElement.querySelectorAll("tbody tr") as NodeListOf<HTMLElement>).map((row) =>
+      Array.from(row.querySelectorAll("td"))
+        .slice(0, 2)
+        .map((cell) => cell.textContent?.trim())
+    );
+    expect(rows).toEqual([
+      ["yubikey.apiid.1", "apiKey1"],
+      ["yubikey.apiid.2", "apiKey2"],
+      ["yubikey.apiid.3", "apiKey3"]
+    ]);
   });
 
-  it("should emit yubikeyCreateNewKey when createNewKey is called with valid id", () => {
-    jest.spyOn(component.yubikeyCreateNewKey, "emit");
-    const newId = "newClientId";
-    component.newYubikeyApiId.set(newId);
-    component.createNewKey();
-    expect(component.yubikeyCreateNewKey.emit).toHaveBeenCalledWith({ apiId: newId, apiKey: "", generateKey: true });
-  });
-
-  it("should clear newYubikeyApiId and newYubikeyApiKey after creating a new key", () => {
-    const newId = "clientId123";
-    const newKey = "apiKey123";
-    component.newYubikeyApiId.set(newId);
-    component.newYubikeyApiKey.set(newKey);
-    expect(component.newYubikeyApiId()).toBe(newId);
-    expect(component.newYubikeyApiKey()).toBe(newKey);
-
-    component.createNewKey();
-
-    expect(component.newYubikeyApiId()).toBe("");
-    expect(component.newYubikeyApiKey()).toBe("");
-  });
-
-  it("should not emit yubikeyCreateNewKey when createNewKey is called with empty id", () => {
-    jest.spyOn(component.yubikeyCreateNewKey, "emit");
-    component.newYubikeyApiId.set("");
-    component.newYubikeyApiKey.set("apiKey");
-    component.createNewKey();
-    expect(component.yubikeyCreateNewKey.emit).not.toHaveBeenCalled();
-  });
-
-  it("should emit deleteRequest when deleteEntry is called", () => {
+  it("should emit deleteRequest when deleteEntry is called", async () => {
+    await create();
     jest.spyOn(component.deleteRequest, "emit");
     const keyToDelete = "yubikey.apiid.1";
     component.deleteEntry(keyToDelete);
     expect(component.deleteRequest.emit).toHaveBeenCalledWith(keyToDelete);
   });
 
-  it("should handle multiple yubikey API IDs", () => {
-    const multipleIds = ["yubikey.apiid.1", "yubikey.apiid.2", "yubikey.apiid.3", "yubikey.apiid.4"];
-    fixture.componentRef.setInput("yubikeyApiIds", multipleIds);
-    fixture.detectChanges();
+  it("should handle multiple and no yubikey API IDs", async () => {
+    await create({ ...mockConfig(), "yubikey.apiid.4": "k" }, [...mockYubikeyApiIds, "yubikey.apiid.4"]);
     expect(component.yubikeyApiIds().length).toBe(4);
-  });
 
-  it("should handle empty yubikeyApiIds array", () => {
     fixture.componentRef.setInput("yubikeyApiIds", []);
     fixture.detectChanges();
     expect(component.yubikeyApiIds().length).toBe(0);
   });
 
-  it("should update newYubikeyApiId signal", () => {
-    const newId = "testClientId";
-    component.newYubikeyApiId.set(newId);
-    expect(component.newYubikeyApiId()).toBe(newId);
-  });
+  describe("new key", () => {
+    beforeEach(async () => {
+      await create({}, []);
+    });
 
-  it("should update newYubikeyApiKey signal", () => {
-    const newKey = "testApiKey";
-    component.newYubikeyApiKey.set(newKey);
-    expect(component.newYubikeyApiKey()).toBe(newKey);
+    it("starts with the Add button disabled and no error", () => {
+      expect(addButton().disabled).toBe(true);
+      expect(errors()).toEqual([]);
+      expect(generateCheckbox().checked).toBe(true);
+      expect(keyInput().disabled).toBe(true);
+    });
+
+    it("enables the Add button for a valid client ID", async () => {
+      await type(idInput(), "newClientId");
+
+      expect(component.newKey().apiId).toBe("newClientId");
+      expect(addButton().disabled).toBe(false);
+    });
+
+    it("shows the required error once the empty client ID was touched", async () => {
+      await type(idInput(), "x");
+      await type(idInput(), "");
+      component.newKeyForm.apiId().markAsTouched();
+      await flush();
+
+      expect(errors()).toEqual(["Client ID is required"]);
+      expect(addButton().disabled).toBe(true);
+    });
+
+    it("rejects a client ID with characters other than alphanumerics, dots, underscores and hyphens", async () => {
+      await type(idInput(), "bad id!");
+      component.newKeyForm.apiId().markAsTouched();
+      await flush();
+
+      expect(errors()).toEqual(["Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed."]);
+      expect(addButton().disabled).toBe(true);
+    });
+
+    it("accepts alphanumerics, dots, underscores and hyphens", async () => {
+      await type(idInput(), "Az09._-");
+      expect(component.newKeyForm().valid()).toBe(true);
+    });
+
+    it("enables the API key input once the key is no longer generated", async () => {
+      generateCheckbox().click();
+      await flush();
+
+      expect(component.newKey().generateKey).toBe(false);
+      expect(keyInput().disabled).toBe(false);
+
+      await type(keyInput(), "typedKey");
+      expect(component.newKey().apiKey).toBe("typedKey");
+    });
+
+    it("emits the new key and clears the id and key after a click on Add", async () => {
+      jest.spyOn(component.yubikeyCreateNewKey, "emit");
+      generateCheckbox().click();
+      await flush();
+      await type(idInput(), "clientId123");
+      await type(keyInput(), "apiKey123");
+
+      addButton().click();
+      await flush();
+
+      expect(component.yubikeyCreateNewKey.emit).toHaveBeenCalledWith({
+        apiId: "clientId123",
+        apiKey: "apiKey123",
+        generateKey: false
+      });
+      expect(component.newKey()).toEqual({ apiId: "", apiKey: "", generateKey: false });
+      expect(idInput().value).toBe("");
+      expect(errors()).toEqual([]);
+      expect(component.newKeyForm().touched()).toBe(false);
+    });
+
+    it("emits a generated key request with the id", async () => {
+      jest.spyOn(component.yubikeyCreateNewKey, "emit");
+      await type(idInput(), "newClientId");
+
+      component.createNewKey();
+
+      expect(component.yubikeyCreateNewKey.emit).toHaveBeenCalledWith({
+        apiId: "newClientId",
+        apiKey: "",
+        generateKey: true
+      });
+    });
+
+    it("does not emit for an empty or invalid client ID", async () => {
+      jest.spyOn(component.yubikeyCreateNewKey, "emit");
+
+      component.createNewKey();
+      await type(idInput(), "bad id!");
+      component.createNewKey();
+
+      expect(component.yubikeyCreateNewKey.emit).not.toHaveBeenCalled();
+    });
   });
 });

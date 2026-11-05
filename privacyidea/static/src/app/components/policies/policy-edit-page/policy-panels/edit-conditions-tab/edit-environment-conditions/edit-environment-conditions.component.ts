@@ -38,6 +38,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
+import { ChipListInputComponent } from "@components/shared/chip-list-input/chip-list-input.component";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -49,6 +50,7 @@ import {
   UserAgentOption
 } from "@services/policies/policies.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { hasError } from "@utils/form-state.utils";
 
 interface ClientSuggestion {
   ip: string;
@@ -69,7 +71,8 @@ interface ClientSuggestion {
     MatExpansionModule,
     MultiSelectOnlyComponent,
     ClearButtonComponent,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    ChipListInputComponent
   ],
   templateUrl: "./edit-environment-conditions.component.html",
   styleUrl: "./edit-environment-conditions.component.scss"
@@ -85,13 +88,7 @@ export class EditEnvironmentConditionsComponent implements OnInit {
   readonly policy = input.required<PolicyDetail>();
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  readonly addUserAgentSignal = signal("");
-  readonly addUserAgentField = form(this.addUserAgentSignal, (f) => {
-    validate(f, (ctx) => {
-      const value = ctx.value();
-      return value && value.includes(",") ? [{ kind: "includesComma" }] : [];
-    });
-  });
+  protected readonly hasError = hasError;
 
   readonly validTimeSignal = signal("");
   readonly validTimeField = form(this.validTimeSignal, (f) => {
@@ -237,20 +234,6 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     if (!oldUserAgents.includes(userAgent)) {
       this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
     }
-  }
-
-  addUserAgent() {
-    const userAgent = this.addUserAgentSignal()?.trim();
-    if (this.addUserAgentField().errors().length > 0 || !userAgent) return;
-    const oldUserAgents = this.selectedUserAgents();
-    if (!oldUserAgents.includes(userAgent)) {
-      this.emitEdits({ user_agents: [...oldUserAgents, userAgent] });
-    }
-    this.addUserAgentSignal.set("");
-  }
-
-  removeUserAgent(userAgent: string) {
-    this.emitEdits({ user_agents: this.selectedUserAgents().filter((ua) => ua !== userAgent) });
   }
 
   clearUserAgents() {

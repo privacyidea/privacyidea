@@ -97,11 +97,18 @@ describe("TokenGetSerialComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("getParams builds query from signals", () => {
-    component.countWindow.set(25);
-    component.assignmentState.set("assigned");
-    component.tokenType.set("totp");
-    component.serialSubstring.set("ABC");
+  const patchModel = (patch: Partial<ReturnType<typeof component.searchModel>>) =>
+    component.searchModel.update((model) => ({ ...model, ...patch }));
+  const input = (id: string): HTMLInputElement => fixture.nativeElement.querySelector(`#${id}`);
+  const typeInto = (el: HTMLInputElement, value: string) => {
+    el.value = value;
+    el.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+  };
+  const runButton = (): HTMLButtonElement => fixture.nativeElement.querySelector(".action-button-primary");
+
+  it("getParams builds query from the model", () => {
+    patchModel({ countWindow: 25, assignmentState: "assigned", tokenType: "totp", serialSubstring: "ABC" });
 
     const p = component.getParams();
     expect(p.get("window")).toBe("25");
@@ -110,7 +117,7 @@ describe("TokenGetSerialComponent", () => {
     expect(p.get("type")).toBe("totp");
     expect(p.get("serial")).toBe("ABC");
 
-    component.assignmentState.set("unassigned");
+    patchModel({ assignmentState: "unassigned" });
     const p2 = component.getParams();
     expect(p2.get("unassigned")).toBe("1");
     expect(p2.get("assigned")).toBeNull();
@@ -134,10 +141,7 @@ describe("TokenGetSerialComponent", () => {
         return of(makeSerialResp("SER-1"));
       });
 
-    component.otpValue.set("000000");
-    component.countWindow.set(10);
-    component.tokenType.set("hotp");
-    component.serialSubstring.set("SER");
+    patchModel({ otpValue: "000000", countWindow: 10, tokenType: "hotp", serialSubstring: "SER" });
 
     component.countTokens();
 
@@ -160,7 +164,7 @@ describe("TokenGetSerialComponent", () => {
         return of(makeCountResp(150));
       })
       .mockImplementationOnce(() => of(makeSerialResp("BIG-1")));
-    component.otpValue.set("000000");
+    patchModel({ otpValue: "000000" });
     TestBed.tick();
     component.countTokens();
 
@@ -193,6 +197,126 @@ describe("TokenGetSerialComponent", () => {
     expect(component.currentStep()).toBe("init");
   });
 
+  it("getParams omits the window when the count window is empty", () => {
+    patchModel({ countWindow: null });
+    expect(component.getParams().has("window")).toBe(false);
+  });
+
+  it("starts with the search button disabled and enables it once an OTP value is typed", () => {
+    expect(runButton().disabled).toBe(true);
+    typeInto(input("otpValue"), "123456");
+    expect(component.searchModel().otpValue).toBe("123456");
+    expect(runButton().disabled).toBe(false);
+  });
+
+  it("rejects a whitespace-only OTP value", () => {
+    typeInto(input("otpValue"), "   ");
+    expect(
+      component.searchForm
+        .otpValue()
+        .errors()
+        .map((e) => e.kind)
+    ).toEqual(["required"]);
+    expect(runButton().disabled).toBe(true);
+  });
+
+  it("countTokens does not search while the form is invalid and touches the fields", () => {
+    component.countTokens();
+    fixture.detectChanges();
+    expect(tokenServiceMock.getSerial as jest.Mock).not.toHaveBeenCalled();
+    expect(component.currentStep()).toBe("init");
+    expect(component.searchForm.otpValue().touched()).toBe(true);
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("OTP value is required");
+  });
+
+  it("an empty count window is required and disables the search button", () => {
+    patchModel({ otpValue: "000000" });
+    typeInto(input("countWindow"), "");
+    expect(component.searchModel().countWindow).toBeNull();
+    expect(
+      component.searchForm
+        .countWindow()
+        .errors()
+        .map((e) => e.kind)
+    ).toEqual(["required"]);
+    expect(runButton().disabled).toBe(true);
+  });
+
+  it("a count window below 1 fails the min rule and renders its message once touched", () => {
+    patchModel({ otpValue: "000000" });
+    typeInto(input("countWindow"), "0");
+    input("countWindow").dispatchEvent(new Event("blur"));
+    fixture.detectChanges();
+    expect(
+      component.searchForm
+        .countWindow()
+        .errors()
+        .map((e) => e.kind)
+    ).toEqual(["min"]);
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("at least 1");
+  });
+
+  it("a bad number input reports parse and renders the number message", () => {
+    patchModel({ otpValue: "000000" });
+    const el = input("countWindow");
+    Object.defineProperty(el, "validity", { value: { badInput: true }, configurable: true });
+    typeInto(el, "");
+    el.dispatchEvent(new Event("blur"));
+    fixture.detectChanges();
+    expect(
+      component.searchForm
+        .countWindow()
+        .errors()
+        .map((e) => e.kind)
+    ).toContain("parse");
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Enter a valid number.");
+  });
+
+  it("disables the OTP value once a search has left the init step", () => {
+    expect(component.searchForm.otpValue().disabled()).toBe(false);
+    component.currentStep.set("counting");
+    expect(component.searchForm.otpValue().disabled()).toBe(true);
+  });
+
+  it("keeps the button enabled as Stop while a search is running", () => {
+    patchModel({ otpValue: "000000", countWindow: null });
+    TestBed.tick();
+    component.currentStep.set("searching");
+    fixture.detectChanges();
+    expect(component.runSearchDisabled()).toBe(false);
+    expect(runButton().disabled).toBe(false);
+  });
+
+  it("a changed search option resets the steps", () => {
+    component.currentStep.set("found");
+    TestBed.tick();
+    patchModel({ tokenType: "totp" });
+    TestBed.tick();
+    expect(component.currentStep()).toBe("init");
+  });
+
+  it("changing the count window does not reset the steps", () => {
+    TestBed.tick();
+    component.currentStep.set("found");
+    patchModel({ countWindow: 5 });
+    TestBed.tick();
+    expect(component.currentStep()).toBe("found");
+  });
+
+  it("picking an assignment state in the select updates the model and resets the steps", () => {
+    TestBed.tick();
+    component.currentStep.set("found");
+    const selects = fixture.nativeElement.querySelectorAll("mat-select .mat-mdc-select-trigger");
+    (selects[1] as HTMLElement).click();
+    fixture.detectChanges();
+    const options = Array.from(document.querySelectorAll("mat-option")) as HTMLElement[];
+    options.find((o) => o.textContent?.includes("is assigned to a user"))?.click();
+    fixture.detectChanges();
+    TestBed.tick();
+    expect(component.searchModel().assignmentState).toBe("assigned");
+    expect(component.currentStep()).toBe("init");
+  });
+
   it("findSerial: guards invalid state", () => {
     component.currentStep.set("init");
     component.findSerial();
@@ -210,8 +334,7 @@ describe("TokenGetSerialComponent", () => {
     });
     expect(component.foundSerial()).toBe("J-007");
     expect(component.currentStep()).toBe("found");
-    lastResultDialogData = dialogServiceMock.openDialog.mock.calls.slice(-1)[0]?.[0]
-      ?.data as GetSerialResultDialogData;
+    lastResultDialogData = dialogServiceMock.openDialog.mock.calls.slice(-1)[0]?.[0]?.data as GetSerialResultDialogData;
 
     expect(lastResultDialogData).toBeDefined();
   });
@@ -221,6 +344,8 @@ describe("TokenGetSerialComponent", () => {
       .mockImplementationOnce(() => of(makeCountResp(1)))
       .mockImplementationOnce(() => of(makeSerialResp("A-1")));
 
+    patchModel({ otpValue: "000000" });
+    TestBed.tick();
     component.currentStep.set("init");
     component.onClickRunSearch();
     expect(component.currentStep()).toBe("found");

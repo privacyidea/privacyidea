@@ -56,13 +56,23 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     expect(component).toBeTruthy();
   });
 
+  const serialInput = (): HTMLInputElement => fixture.nativeElement.querySelector("mat-form-field input");
+  const pinInputs = (): HTMLInputElement[] =>
+    Array.from(fixture.nativeElement.querySelectorAll("app-enrollment-pin input"));
+  const assignButton = (): HTMLButtonElement => fixture.nativeElement.querySelector(".enroll-button-container button");
+  const typeInto = (input: HTMLInputElement, value: string) => {
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+  };
+
   it("assignUserToToken: calls service, opens the token details", () => {
     const serial = "TKN-123";
     const pin = "1234";
 
-    component.selectedToken.set(serial);
-    component.setPin.set(pin);
-    component.repeatPin.set(pin);
+    component.serialModel.set({ serial });
+    component.setPinValue.set(pin);
+    component.repeatPinValue.set(pin);
 
     component.assignUserToToken();
 
@@ -77,55 +87,66 @@ describe("AssignTokenSelfServiceComponent (no zone.js)", () => {
     expect(TestBed.inject(ContentService).tokenSelected).toHaveBeenCalledWith(serial);
   });
 
-  describe("PIN check", () => {
-    const pinInputs = (): HTMLInputElement[] =>
-      Array.from(fixture.nativeElement.querySelectorAll("app-enrollment-pin input")) as HTMLInputElement[];
-    const type = (input: HTMLInputElement, value: string) => {
-      input.value = value;
-      input.dispatchEvent(new Event("input"));
-      input.dispatchEvent(new Event("blur"));
-    };
+  it("starts with the Assign button disabled until a serial is entered", () => {
+    expect(component.canAssign()).toBe(false);
+    expect(assignButton().disabled).toBe(true);
 
-    beforeEach(() => component.selectedToken.set("TKN-123"));
+    typeInto(serialInput(), "TKN-1");
 
-    it("does not assign the token and shows an error if the PINs differ", () => {
-      type(pinInputs()[0], "1234");
-      type(pinInputs()[1], "4321");
+    expect(component.serialModel().serial).toBe("TKN-1");
+    expect(assignButton().disabled).toBe(false);
+  });
 
-      component.assignUserToToken();
-      fixture.detectChanges();
+  it("rejects a whitespace-only serial", () => {
+    typeInto(serialInput(), "   ");
+    expect(component.serialForm().valid()).toBe(false);
+    expect(assignButton().disabled).toBe(true);
+  });
 
-      expect(tokenService.assignUser).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector("app-enrollment-pin mat-error")?.textContent).toContain(
-        "PINs do not match."
-      );
-    });
+  it("does not assign without a serial and shows the serial error", () => {
+    component.assignUserToToken();
+    fixture.detectChanges();
 
-    it("shows the mismatch on submit even if the repeat field was never touched", () => {
-      component.setPin.set("1234");
+    expect(tokenService.assignUser).not.toHaveBeenCalled();
+    expect(component.serialForm.serial().touched()).toBe(true);
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Serial is required");
+  });
 
-      component.assignUserToToken();
-      fixture.detectChanges();
+  it("does not assign when the repeated PIN differs and shows the mismatch", () => {
+    component.serialModel.set({ serial: "TKN-1" });
+    const [pin, repeat] = pinInputs();
+    typeInto(pin, "1234");
+    typeInto(repeat, "4321");
 
-      expect(tokenService.assignUser).not.toHaveBeenCalled();
-      expect(fixture.nativeElement.querySelector("app-enrollment-pin mat-error")?.textContent).toContain(
-        "PINs do not match."
-      );
-    });
+    expect(component.canAssign()).toBe(false);
+    expect(assignButton().disabled).toBe(true);
 
-    it("assigns the token with the PIN once both PINs match", () => {
-      type(pinInputs()[0], "1234");
-      type(pinInputs()[1], "1234");
+    component.assignUserToToken();
+    fixture.detectChanges();
 
-      component.assignUserToToken();
+    expect(tokenService.assignUser).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector("app-enrollment-pin mat-error")?.textContent).toContain(
+      "PINs do not match."
+    );
+  });
 
-      expect(tokenService.assignUser).toHaveBeenCalledWith(expect.objectContaining({ pin: "1234" }));
-    });
+  it("assigns with the typed PIN once both PIN fields match", () => {
+    typeInto(serialInput(), "TKN-9");
+    const [pin, repeat] = pinInputs();
+    typeInto(pin, "5555");
+    typeInto(repeat, "5555");
 
-    it("assigns the token without a PIN if both PIN fields are empty", () => {
-      component.assignUserToToken();
+    expect(assignButton().disabled).toBe(false);
+    assignButton().click();
 
-      expect(tokenService.assignUser).toHaveBeenCalledWith(expect.objectContaining({ pin: "" }));
-    });
+    expect(tokenService.assignUser).toHaveBeenCalledWith(
+      expect.objectContaining({ tokenSerial: "TKN-9", pin: "5555" })
+    );
+  });
+
+  it("assigns without a PIN when both PIN fields are empty", () => {
+    component.serialModel.set({ serial: "TKN-2" });
+    component.assignUserToToken();
+    expect(tokenService.assignUser).toHaveBeenCalledWith(expect.objectContaining({ tokenSerial: "TKN-2", pin: "" }));
   });
 });

@@ -19,9 +19,7 @@
 <div class="flex-column">
   @if (!wizard()) {
     <mat-checkbox
-      [checked]="generateOnServer()"
-      [disabled]="authService.checkForceServerGenerateOTPKey('applspec') || disabled()"
-      (change)="generateOnServer.set($event.checked)"
+      [formField]="generateOnServerForm"
       class="server-checkbox"
       i18n="@@token.generateStatic"
       >Generate the static password on the Server</mat-checkbox
