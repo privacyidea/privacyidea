@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 
 import mock
+import responses
 from sqlalchemy import select
 
 from privacyidea.lib.challenge import get_challenges
@@ -37,11 +38,13 @@ from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pa
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
                                    TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError,
                                    ResolverError)
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, Challenge, db
 from .base import MyTestCase
+from .test_lib_token_list_lookups import count_containing, count_statements
 
 
 class TokenContainerManagementTestCase(MyTestCase):
@@ -2736,6 +2739,22 @@ class TokenContainerTemplateTestCase(MyTestCase):
             template_obj = get_template_obj(template["name"])
             template_obj.delete()
 
+    def test_16b_the_template_id_orders_equal_sort_values(self):
+        # The names are not in alphabetical order, so that only the id gives this order
+        names = ["tie_c", "tie_a", "tie_b"]
+        for name in names:
+            create_container_template(container_type="generic", template_name=name, options={})
+
+        # All templates have the same type, so only the id gives the pages a fixed order
+        for sortdir, expected_names in [("asc", names), ("desc", names[::-1])]:
+            pages = [[template["name"] for template in get_templates_by_query(sortby="container_type", sortdir=sortdir,
+                                                                              page=page, pagesize=2)["templates"]]
+                     for page in [1, 2]]
+            self.assertListEqual([expected_names[:2], expected_names[2:]], pages, sortdir)
+
+        for name in names:
+            get_template_obj(name).delete()
+
     def test_17_compare_templates(self):
         # same templates but different order of entries
         template_a = {"template_options": {"tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha1"},
@@ -2966,7 +2985,7 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
         for serial in serials:
             find_container_by_serial(serial).delete()
 
-    def test_02_generator_yields_a_container_matched_by_several_rows_once(self):
+    def test_02_generator_yields_a_container_in_several_realms_once(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
         serials = []
@@ -2975,12 +2994,26 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
             set_container_realms(serial, [self.realm1, self.realm2], allowed_realms=None)
             serials.append(serial)
 
-        # The realm wildcard matches both realms of each container, so the query returns every container twice
+        # The realm wildcard matches both realms of each container, but each container is yielded once
         visited_serials = [container.serial
                            for containers in get_container_generator(pagesize=1, realm="realm*")
                            for container in containers]
 
         self.assertListEqual(serials, visited_serials)
+        for serial in serials:
+            find_container_by_serial(serial).delete()
+
+    def test_02b_generator_sends_no_query_after_a_page_that_is_not_full(self):
+        serials = [init_container({"type": "generic", "description": "last page test"})["container_serial"]
+                   for _ in range(3)]
+
+        with count_statements() as statements:
+            pages = [[container.serial for container in containers]
+                     for containers in get_container_generator(pagesize=2, description="last page test")]
+
+        self.assertListEqual([serials[:2], serials[2:]], pages)
+        # The second page holds one container, so it is the last page: one page query for each of the two pages
+        self.assertEqual(2, count_containing(statements, "ORDER BY tokencontainer.id"))
         for serial in serials:
             find_container_by_serial(serial).delete()
 
@@ -3008,3 +3041,40 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
 
         container.delete()
         orphan.delete()
+
+    def test_04_is_orphaned_with_a_failing_user_store(self) -> None:
+        save_resolver({"resolver": "staffstore",
+                       "type": "httpresolver",
+                       "endpoint": "https://staff.example.org/users",
+                       "method": "GET",
+                       "requestMapping": """{"id": "{userid}"}""",
+                       "responseMapping": """{"username": "{data.login}"}""",
+                       "hasSpecialErrorHandler": False})
+        set_realm("staffrealm", [{"name": "staffstore"}])
+        # A cached login name would answer before the user store is asked, so the mocked status would not be seen
+        self.pin_to_database("users")
+        container = find_container_by_serial(init_container({"type": "generic"})["container_serial"])
+        db.session.add(TokenContainerOwner(container_id=container._db_container.id, user_id="4711",
+                                           resolver="staffstore", realm_name="staffrealm"))
+        db.session.commit()
+
+        try:
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=503, body="{}")
+                self.assertRaises(ResolverError, container.is_orphaned)
+
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=404, body="{}")
+                self.assertTrue(container.is_orphaned())
+
+            # The first request gets an error and the second one finds the user, for example from two servers behind
+            # a load balancer of which one fails. The user exists, so the container is not orphaned.
+            with responses.RequestsMock() as mocked_responses:
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=503, body="{}")
+                mocked_responses.add(responses.GET, "https://staff.example.org/users", status=200,
+                                     body='{"data": {"login": "alice"}}')
+                self.assertFalse(container.is_orphaned())
+        finally:
+            container.delete()
+            delete_realm("staffrealm")
+            delete_resolver("staffstore")

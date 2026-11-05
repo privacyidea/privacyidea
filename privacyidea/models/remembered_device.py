@@ -75,9 +75,10 @@ class RememberedDevice(MethodsMixin, db.Model):
         Index('ix_remembered_devices_client_created', 'client_id', 'created_at'),
     )
     # series_id is the secret half of the cookie (series_id:counter) and is never
-    # exposed in an API response, URL or log. device_id is a separate, non-secret
-    # handle used to list and revoke a device, so managing a device never leaks
-    # reusable credential material.
+    # exposed in an API response, URL or log. The column holds its SHA-256 hex
+    # digest (see hash_series_id in privacyidea.lib.remembered_device), not the
+    # series id itself. device_id is a separate, non-secret handle used to list and
+    # revoke a device, so managing a device never leaks reusable credential material.
     series_id: Mapped[str] = mapped_column(Unicode(64), primary_key=True)
     device_id: Mapped[str] = mapped_column(Unicode(64), unique=True, nullable=False)
     counter: Mapped[int] = mapped_column(Integer, default=1, nullable=False)

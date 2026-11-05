@@ -150,7 +150,7 @@ export class PrivacyideaServersComponent {
 
   openEditDialog(server?: PrivacyideaServer): void {
     if (server) {
-      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
+      this.router.navigate([ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS, server.identifier]);
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
     }

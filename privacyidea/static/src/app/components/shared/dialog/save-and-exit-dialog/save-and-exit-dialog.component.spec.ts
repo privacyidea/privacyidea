@@ -97,7 +97,7 @@ describe("SaveAndExitDialogComponent", () => {
       const actions = defaultsComponent.actions();
       expect(actions.find((a) => a.value === "save-exit")?.label).toBe("Save");
       expect(actions.find((a) => a.value === "discard")?.label).toBe("Discard");
-      expect(defaultsComponent.title()).toBe("Discard changes");
+      expect(defaultsComponent.title()).toBe("Discard Changes");
       expect(defaultsComponent.message()).toBe("You have unsaved changes. Do you want to save them before exiting?");
     });
   });

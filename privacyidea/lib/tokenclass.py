@@ -113,7 +113,6 @@ from .error import (TokenAdminError,
 from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
-from .resolver import get_resolver_type
 from .user import (User)
 from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Token, Tokengroup, TokenCredentialIdHash)
@@ -178,6 +177,9 @@ class TokenClass:
     client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
+    # Whether the token can verify a login. A token that only stores a key or a certificate for another purpose sets
+    # this to False.
+    verifies_login = True
     # Whether check_challenge_response removes the challenge it accepted. A class that keeps the answered challenge
     # because has_further_challenge still has to read it sets this to False; check_token_list then consumes the
     # challenge for it once no further challenge follows.
@@ -485,33 +487,19 @@ class TokenClass:
             self.token.save()
         return user_object
 
-    def is_orphaned(self, orphaned_on_error=True):
+    def is_orphaned(self, orphaned_on_error: bool = True) -> bool:
         """
         Return True if the token is orphaned.
 
         An orphaned token means, that it has a user assigned, but the user
-        does not exist in the user store (anymore)
+        does not exist in the user store (anymore). It decides exactly like
+        :py:func:`privacyidea.lib.token.get_orphaned_serials`, which the token janitors use.
 
+        :param orphaned_on_error: Whether the token is orphaned if its owner can not be looked up
         :return: True / False
-        :rtype: bool
         """
-        orphaned = False
-        owner = self.token.first_owner
-        if owner:
-            if owner.resolver and not get_resolver_type(owner.resolver):
-                # The resolver of the owner was deleted, so the user can not exist any more. This is certain, unlike
-                # an error of the user store, which orphaned_on_error decides about.
-                return True
-            try:
-                if not self.user or not self.user.login or not self.user.realm:
-                    # The token is assigned, but the username does not resolve
-                    orphaned = True
-            except Exception:
-                # If any other resolving error occurs, we also assume the
-                # token to be orphaned per default, You can change this with
-                # the parameter orphaned_on_error.
-                orphaned = orphaned_on_error
-        return orphaned
+        from privacyidea.lib.token import get_orphaned_serials
+        return self.token.serial in get_orphaned_serials([self], orphaned_on_error)
 
     def get_user_displayname(self):
         """

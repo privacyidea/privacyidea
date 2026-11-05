@@ -214,6 +214,51 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **The audit log download contains the realms that both audit policies grant** — The audit log download
+  (`GET /audit/<file>.csv`) contains the entries of the realms that both the `auditlog_download` and the `auditlog`
+  policies of an administrator grant, plus the entries the administrator caused. An administrator with
+  `auditlog_download` but no matching `auditlog` policy downloads only their own entries; with `auditlog` for every
+  realm and `auditlog_download` for some realms, the download contains these realms. A `realm` parameter filters the
+  download within the granted realms. Nothing changes without admin policies or for administrators with both actions
+  for the same realms. Grant `auditlog_download` together with an `auditlog` policy for the same realms.
+
+* **`hide_tokeninfo` and `hide_audit_columns` with realms, resolvers or users apply in every list** — Such a policy
+  hides its token info keys for the tokens whose owner or token realm it names and its audit columns for the entries
+  of the users and realms it names, also in the token list, the container list and the audit log without a filter.
+  Administrators with such a policy see fewer token info entries and audit columns in these lists. Policies without
+  realm, resolver and user work as before.
+
+* **Policies that name users apply to tokens and containers in more than one realm.** Such a policy matches the
+  owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
+  matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
+  The user still matches only together with the realm of the user. Admin policies of this kind allow their actions
+  on more tokens and containers. The `change_pin_on_first_use` and `change_pin_every` policies of this kind apply to
+  more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
+  case-insensitive names.
+
+* **Tokens from a container template are checked with their own user and realm** — When a container is created from
+  a template, the enrollment policies are checked for each token as for a single token enrollment: against the user
+  and the realm the token gets, not against the user of the container. A token without *Assign to user* gets neither a
+  user nor a realm, so an administrator whose admin policies are restricted to certain realms can no longer create it
+  from a template. As before, such a token is skipped and the reason is only written to the log: the container is
+  created with the remaining tokens. **Review the container templates your realm administrators use** and select
+  *Assign to user* for the tokens they need to create.
+
+* **Container conditions of PIN change and resync policies are checked against the container of the token.** The
+  policies `change_pin_on_first_use`, `change_pin_every`, `change_pin_via_validate` and `resync_via_multichallenge`
+  now compare a `container` or `container_info` condition with the container that holds the token. Before 3.14.1,
+  these conditions never got container data, so the *Handle Missing Data* option alone decided whether the policy
+  applied. For a token without a container, the option still decides. **Check these policies for container
+  conditions.** For example, a policy with *Condition is true* no longer applies to tokens in a container that does
+  not match the condition. A policy with *Condition is false* now applies to tokens in a container that matches the
+  condition.
+
+* **Policies with `check_all_resolvers` match only users contained in one of their resolvers.** Such a policy now
+  applies to a user only if the user was found in one of the resolvers it names or is also contained in one of them as
+  a lower-priority resolver of the realm, as documented. To check this, privacyIDEA asks the named resolvers that are
+  ranked below the user's resolver in the realm. If one of them can not be reached, the request fails with an error,
+  and the log names the policy and the resolver.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
 
