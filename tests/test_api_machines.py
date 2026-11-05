@@ -273,11 +273,13 @@ class APIMachinesTestCase(MyApiTestCase):
             self.assertEqual(1, result["value"]["added"], result)
             self.assertEqual(1, result['value']['deleted'], result)
 
-        # check if the options were set.
+        # check if the options were set. The machine tokens of a token have no fixed order.
         token_obj = get_tokens(serial=serial)[0]
-        self.assertEqual(token_obj.token.machine_list[1].application, "ssh")
-        self.assertEqual(token_obj.token.machine_list[1].option_list[
-                             0].mt_value, "mailserver")
+        self.assertEqual(num_applications + 1, len(token_obj.token.machine_list))
+        machine_token = next(entry for entry in token_obj.token.machine_list if entry.id == mtid)
+        self.assertEqual("ssh", machine_token.application)
+        options = {option.mt_key: option.mt_value for option in machine_token.option_list}
+        self.assertEqual("mailserver", options.get("service_id"), options)
         # Delete machinetoken
         with self.app.test_request_context(
                 '/machine/token/S1/ssh/{}'.format(mtid),

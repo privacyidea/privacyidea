@@ -313,7 +313,7 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                       data=None, validitytime=120)
         c.save()
 
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Clean up
@@ -326,7 +326,7 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
                       data="", validitytime=120)
         c.save()
 
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Clean up
@@ -376,13 +376,13 @@ class ChallengeDataEncryptionTestCase(MyTestCase):
         # Assign empty dict via setter - stored as empty, not encrypted
         c.data = {}
         db.session.commit()
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Assign None via setter
         c.data = None
         db.session.commit()
-        self.assertEqual(c._data, "")
+        self.assert_empty_string(c._data)
         self.assertEqual(c.get_data(), {})
 
         # Clean up

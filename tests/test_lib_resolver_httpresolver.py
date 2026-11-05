@@ -1689,9 +1689,12 @@ class EntraIDResolverTestCase(MyTestCase):
         # Invalid authority
         config = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value, CLIENT_SECRET: "secret",
                   TENANT: "organization"}
-        # invalid when checking authority
-        with pytest.raises(ParameterError, match="Invalid Authorization"):
-            EntraIDResolver().loadConfig(config)
+        # The OIDC discovery of MSAL fails for an unknown tenant
+        with responses.RequestsMock() as mocked_responses:
+            mocked_responses.get("https://login.microsoftonline.com/organization/v2.0/.well-known/openid-configuration",
+                                 status=400, json={"error": "invalid_tenant"})
+            with pytest.raises(ParameterError, match="Invalid Authorization"):
+                EntraIDResolver().loadConfig(config)
 
         # Missing parameters
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
@@ -1981,11 +1984,13 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # request specific attributes without groups
         user_list = resolver.getUserList(attributes=["username", "email", "unknown"])
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual({"username", "email"}, set(user.keys()))
 
         # request specific attributes with groups
         user_list = resolver.getUserList(attributes=["username", custom_groups_key])
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual({"username", custom_groups_key}, set(user.keys()))
             if user["username"] == "Adams@contoso.com":
@@ -1995,6 +2000,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # request without attributes defined should return all attributes
         user_list = resolver.getUserList()
+        self.assertEqual(2, len(user_list))
         for user in user_list:
             self.assertSetEqual(
                 {"username", "userid", "givenname", "surname", "email", "mobile", "phone", custom_groups_key},

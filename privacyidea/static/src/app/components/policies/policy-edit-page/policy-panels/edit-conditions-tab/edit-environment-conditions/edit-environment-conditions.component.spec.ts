@@ -101,6 +101,11 @@ describe("EditEnvironmentConditionsComponent", () => {
     );
   });
 
+  it("should show a selected preset with its label and stored value, and a custom value as it is", () => {
+    expect(component.getUserAgentDisplay("privacyIDEA-Shibboleth")).toBe("Shibboleth (privacyIDEA-Shibboleth)");
+    expect(component.getUserAgentDisplay("Shibboleth")).toBe("Shibboleth");
+  });
+
   it("should clear valid time control", () => {
     component.clearValidTimeControl();
     expect(component.validTimeSignal()).toBe("");

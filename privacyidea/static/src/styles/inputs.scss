@@ -81,16 +81,34 @@ $input-focus-outline: theme.$focus-outline;
   margin-bottom: 1.2em;
 }
 
-.checkbox-hint {
+.checkbox-hint,
+.checkbox-error {
   display: block;
   font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
   font-weight: var(--mat-form-field-subscript-text-weight, var(--mat-sys-body-small-weight));
-  color: var(--mat-sys-primary);
   padding-left: 16px;
   padding-right: 16px;
   padding-top: 4px;
   line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
   letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
+}
+
+.checkbox-hint {
+  color: var(--mat-sys-primary);
+}
+
+// The counterpart of mat-error for text outside a form field, e.g. below a checkbox.
+.checkbox-error {
+  color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+}
+
+// Places the text directly below the label of the mat-checkbox above it: the label starts after the state layer of
+// the checkbox and the 4px padding of the label.
+.checkbox-hint.below-checkbox,
+.checkbox-error.below-checkbox {
+  margin: 0;
+  padding-left: calc(var(--mat-checkbox-state-layer-size, 40px) + 4px);
+  padding-top: 0;
 }
 
 .user-pin-container {

@@ -53,7 +53,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_token_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key, verify_enrollment)
+                                           hide_container_info, force_server_generate_key, verify_enrollment,
+                                           rerun_user_dependent_prepolicies)
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
@@ -947,3 +948,26 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Delete policy
         delete_policy("WebAuthn")
+
+    def test_29g_rerun_for_the_token_owner_updates_the_copied_options(self):
+        class RequestMock(object):
+            pass
+
+        # An allow-list matched before the token owner was known, and no policy restricts the owner's authenticators
+        request = RequestMock()
+        request.all_data = {
+            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
+            "pass": "",
+            FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: ["foo"]
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        request.User = User("cornelius", self.realm1)
+        options = dict(request.all_data)
+        rerun_user_dependent_prepolicies(request, options)
+        self.assertNotIn(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, request.all_data)
+        self.assertNotIn(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, options)
+        # The parameters the pre-policies set reach the copy as well
+        self.assertEqual(ORIGIN, options["HTTP_ORIGIN"])
+        self.assertEqual(request.all_data[FIDO2PolicyAction.TIMEOUT], options[FIDO2PolicyAction.TIMEOUT])

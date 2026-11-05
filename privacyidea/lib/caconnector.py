@@ -329,8 +329,9 @@ def get_caconnector_object(connector_name):
             if c_obj is not None:
                 connector_config = {}
                 for conf in conn.caconfig:
+                    # Oracle stores an empty value as NULL, the connectors expect a string.
+                    value = conf.Value or ""
                     # Handle passwords
-                    value = conf.Value
                     if conf.Type == "password":
                         value = decryptPassword(value)
                     connector_config[conf.Key] = value

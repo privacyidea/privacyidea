@@ -30,7 +30,7 @@ from sqlalchemy import delete, select
 
 from privacyidea.models import InternalUserAttribute, NodeName, TokenOwner, db
 from . import ldap3mock
-from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures
+from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures, stored_empty_string
 from .test_lib_resolver import LDAPDirectory_small
 from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
@@ -421,15 +421,23 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                          count_users({"realm": self.realm4}, user_filter=only_cornelius_of_reso3))
 
     def test_get_user_list_has_tokens_values(self):
-        with_tokens = get_user_list({"realm": self.realm1, "has_tokens": "True"})
-        for value in ("1", "true", "TRUE"):
-            self.assertEqual(with_tokens, get_user_list({"realm": self.realm1, "has_tokens": value}), value)
-        without_tokens = get_user_list({"realm": self.realm1, "has_tokens": "False"})
-        for value in ("0", "false", "FALSE"):
-            self.assertEqual(without_tokens, get_user_list({"realm": self.realm1, "has_tokens": value}), value)
-        # A value that reads as neither must not be taken for False, which would invert the filter.
-        for value in ("yes", "Tru", "on"):
-            self.assertRaises(ParameterError, get_user_list, {"realm": self.realm1, "has_tokens": value})
+        token = init_token({"type": "spass"}, user=User("cornelius", self.realm1, self.resolvername1))
+        try:
+            with_tokens = get_user_list({"realm": self.realm1, "has_tokens": "True"})
+            self.assertEqual(["cornelius"], [user["username"] for user in with_tokens])
+            for value in ("1", "true", "TRUE"):
+                self.assertEqual(with_tokens, get_user_list({"realm": self.realm1, "has_tokens": value}), value)
+            without_tokens = get_user_list({"realm": self.realm1, "has_tokens": "False"})
+            usernames_without_tokens = {user["username"] for user in without_tokens}
+            self.assertNotIn("cornelius", usernames_without_tokens)
+            self.assertIn("root", usernames_without_tokens)
+            for value in ("0", "false", "FALSE"):
+                self.assertEqual(without_tokens, get_user_list({"realm": self.realm1, "has_tokens": value}), value)
+            # A value that reads as neither must not be taken for False, which would invert the filter.
+            for value in ("yes", "Tru", "on"):
+                self.assertRaises(ParameterError, get_user_list, {"realm": self.realm1, "has_tokens": value})
+        finally:
+            remove_token(token.get_serial())
 
     def test_get_user_list_dedup_without_username_attribute(self):
         """
@@ -1557,8 +1565,8 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                                side_effect=RuntimeError("resolver unreachable")):
             # Default orphaned_on_error=False: errored row is skipped (not reported).
             orphans = set(find_orphaned_internal_attributes())
-            self.assertIn(("", self.resolvername1, None), orphans)        # branch 1a
-            self.assertIn(("uid-X", "", None), orphans)                   # branch 1b
+            self.assertIn((stored_empty_string(), self.resolvername1, None), orphans)    # branch 1a
+            self.assertIn(("uid-X", stored_empty_string(), None), orphans)               # branch 1b
             self.assertIn(("uid-Y", "never-existed", None), orphans)      # branch 2
             self.assertNotIn(("uid-Z", self.resolvername1, live_user.realm_id), orphans)
 
@@ -1590,3 +1598,42 @@ class HidePasswordInDebugLogTestCase(OverrideConfigTestCase):
                           "'cornelius', 'realm': 'realm1', 'pass': 'HIDDEN', "
                           "'password': 'HIDDEN'}] and keywords {} (called from test_lib_user.py:",
                           str(lc), lc)
+
+
+class UserIdentityTestCase(MyTestCase):
+    """
+    Who a user is: the same login (and user id) can exist in several resolvers and realms. cornelius has the user id
+    1000 in tests/testdata/passwords and 1009 in tests/testdata/passwd.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        save_resolver({"resolver": cls.resolvername1, "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
+        save_resolver({"resolver": cls.resolvername3, "type": "passwdresolver", "fileName": "tests/testdata/passwd"})
+        set_realm(cls.realm1, [{"name": cls.resolvername1, "priority": 1}, {"name": cls.resolvername3, "priority": 2}])
+        set_realm(cls.realm2, [{"name": cls.resolvername1}])
+        set_realm(cls.realm3, [{"name": cls.resolvername3}])
+
+    def test_01_the_same_user_needs_the_same_resolver_and_realm(self):
+        cornelius = User("cornelius", self.realm1, self.resolvername1)
+        self.assertEqual(cornelius, User("cornelius", self.realm1, self.resolvername1))
+        self.assertNotEqual(cornelius, User("cornelius", self.realm1, self.resolvername3))
+        self.assertNotEqual(cornelius, User("cornelius", self.realm2, self.resolvername1))
+        # franzi has the user id of cornelius, in the other resolver of the realm
+        self.assertNotEqual(cornelius, User("franzi", self.realm1, self.resolvername3))
+        # With a user id on both sides, the user id decides, not the login name
+        renamed = User("cornelius", self.realm1, self.resolvername1)
+        renamed.login = "cornelius.renamed"
+        self.assertEqual(cornelius, renamed)
+
+    def test_02_the_resolver_parameter_selects_the_user(self):
+        user = get_user_from_param({"user": "cornelius", "realm": self.realm1})
+        self.assertTupleEqual((self.resolvername1, "1000"), (user.resolver, user.uid))
+        user = get_user_from_param({"user": "cornelius", "realm": self.realm1, "resolver": self.resolvername3})
+        self.assertTupleEqual((self.resolvername3, "1009"), (user.resolver, user.uid))
+        # "**" names no resolver
+        self.assertEqual(self.resolvername1, User("cornelius", self.realm1, "**").resolver)
+
+    def test_03_a_user_with_only_a_resolver_belongs_to_the_realms_of_the_resolver(self):
+        self.assertCountEqual([self.realm1, self.realm3], User(resolver=self.resolvername3).get_user_realms())

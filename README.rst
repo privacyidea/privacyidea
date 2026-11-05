@@ -81,6 +81,26 @@ Join the Community
 Have feedback, questions, or ideas? Join the discussion on our community forum:
 https://community.privacyidea.org
 
+Docker Quickstart
+=================
+
+The Docker Compose stack in `deploy/docker
+<https://github.com/privacyidea/privacyidea/tree/master/deploy/docker>`_ runs privacyIDEA with a
+MariaDB database and a maintenance scheduler. You need Docker with the Compose plugin 2.24 or newer,
+``git``, ``make``, ``python3`` and ``openssl``.
+
+Replace ``<version>`` with the version of the latest `release
+<https://github.com/privacyidea/privacyidea/releases>`_. Then run these commands::
+
+    git clone --depth 1 --branch v<version> https://github.com/privacyidea/privacyidea.git
+    cd privacyidea/deploy/docker
+    make init    # generates the secrets and prints the admin password once
+    make up
+
+Open http://localhost:8080 and log in as ``admin``. The stack serves plain HTTP on localhost only.
+Before you use the stack in production, read ``README.Docker.md`` in that directory. It describes
+TLS, backups and upgrades.
+
 Setup
 =====
 

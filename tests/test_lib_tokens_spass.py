@@ -45,8 +45,9 @@ class SpassTokenTestCase(MyTestCase):
         # check pin+otp:
         spass_log.setLevel(logging.DEBUG)
         token.set_pin(self.otppin)
-        r = token.authenticate(self.otppin)
-        self.assertTrue(r, r)
+        pin_matches, otp_counter, _ = token.authenticate(self.otppin)
+        self.assertTrue(pin_matches)
+        self.assertEqual(0, otp_counter)
         log_msg = str(capture)
         self.assertIn('HIDDEN', log_msg, log_msg)
         self.assertNotIn(self.otppin, log_msg, log_msg)

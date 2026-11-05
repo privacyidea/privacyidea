@@ -28,6 +28,7 @@ export * from "./mock-policy-templates-service";
 export * from "./mock-privacyidea-server-service";
 export * from "./mock-radius-service";
 export * from "./mock-realm-service";
+export * from "./mock-recover-service";
 export * from "./mock-service-id-service";
 export * from "./mock-session-timer-service";
 export * from "./mock-sms-gateway-service";

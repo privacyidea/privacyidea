@@ -5,6 +5,8 @@ abort_on_error, which is set for existing Federation bindings: a federation hand
 the one of the remote privacyIDEA, so continuing without it answers the client with the local response as if it
 came from the remote server.
 
+The column is only added when it does not exist yet, so the migration can run again on its own result.
+
 Revision ID: d9e0f1a2b3c4
 Revises: c8d9e0f1a2b3
 Create Date: 2026-08-12 00:00:00.000000
@@ -22,17 +24,11 @@ depends_on = None
 
 
 def upgrade():
-    try:
+    columns = {column["name"].lower() for column in sa.inspect(op.get_bind()).get_columns('eventhandler')}
+    if 'abort_on_error' in columns:
+        print("Ok, column 'abort_on_error' already exists.")
+    else:
         op.add_column('eventhandler', sa.Column('abort_on_error', sa.Boolean(), nullable=True))
-    except (OperationalError, ProgrammingError) as exx:
-        if any(x in str(exx.orig).lower() for x in ["already exists", "duplicate column name"]):
-            print("Ok, column 'abort_on_error' already exists.")
-        else:
-            print(exx)
-            raise
-    except Exception as exx:
-        print(f"Could not add column 'abort_on_error' to database: {exx}")
-        raise
 
     try:
         # Existing bindings are best-effort, which is the new default. Federation is the exception: its result

@@ -19,11 +19,13 @@
 import logging
 from collections import defaultdict
 from collections.abc import Callable, Iterable
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from flask import g, request
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -130,6 +132,35 @@ def check_max_auth_success(user: User, user_search_dict: dict, check_validate_ch
     return result, reply_dict
 
 
+@dataclass(frozen=True)
+class AuthTimeLimitResult:
+    """
+    The result of :func:`check_auth_time_limit`.
+    """
+    allowed: bool
+    # Which limit refused the authentication, None if it is allowed
+    reason: AuthEventReason | None = None
+    # The client-facing message of the refusal, see check_max_auth_fail
+    reply_dict: dict = field(default_factory=dict)
+
+
+def check_auth_time_limit(user: User) -> AuthTimeLimitResult:
+    """
+    Check the auth_max_fail and auth_max_success policies of a user who authenticates at /validate/check or /auth.
+
+    :param user: The user who authenticates
+    :return: Whether the user may authenticate, and which limit refused it
+    """
+    user_search_dict = {"user": user.login, "realm": user.realm}
+    allowed, reply_dict = check_max_auth_fail(user, user_search_dict)
+    if not allowed:
+        return AuthTimeLimitResult(False, AuthEventReason.AUTH_MAX_FAIL, reply_dict)
+    allowed, reply_dict = check_max_auth_success(user, user_search_dict)
+    if not allowed:
+        return AuthTimeLimitResult(False, AuthEventReason.AUTH_MAX_SUCCESS, reply_dict)
+    return AuthTimeLimitResult(True)
+
+
 def get_jwt_validity(user: User) -> timedelta:
     """
     Reads the JWT validity for the auth token from the policy or returns the default time of 1 hour if no policy is set.
@@ -151,39 +182,63 @@ def get_jwt_validity(user: User) -> timedelta:
     validity_time = timedelta(seconds=int(validity_time))
     return validity_time
 
-def get_admin_audit_params() -> dict:
+def _audit_realms_granted(action: str) -> dict[str, None] | None:
     """
-    Checks if a policy is set, which limits the audit log access for admins to certain realms.
-    If such a policy is set, the admin's username, realm and the allowed realms are returned in a dictionary. Otherwise,
-    an empty dictionary is returned. For admins, it should still be possible to see their own audit log entries, which
-    is why the admin's username and realm are also returned.
+    The realms whose audit entries the matching admin policies with the given action grant to the logged-in admin.
 
+    :param action: An audit action, e.g. ``auditlog`` or ``auditlog_download``
+    :return: None if every realm is granted, otherwise the names of the granted realms in the order of the policies,
+        as the keys of a dictionary (empty: no realm)
+    """
+    match = Match.admin(g, action=action)
+    policies = match.policies()
+    if not policies:
+        # No policy grants the action: every realm if the admin scope has no active policy at all (the unconfigured
+        # default), no realm otherwise.
+        return None if match.allowed(write_to_audit_log=False) else {}
+    granted_realms = {}
+    for policy in policies:
+        if policy.get("resolver") or policy.get("user"):
+            # The audit log is only restricted by realm and can not show just these users or resolvers,
+            # so such a policy grants no realm - rather than every entry of its realms.
+            continue
+        realm_names = policy_realm_names(policy.get("realm"))
+        if realm_names is None:
+            # A policy with no target scope at all grants every realm, whatever the others name.
+            return None
+        granted_realms.update(dict.fromkeys(realm_names))
+    return granted_realms
+
+
+def get_admin_audit_params(actions: Iterable[str] = (PolicyAction.AUDIT,)) -> dict:
+    """
+    Checks if policies limit the audit log access of an admin to certain realms. The admin sees the realms that the
+    policies of every given action grant.
+    If the access is limited, the admin's username, realm and the allowed realms are returned in a dictionary.
+    Otherwise, an empty dictionary is returned. For admins, it should still be possible to see their own audit log
+    entries, which is why the admin's username and realm are also returned.
+
+    :param actions: The audit actions whose policies grant the realms, e.g. ``auditlog`` for the search, and
+        ``auditlog`` and ``auditlog_download`` for the download
     :return: A dictionary with the keys "admin", "admin_realm" and "allowed_audit_realms" or an empty dictionary.
     """
     from privacyidea.lib.auth import ROLE
     admin_params = {}
     if g.logged_in_user["role"] == ROLE.ADMIN:
-        pols = Match.admin(g, action=PolicyAction.AUDIT).policies()
-        if pols:
-            allowed_audit_realms = {}
-            restricted_to_realms = False
-            for pol in pols:
-                if pol.get("resolver") or pol.get("user"):
-                    # The audit log is only restricted by realm and can not show just these users or resolvers,
-                    # so such a policy grants no realm - rather than every entry of its realms.
-                    restricted_to_realms = True
-                    continue
-                realm_names = policy_realm_names(pol.get("realm"))
-                if realm_names is None:
-                    # A policy with no target scope at all grants every realm, whatever the others name.
-                    return {}
-                restricted_to_realms = True
-                allowed_audit_realms.update(dict.fromkeys(realm_names))
-            if restricted_to_realms:
-                admin_params["admin"] = g.logged_in_user["username"]
-                admin_params["admin_realm"] = g.logged_in_user["realm"]
-                # Empty if no policy's realm field matches a realm: then only the admin's own entries are shown.
-                admin_params["allowed_audit_realms"] = list(allowed_audit_realms)
+        allowed_audit_realms = None
+        for action in actions:
+            granted_realms = _audit_realms_granted(action)
+            if granted_realms is None:
+                continue
+            if allowed_audit_realms is None:
+                allowed_audit_realms = granted_realms
+            else:
+                allowed_audit_realms = {realm: None for realm in allowed_audit_realms if realm in granted_realms}
+        if allowed_audit_realms is not None:
+            admin_params["admin"] = g.logged_in_user["username"]
+            admin_params["admin_realm"] = g.logged_in_user["realm"]
+            # Empty if no realm is granted: then only the admin's own entries are shown.
+            admin_params["allowed_audit_realms"] = list(allowed_audit_realms)
     return admin_params
 
 

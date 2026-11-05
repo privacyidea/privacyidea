@@ -23,6 +23,7 @@ from contextlib import contextmanager
 import ldap3
 import mock
 import responses
+import yaml
 from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError, LDAPSocketReceiveError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
@@ -48,7 +49,7 @@ from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver,
 from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED
+from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver, USER_LOOKUP_FAILED, parse_config_yaml
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.models import ResolverConfig, Resolver, db, save_config_timestamp
 from . import ldap3mock
@@ -193,6 +194,7 @@ class SQLResolverTestCase(MyTestCase):
     def tearDownClass(cls):
         # Remove temporary work directory
         shutil.rmtree(cls.parameters["Server"])
+        super().tearDownClass()
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
@@ -2005,6 +2007,7 @@ class LDAPResolverTestCase(MyTestCase):
         # 1) start_tls has actually been called!
         self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
@@ -2034,6 +2037,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = start_tls_resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
@@ -2071,6 +2075,7 @@ class LDAPResolverTestCase(MyTestCase):
             # 1) start_tls has actually been called!
             self.assertTrue(start_tls_resolver.connection.start_tls_called)
             # 2) All Server objects were constructed with a non-None TLS context and use_ssl=False
+            self.assertTrue(ldap3mock.get_server_mock().call_args_list)
             for _, kwargs in ldap3mock.get_server_mock().call_args_list:
                 self.assertIsNotNone(kwargs['tls'])
                 self.assertFalse(kwargs['use_ssl'])
@@ -2110,6 +2115,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = start_tls_resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
         # We check that all Server objects were constructed with a non-None TLS context and use_ssl=True
+        self.assertTrue(ldap3mock.get_server_mock().call_args_list)
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertTrue(kwargs['use_ssl'])
@@ -3395,6 +3401,88 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertDictEqual({"1": "manager", "2": "alice", "does-not-exist": ""}, login_map)
         self.assertEqual(resolver.getUsername("2"), login_map["2"], login_map)
 
+    def test_53_resolvers_with_the_same_attribute_mapping(self):
+        # Two resolvers parse the same USERINFO text. Each puts the first attribute of its own LOGINNAMEATTRIBUTE
+        # into its user info, and the attribute mapping of both keeps the configured "username" attribute.
+        config = {"LDAPURI": "ldap://localhost",
+                  "LDAPBASE": "o=test",
+                  "USERINFO": '{"username": "cn", "email": "mail"}',
+                  "UIDTYPE": "DN"}
+        uid_resolver = LDAPResolver()
+        uid_resolver.loadConfig(config | {"LOGINNAMEATTRIBUTE": "uid"})
+        mail_resolver = LDAPResolver()
+        mail_resolver.loadConfig(config | {"LOGINNAMEATTRIBUTE": "mail"})
+        # A resolver that loads the same text again does not change the first two
+        LDAPResolver().loadConfig(config | {"LOGINNAMEATTRIBUTE": "sAMAccountName"})
+
+        self.assertEqual("uid", uid_resolver.userinfo["username"])
+        self.assertEqual("mail", mail_resolver.userinfo["username"])
+        self.assertEqual("cn", uid_resolver.map["username"])
+        self.assertEqual("cn", mail_resolver.map["username"])
+        self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
+        mail_resolver.multivalueattributes.append("email")
+        self.assertEqual(["mobile"], uid_resolver.multivalueattributes)
+
+    def test_54_saved_serverpool_strategy_is_used_for_the_server_pool(self):
+        save_resolver({"resolver": "strategy_resolver",
+                       "type": "ldapresolver",
+                       "LDAPURI": "ldap://server1, ldap://server2",
+                       "LDAPBASE": "o=test",
+                       "LOGINNAMEATTRIBUTE": "cn",
+                       "LDAPSEARCHFILTER": "(cn=*)",
+                       "USERINFO": '{"username": "cn"}',
+                       "UIDTYPE": "DN",
+                       "SERVERPOOL_STRATEGY": "FIRST"})
+
+        self.assertEqual("FIRST", get_resolver_config("strategy_resolver").get("SERVERPOOL_STRATEGY"))
+        resolver = get_resolver_object("strategy_resolver")
+        self.assertEqual("FIRST", resolver.get_serverpool_instance().strategy)
+        delete_resolver("strategy_resolver")
+
+    @ldap3mock.activate
+    def test_55_testconnection_uses_serverpool_strategy(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        params = {"LDAPURI": "ldap://localhost",
+                  "LDAPBASE": "o=test",
+                  "BINDDN": "cn=manager,ou=example,o=test",
+                  "BINDPW": "ldaptest",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_STRATEGY": "RANDOM"}
+
+        with mock.patch.object(LDAPResolver, "create_serverpool",
+                               wraps=LDAPResolver.create_serverpool) as create_serverpool:
+            success, desc = LDAPResolver.testconnection(params)
+
+        self.assertTrue(success, desc)
+        self.assertEqual("RANDOM", create_serverpool.call_args.kwargs["strategy"])
+
+    def test_56_persistent_serverpool_per_strategy(self):
+        # Resolvers that differ only in the strategy must not share a persistent server pool, so that a changed
+        # strategy takes effect without a restart.
+        config = {"LDAPURI": "ldap://server1, ldap://server2",
+                  "LDAPBASE": "o=test",
+                  "LOGINNAMEATTRIBUTE": "cn",
+                  "LDAPSEARCHFILTER": "(cn=*)",
+                  "USERINFO": '{"username": "cn"}',
+                  "UIDTYPE": "DN",
+                  "SERVERPOOL_PERSISTENT": "true"}
+        first_resolver = LDAPResolver()
+        first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+        random_resolver = LDAPResolver()
+        random_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "RANDOM"})
+        other_first_resolver = LDAPResolver()
+        other_first_resolver.loadConfig(config | {"SERVERPOOL_STRATEGY": "FIRST"})
+
+        first_pool = first_resolver.get_serverpool_instance()
+        random_pool = random_resolver.get_serverpool_instance()
+
+        self.assertEqual("FIRST", first_pool.strategy)
+        self.assertEqual("RANDOM", random_pool.strategy)
+        self.assertIs(first_pool, other_first_resolver.get_serverpool_instance())
+
 
 class BaseResolverTestCase(MyTestCase):
 
@@ -3452,6 +3540,27 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(2, mock_get_username.call_count)
 
         self.assertDictEqual({}, resolver.get_usernames_batch([]))
+
+    def test_03_parse_config_yaml(self):
+        # Every call returns its own copy, the first call too, so a change of one result does not reach the next
+        text = f'{{"username": "uid", "groups": ["admins"], "id": "{uuid.uuid4()}"}}'
+        first = parse_config_yaml(text)
+        first["username"] = "mail"
+        first["groups"].append("developers")
+        second = parse_config_yaml(text)
+        self.assertEqual("uid", second["username"])
+        self.assertEqual(["admins"], second["groups"])
+        self.assertIsNot(first, second)
+
+        self.assertEqual(["mobile"], parse_config_yaml('["mobile"]'))
+        self.assertEqual({"username": "userName"}, parse_config_yaml("{username: 'userName'}"))
+        # Invalid YAML raises on every call
+        for _ in range(2):
+            with self.assertRaises(yaml.YAMLError):
+                parse_config_yaml('{"username": "uid"')
+        # A value that is not a string goes to the YAML parser unchanged
+        with self.assertRaises(AttributeError):
+            parse_config_yaml({})
 
 
 class ResolverTestCase(MyTestCase):

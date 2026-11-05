@@ -18,6 +18,7 @@
  **/
 export const ROUTE_PATHS = {
   LOGIN: "/login",
+  PASSWORD_RECOVERY: "/recover",
   DASHBOARD: "/dashboard",
   SETTINGS: "/configuration/ui-settings",
   LOGS: "/logs",

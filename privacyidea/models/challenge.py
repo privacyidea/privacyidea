@@ -18,7 +18,7 @@
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import (
     Sequence,
@@ -87,8 +87,18 @@ class Challenge(MethodsMixin, db.Model):
         return self._data or ''
 
     @log_with(log)
-    def __init__(self, serial, transaction_id=None,
-                 challenge='', data=None, session='', validitytime=120):
+    def __init__(self, serial: str, transaction_id: str | None = None, challenge: str = '', data: dict | None = None,
+                 session: str = '', validitytime: int = 120, expiration: datetime | None = None):
+        """
+        :param serial: Serial number of the token
+        :param transaction_id: Transaction id of the challenge, a new one is generated if None
+        :param challenge: The challenge string
+        :param data: Challenge data
+        :param session: Session string
+        :param validitytime: Validity period in seconds, used if no expiration is given
+        :param expiration: The time the challenge expires, timezone-aware, e.g. to share it with the time limit of a
+            sent OTP value
+        """
         # We manually assign attributes here as they depend on the function parameters
         self.transaction_id = transaction_id or self.create_transaction_id()
         self.challenge = challenge
@@ -98,7 +108,11 @@ class Challenge(MethodsMixin, db.Model):
         self.session = session
         self.received_count = 0
         self.otp_valid = False
-        self.expiration = self.timestamp + timedelta(seconds=validitytime)
+        if expiration:
+            # Stored as naive UTC like the timestamp
+            self.expiration = expiration.astimezone(timezone.utc).replace(tzinfo=None)
+        else:
+            self.expiration = self.timestamp + timedelta(seconds=validitytime)
 
     @staticmethod
     def create_transaction_id(length=20):

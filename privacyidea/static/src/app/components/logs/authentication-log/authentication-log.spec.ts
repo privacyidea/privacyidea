@@ -32,6 +32,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ClientsService } from "@services/clients/clients.service";
 import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
 import { ContentService } from "@services/content/content.service";
+import { IntegrationsService } from "@services/integrations/integrations.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -40,6 +41,7 @@ import {
   MockClientsService,
   MockConditionalAccessPolicyService,
   MockContentService,
+  MockIntegrationsService,
   MockPiResponse,
   MockRealmService,
   MockTableUtilsService
@@ -72,6 +74,7 @@ describe("AuthenticationLog", () => {
         { provide: MockClientsService, useClass: MockClientsService },
         { provide: MockConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
         { provide: AuthService, useClass: MockAuthService },
+        { provide: IntegrationsService, useClass: MockIntegrationsService },
         { provide: AuthenticationLogService, useExisting: MockAuthenticationLogService },
         { provide: TableUtilsService, useExisting: MockTableUtilsService },
         { provide: ContentService, useExisting: MockContentService },
@@ -608,7 +611,7 @@ describe("AuthenticationLog", () => {
       "filter_alt_offClear Filter",
       "Action",
       "Policy",
-      "Dry run"
+      "Dry Run"
     ]);
   });
 
@@ -743,9 +746,13 @@ describe("AuthenticationLog", () => {
     expect(component.eventTypeOptions()).toEqual(["ONLY_ONE"]);
   });
 
-  it("exposes client-label options mapping friendly name -> identifier", () => {
-    expect(component.clientLabelOptions).toContainEqual({ label: "Keycloak", value: "privacyIDEA-Keycloak" });
-    expect(component.clientLabelOptions.every((o) => o.label && o.value)).toBe(true);
+  it("derives client-label options from the integration catalog, label -> policy_value", () => {
+    expect(component.clientLabelOptions()).toContainEqual({ label: "Keycloak", value: "privacyIDEA-Keycloak" });
+    expect(component.clientLabelOptions()).toContainEqual({
+      label: "Windows Credential Provider",
+      value: "privacyidea-cp"
+    });
+    expect(component.clientLabelOptions().every((o) => o.label && o.value)).toBe(true);
   });
 
   it("requests known clients on init for the source-IP options", () => {
@@ -841,7 +848,7 @@ describe("AuthenticationLog", () => {
     });
 
     it("dateRangeLabel is the neutral default, a matched preset name, or the custom fallback", () => {
-      expect(component.dateRangeLabel()).toBe("Date range");
+      expect(component.dateRangeLabel()).toBe("Date Range");
 
       // A start ~1 year ago with an open end reads as the "Last year" preset.
       const yearAgo = new Date();

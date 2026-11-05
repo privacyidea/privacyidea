@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 # privacyIDEA single-node Docker stack — common operations.
-# Run from deploy/docker/.  "make help" lists the available targets.
+# Run from the deployment directory.  "make help" lists the available targets.
 
-COMPOSE := docker compose -f compose.yaml
+# No "-f": compose then reads the compose files from COMPOSE_FILE in .env, or
+# compose.yaml and an optional compose.override.yaml when that is unset.
+COMPOSE := docker compose
 
 .DEFAULT_GOAL := help
 
@@ -13,9 +15,12 @@ help:  ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-9s\033[0m %s\n", $$1, $$2}'
 
-init:  ## Generate secrets and create .env (idempotent)
+init:  ## Generate secrets and create the config files from their templates (idempotent)
 	@./scripts/init-secrets.sh
-	@[ -f .env ] || { cp .env.template .env && echo "[init] created .env from .env.template — review it"; }
+	@for file in .env privacyidea.env caddy.env mariadb.cnf; do \
+	  [ -f "$$file" ] || { cp "$$file.template" "$$file" && chmod 644 "$$file" && \
+	    echo "[init] created $$file from $$file.template — review it"; }; \
+	done
 
 up:  ## Start the stack
 	$(COMPOSE) up -d
@@ -42,13 +47,18 @@ restore:  ## Restore from a backup (FILE=backups/<archive>)
 	@[ -n "$(FILE)" ] || { echo "usage: make restore FILE=backups/<archive>"; exit 1; }
 	./scripts/restore.sh $(FILE)
 
-upgrade:  ## Back up, pull the new image, and restart (safe upgrade)
+# Pulls before the backup, so a failed pull changes nothing and the backup is
+# taken right before the switch.
+upgrade:  ## Pull the configured images, back up, and restart on them (safe upgrade)
+	@$(COMPOSE) pull || { \
+	  echo "[upgrade] Pulling failed, nothing was changed. An image built with 'make build'" >&2; \
+	  echo "          is not pulled: update it with 'make build' and 'make up' instead." >&2; \
+	  exit 1; }
 	./scripts/backup.sh
-	$(COMPOSE) pull
 	$(COMPOSE) up -d
 
-build:  ## Build the image locally (development; not needed when pulling)
-	$(COMPOSE) build
+build:  ## Build the image from the source tree as PI_IMAGE (development; see compose.build.yaml)
+	$(COMPOSE) -f compose.yaml -f compose.build.yaml build
 
 pimanage:  ## Run a one-off pi-manage command (ARGS="admin list"); needs db running
 	@[ -n "$(ARGS)" ] || { echo 'usage: make pimanage ARGS="admin list"'; exit 1; }

@@ -1,6 +1,7 @@
 @use "sass:map";
 @use "sass:math";
 @use "sass:meta";
+@use "sass:string";
 @use "@angular/material" as mat;
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
@@ -472,7 +473,7 @@ $status-colors: (
   @if map.has-key($set, "#{$fill}-edge") {
     @return map.get($set, "#{$fill}-edge");
   }
-  @return unquote("color-mix(in srgb, var(--#{$fill}-fill), var(--status-edge-tone) 65%)");
+  @return string.unquote("color-mix(in srgb, var(--#{$fill}-fill), var(--status-edge-tone) 65%)");
 }
 
 @mixin status-colors($set) {

@@ -193,11 +193,11 @@ export class MockIntegrationsService implements IntegrationsServiceInterface {
   apiClientIntegrations = jest.fn(() => this.integrations().filter((integration) => integration.api_client));
   dashboardIntegrations = jest.fn(() => this.integrations().filter((integration) => integration.dashboard));
   labelFor = jest.fn((id: string) => this.integrations().find((integration) => integration.id === id)?.label ?? id);
-  labelForPolicyValue = jest.fn((policyValue: string) => {
+  displayForPolicyValue = jest.fn((policyValue: string) => {
     const normalized = policyValue.toLowerCase();
-    return (
-      this.integrations().find((integration) => integration.policy_value.toLowerCase() === normalized)?.label ??
-      policyValue
-    );
+    const label = this.integrations().find(
+      (integration) => integration.policy_value.toLowerCase() === normalized
+    )?.label;
+    return label && label !== policyValue ? `${label} (${policyValue})` : policyValue;
   });
 }
