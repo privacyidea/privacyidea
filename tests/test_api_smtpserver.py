@@ -197,6 +197,9 @@ class SMTPServerTestCase(MyApiTestCase):
              "The recipient 'jörg@exämple.com' contains non-ASCII characters."),
             ({"sender": "jörg@exämple.com"},
              "The sender 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"sender": "Jörg Müller <pi@example.com>"},
+             "The display name 'Jörg Müller' of the sender contains non-ASCII characters. "
+             "privacyIDEA can only send emails with an ASCII display name."),
             ({"recipient": "a@example.com\nBcc: x@example.com"},
              "The recipient must not contain line breaks or other control characters."),
             ({"sender": "a@example.com\r\nBcc: x@example.com"},
@@ -343,6 +346,8 @@ class SMTPServerTestCase(MyApiTestCase):
              "The sender must not contain line breaks or other control characters."),
             ({"sender": "jörg@exämple.com"},
              "The sender 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"sender": "Jörg Müller <pi@example.com>"},
+             "The display name 'Jörg Müller' of the sender contains non-ASCII characters."),
         ]
         for data, expected in cases:
             with self.subTest(data=data):

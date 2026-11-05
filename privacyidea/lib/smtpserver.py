@@ -20,6 +20,7 @@ import smtplib
 import time
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
+from email.utils import parseaddr
 from time import gmtime, strftime
 from urllib.parse import urlparse
 
@@ -117,13 +118,18 @@ def check_email_address(address: str, name: str) -> None:
     """
     Reject an email address that can not be put into the message header or the SMTP envelope.
 
-    :param address: the email address
+    :param address: the email address, optionally with a display name like ``Name <user@example.com>``
     :param name: the name of the setting, used in the error message
-    :raises ParameterError: if the address contains control characters or non-ASCII characters
+    :raises ParameterError: if the address contains control characters, or if the address or the display name
+        contains non-ASCII characters
     """
     if any(ord(character) < 32 or ord(character) == 127 for character in address):
         raise ParameterError(f"The {name} must not contain line breaks or other control characters.")
     if not address.isascii():
+        display_name, mail_address = parseaddr(address)
+        if mail_address.isascii():
+            raise ParameterError(f"The display name {display_name!r} of the {name} contains non-ASCII characters. "
+                                 f"privacyIDEA can only send emails with an ASCII display name.")
         raise ParameterError(f"The {name} {address!r} contains non-ASCII characters. "
                              f"privacyIDEA can only send emails from and to ASCII addresses.")
 

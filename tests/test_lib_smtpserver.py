@@ -532,7 +532,11 @@ class SMTPServerExportImportTestCase(MyTestCase):
                    "server": ({"server": "smtp://"}, "does not contain a host name"),
                    "server_port": ({"server": "mail.example:99999"}, "must be a number between 1 and 65535"),
                    "sender": ({"sender": "pi@example.com\r\n"}, "must not contain line breaks"),
-                   "sender_ascii": ({"sender": "pi@exämple.com"}, "contains non-ASCII characters")}
+                   "sender_ascii": ({"sender": "pi@exämple.com"}, "can only send emails from and to ASCII addresses"),
+                   "sender_name": ({"sender": "Jörg Müller <pi@example.com>"},
+                                   "The display name 'Jörg Müller' of the sender contains non-ASCII characters"),
+                   "sender_name_and_address": ({"sender": "Jörg <jörg@exämple.com>"},
+                                               "can only send emails from and to ASCII addresses")}
         for name, (change, message) in invalid.items():
             with self.subTest(name=name):
                 settings = dict({"server": "mail.example", "sender": "pi@example.com"}, **change)
@@ -552,6 +556,9 @@ class SMTPServerExportImportTestCase(MyTestCase):
         stored = get_smtpserver("valid").config
         self.assertEqual(587, stored.port)
         self.assertEqual(20, stored.timeout)
+        # A display name with ASCII characters is accepted
+        add_smtpserver("valid", server="mail.example", sender="privacyIDEA <pi@example.com>")
+        self.assertEqual("privacyIDEA <pi@example.com>", get_smtpserver("valid").config.sender)
         # A float without fraction is a whole number
         add_smtpserver("valid", server="mail.example", port=587.0)
         self.assertEqual(587, get_smtpserver("valid").config.port)
