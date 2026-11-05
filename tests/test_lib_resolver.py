@@ -13,6 +13,7 @@ The lib.resolver.py only depends on the database model.
 import datetime
 import json
 import logging
+import os
 import shutil
 import ssl
 import tempfile
@@ -42,7 +43,7 @@ from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT
 from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, EDITABLE, CONFIG_GET_USER_BY_NAME,
                                                     HTTPMethod, CONFIG_GET_USER_BY_ID, ADVANCED)
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
-from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
+from privacyidea.lib.resolvers.LDAPIdResolver import (CACHE, SERVERPOOL_ROUNDS, SERVERPOOL_SKIP, DEFAULT_CA_FILE)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
@@ -189,7 +190,9 @@ class SQLResolverTestCase(MyTestCase):
     @classmethod
     def tearDownClass(cls):
         # Remove temporary work directory
-        shutil.rmtree(cls.parameters["Server"])
+        # The server is the working directory with a slash in front. Windows does not remove a database file that
+        # is still open.
+        shutil.rmtree(cls.parameters["Server"][1:], ignore_errors=os.name == "nt")
 
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
@@ -1917,7 +1920,9 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertTrue(kwargs['use_ssl'])
             ldap3_tls_config = kwargs['tls'].__str__()
             self.assertIn("protocol: 2", ldap3_tls_config)
-            self.assertIn("CA certificates file: present", ldap3_tls_config)
+            # Without a CA file (the default on Windows), ldap3 uses the certificate store of the system
+            self.assertIn("CA certificates file: present" if DEFAULT_CA_FILE else "CA certificates file: not present",
+                          ldap3_tls_config)
             self.assertTrue("verify mode: VerifyMode.CERT_REQUIRED" in ldap3_tls_config
                             or "verify mode: 2" in ldap3_tls_config
                             or "verify mode: True" in ldap3_tls_config)
@@ -3383,7 +3388,7 @@ class ResolverTestCase(MyTestCase):
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
                              "description": "",
-                             "fileName": "/etc/passwd"})
+                             "fileName": PWFILE})
         self.assertTrue(rid > 0, rid)
         config_db = db.session.scalars(select(ResolverConfig).where(ResolverConfig.resolver_id == rid)).all()
         self.assertSetEqual({"fileName", "test_bool"}, set([c.Key for c in config_db]), config_db)

@@ -1663,6 +1663,15 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertEqual(content, "OATH123456, Cornelius")
         os.remove("tests/testdata/testOATH123456.txt")
 
+        # The file is written as UTF-8, independent of the default encoding of the platform
+        options["handler_def"]["options"]["body"] = "{serial}, {user} → €"
+        res = un_handler.do("savefile", options=options)
+        self.assertTrue(res)
+        with open("tests/testdata/testOATH123456.txt", encoding="utf-8") as f:
+            content = f.read()
+        self.assertEqual(content, "OATH123456, Cornelius → €")
+        os.remove("tests/testdata/testOATH123456.txt")
+
         # Check what happens if we try to write outside of spooldir
         options = {"g": g,
                    "request": req,
@@ -1680,7 +1689,7 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
             mock_log.assert_called_once_with("Cannot write outside of spooldir tests/testdata/!")
 
         # This part only works for a non-root user
-        if os.getuid() == 0:
+        if hasattr(os, "getuid") and os.getuid() == 0:
             return
 
         # Check what happens if the file can not be written
@@ -1708,6 +1717,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
             # ... with the right message
             self.assertTrue(call_args[0][0].startswith("Failed to write notification file:"))
 
+        # Windows does not remove a read only file
+        os.chmod("tests/testdata/testOATH123456.txt", 0o600)
         os.remove("tests/testdata/testOATH123456.txt")
 
     @smtpmock.activate

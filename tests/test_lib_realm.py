@@ -21,7 +21,7 @@ from privacyidea.lib.resolver import (save_resolver,
 from privacyidea.lib.token import init_token, unassign_token
 from privacyidea.lib.user import User
 from privacyidea.models import CustomUserAttribute, NodeName, TokenContainerOwner, TokenOwner, db
-from .base import MyTestCase
+from .base import MyTestCase, PWFILE2
 
 
 class ResolverTestCase(MyTestCase):
@@ -36,7 +36,7 @@ class ResolverTestCase(MyTestCase):
     def test_01_create_realm(self):
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
-                             "fileName": "/etc/passwd"})
+                             "fileName": PWFILE2})
         self.assertTrue(rid > 0, rid)
 
         rid = save_resolver({"resolver": self.resolvername2,
@@ -145,7 +145,7 @@ class ResolverTestCase(MyTestCase):
         self.assertTrue(len(realms) == 0, realms)
 
     def test_11_delete_realm_owner_check(self):
-        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": "/etc/passwd"})
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": PWFILE2})
         set_realm("realm3", [{"name": self.resolvername1}])
         set_realm("realm4", [{"name": self.resolvername1}])
         unreachable = mock.patch.object(User, "_get_user_from_userstore",
@@ -198,7 +198,7 @@ class ResolverTestCase(MyTestCase):
 
         save_resolver({"resolver": self.resolvername1,
                        "type": "passwdresolver",
-                       "fileName": "/etc/passwd"})
+                       "fileName": PWFILE2})
 
         save_resolver({"resolver": self.resolvername2,
                        "type": "passwdresolver",
@@ -290,7 +290,7 @@ class ResolverTestCase(MyTestCase):
 
         save_resolver({"resolver": self.resolvername1,
                        "type": "passwdresolver",
-                       "fileName": "/etc/passwd"})
+                       "fileName": PWFILE2})
 
         save_resolver({"resolver": self.resolvername2,
                        "type": "passwdresolver",
@@ -334,7 +334,7 @@ class ResolverTestCase(MyTestCase):
 
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
-                             "fileName": "/etc/passwd"})
+                             "fileName": PWFILE2})
         self.assertTrue(rid > 0, rid)
         set_realm(self.realm1, [{"name": self.resolvername1}])
 

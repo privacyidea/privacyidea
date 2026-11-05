@@ -6,7 +6,7 @@ import urllib
 from base64 import b32encode, b64encode, b64decode
 from datetime import datetime, UTC
 from hashlib import sha1
-from zoneinfo import ZoneInfo
+from dateutil.tz import gettz
 
 from unittest import mock
 import responses
@@ -587,7 +587,7 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.assertEqual("Do you want to confirm the login?", value[0].get("question"))
 
         # Check the challenge again, this time with a timestamp in a different timezone
-        timestamp = datetime.now(tz=ZoneInfo("America/Los_Angeles")).isoformat()
+        timestamp = datetime.now(tz=gettz("America/Los_Angeles")).isoformat()
         sign_string = f"{tokenobj.token.serial}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),

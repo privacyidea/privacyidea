@@ -257,7 +257,7 @@ def test_is_operator_is_only_used_with_null():
 
     offenders = []
     for path in sorted(pathlib.Path("privacyidea").rglob("*.py")):
-        tree = ast.parse(path.read_text(), filename=str(path))
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                     and node.func.attr in ("is_", "is_not", "isnot") and node.args):

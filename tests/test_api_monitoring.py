@@ -2,6 +2,7 @@ from .base import MyApiTestCase
 from privacyidea.lib.monitoringstats import write_stats
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 import datetime
+import time
 
 
 class APIMonitoringTestCase(MyApiTestCase):
@@ -94,6 +95,8 @@ class APIMonitoringTestCase(MyApiTestCase):
     def test_02_delete_stats(self):
 
         ts = datetime.datetime.now()
+        # The clock of Windows ticks every 15 ms, the new value has to be written after ts
+        time.sleep(0.05)
         write_stats("key2", 60)
 
         # Now we delete some keys (the three old ones)
