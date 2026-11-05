@@ -2062,6 +2062,28 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
                                         serials={self.serial}, transaction_id=res.json["detail"]["transaction_id"],
                                         endpoint='/validate/triggerchallenge')
 
+    def test_triggerchallenge_without_usable_token_names_the_refusal(self):
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount()):
+            token.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertEqual("Failcounter exceeded", res.json["detail"]["message"], res.json)
+
+    def test_triggerchallenge_with_a_challenge_keeps_refusals_out_of_the_messages(self):
+        failcount = self._init_hotp("AUTHLOG_FAILCOUNT")
+        for _ in range(failcount.get_max_failcount()):
+            failcount.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        challenge_message = res.json["detail"]["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], res.json["detail"]["messages"])
+        self.assertEqual(challenge_message, res.json["detail"]["message"])
+
     def test_triggerchallenge_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
         set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
         self.addCleanup(delete_policy, "authlog_inc_fail")

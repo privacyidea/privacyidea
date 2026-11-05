@@ -417,7 +417,8 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
 
     :param token_list: The tokens of the user or serial of the request
     :param reply_dict: The details of the response, which get the challenges, see
-        :func:`create_challenges_from_tokens`
+        :func:`create_challenges_from_tokens`, or, if no token is left to challenge, the message why the tokens
+        were refused
     :param options: The request options passed to the tokens
     :return: The event, serials and reasons for the authentication log
     """
@@ -456,6 +457,9 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
                                                       if serial in token_reasons),
                                 token_reasons)
     if token_list:
+        # As at /validate/check, why the tokens were refused is only the message when no token was left to challenge
+        if messages:
+            reply_dict["message"] = ", ".join(set(messages))
         return ChallengeTrigger(AuthEventType.NO_USABLE_TOKEN, [], order_request_reasons(token_reasons.values()),
                                 token_reasons)
     return ChallengeTrigger(AuthEventType.NO_TOKEN, [], [], {})
