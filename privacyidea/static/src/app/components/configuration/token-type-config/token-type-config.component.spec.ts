@@ -535,6 +535,36 @@ describe("TokenTypeConfigComponent", () => {
       });
     });
 
+    describe("a loaded config", () => {
+      it("shows the error of a stored duplicate question without a touch", async () => {
+        systemService.systemConfig.set({
+          [QUESTION_NUMBER_OF_ANSWERS]: "2",
+          "question.question.0": "Pet?",
+          "question.question.1": "Pet?"
+        });
+        await flush();
+
+        expect(component.configForm.values["question.question.1"]().touched()).toBe(true);
+        expect(query("app-questionnaire-config mat-error")?.textContent).toContain("This question already exists.");
+      });
+
+      it("shows the error of a stored incomplete panel without a touch", async () => {
+        jest.spyOn(component.authService, "actionAllowed").mockReturnValue(true);
+        systemService.systemConfig.set({ [YUBICO_ID]: "12345" });
+        await flush();
+
+        expect(query("app-yubico-config mat-error")).not.toBeNull();
+      });
+
+      it("leaves a valid config untouched", async () => {
+        systemService.systemConfig.set({ [YUBICO_ID]: "12345", [YUBICO_SECRET]: "secret" });
+        await flush();
+
+        expect(component.configForm().touched()).toBe(false);
+        expect(query("mat-error")).toBeNull();
+      });
+    });
+
     describe("an incomplete panel and the open-all toggle", () => {
       it("closes the opened incomplete panel with the other panels", async () => {
         jest.spyOn(component.authService, "actionAllowed").mockReturnValue(true);

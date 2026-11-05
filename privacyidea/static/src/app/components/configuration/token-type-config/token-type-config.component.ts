@@ -149,6 +149,13 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
       const values = this.formData().values;
       untracked(() => this.syncQuestionSlots(values));
     });
+    // A stored invalid entry disables Save, so its error is shown right away.
+    effect(() => {
+      this.systemService.systemConfig();
+      untracked(() => {
+        if (!this.configForm().valid()) void touchAll(this.configForm);
+      });
+    });
   }
 
   /** Adds or trims the empty question slots so they match the configured number of answers. */
