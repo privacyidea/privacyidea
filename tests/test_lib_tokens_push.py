@@ -416,9 +416,10 @@ class PushTokenTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         g.audit_object = mock.MagicMock(audit_data={})
 
-        success, _message, _transaction_id, _ = token.create_challenge(options={"g": g})
+        success, message, _transaction_id, _ = token.create_challenge(options={"g": g})
 
         self.assertFalse(success)
+        self.assertEqual("The PIN was correct, but the push notification was not sent.", message)
         self.assertListEqual([], get_challenges(serial=token.get_serial()))
         self.assertEqual(AuthEventReason.CHALLENGE_NOT_DELIVERED, token.auth_details[AUTH_EVENT_REASON_KEY])
 
@@ -547,6 +548,8 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("REJECT", result.get("authentication"))
                     self.assertListEqual([], res.json["detail"]["multi_challenge"])
+                    self.assertEqual("The PIN was correct, but the push notification was not sent.",
+                                     res.json["detail"]["message"])
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
@@ -567,6 +570,8 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("REJECT", result.get("authentication"))
                     self.assertListEqual([], res.json["detail"]["multi_challenge"])
+                    self.assertEqual("The PIN was correct, but the push notification was not sent.",
+                                     res.json["detail"]["message"])
                     # Check that the warning was written to the log file.
                     mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)

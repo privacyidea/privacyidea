@@ -98,6 +98,7 @@ log = logging.getLogger(__name__)
 DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please confirm the authentication on your mobile device!")
 ERROR_CHALLENGE_TEXT = lazy_gettext("Use the polling feature of your privacyIDEA Authenticator App"
                                     " to check for a new Login request.")
+NOT_SENT_CHALLENGE_TEXT = lazy_gettext("The PIN was correct, but the push notification was not sent.")
 DEFAULT_MOBILE_TEXT = lazy_gettext("Do you want to confirm the login?")
 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE = lazy_gettext("Enter the code to log in")
 PRIVATE_KEY_SERVER = "private_key_server"
@@ -1624,13 +1625,13 @@ class PushTokenClass(TokenClass):
             # If sending the Push message failed, we log a warning
             if not res:
                 log.warning(f"Failed to submit message to push gateway for token {self.token.serial}.")
-                message += " " + ERROR_CHALLENGE_TEXT
+                if challenge_created:
+                    message += " " + ERROR_CHALLENGE_TEXT
                 if is_true(options.get("exception")):
                     raise ValidateError("Failed to submit message to push gateway.")
         else:
             log.warning(f"The token {self.token.serial} has no tokeninfo {PushAction.FIREBASE_CONFIG}. "
                         f"The message could not be sent.")
-            message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via push gateway.")
 
@@ -1638,6 +1639,8 @@ class PushTokenClass(TokenClass):
                            "client_mode": client_mode})
         if not challenge_created:
             self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_NOT_DELIVERED
+            # Without a challenge, the smartphone has nothing to confirm and nothing to poll
+            message = str(NOT_SENT_CHALLENGE_TEXT)
         return challenge_created, message, transactionid, reply_dict
 
     @check_token_locked
@@ -1688,7 +1691,7 @@ class PushTokenClass(TokenClass):
                     # There is nothing to wait for. create_challenge recorded why, and check_token_list handles the
                     # request like a challenge request that created no challenge.
                     self.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_TRIGGER_FAIL
-                    return True, -1, {"message": _("The PIN was correct, but the push notification was not sent.")}
+                    return True, -1, {"message": message}
 
                 if code_to_phone_enabled:
                     # code_to_phone: return challenge immediately, no waiting.

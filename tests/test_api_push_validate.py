@@ -34,7 +34,8 @@ from privacyidea.lib.tokenclass import ClientMode, ChallengeSession
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import PushAllowPolling, PushDeclineReason
 from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
-                                              DEFAULT_CHALLENGE_TEXT, PushMode, PushTokenClass)
+                                              DEFAULT_CHALLENGE_TEXT, NOT_SENT_CHALLENGE_TEXT, PushMode,
+                                              PushTokenClass)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import db, Challenge
@@ -2582,7 +2583,8 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
     def test_24c_push_without_challenge_is_not_offered(self):
         """
         A push token that creates no challenge (no firebase_configuration) is neither offered to the client nor
-        logged as challenged; only the tokens that got a challenge are.
+        logged as challenged; only the tokens that got a challenge are. The reply says that the push notification was
+        not sent, and does not ask the user to confirm it.
         """
         self.setUp_user_realms()
         user = User("selfservice", self.realm1)
@@ -2605,6 +2607,8 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
         detail = res.json["detail"]
         self.assertListEqual([hotp_serial], [challenge["serial"] for challenge in detail["multi_challenge"]])
+        self.assertCountEqual(["please enter otp: ", str(NOT_SENT_CHALLENGE_TEXT)], detail["messages"])
+        self.assertNotIn(str(DEFAULT_CHALLENGE_TEXT), detail["message"])
         self.assertListEqual([], get_challenges(serial=self.serial_push))
         self.assertEqual(hotp_serial, self.find_most_recent_audit_entry(action="POST /validate/check")["serial"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
@@ -2618,6 +2622,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             self.assertEqual(200, res.status_code, res.json)
         detail = res.json["detail"]
         self.assertListEqual([hotp_serial], [challenge["serial"] for challenge in detail["multi_challenge"]])
+        self.assertCountEqual(["please enter otp: ", str(NOT_SENT_CHALLENGE_TEXT)], detail["messages"])
         self.assertListEqual([], get_challenges(serial=self.serial_push))
         self.assertEqual(hotp_serial,
                          self.find_most_recent_audit_entry(action="POST /validate/triggerchallenge")["serial"])
@@ -2635,6 +2640,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
         self.assertListEqual([], res.json["detail"]["multi_challenge"])
+        self.assertEqual(str(NOT_SENT_CHALLENGE_TEXT), res.json["detail"]["message"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
