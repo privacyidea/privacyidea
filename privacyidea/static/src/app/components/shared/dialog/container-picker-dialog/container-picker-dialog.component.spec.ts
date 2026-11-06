@@ -69,6 +69,14 @@ describe("ContainerPickerDialogComponent", () => {
 
   const warning = (): HTMLElement | null => fixture.nativeElement.querySelector(".inline-warning");
 
+  /** Lets the backend return `serials`, optionally with details, and types `typed` into the field. */
+  const pick = (typed: string, serials: string[], details: ContainerDetailData[] = []) => {
+    containerServiceMock.pickableContainerDetails.set(details);
+    containerServiceMock.pickableContainers.set(serials);
+    component.setContainerSerial(typed);
+    fixture.detectChanges();
+  };
+
   it("opens the container list while it lives and closes it again on destroy", async () => {
     await setup();
 
@@ -87,18 +95,14 @@ describe("ContainerPickerDialogComponent", () => {
     expect(containerServiceMock.containerPickerFilter()).toBe("CONT");
   });
 
-  it("keeps Add disabled for a serial that no container has", async () => {
+  it.each<{ name: string; typed: string | null }>([
+    { name: "a serial that no container has", typed: "Cff" },
+    { name: "nothing typed", typed: null }
+  ])("keeps Add disabled for $name", async ({ typed }) => {
     await setup();
     containerServiceMock.pickableContainers.set(["CONT0001"]);
 
-    component.setContainerSerial("Cff");
-
-    expect(addAction().disabled).toBe(true);
-  });
-
-  it("keeps Add disabled while nothing is typed", async () => {
-    await setup();
-    containerServiceMock.pickableContainers.set(["CONT0001"]);
+    if (typed !== null) component.setContainerSerial(typed);
 
     expect(addAction().disabled).toBe(true);
   });
@@ -113,7 +117,7 @@ describe("ContainerPickerDialogComponent", () => {
     expect(addAction().value.containerSerial).toBe("CONT0001");
   });
 
-  it("offers the containers of the user as shortcut buttons", async () => {
+  it("offers the containers of the user as shortcut buttons and takes the serial of a clicked one", async () => {
     await setup();
     containerServiceMock.userContainerSerials.set(["CONT0001", "SMPH0002"]);
     fixture.detectChanges();
@@ -121,16 +125,9 @@ describe("ContainerPickerDialogComponent", () => {
     const shortcuts = Array.from(
       fixture.nativeElement.querySelectorAll(".container-picker-buttons button")
     ) as HTMLButtonElement[];
-
     expect(shortcuts.map((button) => button.textContent?.trim())).toEqual(["folder CONT0001", "folder SMPH0002"]);
-  });
 
-  it("takes the serial of a shortcut button that was clicked", async () => {
-    await setup();
-    containerServiceMock.userContainerSerials.set(["CONT0001"]);
-    fixture.detectChanges();
-
-    (fixture.nativeElement.querySelector(".container-picker-buttons button") as HTMLButtonElement).click();
+    shortcuts[0].click();
 
     expect(component.containerSerial()).toBe("CONT0001");
     expect(containerServiceMock.containerPickerFilter()).toBe("CONT0001");
@@ -146,26 +143,23 @@ describe("ContainerPickerDialogComponent", () => {
     expect(addAction().disabled).toBe(false);
   });
 
-  it("offers to assign a container that has no owner yet, checked by default", async () => {
+  it.each<{ name: string; allowed: boolean; checkboxShown: boolean }>([
+    { name: "offers to assign a container that has no owner yet, checked by default", allowed: true, checkboxShown: true },
+    { name: "hides the assignment when the admin may not assign container users", allowed: false, checkboxShown: false }
+  ])("$name", async ({ allowed, checkboxShown }) => {
     await setup();
-    containerServiceMock.pickableContainerDetails.set([container("CONT0001")]);
-    containerServiceMock.pickableContainers.set(["CONT0001"]);
+    authServiceMock.actionAllowed.mockReturnValue(allowed);
 
-    component.setContainerSerial("CONT0001");
-    fixture.detectChanges();
+    pick("CONT0001", ["CONT0001"], [container("CONT0001")]);
 
-    expect(checkbox()).not.toBeNull();
-    expect(component.assignToUser()).toBe(true);
-    expect(addAction().value).toEqual({ containerSerial: "CONT0001", assignToUser: true, previousOwner: null });
+    expect(checkbox() !== null).toBe(checkboxShown);
+    if (allowed) expect(component.assignToUser()).toBe(true);
+    expect(addAction().value).toEqual({ containerSerial: "CONT0001", assignToUser: allowed, previousOwner: null });
   });
 
-  it("warns about the current owner and still offers to move the container", async () => {
+  it("warns about the current owner, offers to move the container and drops the move once unchecked", async () => {
     await setup();
-    containerServiceMock.pickableContainerDetails.set([container("CONT0001", "otheruser")]);
-    containerServiceMock.pickableContainers.set(["CONT0001"]);
-
-    component.setContainerSerial("CONT0001");
-    fixture.detectChanges();
+    pick("CONT0001", ["CONT0001"], [container("CONT0001", "otheruser")]);
 
     expect(warning()?.textContent).toContain("otheruser");
     expect(warning()?.textContent).toContain("will be moved");
@@ -175,13 +169,6 @@ describe("ContainerPickerDialogComponent", () => {
       assignToUser: true,
       previousOwner: { username: "otheruser", realm: "defrealm" }
     });
-  });
-
-  it("drops the move from the warning once the assignment is unchecked", async () => {
-    await setup();
-    containerServiceMock.pickableContainerDetails.set([container("CONT0001", "otheruser")]);
-    containerServiceMock.pickableContainers.set(["CONT0001"]);
-    component.setContainerSerial("CONT0001");
 
     component.assignToUser.set(false);
     fixture.detectChanges();
@@ -193,51 +180,22 @@ describe("ContainerPickerDialogComponent", () => {
   it("offers neither warning nor assignment for a container of the user", async () => {
     await setup();
     containerServiceMock.userContainerSerials.set(["CONT0001"]);
-    containerServiceMock.pickableContainerDetails.set([container("CONT0001", "root")]);
-    containerServiceMock.pickableContainers.set(["CONT0001"]);
 
-    component.setContainerSerial("CONT0001");
-    fixture.detectChanges();
+    pick("CONT0001", ["CONT0001"], [container("CONT0001", "root")]);
 
     expect(warning()).toBeNull();
     expect(checkbox()).toBeNull();
   });
 
-  it("hides the assignment when the admin may not assign container users", async () => {
+  it.each<{ name: string; typed: string; serials: string[]; expected: string[] }>([
+    { name: "drops the suggestion that only repeats what is already in the field", typed: "SMPH00004476", serials: ["SMPH00004476"], expected: [] },
+    { name: "keeps the suggestions while more than one container matches", typed: "SMPH0", serials: ["SMPH00004476", "SMPH00015931"], expected: ["SMPH00004476", "SMPH00015931"] }
+  ])("$name", async ({ typed, serials, expected }) => {
     await setup();
-    authServiceMock.actionAllowed.mockReturnValue(false);
-    containerServiceMock.pickableContainerDetails.set([container("CONT0001")]);
-    containerServiceMock.pickableContainers.set(["CONT0001"]);
 
-    component.setContainerSerial("CONT0001");
-    fixture.detectChanges();
+    pick(typed, serials);
 
-    expect(checkbox()).toBeNull();
-    expect(addAction().value).toEqual({
-      containerSerial: "CONT0001",
-      assignToUser: false,
-      previousOwner: null
-    });
-  });
-
-  it("drops the suggestion that only repeats what is already in the field", async () => {
-    await setup();
-    containerServiceMock.pickableContainers.set(["SMPH00004476"]);
-
-    component.setContainerSerial("SMPH00004476");
-    fixture.detectChanges();
-
-    expect(component["suggestions"]()).toEqual([]);
-  });
-
-  it("keeps the suggestions while more than one container matches", async () => {
-    await setup();
-    containerServiceMock.pickableContainers.set(["SMPH00004476", "SMPH00015931"]);
-
-    component.setContainerSerial("SMPH0");
-    fixture.detectChanges();
-
-    expect(component["suggestions"]()).toEqual(["SMPH00004476", "SMPH00015931"]);
+    expect(component["suggestions"]()).toEqual(expected);
   });
 
   it("closes with the chosen serial", async () => {

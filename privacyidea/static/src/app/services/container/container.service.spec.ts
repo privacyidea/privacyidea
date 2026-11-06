@@ -516,18 +516,14 @@ describe("ContainerService", () => {
     expect(containerService.filterParams()).toEqual({ user: "alice", realm: "realm1" });
   });
 
-  it("filterParams sends template names and template-presence filters exactly", () => {
-    containerService.activeFilter.set(new FilterValue({ value: "template: =baseline has_template: true" }));
-    expect(containerService.filterParams()).toEqual({ template: "baseline", has_template: "true" });
-  });
-
-  it("filterParams maps the template presets to has_template", () => {
-    containerService.activeFilter.set(new FilterValue({ value: "template: any" }));
-    expect(containerService.filterParams()).toEqual({ has_template: "true" });
-    containerService.activeFilter.set(new FilterValue({ value: "template: none" }));
-    expect(containerService.filterParams()).toEqual({ has_template: "false" });
-    containerService.activeFilter.set(new FilterValue({ value: "template: =any" }));
-    expect(containerService.filterParams()).toEqual({ template: "any" });
+  it.each([
+    ["template: =baseline has_template: true", { template: "baseline", has_template: "true" }],
+    ["template: any", { has_template: "true" }],
+    ["template: none", { has_template: "false" }],
+    ["template: =any", { template: "any" }]
+  ])("filterParams maps '%s' to the template request params", (filter, params) => {
+    containerService.activeFilter.set(new FilterValue({ value: filter }));
+    expect(containerService.filterParams()).toEqual(params);
   });
 
   it("filterParams keeps realm and container_realm apart", () => {

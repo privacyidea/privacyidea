@@ -57,21 +57,15 @@ describe("NoRealmDialogService", () => {
     authMock.actionAllowed.mockImplementation((action: string) => action === "resolverwrite");
   });
 
-  it("opens for an admin with the right while no realm exists", () => {
+  it.each<{ name: string; resolvers: string[]; noResolver: boolean }>([
+    { name: "the no-resolver variant when no resolver exists", resolvers: [], noResolver: true },
+    { name: "the realm variant when a resolver exists", resolvers: ["reso1"], noResolver: false }
+  ])("opens for an admin with the right while no realm exists, as $name", ({ resolvers, noResolver }) => {
+    if (resolvers.length) resolverMock.setResolverOptions(resolvers);
     start();
     expect(dialogMock.open).toHaveBeenCalledTimes(1);
-  });
-
-  it("opens the no-resolver variant when no resolver exists", () => {
-    start();
-    expect(dialogMock.open.mock.calls[0][1].data).toEqual({ noResolver: true });
-    expect(resolverMock.loadRequested()).toBe(true);
-  });
-
-  it("opens the realm variant when a resolver exists", () => {
-    resolverMock.setResolverOptions(["reso1"]);
-    start();
-    expect(dialogMock.open.mock.calls[0][1].data).toEqual({ noResolver: false });
+    expect(dialogMock.open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ data: { noResolver } }));
+    if (noResolver) expect(resolverMock.loadRequested()).toBe(true);
   });
 
   it("waits for the resolver list before opening", () => {
@@ -94,18 +88,10 @@ describe("NoRealmDialogService", () => {
     expect(dialogMock.open).toHaveBeenCalledTimes(2);
   });
 
-  it("waits for an open dialog to close before opening", () => {
+  it("waits for an open dialog to close before opening, while the session stays authenticated", () => {
     dialogMock.openDialogs.push({});
     start();
     expect(dialogMock.open).not.toHaveBeenCalled();
-    dialogMock.openDialogs.pop();
-    dialogMock.afterAllClosed.next();
-    expect(dialogMock.open).toHaveBeenCalledTimes(1);
-  });
-
-  it("opens after the other dialog closed while the session stays authenticated", () => {
-    dialogMock.openDialogs.push({});
-    start();
     dialogMock.openDialogs.pop();
     dialogMock.afterAllClosed.next();
     expect(dialogMock.open).toHaveBeenCalledTimes(1);
@@ -134,26 +120,13 @@ describe("NoRealmDialogService", () => {
     expect(dialogMock.open).not.toHaveBeenCalled();
   });
 
-  it("does not open when a realm exists", () => {
-    realmMock.noRealm.set(false);
-    start();
-    expect(dialogMock.open).not.toHaveBeenCalled();
-  });
-
-  it("does not open without the resolverwrite right", () => {
-    authMock.actionAllowed.mockReturnValue(false);
-    start();
-    expect(dialogMock.open).not.toHaveBeenCalled();
-  });
-
-  it("does not open for a non-admin", () => {
-    authMock.role.set("user");
-    start();
-    expect(dialogMock.open).not.toHaveBeenCalled();
-  });
-
-  it("does not open when not authenticated", () => {
-    authMock.isAuthenticated.set(false);
+  it.each<{ name: string; arrange: () => void }>([
+    { name: "a realm exists", arrange: () => realmMock.noRealm.set(false) },
+    { name: "the resolverwrite right is missing", arrange: () => authMock.actionAllowed.mockReturnValue(false) },
+    { name: "the user is a non-admin", arrange: () => authMock.role.set("user") },
+    { name: "not authenticated", arrange: () => authMock.isAuthenticated.set(false) }
+  ])("does not open when $name", ({ arrange }) => {
+    arrange();
     start();
     expect(dialogMock.open).not.toHaveBeenCalled();
   });

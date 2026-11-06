@@ -46,38 +46,42 @@ describe("NoRealmDialogComponent", () => {
     fixture.detectChanges();
   };
 
-  describe("with a resolver", () => {
-    beforeEach(() => setup({ noResolver: false }));
+  describe.each<{
+    name: string;
+    data: NoRealmDialogData;
+    heading: string;
+    text: string;
+    primary: string;
+    route: string;
+  }>([
+    {
+      name: "with a resolver",
+      data: { noResolver: false },
+      heading: "No realm exists yet",
+      text: "needed to enroll tokens",
+      primary: "Create realm",
+      route: ROUTE_PATHS.USERS_REALMS
+    },
+    {
+      name: "without a resolver",
+      data: { noResolver: true },
+      heading: "No resolver",
+      text: "Create a resolver first",
+      primary: "Create resolver",
+      route: ROUTE_PATHS.USERS_RESOLVERS_NEW
+    }
+  ])("$name", ({ data, heading, text, primary, route }) => {
+    beforeEach(() => setup(data));
+
     it("shows heading and explanation", () => {
-      expect(fixture.nativeElement.querySelector(".pi-dialog-header").textContent).toContain("No realm exists yet");
-      expect(fixture.nativeElement.textContent).toContain("needed to enroll tokens");
+      expect(fixture.nativeElement.querySelector(".pi-dialog-header").textContent).toContain(heading);
+      expect(fixture.nativeElement.textContent).toContain(text);
+      if (data.noResolver) expect(button("Create realm")).toBeUndefined();
     });
 
-    it("navigates to the realm management and closes on Create realm", () => {
-      button("Create realm")!.click();
-      expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_REALMS);
-      expect(dialogRefMock.close).toHaveBeenCalled();
-    });
-
-    it("only closes on Later", () => {
-      button("Later")!.click();
-      expect(routerMock.navigateByUrl).not.toHaveBeenCalled();
-      expect(dialogRefMock.close).toHaveBeenCalled();
-    });
-  });
-
-  describe("without a resolver", () => {
-    beforeEach(() => setup({ noResolver: true }));
-
-    it("explains that a resolver is needed first", () => {
-      expect(fixture.nativeElement.querySelector(".pi-dialog-header").textContent).toContain("No resolver");
-      expect(fixture.nativeElement.textContent).toContain("Create a resolver first");
-      expect(button("Create realm")).toBeUndefined();
-    });
-
-    it("navigates to the new resolver page and closes on Create resolver", () => {
-      button("Create resolver")!.click();
-      expect(routerMock.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_NEW);
+    it(`navigates and closes on ${primary}`, () => {
+      button(primary)!.click();
+      expect(routerMock.navigateByUrl).toHaveBeenCalledWith(route);
       expect(dialogRefMock.close).toHaveBeenCalled();
     });
 

@@ -71,20 +71,15 @@ describe("ContainerCreateDialogComponent", () => {
     fixture.detectChanges();
   };
 
-  it("should create", async () => {
-    await setup();
-    expect(component).toBeTruthy();
-  });
-
-  it("selects the default container type initially", async () => {
+  it("starts with the default container type and offers all types when no token type is relevant", async () => {
     await setup();
     // MockAuthService default container type is "generic"
     expect(component.selectedType()?.containerType).toBe("generic");
-  });
-
-  it("offers all container types when no token type is relevant", async () => {
-    await setup();
-    expect(component.typeOptions().map((option) => option.containerType)).toEqual(["generic", "smartphone", "yubikey"]);
+    expect(component.typeOptions().map((option) => option.containerType)).toEqual([
+      "generic",
+      "smartphone",
+      "yubikey"
+    ]);
   });
 
   it("only offers container types that support the relevant token type", async () => {
@@ -127,49 +122,37 @@ describe("ContainerCreateDialogComponent", () => {
 
   describe("user assignment", () => {
     const data: ContainerCreateDialogData = { username: "alice", userRealm: "realm1", checkUserAssignment: true };
+    const allowAssign = () =>
+      authService.actionAllowed.mockImplementation((action: string) => action === "container_assign_user");
 
-    it("shows the user assignment if a user is given and the action is allowed", async () => {
-      await setup(data, () =>
-        authService.actionAllowed.mockImplementation((action: string) => action === "container_assign_user")
-      );
-      expect(component.showUserAssignment()).toBe(true);
-      expect(component.assignUser()).toBe(true);
-    });
+    it.each<{ allowed: boolean }>([{ allowed: true }, { allowed: false }])(
+      "shows the user assignment only if the action is allowed (allowed: $allowed)",
+      async ({ allowed }) => {
+        await setup(data, () => authService.actionAllowed.mockReturnValue(allowed));
+        expect(component.showUserAssignment()).toBe(allowed);
+        if (allowed) expect(component.assignUser()).toBe(true);
+      }
+    );
 
-    it("hides the user assignment if the action is not allowed", async () => {
-      await setup(data, () => authService.actionAllowed.mockReturnValue(false));
-      expect(component.showUserAssignment()).toBe(false);
-    });
-
-    it("assigns the user to the new container when the checkbox is checked", async () => {
-      await setup(data, () =>
-        authService.actionAllowed.mockImplementation((action: string) => action === "container_assign_user")
-      );
+    it.each<{ name: string; checked: boolean; expected: object }>([
+      {
+        name: "assigns the user to the new container when the checkbox is checked",
+        checked: true,
+        expected: { type: "generic", description: "", user: "alice", realm: "realm1" }
+      },
+      {
+        name: "does not assign the user when the checkbox is unchecked",
+        checked: false,
+        expected: { type: "generic", description: "" }
+      }
+    ])("$name", async ({ checked, expected }) => {
+      await setup(data, allowAssign);
       containerService.createContainer.mockReturnValue(of(MockPiResponse.fromValue({ container_serial: "CONT-NEW" })));
 
+      component.assignUser.set(checked);
       component.onAction("create");
 
-      expect(containerService.createContainer).toHaveBeenCalledWith({
-        type: "generic",
-        description: "",
-        user: "alice",
-        realm: "realm1"
-      });
-    });
-
-    it("does not assign the user when the checkbox is unchecked", async () => {
-      await setup(data, () =>
-        authService.actionAllowed.mockImplementation((action: string) => action === "container_assign_user")
-      );
-      containerService.createContainer.mockReturnValue(of(MockPiResponse.fromValue({ container_serial: "CONT-NEW" })));
-
-      component.assignUser.set(false);
-      component.onAction("create");
-
-      expect(containerService.createContainer).toHaveBeenCalledWith({
-        type: "generic",
-        description: ""
-      });
+      expect(containerService.createContainer).toHaveBeenCalledWith(expected);
     });
   });
 });

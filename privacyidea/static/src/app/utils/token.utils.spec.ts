@@ -55,45 +55,25 @@ describe("tokenTypeLabel", () => {
 });
 
 describe("tokenTypeDisplayLabel", () => {
-  it("returns the part before the colon", () => {
-    expect(tokenTypeDisplayLabel("HOTP: counter based", "fallback")).toBe("HOTP");
-  });
-
-  it("returns the fallback when the info has no colon", () => {
-    expect(tokenTypeDisplayLabel("counter based", "fallback")).toBe("fallback");
-  });
-
-  it("returns the fallback for an empty info", () => {
-    expect(tokenTypeDisplayLabel("", "fallback")).toBe("fallback");
-  });
-
-  it("returns an empty label for a leading colon", () => {
-    expect(tokenTypeDisplayLabel(": desc", "fallback")).toBe("");
-  });
-
-  it("splits at the first colon only", () => {
-    expect(tokenTypeDisplayLabel("Name: see http://x: more", "fallback")).toBe("Name");
+  it.each([
+    { name: "the part before the colon", info: "HOTP: counter based", expected: "HOTP" },
+    { name: "the fallback when the info has no colon", info: "counter based", expected: "fallback" },
+    { name: "the fallback for an empty info", info: "", expected: "fallback" },
+    { name: "an empty label for a leading colon", info: ": desc", expected: "" },
+    { name: "the part before the first colon only", info: "Name: see http://x: more", expected: "Name" }
+  ])("returns $name", ({ info, expected }) => {
+    expect(tokenTypeDisplayLabel(info, "fallback")).toBe(expected);
   });
 });
 
 describe("tokenTypeDisplayDescription", () => {
-  it("returns the trimmed part after the colon", () => {
-    expect(tokenTypeDisplayDescription("Name:   some description ")).toBe("some description");
-  });
-
-  it("returns the whole text when the info has no colon", () => {
-    expect(tokenTypeDisplayDescription("only a description")).toBe("only a description");
-  });
-
-  it("returns an empty string for an empty info", () => {
-    expect(tokenTypeDisplayDescription("")).toBe("");
-  });
-
-  it("returns the description for a leading colon", () => {
-    expect(tokenTypeDisplayDescription(": desc")).toBe("desc");
-  });
-
-  it("keeps a colon inside the description", () => {
-    expect(tokenTypeDisplayDescription("Name: see http://x: more")).toBe("see http://x: more");
+  it.each([
+    { name: "the trimmed part after the colon", info: "Name:   some description ", expected: "some description" },
+    { name: "the whole text when the info has no colon", info: "only a description", expected: "only a description" },
+    { name: "an empty string for an empty info", info: "", expected: "" },
+    { name: "the description for a leading colon", info: ": desc", expected: "desc" },
+    { name: "the description with a colon inside it", info: "Name: see http://x: more", expected: "see http://x: more" }
+  ])("returns $name", ({ info, expected }) => {
+    expect(tokenTypeDisplayDescription(info)).toBe(expected);
   });
 });

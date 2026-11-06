@@ -294,12 +294,15 @@ describe("RealmService", () => {
       expect(realmService.noRealm()).toBe(false);
     });
 
-    it("is false when realms exist", async () => {
+    it.each([
+      { name: "realms exist", realms: realmA, expected: false },
+      { name: "the realms are loaded and empty", realms: {}, expected: true }
+    ])("is $expected when $name", async ({ realms, expected }) => {
       const req = loadOnAllowedRoute();
-      req.realms.flush(MockPiResponse.fromValue(realmA));
-      req.defaultRealm.flush(MockPiResponse.fromValue(realmA));
+      req.realms.flush(MockPiResponse.fromValue(realms));
+      req.defaultRealm.flush(MockPiResponse.fromValue(realms));
       await Promise.resolve();
-      expect(realmService.noRealm()).toBe(false);
+      expect(realmService.noRealm()).toBe(expected);
     });
 
     it("is false until the default realm is resolved", async () => {
@@ -307,14 +310,6 @@ describe("RealmService", () => {
       req.realms.flush(MockPiResponse.fromValue({}));
       await Promise.resolve();
       expect(realmService.noRealm()).toBe(false);
-      req.defaultRealm.flush(MockPiResponse.fromValue({}));
-      await Promise.resolve();
-      expect(realmService.noRealm()).toBe(true);
-    });
-
-    it("is true when the realms are loaded and empty", async () => {
-      const req = loadOnAllowedRoute();
-      req.realms.flush(MockPiResponse.fromValue({}));
       req.defaultRealm.flush(MockPiResponse.fromValue({}));
       await Promise.resolve();
       expect(realmService.noRealm()).toBe(true);

@@ -118,17 +118,13 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       return Array.from(document.querySelectorAll<HTMLElement>("mat-option"));
     };
 
-    it("renders an unsupported type as a disabled option with the info icon", () => {
-      const [, unsupportedOption] = openOptions();
+    it("renders an unsupported type as a disabled option with the info icon and a supported one as enabled without it", () => {
+      const [supportedOption, unsupportedOption] = openOptions();
       expect(unsupportedOption.classList.contains("select-option-unsupported")).toBe(true);
       expect(unsupportedOption.getAttribute("aria-disabled")).toBe("true");
       expect(unsupportedOption.querySelector(".select-option-unsupported-icon mat-icon")?.textContent).toContain(
         "info_outline"
       );
-    });
-
-    it("renders a supported type as an enabled option without the info icon", () => {
-      const [supportedOption] = openOptions();
       expect(supportedOption.classList.contains("select-option-unsupported")).toBe(false);
       expect(supportedOption.getAttribute("aria-disabled")).toBe("false");
       expect(supportedOption.querySelector(".select-option-unsupported-icon")).toBeNull();
