@@ -93,14 +93,17 @@ export class EventActionTabComponent {
    * The Script handler offers each file in its script directory as an action. If the directory is empty or the
    * server cannot read it, the tab explains where the scripts go instead of showing an empty dropdown. The server
    * reads the directory on each request, so new scripts show up after a reload of the actions. A reload keeps the
-   * hint visible. Only the first load for the selected handler module hides it.
+   * hint visible. Only a successful answer of the server shows the hint. During the first load, after a failed
+   * request and if the request does not run (for example without eventhandling_read), the tab shows the dropdown.
    */
-  noScriptsFound = computed(
-    () =>
+  noScriptsFound = computed(() => {
+    const status = this.eventService.moduleActionsResource.status();
+    return (
       this.eventService.selectedHandlerModule() === "Script" &&
-      this.eventService.moduleActionsResource.status() !== "loading" &&
+      (status === "resolved" || status === "reloading") &&
       Object.keys(this.eventService.moduleActions()).length === 0
-  );
+    );
+  });
 
   actionOptions = computed(() => {
     const action = this.selectedAction();

@@ -174,6 +174,18 @@ describe("EventActionTabComponent", () => {
       expect(component.noScriptsFound()).toBe(false);
     });
 
+    it.each<ResourceStatus>(["error", "idle"])(
+      "shows the action dropdown instead of the hint if the status of the actions is %s",
+      (resourceStatus) => {
+        const status = eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>;
+        status.set(resourceStatus);
+        fixture.detectChanges();
+        expect(component.noScriptsFound()).toBe(false);
+        expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+        expect(fixture.nativeElement.textContent).not.toContain("No scripts found.");
+      }
+    );
+
     it("shows the action dropdown when the script directory contains scripts", () => {
       eventService.moduleActions.set({ "backup.sh": { background: { type: "str", required: true } } });
       fixture.detectChanges();
