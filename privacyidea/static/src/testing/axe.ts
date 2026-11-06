@@ -23,12 +23,13 @@ import { configureAxe } from "jest-axe";
  *
  *   expect(await axe(fixture.nativeElement)).toHaveNoViolations();
  *
- * Only rules tagged as WCAG run: the best-practice rules ("region", "heading-order") need a full page. jest-axe turns
- * off the colour rules, as jsdom has no layout. When to add a check, what it covers and its pitfalls:
- * dev/webui-accessibility-tests.md.
+ * Only rules tagged as WCAG run; axe skips the best-practice rules ("region", "heading-order"), which need a full page,
+ * and the experimental ones. When to add a check, what it covers and its pitfalls: dev/webui-accessibility-tests.md.
  */
 export const axe = configureAxe({
   runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"] },
+  // The colour rules need a layout, which jsdom lacks. jest-axe turns them off globally, but a run by tag ignores that.
+  rules: { "color-contrast": { enabled: false }, "link-in-text-block": { enabled: false } },
   // Full details (selector, HTML snippet) only for violations; the other result types are not read.
   resultTypes: ["violations"]
 });
