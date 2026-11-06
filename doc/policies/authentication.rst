@@ -491,10 +491,12 @@ type: ``string``
 This is a list of token types that are not allowed to be used during authentication.
 The list is separated by whitespaces like *"hotp totp"*.
 
-``/validate/triggerchallenge`` still creates challenges for these token types, but
-an answer to them is rejected.
+``/validate/triggerchallenge`` does not create challenges for these token types. For a trigger by serial only,
+it applies only the policies that do not name a user, realm or resolver.
 
 .. versionadded:: 3.12
+
+.. versionchanged:: 3.14.1 ``/validate/triggerchallenge`` applies the policy.
 
 .. _policy_force_challenge_response:
 

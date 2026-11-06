@@ -2079,6 +2079,44 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
                                         serials={self.serial}, transaction_id=res.json["detail"]["transaction_id"],
                                         endpoint='/validate/triggerchallenge')
 
+    def test_triggerchallenge_leaves_out_disabled_token_types(self):
+        # A challenge of a disabled type could not be answered at /validate/check, so it is not created, and the
+        # failcounter of the token is not increased either
+        set_policy("authlog_disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "authlog_disabled_hotp")
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        totp = init_token({"serial": "AUTHLOG_TOTP", "type": "totp", "otpkey": self.otpkey, "pin": self.pin},
+                          user=self.user)
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        self.assertListEqual([totp.get_serial()],
+                             [challenge["serial"] for challenge in res.json["detail"]["multi_challenge"]])
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(1, get_one_token(serial=totp.get_serial()).token.failcount)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={totp.get_serial()},
+                                        transaction_id=res.json["detail"]["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_with_only_disabled_token_types_logs_no_usable_token(self):
+        set_policy("authlog_disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "authlog_disabled_hotp")
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_TYPE_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_TYPE_DISABLED},
+                                        endpoint='/validate/triggerchallenge')
+
     def test_triggerchallenge_names_the_token_type_before_the_token_state(self):
         remove_token(self.serial)
         revoked = init_token({"serial": "AUTHLOG_SPASS_REVOKED", "type": "spass", "pin": self.pin}, user=self.user)

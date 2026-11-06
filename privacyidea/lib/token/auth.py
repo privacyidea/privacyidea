@@ -493,14 +493,15 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
     Create challenges for the usable challenge-response tokens of *token_list*, as /validate/triggerchallenge does.
 
     A token is only used if a challenge can be triggered for it at all (see :meth:`TokenClass.can_trigger_challenge`),
-    and then, like at :func:`check_token_list`, if it is not revoked, active and passes ``check_all``. Only those tokens
-    get their failcounter increased by ``increase_failcounter_on_challenge``. Every token left out records why.
+    and then, like at :func:`check_token_list`, if it is not revoked, passes :func:`keep_tokens_usable_for_request`,
+    is active and passes ``check_all``. Only those tokens get their failcounter increased by
+    ``increase_failcounter_on_challenge``. Every token left out records why.
 
     :param token_list: The tokens of the user or serial of the request
     :param reply_dict: The details of the response, which get the challenges, see
         :func:`create_challenges_from_tokens`, or, if no token is left to challenge, the message why the tokens
         were refused
-    :param options: The request options passed to the tokens
+    :param options: The request options passed to the tokens, with the disabled token types
     :return: The event, serials and reasons for the authentication log
     """
     token_reasons: dict[str, str] = {}
@@ -512,6 +513,8 @@ def trigger_challenges(token_list: list[TokenClass], reply_dict: dict, options: 
                                          else AuthEventReason.TOKEN_NOT_APPLICABLE))
     tokens = _keep_usable(tokens, token_reasons, lambda token: not (token.is_revoked() or token.is_locked()),
                           AuthEventReason.TOKEN_REVOKED)
+    # A challenge that /validate/check would refuse to accept the answer for is not created
+    tokens = keep_tokens_usable_for_request(tokens, options, token_reasons)
     tokens = _keep_usable(tokens, token_reasons, lambda token: token.is_active(), AuthEventReason.TOKEN_DISABLED)
     challenge_tokens = []
     messages = []

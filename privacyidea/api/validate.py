@@ -1617,6 +1617,7 @@ def check_remember_device():
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(check_base_action, request, action=PolicyAction.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(load_challenge_text, request=request)
@@ -1633,10 +1634,10 @@ def trigger_challenge():
     :ref:`policy_triggerchallenge`. The request must carry a valid
     ``PI-Authorization`` header.
 
-    Only tokens that are not revoked, active and usable (failcounter, authentication counters, validity period,
-    completed enrollment) are challenged, as at ``/validate/check``. If the AUTH-scope
-    ``increase_failcounter_on_challenge`` policy is active, the fail counter of these tokens is incremented before
-    the challenges are created.
+    Only tokens that are not revoked, of a type that the AUTH-scope ``disabled_token_types`` policy allows, active
+    and usable (failcounter, authentication counters, validity period, completed enrollment) are challenged, as at
+    ``/validate/check``. If the AUTH-scope ``increase_failcounter_on_challenge`` policy is active, the fail counter of
+    these tokens is incremented before the challenges are created.
 
     :jsonparam user: user the challenges should be created for.
     :jsonparam realm: realm of the user; defaults to the default
