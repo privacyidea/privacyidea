@@ -27,7 +27,9 @@ myApp.factory("ValidateFactory", ['$http', '$state', '$rootScope',
      */
     return {
         check: function (params, callback) {
-            $http.post(validateUrl + "/check", params
+            // The session token lets the server accept otponly for an administrator or the token owner.
+            $http.post(validateUrl + "/check", params,
+                {headers: {'PI-Authorization': AuthFactory.getAuthToken()}}
             ).then(function (response) { callback(response.data) },
                 function(error) { AuthFactory.authError(error.data) });
         }

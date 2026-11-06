@@ -1255,7 +1255,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         # serial + otponly validates only the OTP (no PIN); a correct value is LOGIN_SUCCESS.
         # This classification is set by the API handler (check_otp), not the lib layer - and so is the serial, which
         # check_otp does not report back.
-        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"})
+        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"},
+                           headers={"Authorization": self.at})
         self.assertTrue(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
@@ -1264,7 +1265,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     def test_serial_otp_only_fail(self):
         # serial + otponly verifies only the token (no PIN/password), so a wrong value is TOKEN_ONLY_FAIL - against
         # the one token the request named, which the row records like every other failure.
-        body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"})
+        body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"},
+                           headers={"Authorization": self.at})
         self.assertFalse(body["result"]["value"], body)
 
         entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
@@ -1274,7 +1276,8 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
     def test_serial_otp_only_disabled_token(self):
         # otponly checks the token like every other path: a disabled token is not usable
         get_one_token(serial=self.serial).enable(False)
-        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"})
+        body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"},
+                           headers={"Authorization": self.at})
         self.assertFalse(body["result"]["value"], body)
 
         entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
