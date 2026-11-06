@@ -104,15 +104,17 @@
                     }
                   }
                   @case ("states") {
-                    <span
-                      (click)="handleStateClick(element)"
-                      (keydown.enter)="handleStateClick(element)"
-                      (keydown.space)="$event.preventDefault(); handleStateClick(element)"
-                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
-                      role="button"
-                      tabindex="0">
-                      {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
-                    </span>
+                    @if (element[column.key]?.length) {
+                      <span
+                        (click)="handleStateClick(element); $event.stopPropagation()"
+                        (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
+                        (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
+                        [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
+                        role="button"
+                        tabindex="0">
+                        {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                      </span>
+                    }
                   }
                   @case ("delete") {
                     <button

@@ -22,7 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { provideRouter } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerDetailData, ContainerDetails, ContainerService } from "@services/container/container.service";
+import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -96,12 +96,11 @@ describe("ContainerTableSelfServiceComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("links the container serial and its tokens to their details pages", () => {
+  const showContainer = (container: Partial<ContainerDetailData>) => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,
       rights: ["container_list"]
     });
-    containerService.containerBelongsToUser.mockReturnValue(true);
     containerService.containerResource.set(
       MockPiResponse.fromValue({
         count: 1,
@@ -110,15 +109,24 @@ describe("ContainerTableSelfServiceComponent", () => {
             serial: "C-1",
             states: [],
             realms: [],
-            tokens: [{ serial: "T-1", tokentype: "hotp", container_serial: "C-1" }],
+            tokens: [],
             type: "generic",
             description: "",
-            users: []
+            users: [],
+            ...container
           } as unknown as ContainerDetailData
         ]
       })
     );
     fixture.detectChanges();
+  };
+  const stateToggle = (): HTMLElement | null => fixture.nativeElement.querySelector("td span[role=button]");
+
+  it("links the container serial and its tokens to their details pages", () => {
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    showContainer({
+      tokens: [{ serial: "T-1", tokentype: "hotp", container_serial: "C-1" }]
+    } as unknown as Partial<ContainerDetailData>);
     fixture.nativeElement.querySelector("tr[mat-row]").click();
     fixture.detectChanges();
 
@@ -130,27 +138,39 @@ describe("ContainerTableSelfServiceComponent", () => {
     expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
   });
 
-  it("toggles the container state with Space", () => {
-    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
-      ...MockAuthService.MOCK_AUTH_DATA,
-      rights: ["container_list"]
+  describe("state toggle", () => {
+    let handleStateClick: jest.SpyInstance;
+
+    beforeEach(() => {
+      handleStateClick = jest.spyOn(component, "handleStateClick").mockImplementation(() => {
+        /* empty */
+      });
     });
-    containerService.containerResource.set(
-      MockPiResponse.fromValue({
-        count: 1,
-        containers: [
-          { serial: "C-1", states: ["active"], realms: [], tokens: [], type: "generic", description: "", users: [] }
-        ]
-      } as unknown as ContainerDetails)
-    );
-    fixture.detectChanges();
-    const handleStateClick = jest.spyOn(component, "handleStateClick").mockImplementation(() => { /* empty */ });
-    const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
 
-    fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
+    it("toggles the container state with Space", () => {
+      showContainer({ states: ["active"] });
+      const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
 
-    expect(handleStateClick).toHaveBeenCalledWith(component.containerDataSource().data[0]);
-    expect(space.defaultPrevented).toBe(true);
+      stateToggle()!.dispatchEvent(space);
+
+      expect(handleStateClick).toHaveBeenCalledWith(component.containerDataSource().data[0]);
+      expect(space.defaultPrevented).toBe(true);
+    });
+
+    it("toggles the state without expanding the row", () => {
+      showContainer({ states: ["active"] });
+
+      stateToggle()!.click();
+
+      expect(handleStateClick).toHaveBeenCalled();
+      expect(component.expandedElement).toBeNull();
+    });
+
+    it("is not offered for a container without a state, which would leave it without a name", () => {
+      showContainer({ states: [] });
+
+      expect(stateToggle()).toBeNull();
+    });
   });
 
   it("exposes the expected self-service columns", () => {
