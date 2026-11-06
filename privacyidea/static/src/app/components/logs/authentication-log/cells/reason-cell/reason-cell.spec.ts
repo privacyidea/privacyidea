@@ -128,7 +128,7 @@ describe("ReasonCell", () => {
     );
   });
 
-  it("opens the dialog from the placeholder link when the entry has no reason of its own", () => {
+  it("opens the dialog from the placeholder when the entry has no reason of its own", () => {
     fixture.componentRef.setInput("reasons", []);
     fixture.componentRef.setInput("info", {
       reason_detail: { reasons: { OATH0001: "TOKEN_FAILCOUNT_EXCEEDED" }, policies: ["deny_vpn"] }
@@ -179,10 +179,12 @@ describe("ReasonCell", () => {
     expect(button.getAttribute("aria-label")).toBe(component.detailLabel);
   });
 
-  it("names the placeholder link by its visible text", () => {
+  it("offers the placeholder as a button named by its visible text, since it opens a dialog", () => {
     fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
     fixture.detectChanges();
 
+    expect(placeholder()?.tagName).toBe("BUTTON");
+    expect(placeholder()?.getAttribute("type")).toBe("button");
     expect(placeholder()?.hasAttribute("aria-label")).toBe(false);
     expect(placeholder()?.textContent?.trim()).toBe("see details");
   });
