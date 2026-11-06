@@ -60,6 +60,9 @@ export interface ValidateCheckDetail {
 
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 
+/** The value is the number of challenges that the server created. */
+export type TriggerChallengeResponse = PiResponse<number, ValidateCheckDetail>;
+
 /**
  * Each WebAuthn token of the user gets its own entry in multi_challenge. The browser can only be asked once, so the
  * allowed credentials of the entries are combined into one sign request; otherwise only the first token could be used.
@@ -112,6 +115,8 @@ export interface PasskeyCheckParams {
 export interface ValidateServiceInterface {
   testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
 
+  triggerChallenge(tokenSerial: string): Observable<TriggerChallengeResponse>;
+
   authenticatePasskey(args?: { isTest?: boolean; onCredentialId?: (id: string) => void }): Observable<AuthResponse>;
 
   authenticateWebAuthn(args: {
@@ -154,6 +159,26 @@ export class ValidateService implements ValidateServiceInterface {
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error(
             $localize`:@@validate.failedToTestToken:Failed to test token. ${message}:MESSAGE:`
+          );
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * Asks the server to create a challenge for the token, without the PIN of the token. The admin needs the
+   * triggerchallenge right. The server only creates a challenge if the token is active and supports
+   * challenge-response.
+   */
+  triggerChallenge(tokenSerial: string): Observable<TriggerChallengeResponse> {
+    const headers = this.authService.getHeaders();
+    return this.http
+      .post<TriggerChallengeResponse>(`${this.baseUrl}triggerchallenge`, { serial: tokenSerial }, { headers })
+      .pipe(
+        catchError((error: HttpErrorResponse) => {
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error(
+            $localize`:@@validate.failedToTriggerChallenge:Failed to trigger a challenge. ${message}:MESSAGE:`
           );
           return throwError(() => error);
         })

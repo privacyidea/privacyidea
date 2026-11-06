@@ -22,6 +22,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput, MatSuffix } from "@angular/material/input";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
@@ -38,6 +39,7 @@ export class TestOtpPinActionComponent {
   private readonly validateService: ValidateServiceInterface = inject(ValidateService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
   hide = signal(true);
   otpOrPinToTest = signal("");
   otpOrPinForm = form(this.otpOrPinToTest);
@@ -52,6 +54,24 @@ export class TestOtpPinActionComponent {
         } else {
           this.notificationService.warning(
             $localize`:@@token.otpPinTestedTokenWas:OTP or Pin tested with token was rejected.`
+          );
+        }
+        this.tokenService.tokenDetailResource.reload();
+      }
+    });
+  }
+
+  testWithoutPin(): void {
+    this.validateService.triggerChallenge(this.tokenService.tokenSerial()).subscribe({
+      next: (response) => {
+        if (response.result?.value) {
+          const message = response.detail?.message ?? "";
+          this.notificationService.success(
+            $localize`:@@token.challengeTriggered:Challenge triggered. ${message}:MESSAGE:`
+          );
+        } else {
+          this.notificationService.warning(
+            $localize`:@@token.noChallengeTriggered:No challenge triggered. The token must be active and support challenge-response.`
           );
         }
         this.tokenService.tokenDetailResource.reload();
