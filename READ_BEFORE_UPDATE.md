@@ -325,7 +325,10 @@
   well. A trigger there for a user whose tokens are all unusable is logged as `NO_USABLE_TOKEN` instead of `NO_TOKEN`,
   with a reason for each token, among them `TOKEN_NO_CHALLENGE_MODE` for a token type without challenge-response such as
   a simple pass token, and `TOKEN_NOT_APPLICABLE` for a passkey without `passkey_trigger_by_pin`. A conditional-access
-  policy that counts failures now counts these requests as well.
+  policy counts these requests only if `CHALLENGE_TRIGGER_FAIL` is one of its *Tracked Event Types*. Policies from the
+  *Per-User Failed-Attempt Rate Limit* and *Per-IP Failed-Attempt Rate Limit (Distinct Accounts)* templates do not track
+  it. These policies track `NO_TOKEN`, so they no longer count a trigger at `/validate/triggerchallenge` that creates no
+  challenge. To count these requests, add `CHALLENGE_TRIGGER_FAIL` to the *Tracked Event Types* of the policy.
 
 * **`/validate/triggerchallenge` checks the token state before raising the failcounter** — Like `/validate/check`, it
   now only uses tokens that pass the usual checks: below the failcounter, within the authentication counters and the
