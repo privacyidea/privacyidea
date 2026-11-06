@@ -87,13 +87,20 @@ describe("TokenDetailsStatusComponent", () => {
       expect(toggle().textContent?.trim()).toBe("Active");
     });
 
-    it("describes what pressing it does", () => {
-      expect(description()).toBe("Deactivate Token");
-
+    it("describes what pressing it does with the tooltip of the token tables", () => {
+      const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+      tableUtils.getTooltipForColumn.mockImplementation((_: string, row: { active: boolean }) =>
+        row.active ? "Deactivate Token" : "Activate Token"
+      );
       (TestBed.inject(TokenService) as unknown as MockTokenService).tokenIsActive.set(false);
       fixture.detectChanges();
-
       expect(description()).toBe("Activate Token");
+
+      (TestBed.inject(TokenService) as unknown as MockTokenService).tokenIsActive.set(true);
+      fixture.detectChanges();
+
+      expect(description()).toBe("Deactivate Token");
+      expect(tableUtils.getTooltipForColumn).toHaveBeenCalledWith("active", { active: true });
     });
   });
 });

@@ -59,9 +59,7 @@ export class TokenDetailsStatusComponent {
   protected readonly tokenIsRevoked = this.tokenService.tokenIsRevoked;
   protected readonly maxfail = computed(() => this.tokenDetails().maxfail);
   protected readonly toggleActiveHint = computed(() =>
-    this.tokenIsActive()
-      ? $localize`:@@token.deactivateToken:Deactivate Token`
-      : $localize`:@@token.activateToken:Activate Token`
+    this.tableUtilsService.getTooltipForColumn("active", { active: this.tokenIsActive() })
   );
   protected readonly createdDisplay = computed(
     () => formatTokenTimestamp(this.tokenDetails().info?.["creation_date"]) ?? ""
