@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { EditConditionsTabComponent } from "./edit-conditions-tab.component";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-edit-admin-conditions", standalone: true, template: "" })
 class MockAdminComp {
@@ -84,5 +85,11 @@ describe("EditConditionsTabComponent", () => {
     const userComp = fixture.debugElement.query(By.directive(MockUserComp)).componentInstance;
     userComp.policyEdit.emit({ realm: ["test"] });
     expect(spy).toHaveBeenCalledWith({ realm: ["test"] });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

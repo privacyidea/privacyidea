@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { LdapMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverLdapTabComponent } from "./machine-resolver-ldap-tab.component";
+import { axe } from "@testing/axe";
 
 const completeData = (): LdapMachineResolverData => ({
   type: "ldap",
@@ -338,5 +339,11 @@ describe("MachineResolverLdapTabComponent", () => {
       await flush();
       expect(lastEmitted().IDATTRIBUTE).toBe("DN");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

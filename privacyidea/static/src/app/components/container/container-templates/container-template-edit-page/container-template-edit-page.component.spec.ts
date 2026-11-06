@@ -49,6 +49,7 @@ import {
 import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { BehaviorSubject, of } from "rxjs";
 import { ContainerTemplateEditPageComponent } from "./container-template-edit-page.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplateEditPageComponent", () => {
   let component: ContainerTemplateEditPageComponent;
@@ -473,6 +474,12 @@ describe("ContainerTemplateEditPageComponent", () => {
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

@@ -24,6 +24,7 @@ import {
   RealmDeleteAttributesDialogComponent,
   RealmDeleteAttributesDialogData
 } from "./realm-delete-attributes-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("RealmDeleteAttributesDialogComponent", () => {
   let component: RealmDeleteAttributesDialogComponent;
@@ -55,5 +56,11 @@ describe("RealmDeleteAttributesDialogComponent", () => {
   it("should show the server message verbatim", () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
     expect(text).toContain(mockValue.message);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

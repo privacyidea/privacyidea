@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("SystemDocumentationDialogComponent", () => {
   let fixture: ComponentFixture<SystemDocumentationDialogComponent>;
@@ -48,5 +49,11 @@ describe("SystemDocumentationDialogComponent", () => {
     fixture.nativeElement.querySelector(".pi-dialog-footer button").click();
 
     expect(dialogRef.close).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

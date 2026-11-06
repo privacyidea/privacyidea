@@ -44,6 +44,7 @@ import { UserService } from "@services/user/user.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsTokenTableComponent", () => {
   let fixture: ComponentFixture<UserDetailsTokenTableComponent>;
@@ -398,5 +399,11 @@ describe("UserDetailsTokenTableComponent", () => {
 
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
     expect(notificationServiceMock.error).toHaveBeenCalledWith("1/2 reset fail count failed: A");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

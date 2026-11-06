@@ -26,6 +26,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { PendingChangesDialogComponent } from "./pending-changes-dialog.component";
+import { axe } from "@testing/axe";
 
 @Component({
   template: "",
@@ -161,5 +162,11 @@ describe("PendingChangesDialogComponent", () => {
     await fixture.whenStable();
 
     expect(dialogRef.close).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

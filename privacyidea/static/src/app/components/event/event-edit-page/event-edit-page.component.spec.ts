@@ -37,6 +37,7 @@ import {
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject, of, throwError } from "rxjs";
 import { EventEditPageComponent } from "./event-edit-page.component";
+import { axe } from "@testing/axe";
 
 globalThis.IntersectionObserver = class IntersectionObserver {
   disconnect = jest.fn();
@@ -616,6 +617,12 @@ describe("EventEditPageComponent — edit mode", () => {
     const resolved = await component.saveEvent();
     expect(resolved).toBe(false);
     expect(mockRouter.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

@@ -38,6 +38,7 @@ import {
 import { Subject } from "rxjs";
 import { CaConnectorsComponent } from "./ca-connectors.component";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("CaConnectorsComponent", () => {
   let component: CaConnectorsComponent;
@@ -218,5 +219,11 @@ describe("CaConnectorsComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

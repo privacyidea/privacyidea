@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { SqlResolverComponent } from "./sql-resolver.component";
+import { axe } from "@testing/axe";
 
 describe("SqlResolverComponent", () => {
   let component: SqlResolverComponent;
@@ -276,5 +277,11 @@ describe("SqlResolverComponent", () => {
       expect(component.model().poolSize).toBe("");
       expect(component.isValid()).toBe(true);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -36,6 +36,7 @@ import { MockResolverService } from "@testing/mock-services/mock-resolver-servic
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, Subject, throwError } from "rxjs";
 import { ResolverTimingWidgetComponent } from "./resolver-timing-widget.component";
+import { axe } from "@testing/axe";
 
 function makeResponse<T>(value: T): PiResponse<T> {
   return {
@@ -502,5 +503,11 @@ describe("ResolverTimingWidgetComponent", () => {
 
     expect(component.selectedTimeWindow().id).toBe("24h");
     view.destroy();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

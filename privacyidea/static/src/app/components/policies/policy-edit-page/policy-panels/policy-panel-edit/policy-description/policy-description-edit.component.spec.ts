@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyDescriptionEditComponent", () => {
   let component: PolicyDescriptionEditComponent;
@@ -72,5 +73,11 @@ describe("PolicyDescriptionEditComponent", () => {
     textarea().dispatchEvent(new Event("input"));
 
     expect(component.description()).toBe("");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

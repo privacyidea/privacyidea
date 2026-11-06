@@ -33,6 +33,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { of, Subject, throwError } from "rxjs";
 import { TokensWidgetComponent } from "./tokens-widget.component";
+import { axe } from "@testing/axe";
 
 function makeCountResponse(count: number) {
   return {
@@ -565,5 +566,11 @@ describe("TokensWidgetComponent", () => {
       component.showUsers(false);
       expect(userMock.presetFilter()?.getValueOfKey("has_tokens")).toBe("False");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
