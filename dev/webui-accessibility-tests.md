@@ -42,7 +42,8 @@ The helper is `src/testing/axe.ts`. It registers nothing globally; the `toHaveNo
 3. axe compares this with its rules. `toHaveNoViolations()` fails if a rule is violated. The message names the rule, the
    element and what is missing.
 
-The helper runs only the rules tagged as WCAG 2.0, 2.1 and 2.2, Level A and AA (about 70 rules).
+The helper runs the rules tagged as WCAG 2.0, 2.1 and 2.2, Level A and AA, about 60 on a component. axe does not run its
+experimental rules this way.
 
 ## What it finds
 
@@ -63,16 +64,20 @@ Examples:
 
 - **Behaviour.** axe does not press keys or move the focus. Whether Space triggers a toggle, whether the focus stays
   after a reload, or in which order Tab moves, needs a normal test assertion or a browser test.
-- **Layout.** jsdom does not lay out the page. Colour contrast, a visible focus ring, target size, zoom and reflow, and
-  sticky headers covering the focus are not checked. The colour rules are turned off for this reason.
+- **Layout.** jsdom does not lay out the page. Colour contrast, a visible focus ring, zoom and reflow, and sticky
+  headers covering the focus are not checked. The colour rules are turned off for this reason. `target-size` runs, but
+  cannot measure anything without a layout.
+- **Label in Name.** The rule for WCAG 2.5.3, `label-content-name-mismatch` (an `aria-label` that does not contain the
+  visible text), is experimental in axe and does not run. Turned on, it still cannot decide in jsdom which text is
+  visible, so it never reports a violation. Check it in the review.
 - **The page around the component.** Landmarks and the heading order of a page are not checked. axe tags these rules as
   best practice, not as WCAG, so the helper does not run them.
 - **States the test does not render.** A dialog that never opens in the test is not checked.
 - **What a screen reader really says.** A passing check means that axe found no errors, not that the component is
   accessible.
 
-These parts are covered by the Playwright suite, which runs axe and further checks on the real pages in a browser, and
-by a manual keyboard and screen-reader test.
+These parts need a real browser. They are to be covered by Playwright tests on the real pages, which are not part of
+the WebUI tests yet. Until then, only a manual keyboard and screen-reader test covers them.
 
 ## Pitfalls
 

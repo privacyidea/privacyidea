@@ -25,10 +25,6 @@ import { deserialize, serialize } from "node:v8";
 setupZonelessTestEnv();
 expect.extend(toHaveNoViolations);
 
-// axe-core measures text on a canvas while computing accessible names. jsdom has no canvas: it returns null and logs
-// "Not implemented" for every call. Return null without the log.
-Object.defineProperty(HTMLCanvasElement.prototype, "getContext", { value: () => null, configurable: true });
-
 // jsdom provides no `crypto.subtle`, so tests fall back to Node's webcrypto. Node's
 // implementation rejects ArrayBuffers/views created in the jsdom realm with
 // "2nd argument is not instance of ArrayBuffer". Install Node webcrypto behind a proxy
