@@ -68,6 +68,15 @@ class PasswordTokenTestCase(MyTestCase):
         info = token.get_class_info("title")
         self.assertTrue(info == "Password Token", info)
 
+    def test_03a_not_enrollable_in_webui(self):
+        # The WebUI has no enrollment form for type "pw", so it must not be offered
+        self.assertEqual([], PasswordTokenClass.get_class_info("ui_enroll"))
+
+        from privacyidea.lib.policy import PolicyClass
+        tt = PolicyClass().ui_get_enroll_tokentypes(
+            "127.0.0.1", {"username": "admin", "role": "admin", "realm": "realm1"})
+        self.assertNotIn("pw", tt)
+
     def test_04_password_token_export(self):
         # Set up the PasswordTokenClass for testing
         passwordtoken = init_token(param={'serial': "PASS12345678", 'type': 'pw', 'otpkey': '12345'})
