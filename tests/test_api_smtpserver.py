@@ -200,6 +200,9 @@ class SMTPServerTestCase(MyApiTestCase):
             ({"sender": "Jörg Müller <pi@example.com>"},
              "The display name 'Jörg Müller' of the sender contains non-ASCII characters. "
              "privacyIDEA can only send emails with an ASCII display name."),
+            ({"recipient": "Jörg <a@example.com> <b@example.com>"},
+             "The recipient 'Jörg <a@example.com> <b@example.com>' contains non-ASCII characters. "
+             "privacyIDEA can only send emails from and to ASCII addresses."),
             ({"recipient": "a@example.com\nsecond line"},
              "The recipient must not contain line breaks or other control characters."),
             ({"sender": "a@example.com\r\nsecond line"},

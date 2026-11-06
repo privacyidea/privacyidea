@@ -126,8 +126,9 @@ def check_email_address(address: str, name: str) -> None:
     if any(ord(character) < 32 or ord(character) == 127 for character in address):
         raise ParameterError(f"The {name} must not contain line breaks or other control characters.")
     if not address.isascii():
+        # parseaddr() returns two empty strings for a value it can not parse, e.g. a list of two addresses
         display_name, mail_address = parseaddr(address)
-        if mail_address.isascii():
+        if not display_name.isascii() and mail_address.isascii():
             raise ParameterError(f"The display name {display_name!r} of the {name} contains non-ASCII characters. "
                                  f"privacyIDEA can only send emails with an ASCII display name.")
         raise ParameterError(f"The {name} {address!r} contains non-ASCII characters. "

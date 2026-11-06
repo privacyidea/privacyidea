@@ -536,7 +536,10 @@ class SMTPServerExportImportTestCase(MyTestCase):
                    "sender_name": ({"sender": "Jörg Müller <pi@example.com>"},
                                    "The display name 'Jörg Müller' of the sender contains non-ASCII characters"),
                    "sender_name_and_address": ({"sender": "Jörg <jörg@exämple.com>"},
-                                               "can only send emails from and to ASCII addresses")}
+                                               "can only send emails from and to ASCII addresses"),
+                   # parseaddr() can not parse two addresses and returns no display name
+                   "sender_two_addresses": ({"sender": '"Jörg" <pi@example.com>, x@example.com'},
+                                            "can only send emails from and to ASCII addresses")}
         for name, (change, message) in invalid.items():
             with self.subTest(name=name):
                 settings = dict({"server": "mail.example", "sender": "pi@example.com"}, **change)
