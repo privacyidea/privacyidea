@@ -172,6 +172,9 @@ def lock_token_row(condition: ColumnElement[bool]) -> None:
 class TokenClass:
     # Class properties
     using_pin = True
+    # The PIN is the whole credential, there is no OTP value next to it. The otppin policy "none" does not
+    # apply to such a token: its PIN is always checked.
+    pin_is_whole_credential = False
     hKeyRequired = False
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
     client_mode = ClientMode.INTERACTIVE
@@ -1010,6 +1013,15 @@ class TokenClass:
         :return:
         """
         return True
+
+    def can_trigger_challenge(self, options: dict) -> bool:
+        """
+        Whether a challenge can be triggered for this token without a PIN, as at /validate/triggerchallenge.
+
+        :param options: The request options
+        :return: True if the token type has a challenge mode
+        """
+        return AuthenticationMode.CHALLENGE in self.mode
 
     @property
     def rollout_state(self):

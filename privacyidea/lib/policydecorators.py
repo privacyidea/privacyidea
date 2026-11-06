@@ -556,7 +556,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
         otppin_dict = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.OTPPIN,
                                  user_object=user).action_values(unique=True)
         if otppin_dict:
-            if list(otppin_dict)[0] == ACTIONVALUE.NONE:
+            # A token whose PIN is the whole credential keeps checking its PIN, there is no OTP value instead
+            if list(otppin_dict)[0] == ACTIONVALUE.NONE and not getattr(token, "pin_is_whole_credential", False):
                 # Record that no otppin was used, so later authentication-event classification is correct.
                 if token:
                     token.auth_details[NO_FIRST_FACTOR_KEY] = True
