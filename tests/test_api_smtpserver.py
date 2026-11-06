@@ -617,7 +617,7 @@ class SMTPServerTestCase(MyApiTestCase):
                         res = self.app.full_dispatch_request()
                 self.assertEqual(400, res.status_code, res.json)
                 message = res.json["result"]["error"]["message"]
-                self.assertIn(f"The settings {field} differ from the saved SMTP server 'savedServer3'", message)
+                self.assertIn(f"These settings differ from the saved SMTP server 'savedServer3': {field}.", message)
                 self.assertIn("Enter the password to test", message)
                 login.assert_not_called()
 
@@ -637,7 +637,7 @@ class SMTPServerTestCase(MyApiTestCase):
                     res = self.app.full_dispatch_request()
                 self.assertEqual(400, res.status_code, res.json)
                 message = res.json["result"]["error"]["message"]
-                self.assertIn(f"The settings {field} differ from the saved SMTP server 'savedServer4'", message)
+                self.assertIn(f"These settings differ from the saved SMTP server 'savedServer4': {field}.", message)
                 self.assertIn("Enter the password to save", message)
         stored = list_smtpservers(identifier="savedServer4")["savedServer4"]
         self.assertEqual("mail.example.com", stored["server"])

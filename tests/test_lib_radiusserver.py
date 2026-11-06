@@ -251,7 +251,7 @@ class RADIUSServerTestCase(MyTestCase):
                 settings = {"server": "1.2.3.4", "port": 1812, **change}
                 with self.assertRaises(ParameterError) as cm:
                     add_radius("censored2", secret=CENSORED, dictionary=DICT_FILE, description="new", **settings)
-                self.assertIn(f"The settings {field} differ from the saved RADIUS server 'censored2'",
+                self.assertIn(f"These settings differ from the saved RADIUS server 'censored2': {field}.",
                               cm.exception.message)
                 self.assertIn("Enter the secret to save", cm.exception.message)
         stored = list_radiusservers()["censored2"]
@@ -281,7 +281,7 @@ class RADIUSServerTestCase(MyTestCase):
                     with self.assertRaises(ParameterError) as cm:
                         test_radius("censored3", secret=CENSORED, user="user", password="password",
                                     dictionary=DICT_FILE, **settings)
-                    self.assertIn(f"The settings {field} differ from the saved RADIUS server 'censored3'",
+                    self.assertIn(f"These settings differ from the saved RADIUS server 'censored3': {field}.",
                                   cm.exception.message)
                     self.assertIn("Enter the secret to test", cm.exception.message)
             self.assertEqual(1, request.call_count)
@@ -298,7 +298,7 @@ class RADIUSServerTestCase(MyTestCase):
         with self.assertRaises(ConfigAdminError) as cm:
             import_radiusserver({"censored4": {"server": "5.6.7.8", "port": 1812, "secret": CENSORED,
                                                "dictionary": DICT_FILE}})
-        self.assertIn("The settings server differ from the saved RADIUS server 'censored4'", cm.exception.message)
+        self.assertIn("These settings differ from the saved RADIUS server 'censored4': server.", cm.exception.message)
         stored = list_radiusservers()["censored4"]
         self.assertEqual("1.2.3.4", stored["server"])
         self.assertEqual("radsecret", stored["secret"])

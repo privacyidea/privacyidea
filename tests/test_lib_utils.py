@@ -1369,12 +1369,12 @@ class CheckStoredSecretSettingsTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as cm:
             check_stored_secret_settings("RADIUS server", "radius1", self.saved_settings,
                                          {"server": "5.6.7.8", "port": 1645}, "secret", "test")
-        self.assertEqual("The settings server, port differ from the saved RADIUS server 'radius1'. "
+        self.assertEqual("These settings differ from the saved RADIUS server 'radius1': server, port. "
                          "Enter the secret to test the changed settings.", cm.exception.message)
         with self.assertRaises(ParameterError) as cm:
             check_stored_secret_settings("SMTP server", "mail1", {"server": "mail.example.com", "port": 25},
                                          {"server": "mail.example.com", "port": 587}, "password", "save")
-        self.assertEqual("The settings port differ from the saved SMTP server 'mail1'. "
+        self.assertEqual("These settings differ from the saved SMTP server 'mail1': port. "
                          "Enter the password to save the changed settings.", cm.exception.message)
 
 

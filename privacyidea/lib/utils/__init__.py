@@ -986,7 +986,7 @@ def check_stored_secret_settings(kind: str, identifier: str, saved_settings: dic
     changed = [key for key, value in requested_settings.items()
                if value is not None and value != saved_settings.get(key)]
     if changed:
-        raise ParameterError(f"The settings {', '.join(changed)} differ from the saved {kind} '{identifier}'. "
+        raise ParameterError(f"These settings differ from the saved {kind} '{identifier}': {', '.join(changed)}. "
                              f"Enter the {secret_name} to {action} the changed settings.")
 
 
