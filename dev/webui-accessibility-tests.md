@@ -85,8 +85,6 @@ by a manual keyboard and screen-reader test.
 - **Fake timers.** axe needs real timers. A test that calls `jest.useFakeTimers()` must switch back with
   `jest.useRealTimers()` (e.g. in `afterEach`). Otherwise the axe check in a later test of the same file hangs until the
   test timeout.
-- **Two axe-core versions.** `jest-axe` runs its own axe-core 4.x. `@types/jest-axe` installs an old axe-core 3.5 only
-  for its types. Don't import from `axe-core` directly; use the helper.
 
 ## Known violations
 
