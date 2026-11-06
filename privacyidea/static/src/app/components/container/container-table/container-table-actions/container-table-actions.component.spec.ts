@@ -19,7 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatMenuTrigger } from "@angular/material/menu";
 
-import { provideHttpClient } from "@angular/common/http";
+import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -109,9 +109,15 @@ describe("ContainerTableActionsComponent", () => {
     const compareAction = (): TableAction | undefined =>
       (component as unknown as { actions: () => TableAction[] }).actions().find((action) => action.id === "compare");
 
-    it("enables the action without a selection", () => {
+    it.each([
+      [false, "Compare with templates"],
+      [true, "Hide comparison"]
+    ])("with comparisonActive=%s the enabled action without a selection is labelled %s", (active, label) => {
       expect(containerService.containerSelection.hasSelection()).toBe(false);
-      expect(compareAction()?.label).toBe("Compare with templates");
+      fixture.componentRef.setInput("comparisonActive", active);
+      fixture.detectChanges();
+
+      expect(compareAction()?.label).toBe(label);
       expect(compareAction()?.disabled).toBe(false);
     });
 
@@ -151,18 +157,16 @@ describe("ContainerTableActionsComponent", () => {
       expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
     });
 
-    it("labels the action to hide the comparison while it is shown", () => {
-      fixture.componentRef.setInput("comparisonActive", true);
-      fixture.detectChanges();
-
-      expect(compareAction()?.label).toBe("Hide comparison");
-    });
-
-    it("reports comparison errors", async () => {
+    it.each([
+      ["the server message of an HttpErrorResponse", new HttpErrorResponse({ status: 403, error: { result: { error: { message: "no rights for container X" } } } }), "no rights for container X"],
+      ["the message of a plain Error", new Error("boom"), "boom"],
+      ["the unknown-error text for a string", "oops", "unknown error"],
+      ["the unknown-error text for an object without a message", { foo: 1 }, "unknown error"]
+    ])("reports comparison errors: shows %s", async (_name, reason, expected) => {
       containerService.containerResource.set(
         MockPiResponse.fromValue({ containers: [{ serial: "CONT-1" }] as ContainerDetailData[], count: 1 })
       );
-      containerService.compareContainersWithTemplates.mockRejectedValue(new Error("Comparison failed"));
+      containerService.compareContainersWithTemplates.mockRejectedValue(reason);
       const errorSpy = jest.spyOn(
         (component as unknown as { notificationService: { error: (msg: string) => void } }).notificationService,
         "error"
@@ -171,7 +175,10 @@ describe("ContainerTableActionsComponent", () => {
 
       await component.toggleComparison();
 
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Comparison failed"));
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining(expected));
+      if (expected !== "unknown error") {
+        expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining("unknown error"));
+      }
     });
   });
 

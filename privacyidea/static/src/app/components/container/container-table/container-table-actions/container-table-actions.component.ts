@@ -18,6 +18,7 @@
  **/
 import { Component, computed, DOCUMENT, inject, input, output, signal, viewChild } from "@angular/core";
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { MatMenuTrigger } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -140,6 +141,20 @@ export class ContainerTableActionsComponent extends TableActionsHost {
     await this.compareDisplayedContainers();
   }
 
+  private comparisonErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const body: unknown = error.error;
+      const serverMessage = (body as { result?: { error?: { message?: unknown } } } | null)?.result?.error?.message;
+      if (typeof serverMessage === "string" && serverMessage) {
+        return serverMessage;
+      }
+    }
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return $localize`:@@container.unknownComparisonError:An unknown error occurred.`;
+  }
+
   private async compareDisplayedContainers(): Promise<void> {
     const displayedContainers = this.containerService.containerResource.value()?.result?.value?.containers ?? [];
     if (displayedContainers.length === 0 || this.comparingContainers()) {
@@ -153,10 +168,7 @@ export class ContainerTableActionsComponent extends TableActionsHost {
       this.comparisonLoaded.emit(comparisons);
     } catch (error) {
       console.error("Failed to compare containers with their templates:", error);
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : $localize`:@@container.unknownComparisonError:An unknown error occurred.`;
+      const message = this.comparisonErrorMessage(error);
       this.notificationService.error(
         $localize`:@@container.failedToCompareSelected:Failed to compare selected containers. ${message}:MESSAGE:`
       );

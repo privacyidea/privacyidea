@@ -26,9 +26,11 @@ import {
   ViewChild,
   WritableSignal,
   computed,
+  effect,
   inject,
   linkedSignal,
-  signal
+  signal,
+  untracked
 } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
@@ -278,6 +280,20 @@ export class ContainerTableComponent implements OnDestroy {
     }));
     this.comparisonVisible.set(true);
   }
+
+  private comparisonResetSkipsFirstRun = true;
+
+  // Paging, sorting or filtering drops the comparison, a plain reload keeps it.
+  private readonly resetComparisonOnListChange = effect(() => {
+    this.containerService.pageIndex();
+    this.containerService.sort();
+    this.containerService.activeFilter();
+    if (this.comparisonResetSkipsFirstRun) {
+      this.comparisonResetSkipsFirstRun = false;
+      return;
+    }
+    untracked(() => this.hideComparison());
+  });
 
   hideComparison(): void {
     this.comparisonVisible.set(false);

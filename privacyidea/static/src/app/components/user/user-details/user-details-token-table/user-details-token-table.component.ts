@@ -293,12 +293,8 @@ export class UserDetailsTokenTableComponent {
       : assign();
     request.subscribe({
       next: () => this.containerService.userContainersResource.reload(),
-      error: () => {
-        this.notificationService.error(
-          $localize`:@@container.assignUserFailed:Failed to assign the container to the user.`
-        );
-        this.containerService.userContainersResource.reload();
-      }
+      // ContainerService already notifies about the failure, so only show the real owner again.
+      error: () => this.containerService.userContainersResource.reload()
     });
   }
 
