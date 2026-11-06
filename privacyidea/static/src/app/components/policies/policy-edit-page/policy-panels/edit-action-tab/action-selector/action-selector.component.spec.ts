@@ -28,6 +28,7 @@ import { PolicyDetail, PolicyService, ScopedPolicyActions } from "@services/poli
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { ActionSelectorComponent } from "./action-selector.component";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
+import { axe } from "@testing/axe";
 
 @Component({
   selector: "app-policy-action-item-new",
@@ -298,5 +299,11 @@ describe("ActionSelectorComponent", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

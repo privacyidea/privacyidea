@@ -43,6 +43,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of } from "rxjs";
 import { UserTableComponent } from "./user-table.component";
+import { axe } from "@testing/axe";
 
 describe("UserTableComponent", () => {
   let component: UserTableComponent;
@@ -339,5 +340,11 @@ describe("UserTableComponent", () => {
 
       expect(mockUserService.activeFilter().getValueOfKey("resolver")).toBe("ldap1");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

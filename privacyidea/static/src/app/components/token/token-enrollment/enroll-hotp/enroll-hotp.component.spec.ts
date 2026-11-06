@@ -35,6 +35,7 @@ import {
   matSelectAt,
   pickOption
 } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
@@ -343,5 +344,12 @@ describe("EnrollHotpComponent", () => {
       expect(text).toContain("OTP key is required");
       expect(text).toContain("OTP key must be at least 16 characters long.");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    createAndInit();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

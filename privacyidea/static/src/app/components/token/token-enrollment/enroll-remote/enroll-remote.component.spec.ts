@@ -29,6 +29,7 @@ import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyid
 import { MockPrivacyideaServerService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 import { clickCheckbox } from "@testing/enroll-form-dom";
+import { axe } from "@testing/axe";
 
 describe("EnrollRemoteComponent", () => {
   let component: EnrollRemoteComponent;
@@ -203,5 +204,11 @@ describe("EnrollRemoteComponent", () => {
 
     expect(component.checkPinLocally()).toBe(true);
     expect(component.checkPinLocallyForm().dirty()).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -33,6 +33,7 @@ import { MockAuthService, MockDialogService, MockRadiusService, MockTableUtilsSe
 import { Subject } from "rxjs";
 import { RadiusServersComponent } from "./radius-servers.component";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;
@@ -216,5 +217,11 @@ describe("RadiusServersComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -38,6 +38,7 @@ import {
 import { Subject } from "rxjs";
 import { SmsGatewaysComponent } from "./sms-gateways.component";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;
@@ -224,5 +225,11 @@ describe("SmsGatewaysComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

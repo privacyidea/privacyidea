@@ -28,6 +28,7 @@ import { ContainerTemplateService } from "@services/container-template/container
 import { DialogService } from "@services/dialog/dialog.service";
 import { MockContainerTemplateService, MockDialogService } from "@testing/mock-services";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplatesTableActionsComponent", () => {
   let component: ContainerTemplatesTableActionsComponent;
@@ -167,5 +168,11 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     await component.openDeleteTemplateDialog();
 
     expect(serviceSpy).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

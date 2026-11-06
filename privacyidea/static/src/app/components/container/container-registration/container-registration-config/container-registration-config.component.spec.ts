@@ -30,6 +30,7 @@ import {
   PASSPHRASE_MISMATCH,
   registrationRules
 } from "./container-registration-config.component";
+import { axe } from "@testing/axe";
 
 @Component({
   imports: [ContainerRegistrationConfigComponent],
@@ -231,5 +232,11 @@ describe("ContainerRegistrationConfigComponent", () => {
       await flush();
       expect(errorTexts()).toEqual(["Passphrase prompt is required."]);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

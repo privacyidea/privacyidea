@@ -34,6 +34,7 @@ import { MockPendingChangesService } from "@testing/mock-services/mock-pending-c
 import { MockRadiusService } from "@testing/mock-services/mock-radius-service";
 import { BehaviorSubject, of } from "rxjs";
 import { NewRadiusServerComponent } from "./new-radius-server.component";
+import { axe } from "@testing/axe";
 
 const flush = async (fixture: ComponentFixture<unknown>) => {
   fixture.detectChanges();
@@ -354,6 +355,12 @@ describe("NewRadiusServerComponent", () => {
       expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
       expect(navigateSpy).not.toHaveBeenCalled();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
 

@@ -25,6 +25,7 @@ import { MockPolicyService } from "@testing/mock-services/mock-policies-service"
 import { PolicyActionDrafts } from "../policy-action-drafts";
 import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 import { AddedActionsListComponent } from "./added-actions-list.component";
+import { axe } from "@testing/axe";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -184,5 +185,11 @@ describe("AddedActionsListComponent", () => {
     component.getDetailsOfAction("action1");
 
     expect(spy).toHaveBeenCalledWith("action1", undefined);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -32,6 +32,7 @@ import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { MockUiPreferencesService } from "@testing/mock-services/mock-ui-preferences-service";
 import { UISettingsComponent } from "./ui-settings.component";
+import { axe } from "@testing/axe";
 
 describe("UISettingsComponent", () => {
   let fixture: ComponentFixture<UISettingsComponent>;
@@ -204,5 +205,11 @@ describe("UISettingsComponent", () => {
     testable().selectLocale("de");
 
     expect(uiPreferencesService.switchLocale).toHaveBeenCalledWith("de");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

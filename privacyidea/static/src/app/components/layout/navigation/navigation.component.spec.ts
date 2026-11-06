@@ -54,6 +54,7 @@ import { EventService } from "@services/event/event.service";
 import { SystemService } from "@services/system/system.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
+import { axe } from "@testing/axe";
 
 interface NavigationComponentPrivate {
   getFilteredNavItems: () => NavItem[];
@@ -526,5 +527,11 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       component["saveDashboard"]();
       expect(pendingChanges.hasSaveFn).toBe(false);
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
