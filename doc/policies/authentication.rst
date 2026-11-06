@@ -56,6 +56,8 @@ how the authentication should be processed:
 
    The user must not send a fixed password, only the OTP value.
    A request with PIN and OTP fails.
+   A simple pass token (SPASS) has no OTP value, its PIN is the whole password,
+   so its PIN is still checked.
 
 .. versionadded:: 2.0
 
@@ -524,7 +526,18 @@ will start a challenge response mechanism in which the user is supposed to enter
 PIN two times.
 
 Only if the user successfully changes the PIN the authentication process is finished
-successfully. E.g. if the user enters two different new PINs, the authentication process will fail.
+successfully. For example, if the user enters two different new PINs, the authentication process fails.
+This counts as a failed authentication of the token, and the PIN change starts again with the next login.
+
+Each of the two challenges can be answered once, and only within its validity time. As for any other
+authentication, the token has to be usable and the authorization policies have to allow it.
+
+The authentication that starts the PIN change does not count for the authentication counters of the token
+(``count_auth`` and ``count_auth_success``). The confirmation of the new PIN completes the authentication and counts
+it. A PIN change that the user does not finish does not count.
+
+A registration token does not start a PIN change, because the token deletes itself after the successful
+authentication.
 
 .. note:: The application must support several consecutive challenge response requests.
 

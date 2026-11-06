@@ -5,12 +5,14 @@
 import json
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
-                                                         generic_challenge_response_resync)
+                                                         generic_challenge_response_resync,
+                                                         pin_change_via_validate_follows, PIN_CHANGE_FOLLOWS_KEY)
 from privacyidea.lib.conditional_access.request_context import confirm_attempt_for_serials
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            AuthEventReason, AUTH_EVENT_REASON_KEY,
@@ -162,9 +164,7 @@ def check_otp(serial: str, otpval: str) -> tuple[bool, dict]:
         return False, reply_dict
     res = token_object.check_otp(otpval) >= 0
     if res:
-        if increase_auth_counters:
-            token_object.inc_count_auth_success()
-        token_object.reset()
+        record_successful_authentication(token_object)
         token_object.post_success()
     else:
         token_object.inc_failcount()
@@ -345,6 +345,91 @@ def _keep_usable(tokens: list[TokenClass], token_reasons: dict[str, str], is_usa
     return kept
 
 
+def keep_tokens_usable_for_request(token_object_list: list[TokenClass], options: dict,
+                                   token_reasons: dict[str, str]) -> list[TokenClass]:
+    """
+    Return the tokens that may authenticate this request: those of a type the policy ``disabled_token_types`` does
+    not exclude and that do not exclude themselves, see
+    :meth:`~privacyidea.lib.tokenclass.TokenClass.use_for_authentication`.
+
+    Every answer that can end in a successful authentication has to pass this filter, also the answers of the PIN
+    change via ``/validate/check``, which do not reach the rest of :func:`check_token_list`.
+
+    :param token_object_list: The tokens of the request
+    :param options: The options of the request, with the disabled token types and for example the service_id
+    :param token_reasons: Why each removed token could not authenticate, by serial, changed in place
+    :return: The tokens that may authenticate this request
+    """
+    # Remove disabled token types from token_object_list
+    if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
+        disabled_types = options[PolicyAction.DISABLED_TOKEN_TYPES]
+        token_object_list = _keep_usable(token_object_list, token_reasons,
+                                        lambda token: token.type not in disabled_types,
+                                        AuthEventReason.TOKEN_TYPE_DISABLED)
+
+    # Remove certain disabled tokens from token_object_list
+    if len(token_object_list) > 0:
+        # A type that excludes itself here usually means "not applicable to this request" (an
+        # application-specific password whose service_id does not match), but push and passkey express *disabled*
+        # through this very hook - and they are then never seen by check_all, which would have named that state. So
+        # ask the token whether it is disabled before falling back to the generic reason.
+        token_object_list = _keep_usable(
+            token_object_list, token_reasons,
+            lambda token: token.use_for_authentication(options),
+            lambda token: (AuthEventReason.TOKEN_DISABLED if not token.is_active()
+                           else AuthEventReason.TOKEN_NOT_APPLICABLE))
+    return token_object_list
+
+
+@dataclass
+class TokenState:
+    """
+    Whether a token may authenticate, and the state that refuses it if it may not.
+    """
+    usable: bool
+    message: str = ""
+    reason: AuthEventReason | None = None
+
+
+def check_token_state(token: TokenClass) -> TokenState:
+    """
+    Apply the token checks that :func:`check_token_list` runs before any verification: revoked, authentication
+    counters, active, fail counter, validity period and rollout state.
+
+    For the answers that do not go through :func:`check_token_list`: a FIDO2 answer that carries a credential_id,
+    whose token the view gets from the credential, and the answers of the PIN change via ``/validate/check``. The
+    state is returned and not raised, because each caller writes its own response and its own authentication log
+    entry from the reason.
+
+    :param token: The token to check
+    :return: The state of the token
+    """
+    # Revocation first, as check_serial_pass does: revoke() also locks the token, and check_reset_failcount()
+    # calls the lock-protected reset() once the clear timeout has elapsed, which would raise here instead of
+    # letting the token report that it is revoked.
+    if token.is_revoked():
+        return TokenState(False, "Token is revoked", AuthEventReason.TOKEN_REVOKED)
+    token.check_reset_failcount()
+    messages = []
+    if not token.check_all(messages):
+        return TokenState(False, ", ".join(messages), token.auth_details.get(AUTH_EVENT_REASON_KEY))
+    return TokenState(True)
+
+
+def record_successful_authentication(token: TokenClass, count_authentication: bool = True) -> None:
+    """
+    The bookkeeping of the step that completes a successful authentication: count the authentication, unless the
+    no_auth_counter config switches the counters off, and reset the fail counter.
+
+    :param token: The token of the authentication
+    :param count_authentication: False if a later step counts the authentication, for example the confirmation of
+        the PIN change via /validate/check
+    """
+    if count_authentication and not is_true(get_from_config(key="no_auth_counter")):
+        token.inc_count_auth_success()
+    token.reset()
+
+
 def _note_event(request_events: list, event_serials: dict[str, set[str]], event: AuthEventType,
                 token: TokenClass) -> None:
     """
@@ -454,24 +539,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             raise TokenAdminError(_("This action is not possible, since the token is locked"),
                                   id=Error.TOKEN_LOCKED)
 
-    # Remove disabled token types from token_object_list
-    if PolicyAction.DISABLED_TOKEN_TYPES in options and options[PolicyAction.DISABLED_TOKEN_TYPES]:
-        disabled_types = options[PolicyAction.DISABLED_TOKEN_TYPES]
-        token_object_list = _keep_usable(token_object_list, token_reasons,
-                                        lambda token: token.type not in disabled_types,
-                                        AuthEventReason.TOKEN_TYPE_DISABLED)
-
-    # Remove certain disabled tokens from token_object_list
-    if len(token_object_list) > 0:
-        # A type that excludes itself here usually means "not applicable to this request" (an
-        # application-specific password whose service_id does not match), but push and passkey express *disabled*
-        # through this very hook - and they are then never seen by check_all, which would have named that state. So
-        # ask the token whether it is disabled before falling back to the generic reason.
-        token_object_list = _keep_usable(
-            token_object_list, token_reasons,
-            lambda token: token.use_for_authentication(options),
-            lambda token: (AuthEventReason.TOKEN_DISABLED if not token.is_active()
-                           else AuthEventReason.TOKEN_NOT_APPLICABLE))
+    # Remove the tokens of disabled types and the tokens that are not for this request
+    token_object_list = keep_tokens_usable_for_request(token_object_list, options, token_reasons)
 
     for token_object in sorted(token_object_list, key=weigh_token_type):
         if log.isEnabledFor(logging.DEBUG):
@@ -588,6 +657,10 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
         # One or more successfully authenticating tokens found
         # We need to return success
         message_list = [_("matching {0:d} tokens").format(len(valid_token_list))]
+        # A login that continues with the PIN change via /validate/check is complete with the confirmation of the new
+        # PIN only. The confirmation counts the authentication, the login triggers the challenge for the new PIN.
+        pin_change_follows = (len(valid_token_list) == 1
+                              and pin_change_via_validate_follows(valid_token_list[0], options))
         # write serial numbers or something to audit log
         for token_obj in valid_token_list:
             # Reset the failcounter, if there is a timeout set
@@ -595,18 +668,19 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             # Check if the max auth is succeeded.
             # We need to set the offsets, since we are in the n+1st authentication.
             if token_obj.check_all(message_list):
-                if increase_auth_counters:
-                    token_obj.inc_count_auth_success()
-
                 # The token is active and the auth counters are ok.
                 res = True
-                request_events.append(AuthEventType.LOGIN_SUCCESS)
+                if pin_change_follows:
+                    reply_dict[PIN_CHANGE_FOLLOWS_KEY] = True
+                    request_events.append(AuthEventType.CHALLENGE_TRIGGERED)
+                else:
+                    request_events.append(AuthEventType.LOGIN_SUCCESS)
                 if not reply_dict.get("type"):
                     reply_dict["type"] = token_obj.token.tokentype
                 if reply_dict["type"] != token_obj.token.tokentype:
                     reply_dict["type"] = "undetermined"
-                # reset the failcounter of valid token
-                token_obj.reset()
+                # Count the authentication and reset the failcounter of valid token
+                record_successful_authentication(token_obj, count_authentication=not pin_change_follows)
                 # Run the token post method. e.g. registration token deletes itself.
                 token_obj.post_success()
         if len(valid_token_list) == 1:
@@ -667,9 +741,11 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                                      f"already been used by another request.")
                             reply_dict["message"] = _("Response did not match the challenge.")
                             continue
+                    # As after a login, a PIN change via /validate/check can follow the last challenge. The
+                    # confirmation of the new PIN then counts the authentication.
+                    pin_change_follows = (not further_challenge_follows
+                                          and pin_change_via_validate_follows(token_object, options))
                     res = True
-                    if increase_auth_counters:
-                        token_object.inc_count_auth_success()
                     reply_dict["message"] = _("Found matching challenge")
                     # If they exist, add next pin and next password change
                     next_pin = token_object.get_tokeninfo("next_pin_change")
@@ -681,6 +757,10 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         reply_dict["next_password_change"] = next_passw
                         reply_dict["password_change"] = token_object.is_pin_change(password=True)
                     if further_challenge_follows:
+                        # Each correct answer counts as a successful authentication, also one that is followed by
+                        # a further challenge
+                        if increase_auth_counters:
+                            token_object.inc_count_auth_success()
                         # The token creates further challenges, so create the new challenge
                         # and new transaction_id
                         create_challenges_from_tokens([token_object], reply_dict, options)
@@ -688,11 +768,15 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                         res = False
                         request_events.append(AuthEventType.CHALLENGE_CONTINUED)
                     else:
-                        # This was the last successful challenge, so
+                        # This was the last successful challenge, so count the authentication and
                         # reset the fail counter of the challenge response token
-                        token_object.reset()
+                        record_successful_authentication(token_object, count_authentication=not pin_change_follows)
                         token_object.post_success()
-                        request_events.append(_token_event(token_object, AuthEventType.LOGIN_SUCCESS))
+                        if pin_change_follows:
+                            reply_dict[PIN_CHANGE_FOLLOWS_KEY] = True
+                            request_events.append(AuthEventType.CHALLENGE_CONTINUED)
+                        else:
+                            request_events.append(_token_event(token_object, AuthEventType.LOGIN_SUCCESS))
 
                     # Clean up all challenges with this transaction_id from
                     # both Redis (when active) and the DB.

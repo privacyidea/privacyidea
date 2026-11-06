@@ -102,8 +102,7 @@ from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError, ResolverError
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib.fido2.challenge import (verify_fido2_challenge, has_unbound_challenge,
-                                             ChallengeExpiredError, check_fido2_token_state,
-                                             record_fido2_login_success)
+                                             ChallengeExpiredError, record_fido2_login_success)
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.tokenclass import TokenClass
@@ -115,6 +114,7 @@ from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token.auth import check_token_state
 from privacyidea.lib.user import User, split_user, log_used_user, get_user_from_param
 from privacyidea.lib.utils import (get_client_ip_info, hexlify_and_unicode, to_unicode, get_plugin_info_from_useragent,
                                    AUTH_RESPONSE)
@@ -481,7 +481,7 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise AuthError(_("Authentication failure using passkey."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
-        token_state = check_fido2_token_state(token)
+        token_state = check_token_state(token)
         if not token_state.usable:
             log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
                       f"{token_state.message}")
