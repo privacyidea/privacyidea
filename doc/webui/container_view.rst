@@ -251,13 +251,15 @@ after saving the template.
 
 **Containers Created With This Template**
 
-.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as described in
-   :ref:`legacy_webui`. In the WebUI, a container is compared to its template on the container details page.
+The template page does not list the containers created from the template. To see them, open the container list
+and select the template in the filter menu of the *Template* column. Click *Compare with templates* to compare the
+containers of the current page with their templates. The column *Differences* then shows the missing token types
+with a minus, the additional token types with a plus and *Equal* for matching containers.
 
-Optionally, a table of all containers created from the template can be displayed. Additionally, clicking the
-button *Compare* adds a new column to the table showing the differences for the token types between the containers
-and the template. The row *missing* lists the token types included in the template but not in the container.
-The row *additional* lists the token types included in the container but not in the template.
+.. note:: The previous WebUI, see :ref:`legacy_webui`, displays a table of the containers on the template page.
+   The button *Compare* adds a column to this table. The row *missing* lists the token types included in the
+   template but not in the container. The row *additional* lists the token types included in the container but not
+   in the template.
 
 .. figure:: images/container_template_details_containers.png
    :width: 500

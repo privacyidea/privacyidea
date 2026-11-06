@@ -227,7 +227,7 @@ describe("ContainerPickerDialogComponent", () => {
     component.setContainerSerial("SMPH00004476");
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.ownerDocument.querySelectorAll("mat-option")).toHaveLength(0);
+    expect(component["suggestions"]()).toEqual([]);
   });
 
   it("keeps the suggestions while more than one container matches", async () => {

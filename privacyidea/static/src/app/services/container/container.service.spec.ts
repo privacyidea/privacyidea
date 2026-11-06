@@ -1540,6 +1540,60 @@ describe("ContainerService", () => {
           expect.objectContaining({ params: { container_serial: "CONT-1" } })
         );
       });
+
+      it("sends no request for containers without a template", async () => {
+        const getSpy = jest.spyOn(http, "get");
+
+        const comparisons = await containerService.compareContainersWithTemplates([
+          { serial: "CONT-2", states: [], realms: [], tokens: [], type: "", users: [] },
+          { serial: "CONT-3", states: [], realms: [], tokens: [], type: "", users: [] }
+        ]);
+
+        expect(getSpy).not.toHaveBeenCalled();
+        expect(comparisons).toEqual([
+          { additional: [], containerSerial: "CONT-2", equal: null, missing: [], templateName: "" },
+          { additional: [], containerSerial: "CONT-3", equal: null, missing: [], templateName: "" }
+        ]);
+      });
+
+      it("rejects when the response has no entry for the container serial", async () => {
+        jest
+          .spyOn(http, "get")
+          .mockReturnValue(of({ result: { value: {} } } as unknown as PiResponse<TemplateComparisonResult>));
+
+        await expect(
+          containerService.compareContainersWithTemplates([
+            { serial: "CONT-1", template: "baseline", states: [], realms: [], tokens: [], type: "", users: [] }
+          ])
+        ).rejects.toThrow("No comparison result was returned for container CONT-1.");
+      });
+
+      it("sends exactly one request per templated container", async () => {
+        const getSpy = jest.spyOn(http, "get").mockImplementation(((
+          _url: string,
+          options?: { params?: Record<string, string> }
+        ) => {
+          const serial = options?.params?.container_serial as string;
+          const value: TemplateComparisonResult = { [serial]: { tokens: { equal: true, missing: [], additional: [] } } };
+          return of({ result: { value } } as unknown as PiResponse<TemplateComparisonResult>);
+        }) as unknown as typeof http.get);
+
+        await containerService.compareContainersWithTemplates([
+          { serial: "CONT-1", template: "baseline", states: [], realms: [], tokens: [], type: "", users: [] },
+          { serial: "CONT-2", states: [], realms: [], tokens: [], type: "", users: [] },
+          { serial: "CONT-3", template: "other", states: [], realms: [], tokens: [], type: "", users: [] }
+        ]);
+
+        expect(getSpy).toHaveBeenCalledTimes(2);
+        expect(getSpy).toHaveBeenCalledWith(
+          `${containerService.containerTemplateBaseUrl}baseline/compare`,
+          expect.objectContaining({ params: { container_serial: "CONT-1" } })
+        );
+        expect(getSpy).toHaveBeenCalledWith(
+          `${containerService.containerTemplateBaseUrl}other/compare`,
+          expect.objectContaining({ params: { container_serial: "CONT-3" } })
+        );
+      });
     });
 
     it("returns early when serial is empty", async () => {

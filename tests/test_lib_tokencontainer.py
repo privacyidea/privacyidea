@@ -1055,11 +1055,14 @@ class TokenContainerManagementTestCase(MyTestCase):
         self.assertEqual(1, len(container_data["containers"]))
         self.assertEqual("test", container_data["containers"][0].template.name)
 
-        container_data = get_all_containers(has_template=True)
-        self.assertIn(container_serial, [container.serial for container in container_data["containers"]])
-        self.assertNotIn(container_serial, [
-            container.serial for container in get_all_containers(has_template=False)["containers"]
-        ])
+        # containers created above have no template
+        all_serials = set(container_serials) | {container_serial}
+        container_data = get_all_containers(has_template=True, pagesize=15)
+        self.assertSetEqual({container_serial}, {container.serial for container in container_data["containers"]})
+        container_data = get_all_containers(has_template=False, pagesize=15)
+        self.assertSetEqual(set(container_serials), {container.serial for container in container_data["containers"]})
+        container_data = get_all_containers(has_template=None, pagesize=15)
+        self.assertSetEqual(all_serials, {container.serial for container in container_data["containers"]})
 
         # filter template with wildcards
         container_data = get_all_containers(template="te*")

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { tokenTypeLabel, tokenTypes } from "./token.utils";
+import { tokenTypeDisplayDescription, tokenTypeDisplayLabel, tokenTypeLabel, tokenTypes } from "./token.utils";
 
 describe("tokenTypeLabel", () => {
   it("returns the display name of a token type key", () => {
@@ -51,5 +51,49 @@ describe("tokenTypeLabel", () => {
 
   it("covers every token type", () => {
     expect(tokenTypes.filter((tokenType) => !tokenTypeLabel(tokenType.key))).toEqual([]);
+  });
+});
+
+describe("tokenTypeDisplayLabel", () => {
+  it("returns the part before the colon", () => {
+    expect(tokenTypeDisplayLabel("HOTP: counter based", "fallback")).toBe("HOTP");
+  });
+
+  it("returns the fallback when the info has no colon", () => {
+    expect(tokenTypeDisplayLabel("counter based", "fallback")).toBe("fallback");
+  });
+
+  it("returns the fallback for an empty info", () => {
+    expect(tokenTypeDisplayLabel("", "fallback")).toBe("fallback");
+  });
+
+  it("returns an empty label for a leading colon", () => {
+    expect(tokenTypeDisplayLabel(": desc", "fallback")).toBe("");
+  });
+
+  it("splits at the first colon only", () => {
+    expect(tokenTypeDisplayLabel("Name: see http://x: more", "fallback")).toBe("Name");
+  });
+});
+
+describe("tokenTypeDisplayDescription", () => {
+  it("returns the trimmed part after the colon", () => {
+    expect(tokenTypeDisplayDescription("Name:   some description ")).toBe("some description");
+  });
+
+  it("returns the whole text when the info has no colon", () => {
+    expect(tokenTypeDisplayDescription("only a description")).toBe("only a description");
+  });
+
+  it("returns an empty string for an empty info", () => {
+    expect(tokenTypeDisplayDescription("")).toBe("");
+  });
+
+  it("returns the description for a leading colon", () => {
+    expect(tokenTypeDisplayDescription(": desc")).toBe("desc");
+  });
+
+  it("keeps a colon inside the description", () => {
+    expect(tokenTypeDisplayDescription("Name: see http://x: more")).toBe("see http://x: more");
   });
 });
