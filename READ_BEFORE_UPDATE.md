@@ -195,12 +195,17 @@
   value.
 
 * **The policy actions of the `u2f` token type are removed.** The schema update removes `enrollU2F` and the actions
-  starting with `u2f_` from the policies and prints the names of the policies it changed. A policy that holds only u2f
-  actions is left as it is and named in a warning: it allows nothing any more, so replace its actions or delete it.
-  Deleting the last admin policy or the last user policy gives every administrator or user all rights of that scope. A
-  configuration exported from an earlier version that still contains them is imported with
-  `pi-manage config import --skip-invalid`, which drops these actions; without the option, the import refuses such a
-  policy.
+  that start with `u2f_` from the policies. It deletes a policy that holds only these actions, together with the
+  conditions and the description of the policy. The update prints the names of the changed and the deleted policies.
+
+  The update keeps such a policy if it is the last active policy of the admin or the user scope. Without an active
+  policy, every administrator or user gets all rights of that scope. The update names these policies in a warning.
+  They allow nothing. Replace their actions with other actions, or add another active policy to the scope and then
+  delete them. Do not save them without actions. A policy without actions allows every action of its scope.
+
+  `pi-manage config import --skip-invalid` imports a configuration that an earlier version exported with these
+  actions. The option drops the actions and skips a policy that holds only these actions. Without the option, the
+  import refuses such a policy.
 
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
