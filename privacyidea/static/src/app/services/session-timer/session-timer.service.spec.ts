@@ -134,6 +134,33 @@ describe("SessionTimerService", () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  describe("expiry warning", () => {
+    const warnAt30Seconds = () => {
+      service.initialTimerStart();
+      TestBed.tick();
+    };
+
+    it("tells how to stay signed in when inactivity ends the session", () => {
+      authService.logoutTimeS.set(30.5);
+      authService.jwtLogoutTimeS.set(600);
+
+      warnAt30Seconds();
+
+      expect(notify.warning).toHaveBeenCalledWith(
+        "Session will expire in 30 seconds. Click, press a key or move the mouse to stay signed in."
+      );
+    });
+
+    it("does not promise more time when the session limit ends the session", () => {
+      authService.logoutTimeS.set(600);
+      authService.jwtLogoutTimeS.set(30.5);
+
+      warnAt30Seconds();
+
+      expect(notify.warning).toHaveBeenCalledWith("Session will expire in 30 seconds.");
+    });
+  });
+
   it("startTimer schedules timeout and triggers logout on expiry", () => {
     authService.logoutTimeS.set(2);
     const clearIntervalSpy = jest.spyOn(globalThis, "clearInterval");
@@ -207,7 +234,9 @@ describe("SessionTimerService", () => {
     await Promise.resolve();
     jest.runOnlyPendingTimers();
 
-    expect(snackSpy).toHaveBeenCalledWith("Session will expire in 30 seconds.");
+    expect(snackSpy).toHaveBeenCalledWith(
+      "Session will expire in 30 seconds. Click, press a key or move the mouse to stay signed in."
+    );
   });
 
   it("remainingTime counts down relative to startTime when timer restarted", () => {

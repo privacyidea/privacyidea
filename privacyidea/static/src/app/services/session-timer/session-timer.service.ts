@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, effect, inject, Injectable, Signal, signal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal, signal, untracked } from "@angular/core";
 import { Router } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -70,6 +70,11 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     }
     return Math.max(0, jwtLogoutTime);
   });
+  private readonly activityExtendsSession = computed(() => {
+    const logoutTime = this.logoutTimeMs();
+    const jwtLogoutTime = this.jwtLogoutTimeMs();
+    return logoutTime !== null && (jwtLogoutTime === null || logoutTime <= jwtLogoutTime);
+  });
   remainingTime = computed(() => {
     if (this.jwtLogoutTimeMs() == null && this.logoutTimeMs() == null) return;
     if (this.logoutTimeMs() == null) return this.jwtLogoutTimeMs() ?? undefined;
@@ -82,7 +87,9 @@ export class SessionTimerService implements SessionTimerServiceInterface {
       const remainingTime = this.remainingTime();
       if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
         this.notificationService.warning(
-          $localize`:@@session.sessionWillExpireIn30:Session will expire in 30 seconds.`
+          untracked(() => this.activityExtendsSession())
+            ? $localize`:@@session.sessionWillExpireIn30StaySignedIn:Session will expire in 30 seconds. Click, press a key or move the mouse to stay signed in.`
+            : $localize`:@@session.sessionWillExpireIn30:Session will expire in 30 seconds.`
         );
       }
     });
