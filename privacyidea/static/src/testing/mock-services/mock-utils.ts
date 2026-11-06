@@ -157,8 +157,8 @@ export class MockPiResponse<Value, Detail = unknown, Init = unknown> {
 }
 
 export class MockRouter {
-  navigate = jest.fn();
-  navigateByUrl = jest.fn();
+  navigate = jest.fn().mockResolvedValue(true);
+  navigateByUrl = jest.fn().mockResolvedValue(true);
   events = of();
   url = "";
 }

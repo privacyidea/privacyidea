@@ -47,6 +47,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { axe } from "@testing/axe";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -91,7 +92,7 @@ describe("ContainerTableComponent (Jest)", () => {
     expect(component).toBeTruthy();
   });
 
-  it("links the container serial, its user and its tokens to their details pages", () => {
+  const showExpandedContainer = () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,
       rights: ["container_list"]
@@ -115,6 +116,16 @@ describe("ContainerTableComponent (Jest)", () => {
     fixture.detectChanges();
     fixture.nativeElement.querySelector("tr[mat-row]").click();
     fixture.detectChanges();
+  };
+
+  it("passes the axe accessibility checks with an expanded container row", async () => {
+    showExpandedContainer();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
+
+  it("links the container serial, its user and its tokens to their details pages", () => {
+    showExpandedContainer();
 
     const hrefOf = (text: string) =>
       Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))
