@@ -54,7 +54,7 @@ describe("EnrollTiqrComponent", () => {
   });
 
   describe("missing TiQR configuration", () => {
-    const warning = (): HTMLElement => fixture.nativeElement.querySelector(".inline-warning");
+    const warning = (): HTMLElement | null => fixture.nativeElement.querySelector(".inline-warning");
 
     const setRights = (rights: string[]) => {
       const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
@@ -62,17 +62,16 @@ describe("EnrollTiqrComponent", () => {
       fixture.detectChanges();
     };
 
-    it("links to the token type configuration with the right to read the configuration", () => {
+    it("links to the TiQR section of the token configuration with the right to read the configuration", () => {
       setRights(["configread"]);
 
-      expect(warning().querySelector("a")?.getAttribute("href")).toBe("/configuration/tokens");
+      expect(warning()?.querySelector("a")?.getAttribute("href")).toBe("/configuration/tokens#tiqr");
     });
 
-    it("asks to contact the administrator, without a link, without the right to read the configuration", () => {
+    it("is not shown without the right to read the configuration, which it is based on", () => {
       setRights([]);
 
-      expect(warning().querySelector("a")).toBeNull();
-      expect(warning().textContent).toContain("Please contact your administrator.");
+      expect(warning()).toBeNull();
     });
   });
 });
