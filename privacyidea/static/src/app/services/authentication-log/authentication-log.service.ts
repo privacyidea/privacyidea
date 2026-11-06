@@ -28,6 +28,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
 import { Observable } from "rxjs";
+import { recordsEqual } from "@utils/record.utils";
 
 export interface AuthenticationLogEntry {
   id: number;
@@ -96,12 +97,6 @@ export interface AuthenticationLogEventType {
 }
 
 export const AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE = 100;
-
-// Shallow value-equality for the flat string->string filter params record.
-function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
-  const aKeys = Object.keys(a);
-  return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
-}
 
 // Filter keys the backend matches exactly (see _FILTER_PARAMS in api/authentication_log.py). A key is a *column* of
 // the table, which is why it is singular here while the query parameter it is sent as is plural (see apiParamOf).
@@ -207,7 +202,7 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
         .filter(([, value]) => StringUtils.validFilterValue(value));
       return Object.fromEntries(entries) as Record<string, string>;
     },
-    { equal: shallowEqualRecord }
+    { equal: recordsEqual }
   );
 
   pageSize = signal(AUTHENTICATION_LOG_DEFAULT_PAGE_SIZE);

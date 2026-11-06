@@ -7,7 +7,6 @@ from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get
 from privacyidea.lib import fido2
 from privacyidea.lib.cache.redis import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, cancel_challenge, consume_challenge
-from privacyidea.lib.conditional_access.authentication_event_types import AUTH_EVENT_REASON_KEY, AuthEventReason
 from privacyidea.lib.config import get_from_config
 from privacyidea.models import Challenge
 from privacyidea.lib.crypto import geturandom
@@ -15,10 +14,10 @@ from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.token.auth import record_successful_authentication
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
-from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -90,38 +89,6 @@ class FIDOVerificationResult:
     challenge: "Challenge | ChallengeDTO"
 
 
-@dataclass
-class FIDO2TokenState:
-    """
-    Whether a token may authenticate, and the state that refuses it if it may not.
-    """
-    usable: bool
-    message: str = ""
-    reason: AuthEventReason | None = None
-
-
-def check_fido2_token_state(token: TokenClass) -> FIDO2TokenState:
-    """
-    Apply the token checks that ``check_token_list`` runs before any verification: revoked, authentication
-    counters, active, fail counter, validity period and rollout state.
-
-    A FIDO2 answer that carries a credential_id is handled outside ``check_token_list`` - the view resolves the
-    token from the credential itself - so the views call this before verifying the response. The state is
-    returned instead of raised, because each view phrases its own response and writes its own
-    authentication-log row from the reason.
-    """
-    # Revocation first, as check_serial_pass does: revoke() also locks the token, and check_reset_failcount()
-    # calls the lock-protected reset() once the clear timeout has elapsed, which would raise here instead of
-    # letting the token report that it is revoked.
-    if token.is_revoked():
-        return FIDO2TokenState(False, "Token is revoked", AuthEventReason.TOKEN_REVOKED)
-    token.check_reset_failcount()
-    messages = []
-    if not token.check_all(messages):
-        return FIDO2TokenState(False, ", ".join(messages), token.auth_details.get(AUTH_EVENT_REASON_KEY))
-    return FIDO2TokenState(True)
-
-
 def record_fido2_login_success(token: TokenClass) -> None:
     """
     The success bookkeeping of ``check_token_list`` for the FIDO2 login paths: count the authentication unless
@@ -131,9 +98,7 @@ def record_fido2_login_success(token: TokenClass) -> None:
     The views call this once the login is accepted. A verified assertion is not yet an accepted login - the
     view can still refuse it - so last_auth is written here and not where the assertion is verified.
     """
-    if not is_true(get_from_config(key="no_auth_counter")):
-        token.inc_count_auth_success()
-    token.reset()
+    record_successful_authentication(token)
     token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 

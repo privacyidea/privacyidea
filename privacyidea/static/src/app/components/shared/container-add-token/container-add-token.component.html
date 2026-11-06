@@ -63,8 +63,10 @@
       }
       <mat-autocomplete
         #tokenAuto="matAutocomplete"
+        [displayWith]="clearInputOnSelect"
         class="token-option-panel"
-        (opened)="applyCompatibleTokenTypesFilter()">
+        (opened)="applyCompatibleTokenTypesFilter()"
+        (optionSelected)="addToken.emit($event.option.value)">
         @if (tokenOptions().length === 0) {
           <mat-option
             [disabled]="true"
@@ -74,7 +76,7 @@
         }
         @for (option of tokenOptions(); track option) {
           <mat-option
-            (click)="addToken.emit(option)"
+            [value]="option"
             class="token-option">
             <span class="token-option-span"> {{ option["serial"] }} </span>
             <span class="token-option-span">

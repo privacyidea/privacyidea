@@ -3,7 +3,6 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
-import ast
 import json
 import pathlib
 import re
@@ -16,7 +15,7 @@ from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import ParameterError, PrivacyIDEAError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError, ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
@@ -35,6 +34,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import init_token, get_dynamic_policy_definitions
 from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
@@ -76,12 +76,6 @@ class PolicyTestCase(MyTestCase):
     """
     Test the policies on a database level
     """
-
-    def assert_undefined_values(self, kind: str, values: set[str], message: str) -> None:
-        # The undefined values are listed in no particular order
-        prefix = f"Undefined {kind}: "
-        self.assertTrue(message.startswith(prefix) and message.endswith("!"), message)
-        self.assertSetEqual(values, set(ast.literal_eval(message[len(prefix):-1])), message)
 
     def setUp(self):
         self.setUp_user_realms()
@@ -282,7 +276,7 @@ class PolicyTestCase(MyTestCase):
         # Invalid actions
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action="invalid_action")
-        self.assertEqual("Invalid actions ['invalid_action']!", exception.exception.message)
+        self.assertEqual("Invalid actions for scope 'admin': ['invalid_action']!", exception.exception.message)
 
         # Priority
         with self.assertRaises(ParameterError) as exception:
@@ -297,19 +291,19 @@ class PolicyTestCase(MyTestCase):
         # Invalid realm
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, realm="invalid_realm")
-        self.assert_undefined_values("User-realms", {"invalid_realm"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid_realm']!", exception.exception.message)
 
         # set_policy takes any admin realm: the API checks it against the admin realms of the app configuration
 
         # Invalid resolver
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, resolver="invalid_resolver")
-        self.assert_undefined_values("Resolvers", {"invalid_resolver"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid_resolver']!", exception.exception.message)
 
         # Invalid node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="invalid", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, pinode="invalid_node")
-        self.assert_undefined_values("Privacyidea nodes", {"invalid_node"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid_node']!", exception.exception.message)
 
         # Invalid time
         with self.assertRaises(ParameterError) as exception:
@@ -1204,6 +1198,119 @@ class PolicyTestCase(MyTestCase):
             rid = delete_resolver(reso)
             self.assertTrue(rid > 0, rid)
 
+    def test_21a_check_all_resolver_user_not_in_resolver(self):
+        # reso1 (prio 1) contains selfservice and cornelius, reso2 (prio 2) contains cornelius and root.
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1}, {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=totp")
+        try:
+            expected_matches = {"selfservice": [], "cornelius": ["checkAll"], "root": ["checkAll"]}
+            for login, expected in expected_matches.items():
+                with self.subTest(login=login):
+                    user = User(login, "test_realm")
+                    policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                                                            resolver=user.resolver, user=user.login)
+                    self.assertListEqual(expected, [policy["name"] for policy in policies], str(user))
+
+            # One policy object asks each resolver once for a user
+            user = User("selfservice", "test_realm")
+            policy_object = PolicyClass()
+            with mock.patch.object(PasswdIdResolver, "getUserId", autospec=True,
+                                   side_effect=PasswdIdResolver.getUserId) as get_user_id:
+                for _ in range(2):
+                    policy_object.match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                                 user=user.login)
+                self.assertEqual(1, get_user_id.call_count)
+                PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                             user=user.login)
+                self.assertEqual(2, get_user_id.call_count)
+
+            error = ResolverError("unreachable")
+            with (mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error),
+                  self.assertLogs("privacyidea.lib.policy", level="ERROR") as logs):
+                self.assertRaises(ResolverError, PolicyClass().match_policies, scope=SCOPE.AUTHZ,
+                                  realm=user.realm, resolver=user.resolver, user=user.login)
+            self.assertIn(f"'reso2' of the policy 'checkAll' with check_all_resolvers: {error}", logs.output[0])
+
+            # A resolver ranked above the user's resolver is not asked, also for a user created with its resolver
+            # whose login name is also in the resolver ranked above.
+            set_policy(name="checkAllHigher", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso1",
+                       check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=hotp")
+            users = [User("root", "test_realm"), User("cornelius", "test_realm", resolver="reso2")]
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=error):
+                for user in users:
+                    with self.subTest(user=str(user)):
+                        policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm,
+                                                                resolver=user.resolver, user=user.login)
+                        self.assertListEqual(["checkAll"], [policy["name"] for policy in policies])
+        finally:
+            delete_policy("checkAllHigher")
+            delete_policy("checkAll")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
+
+    def test_21b_check_all_resolvers_asks_user_store_after_other_filters(self):
+        # reso1 (prio 1) contains selfservice and cornelius, reso2 (prio 2) contains cornelius and root.
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1}, {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAllClient", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, client="10.0.0.0/8", action=f"{PolicyAction.TOKENTYPE}=totp")
+        set_policy(name="checkAllAgent", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, user_agents="privacyidea-cp", action=f"{PolicyAction.TOKENTYPE}=hotp")
+        user = User("selfservice", "test_realm")
+        try:
+            # The client and the user agent remove both policies, so reso2 is not asked.
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("unreachable")):
+                policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm=user.realm, resolver=user.resolver,
+                                                        user=user.login, client="192.168.1.5", user_agent="PAM")
+            self.assertListEqual([], policies)
+
+            # A policy that the client filter keeps still asks reso2.
+            with mock.patch.object(PasswdIdResolver, "getUserId", side_effect=ResolverError("unreachable")):
+                self.assertRaises(ResolverError, PolicyClass().match_policies, scope=SCOPE.AUTHZ,
+                                  realm=user.realm, resolver=user.resolver, user=user.login, client="10.0.0.1",
+                                  user_agent="PAM")
+        finally:
+            delete_policy("checkAllClient")
+            delete_policy("checkAllAgent")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
+
+    def test_21c_check_all_resolvers_user_resolver_pinned_to_another_node(self):
+        # reso1 (prio 1, pinned to another node) contains cornelius, reso2 (prio 2) contains cornelius and root.
+        other_node = "8e4272a9-9037-40df-8aa3-976e4a04b5a8"
+        this_node = "d1d7fde6-330f-4c12-88f3-58a1752594bf"
+        db.session.add_all([NodeName(id=other_node, name="otherNode"), NodeName(id=this_node, name="thisNode")])
+        db.session.commit()
+        save_resolver({"resolver": "reso1", "type": "passwdresolver", "fileName": FILE_PASSWORDS})
+        save_resolver({"resolver": "reso2", "type": "passwdresolver", "fileName": FILE_PASSWD})
+        set_realm("test_realm", [{"name": "reso1", "priority": 1, "node": other_node},
+                                 {"name": "reso2", "priority": 2}])
+        set_policy(name="checkAll", scope=SCOPE.AUTHZ, realm="test_realm", resolver="reso2",
+                   check_all_resolvers=True, action=f"{PolicyAction.TOKENTYPE}=totp")
+        try:
+            with mock.patch.dict(self.app.config, {"PI_NODE_UUID": this_node}):
+                self.assertListEqual(["reso2"], get_ordered_resolvers("test_realm"))
+                # A token owner stored with reso1 is checked against all resolvers of the realm.
+                expected_matches = {"cornelius": ["checkAll"], "selfservice": []}
+                for login, expected in expected_matches.items():
+                    with self.subTest(login=login):
+                        policies = PolicyClass().match_policies(scope=SCOPE.AUTHZ, realm="test_realm",
+                                                                resolver="reso1", user=login)
+                        self.assertListEqual(expected, [policy["name"] for policy in policies])
+        finally:
+            delete_policy("checkAll")
+            delete_realm("test_realm")
+            delete_resolver("reso1")
+            delete_resolver("reso2")
+            NodeName.query.filter(NodeName.id.in_([other_node, this_node])).delete()
+            db.session.commit()
+
     def test_22_non_ascii_user(self):
         set_policy(name="polnonascii",
                    action=f"enrollHOTP, {PolicyAction.OTPPINMINLEN}=4",
@@ -2087,6 +2194,33 @@ class PolicyTestCase(MyTestCase):
             for name in policies:
                 delete_policy(name)
 
+    def test_41e_list_policies_user_with_additional_realms(self):
+        # With the realms of a token or container, a policy for users matches the user as it does without these
+        # realms: without a realm in every realm, otherwise only in the user realm and not in another realm of the list.
+        policies = {"multi_realm_user": {"user": "cornelius"},
+                    "multi_realm_every_user": {"user": "*"},
+                    "multi_realm_regex": {"user": "corn.*"},
+                    "multi_realm_user_realm1": {"user": "cornelius", "realm": self.realm1},
+                    "multi_realm_every_user_realm1": {"user": "*", "realm": self.realm1},
+                    "multi_realm_case_insensitive": {"user": "Cornelius", "realm": self.realm1,
+                                                     "user_case_insensitive": True},
+                    "multi_realm_user_realm2": {"user": "cornelius", "realm": self.realm2},
+                    "multi_realm_other_user": {"user": "bob"}}
+        for name, attributes in policies.items():
+            set_policy(name=name, scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, **attributes)
+        policy_class = PolicyClass()
+
+        try:
+            matching = {policy["name"] for policy in policy_class.list_policies(
+                action=PolicyAction.DISABLE, user="cornelius", realm=self.realm1,
+                additional_realms=[self.realm1, self.realm2]) if policy["name"].startswith("multi_realm_")}
+            self.assertSetEqual({"multi_realm_user", "multi_realm_every_user", "multi_realm_regex",
+                                 "multi_realm_user_realm1", "multi_realm_every_user_realm1",
+                                 "multi_realm_case_insensitive"}, matching)
+        finally:
+            for name in policies:
+                delete_policy(name)
+
     def test_42_convert_action_dict_to_python_dict_success(self):
         action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
         python_dict = convert_action_dict_to_python_dict(action_dict)
@@ -2618,13 +2752,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Realm
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=[self.realm2, "undefined_realm", self.realm1, "invalid"])
-        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid', 'undefined_realm']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, undefined_realm,{self.realm1} ,invalid")
-        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid', 'undefined_realm']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, realm=f"{self.realm2}, -undefined_realm,{self.realm1} ,!invalid")
-        self.assert_undefined_values("User-realms", {"undefined_realm", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined User-Realms: ['invalid', 'undefined_realm']!", exception.exception.message)
 
         delete_policy("test")
 
@@ -2650,14 +2784,14 @@ class PolicyTestCase(MyTestCase):
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=[self.resolvername1, "undefined_resolver", self.resolvername3, "invalid"])
-        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid', 'undefined_resolver']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, resolver=f"undefined_resolver,{self.resolvername1}, invalid")
-        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid', 'undefined_resolver']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN,
                        resolver=f"*, -undefined_resolver,{self.resolvername1}, !invalid")
-        self.assert_undefined_values("Resolvers", {"undefined_resolver", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined Resolvers: ['invalid', 'undefined_resolver']!", exception.exception.message)
 
         delete_policy("test")
 
@@ -2687,13 +2821,13 @@ class PolicyTestCase(MyTestCase):
         # Undefined Node
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=[node_name1, "undefined_node", node_name2, "invalid"])
-        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"undefined_node,{node_name1}, invalid")
-        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
         with self.assertRaises(ParameterError) as exception:
             set_policy(name="test", scope=SCOPE.ADMIN, pinode=f"*, -undefined_node,{node_name1}, !invalid")
-        self.assert_undefined_values("Privacyidea nodes", {"undefined_node", "invalid"}, exception.exception.message)
+        self.assertEqual("Undefined privacyIDEA Nodes: ['invalid', 'undefined_node']!", exception.exception.message)
 
         db.session.delete(node1)
         db.session.delete(node2)
@@ -3473,7 +3607,7 @@ class ConditionHandleMissingDataTestCase(MyTestCase):
 class PolicyMatchTestCase(MyTestCase):
     def setUp(self):
         """ create some policies """
-        MyTestCase.setUpClass()
+        self.set_up_database()
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy(name="pol1",
@@ -3686,8 +3820,20 @@ class PolicyMatchTestCase(MyTestCase):
         self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_corny).policies(),
                          {"no_condition", "realm4", "resolver3"})
 
+        # The container of the token is used for container conditions
+        set_policy(name="smartphone", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
+                   conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        container = find_container_by_serial(init_container({"type": "smartphone"})["container_serial"])
+        container.add_token(token_hans)
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_hans).policies(),
+                         {"no_condition", "realm4", "hans", "resolver1", "smartphone"})
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_no_user).policies(),
+                         {"no_condition"})
+        container.delete()
+
         # Clean up
-        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1"])
+        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1", "smartphone"])
         token_corny.delete_token()
         token_hans.delete_token()
         token_no_user.delete_token()
@@ -3838,6 +3984,7 @@ class PolicyMatchTestCase(MyTestCase):
     @classmethod
     def tearDownClass(cls):
         delete_all_policies()
+        super().tearDownClass()
 
 
 class PolicyTemplateTestCase(MyTestCase):
@@ -3909,3 +4056,28 @@ class PolicyTemplateTestCase(MyTestCase):
     def test_04_both_webui_copies_are_identical(self):
         first, second = [self._read_templates(directory) for directory in self.template_directories]
         self.assertEqual(first, second)
+
+
+class PolicyValueErrorTestCase(MyTestCase):
+    """
+    The errors of set_policy name the undefined values and the invalid actions sorted, the field as it is written and
+    the scope of the actions.
+    """
+
+    def test_01_undefined_values_are_listed_sorted(self):
+        for field, name in (("realm", "User-Realms"), ("resolver", "Resolvers"), ("pinode", "privacyIDEA Nodes")):
+            with self.subTest(field=field):
+                with self.assertRaises(ParameterError) as exception:
+                    set_policy(name="undefined_values", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE,
+                               **{field: "zzz_undefined, aaa_undefined, mmm_undefined"})
+                self.assertEqual(f"Undefined {name}: ['aaa_undefined', 'mmm_undefined', 'zzz_undefined']!",
+                                 exception.exception.message)
+                self.assertListEqual([], get_policies(name="undefined_values"))
+
+    def test_02_invalid_actions_name_the_scope(self):
+        with self.assertRaises(ParameterError) as exception:
+            set_policy(name="invalid_actions", scope=SCOPE.ADMIN,
+                       action=f"zzz_invalid, {PolicyAction.ENABLE}, aaa_invalid")
+        self.assertEqual("Invalid actions for scope 'admin': ['aaa_invalid', 'zzz_invalid']!",
+                         exception.exception.message)
+        self.assertListEqual([], get_policies(name="invalid_actions"))

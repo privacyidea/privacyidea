@@ -22,8 +22,9 @@
   <mat-label i18n="@@machine.resolverFilename">Resolver Filename</mat-label>
   <input
     matInput
-    [disabled]="!canEdit()"
     placeholder="/etc/hosts"
-    [value]="hostsData().filename ?? ''"
-    (input)="updateData({ filename: $event.target['value'] })" />
+    [formField]="hostsForm.filename" />
+  @if (hasError(hostsForm.filename, ERR.required)) {
+    <mat-error i18n="@@machine.resolverFilenameRequired">Resolver filename is <strong>required</strong>.</mat-error>
+  }
 </mat-form-field>

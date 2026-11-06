@@ -17,61 +17,63 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, linkedSignal, OnInit, output } from "@angular/core";
+import { Component, effect, input, linkedSignal, output, untracked } from "@angular/core";
+import { disabled, form, FormField } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
+
+interface HostsFormModel {
+  filename: string;
+}
+
+function toFormModel(data: MachineResolverData): HostsFormModel {
+  return { filename: (data as HostsMachineResolverData).filename ?? "" };
+}
+
+// A filename the data did not hold and the user left empty stays absent from the emitted data.
+function toData(model: HostsFormModel, base: MachineResolverData): HostsMachineResolverData {
+  const data: HostsMachineResolverData = { ...(base as HostsMachineResolverData), type: "hosts" };
+  if (model.filename !== "" || data.filename !== undefined) {
+    data.filename = model.filename;
+  }
+  return data;
+}
 
 @Component({
   selector: "app-machine-resolver-hosts-tab",
   templateUrl: "./machine-resolver-hosts-tab.component.html",
   styleUrls: ["./machine-resolver-hosts-tab.component.scss"],
-  imports: [MatFormFieldModule, MatInputModule],
+  imports: [FormField, MatFormFieldModule, MatInputModule],
   standalone: true
 })
-export class MachineResolverHostsTabComponent implements OnInit {
+export class MachineResolverHostsTabComponent {
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+
   readonly canEdit = input<boolean>(false);
-  readonly machineResolverData = input.required<MachineResolverData>();
-  readonly hostsData = linkedSignal<HostsMachineResolverData>(
-    () => this.machineResolverData() as HostsMachineResolverData
-  );
+  // The default data is read while the details page evaluates the validity of a tab whose inputs are not bound yet.
+  readonly machineResolverData = input<MachineResolverData>({ resolver: "", type: "hosts" });
   readonly newData = output<MachineResolverData>();
-  readonly newValidator = output<(data: MachineResolverData) => boolean>();
 
-  ngOnInit(): void {
-    this.newValidator.emit(this.isValid.bind(this));
-  }
+  readonly model = linkedSignal<HostsFormModel>(() => toFormModel(this.machineResolverData()));
+  readonly hostsForm = form(this.model, (f) => {
+    requiredNonBlank(f.filename);
+    disabled(f.filename, () => !this.canEdit());
+  });
 
-  updateData(
-    args:
-      | { patch: Partial<HostsMachineResolverData>; remove?: (keyof HostsMachineResolverData)[] }
-      | { patch?: Partial<HostsMachineResolverData>; remove: (keyof HostsMachineResolverData)[] }
-      | Partial<HostsMachineResolverData>
-  ) {
-    let patch: Partial<HostsMachineResolverData>;
-    let remove: (keyof HostsMachineResolverData)[];
-    if ("remove" in args || "patch" in args) {
-      const complexArgs = args as {
-        patch?: Partial<HostsMachineResolverData>;
-        remove?: (keyof HostsMachineResolverData)[];
-      };
-      patch = complexArgs.patch || {};
-      remove = complexArgs.remove || [];
-    } else {
-      patch = args as Partial<HostsMachineResolverData>;
-      remove = [];
-    }
-    const newData = { ...this.machineResolverData(), ...patch, type: "hosts" };
-    if (remove.length > 0) {
-      remove.forEach((key) => {
-        delete newData[key];
-      });
-    }
-    this.newData.emit(newData);
-  }
+  readonly isValid = () => this.hostsForm().valid();
+  readonly touchAll = () => touchAll(this.hostsForm);
 
-  isValid(data: MachineResolverData): boolean {
-    if (data.type !== "hosts") return false;
-    return !!(data as HostsMachineResolverData).filename?.trim();
+  constructor() {
+    effect(() => {
+      const model = this.model();
+      const base = untracked(() => this.machineResolverData());
+      if (JSON.stringify(model) !== JSON.stringify(toFormModel(base))) {
+        this.newData.emit(toData(model, base));
+      }
+    });
   }
 }

@@ -83,6 +83,17 @@
   disabled, like `-policywrite`. Boolean actions of token types that privacyIDEA does not ship keep their value until
   the policy is saved again.
 
+* **The schema update stops on a database without schema revision stamp** — `privacyidea-schema-upgrade`, which
+  `privacyidea-pip-update` and the Ubuntu packages run, and `pi-manage db upgrade` stop with an error and leave the
+  database unchanged if its `alembic_version` table holds no revision. Stamp such a database with the newest revision
+  of the version that created its tables, then run the update again. For tables that the installed version created
+  with `pi-manage setup create_tables --no-stamp`, use `pi-manage db stamp head`. Versions before 3.10 created the
+  tables without a stamp by default. The upgrade documentation lists their revisions, for example
+  `pi-manage db stamp 5cb310101a1f` for 3.9. Set up an empty database with `pi-manage setup create_tables`.
+  `privacyidea-schema-upgrade` prints the database and its schema revision before and after the update. Keep this
+  output. `privacyidea-pip-update` ends with the exit code of the step that failed. The option `-s`/`--skipstamp` of
+  both scripts is accepted and has no effect.
+
 * **Entra ID resolvers apply their TLS settings to the sign-in as well** — "Verify TLS" and the CA file of an Entra ID
   resolver now also apply to the requests that fetch the access token from the authority (by default
   `login.microsoftonline.com`), not only to the Graph API requests. A configured CA file has to cover both hosts.
@@ -203,8 +214,98 @@
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
 
+* **The audit log download contains the realms that both audit policies grant** — The audit log download
+  (`GET /audit/<file>.csv`) contains the entries of the realms that both the `auditlog_download` and the `auditlog`
+  policies of an administrator grant, plus the entries the administrator caused. An administrator with
+  `auditlog_download` but no matching `auditlog` policy downloads only their own entries; with `auditlog` for every
+  realm and `auditlog_download` for some realms, the download contains these realms. A `realm` parameter filters the
+  download within the granted realms. Nothing changes without admin policies or for administrators with both actions
+  for the same realms. Grant `auditlog_download` together with an `auditlog` policy for the same realms.
+
+* **`hide_tokeninfo` and `hide_audit_columns` with realms, resolvers or users apply in every list** — Such a policy
+  hides its token info keys for the tokens whose owner or token realm it names and its audit columns for the entries
+  of the users and realms it names, also in the token list, the container list and the audit log without a filter.
+  Administrators with such a policy see fewer token info entries and audit columns in these lists. Policies without
+  realm, resolver and user work as before.
+
+* **Policies that name users apply to tokens and containers in more than one realm.** Such a policy matches the
+  owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
+  matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
+  The user still matches only together with the realm of the user. Admin policies of this kind allow their actions
+  on more tokens and containers. The `change_pin_on_first_use` and `change_pin_every` policies of this kind apply to
+  more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
+  case-insensitive names.
+
+* **Tokens from a container template are checked with their own user and realm** — When a container is created from
+  a template, the enrollment policies are checked for each token as for a single token enrollment: against the user
+  and the realm the token gets, not against the user of the container. A token without *Assign to user* gets neither a
+  user nor a realm, so an administrator whose admin policies are restricted to certain realms can no longer create it
+  from a template. As before, such a token is skipped and the reason is only written to the log: the container is
+  created with the remaining tokens. **Review the container templates your realm administrators use** and select
+  *Assign to user* for the tokens they need to create.
+
+* **Container conditions of PIN change and resync policies are checked against the container of the token.** The
+  policies `change_pin_on_first_use`, `change_pin_every`, `change_pin_via_validate` and `resync_via_multichallenge`
+  now compare a `container` or `container_info` condition with the container that holds the token. Before 3.14.1,
+  these conditions never got container data, so the *Handle Missing Data* option alone decided whether the policy
+  applied. For a token without a container, the option still decides. **Check these policies for container
+  conditions.** For example, a policy with *Condition is true* no longer applies to tokens in a container that does
+  not match the condition. A policy with *Condition is false* now applies to tokens in a container that matches the
+  condition.
+
+* **Policies with `check_all_resolvers` match only users contained in one of their resolvers.** Such a policy now
+  applies to a user only if the user was found in one of the resolvers it names or is also contained in one of them as
+  a lower-priority resolver of the realm, as documented. To check this, privacyIDEA asks the named resolvers that are
+  ranked below the user's resolver in the realm. If one of them can not be reached, the request fails with an error,
+  and the log names the policy and the resolver.
+
 * **For Oracle operators:** The [Oracle section of the database documentation](https://privacyidea.readthedocs.io/en/stable/faq/mysqldb.html#oracledb)
   describes the columns of `user_lock_state` and `metric_aggregate` that store `chr(0)` instead of an empty string.
+
+* **An authentication answered with an error is audited as a failure** — An authentication that succeeds or
+  triggers a challenge but is then answered with an error, e.g. because a policy refuses it, is now recorded in the
+  audit log with `success` false and `authentication` `REJECT`. The authentication that starts an enrollment via
+  multichallenge is recorded as a challenge. The `auth_max_success` and `auth_max_fail` policies, which count the
+  requests to `/validate/check` and `/auth`, count these requests accordingly: as a failed authentication, and the
+  enrollment start not as a successful one.
+
+* **An authentication answered with an error is logged as `POST_AUTHENTICATION_FAIL`.** An authentication that
+  succeeds or triggers a challenge can still get an error response, for example because of policies with conflicting
+  actions. The authentication log records such a request as `POST_AUTHENTICATION_FAIL`, with the error message. With
+  3.14 it was logged as `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED`. A conditional-access policy that counts
+  `LOGIN_SUCCESS` or `CHALLENGE_TRIGGERED` no longer counts these requests. This includes policies created from the
+  *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
+  `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
+
+* **The PIN change via `/validate/check`** (policy `change_pin_via_validate`) has the checks of any other
+  authentication. Each of its two challenges can be answered once, and only while it is valid. The token has to be
+  usable, that is not disabled, below its fail counter and within its validity period. The authorization policies,
+  for example `tokentype`, have to allow the token. A confirmation that does not match the new PIN counts as a failed
+  authentication and ends the PIN change. The PIN change starts again with the next login.
+  The authentication that starts the PIN change does not count for the authentication counters of the token
+  (`count_auth`, `count_auth_success`). The confirmation of the new PIN counts it. In the authentication log, the
+  steps of a PIN change are `CHALLENGE_TRIGGERED`, `CHALLENGE_CONTINUED` and `LOGIN_SUCCESS`. A refused answer has
+  the event type and the reason of its failure, for example `CHALLENGE_ANSWERED_FAIL` with
+  `CHALLENGE_WRONG_RESPONSE` for a confirmation that does not match.
+
+* **The PIN policies check the PIN that is stored.** `otp_pin_minlength`, `otp_pin_maxlength` and `otp_pin_contents`
+  check `pin` for `/token/init`, `/token/assign` and container templates, and `otppin` for `/token/setpin`. A PIN
+  sent together with `rollover` or `verify` is checked as well, and the token type-specific PIN policies apply
+  whatever the case of the `type` parameter. Requests whose PIN does not match the policies are refused.
+
+* **Simple pass tokens under `otppin=none`.** The authentication policy `otppin=none` drops the PIN in front of an OTP
+  value. A simple pass (SPASS) token has no OTP value, its PIN is the whole password, so its PIN is checked as usual.
+  SPASS tokens with `otppin=userstore` work as before.
+
+* **`POST /container/init` with a template returns the PIN of the template only.** A PIN the server generates (policy
+  `otp_pin_random`) is not part of the `init_params` of a token, as with `/token/init`.
+
+* **The base PIN handler does not write the PIN to the log.** `privacyidea.lib.pinhandling.base.PinHandler`
+  logs the token and the user that a random PIN (policy `otp_pin_random`) was set for. To give random PINs
+  to users, use a PIN handler class that sends them (policy `pinhandling`).
+
+* **PIN handler classes get the token type in lower case.** `PinHandler.send` gets the type as privacyIDEA
+  stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
 
 ## Update from 3.13 to 3.14
 

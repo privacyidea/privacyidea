@@ -107,6 +107,52 @@ describe("NewTokengroupComponent", () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
+  describe("identifier field", () => {
+    const identifierInput = () => fixture.nativeElement.querySelector("input") as HTMLInputElement;
+    const type = async (value: string) => {
+      identifierInput().value = value;
+      identifierInput().dispatchEvent(new Event("input"));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it("reports required, then the invalid characters, once the field is touched", async () => {
+      await type("bad name");
+      expect(
+        component.tokengroupForm
+          .groupname()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["pattern"]);
+      identifierInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain("invalid characters");
+
+      await type("");
+      identifierInput().dispatchEvent(new Event("blur"));
+      fixture.detectChanges();
+      expect(
+        component.tokengroupForm
+          .groupname()
+          .errors()
+          .map((e) => e.kind)
+      ).toEqual(["required"]);
+      expect(fixture.nativeElement.textContent).toContain("is required");
+    });
+
+    it("marks the form dirty when the clear button empties the field", async () => {
+      await type("name");
+      component.tokengroupForm().reset();
+      expect(component.hasChanges).toBe(false);
+      const clear = identifierInput().closest("app-clearable-input")!.querySelector("button") as HTMLButtonElement;
+      clear.click();
+      fixture.detectChanges();
+      expect(component.tokengroupModel().groupname).toBe("");
+      expect(component.hasChanges).toBe(true);
+    });
+  });
+
   describe("onCancel", () => {
     let mockSaveExitDialogRef: { afterClosed: jest.Mock };
 

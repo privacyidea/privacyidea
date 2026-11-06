@@ -58,26 +58,3 @@
     min-width: 0;
   }
 }
-
-.action-value-input,
-.action-value-textarea {
-  background-color: var(--mat-sys-surface);
-  border: 1px solid var(--mat-sys-outline);
-  border-radius: var(--border-radius);
-
-  box-sizing: border-box;
-  color: var(--mat-sys-on-surface);
-  font-family: inherit;
-  width: 100%;
-}
-
-.action-value-input:focus-visible,
-.action-value-textarea:focus-visible {
-  outline: 2px solid var(--mat-sys-primary);
-  outline-offset: 2px;
-}
-
-.action-value-textarea {
-  min-height: 40px;
-  resize: vertical;
-}

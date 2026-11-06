@@ -20,12 +20,17 @@
 import { Component, computed, effect, inject, signal } from "@angular/core";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-import { form, FormField, pattern, validate } from "@angular/forms/signals";
+import { form, FormField, validate } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogAction } from "@models/dialog";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
+
+/** Error kind of a name that equals the name of the policy being copied. */
+const NOT_CHANGED = "notChanged";
 
 @Component({
   selector: "app-copy-policy-dialog",
@@ -39,15 +44,18 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
 
   readonly nameSignal = signal(this.data ?? "");
   readonly nameField = form(this.nameSignal, (f) => {
-    validate(f, (ctx) => (!ctx.value() ? [{ kind: "required" }] : []));
-    // The characters the name field of the edit page allows.
-    pattern(f, /^[a-zA-Z0-9._-]*$/);
-    validate(f, (ctx) => (ctx.value() === this.data ? [{ kind: "notChanged" }] : []));
+    // The rules the name field of the edit page applies.
+    identifierName(f);
+    validate(f, (ctx) => (ctx.value() === this.data ? [{ kind: NOT_CHANGED }] : []));
     // The unchanged original name is reported as "notChanged" only.
     validate(f, (ctx) =>
-      ctx.value() !== this.data && this.policyService.isPolicyNameTaken(ctx.value()) ? [{ kind: "nameTaken" }] : []
+      ctx.value() !== this.data && this.policyService.isPolicyNameTaken(ctx.value()) ? [{ kind: ERR.nameTaken }] : []
     );
   });
+
+  protected readonly ERR = ERR;
+  protected readonly NOT_CHANGED = NOT_CHANGED;
+  protected readonly hasError = hasError;
 
   readonly isInvalid = computed(() => this.nameField().errors().length > 0);
   // Set once the name has differed from the original, so that an error is shown from then on even when the

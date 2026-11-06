@@ -94,6 +94,12 @@ class LibPolicyTestCase(MyTestCase):
         r = auth_otppin(self.fake_check_otp, None, "some pin", options=options, user=my_user)
         self.assertFalse(r)
 
+        # The PIN of a simple pass token is its whole credential: NONE does not apply, the PIN is checked as usual
+        spass_token = init_token({"type": "spass", "pin": "FAKE"})
+        self.assertFalse(auth_otppin(self.fake_check_otp, spass_token, "", options=options, user=None))
+        self.assertTrue(auth_otppin(self.fake_check_otp, spass_token, "FAKE", options=options, user=None))
+        spass_token.delete_token()
+
         delete_policy("pol1")
         set_policy(name="pol1", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}={ACTIONVALUE.TOKENPIN}")
         fake_g = FakeFlaskG()

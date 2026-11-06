@@ -81,16 +81,34 @@ $input-focus-outline: theme.$focus-outline;
   margin-bottom: 1.2em;
 }
 
-.checkbox-hint {
+.checkbox-hint,
+.checkbox-error {
   display: block;
   font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
   font-weight: var(--mat-form-field-subscript-text-weight, var(--mat-sys-body-small-weight));
-  color: var(--mat-sys-primary);
   padding-left: 16px;
   padding-right: 16px;
   padding-top: 4px;
   line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
   letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
+}
+
+.checkbox-hint {
+  color: var(--mat-sys-primary);
+}
+
+// The counterpart of mat-error for text outside a form field, e.g. below a checkbox.
+.checkbox-error {
+  color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+}
+
+// Places the text directly below the label of the mat-checkbox above it: the label starts after the state layer of
+// the checkbox and the 4px padding of the label.
+.checkbox-hint.below-checkbox,
+.checkbox-error.below-checkbox {
+  margin: 0;
+  padding-left: calc(var(--mat-checkbox-state-layer-size, 40px) + 4px);
+  padding-top: 0;
 }
 
 .user-pin-container {
@@ -104,23 +122,6 @@ $input-focus-outline: theme.$focus-outline;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-}
-
-@mixin action-tab-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-family: inherit;
-  font-size: 1rem;
-  resize: vertical;
-  width: 100%;
-
-  &:focus {
-    border-bottom-color: var(--mat-sys-primary);
-    outline: none;
-  }
 }
 
 .input-width-xs {
@@ -146,6 +147,23 @@ $input-focus-outline: theme.$focus-outline;
 .input-width-xl {
   width: 100%;
   max-width: var(--input-width-xl);
+}
+
+// A form field with dynamic subscript sizing that holds the space of one message line from the start, so an error of one
+// line appears without moving anything below the field.
+.reserve-one-message-line .mat-mdc-form-field-subscript-wrapper {
+  min-height: 20px;
+}
+
+// A form field with dynamic subscript sizing that holds the space of two message lines from the start, so a hint or error
+// of up to two lines appears without moving anything below the field. The field does not add its message width to the
+// width of its container, so a long message wraps instead of widening a dialog.
+.reserve-two-message-lines {
+  contain: inline-size;
+
+  .mat-mdc-form-field-subscript-wrapper {
+    min-height: 36px;
+  }
 }
 
 .input-width-xxl {

@@ -253,6 +253,7 @@ class CertificateTokenClass(TokenClass):
     """
     using_pin = False
     hKeyRequired = False
+    verifies_login = False
 
     owned_tokeninfo_keys = frozenset({"CA", "certificate", "pkcs12", "pkcs12_password", "privatekey", REQUEST_ID})
 
@@ -607,11 +608,13 @@ class CertificateTokenClass(TokenClass):
         key = serialization.load_pem_private_key(privatekey.encode(), None)
         # Get the token PIN. If it exists we use it as the password for the
         # encrypted pkcs12 container. Otherwise, we create a random password.
+        # An empty PIN is no PIN: a container can not be encrypted with an empty password.
         token_pin = self.token.get_pin()
-        if token_pin == -1:
-            passphrase = secrets.token_urlsafe(12)
-        else:
+        uses_token_pin = token_pin not in (-1, "")
+        if uses_token_pin:
             passphrase = token_pin
+        else:
+            passphrase = secrets.token_urlsafe(12)
         # See https://cryptography.io/en/latest/hazmat/primitives/asymmetric/serialization/#cryptography.hazmat.primitives.serialization.pkcs12.serialize_key_and_certificates
         # for more details on PKCS12 export
         p12 = pkcs12.serialize_key_and_certificates(
@@ -619,7 +622,7 @@ class CertificateTokenClass(TokenClass):
             BestAvailableEncryption(passphrase.encode()))
         # If we used the token PIN to encrypt the pkcs12 container, we do not
         # return it to the caller
-        if token_pin != -1:
+        if uses_token_pin:
             passphrase = None
         return passphrase, p12
 

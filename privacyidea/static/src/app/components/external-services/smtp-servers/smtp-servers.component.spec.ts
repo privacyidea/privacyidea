@@ -148,9 +148,10 @@ describe("SmtpServersComponent", () => {
   });
 
   it("should navigate to edit page when editing a server", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const server = smtpServiceMock.smtpServers()[0];
     component.onEditServer(server);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS, server.identifier]);
   });
 
   it("should delete server after confirmation", async () => {

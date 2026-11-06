@@ -62,10 +62,12 @@ Configuration via environment variables (all optional):
 import datetime
 import os
 import re
+import signal
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from types import FrameType
 from typing import Callable
 
 
@@ -260,20 +262,44 @@ TASKS = [
 # legitimately needs longer.
 TASK_TIMEOUT = _int("PI_CRON_TASK_TIMEOUT", 3600)
 
+# Set by the SIGTERM handler: whether a stop was requested, and whether a task is running right now.
+_stop_requested = False
+_task_running = False
+
+
+def _on_sigterm(signum: int, frame: FrameType | None) -> None:
+    """docker stop sends SIGTERM to this process, which is PID 1 of the container. The kernel applies no default
+    action to PID 1, so without this handler the signal is ignored and the container is only killed once the stop
+    timeout runs out. Stop at once while waiting for the next minute; a running task is allowed to finish first,
+    within the stop timeout (stop_grace_period of pi-cron in compose.yaml), after which Docker kills the container."""
+    global _stop_requested
+    _stop_requested = True
+    if _task_running:
+        print("[pi-cron] SIGTERM received, stopping after the running task (killed if it outlasts the stop timeout)",
+              flush=True)
+    else:
+        print("[pi-cron] SIGTERM received, stopping", flush=True)
+        sys.exit(0)
+
 
 def run(cmd: list[str]) -> None:
+    global _task_running
     print(f"[pi-cron] {' '.join(cmd)}", flush=True)
+    _task_running = True
     try:
         result = subprocess.run(cmd, timeout=TASK_TIMEOUT)
     except subprocess.TimeoutExpired:
         print(f"[pi-cron] WARNING: {' '.join(cmd)} timed out after {TASK_TIMEOUT}s; killed",
               file=sys.stderr, flush=True)
         return
+    finally:
+        _task_running = False
     if result.returncode != 0:
         print(f"[pi-cron] WARNING: exited with code {result.returncode}", file=sys.stderr, flush=True)
 
 
 def main() -> None:
+    signal.signal(signal.SIGTERM, _on_sigterm)
     print("[pi-cron] Starting. Scheduled tasks:", flush=True)
     name_width = max(len(task.name) for task in TASKS)
     for task in TASKS:
@@ -292,6 +318,8 @@ def main() -> None:
             for task in TASKS:
                 if task.enabled and task.schedule.due(now):
                     run(task.build())
+                    if _stop_requested:
+                        sys.exit(0)
 
         # Sleep until just past the start of the next minute.
         time.sleep(61 - datetime.datetime.now(datetime.timezone.utc).second)
