@@ -39,13 +39,19 @@ class TestMigration35815effd77c(MigrationTestBase):
         return self._fetch_scalar(engine, f"SELECT COUNT(*) FROM {table} WHERE {quote_identifier(column)} = :value",
                                   {"value": value})
 
-    def _deactivate_the_admin_policies(self, engine: Engine) -> None:
-        """Deactivate the admin policies of the seed, so that the test decides which admin policies are active."""
-        statement = (f"UPDATE policy SET {quote_identifier('active')} = :active "
-                     f"WHERE {quote_identifier('scope')} = :scope")
+    def _deactivate_the_seed_policies(self, engine: Engine) -> None:
+        """Deactivate the policies of the seed, so that the test decides which policies are active."""
         with engine.connect() as connection:
-            connection.execute(text(statement), {"active": False, "scope": "admin"})
+            connection.execute(text(f"UPDATE policy SET {quote_identifier('active')} = :active"), {"active": False})
             connection.commit()
+
+    @staticmethod
+    def _printed_names(output: str, before: str, after: str) -> set[str]:
+        """The policy names that the upgrade printed between *before* and *after* on one line."""
+        for line in output.splitlines():
+            if before in line:
+                return set(line.split(before, 1)[1].split(after, 1)[0].split(", "))
+        return set()
 
     @staticmethod
     def _admin_rights(admin_user: str) -> list[str]:
@@ -82,9 +88,10 @@ class TestMigration35815effd77c(MigrationTestBase):
             assert self._action(engine, 901) == "max_token_per_user=3, challenge_text=Hello\\, world"
             assert self._action(engine, 902) == "enrollHOTP"
             assert self._action(engine, 903) == "max_token_per_user=2,otp_pin_minlength=4"
-            output = capsys.readouterr().out
-            assert "from the policies u2f_admin, u2f_enroll." in output
-            assert "untouched" not in output
+            changed_names = self._printed_names(capsys.readouterr().out, "from the policies ", ".")
+            # A seed can hold policies with u2f actions too
+            assert {"u2f_admin", "u2f_enroll"} <= changed_names, changed_names
+            assert "untouched" not in changed_names
         finally:
             engine.dispose()
 
@@ -97,6 +104,7 @@ class TestMigration35815effd77c(MigrationTestBase):
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
+            self._deactivate_the_seed_policies(engine)
             self._insert_rows(engine, "policy", [
                 {"id": 904, "name": "u2f_only_admin", "scope": "admin", "active": True, "priority": 1,
                  "action": "enrollU2F", "adminuser": "helpdesk"},
@@ -126,8 +134,8 @@ class TestMigration35815effd77c(MigrationTestBase):
             assert self._count(engine, "description", "object_id", 904) == 0
             assert self._action(engine, 908) == "enrollHOTP"
             output = capsys.readouterr().out
-            assert ("Deleted the policies u2f_only_admin, u2f_only_authorization, u2f_only_enrollment, "
-                    "u2f_only_user_inactive.") in output
+            assert self._printed_names(output, "Deleted the policies ", ". ") == {
+                "u2f_only_admin", "u2f_only_authorization", "u2f_only_enrollment", "u2f_only_user_inactive"}
             assert "WARNING" not in output
         finally:
             engine.dispose()
@@ -140,7 +148,7 @@ class TestMigration35815effd77c(MigrationTestBase):
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
-            self._deactivate_the_admin_policies(engine)
+            self._deactivate_the_seed_policies(engine)
             self._insert_rows(engine, "policy", [
                 {"id": 911, "name": "helpdesk_u2f", "scope": "admin", "active": True, "priority": 1,
                  "action": "enrollU2F", "adminuser": "helpdesk"},
@@ -163,8 +171,8 @@ class TestMigration35815effd77c(MigrationTestBase):
             assert self._count(engine, "policy", "id", 914) == 0
             assert self._action(engine, 915) == "enrollHOTP"
             output = capsys.readouterr().out
-            assert "WARNING: The policies helpdesk_u2f, other_u2f only hold policy actions" in output
-            assert "Deleted the policies u2f_user." in output
+            assert self._printed_names(output, "WARNING: The policies ", " only hold") == {"helpdesk_u2f", "other_u2f"}
+            assert self._printed_names(output, "Deleted the policies ", ". ") == {"u2f_user"}
         finally:
             engine.dispose()
 
@@ -176,6 +184,7 @@ class TestMigration35815effd77c(MigrationTestBase):
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
+            self._deactivate_the_seed_policies(engine)
             self._insert_rows(engine, "policy", [
                 {"id": 921, "name": "helpdesk_u2f", "scope": "admin", "active": True, "priority": 1,
                  "action": "enrollU2F", "adminuser": "helpdesk"},
@@ -200,7 +209,7 @@ class TestMigration35815effd77c(MigrationTestBase):
         engine = self._engine()
         try:
             self._load_seed_and_upgrade_to_parent(engine)
-            self._deactivate_the_admin_policies(engine)
+            self._deactivate_the_seed_policies(engine)
             self._insert_rows(engine, "policy", [
                 {"id": 931, "name": "helpdesk_u2f", "scope": "admin", "active": True, "priority": 1,
                  "action": "enrollU2F", "adminuser": "helpdesk"},
