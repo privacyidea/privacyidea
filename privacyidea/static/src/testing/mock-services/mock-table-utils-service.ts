@@ -28,7 +28,6 @@ export class MockTableUtilsService implements TableUtilsServiceInterface {
   emptyDataSource = jest.fn().mockImplementation(() => new MatTableDataSource<TokenApplication>([]));
   toggleKeywordInFilter = jest.fn();
   public toggleBooleanInFilter = jest.fn();
-  isLink = jest.fn().mockReturnValue(false);
   getClassForColumn = jest.fn();
   getTooltipForColumn = jest.fn();
   getDisplayText = jest.fn();
