@@ -38,6 +38,7 @@ import {
 import { Subject } from "rxjs";
 import { PrivacyideaServersComponent } from "./privacyidea-servers.component";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("PrivacyideaServersComponent", () => {
   let component: PrivacyideaServersComponent;
@@ -225,5 +226,11 @@ describe("PrivacyideaServersComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -38,6 +38,7 @@ import {
 import { Subject } from "rxjs";
 import { TokengroupsComponent } from "./tokengroups.component";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;
@@ -217,5 +218,11 @@ describe("TokengroupsComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

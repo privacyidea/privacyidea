@@ -39,6 +39,7 @@ import {
 } from "@testing/mock-services";
 import { of } from "rxjs";
 import { MachineDetailsComponent } from "./machine-details.component";
+import { axe } from "@testing/axe";
 
 describe("MachineDetailsComponent", () => {
   let component: MachineDetailsComponent;
@@ -311,5 +312,11 @@ describe("MachineDetailsComponent", () => {
     fixture.detectChanges();
     const title: HTMLElement = fixture.nativeElement.querySelector(".machine-title .h3-color");
     expect(title.textContent?.trim()).toBe("a.example, b.example");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

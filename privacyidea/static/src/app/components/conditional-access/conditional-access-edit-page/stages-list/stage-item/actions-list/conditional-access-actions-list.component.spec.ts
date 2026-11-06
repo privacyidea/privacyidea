@@ -32,6 +32,7 @@ import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-
 import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
 import { ConditionalAccessActionItemComponent } from "./action-item/conditional-access-action-item.component";
 import { ConditionalAccessActionsListComponent } from "./conditional-access-actions-list.component";
+import { axe } from "@testing/axe";
 
 describe("ConditionalAccessActionsListComponent", () => {
   let component: ConditionalAccessActionsListComponent;
@@ -209,5 +210,11 @@ describe("ConditionalAccessActionsListComponent", () => {
       expect(warning.textContent).toContain("LOCK_USER");
       expect(warning.textContent).toContain("PERMANENT_LOCK_USER");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

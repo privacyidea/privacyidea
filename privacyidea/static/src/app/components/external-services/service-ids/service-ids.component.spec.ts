@@ -38,6 +38,7 @@ import {
 } from "@testing/mock-services";
 import { Subject } from "rxjs";
 import { setRights, toolbarAction, toolbarButton } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
@@ -220,5 +221,11 @@ describe("ServiceIdsComponent", () => {
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { PolicyActionSearchComponent } from "./policy-action-search.component";
+import { axe } from "@testing/axe";
 
 describe("PolicyActionSearchComponent", () => {
   let component: PolicyActionSearchComponent;
@@ -96,5 +97,11 @@ describe("PolicyActionSearchComponent", () => {
     expect(component.actionFilter()).toBe("");
     expect(input.value).toBe("");
     expect(fixture.debugElement.query(By.css("app-clear-button"))).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

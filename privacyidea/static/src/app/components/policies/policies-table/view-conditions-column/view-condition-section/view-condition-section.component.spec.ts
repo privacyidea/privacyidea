@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { ViewConditionSectionComponent } from "./view-condition-section.component";
+import { axe } from "@testing/axe";
 
 describe("ViewConditionSectionComponent", () => {
   let component: ViewConditionSectionComponent;
@@ -97,5 +98,11 @@ describe("ViewConditionSectionComponent", () => {
       const container = fixture.debugElement.query(By.css(".conditions-grid-container"));
       expect(container).toBeTruthy();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

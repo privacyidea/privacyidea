@@ -25,6 +25,7 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
 import { ConditionalAccessConditionsComponent } from "./conditional-access-conditions.component";
+import { axe } from "@testing/axe";
 
 const CONDITION_TYPE_META: Record<string, ConditionTypeMeta> = {
   USER_REALM: {
@@ -461,5 +462,11 @@ describe("ConditionalAccessConditionsComponent", () => {
     expect(component.hintFor(endpointRow)).toBe("Restrict the endpoints this policy is applied to.");
     // A path is what an admin recognizes an endpoint by, so it is not relabelled.
     expect(component.valueLabel(endpointRow, "/validate/check")).toBe("/validate/check");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

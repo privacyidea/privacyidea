@@ -29,6 +29,7 @@ import {
   YUBICO_SECRET,
   YUBICO_URL
 } from "@constants/token.constants";
+import { axe } from "@testing/axe";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
@@ -756,5 +757,11 @@ describe("TokenTypeConfigComponent", () => {
         expect(query("app-questionnaire-config").querySelectorAll("mat-error").length).toBe(1);
       });
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

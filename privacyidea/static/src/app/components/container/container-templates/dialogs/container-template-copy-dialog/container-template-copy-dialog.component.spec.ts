@@ -32,6 +32,7 @@ import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ContainerTemplateCopyDialogComponent } from "./container-template-copy-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTemplateCopyDialogComponent", () => {
   let component: ContainerTemplateCopyDialogComponent;
@@ -232,5 +233,11 @@ describe("ContainerTemplateCopyDialogComponent", () => {
     const spy = jest.spyOn(component, "onAction");
     component.onSave();
     expect(spy).toHaveBeenCalledWith("copy");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

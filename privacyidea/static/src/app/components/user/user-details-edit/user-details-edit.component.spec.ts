@@ -23,6 +23,7 @@ import { ResolverService } from "@services/resolver/resolver.service";
 import { EditUserData, UserData } from "@services/user/user.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { UserDetailsEditComponent } from "./user-details-edit.component";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsEditComponent", () => {
   let component: UserDetailsEditComponent;
@@ -194,5 +195,11 @@ describe("UserDetailsEditComponent", () => {
     type("mobile", "12345");
     expect(component["newUserData"]()["mobile"]).toBe("12345");
     expect(emitted.at(-1)).toEqual({ username: "testuser", email: "test@example.com", mobile: "12345" });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

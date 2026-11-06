@@ -22,6 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MachineService } from "@services/machine/machine.service";
 import { TokenApplicationsActionsComponent } from "./token-applications-actions.component";
 import { MockMachineService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 describe("TokenApplicationsActionsComponent", () => {
   let component: TokenApplicationsActionsComponent;
@@ -67,5 +68,11 @@ describe("TokenApplicationsActionsComponent", () => {
 
     expect(iconSpy).toHaveBeenCalledWith(keyword);
     expect(iconName).toBe("filter_alt");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

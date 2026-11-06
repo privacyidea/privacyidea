@@ -48,6 +48,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { toolbarActions } from "@testing/toolbar-actions";
+import { axe } from "@testing/axe";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -937,5 +938,11 @@ describe("RealmTableComponent", () => {
 
       expect(component.selectedNode()).toBe("node-2");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
