@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { provideHttpClient } from "@angular/common/http";
-import { OutputEmitterRef } from "@angular/core";
-import { signal } from "@angular/core";
+import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
+import { OutputEmitterRef, ResourceStatus, signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { MatSelect } from "@angular/material/select";
 import { AuthService } from "@services/auth/auth.service";
-import { EventActions, EventService } from "@services/event/event.service";
+import { CONFIG_ADMIN_ERROR_CODE, EventActions, EventService } from "@services/event/event.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventActionOptionValues, EventActionTabComponent } from "./event-action-tab.component";
@@ -140,6 +139,106 @@ describe("EventActionTabComponent", () => {
     component.selectedOptions.set({ opt1: true });
     fixture.detectChanges();
     expect(component.checkOptionVisibility("opt2")).toBe(true);
+  });
+
+  describe("Script handler without scripts", () => {
+    let eventService: MockEventService;
+
+    beforeEach(() => {
+      eventService = TestBed.inject(EventService) as unknown as MockEventService;
+      eventService.selectedHandlerModule.set("Script");
+      eventService.moduleActions.set({});
+      fixture.detectChanges();
+    });
+
+    it("shows the hint and the reload button instead of the action dropdown", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(component.noScriptsFound()).toBe(true);
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.textContent).toContain("No scripts found.");
+      expect(element.textContent).toContain("/etc/privacyidea/scripts");
+      expect(element.textContent).toContain("PI_SCRIPT_HANDLER_DIRECTORY");
+    });
+
+    it("reloads the actions when the reload button is clicked", () => {
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector("button");
+      button.click();
+      expect(eventService.moduleActionsResource.reload).toHaveBeenCalled();
+    });
+
+    it("keeps the hint while the actions reload, but hides it during the first load", () => {
+      const status = eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>;
+      status.set("reloading");
+      expect(component.noScriptsFound()).toBe(true);
+      status.set("loading");
+      expect(component.noScriptsFound()).toBe(false);
+    });
+
+    it.each<ResourceStatus>(["error", "idle"])(
+      "shows the action dropdown instead of the hint if the status of the actions is %s",
+      (resourceStatus) => {
+        const status = eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>;
+        status.set(resourceStatus);
+        fixture.detectChanges();
+        expect(component.noScriptsFound()).toBe(false);
+        expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+        expect(fixture.nativeElement.textContent).not.toContain("No scripts found.");
+      }
+    );
+
+    describe("failed request for the actions", () => {
+      const failWithErrorCode = (errorCode: number) => {
+        (eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>).set("error");
+        eventService.moduleActionsResource.error.set(
+          new HttpErrorResponse({
+            status: 400,
+            error: { result: { status: false, error: { code: errorCode, message: `ERR${errorCode}: failed` } } }
+          })
+        );
+        fixture.detectChanges();
+      };
+
+      it("shows the hint if the server cannot open the script directory", () => {
+        failWithErrorCode(CONFIG_ADMIN_ERROR_CODE);
+        expect(component.noScriptsFound()).toBe(true);
+        expect(fixture.nativeElement.querySelector("mat-select")).toBeNull();
+        expect(fixture.nativeElement.textContent).toContain("No scripts found.");
+      });
+
+      it("keeps the hint while the actions reload after the server could not open the script directory", () => {
+        failWithErrorCode(CONFIG_ADMIN_ERROR_CODE);
+        (eventService.moduleActionsResource.status as WritableSignal<ResourceStatus>).set("reloading");
+        expect(component.noScriptsFound()).toBe(true);
+      });
+
+      it("shows the action dropdown for any other error code", () => {
+        failWithErrorCode(303);
+        expect(component.noScriptsFound()).toBe(false);
+        expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+        expect(fixture.nativeElement.textContent).not.toContain("No scripts found.");
+      });
+
+      it("shows the action dropdown for the error code of the script directory from another handler module", () => {
+        eventService.selectedHandlerModule.set("UserNotification");
+        failWithErrorCode(CONFIG_ADMIN_ERROR_CODE);
+        expect(component.noScriptsFound()).toBe(false);
+        expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+      });
+    });
+
+    it("shows the action dropdown when the script directory contains scripts", () => {
+      eventService.moduleActions.set({ "backup.sh": { background: { type: "str", required: true } } });
+      fixture.detectChanges();
+      expect(component.noScriptsFound()).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+    });
+
+    it("shows the action dropdown for other handler modules", () => {
+      eventService.selectedHandlerModule.set("UserNotification");
+      fixture.detectChanges();
+      expect(component.noScriptsFound()).toBe(false);
+      expect(fixture.nativeElement.querySelector("mat-select")).not.toBeNull();
+    });
   });
 
   describe("action select", () => {

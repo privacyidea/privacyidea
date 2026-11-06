@@ -82,7 +82,7 @@ export class MockEventService implements EventServiceInterface {
     MockPiResponse.fromValue<EventActions>({})
   );
 
-  moduleActions: Signal<EventActions> = computed(() => ({
+  moduleActions = signal<EventActions>({
     actionA: {
       opt1: { type: "bool", desc: "desc1", required: true },
       opt2: { type: "int", desc: "desc2", visibleIf: "opt1" },
@@ -95,7 +95,7 @@ export class MockEventService implements EventServiceInterface {
       key: { type: "str", desc: "The key to add the token info under." },
       value: { type: "str", desc: "The value to add to the token info." }
     }
-  }));
+  });
 
   readonly moduleConditionsResource = new MockHttpResourceRef<PiResponse<Record<string, EventCondition>>>(
     MockPiResponse.fromValue<Record<string, EventCondition>>({})
