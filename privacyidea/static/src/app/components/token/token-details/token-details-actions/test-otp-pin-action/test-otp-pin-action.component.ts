@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DestroyRef, effect, inject, linkedSignal, signal, untracked } from "@angular/core";
+import { Component, computed, DestroyRef, effect, inject, input, linkedSignal, signal, untracked } from "@angular/core";
 import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -36,6 +36,26 @@ import { catchError, filter, switchMap, take, timeout } from "rxjs/operators";
 
 export const CONFIRMATION_POLLING_INTERVAL_MS = 1000;
 export const CONFIRMATION_POLLING_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Token types that the server can not check by the OTP value alone, so "Verify OTP Value" never gives a result for
+ * them. A Simple Pass token has no OTP value and accepts every value. Push, questionnaire, indexed secret, 4 eyes,
+ * certificate and SSH key tokens have no OTP check of their own. OCRA and TiQR tokens need the challenge. U2F tokens
+ * are deprecated and refuse every authentication. Challenge-response tokens are tested with "Test without PIN".
+ */
+export const TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK: ReadonlySet<string> = new Set([
+  "spass",
+  "push",
+  "question",
+  "indexedsecret",
+  "4eyes",
+  "certificate",
+  "sshkey",
+  "ocra",
+  "tiqr",
+  "u2f",
+  "deprecated"
+]);
 
 /** A challenge of the token that the admin can answer in the test section. */
 export interface OpenChallenge {
@@ -63,6 +83,8 @@ export class TestOtpPinActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  tokenType = input<string>("");
+  showVerifyOtpValue = computed(() => !TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK.has(this.tokenType()));
   hide = signal(true);
   otpOrPinToTest = signal("");
   otpOrPinForm = form(this.otpOrPinToTest);

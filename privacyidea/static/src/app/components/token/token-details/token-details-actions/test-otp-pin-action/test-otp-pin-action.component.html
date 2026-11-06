@@ -88,13 +88,15 @@
       <mat-icon>help_outline</mat-icon>
       <span i18n="@@token.testToken">Test Token</span>
     </button>
-    <button
-      (click)="verifyOTPValue()"
-      class="action-button-secondary button-width-l"
-      mat-stroked-button>
-      <mat-icon>help_outline</mat-icon>
-      <span i18n="@@token.verifyOtpValue">Verify OTP Value</span>
-    </button>
+    @if (showVerifyOtpValue()) {
+      <button
+        (click)="verifyOTPValue()"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>help_outline</mat-icon>
+        <span i18n="@@token.verifyOtpValue">Verify OTP Value</span>
+      </button>
+    }
     @if (authService.actionAllowed("triggerchallenge")) {
       <button
         (click)="testWithoutPin()"

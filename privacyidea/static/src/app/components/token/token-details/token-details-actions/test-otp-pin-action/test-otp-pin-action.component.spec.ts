@@ -143,21 +143,25 @@ describe("TestOtpPinActionComponent", () => {
         button.textContent?.includes("Test without PIN")
       );
 
-    it("hides the button without the triggerchallenge right", () => {
-      authService.actionAllowed.mockReturnValue(false);
+    // The rights are no signal, so the view has to be marked for the next check after the mock changes
+    const allowTriggerChallenge = (allowed: boolean): void => {
+      authService.actionAllowed.mockImplementation((action: string) => allowed && action === "triggerchallenge");
+      fixture.componentRef.changeDetectorRef.markForCheck();
       fixture.detectChanges();
+    };
+
+    it("hides the button without the triggerchallenge right", () => {
+      allowTriggerChallenge(false);
       expect(testWithoutPinButton()).toBeUndefined();
     });
 
     it("shows the button with the triggerchallenge right", () => {
-      authService.actionAllowed.mockImplementation((action: string) => action === "triggerchallenge");
-      fixture.detectChanges();
+      allowTriggerChallenge(true);
       expect(testWithoutPinButton()).toBeDefined();
     });
 
     it("triggers a challenge for the token when the button is clicked", () => {
-      authService.actionAllowed.mockImplementation((action: string) => action === "triggerchallenge");
-      fixture.detectChanges();
+      allowTriggerChallenge(true);
       tokenService.tokenSerial.set("HOTP0001");
 
       testWithoutPinButton()?.click();
@@ -194,7 +198,7 @@ describe("TestOtpPinActionComponent", () => {
   describe("open challenge", () => {
     const buttonLabels = (): string[] =>
       Array.from(fixture.nativeElement.querySelectorAll(".actions-pin-button button") as NodeListOf<HTMLElement>).map(
-        (button) => button.querySelector("span")?.textContent?.trim() ?? ""
+        (button) => button.querySelector(".mdc-button__label")?.textContent?.trim() ?? ""
       );
 
     beforeEach(() => {
@@ -325,6 +329,29 @@ describe("TestOtpPinActionComponent", () => {
   });
 
   describe("Verify OTP Value", () => {
+    const verifyOtpValueButton = (): HTMLButtonElement | undefined =>
+      Array.from(fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLButtonElement>).find((button) =>
+        button.textContent?.includes("Verify OTP Value")
+      );
+
+    it.each(["spass", "push", "question", "indexedsecret", "4eyes", "certificate", "sshkey", "ocra", "tiqr", "u2f"])(
+      "hides the button for %s tokens, which the server can not check by the OTP value alone",
+      (tokenType) => {
+        fixture.componentRef.setInput("tokenType", tokenType);
+        fixture.detectChanges();
+        expect(verifyOtpValueButton()).toBeUndefined();
+      }
+    );
+
+    it.each(["hotp", "totp", "motp", "sms", "email", "yubikey", "pw", "registration"])(
+      "shows the button for %s tokens",
+      (tokenType) => {
+        fixture.componentRef.setInput("tokenType", tokenType);
+        fixture.detectChanges();
+        expect(verifyOtpValueButton()).toBeDefined();
+      }
+    );
+
     it("notifies success if the OTP value is accepted", () => {
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
@@ -372,7 +399,7 @@ describe("TestOtpPinActionComponent", () => {
       expect(fixture.nativeElement.querySelector("input[matInput]")).toBeNull();
       const labels = Array.from(
         fixture.nativeElement.querySelectorAll(".actions-pin-button button") as NodeListOf<HTMLElement>
-      ).map((button) => button.querySelector("span")?.textContent?.trim());
+      ).map((button) => button.querySelector(".mdc-button__label")?.textContent?.trim());
       expect(labels).toEqual(["Cancel"]);
     });
 
