@@ -144,7 +144,7 @@ describe("ContainerTableSelfServiceComponent", () => {
       } as unknown as ContainerDetails)
     );
     fixture.detectChanges();
-    const handleStateClick = jest.spyOn(component, "handleStateClick").mockImplementation(() => {});
+    const handleStateClick = jest.spyOn(component, "handleStateClick").mockImplementation(() => { /* empty */ });
     const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
 
     fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
