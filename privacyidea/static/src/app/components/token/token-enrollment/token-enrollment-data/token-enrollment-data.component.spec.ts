@@ -27,6 +27,7 @@ import { MockTokenService } from "@testing/mock-services";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { Subject, of } from "rxjs";
 import { TokenEnrollmentDataComponent } from "./token-enrollment-data.component";
+import { axe } from "@testing/axe";
 
 describe("TokenEnrollmentDataComponent", () => {
   let component: TokenEnrollmentDataComponent;
@@ -385,5 +386,11 @@ describe("TokenEnrollmentDataComponent", () => {
     fixture.detectChanges();
     expect(component["qrCode"]()).toBe("push-qr-img");
     expect(component["url"]()).toBe("push://enroll-url");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

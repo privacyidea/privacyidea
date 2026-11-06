@@ -24,6 +24,7 @@ import {
   SaveAndExitDialogData,
   SaveAndExitDialogResult
 } from "./save-and-exit-dialog.component";
+import { axe } from "@testing/axe";
 
 describe("SaveAndExitDialogComponent", () => {
   let component: SaveAndExitDialogComponent;
@@ -114,5 +115,11 @@ describe("SaveAndExitDialogComponent", () => {
       component.onAction("save-exit");
       expect(spy).toHaveBeenCalledWith("save-exit");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

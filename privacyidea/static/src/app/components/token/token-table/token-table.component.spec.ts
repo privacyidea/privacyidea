@@ -52,6 +52,7 @@ import { TokenTableComponent } from "./token-table.component";
 import { TokenTableSelfServiceComponent } from "./token-table.self-service.component";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { axe } from "@testing/axe";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -144,6 +145,12 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
     expect(hrefOf("C-1")).toBe("/containers/details/C-1");
     expect(hrefOf("alice")).toBe("/users/details/alice?realm=r1");
+  });
+
+  it("passes the axe accessibility checks with a token row", async () => {
+    showsTokens();
+
+    expect(await axe(tableFixture.nativeElement)).toHaveNoViolations();
   });
 
   it("gates the table on its read right, row count and filter", () => {

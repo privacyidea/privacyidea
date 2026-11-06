@@ -22,6 +22,7 @@ import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 
 import { ReasonDetailDialog } from "../../reason-detail-dialog/reason-detail-dialog";
 import { ReasonCell } from "./reason-cell";
+import { axe } from "@testing/axe";
 
 describe("ReasonCell", () => {
   let component: ReasonCell;
@@ -187,5 +188,12 @@ describe("ReasonCell", () => {
     expect(placeholder()?.getAttribute("type")).toBe("button");
     expect(placeholder()?.hasAttribute("aria-label")).toBe(false);
     expect(placeholder()?.textContent?.trim()).toBe("see details");
+  });
+
+  it("passes the axe accessibility checks with the placeholder and the detail button", async () => {
+    fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

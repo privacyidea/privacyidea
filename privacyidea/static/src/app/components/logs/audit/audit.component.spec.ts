@@ -38,6 +38,7 @@ import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-s
 import { of } from "rxjs";
 import { AuditComponent } from "./audit.component";
 import { AuditSelfServiceComponent } from "./audit.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;
@@ -322,6 +323,16 @@ describe("AuditComponent (template rendering)", () => {
 
       expect(hrefOf(linkFixture.nativeElement, "S-1")).toBe("/tokens/details/S-1");
       expect(hrefOf(linkFixture.nativeElement, "C-1")).toBe("/containers/details/C-1");
+    });
+
+    it.each([
+      ["admin", AuditComponent],
+      ["self-service", AuditSelfServiceComponent]
+    ])("passes the %s axe accessibility checks", async (_, componentType) => {
+      const axeFixture = TestBed.createComponent<AuditComponent>(componentType);
+      axeFixture.detectChanges();
+
+      expect(await axe(axeFixture.nativeElement)).toHaveNoViolations();
     });
 
     it("links admins to the details of the user in their realm", () => {

@@ -24,6 +24,7 @@ import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.ser
 import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { WidgetPaletteComponent } from "./widget-palette.component";
+import { axe } from "@testing/axe";
 
 describe("WidgetPaletteComponent", () => {
   let fixture: ComponentFixture<WidgetPaletteComponent>;
@@ -106,5 +107,11 @@ describe("WidgetPaletteComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector("button")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

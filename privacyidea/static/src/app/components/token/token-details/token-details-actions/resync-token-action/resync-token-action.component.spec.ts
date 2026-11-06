@@ -23,6 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TokenService } from "@services/token/token.service";
 import { MockTokenService } from "@testing/mock-services";
 import { ResyncTokenActionComponent } from "./resync-token-action.component";
+import { axe } from "@testing/axe";
 
 describe("ResyncTokenActionComponent", () => {
   let component: ResyncTokenActionComponent;
@@ -81,5 +82,11 @@ describe("ResyncTokenActionComponent", () => {
     btn.click();
 
     expect(resyncSpy).toHaveBeenCalledWith("Mock serial", "otp1", "otp2");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

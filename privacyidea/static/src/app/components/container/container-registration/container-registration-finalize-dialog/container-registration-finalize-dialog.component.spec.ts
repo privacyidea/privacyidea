@@ -25,6 +25,7 @@ import { ContainerService } from "@services/container/container.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContainerService } from "@testing/mock-services";
 import { ContainerRegistrationFinalizeDialogComponent } from "./container-registration-finalize-dialog.component";
+import { axe } from "@testing/axe";
 
 const detectChangesStable = async (fixture: ComponentFixture<ContainerRegistrationFinalizeDialogComponent>) => {
   fixture.detectChanges();
@@ -124,5 +125,11 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     const button = fixture.debugElement.query(By.css("button.action-button-secondary"));
     button.triggerEventHandler("click");
     expect(mockRegisterContainer).toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
