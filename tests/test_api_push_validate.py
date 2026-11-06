@@ -27,12 +27,12 @@ from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token, enable_token)
 from privacyidea.lib.tokenclass import ClientMode, ChallengeSession
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.tokens.push_types import PushDeclineReason
+from privacyidea.lib.tokens.push_types import PushAllowPolling, PushDeclineReason
 from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
                                               DEFAULT_CHALLENGE_TEXT, PushMode, PushTokenClass)
 from privacyidea.lib.user import User
@@ -2644,6 +2644,61 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("challenge_response")
+
+    def test_24d_push_wait_without_challenge_fails_at_once(self):
+        """
+        With push_wait, a push token whose push gateway fails while polling is not allowed creates no challenge. The
+        request fails at once as CHALLENGE_TRIGGER_FAIL, and an answered challenge of another transaction of the token
+        does not answer it. The failcounter only increases with increase_failcounter_on_challenge.
+        """
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_smsgateway(self.firebase_config_name, 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                       "myFB", FB_CONFIG_VALS)
+        self.addCleanup(delete_smsgateway, self.firebase_config_name)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self.addCleanup(delete_policy, "push_config")
+        self._enroll_push_token()
+        self.addCleanup(remove_token, self.serial_push)
+        # A wait that is long enough for the test to time out if the request waited
+        set_policy("push_wait", scope=SCOPE.AUTH,
+                   action=f"{PushAction.WAIT}=600,{PushAction.ALLOW_POLLING}={PushAllowPolling.DENY}")
+        self.addCleanup(delete_policy, "push_wait")
+        other_transaction_id = "44440000444400004444"
+        answered = Challenge(self.serial_push, transaction_id=other_transaction_id, data={"type": "push"})
+        answered.set_otp_status(True)
+        answered.save()
+
+        def check() -> Response:
+            with mock.patch("privacyidea.lib.tokens.pushtoken._submit_push_message", return_value=False):
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": "selfservice", "pass": "push_pin"}):
+                    response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response.json)
+            return response
+
+        clear_log()
+        res = check()
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self.assertEqual("The PIN was correct, but the push notification was not sent.",
+                         res.json["detail"]["message"])
+        self.assertEqual(0, get_one_token(serial=self.serial_push).token.failcount)
+        self.assertListEqual([other_transaction_id],
+                             [challenge.transaction_id for challenge in get_challenges(serial=self.serial_push)])
+        # push_wait logs CHALLENGE_TRIGGERED before it waits, so the single row also shows that it did not wait
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/check')
+
+        set_policy("increase_failcounter", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "increase_failcounter")
+        res = check()
+        self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self.assertEqual(1, get_one_token(serial=self.serial_push).token.failcount)
 
     def test_25_push_answer_challenge_deleted_concurrently(self):
         """

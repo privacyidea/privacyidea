@@ -1683,7 +1683,12 @@ class PushTokenClass(TokenClass):
                 # We should only do push_wait, if we do not already have successfully authenticated tokens!
                 waiting = int(options.get(PushAction.WAIT, 20))
                 # Trigger the challenge
-                _t, message, transaction_id, _attr = self.create_challenge(options=options)
+                challenge_created, message, transaction_id, _attr = self.create_challenge(options=options)
+                if not challenge_created:
+                    # There is nothing to wait for. create_challenge recorded why, and check_token_list handles the
+                    # request like a challenge request that created no challenge.
+                    self.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_TRIGGER_FAIL
+                    return True, -1, {"message": _("The PIN was correct, but the push notification was not sent.")}
 
                 if code_to_phone_enabled:
                     # code_to_phone: return challenge immediately, no waiting.
@@ -1762,8 +1767,13 @@ class PushTokenClass(TokenClass):
         2. After confirmation, a display_code is stored in the challenge data. The client must send this
            display_code via /validate/check. The display_code is only used for synchronization, the
            security lies in the smartphone confirmation.
+
+        Without a transaction id there is no challenge to scan: the challenges of other transactions of the token
+        must not answer this one.
         """
         state = _PushChallengeState()
+        if not transaction_id:
+            return state
         challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
         for challenge in challenges:
             # Nothing is finalized on an expired challenge. The smartphone answers within the

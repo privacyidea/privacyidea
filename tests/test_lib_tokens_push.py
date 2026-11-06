@@ -2457,6 +2457,16 @@ class PushTokenTestCase(MyTestCase):
 
         self._teardown_notification_token(token, "16o")
 
+    def test_16p_challenge_scan_without_transaction_finds_no_answer(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        answered = Challenge(token.get_serial(), transaction_id="33330000333300003333", data={"type": "push"})
+        answered.set_otp_status(True)
+        answered.save()
+
+        self.assertEqual(-1, token._scan_challenge_response(None).otp_counter)
+        self.assertEqual(1, token._scan_challenge_response("33330000333300003333").otp_counter)
+
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):
         # Test the /validate/check endpoints, user has two push tokens, require presence

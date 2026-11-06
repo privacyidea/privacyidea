@@ -586,6 +586,8 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     challenge_response_token_list = []
     challenge_request_token_list = []
     pin_matching_token_list = []
+    # Tokens whose PIN matched but that could not create the challenge they wait for (push_wait)
+    untriggered_token_list = []
     invalid_token_list = []
     valid_token_list = []
     messages = []
@@ -672,6 +674,16 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                     # LOGIN_SUCCESS is classified once, later in the final valid_token_list block, after it
                     # re-checks check_all - so it is not appended here too, avoiding a duplicate event.
                     valid_token_list.append(token_object)
+                elif (pin_match and token_object.auth_details.get(AUTH_EVENT_TYPE_KEY)
+                      == AuthEventType.CHALLENGE_TRIGGER_FAIL):
+                    # The token could not create the challenge it waits for, so no OTP was checked. As for a
+                    # challenge request that creates no challenge, the failcounter is only increased with
+                    # increase_failcounter_on_challenge.
+                    untriggered_token_list.append(token_object)
+                    if is_true(options.get("increase_failcounter_on_challenge")):
+                        token_object.inc_failcount()
+                    _note_event(request_events, event_serials, AuthEventType.CHALLENGE_TRIGGER_FAIL, token_object)
+                    _record_reason(token_reasons, token_object)
                 elif pin_match:
                     # The PIN matched but the OTP did not; the classification below depends on whether a PIN was
                     # required at all.
@@ -933,6 +945,13 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
                 reply_dict["serial"] = pin_matching_token_list[0].token.serial
                 reply_dict["type"] = pin_matching_token_list[0].token.tokentype
                 reply_dict["otplen"] = pin_matching_token_list[0].token.otplen
+
+    elif untriggered_token_list:
+        # The PIN matched, but no challenge was created. The reply keeps the message of the token, and, as after a
+        # challenge request, the failcounters of the tokens whose PIN did not match stay as they are.
+        if len(untriggered_token_list) == 1:
+            reply_dict["serial"] = untriggered_token_list[0].token.serial
+            reply_dict["type"] = untriggered_token_list[0].token.tokentype
 
     elif invalid_token_list:
         # There were only tokens, that did not match the OTP value and

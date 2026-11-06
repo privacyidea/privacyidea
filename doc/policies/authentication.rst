@@ -899,6 +899,9 @@ seconds and check, if the push challenge was confirmed by the user.
 
 This way push tokens can be used with any non-push-capable applications.
 
+If the push token does not create a challenge, the request does not wait and fails at once. This happens if the
+token has no push gateway, or if the push gateway fails and :ref:`policy_auth_push_allow_poll` does not allow polling.
+
 Sensible numbers might be 10 or 20 seconds.
 
 .. note:: This behavior can interfere with other tokentypes. A request that
@@ -913,6 +916,8 @@ Sensible numbers might be 10 or 20 seconds.
    the number of available worker threads!
 
 .. versionadded:: 3.1
+
+.. versionchanged:: 3.14.1 A request without a challenge does not wait.
 
 .. _policy_push_code_to_phone:
 
