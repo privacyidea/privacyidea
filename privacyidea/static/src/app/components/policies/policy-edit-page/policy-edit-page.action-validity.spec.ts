@@ -37,7 +37,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
-import { axe } from "@testing/axe";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 /**
  * The page with its real panel, action tab, added-actions list and action rows: an added action whose value does not
@@ -211,9 +211,13 @@ describe("PolicyEditPageComponent – added action validity", () => {
     expect(saved.action).not.toEqual({ max_token_per_user: 0 });
   });
 
-  it("passes the axe accessibility checks", async () => {
-    fixture.detectChanges();
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
-  });
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

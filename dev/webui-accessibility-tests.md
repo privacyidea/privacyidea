@@ -79,6 +79,9 @@ by a manual keyboard and screen-reader test.
 - **Empty mocks.** If a mocked service returns no text, a component can look unnamed to axe, e.g. a state toggle whose
   text comes from a mocked `TableUtilsService`. Give the mock a realistic value in the test
   (`mockReturnValue("Active")`); don't turn off the rule.
+- **Timeout.** axe can take more than a second on a large form, and two to three times longer when all Jest workers
+  are busy, which can exceed the default timeout of 5 seconds. If the check takes more than half a second when the
+  spec runs alone, pass `AXE_TIMEOUT` from the helper as the third argument of its `it`.
 - **Fake timers.** axe needs real timers. A test that calls `jest.useFakeTimers()` must switch back with
   `jest.useRealTimers()` (e.g. in `afterEach`). Otherwise the axe check in a later test of the same file hangs until the
   test timeout.

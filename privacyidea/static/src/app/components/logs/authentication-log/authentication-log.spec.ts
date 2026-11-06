@@ -49,7 +49,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 import { AuthenticationLog } from "./authentication-log";
-import { axe } from "@testing/axe";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("AuthenticationLog", () => {
   let component: AuthenticationLog;
@@ -203,11 +203,15 @@ describe("AuthenticationLog", () => {
     fixture.detectChanges();
   };
 
-  it("passes the axe accessibility checks with an entry", async () => {
-    showEntry();
+  it(
+    "passes the axe accessibility checks with an entry",
+    async () => {
+      showEntry();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
-  });
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 
   it("links the serial and the user to their details pages", () => {
     showEntry();

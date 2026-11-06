@@ -24,7 +24,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { EntraidResolverComponent } from "./entraid-resolver.component";
-import { axe } from "@testing/axe";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("EntraidResolverComponent", () => {
   let component: EntraidResolverComponent;
@@ -78,9 +78,13 @@ describe("EntraidResolverComponent", () => {
     expect(component.isDirty()).toBe(false);
   });
 
-  it("passes the axe accessibility checks", async () => {
-    fixture.detectChanges();
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
-  });
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

@@ -47,7 +47,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { axe } from "@testing/axe";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -118,11 +118,15 @@ describe("ContainerTableComponent (Jest)", () => {
     fixture.detectChanges();
   };
 
-  it("passes the axe accessibility checks with an expanded container row", async () => {
-    showExpandedContainer();
+  it(
+    "passes the axe accessibility checks with an expanded container row",
+    async () => {
+      showExpandedContainer();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
-  });
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 
   it("links the container serial, its user and its tokens to their details pages", () => {
     showExpandedContainer();

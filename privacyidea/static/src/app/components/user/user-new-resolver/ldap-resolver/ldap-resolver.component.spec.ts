@@ -23,7 +23,7 @@ import { By } from "@angular/platform-browser";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { LdapResolverComponent } from "./ldap-resolver.component";
-import { axe } from "@testing/axe";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("LdapResolverComponent", () => {
   let component: LdapResolverComponent;
@@ -393,9 +393,13 @@ describe("LdapResolverComponent", () => {
     });
   });
 
-  it("passes the axe accessibility checks", async () => {
-    fixture.detectChanges();
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
-  });
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });

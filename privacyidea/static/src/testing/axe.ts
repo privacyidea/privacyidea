@@ -28,5 +28,13 @@ import { configureAxe } from "jest-axe";
  * dev/webui-accessibility-tests.md.
  */
 export const axe = configureAxe({
-  runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"] }
+  runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"] },
+  // Full details (selector, HTML snippet) only for violations; the other result types are not read.
+  resultTypes: ["violations"]
 });
+
+/**
+ * Timeout for an axe check on a large component, where axe alone takes more than half a second: when all Jest workers
+ * are busy, that can exceed the default of 5 seconds. Pass it as the third argument of the check's `it`.
+ */
+export const AXE_TIMEOUT = 15_000;
