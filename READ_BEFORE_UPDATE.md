@@ -277,6 +277,36 @@
   *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
   `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
 
+* **The PIN change via `/validate/check`** (policy `change_pin_via_validate`) has the checks of any other
+  authentication. Each of its two challenges can be answered once, and only while it is valid. The token has to be
+  usable, that is not disabled, below its fail counter and within its validity period. The authorization policies,
+  for example `tokentype`, have to allow the token. A confirmation that does not match the new PIN counts as a failed
+  authentication and ends the PIN change. The PIN change starts again with the next login.
+  The authentication that starts the PIN change does not count for the authentication counters of the token
+  (`count_auth`, `count_auth_success`). The confirmation of the new PIN counts it. In the authentication log, the
+  steps of a PIN change are `CHALLENGE_TRIGGERED`, `CHALLENGE_CONTINUED` and `LOGIN_SUCCESS`. A refused answer has
+  the event type and the reason of its failure, for example `CHALLENGE_ANSWERED_FAIL` with
+  `CHALLENGE_WRONG_RESPONSE` for a confirmation that does not match.
+
+* **The PIN policies check the PIN that is stored.** `otp_pin_minlength`, `otp_pin_maxlength` and `otp_pin_contents`
+  check `pin` for `/token/init`, `/token/assign` and container templates, and `otppin` for `/token/setpin`. A PIN
+  sent together with `rollover` or `verify` is checked as well, and the token type-specific PIN policies apply
+  whatever the case of the `type` parameter. Requests whose PIN does not match the policies are refused.
+
+* **Simple pass tokens under `otppin=none`.** The authentication policy `otppin=none` drops the PIN in front of an OTP
+  value. A simple pass (SPASS) token has no OTP value, its PIN is the whole password, so its PIN is checked as usual.
+  SPASS tokens with `otppin=userstore` work as before.
+
+* **`POST /container/init` with a template returns the PIN of the template only.** A PIN the server generates (policy
+  `otp_pin_random`) is not part of the `init_params` of a token, as with `/token/init`.
+
+* **The base PIN handler does not write the PIN to the log.** `privacyidea.lib.pinhandling.base.PinHandler`
+  logs the token and the user that a random PIN (policy `otp_pin_random`) was set for. To give random PINs
+  to users, use a PIN handler class that sends them (policy `pinhandling`).
+
+* **PIN handler classes get the token type in lower case.** `PinHandler.send` gets the type as privacyIDEA
+  stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
+
 * **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
   for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
   It is now left out of `multi_challenge` and of the serials in the audit and authentication log, instead of being

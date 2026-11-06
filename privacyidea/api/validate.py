@@ -141,6 +141,7 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, get_one_token, trigger_challenges)
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token.auth import check_token_state
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -164,7 +165,7 @@ from ..lib.conditional_access.request_context import (continue_attempt, confirm_
                                                       confirm_attempt_for_serials, get_ca_context)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
-                                   check_fido2_token_state, record_fido2_login_success)
+                                   record_fido2_login_success)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -891,7 +892,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
-        token_state = check_fido2_token_state(token)
+        token_state = check_token_state(token)
         if not token_state.usable:
             log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
                       f"{token_state.message}")
