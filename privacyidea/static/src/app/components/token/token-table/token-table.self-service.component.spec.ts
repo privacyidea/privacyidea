@@ -119,6 +119,26 @@ describe("TokenTableSelfServiceComponent", () => {
     expectsTableStateGating({ state: component.tableState });
   });
 
+  it("links the serial and the container serial to their details pages", () => {
+    authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [], role: "user" });
+    (TestBed.inject(ContainerService) as unknown as MockContainerService).containerBelongsToUser.mockReturnValue(true);
+    const response = MockPiResponse.fromValue<Tokens>({
+      count: 1,
+      current: 1,
+      tokens: [{ serial: "T-1", container_serial: "C-1" }] as TokenDetails[]
+    });
+    tokenServiceMock.tokenResource.set(response);
+    tokenServiceMock.tokenResourceValue.set(response.result!.value!);
+    fixture.detectChanges();
+
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+    expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+    expect(hrefOf("C-1")).toBe("/containers/details/C-1");
+  });
+
   describe("columns", () => {
     const rights = (...names: string[]): void => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: names });

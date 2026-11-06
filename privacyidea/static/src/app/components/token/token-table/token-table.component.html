@@ -193,13 +193,9 @@
                     @if (tokenDetails.serial) {
                       <app-copyable [copyText]="tokenDetails.serial">
                         <a
-                          (click)="contentService.tokenSelected(tokenDetails.serial)"
-                          (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
-                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
                           [appTruncationTooltip]="tokenDetails.serial"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, tokenDetails.serial]"
+                          class="cell-truncate">
                           {{ tokenDetails[column.key] }}
                         </a>
                       </app-copyable>
@@ -246,16 +242,9 @@
                     @if (tokenDetails.container_serial) {
                       <app-copyable [copyText]="tokenDetails.container_serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                          (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                          (keydown.space)="
-                            $event.preventDefault();
-                            contentService.navigateContainerDetails(tokenDetails.container_serial)
-                          "
                           [appTruncationTooltip]="tokenDetails.container_serial"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, tokenDetails.container_serial]"
+                          class="cell-truncate">
                           {{ tokenDetails[column.key] }}
                         </a>
                         <app-filter-value-button
@@ -269,18 +258,10 @@
                     @if (tokenDetails[column.key]) {
                       <app-copyable [copyText]="tokenDetails[column.key]">
                         <a
-                          (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
-                          (keydown.enter)="
-                            contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
-                          "
-                          (keydown.space)="
-                            $event.preventDefault();
-                            contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
-                          "
                           [appTruncationTooltip]="tokenDetails[column.key]"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [queryParams]="{ realm: tokenDetails['user_realm'] ?? '' }"
+                          [routerLink]="[ROUTE_PATHS.USERS_DETAILS, tokenDetails[column.key]]"
+                          class="cell-truncate">
                           {{ tokenDetails[column.key] }}
                         </a>
                         <app-filter-value-button

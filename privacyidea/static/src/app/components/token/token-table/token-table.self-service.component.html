@@ -83,13 +83,9 @@
                     @if (element.serial) {
                       <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.tokenSelected(element.serial)"
-                          (keydown.enter)="contentService.tokenSelected(element.serial)"
-                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
                           [appTruncationTooltip]="element.serial"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.serial]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                       </app-copyable>
@@ -100,15 +96,9 @@
                       <app-copyable [copyText]="element.container_serial">
                         @if (containerService.containerBelongsToUser(element.container_serial)) {
                           <a
-                            (click)="contentService.navigateContainerDetails(element.container_serial)"
-                            (keydown.enter)="contentService.navigateContainerDetails(element.container_serial)"
-                            (keydown.space)="
-                              $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
-                            "
                             [appTruncationTooltip]="element.container_serial"
-                            class="cell-truncate"
-                            role="button"
-                            tabindex="0">
+                            [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, element.container_serial]"
+                            class="cell-truncate">
                             {{ element[column.key] }}
                           </a>
                         } @else {
