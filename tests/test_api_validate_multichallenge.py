@@ -990,8 +990,10 @@ class PinChangeViaValidateTestCase(MyApiTestCase):
                                    AuthEventType.CHALLENGE_CONTINUED, AuthEventType.LOGIN_SUCCESS])
 
     def test_15_a_registration_token_does_not_start_a_pin_change(self):
-        # A registration token deletes itself after the successful authentication, so a new PIN is never used
-        token = init_token({"type": "registration", "serial": self.other_serial, "pin": "reg"},
+        # A registration token deletes itself after the successful authentication, so a new PIN is never used.
+        # Digits only: the test client sends no user agent, so the API percent-decodes the values it receives.
+        token = init_token({"type": "registration", "serial": self.other_serial, "pin": "reg",
+                            "registration.contents": "-cs"},
                            user=User("cornelius", self.realm1))
         registration_code = token.get_init_detail()["registrationcode"]
         token.set_next_pin_change(diff="-1d")
