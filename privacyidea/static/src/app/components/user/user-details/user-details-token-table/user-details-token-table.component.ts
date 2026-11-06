@@ -265,7 +265,7 @@ export class UserDetailsTokenTableComponent {
           "addToContainer",
           serials.map((serial) => ({ serial, ok: added[serial] === true }))
         );
-        if (choice.assignToUser) {
+        if (choice.assignToUser && serials.some((serial) => added[serial] === true)) {
           this.assignContainerToUser(choice.containerSerial, choice.previousOwner);
         }
       },
@@ -283,15 +283,22 @@ export class UserDetailsTokenTableComponent {
     if (!username || !userRealm) {
       return;
     }
-    const assign = this.containerService.assignUser({ containerSerial, username, userRealm });
+    // The assign request is built lazily so it only runs after the old owner was unassigned.
+    const assign = () => this.containerService.assignUser({ containerSerial, username, userRealm });
     // A container takes only one owner, so an existing one has to go before the new one can be set.
     const request = previousOwner
       ? this.containerService
           .unassignUser(containerSerial, previousOwner.username, previousOwner.realm)
-          .pipe(switchMap(() => assign))
-      : assign;
+          .pipe(switchMap(() => assign()))
+      : assign();
     request.subscribe({
-      next: () => this.containerService.userContainersResource.reload()
+      next: () => this.containerService.userContainersResource.reload(),
+      error: () => {
+        this.notificationService.error(
+          $localize`:@@container.assignUserFailed:Failed to assign the container to the user.`
+        );
+        this.containerService.userContainersResource.reload();
+      }
     });
   }
 

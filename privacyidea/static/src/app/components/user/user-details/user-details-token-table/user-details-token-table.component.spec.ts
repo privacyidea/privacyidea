@@ -511,6 +511,71 @@ describe("UserDetailsTokenTableComponent", () => {
       username: "testuser",
       userRealm: "defrealm"
     });
+    expect(containerServiceMock.unassignUser.mock.invocationCallOrder[0]).toBeLessThan(
+      containerServiceMock.assignUser.mock.invocationCallOrder[0]
+    );
+  });
+
+  it("addToContainerSelected neither unassigns nor assigns when no token was added", async () => {
+    dialogServiceMock.openDialogAsync.mockResolvedValue({
+      containerSerial: "CONT-001",
+      assignToUser: true,
+      previousOwner: { username: "otheruser", realm: "otherrealm" }
+    });
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    const rowB = { serial: "B" } as unknown as ContainerDetailToken;
+    showTokens(rowA, rowB);
+    component.selector.selectAllRows();
+    const userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+    userServiceMock.detailsUser.set({ username: "testuser", realm: "defrealm" });
+    userServiceMock.selectedUserRealm.set("defrealm");
+    containerServiceMock.addTokensToContainer.mockReturnValue(of(MockPiResponse.fromValue({ A: false, B: false })));
+
+    await component.addToContainerSelected();
+
+    expect(containerServiceMock.unassignUser).not.toHaveBeenCalled();
+    expect(containerServiceMock.assignUser).not.toHaveBeenCalled();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("2/2 add to container failed: A, B");
+  });
+
+  it("addToContainerSelected reports an error notification when unassigning the old owner fails", async () => {
+    dialogServiceMock.openDialogAsync.mockResolvedValue({
+      containerSerial: "CONT-001",
+      assignToUser: true,
+      previousOwner: { username: "otheruser", realm: "otherrealm" }
+    });
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    showTokens(rowA);
+    component.selector.selectAllRows();
+    const userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+    userServiceMock.detailsUser.set({ username: "testuser", realm: "defrealm" });
+    userServiceMock.selectedUserRealm.set("defrealm");
+    containerServiceMock.addTokensToContainer.mockReturnValue(of(MockPiResponse.fromValue({ A: true })));
+    containerServiceMock.unassignUser.mockReturnValue(throwError(() => new Error("unassign failed")));
+
+    await expect(component.addToContainerSelected()).resolves.toBeUndefined();
+
+    expect(notificationServiceMock.error).toHaveBeenCalled();
+  });
+
+  it("addToContainerSelected reports an error notification when assigning the container fails", async () => {
+    dialogServiceMock.openDialogAsync.mockResolvedValue({
+      containerSerial: "CONT-001",
+      assignToUser: true,
+      previousOwner: null
+    });
+    const rowA = { serial: "A" } as unknown as ContainerDetailToken;
+    showTokens(rowA);
+    component.selector.selectAllRows();
+    const userServiceMock = TestBed.inject(UserService) as unknown as MockUserService;
+    userServiceMock.detailsUser.set({ username: "testuser", realm: "defrealm" });
+    userServiceMock.selectedUserRealm.set("defrealm");
+    containerServiceMock.addTokensToContainer.mockReturnValue(of(MockPiResponse.fromValue({ A: true })));
+    containerServiceMock.assignUser.mockReturnValue(throwError(() => new Error("assign failed")));
+
+    await expect(component.addToContainerSelected()).resolves.toBeUndefined();
+
+    expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
   it("addToContainerSelected leaves the container alone when the dialog did not ask for an assignment", async () => {

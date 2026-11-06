@@ -34,13 +34,7 @@ export class MockRealmService implements RealmServiceInterface {
 
   defaultRealmResolved: Signal<boolean> = computed(() => !this.defaultRealmResource.isLoading());
 
-  noRealm: Signal<boolean> = computed(
-    () =>
-      this.realmResource.hasValue() &&
-      !this.realmResource.isLoading() &&
-      Object.keys(this.realmResource.value()?.result?.value ?? {}).length === 0 &&
-      this.defaultRealmResolved()
-  );
+  noRealm = signal(false);
 
   createRealm = jest
     .fn()

@@ -22,7 +22,7 @@ import { NoRealmDialogComponent } from "@components/shared/no-realm-dialog/no-re
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
-import { take } from "rxjs";
+import { Subscription, take } from "rxjs";
 
 /**
  * Opens a dialog once per authenticated session (login or app start) when an administrator who may
@@ -35,17 +35,17 @@ export class NoRealmDialogService {
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   private handled = false;
+  private pendingOpen?: Subscription;
 
   constructor() {
     effect(() => {
       if (!this.auth.isAuthenticated()) {
         this.handled = false;
+        this.pendingOpen?.unsubscribe();
+        this.pendingOpen = undefined;
         return;
       }
-      if (this.handled || this.auth.role() !== "admin" || !this.auth.actionAllowed("resolverwrite")) {
-        return;
-      }
-      if (!this.realmService.noRealm()) {
+      if (this.handled || !this.mayOpen()) {
         return;
       }
       // The resolver list decides which variant is shown, so wait for it to avoid a flicker.
@@ -58,10 +58,25 @@ export class NoRealmDialogService {
     });
   }
 
+  private mayOpen(): boolean {
+    return (
+      this.auth.isAuthenticated() &&
+      this.auth.role() === "admin" &&
+      this.auth.actionAllowed("resolverwrite") &&
+      this.realmService.noRealm()
+    );
+  }
+
   /** A dialog already open (e.g. the welcome dialog) is not stacked on: this one follows once it is closed. */
   private openWhenFree(): void {
     if (this.dialog.openDialogs.length > 0) {
-      this.dialog.afterAllClosed.pipe(take(1)).subscribe(() => this.openWhenFree());
+      this.pendingOpen = this.dialog.afterAllClosed.pipe(take(1)).subscribe(() => {
+        this.pendingOpen = undefined;
+        // The session may have ended or changed while the other dialog was open.
+        if (this.mayOpen()) {
+          this.openWhenFree();
+        }
+      });
       return;
     }
     this.dialog.open(NoRealmDialogComponent, {

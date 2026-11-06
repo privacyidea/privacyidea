@@ -53,6 +53,7 @@ describe("NoRealmDialogService", () => {
     realmMock = TestBed.inject(RealmService) as unknown as MockRealmService;
     resolverMock = TestBed.inject(ResolverService) as unknown as MockResolverService;
     authMock.isAuthenticated.set(true);
+    realmMock.noRealm.set(true);
     authMock.actionAllowed.mockImplementation((action: string) => action === "resolverwrite");
   });
 
@@ -102,11 +103,39 @@ describe("NoRealmDialogService", () => {
     expect(dialogMock.open).toHaveBeenCalledTimes(1);
   });
 
+  it("opens after the other dialog closed while the session stays authenticated", () => {
+    dialogMock.openDialogs.push({});
+    start();
+    dialogMock.openDialogs.pop();
+    dialogMock.afterAllClosed.next();
+    expect(dialogMock.open).toHaveBeenCalledTimes(1);
+    expect(dialogMock.open).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ data: { noResolver: true } })
+    );
+  });
+
+  it("does not open after a logout while it waited for another dialog", () => {
+    dialogMock.openDialogs.push({});
+    start();
+    authMock.isAuthenticated.set(false);
+    TestBed.tick();
+    dialogMock.openDialogs.pop();
+    dialogMock.afterAllClosed.next();
+    expect(dialogMock.open).not.toHaveBeenCalled();
+  });
+
+  it("does not open from the deferred callback when the conditions no longer hold", () => {
+    dialogMock.openDialogs.push({});
+    start();
+    authMock.isAuthenticated.set(false);
+    dialogMock.openDialogs.pop();
+    dialogMock.afterAllClosed.next();
+    expect(dialogMock.open).not.toHaveBeenCalled();
+  });
+
   it("does not open when a realm exists", () => {
-    realmMock.realmResource.set({
-      ...realmMock.realmResource.value()!,
-      result: { status: true, value: { r: { default: true, id: 1, option: "", resolver: [] } } }
-    });
+    realmMock.noRealm.set(false);
     start();
     expect(dialogMock.open).not.toHaveBeenCalled();
   });
