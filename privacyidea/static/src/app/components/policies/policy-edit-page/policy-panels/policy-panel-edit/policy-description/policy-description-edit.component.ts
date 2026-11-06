@@ -18,29 +18,19 @@
  **/
 
 import { TextFieldModule } from "@angular/cdk/text-field";
-import { Component, inject, input, output } from "@angular/core";
+import { Component, model } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 
 @Component({
   selector: "app-policy-description-edit",
   templateUrl: "./policy-description-edit.component.html",
   styleUrls: ["./policy-description-edit.component.scss"],
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, TextFieldModule]
+  imports: [MatFormFieldModule, MatInputModule, FormField, TextFieldModule]
 })
 export class PolicyDescriptionEditComponent {
-  readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
-
-  readonly description = input.required<string>();
-  readonly descriptionChange = output<string>();
-
-  openDocumentation(page: string): void {
-    this.documentationService.openDocumentation(page);
-  }
-
-  updatePolicyDescription(value: string): void {
-    this.descriptionChange.emit(value);
-  }
+  readonly description = model.required<string>();
+  readonly descriptionField = form(this.description);
 }

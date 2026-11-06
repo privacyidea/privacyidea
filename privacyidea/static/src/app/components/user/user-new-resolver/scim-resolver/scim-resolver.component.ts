@@ -22,6 +22,8 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SCIMResolverData } from "@services/resolver/resolver.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 interface ScimFormModel {
   Authserver: string;
@@ -39,6 +41,9 @@ interface ScimFormModel {
   styleUrl: "./scim-resolver.component.scss"
 })
 export class ScimResolverComponent {
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
   data = input<Partial<SCIMResolverData>>({});
 
   model = signal<ScimFormModel>({

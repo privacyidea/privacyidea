@@ -16,11 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
-
+import { Component, input } from "@angular/core";
+import { FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import {
+  panelCompleteness,
+  TIQR_KEYS,
+  TokenTypeConfigForm
+} from "@components/configuration/token-type-config/token-type-config.form";
+import { PanelIncompleteComponent } from "@components/configuration/token-type-config/token-types/panel-incomplete/panel-incomplete.component";
 import {
   TIQR_AUTH_SERVER,
   TIQR_INFO_URL,
@@ -30,11 +36,13 @@ import {
   TIQR_SERVICE_DISPLAYNAME,
   TIQR_SERVICE_IDENTIFIER
 } from "@constants/token.constants";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-tiqr-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, FormField, PanelIncompleteComponent],
   templateUrl: "./tiqr-config.component.html"
 })
 export class TiqrConfigComponent {
@@ -45,12 +53,9 @@ export class TiqrConfigComponent {
   protected readonly TIQR_LOGO_URL = TIQR_LOGO_URL;
   protected readonly TIQR_INFO_URL = TIQR_INFO_URL;
   protected readonly TIQR_OCRASUITE = TIQR_OCRASUITE;
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
 
-  formData = input.required<Record<string, string | undefined>>();
-  formDataChange = output<Record<string, string | undefined>>();
-
-  updateFormData(fieldName: string, value: string): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
+  config = input.required<TokenTypeConfigForm>();
+  protected readonly panel = panelCompleteness(this.config, () => TIQR_KEYS);
 }

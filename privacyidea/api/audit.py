@@ -38,6 +38,7 @@ search endpoint, not to the CSV download.
 """
 from flask import (Blueprint, request, current_app, stream_with_context)
 from .lib.utils import (send_result, send_file)
+from ..api.lib.policyhelper import hide_audit_columns_per_entry
 from ..api.lib.prepolicy import prepolicy, check_base_action, auditlog_age, hide_audit_columns
 from ..api.auth import admin_required
 from ..lib.policies.actions import PolicyAction
@@ -83,7 +84,9 @@ def search_audit():
     :query page_size: entries per page.
     :query sortname: column to sort by.
     :query sortorder: ``asc`` or ``desc``.
-    :query: any audit column name as a filter key.
+    :query: any audit column of the entries as a filter key, except
+        ``sig_check`` and ``missing_line``; ``number`` is compared exactly.
+        Unknown keys are ignored.
     :status 200: paginated audit dictionary in ``result.value`` with
         ``count``, ``current``, ``next``, ``prev``, ``auditdata``.
     """
@@ -95,6 +98,7 @@ def search_audit():
             request.all_data.pop(key, None)
         exact_params = {"user": request.User.login, "realm": request.User.realm, "resolver": request.User.resolver}
     audit_dict = search(current_app.config, request.all_data, admin_params, exact_params=exact_params)
+    hide_audit_columns_per_entry(g, audit_dict["auditdata"])
     g.audit_object.log({'success': True})
 
     return send_result(audit_dict)
@@ -111,10 +115,12 @@ def download_csv(csvfile=None):
     the query parameters, which use the same syntax as the search endpoint.
 
     Requires admin authentication and the policy action
-    :ref:`policy_auditlog_download`. The :ref:`policy_auditlog_age` policy
-    caps how far back the export may go. Hidden-column policies do **not**
-    apply to the download — disallow downloading if you need that
-    restriction.
+    :ref:`policy_auditlog_download`. The entries are restricted to the realms
+    that both the :ref:`policy_auditlog_download` and the
+    :ref:`policy_auditlog` policies of the administrator grant. The
+    :ref:`policy_auditlog_age` policy caps how far back the export may go.
+    Hidden-column policies do **not** apply to the download — disallow
+    downloading if you need that restriction.
 
     **Example request**:
 
@@ -127,14 +133,14 @@ def download_csv(csvfile=None):
     :param csvfile: filename to use for the download.
     :query timelimit: only export entries newer than this. Capped by the
         :ref:`policy_auditlog_age` policy.
-    :query: any audit column name as a filter key (same as for the search
-        endpoint).
+    :query: any audit column of the entries as a filter key, as for the
+        search endpoint.
     :status 200: ``text/csv`` body containing the audit entries.
     """
     audit = getAudit(current_app.config)
     g.audit_object.log({'success': True})
     param = request.all_data
-    admin_params = get_admin_audit_params()
+    admin_params = get_admin_audit_params((PolicyAction.AUDIT, PolicyAction.AUDIT_DOWNLOAD))
     if "timelimit" in param:
         timelimit = parse_timedelta(param["timelimit"])
         del param["timelimit"]

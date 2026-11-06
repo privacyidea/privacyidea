@@ -21,6 +21,7 @@
   [appStickyHeader]="scrollContainer()">
   <div class="sticky-controls ali-center">
     <mat-form-field class="input-width-xl type-select">
+      <mat-label i18n="@@common.tokenType">Token Type</mat-label>
       <mat-select
         appGridSelectNav
         [appGridSelectColumns]="2"
@@ -46,7 +47,7 @@
         [matTooltip]="enrollBlockedReason() ?? ''"
         [matTooltipDisabled]="!enrollBlockedReason()">
         <button
-          [disabled]="formInvalid() || !tokenService.selectedTokenType()"
+          [disabled]="formInvalid()"
           class="action-button-primary button-width-m"
           mat-stroked-button
           type="submit">

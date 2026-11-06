@@ -80,8 +80,6 @@
 
       <app-token-details-actions
         class="details-card--actions"
-        [repeatPinValue]="repeatPinValue"
-        [setPinValue]="setPinValue"
         [tokenType]="tokenType"
         [token]="tokenDetails()"></app-token-details-actions>
 
@@ -90,12 +88,7 @@
           [element]="desc"
           [editable]="isEditableElement(desc.keyMap.key)"
           [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()"
-          [isEditingInfo]="isEditingInfo()"
-          [isEditingUser]="isEditingUser()"
-          [selfService]="true"
-          [cancelEdit]="cancelTokenEdit.bind(this)"
-          [saveEdit]="saveTokenEdit.bind(this)"
-          [toggleEdit]="toggleTokenEdit.bind(this)" />
+          [selfService]="true" />
       }
 
       <app-token-details-info

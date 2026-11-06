@@ -25,6 +25,7 @@ import re
 from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.policyhelper import hide_tokeninfo_per_token
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
                                            resolver_realm_access,
                                            check_admin_tokenlist, check_container_action,
@@ -253,6 +254,8 @@ def list_containers():
 
     containers = create_container_dict(result["containers"], no_token, user, logged_in_user_role, allowed_token_realms,
                                        hide_container_info=hide_container_info, hide_token_info=hide_token_info)
+    for container in containers:
+        hide_tokeninfo_per_token(g, container.get("tokens") or [])
     result["containers"] = containers
 
     g.audit_object.log({"success": True,

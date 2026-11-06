@@ -18,7 +18,8 @@
  **/
 import { provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatAutocomplete } from "@angular/material/autocomplete";
+import { DOWN_ARROW, ENTER } from "@angular/cdk/keycodes";
+import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatPaginator } from "@angular/material/paginator";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -27,6 +28,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { TokenService } from "@services/token/token.service";
 import { MockAuthService, MockContainerService, MockTokenService } from "@testing/mock-services";
+import { mockTokenDetails } from "@testing/mock-token-details";
 import { By } from "@angular/platform-browser";
 import { ContainerAddTokenComponent } from "./container-add-token.component";
 
@@ -155,6 +157,46 @@ describe("ContainerAddTokenComponent", () => {
 
     expect(tokenService.eventPageSize()).toBe(5);
     expect(tokenService.pageIndex()).toBe(1);
+  });
+
+  describe("adding a token", () => {
+    const token = mockTokenDetails({ serial: "HOTP0001" });
+    const input = () => fixture.nativeElement.querySelector("input[matInput]") as HTMLInputElement;
+    const options = () => Array.from(document.querySelectorAll<HTMLElement>("mat-option.token-option"));
+    let added: jest.Mock;
+
+    beforeEach(() => {
+      tokenService.tokenResourceValue.set({ count: 1, current: 1, tokens: [token] });
+      added = jest.fn();
+      component.addToken.subscribe(added);
+      input().focus();
+      fixture.debugElement.query(By.directive(MatAutocompleteTrigger)).injector.get(MatAutocompleteTrigger).openPanel();
+      fixture.detectChanges();
+    });
+
+    it("adds the token chosen with Arrow Down and Enter", () => {
+      input().dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", keyCode: DOWN_ARROW, bubbles: true }));
+      input().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode: ENTER, bubbles: true }));
+      fixture.detectChanges();
+
+      expect(added).toHaveBeenCalledTimes(1);
+      expect(added).toHaveBeenCalledWith(token);
+    });
+
+    it("adds the clicked token once", () => {
+      options()[0].click();
+      fixture.detectChanges();
+
+      expect(added).toHaveBeenCalledTimes(1);
+      expect(added).toHaveBeenCalledWith(token);
+    });
+
+    it("leaves the filter input empty after a token was added", () => {
+      options()[0].click();
+      fixture.detectChanges();
+
+      expect(input().value).toBe("");
+    });
   });
 
   it("does not render the panel when container_add_token is not allowed", () => {

@@ -24,7 +24,7 @@
       >Stage {{ stageNumber() }}</span
     >
     <div class="ca-stage-name">
-      @if (!stage().id || editingName()) {
+      @if (!stage().id().value() || editingName()) {
         <mat-form-field
           appearance="fill"
           subscriptSizing="dynamic"
@@ -33,12 +33,10 @@
           <input
             matInput
             type="text"
-            maxlength="255"
-            [value]="stage().name ?? ''"
-            (input)="onNameInput($any($event.target).value)"
+            [formField]="stage().name"
             (keydown.enter)="stopEditingName()" />
         </mat-form-field>
-        @if (stage().id) {
+        @if (stage().id().value()) {
           <button
             mat-icon-button
             class="ca-stage-name-action"
@@ -49,8 +47,8 @@
           </button>
         }
       } @else {
-        @if (stage().name) {
-          <span class="ca-stage-title-name">{{ stage().name }}</span>
+        @if (stageName()) {
+          <span class="ca-stage-title-name">{{ stageName() }}</span>
         } @else {
           <span
             class="ca-stage-title-name ca-stage-title-name--empty"
@@ -91,16 +89,20 @@
       <input
         matInput
         type="number"
-        required
-        [appErrorState]="zeroThresholdInvalid()"
-        [min]="minThreshold()"
-        [value]="stage().failure_threshold"
-        (input)="onFailureThresholdInput($any($event.target).value)" />
-      @if (zeroThresholdInvalid()) {
+        [formField]="stage().failure_threshold" />
+      @if (hasError(stage().failure_threshold, CA_ERR.stageThreshold)) {
         <mat-error i18n="@@conditionalAccess.thresholdMeansAlwaysNeeds">
           A threshold of 0 means "always" and needs a stage carrying only DENY.
         </mat-error>
-      } @else if (zeroThresholdAllowed()) {
+      } @else if (
+        hasError(stage().failure_threshold, ERR.required) && !hasError(stage().failure_threshold, ERR.parse)
+      ) {
+        <mat-error i18n="@@conditionalAccess.failureThresholdRequired">Failure threshold is required.</mat-error>
+      } @else if (hasAnyError(stage().failure_threshold, thresholdNumberErrorKinds)) {
+        <mat-error i18n="@@conditionalAccess.failureThresholdWholeNumber">
+          Enter a whole number of at least 1, or 0 on a stage carrying only DENY.
+        </mat-error>
+      } @else if (zeroThresholdHint()) {
         <mat-hint i18n="@@conditionalAccess.numberTrackedEventsTrigger2"
           >Number of tracked events that trigger this stage. 0 means always, for this DENY rule.</mat-hint
         >
@@ -114,7 +116,7 @@
     <div class="ca-stage-error-message">
       <div class="ca-stage-error-message-toggle padding-top-8">
         <mat-checkbox
-          [checked]="hasCustomErrorMessage()"
+          [formField]="stage().has_error_message"
           (change)="toggleErrorMessage($event.checked)"
           i18n="@@conditionalAccess.showSpecificErrorMessage">
           Show specific error message
@@ -134,10 +136,7 @@
           <textarea
             matInput
             rows="1"
-            [attr.maxlength]="maxErrorMessageLength"
-            [disabled]="!hasCustomErrorMessage()"
-            [value]="stage().error_message ?? ''"
-            (input)="onErrorMessageInput($any($event.target).value)"></textarea>
+            [formField]="stage().error_message"></textarea>
           <mat-hint>
             <span i18n="@@conditionalAccess.replacedRemainingTimeTemporary"
               >{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span
@@ -173,6 +172,5 @@
 
   <app-conditional-access-actions-list
     [actions]="stage().actions"
-    [target]="target()"
-    (actionsChange)="onActionsChange($event)" />
+    [target]="target()" />
 </div>
