@@ -52,6 +52,7 @@ export class EnrollYubikeyComponent extends EnrollTokenBase<YubikeyEnrollmentDat
   otpKey = signal<string>("");
   otpLength = signal<number>(44);
 
+  testYubiKeyForm = form(this.testYubiKey);
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
     validate(f, (ctx) => (ctx.value().length !== 32 ? [{ kind: "invalidLength" }] : []));

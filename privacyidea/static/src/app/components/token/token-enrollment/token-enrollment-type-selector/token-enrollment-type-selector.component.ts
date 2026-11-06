@@ -19,7 +19,7 @@
 import { NgClass } from "@angular/common";
 import { Component, HostBinding, inject, input, output } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatFormField } from "@angular/material/form-field";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipModule } from "@angular/material/tooltip";
@@ -38,6 +38,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
   imports: [
     TooltipAriaLabelDirective,
     MatFormField,
+    MatLabel,
     MatSelect,
     MatOption,
     MatButton,

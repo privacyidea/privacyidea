@@ -16,19 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, model } from "@angular/core";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
 
+import { Component, input } from "@angular/core";
+import { MatIconModule } from "@angular/material/icon";
+
+/** Marks the header of a token type panel that holds an invalid entry, which keeps Save disabled. */
 @Component({
-  selector: "app-details-description-cell",
+  selector: "app-panel-incomplete",
   standalone: true,
-  imports: [MatFormFieldModule, MatInput],
-  templateUrl: "./details-description-cell.component.html"
+  imports: [MatIconModule],
+  templateUrl: "./panel-incomplete.component.html",
+  styleUrl: "./panel-incomplete.component.scss"
 })
-export class DetailsDescriptionCellComponent {
-  value = model.required<string>();
-  isEditing = input(false);
-  maxLength = input(80);
-  rows = input(4);
+export class PanelIncompleteComponent {
+  incomplete = input.required<boolean>();
 }

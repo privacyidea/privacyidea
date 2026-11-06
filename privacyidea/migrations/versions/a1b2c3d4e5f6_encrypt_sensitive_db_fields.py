@@ -28,6 +28,10 @@ that are already in encrypted format (contain a colon separating
 IV:ciphertext hex) are skipped. Encrypted flags that are already set stay set,
 also those of options an administrator marked as secret.
 
+The downgrade can also run again after it stopped at any point. It decrypts the
+options and drops the ``Encrypted`` column only while that column exists, and on
+Oracle it replaces ``challenge.data`` only while that column is a text column.
+
 Revision ID: a1b2c3d4e5f6
 Revises: d4f5a6b7c8e9
 Create Date: 2026-06-22 00:00:00.000000
@@ -165,12 +169,50 @@ def downgrade():
     """
     Decrypt previously encrypted values back to plaintext.
     WARNING: This exposes sensitive data in the database again.
+
+    A value that cannot be decrypted, e.g. with another encryption key, stops the downgrade before anything is
+    changed: 3.13 would send the encrypted value to the SMS gateway.
     """
-    from privacyidea.lib.crypto import decryptPassword
+    # --- 1. Decrypt sensitive SMS gateway options and drop the Encrypted column ---
+    if 'encrypted' in _get_columns('smsgatewayoption'):
+        _decrypt_sms_gateway_options()
+        log.info("Dropping Encrypted column from smsgatewayoption table...")
+        with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
+            batch_op.drop_column('Encrypted')
+    else:
+        # A previous run dropped the column, which it only does after it decrypted every option
+        log.info("The smsgatewayoption table no longer has the Encrypted column.")
+
+    # --- 2. Revert challenge.data to 512 characters ---
+    log.info("Deleting all challenges and reverting challenge.data to 512 characters...")
+    op.execute("DELETE FROM challenge")
+    if op.get_bind().dialect.name == "oracle":
+        data_column = _get_columns('challenge').get('data')
+        if data_column is None:
+            # A previous run dropped the text column and failed before it added the new one
+            op.add_column('challenge', sa.Column('data', sa.Unicode(length=512), nullable=True))
+        elif isinstance(data_column["type"], sa.Text):
+            _replace_challenge_data_column(sa.Unicode(length=512))
+        else:
+            log.info("challenge.data already is limited to 512 characters.")
+    else:
+        with op.batch_alter_table('challenge', schema=None) as batch_op:
+            batch_op.alter_column('data',
+                                  existing_type=sa.Text(),
+                                  type_=sa.Unicode(length=512),
+                                  existing_nullable=True)
+
+
+def _decrypt_sms_gateway_options() -> None:
+    """
+    Decrypt the encrypted SMS gateway options. Raise before any change if an option cannot be decrypted.
+
+    An option that a stopped run already decrypted keeps its Encrypted flag until the column is dropped, but its value
+    no longer looks encrypted and is skipped.
+    """
+    from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword
 
     conn = op.get_bind()
-
-    # --- 1. Decrypt sensitive SMS gateway options ---
     log.info("Decrypting sensitive SMS gateway options (downgrade)...")
     smsgatewayoption = sa.table(
         'smsgatewayoption',
@@ -184,33 +226,22 @@ def downgrade():
         sa.select(smsgatewayoption.c.id, smsgatewayoption.c.Key,
                   smsgatewayoption.c.Value, smsgatewayoption.c.Encrypted)
     )
-    for row in result:
-        option_id, key, value, encrypted = row
-        if not value or not encrypted:
-            continue
-        if not _looks_encrypted(value):
+    decrypted_values = {}
+    undecryptable_keys = []
+    for option_id, key, value, encrypted in result:
+        if not value or not encrypted or not _looks_encrypted(value):
             continue
         decrypted_value = decryptPassword(value)
-        if decrypted_value and not decrypted_value.startswith("FAILED TO DECRYPT"):
-            conn.execute(
-                smsgatewayoption.update().where(
-                    smsgatewayoption.c.id == option_id
-                ).values(Value=decrypted_value)
-            )
-
-    # --- 1b. Drop the Encrypted column ---
-    log.info("Dropping Encrypted column from smsgatewayoption table...")
-    with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
-        batch_op.drop_column('Encrypted')
-
-    # --- 2. Revert challenge.data to 512 characters ---
-    log.info("Deleting all challenges and reverting challenge.data to 512 characters...")
-    op.execute("DELETE FROM challenge")
-    if op.get_bind().dialect.name == "oracle":
-        _replace_challenge_data_column(sa.Unicode(length=512))
-    else:
-        with op.batch_alter_table('challenge', schema=None) as batch_op:
-            batch_op.alter_column('data',
-                                  existing_type=sa.Text(),
-                                  type_=sa.Unicode(length=512),
-                                  existing_nullable=True)
+        if decrypted_value == FAILED_TO_DECRYPT_PASSWORD:
+            undecryptable_keys.append(key)
+        else:
+            decrypted_values[option_id] = decrypted_value
+    if undecryptable_keys:
+        raise RuntimeError(f"Could not decrypt the SMS gateway options {', '.join(sorted(undecryptable_keys))}. "
+                           f"Run the downgrade with the encryption key they were encrypted with.")
+    for option_id, decrypted_value in decrypted_values.items():
+        conn.execute(
+            smsgatewayoption.update().where(
+                smsgatewayoption.c.id == option_id
+            ).values(Value=decrypted_value)
+        )

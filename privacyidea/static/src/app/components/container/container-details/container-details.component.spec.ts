@@ -31,7 +31,6 @@ import { DetailsEditRegistry } from "@components/shared/details-shared/field-edi
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
 import { AuditService } from "@services/audit/audit.service";
-import { AuthService } from "@services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerService,
@@ -143,34 +142,6 @@ describe("ContainerDetailsComponent", () => {
     expect(containerService.addTokenToContainer).toHaveBeenCalledWith("container1", "Mock Serial");
   });
 
-  it("edits description and calls setContainerDescription()", () => {
-    jest.spyOn(containerService, "setContainerDescription").mockReturnValue(of({}) as never);
-
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "description", label: "Description", group: "container" },
-        value: "Old description",
-        isEditing: signal(false)
-      }
-    ]);
-    const element = component.containerDetailData()[0];
-
-    component.toggleContainerEdit(element);
-    expect(element.isEditing()).toBe(true);
-
-    component.containerDetailData.set([
-      {
-        keyMap: { key: "description", label: "Description", group: "container" },
-        value: "New description from UI",
-        isEditing: signal(false)
-      }
-    ]);
-
-    component.saveContainerEdit(element);
-    expect(containerService.setContainerDescription).toHaveBeenCalledWith("Mock serial", "New description from UI");
-    expect(element.isEditing()).toBe(false);
-  });
-
   it("enters user edit mode, saves, and exits", () => {
     jest.spyOn(containerService, "assignUser").mockReturnValue(of({}) as never);
 
@@ -200,30 +171,6 @@ describe("ContainerDetailsComponent", () => {
       userRealm: "realmUser"
     });
     expect(component.isEditingUser()).toBe(false);
-  });
-
-  it("isEditableElement returns true for states when action is allowed", () => {
-    const authService = TestBed.inject(AuthService);
-    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
-    expect(component.isEditableElement("states")).toBe(true);
-  });
-
-  it("isEditableElement returns true for description when action is allowed", () => {
-    const authService = TestBed.inject(AuthService);
-    jest.spyOn(authService, "actionAllowed").mockImplementation((action) => action === "container_description");
-    expect(component.isEditableElement("description")).toBe(true);
-  });
-
-  it("isEditableElement returns true for realms when action is allowed", () => {
-    const authService = TestBed.inject(AuthService);
-    jest.spyOn(authService, "actionAllowed").mockImplementation((action) => action === "container_realms");
-    expect(component.isEditableElement("realms")).toBe(true);
-  });
-
-  it("isEditableElement returns false for an unknown key", () => {
-    const authService = TestBed.inject(AuthService);
-    jest.spyOn(authService, "actionAllowed").mockReturnValue(true);
-    expect(component.isEditableElement("unknown")).toBe(false);
   });
 
   it("cancelContainerEdit for user_name toggles isEditingUser", () => {
@@ -408,24 +355,6 @@ describe("ContainerDetailsComponent", () => {
   });
 
   describe("saveContainerEdit switch cases", () => {
-    it("saves description when key is 'description'", () => {
-      jest.spyOn(containerService, "setContainerDescription").mockReturnValue(of({}) as never);
-
-      component.containerDetailData.set([
-        {
-          keyMap: { key: "description", label: "Description", group: "container" },
-          value: "Updated",
-          isEditing: signal(true)
-        }
-      ]);
-      const element = component.containerDetailData()[0];
-
-      component.saveContainerEdit(element);
-
-      expect(containerService.setContainerDescription).toHaveBeenCalledWith("Mock serial", "Updated");
-      expect(element.isEditing()).toBe(false);
-    });
-
     it("saves user when key is 'user_name'", () => {
       jest.spyOn(containerService, "assignUser").mockReturnValue(of({}) as never);
 
@@ -522,14 +451,6 @@ describe("ContainerDetailsComponent", () => {
       expect(fn()).toBe(false);
     });
 
-    it("counts an open detail row as pending changes while the details have not loaded", () => {
-      containerService.containerDetailsResource.set(undefined);
-      component.containerDetailData()[0].isEditing.set(true);
-
-      const fn = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
-      expect(fn()).toBe(true);
-    });
-
     it("counts an open registered field editor as pending changes while the details have not loaded", () => {
       containerService.containerDetailsResource.set(undefined);
       fixture.debugElement.injector
@@ -556,32 +477,20 @@ describe("ContainerDetailsComponent", () => {
       expect(pendingChangesService.registerSave).toHaveBeenCalled();
     });
 
-    it("saveAllInlineEdits saves every row with isEditing()=true", async () => {
-      const editingRow: EditableElement<string> = {
-        keyMap: { key: "description" },
-        value: "new",
-        isEditing: signal(true)
-      };
-      const idleRow: EditableElement<string> = {
-        keyMap: { key: "type" },
-        value: "generic",
-        isEditing: signal(false)
-      };
-      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [
-        editingRow,
-        idleRow
-      ];
-      const saveSpy = jest.spyOn(component, "saveContainerEdit").mockReturnValue();
+    it("saveAllInlineEdits saves every inline field that is in edit mode", async () => {
+      const editing = { isEditing: signal(true), save: jest.fn(), cancel: jest.fn() };
+      const idle = { isEditing: signal(false), save: jest.fn(), cancel: jest.fn() };
+      component["editRegistry"].register(editing);
+      component["editRegistry"].register(idle);
 
       const result = await component.saveAllInlineEdits();
 
       expect(result).toBe(true);
-      expect(saveSpy).toHaveBeenCalledTimes(1);
-      expect(saveSpy).toHaveBeenCalledWith(editingRow);
+      expect(editing.save).toHaveBeenCalledTimes(1);
+      expect(idle.save).not.toHaveBeenCalled();
     });
 
     it("saveAllInlineEdits calls saveUser when isEditingUser", async () => {
-      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
       component.isEditingUser.set(true);
       const userSaveSpy = jest.spyOn(component, "saveUser").mockReturnValue();
 
@@ -591,7 +500,6 @@ describe("ContainerDetailsComponent", () => {
     });
 
     it("saveAllInlineEdits delegates info save to infoChild when isEditingInfo and info exists", async () => {
-      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
       const infoEl: EditableElement<Record<string, string>> = {
         keyMap: { key: "info", label: "Info" } as { key: string },
         value: { foo: "bar" },
@@ -600,41 +508,89 @@ describe("ContainerDetailsComponent", () => {
       (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [infoEl];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
+      component.infoChild = {
+        canSave: signal(true),
+        saveInfo: infoSaveSpy
+      } as unknown as ContainerDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 
-      expect(infoSaveSpy).toHaveBeenCalledWith(infoEl);
+      expect(infoSaveSpy).toHaveBeenCalledWith();
     });
 
-    it("validChanges always reports true so save button stays enabled", () => {
+    it("validChanges reports true while every open edit may be saved", () => {
       const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
       expect(fn()).toBe(true);
     });
 
+    it("validChanges reports false while an inline field holds an invalid value", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component["editRegistry"].register({
+        isEditing: signal(true),
+        valid: signal(false),
+        save: jest.fn(),
+        cancel: jest.fn()
+      });
+
+      expect(fn()).toBe(false);
+    });
+
+    it("validChanges reports false while the info 'add' row is incomplete", () => {
+      const fn = (pendingChangesService.registerValidChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+      component.infoChild = { canSave: signal(false) } as unknown as ContainerDetailsInfoComponent;
+
+      expect(fn()).toBe(false);
+    });
+
+    it("saveAllInlineEdits saves nothing while an inline field holds an invalid value", async () => {
+      const invalid = { isEditing: signal(true), valid: signal(false), save: jest.fn(), cancel: jest.fn() };
+      component["editRegistry"].register(invalid);
+      const userSaveSpy = jest.spyOn(component, "saveUser").mockReturnValue();
+      component.isEditingUser.set(true);
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(false);
+      expect(invalid.save).not.toHaveBeenCalled();
+      expect(userSaveSpy).not.toHaveBeenCalled();
+    });
+
+    it("saveAllInlineEdits saves nothing while the info 'add' row is incomplete", async () => {
+      const infoSaveSpy = jest.fn();
+      component.infoChild = {
+        canSave: signal(false),
+        saveInfo: infoSaveSpy
+      } as unknown as ContainerDetailsInfoComponent;
+      component.isEditingInfo.set(true);
+
+      const result = await component.saveAllInlineEdits();
+
+      expect(result).toBe(false);
+      expect(infoSaveSpy).not.toHaveBeenCalled();
+    });
+
     it("saveAllInlineEdits is a no-op when nothing is in edit mode", async () => {
-      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
       (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingUser.set(false);
       component.isEditingInfo.set(false);
-      const editSpy = jest.spyOn(component, "saveContainerEdit").mockReturnValue();
       const userSpy = jest.spyOn(component, "saveUser").mockReturnValue();
-      component.infoChild = { saveInfo: jest.fn() } as unknown as ContainerDetailsInfoComponent;
+      component.infoChild = { canSave: signal(true), saveInfo: jest.fn() } as unknown as ContainerDetailsInfoComponent;
 
       const result = await component.saveAllInlineEdits();
 
       expect(result).toBe(true);
-      expect(editSpy).not.toHaveBeenCalled();
       expect(userSpy).not.toHaveBeenCalled();
       expect(component.infoChild!.saveInfo).not.toHaveBeenCalled();
     });
 
     it("saveAllInlineEdits clears isEditingInfo when info element is missing", async () => {
-      (component as unknown as { containerDetailData: () => EditableElement[] }).containerDetailData = () => [];
       (component as unknown as { infoData: () => EditableElement[] }).infoData = () => [];
       component.isEditingInfo.set(true);
       const infoSaveSpy = jest.fn();
-      component.infoChild = { saveInfo: infoSaveSpy } as unknown as ContainerDetailsInfoComponent;
+      component.infoChild = {
+        canSave: signal(true),
+        saveInfo: infoSaveSpy
+      } as unknown as ContainerDetailsInfoComponent;
 
       await component.saveAllInlineEdits();
 

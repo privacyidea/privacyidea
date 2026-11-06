@@ -23,8 +23,7 @@
     </mat-panel-title>
     <div class="token-actions">
       <mat-checkbox
-        [checked]="userAssign()"
-        (change)="toggleUserAssign($event.checked)"
+        [formField]="userAssignField"
         (click)="$event.stopPropagation()"
         i18n="@@container.assignToUser"
         >Assign to user</mat-checkbox

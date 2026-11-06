@@ -15,6 +15,7 @@ from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.sql import ColumnElement, Select
 
 from privacyidea.lib import _
+from privacyidea.lib.cache.user import read_cached_usernames, write_cached_usernames
 from privacyidea.lib.config import (get_token_class)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
@@ -22,8 +23,9 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.resolver import get_resolver_object
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.usercache import add_many_to_cache, get_cached_usernames
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
 from privacyidea.lib.user import User
@@ -604,16 +606,21 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
 
         # In certain cases the LDAP or SQL server might not be reachable. Then an exception is raised
         try:
-            login_map = resolver.get_usernames_batch(user_ids)
+            # An ID the batch can not search for is reported, so it is not taken for a user that does not exist
+            unresolvable_ids = set()
+            login_map = resolver.get_usernames_batch(user_ids, unresolvable_ids=unresolvable_ids)
+            unresolvable_owners.update((resolver_name, user_id) for user_id in unresolvable_ids)
         except Exception as batch_error:
             # A failing batch must not cost the whole page. Fall back to looking the users of this
-            # resolver up one by one, so that only the ones that keep failing are marked.
+            # resolver up one by one, so that only the ones that keep failing are marked. The single
+            # lookup is lookup_username, the one the batch uses as well, so that a user store which
+            # can not be reached is marked instead of reading like a user that does not exist.
             log.error(f"User information can not be retrieved in one batch: {batch_error!s}")
             log.debug(traceback.format_exc())
             login_map = {}
             for user_id in user_ids:
                 try:
-                    login_map[user_id] = resolver.getUsername(user_id)
+                    login_map[user_id] = resolver.lookup_username(user_id)
                 except Exception as user_error:
                     log.error(f"User information can not be retrieved: {user_error!s}")
                     log.debug(traceback.format_exc())
@@ -623,6 +630,122 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
             login_by_owner[(resolver_name, user_id)] = login_map.get(user_id) or ""
 
     return ResolvedOwnerLogins(login_by_owner, editable_by_resolver, unresolvable_owners)
+
+
+def _get_cached_logins(owners: list[TokenOwner]) -> dict[tuple[str, str], str]:
+    """
+    Return the login names the user caches hold for the given owners. As for a ``User`` built from a
+    resolver and a user ID, the user cache in the database answers first and the Redis user cache second.
+
+    :param owners: The token owners
+    :return: The login name keyed by (resolver name, user ID), for the owners a cache holds
+    """
+    user_ids_by_resolver = {}
+    for owner in owners:
+        if owner.resolver and owner.user_id:
+            user_ids_by_resolver.setdefault(owner.resolver, {})[owner.user_id] = None
+    login_by_owner = {}
+    for resolver_name, user_ids in user_ids_by_resolver.items():
+        cached_logins = {}
+        try:
+            for chunk in _chunked(list(user_ids)):
+                cached_logins.update(get_cached_usernames(resolver_name, chunk))
+        except Exception as cache_error:
+            # A user cache that can not be read only costs the lookups it would have saved
+            log.error(f"The user cache of the resolver {resolver_name!r} can not be read: {cache_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+        uncached_user_ids = [user_id for user_id in user_ids if not cached_logins.get(user_id)]
+        # Redis runs one command at a time, so the read is split like the query above: a single
+        # MGET over every owner of a run would hold up every authentication while it runs
+        for chunk in _chunked(uncached_user_ids):
+            cached_logins.update(read_cached_usernames(resolver_name, chunk))
+        for user_id in user_ids:
+            login = cached_logins.get(user_id)
+            if login:
+                login_by_owner[(resolver_name, user_id)] = login
+    return login_by_owner
+
+
+def _write_back_logins(login_by_owner: dict[tuple[str, str], str]) -> None:
+    """
+    Write the login names that were looked up in the user stores to both user caches, with one insert
+    per resolver and one Redis round trip per chunk, as a ``User`` built for each owner would have
+    cached them.
+
+    :param login_by_owner: The login name keyed by (resolver name, user ID). Empty login names are skipped.
+    """
+    login_by_user_id_by_resolver = {}
+    for (resolver_name, user_id), login in login_by_owner.items():
+        if login:
+            login_by_user_id_by_resolver.setdefault(resolver_name, {})[user_id] = login
+    for resolver_name, login_by_user_id in login_by_user_id_by_resolver.items():
+        # One Redis round trip per chunk, like the read, so that neither the pipeline of writes nor
+        # the index it extends grows with the number of owners a run looked up
+        for chunk in _chunked(list(login_by_user_id)):
+            write_cached_usernames(resolver_name, {user_id: login_by_user_id[user_id] for user_id in chunk})
+        try:
+            add_many_to_cache(resolver_name, login_by_user_id)
+        except Exception as cache_error:
+            # A user cache that can not be written only costs the lookups it would have saved later
+            log.error(f"The user cache of the resolver {resolver_name!r} can not be written: {cache_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+
+
+def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = True) -> set[str]:
+    """
+    Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
+    resolver instead of one user store lookup per token.
+
+    A token is orphaned if its first owner has no user ID, belongs to a resolver that no longer exists,
+    does not exist in the user store or has no realm. ``TokenClass.is_orphaned()`` decides with this function as well.
+    If the user store can not be asked, ``orphaned_on_error`` decides. A token whose owner can not be
+    read from the database is not orphaned, since it is not known to have an owner at all. An owner the
+    user cache holds is not looked up in the user store. A resolver without a batch lookup of its own asks
+    its user store for one owner at a time. The login names looked up in the user stores are written to
+    the user caches, as a ``User`` built for each owner would have done.
+
+    :param tokens: The token objects to check, e.g. one chunk of the token janitor
+    :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
+    :return: The serials of the orphaned tokens
+    """
+    token_by_id = {token.token.id: token for token in tokens}
+    owner_by_token_id = {token_id: owners[0]
+                         for token_id, owners in _get_owners_by_token_id(list(token_by_id)).items()}
+    resolvers = get_resolver_list()
+
+    orphaned_serials = set()
+    owners_to_resolve = {}
+    for token_id, owner in owner_by_token_id.items():
+        if owner.resolver and not resolvers.get(owner.resolver, {}).get("type"):
+            # The resolver of the owner was deleted, so the user can not exist any more. This has to be checked
+            # before the lookup, which reports a deleted resolver like one whose user store can not be reached.
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+        elif not owner.user_id:
+            # The user object of an owner without a user ID has no login name
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+        else:
+            owners_to_resolve[token_id] = owner
+
+    cached_login_by_owner = _get_cached_logins(list(owners_to_resolve.values()))
+    uncached_owners = [owner for owner in owners_to_resolve.values()
+                       if (owner.resolver, owner.user_id) not in cached_login_by_owner]
+    resolved = _resolve_owner_logins(uncached_owners)
+    login_by_owner = resolved.login_by_owner | cached_login_by_owner
+    unresolvable_owners = set(resolved.unresolvable_owners)
+
+    for token_id, owner in owners_to_resolve.items():
+        owner_key = (owner.resolver, owner.user_id)
+        if owner_key in unresolvable_owners:
+            orphaned = orphaned_on_error
+        else:
+            orphaned = not login_by_owner.get(owner_key) or not owner.realm
+        if orphaned:
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+    _write_back_logins({owner_key: login for owner_key, login in login_by_owner.items()
+                        if owner_key not in cached_login_by_owner})
+    return orphaned_serials
 
 
 def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | None = None) -> list[dict]:

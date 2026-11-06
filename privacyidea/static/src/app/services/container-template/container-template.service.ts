@@ -43,8 +43,6 @@ export interface ContainerTemplateServiceInterface {
   templateTokenTypesResource: HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
   availableContainerTypes: Signal<string[]>;
 
-  canSaveTemplate(template: ContainerTemplate): boolean;
-
   copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean>;
 
   deleteTemplate(name: string): Promise<void>;
@@ -102,12 +100,13 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onContainersCreate() && !this.contentService.onContainersTemplates()) {
+    if (!this.contentService.onContainersCreate() && !this.contentService.onAnyContainerTemplatesRoute()) {
       return undefined;
     }
 
     let params: Record<string, string> = {};
-    if (this.containerService.selectedContainerType()) {
+    // The template pages need every template, since a template name is unique across the container types.
+    if (!this.contentService.onAnyContainerTemplatesRoute() && this.containerService.selectedContainerType()) {
       params = { container_type: this.containerService.selectedContainerType()!.containerType };
     }
 
@@ -162,14 +161,6 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   });
 
   // --- Public Methods ---
-  canSaveTemplate(template: ContainerTemplate): boolean {
-    if (template.name.trim().length === 0) return false;
-    if (!/^[a-zA-Z0-9._-]*$/.test(template.name)) return false;
-    if (template.container_type.trim().length === 0) return false;
-    if (template.template_options.tokens.length === 0) return false;
-    return true;
-  }
-
   copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean> {
     const newTemplate: ContainerTemplate = {
       ...template,

@@ -47,8 +47,8 @@
         } @else {
           <span i18n="@@machine.editMachineResolver">Edit Machine Resolver</span>
           <span>:&nbsp;</span>
-          <span class="blue-base">{{ currentMachineResolver().resolvername }}</span>
-          <app-copy-button [copyText]="currentMachineResolver().resolvername"></app-copy-button>
+          <span class="blue-base">{{ nameForm.resolvername().value() }}</span>
+          <app-copy-button [copyText]="nameForm.resolvername().value()"></app-copy-button>
         }
       </h3>
 
@@ -91,22 +91,25 @@
             <mat-form-field class="input-width-l">
               <mat-label i18n="@@machine.machineResolverName">Machine Resolver Name</mat-label>
               <app-clearable-input
-                (clearButtonClick)="onResolvernameChange('')"
-                [showClearButton]="!!currentMachineResolver().resolvername">
+                (clearButtonClick)="clearName()"
+                [showClearButton]="!!nameForm.resolvername().value()">
                 <input
                   matInput
-                  [appErrorState]="nameHasPatternError() || nameIsReserved()"
-                  [value]="currentMachineResolver().resolvername"
-                  (input)="onResolvernameChange($any($event.target).value)" />
+                  [formField]="nameForm.resolvername" />
               </app-clearable-input>
-              @if (nameHasPatternError()) {
+              @if (hasError(nameForm.resolvername, ERR.required)) {
+                <mat-error i18n="@@machine.machineResolverNameRequired"
+                  >Machine resolver name is <strong>required</strong>.</mat-error
+                >
+              }
+              @if (hasError(nameForm.resolvername, ERR.pattern)) {
                 <mat-error i18n="@@machine.machineResolverNameContains"
                   >Only <strong>letters, digits and . _ -</strong> are allowed.</mat-error
                 >
               }
-              @if (nameIsReserved()) {
+              @if (hasError(nameForm.resolvername, ERR.reservedName)) {
                 <mat-error i18n="@@common.cannotBeNamed"
-                  >Cannot be named "{{ currentMachineResolver().resolvername }}".</mat-error
+                  >Cannot be named "{{ nameForm.resolvername().value() }}".</mat-error
                 >
               }
             </mat-form-field>
@@ -130,15 +133,13 @@
               class="input-width-xl"
               [canEdit]="canMakeChanges()"
               [machineResolverData]="currentMachineResolver().data"
-              (newData)="onNewData($event)"
-              (newValidator)="onNewValidator($event)" />
+              (newData)="onNewData($event)" />
           }
           @case ("ldap") {
             <app-machine-resolver-ldap-tab
               [canEdit]="canMakeChanges()"
               [machineResolverData]="currentMachineResolver().data"
-              (newData)="onNewData($event)"
-              (newValidator)="onNewValidator($event)" />
+              (newData)="onNewData($event)" />
           }
           @default {
             <p i18n="@@machine.unknownMachine">Unknown machine resolver type: {{ currentMachineResolver().type }}</p>

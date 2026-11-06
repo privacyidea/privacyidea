@@ -762,8 +762,13 @@ class SQLResolverTestCase(MyTestCase):
         self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
 
         # A user ID the userid column can not hold is skipped, the rest of the batch is unaffected
-        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"])
+        unresolvable_ids = set()
+        user_info_map = resolver.get_user_info_batch(["1", "not-a-number"], attributes=["username"],
+                                                     unresolvable_ids=unresolvable_ids)
         self.assertSetEqual({"1"}, set(user_info_map.keys()), user_info_map)
+        # Such a user does not exist, as for a single lookup, so the ID is not reported as unresolvable
+        self.assertSetEqual(set(), unresolvable_ids)
+        self.assertEqual("", resolver.getUsername("not-a-number"))
 
         # With every ID of a chunk skipped there is nothing left to ask the database for
         with mock.patch.object(resolver.session, "execute", wraps=resolver.session.execute) as mock_execute:
@@ -794,6 +799,28 @@ class SQLResolverTestCase(MyTestCase):
         self.assertEqual(1, mock_execute.call_count)
         self.assertDictEqual({"1": "user1", "3": "cornelius", "4242": ""}, login_map)
         self.assertEqual(resolver.getUsername("3"), login_map["3"], login_map)
+
+    def test_13g_get_usernames_batch_with_a_padded_user_id(self) -> None:
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        padded_user_id = "0003"
+
+        # An integer userid column matches a padded ID, so a single lookup finds the user
+        self.assertEqual("cornelius", resolver.getUsername(padded_user_id))
+
+        # The batch has to map the row back to the ID it was asked for, not to the one the column holds
+        unresolvable_ids = set()
+        login_map = resolver.get_usernames_batch([padded_user_id], unresolvable_ids=unresolvable_ids)
+        self.assertDictEqual({padded_user_id: "cornelius"}, login_map)
+        self.assertSetEqual(set(), unresolvable_ids)
+
+        # Both spellings of the ID point at the same row, and one answer may not displace the other
+        login_map = resolver.get_usernames_batch(["3", padded_user_id])
+        self.assertDictEqual({"3": "cornelius", padded_user_id: "cornelius"}, login_map)
+
+        # A user ID without a row still maps to the empty string
+        login_map = resolver.get_usernames_batch([padded_user_id, "04242"])
+        self.assertDictEqual({padded_user_id: "cornelius", "04242": ""}, login_map)
 
     def test_13a_get_user_info_batch_propagates_a_db_error(self):
         resolver = SQLResolver()
@@ -3329,6 +3356,15 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(1, len(search_filters), search_filters)
         self.assertSetEqual({objectGUIDs[0]}, set(user_info_map.keys()), user_info_map)
 
+        # The skipped id is reported, so that a caller does not take it for a user that does not exist
+        unresolvable_ids = set()
+        login_map = resolver.get_usernames_batch([objectGUIDs[0], "not-a-guid"], unresolvable_ids=unresolvable_ids)
+        self.assertSetEqual({"not-a-guid"}, unresolvable_ids)
+        self.assertDictEqual({objectGUIDs[0]: "alice", "not-a-guid": ""}, login_map)
+        # A single lookup of that id fails in the same way
+        with self.assertRaises(ValueError):
+            resolver.getUsername("not-a-guid")
+
     @ldap3mock.activate
     def test_50a_get_user_info_batch_ignores_referrals_and_matches_the_uid_case(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
@@ -3523,7 +3559,7 @@ class BaseResolverTestCase(MyTestCase):
         self.assertDictEqual({}, resolver.get_user_info_batch([]))
 
     def test_02_get_usernames_batch(self):
-        # The login names go through getUsername, which for several resolvers is cheaper than
+        # The login names go through lookup_username, which for several resolvers is cheaper than
         # reading the full user information
         resolver = UserIdResolver()
         with mock.patch.object(UserIdResolver, "getUsername",
@@ -3540,6 +3576,36 @@ class BaseResolverTestCase(MyTestCase):
         self.assertEqual(2, mock_get_username.call_count)
 
         self.assertDictEqual({}, resolver.get_usernames_batch([]))
+
+    def test_02a_get_usernames_batch_reports_a_user_store_that_does_not_answer(self) -> None:
+        # The login names go through lookup_username, which tells a user that does not exist from a user
+        # store that did not answer. The ID of such a user is reported instead of raising, so that one
+        # failing user does not cost the whole batch.
+        resolver = UserIdResolver()
+        unanswered_user_id = "2"
+
+        def lookup_username(user_id: str) -> str:
+            if user_id == unanswered_user_id:
+                raise ResolverError(str(USER_LOOKUP_FAILED))
+            return f"user{user_id}"
+
+        unresolvable_ids = set()
+        with mock.patch.object(UserIdResolver, "lookup_username",
+                               side_effect=lookup_username) as mock_lookup_username:
+            login_map = resolver.get_usernames_batch(["1", unanswered_user_id, "3"],
+                                                     unresolvable_ids=unresolvable_ids)
+
+        self.assertDictEqual({"1": "user1", unanswered_user_id: "", "3": "user3"}, login_map)
+        self.assertSetEqual({unanswered_user_id}, unresolvable_ids)
+        # Every ID is asked exactly once, so a reported ID does not cost a second pass
+        self.assertEqual(3, mock_lookup_username.call_count, mock_lookup_username.call_args_list)
+
+    def test_02b_get_usernames_batch_without_a_set_to_report_to(self) -> None:
+        resolver = UserIdResolver()
+        with mock.patch.object(UserIdResolver, "lookup_username",
+                               side_effect=ResolverError(str(USER_LOOKUP_FAILED))):
+            login_map = resolver.get_usernames_batch(["1"])
+        self.assertDictEqual({"1": ""}, login_map)
 
     def test_03_parse_config_yaml(self):
         # Every call returns its own copy, the first call too, so a change of one result does not reach the next

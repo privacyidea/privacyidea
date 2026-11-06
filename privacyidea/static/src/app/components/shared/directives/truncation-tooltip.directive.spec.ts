@@ -42,6 +42,19 @@ import { TruncationTooltipDirective } from "./truncation-tooltip.directive";
       [appTruncationTooltip]="text()">
       <a href="#">{{ text() }}</a>
     </span>
+    <!-- A host whose clipping descendant is named by clipSelector, as a Material toggle's inner label is. -->
+    <button
+      class="with-clipper"
+      clipSelector=".clipper"
+      [appTruncationTooltip]="text()">
+      <span class="clipper">{{ text() }}</span>
+    </button>
+    <button
+      class="with-missing-clipper"
+      clipSelector=".absent"
+      [appTruncationTooltip]="text()">
+      {{ text() }}
+    </button>
   `
 })
 class HostComponent {
@@ -206,5 +219,48 @@ describe("TruncationTooltipDirective", () => {
     element.dispatchEvent(new MouseEvent("mouseenter"));
 
     expect(tooltipOf("with-text").disabled).toBe(true);
+  });
+
+  it("measures the descendant named by clipSelector instead of the host", () => {
+    const host = elementOf("with-clipper");
+    setWidths(host, 100, 100);
+    setWidths(host.querySelector(".clipper") as HTMLElement, 300, 100);
+
+    host.dispatchEvent(new MouseEvent("mouseenter"));
+
+    const tooltip = tooltipOf("with-clipper");
+    expect(tooltip.disabled).toBe(false);
+    expect(tooltip.message).toBe("a very long resolver name");
+  });
+
+  it("stays disabled when only the host overflows and clipSelector names a descendant that fits", () => {
+    const host = elementOf("with-clipper");
+    setWidths(host, 300, 100);
+    setWidths(host.querySelector(".clipper") as HTMLElement, 100, 100);
+
+    host.dispatchEvent(new MouseEvent("mouseenter"));
+
+    expect(tooltipOf("with-clipper").disabled).toBe(true);
+  });
+
+  it("opens from a focus inside the host when clipSelector names the clipping descendant", () => {
+    jest.useFakeTimers();
+    const host = elementOf("with-clipper");
+    setWidths(host.querySelector(".clipper") as HTMLElement, 300, 100);
+
+    host.focus();
+    jest.advanceTimersByTime(0);
+
+    expect(tooltipOf("with-clipper")._isTooltipVisible()).toBe(true);
+    jest.useRealTimers();
+  });
+
+  it("measures the host when clipSelector matches nothing", () => {
+    const host = elementOf("with-missing-clipper");
+    setWidths(host, 300, 100);
+
+    host.dispatchEvent(new MouseEvent("mouseenter"));
+
+    expect(tooltipOf("with-missing-clipper").disabled).toBe(false);
   });
 });

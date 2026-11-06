@@ -37,21 +37,18 @@
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@token.otpValue">OTP Value</mat-label>
       <input
-        #otpValueInput
-        [value]="otpValue()"
-        (input)="otpValue.set($any($event.target).value)"
-        [disabled]="currentStep() !== 'init'"
+        [formField]="searchForm.otpValue"
         i18n-placeholder="@@token.enterSomeOtpValue"
         id="otpValue"
         matInput
-        name="otpValue"
-        placeholder="Enter some OTP value"
-        required />
-      <mat-error i18n="@@token.otpValueRequired">OTP value is <strong>required</strong></mat-error>
+        placeholder="Enter some OTP value" />
+      @if (hasError(searchForm.otpValue, ERR.required)) {
+        <mat-error i18n="@@token.otpValueRequired">OTP value is <strong>required</strong>.</mat-error>
+      }
     </mat-form-field>
     <button
       (click)="onClickRunSearch()"
-      [disabled]="otpValue() === ''"
+      [disabled]="runSearchDisabled()"
       class="action-button-primary button-width-l margin-bottom-16"
       mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
@@ -77,8 +74,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@common.tokenType">Token Type</mat-label>
         <mat-select
-          (selectionChange)="tokenType.set($event.value)"
-          [value]="tokenType()"
+          [formField]="searchForm.tokenType"
           i18n-placeholder="@@token.selectTokenType"
           placeholder="Select token type">
           @for (type of tokenTypesWithOTP(); track type) {
@@ -89,8 +85,7 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.assignmentState">Assignment State</mat-label>
         <mat-select
-          (selectionChange)="assignmentState.set($event.value)"
-          [value]="assignmentState()"
+          [formField]="searchForm.assignmentState"
           i18n-placeholder="@@token.specifyAssignment"
           placeholder="Specify assignment state">
           @for (assignment of assignmentStates; track assignment) {
@@ -106,27 +101,30 @@
       <mat-form-field class="input-width-l">
         <mat-label i18n="@@token.serialSubstring">Serial Substring</mat-label>
         <input
-          [value]="serialSubstring()"
-          (input)="serialSubstring.set($any($event.target).value)"
+          [formField]="searchForm.serialSubstring"
           i18n-placeholder="@@token.enterOptional"
           id="serialSubstring"
           matInput
-          name="serialSubstring"
           placeholder="Enter optional serial substring" />
       </mat-form-field>
       <div class="flex-column count-window-column hint-spacer">
         <mat-form-field class="input-width-s">
           <mat-label i18n="@@common.countWindow">Count Window</mat-label>
           <input
-            [value]="countWindow()"
-            (input)="countWindow.set(+$any($event.target).value)"
+            [formField]="searchForm.countWindow"
             i18n-placeholder="@@token.lookaheadOtpValues"
             id="countWindow"
             matInput
-            name="countWindow"
             placeholder="Lookahead OTP values"
             type="number" />
           <mat-hint i18n="@@token.setNumberLookahead">Set number of lookahead OTP values.</mat-hint>
+          @if (hasError(searchForm.countWindow, ERR.parse)) {
+            <mat-error i18n="@@token.countWindowNotNumber">Enter a <strong>valid number</strong>.</mat-error>
+          } @else if (hasError(searchForm.countWindow, ERR.required)) {
+            <mat-error i18n="@@token.countWindowRequired">Count window is <strong>required</strong>.</mat-error>
+          } @else if (hasError(searchForm.countWindow, ERR.min)) {
+            <mat-error i18n="@@token.countWindowMin">Count window must be at least <strong>1</strong>.</mat-error>
+          }
         </mat-form-field>
       </div>
     </div>

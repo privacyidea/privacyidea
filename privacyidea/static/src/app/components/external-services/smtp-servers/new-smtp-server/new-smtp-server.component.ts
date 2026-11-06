@@ -19,7 +19,7 @@
 
 import { Component, computed, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, email, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, email, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -37,7 +37,8 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { reservedNames } from "@utils/reserved-names.utils";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 interface SmtpFormModel {
@@ -56,7 +57,6 @@ interface SmtpFormModel {
   private_key_password: string;
   smime: boolean;
   dont_send_on_error: boolean;
-  recipient: string;
 }
 
 const EMPTY_SMTP_FORM: SmtpFormModel = {
@@ -74,8 +74,7 @@ const EMPTY_SMTP_FORM: SmtpFormModel = {
   private_key: "",
   private_key_password: "",
   smime: false,
-  dont_send_on_error: false,
-  recipient: ""
+  dont_send_on_error: false
 };
 
 @Component({
@@ -114,16 +113,23 @@ export class NewSmtpServerComponent implements OnDestroy {
   smtpModel = signal<SmtpFormModel>({ ...EMPTY_SMTP_FORM });
 
   smtpForm = form(this.smtpModel, (f) => {
-    required(f.identifier);
-    pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
     // POST /smtpserver/send_test_email sends a test email, and browsers drop "." and ".." from the URL,
     // so a server with one of these names is never saved.
-    reservedNames(f.identifier, ["send_test_email", ".", ".."]);
+    identifierName(f.identifier, { reserved: ["send_test_email", ".", ".."] });
     required(f.server);
     required(f.sender);
     email(f.sender);
     disabled(f.identifier, () => this.isEditMode());
   });
+
+  /** Recipient of the test email. It is not part of the server definition, so typing it leaves `smtpForm` pristine. */
+  recipientModel = signal({ recipient: "" });
+
+  recipientForm = form(this.recipientModel);
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   showTLS = computed(() => !this.smtpModel().server?.toLowerCase().startsWith("smtps:"));
 
@@ -183,8 +189,7 @@ export class NewSmtpServerComponent implements OnDestroy {
       private_key: data?.private_key || "",
       private_key_password: data?.private_key_password || "",
       smime: data?.smime ?? false,
-      dont_send_on_error: data?.dont_send_on_error ?? false,
-      recipient: ""
+      dont_send_on_error: data?.dont_send_on_error ?? false
     });
     this.smtpForm().reset();
   }
@@ -197,11 +202,7 @@ export class NewSmtpServerComponent implements OnDestroy {
     if (!this.smtpForm().valid()) {
       return false;
     }
-    const model = this.smtpModel();
-    const server = Object.fromEntries(Object.entries(model).filter(([k]) => k !== "recipient")) as Omit<
-      typeof model,
-      "recipient"
-    >;
+    const server: SmtpFormModel = { ...this.smtpModel() };
 
     if (server.private_key_password === this.initialPrivateKeyPassword) {
       delete (server as Partial<SmtpServer>).private_key_password;
@@ -220,7 +221,7 @@ export class NewSmtpServerComponent implements OnDestroy {
   async test(): Promise<void> {
     if (this.smtpForm().valid()) {
       this.isTesting.set(true);
-      const params = this.smtpModel();
+      const params = { ...this.smtpModel(), recipient: this.recipientModel().recipient };
       await this.smtpService.testSmtpServer(params);
       this.isTesting.set(false);
     }
