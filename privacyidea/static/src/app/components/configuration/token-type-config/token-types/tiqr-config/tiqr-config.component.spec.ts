@@ -32,6 +32,7 @@ import {
 } from "@constants/token.constants";
 import { createTokenTypeConfigForm } from "@testing/token-type-config-form";
 import { touchAll } from "@utils/form-state.utils";
+import { axe } from "@testing/axe";
 
 const REG_SERVER_PLACEHOLDER = "http://pi.server/ttype/tiqr";
 const LOGO_URL_PLACEHOLDER = "https://pi.server/static/css/privacyIDEA1.png";
@@ -202,5 +203,12 @@ describe("TiqrConfigComponent", () => {
 
       expect(indicator()).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    await create();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
