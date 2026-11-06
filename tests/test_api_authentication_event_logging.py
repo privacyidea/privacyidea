@@ -50,6 +50,7 @@ from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyActio
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.models import Audit, Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
@@ -633,6 +634,90 @@ class _AuthLogContractTests(_ContractHost):
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial, self.second_serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path)
+
+    def test_a_trigger_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
+        # increase_failcounter_on_challenge raises the failcounter before the challenge is created; at maxfail - 1 the
+        # trigger itself makes the token unusable, so no challenge is created although the PIN matched.
+        self._enable_challenge_response()
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_cr")
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        response = self._authenticate(self.pin)
+
+        self._assert_failed(response)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={self.serial},
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
+                                        endpoint=self.endpoint_path)
+
+    def test_a_token_the_trigger_fills_the_failcounter_of_stays_out_of_the_messages(self):
+        self._add_second_token(pin=self.pin)
+        self._enable_challenge_response()
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_cr")
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.second_serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        detail = self._authenticate(self.pin).json["detail"]
+
+        self.assertListEqual([self.serial], [challenge["serial"] for challenge in detail["multi_challenge"]], detail)
+        challenge_message = detail["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], detail["messages"])
+        self.assertEqual(challenge_message, detail["message"])
+
+    def test_an_undelivered_challenge_logs_challenge_trigger_fail(self):
+        remove_token(self.serial)
+        delivery_failures = {
+            "gateway raises": {"side_effect": Exception("gateway unavailable")},
+            "gateway refuses": {"return_value": (False, "")},
+        }
+        tokens = {
+            "sms": ({"type": "sms", "phone": "+491234567"}, "SmsTokenClass._send_sms"),
+            "email": ({"type": "email", "email": "cornelius@example.com"}, "EmailTokenClass._compose_email"),
+        }
+        for (token_type, (params, sender)), (failure, mock_args) in itertools.product(tokens.items(),
+                                                                                       delivery_failures.items()):
+            with self.subTest(token_type=token_type, failure=failure):
+                token = init_token({**params, "pin": self.pin}, user=self.user)
+                self._clear_log()
+                with mock.patch(f"privacyidea.lib.tokens.{token_type}token.{sender}", **mock_args):
+                    response = self._authenticate(self.pin)
+
+                self._assert_failed(response)
+                entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+                assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                                serials={token.get_serial()},
+                                                reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                                reasons={token.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                                endpoint=self.endpoint_path)
+                remove_token(token.get_serial())
+
+    def test_an_undelivered_challenge_outranks_a_wrong_pin_of_another_token(self):
+        hotp = get_one_token(serial=self.serial)
+        hotp.set_pin("other-pin")
+        hotp.save()
+        email = init_token({"type": "email", "email": "cornelius@example.com", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.emailtoken.EmailTokenClass._compose_email",
+                        side_effect=Exception("gateway unavailable")):
+            response = self._authenticate(self.pin)
+
+        self._assert_failed(response)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={email.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={email.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
                                         endpoint=self.endpoint_path)
 
     def test_the_row_lists_every_reason_while_every_token_keeps_its_own(self):
@@ -1935,6 +2020,232 @@ class TriggerChallengeAuthLogTestCase(AuthLogTestCase):
 
         entries = assert_authentication_log([AuthEventType.NO_TOKEN])
         assert_authentication_log_entry(entries[AuthEventType.NO_TOKEN], user=self.user,
+                                        endpoint='/validate/triggerchallenge')
+
+    def _trigger(self) -> Response:
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"user": self.username},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res
+
+    def _init_hotp(self, serial: str) -> TokenClass:
+        return init_token({"serial": serial, "type": "hotp", "otpkey": self.otpkey, "pin": self.pin}, user=self.user)
+
+    def test_triggerchallenge_without_usable_token_logs_no_usable_token(self):
+        # Every token is left out for a different reason, and each one is named
+        disabled = get_one_token(serial=self.serial)
+        disabled.enable(False)
+        disabled.save()
+        revoked = self._init_hotp("AUTHLOG_REVOKED")
+        revoke_token(revoked.get_serial())
+        failcount = self._init_hotp("AUTHLOG_FAILCOUNT")
+        for _ in range(failcount.get_max_failcount()):
+            failcount.inc_failcount()
+        expired = self._init_hotp("AUTHLOG_EXPIRED")
+        expired.set_validity_period_end("2014-12-30T16:00+0200")
+        spass = init_token({"serial": "AUTHLOG_SPASS", "type": "spass", "pin": self.pin}, user=self.user)
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=[AuthEventReason.TOKEN_DISABLED, AuthEventReason.TOKEN_REVOKED,
+                                                AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                                AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD,
+                                                AuthEventReason.TOKEN_NO_CHALLENGE_MODE],
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                                                 revoked.get_serial(): AuthEventReason.TOKEN_REVOKED,
+                                                 failcount.get_serial(): AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                                 expired.get_serial(): AuthEventReason.TOKEN_OUTSIDE_VALIDITY_PERIOD,
+                                                 spass.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_increases_the_failcounter_of_usable_tokens_only(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        expired = self._init_hotp("AUTHLOG_EXPIRED")
+        expired.set_validity_period_end("2014-12-30T16:00+0200")
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        self.assertEqual(1, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(0, get_one_token(serial=expired.get_serial()).token.failcount)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={self.serial}, transaction_id=res.json["detail"]["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_leaves_out_disabled_token_types(self):
+        # A challenge of a disabled type could not be answered at /validate/check, so it is not created, and the
+        # failcounter of the token is not increased either
+        set_policy("authlog_disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "authlog_disabled_hotp")
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        totp = init_token({"serial": "AUTHLOG_TOTP", "type": "totp", "otpkey": self.otpkey, "pin": self.pin},
+                          user=self.user)
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        self.assertListEqual([totp.get_serial()],
+                             [challenge["serial"] for challenge in res.json["detail"]["multi_challenge"]])
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        self.assertEqual(0, get_one_token(serial=self.serial).token.failcount)
+        self.assertEqual(1, get_one_token(serial=totp.get_serial()).token.failcount)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={totp.get_serial()},
+                                        transaction_id=res.json["detail"]["transaction_id"],
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_with_only_disabled_token_types_logs_no_usable_token(self):
+        set_policy("authlog_disabled_hotp", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=hotp")
+        self.addCleanup(delete_policy, "authlog_disabled_hotp")
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertListEqual([], get_challenges(serial=self.serial))
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_TYPE_DISABLED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_TYPE_DISABLED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_names_the_token_type_before_the_token_state(self):
+        remove_token(self.serial)
+        revoked = init_token({"serial": "AUTHLOG_SPASS_REVOKED", "type": "spass", "pin": self.pin}, user=self.user)
+        revoke_token(revoked.get_serial())
+        failcount = init_token({"serial": "AUTHLOG_SPASS_FAILCOUNT", "type": "spass", "pin": self.pin}, user=self.user)
+        failcount.token.failcount = failcount.get_max_failcount()
+        failcount.save()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertNotIn("message", res.json["detail"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_NO_CHALLENGE_MODE,
+                                        reasons={revoked.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE,
+                                                 failcount.get_serial(): AuthEventReason.TOKEN_NO_CHALLENGE_MODE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_without_usable_token_names_the_refusal(self):
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount()):
+            token.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        self.assertEqual("Failcounter exceeded", res.json["detail"]["message"], res.json)
+
+    def test_triggerchallenge_with_a_challenge_keeps_refusals_out_of_the_messages(self):
+        failcount = self._init_hotp("AUTHLOG_FAILCOUNT")
+        for _ in range(failcount.get_max_failcount()):
+            failcount.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(1, res.json["result"]["value"], res.json)
+        challenge_message = res.json["detail"]["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], res.json["detail"]["messages"])
+        self.assertEqual(challenge_message, res.json["detail"]["message"])
+
+    def test_triggerchallenge_keeps_a_token_it_fills_the_failcounter_of_out_of_the_messages(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        filled = self._init_hotp("AUTHLOG_FILLED")
+        for _ in range(filled.get_max_failcount() - 1):
+            filled.inc_failcount()
+
+        detail = self._trigger().json["detail"]
+
+        self.assertListEqual([self.serial], [challenge["serial"] for challenge in detail["multi_challenge"]], detail)
+        challenge_message = detail["multi_challenge"][0]["message"]
+        self.assertListEqual([challenge_message], detail["messages"])
+        self.assertEqual(challenge_message, detail["message"])
+
+    def test_triggerchallenge_that_fills_the_failcounter_logs_challenge_trigger_fail(self):
+        set_policy("authlog_inc_fail", scope=SCOPE.AUTH, action=PolicyAction.INCREASE_FAILCOUNTER_ON_CHALLENGE)
+        self.addCleanup(delete_policy, "authlog_inc_fail")
+        token = get_one_token(serial=self.serial)
+        for _ in range(token.get_max_failcount() - 1):
+            token.inc_failcount()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={self.serial},
+                                        reason=AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_with_an_undelivered_challenge_logs_challenge_trigger_fail(self):
+        # The row names the token that got no challenge and why; the disabled token is only in the detail
+        disabled = get_one_token(serial=self.serial)
+        disabled.enable(False)
+        disabled.save()
+        sms = init_token({"type": "sms", "phone": "+491234567", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.smstoken.SmsTokenClass._send_sms",
+                        side_effect=Exception("gateway unavailable")):
+            res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={sms.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={self.serial: AuthEventReason.TOKEN_DISABLED,
+                                                 sms.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
+                                        endpoint='/validate/triggerchallenge')
+
+    def _init_passkey(self) -> TokenClass:
+        # Only the token state matters here, the trigger never reaches the credential
+        passkey = init_token({"type": "passkey"}, user=self.user)
+        passkey.token.rollout_state = RolloutState.ENROLLED
+        passkey.token.active = True
+        passkey.save()
+        return passkey
+
+    def test_triggerchallenge_for_passkeys_without_trigger_by_pin_logs_no_usable_token(self):
+        remove_token(self.serial)
+        passkey = self._init_passkey()
+
+        res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.NO_USABLE_TOKEN])
+        assert_authentication_log_entry(entries[AuthEventType.NO_USABLE_TOKEN], user=self.user,
+                                        reason=AuthEventReason.TOKEN_NOT_APPLICABLE,
+                                        reasons={passkey.get_serial(): AuthEventReason.TOKEN_NOT_APPLICABLE},
+                                        endpoint='/validate/triggerchallenge')
+
+    def test_triggerchallenge_names_only_the_undelivered_token_next_to_a_passkey(self):
+        remove_token(self.serial)
+        passkey = self._init_passkey()
+        sms = init_token({"type": "sms", "phone": "+491234567", "pin": self.pin}, user=self.user)
+
+        with mock.patch("privacyidea.lib.tokens.smstoken.SmsTokenClass._send_sms",
+                        side_effect=Exception("gateway unavailable")):
+            res = self._trigger()
+
+        self.assertEqual(0, res.json["result"]["value"], res.json)
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGER_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGER_FAIL], user=self.user,
+                                        serials={sms.get_serial()},
+                                        reason=AuthEventReason.CHALLENGE_NOT_DELIVERED,
+                                        reasons={passkey.get_serial(): AuthEventReason.TOKEN_NOT_APPLICABLE,
+                                                 sms.get_serial(): AuthEventReason.CHALLENGE_NOT_DELIVERED},
                                         endpoint='/validate/triggerchallenge')
 
 
