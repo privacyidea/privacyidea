@@ -3155,6 +3155,7 @@ class PushGateTestCase(PushTokenTestMixin, _GateContract, _UserGateContract, _Po
     """
 
     endpoint_path = "/ttype/push"
+    audit_route = "/ttype/<ttype>"
     username = "selfservice"
     counted_event_type = AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND
     # One: the answer consumes the challenge, and staging a second one would need a second trigger that the
