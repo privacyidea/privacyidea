@@ -82,7 +82,11 @@
     </div>
     <div class="container-actions-row">
       <div class="container-actions-row-inner">
-        <app-container-table-actions #containerTableActions />
+        <app-container-table-actions
+          #containerTableActions
+          [comparisonActive]="comparisonVisible()"
+          (comparisonLoaded)="showComparison($event)"
+          (comparisonHidden)="hideComparison()" />
       </div>
     </div>
     <div
@@ -95,7 +99,7 @@
         i18n-aria-label="@@container.containerData"
         mat-table
         multiTemplateDataRows>
-        @for (column of columnsKeyMap; track column) {
+        @for (column of displayedColumns(); track column.key) {
           <ng-container [matColumnDef]="column.key">
             @if (column.key === "select") {
               <th
@@ -118,7 +122,16 @@
                 <div class="flex ali-center">
                   {{ column.label }}
                   <div class="flex">
-                    @if (
+                    @if (column.key === "template") {
+                      <button
+                        [matMenuTriggerFor]="templateFilterMenu"
+                        [attr.aria-label]="column.label | filterByLabel"
+                        class="filter-button"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
+                      </button>
+                    } @else if (
                       apiFilterKeyMap[column.key] &&
                       containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
@@ -167,14 +180,16 @@
                         </button>
                       }
                     }
-                    <button
-                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      [attr.aria-label]="column.label | sortByLabel"
-                      class="sort-button"
-                      mat-icon-button
-                      type="button">
-                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                    </button>
+                    @if (!unsortableColumnKeys.includes(column.key)) {
+                      <button
+                        (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                        [attr.aria-label]="column.label | sortByLabel"
+                        class="sort-button"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                      </button>
+                    }
                   </div>
                 </div>
               </th>
@@ -246,6 +261,27 @@
                       </div>
                     }
                   }
+                  @case ("template") {
+                    {{ element.template }}
+                  }
+                  @case ("differences") {
+                    @let comparison = comparisonByContainerSerial()[element.serial];
+                    @if (comparison) {
+                      @if (!comparison.templateName) {
+                      } @else if (comparison.missing.length === 0 && comparison.additional.length === 0) {
+                        <span i18n="@@container.equal">Equal</span>
+                      } @else {
+                        <div class="flex-column gap-8">
+                          @for (tokenType of comparison.missing; track tokenType) {
+                            <span class="highlight-false">- {{ tokenType }}</span>
+                          }
+                          @for (tokenType of comparison.additional; track tokenType) {
+                            <span class="highlight-warning">+ {{ tokenType }}</span>
+                          }
+                        </div>
+                      }
+                    }
+                  }
                   @case ("user_name") {
                     @if (element[column.key]) {
                       <app-copyable [copyText]="element[column.key]">
@@ -287,7 +323,7 @@
         <ng-container matColumnDef="expandedDetail">
           <td
             *matCellDef="let element"
-            [attr.colspan]="columnKeys.length"
+            [attr.colspan]="displayedColumnKeys().length"
             mat-cell>
             @if (expandedElement === element) {
               <div
@@ -325,12 +361,12 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="columnKeys; sticky: true"
+          *matHeaderRowDef="displayedColumnKeys(); sticky: true"
           mat-header-row></tr>
 
         <tr
           (click)="expandedElement = expandedElement === row ? null : row"
-          *matRowDef="let row; columns: columnKeys"
+          *matRowDef="let row; columns: displayedColumnKeys()"
           class="example-element-row"
           mat-row></tr>
 
@@ -340,7 +376,7 @@
           mat-row></tr>
 
         <tr *matNoDataRow>
-          <td [attr.colspan]="columnKeys.length">
+          <td [attr.colspan]="displayedColumnKeys().length">
             <app-table-state
               [status]="tableState.rowStatus()"
               [table]="tableState" />
@@ -374,13 +410,55 @@
 <mat-menu
   #advancedFilterMenu="matMenu"
   class="button-width-m">
-  @for (keyword of advancedApiFilterKeys; track keyword) {
+  @for (keyword of toolbarFilterKeys; track keyword) {
     <button
       (click)="onKeywordClick(keyword)"
       mat-menu-item>
       <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
       {{ keyword }}
     </button>
+  }
+</mat-menu>
+
+<mat-menu #templateFilterMenu="matMenu">
+  <button
+    (click)="onTemplateFilterSelected('all')"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n="@@common.clearFilter">Clear Filter</span>
+  </button>
+  <mat-divider />
+  <button
+    (click)="onTemplateFilterSelected('with-template')"
+    mat-menu-item>
+    <span i18n="@@container.withAnyTemplate">With template</span>
+  </button>
+  <button
+    (click)="onTemplateFilterSelected('without-template')"
+    mat-menu-item>
+    <span i18n="@@container.withoutTemplate">Without template</span>
+  </button>
+  @if (containerTemplateService.templatesResource.isLoading()) {
+    <button
+      disabled
+      mat-menu-item>
+      <span i18n="@@common.loading">Loading...</span>
+    </button>
+  } @else if (containerTemplateService.templates().length === 0) {
+    <button
+      disabled
+      mat-menu-item>
+      <span i18n="@@container.noTemplatesAvailable">No templates available</span>
+    </button>
+  } @else {
+    <mat-divider />
+    @for (template of containerTemplateService.templates(); track template.name) {
+      <button
+        (click)="onTemplateFilterSelected('specific', template.name)"
+        mat-menu-item>
+        {{ template.name }}
+      </button>
+    }
   }
 </mat-menu>
 

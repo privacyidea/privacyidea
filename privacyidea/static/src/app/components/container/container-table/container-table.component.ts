@@ -27,7 +27,8 @@ import {
   WritableSignal,
   computed,
   inject,
-  linkedSignal
+  linkedSignal,
+  signal
 } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
@@ -36,7 +37,10 @@ import {
   CONTAINER_STATE_OPTIONS,
   ContainerDetailData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerTemplateComparisonRow,
+  ContainerServiceInterface,
+  TEMPLATE_FILTER_ANY,
+  TEMPLATE_FILTER_NONE
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
@@ -58,6 +62,10 @@ import { ContainerTableActionsComponent } from "@components/container/container-
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "@services/container-template/container-template.service";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
@@ -69,7 +77,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
-import { withUser } from "@utils/filter.utils";
+import { exactMatch, withUser } from "@utils/filter.utils";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
@@ -85,7 +93,12 @@ const columnsKeyMap = [
   { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
   { key: "user_name", label: $localize`:@@common.user:User`, width: "s" },
   { key: "user_realm", label: $localize`:@@common.realm:Realm`, width: "s" },
-  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" }
+  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" },
+  { key: "template", label: $localize`:@@container.template:Template`, width: "l" }
+];
+
+const comparisonColumnsKeyMap = [
+  { key: "differences", label: $localize`:@@container.differences:Differences`, width: "l" }
 ];
 
 @Component({
@@ -132,6 +145,7 @@ export class ContainerTableComponent implements OnDestroy {
   }
 
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -140,8 +154,16 @@ export class ContainerTableComponent implements OnDestroy {
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys = columnsKeyMap.map((column) => column.key);
+  readonly unsortableColumnKeys = ["template", ...comparisonColumnsKeyMap.map((column) => column.key)];
+  readonly comparisonByContainerSerial = signal<Record<string, ContainerTemplateComparisonRow>>({});
+  readonly comparisonVisible = signal(false);
+  readonly displayedColumns = computed(() =>
+    this.comparisonVisible() ? [...columnsKeyMap, ...comparisonColumnsKeyMap] : columnsKeyMap
+  );
+  readonly displayedColumnKeys = computed(() => this.displayedColumns().map((column) => column.key));
   readonly apiFilterKeys = this.containerService.apiFilterKeys;
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
+  readonly toolbarFilterKeys = this.advancedApiFilterKeys.filter((keyword) => keyword !== "template");
   readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
@@ -249,6 +271,19 @@ export class ContainerTableComponent implements OnDestroy {
     });
   }
 
+  showComparison(rows: ContainerTemplateComparisonRow[]): void {
+    this.comparisonByContainerSerial.update((current) => ({
+      ...current,
+      ...Object.fromEntries(rows.map((row) => [row.containerSerial, row]))
+    }));
+    this.comparisonVisible.set(true);
+  }
+
+  hideComparison(): void {
+    this.comparisonVisible.set(false);
+    this.comparisonByContainerSerial.set({});
+  }
+
   onPageEvent(event: PageEvent) {
     this.pageSize.set(event.pageSize);
     this.containerService.eventPageSize.set(event.pageSize);
@@ -313,5 +348,24 @@ export class ContainerTableComponent implements OnDestroy {
     this.containerService.updateFilter((current) =>
       value ? current.addEntry(keyword, value) : current.removeKey(keyword)
     );
+  }
+
+  onTemplateFilterSelected(
+    selection: "all" | "with-template" | "without-template" | "specific",
+    templateName?: string
+  ): void {
+    this.containerService.updateFilter((current) => {
+      const filter = current.removeKey("template").removeKey("has_template");
+      if (selection === "with-template") {
+        return filter.addEntry("template", TEMPLATE_FILTER_ANY);
+      }
+      if (selection === "without-template") {
+        return filter.addEntry("template", TEMPLATE_FILTER_NONE);
+      }
+      if (selection === "specific" && templateName) {
+        return filter.addEntry("template", exactMatch(templateName));
+      }
+      return filter;
+    });
   }
 }

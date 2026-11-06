@@ -53,9 +53,13 @@ const advancedApiFilterKeys = ["token_serial", "template", "assigned"];
 // `realm` is the realm of the assigned user (it builds the endpoint's user object), not the container's
 // own realm, which is `container_realm`. It is only ever set implicitly to scope a `user:` filter, so it
 // stays out of `apiFilterKeys` and is not offered as a keyword.
-const hiddenApiFilterKeys = ["realm"];
+const hiddenApiFilterKeys = ["realm", "has_template"];
 
-const exactMatchKeys = new Set(["user", "realm", "container_realm", "type", "state", "assigned"]);
+const exactMatchKeys = new Set(["user", "realm", "container_realm", "type", "state", "assigned", "has_template"]);
+
+// Shown in the filter field as `template: any` and `template: none`, sent as the `has_template` query param.
+export const TEMPLATE_FILTER_ANY = "any";
+export const TEMPLATE_FILTER_NONE = "none";
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
@@ -76,6 +80,14 @@ export type TemplateComparisonResult = Record<
     };
   }
 >;
+
+export interface ContainerTemplateComparisonRow {
+  additional: string[];
+  containerSerial: string;
+  equal: boolean | null;
+  missing: string[];
+  templateName: string;
+}
 
 export interface ContainerDetails {
   count?: number;
@@ -224,6 +236,7 @@ export interface ContainerServiceInterface extends FilterableTableServiceInterfa
   containerDetails: WritableSignal<ContainerDetails>;
   supportedTokenTypes: Signal<string[]>;
   templateComparison: WritableSignal<TemplateComparisonResult | null>;
+  compareContainersWithTemplates: (containers: ContainerDetailData[]) => Promise<ContainerTemplateComparisonRow[]>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<PiResponse<boolean>>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<PiResponse<boolean>>;
@@ -435,6 +448,11 @@ export class ContainerService extends FilterableTableService implements Containe
       const allowed = this.allFilterKeys().filter((key) => !CONTAINER_TYPE_FILTER_KEYS.has(key));
 
       const filterMap = this.activeFilter().filterMap;
+      const templateValue = filterMap.get("template")?.trim().toLowerCase();
+      if (templateValue === TEMPLATE_FILTER_ANY || templateValue === TEMPLATE_FILTER_NONE) {
+        filterMap.delete("template");
+        filterMap.set("has_template", templateValue === TEMPLATE_FILTER_ANY ? "true" : "false");
+      }
       const params = buildFilterParams(filterMap, allowed, exactMatchKeys);
 
       const types = Array.from(CONTAINER_TYPE_FILTER_KEYS)
@@ -1227,6 +1245,44 @@ export class ContainerService extends FilterableTableService implements Containe
 
     const result = await lastValueFrom(observable);
     this.templateComparison.set(result?.result?.value ?? null);
+  }
+
+  async compareContainersWithTemplates(containers: ContainerDetailData[]): Promise<ContainerTemplateComparisonRow[]> {
+    return Promise.all(
+      containers.map(async (container): Promise<ContainerTemplateComparisonRow> => {
+        const templateName = container.template ?? "";
+        if (!templateName) {
+          return {
+            additional: [],
+            containerSerial: container.serial,
+            equal: null,
+            missing: [],
+            templateName: ""
+          };
+        }
+
+        const response = await lastValueFrom(
+          this.http.get<PiResponse<TemplateComparisonResult>>(
+            `${this.containerTemplateBaseUrl}${encodeURIComponent(templateName)}/compare`,
+            {
+              headers: this.authService.getHeaders(),
+              params: { container_serial: container.serial }
+            }
+          )
+        );
+        const comparison = response.result?.value?.[container.serial];
+        if (!comparison) {
+          throw new Error(`No comparison result was returned for container ${container.serial}.`);
+        }
+        return {
+          additional: comparison.tokens.additional,
+          containerSerial: container.serial,
+          equal: comparison.tokens.equal,
+          missing: comparison.tokens.missing,
+          templateName
+        };
+      })
+    );
   }
 
   readonly templateComparison = linkedSignal<string, TemplateComparisonResult | null>({

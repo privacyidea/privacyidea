@@ -5,15 +5,15 @@
   @include styles.main-component-style;
   // The card is as wide as the table's col-width-* tiers (below), not the default floor, which would leave dead space
   // beside a narrower table.
-  @include table.paginator-range-floor(table.table-width(checkbox, m, s, m, xl, s, s, m));
+  @include table.paginator-range-floor(table.table-width(checkbox, m, s, m, xl, s, s, m, l));
   @include table.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
   overflow: hidden;
   // Sized from the same col-width-* tiers the columns below use (select checkbox + serial m + type s
-  // + states m + description xl + user_name s + user_realm s + realms s), so the empty/error state
+  // + states m + description xl + user_name s + user_realm s + realms m + template l), so the empty/error state
   // is as wide as the table it stands in for, not the unrelated 44rem default.
-  @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, m));
+  @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, m, l));
 
   // The table is as wide as its col-width-* tiers, not stretched across the card: a stretched table
   // hands its spare width to every column in proportion, so no column stays at its tier.

@@ -30,9 +30,11 @@ import {
   MockContainerService,
   MockContentService,
   MockDocumentationService,
+  MockPiResponse,
   MockTableUtilsService
 } from "@testing/mock-services";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TableAction } from "@components/shared/table-actions/table-actions.component";
 import { ContentService } from "@services/content/content.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -99,6 +101,77 @@ describe("ContainerTableActionsComponent", () => {
 
       expect(containerService.deleteContainer).not.toHaveBeenCalled();
       expect(containerService.containerSelection.selectedCount()).toBe(1);
+    });
+  });
+
+  describe("toggleComparison", () => {
+    // The toolbar is rendered by app-table-actions from the action list, so the list is what is checked here.
+    const compareAction = (): TableAction | undefined =>
+      (component as unknown as { actions: () => TableAction[] }).actions().find((action) => action.id === "compare");
+
+    it("enables the action without a selection", () => {
+      expect(containerService.containerSelection.hasSelection()).toBe(false);
+      expect(compareAction()?.label).toBe("Compare with templates");
+      expect(compareAction()?.disabled).toBe(false);
+    });
+
+    it("emits the comparison results of all containers on the page", async () => {
+      const selected = [
+        { serial: "CONT-1", template: "baseline" },
+        { serial: "CONT-2", template: "" }
+      ] as ContainerDetailData[];
+      containerService.containerResource.set(MockPiResponse.fromValue({ containers: selected, count: 2 }));
+      const comparisons = [
+        {
+          additional: [],
+          containerSerial: "CONT-1",
+          equal: true,
+          missing: [],
+          templateName: "baseline"
+        }
+      ];
+      containerService.compareContainersWithTemplates.mockResolvedValue(comparisons);
+      const loadedSpy = jest.fn();
+      component.comparisonLoaded.subscribe(loadedSpy);
+
+      await component.toggleComparison();
+
+      expect(containerService.compareContainersWithTemplates).toHaveBeenCalledWith(selected);
+      expect(loadedSpy).toHaveBeenCalledWith(comparisons);
+    });
+
+    it("emits comparisonHidden instead of comparing while the comparison is shown", async () => {
+      fixture.componentRef.setInput("comparisonActive", true);
+      const hiddenSpy = jest.fn();
+      component.comparisonHidden.subscribe(hiddenSpy);
+
+      await component.toggleComparison();
+
+      expect(hiddenSpy).toHaveBeenCalledTimes(1);
+      expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
+    });
+
+    it("labels the action to hide the comparison while it is shown", () => {
+      fixture.componentRef.setInput("comparisonActive", true);
+      fixture.detectChanges();
+
+      expect(compareAction()?.label).toBe("Hide comparison");
+    });
+
+    it("reports comparison errors", async () => {
+      containerService.containerResource.set(
+        MockPiResponse.fromValue({ containers: [{ serial: "CONT-1" }] as ContainerDetailData[], count: 1 })
+      );
+      containerService.compareContainersWithTemplates.mockRejectedValue(new Error("Comparison failed"));
+      const errorSpy = jest.spyOn(
+        (component as unknown as { notificationService: { error: (msg: string) => void } }).notificationService,
+        "error"
+      );
+      jest.spyOn(console, "error").mockImplementation();
+
+      await component.toggleComparison();
+
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Comparison failed"));
     });
   });
 

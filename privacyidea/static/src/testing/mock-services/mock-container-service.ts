@@ -27,6 +27,7 @@ import {
   ContainerRegisterData,
   ContainerServiceInterface,
   ContainerTemplate,
+  ContainerTemplateComparisonRow,
   ContainerType,
   ContainerTypes,
   TemplateComparisonResult
@@ -39,6 +40,7 @@ import { Debouncer } from "@utils/debounce.utils";
 export class MockContainerService implements ContainerServiceInterface {
   containersForTokenType: Signal<string[]> = signal([]);
   compareWithTemplate: () => Promise<void> = jest.fn().mockResolvedValue(undefined);
+  compareContainersWithTemplates = jest.fn().mockResolvedValue([] as ContainerTemplateComparisonRow[]);
   compatibleWithSelectedTokenType = signal<string | null>(null);
   filterContainersByTokenOwner = signal(false);
   isPollingActive: Signal<boolean> = signal(false);

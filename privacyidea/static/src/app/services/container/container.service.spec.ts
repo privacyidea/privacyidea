@@ -513,8 +513,21 @@ describe("ContainerService", () => {
 
   it("filterParams sends user and realm as exact values", () => {
     containerService.activeFilter.set(new FilterValue({ value: "user: alice realm: realm1" }));
-
     expect(containerService.filterParams()).toEqual({ user: "alice", realm: "realm1" });
+  });
+
+  it("filterParams sends template names and template-presence filters exactly", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "template: =baseline has_template: true" }));
+    expect(containerService.filterParams()).toEqual({ template: "baseline", has_template: "true" });
+  });
+
+  it("filterParams maps the template presets to has_template", () => {
+    containerService.activeFilter.set(new FilterValue({ value: "template: any" }));
+    expect(containerService.filterParams()).toEqual({ has_template: "true" });
+    containerService.activeFilter.set(new FilterValue({ value: "template: none" }));
+    expect(containerService.filterParams()).toEqual({ has_template: "false" });
+    containerService.activeFilter.set(new FilterValue({ value: "template: =any" }));
+    expect(containerService.filterParams()).toEqual({ template: "any" });
   });
 
   it("filterParams keeps realm and container_realm apart", () => {
@@ -1480,6 +1493,53 @@ describe("ContainerService", () => {
     const containerWithTemplate = (serial: string, template: string | undefined): ContainerDetails => ({
       count: 1,
       containers: [{ serial, type: "", tokens: [], users: [], realms: [], states: [], template } as ContainerDetailData]
+    });
+
+    describe("compareContainersWithTemplates", () => {
+      it("compares templated containers and marks containers without a template", async () => {
+        const comparisonResult: TemplateComparisonResult = {
+          "CONT-1": { tokens: { additional: ["totp"], equal: false, missing: ["hotp"] } }
+        };
+        jest
+          .spyOn(http, "get")
+          .mockReturnValue(
+            of({ result: { value: comparisonResult } } as unknown as PiResponse<TemplateComparisonResult>)
+          );
+
+        const comparisons = await containerService.compareContainersWithTemplates([
+          {
+            serial: "CONT-1",
+            template: "baseline",
+            states: [],
+            realms: [],
+            tokens: [],
+            type: "",
+            users: []
+          },
+          { serial: "CONT-2", states: [], realms: [], tokens: [], type: "", users: [] }
+        ]);
+
+        expect(comparisons).toEqual([
+          {
+            additional: ["totp"],
+            containerSerial: "CONT-1",
+            equal: false,
+            missing: ["hotp"],
+            templateName: "baseline"
+          },
+          {
+            additional: [],
+            containerSerial: "CONT-2",
+            equal: null,
+            missing: [],
+            templateName: ""
+          }
+        ]);
+        expect(http.get).toHaveBeenCalledWith(
+          `${containerService.containerTemplateBaseUrl}baseline/compare`,
+          expect.objectContaining({ params: { container_serial: "CONT-1" } })
+        );
+      });
     });
 
     it("returns early when serial is empty", async () => {
