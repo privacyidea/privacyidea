@@ -61,6 +61,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockApiClientService } from "@testing/mock-services/mock-api-client-service";
 import { ApiClientService } from "@services/api-client/api-client.service";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsComponent", () => {
   let component: UserDetailsComponent;
@@ -1023,5 +1024,13 @@ describe("UserDetailsComponent", () => {
     component.resetUserLock();
 
     expect(conditionalAccessStateServiceMock.resetUserLock).not.toHaveBeenCalled();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+    // The spec runs on fake timers; axe itself needs real ones.
+    jest.useRealTimers();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
