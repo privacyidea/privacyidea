@@ -31,7 +31,7 @@ import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-s
 import { ContainerTemplatesComponent } from "./container-templates.component";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
-import { axe } from "@testing/axe";
+import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -336,9 +336,13 @@ describe("ContainerTemplatesComponent", () => {
     expect(component.filter().hasKey("container_type")).toBe(false);
   });
 
-  it("passes the axe accessibility checks", async () => {
-    fixture.detectChanges();
+  it(
+    "passes the axe accessibility checks",
+    async () => {
+      fixture.detectChanges();
 
-    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
-  });
+      expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+    },
+    AXE_TIMEOUT
+  );
 });
