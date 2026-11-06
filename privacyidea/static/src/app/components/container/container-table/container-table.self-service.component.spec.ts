@@ -22,7 +22,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { provideRouter } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerDetailData, ContainerService } from "@services/container/container.service";
+import { ContainerDetailData, ContainerDetails, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -128,6 +128,29 @@ describe("ContainerTableSelfServiceComponent", () => {
         ?.getAttribute("href");
     expect(hrefOf("C-1")).toBe("/containers/details/C-1");
     expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+  });
+
+  it("toggles the container state with Space", () => {
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list"]
+    });
+    containerService.containerResource.set(
+      MockPiResponse.fromValue({
+        count: 1,
+        containers: [
+          { serial: "C-1", states: ["active"], realms: [], tokens: [], type: "generic", description: "", users: [] }
+        ]
+      } as unknown as ContainerDetails)
+    );
+    fixture.detectChanges();
+    const handleStateClick = jest.spyOn(component, "handleStateClick").mockImplementation(() => {});
+    const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+
+    fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
+
+    expect(handleStateClick).toHaveBeenCalledWith(component.containerDataSource().data[0]);
+    expect(space.defaultPrevented).toBe(true);
   });
 
   it("exposes the expected self-service columns", () => {

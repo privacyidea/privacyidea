@@ -109,6 +109,7 @@
                     <span
                       (click)="handleStateClick(element)"
                       (keydown.enter)="handleStateClick(element)"
+                      (keydown.space)="$event.preventDefault(); handleStateClick(element)"
                       [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
                       role="button"
                       tabindex="0">

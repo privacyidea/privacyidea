@@ -125,6 +125,7 @@
                       <span
                         (click)="toggleActive(element.token)"
                         (keydown.enter)="toggleActive(element.token)"
+                        (keydown.space)="$event.preventDefault(); toggleActive(element.token)"
                         [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
                         [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)"
                         role="button"

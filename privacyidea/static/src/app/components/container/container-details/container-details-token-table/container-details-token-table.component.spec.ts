@@ -111,7 +111,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  describe("links", () => {
+  describe("token rows", () => {
     const showTokens = (role: "admin" | "user") => {
       (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
         ...MockAuthService.MOCK_AUTH_DATA,
@@ -131,6 +131,17 @@ describe("ContainerDetailsTokenTableComponent", () => {
       Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a")).find(
         (a) => a.textContent?.trim() === text
       );
+
+    it("toggles the token state with Space", () => {
+      showTokens("user");
+      const toggleActive = jest.spyOn(component, "toggleActive").mockImplementation(() => { /* empty */ });
+      const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+
+      fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
+
+      expect(toggleActive).toHaveBeenCalledWith(expect.objectContaining({ serial: "T-1" }));
+      expect(space.defaultPrevented).toBe(true);
+    });
 
     it("links the token serial to the token details", () => {
       showTokens("user");

@@ -64,4 +64,36 @@ describe("TokenDetailsStatusComponent", () => {
     // self-service: Status becomes a detail field as well
     expect(fixture.nativeElement.querySelectorAll("app-detail-field").length).toBe(3);
   });
+
+  describe("status toggle", () => {
+    const toggle = (): HTMLButtonElement => fixture.nativeElement.querySelector("button.status-toggle");
+    const description = (): string | undefined =>
+      toggle()
+        .getAttribute("aria-describedby")
+        ?.split(" ")
+        .map((id) => document.getElementById(id)?.textContent?.trim())
+        .join(" ");
+
+    beforeEach(() => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights: ["enable", "disable"]
+      });
+      fixture.detectChanges();
+    });
+
+    it("is named by the state it shows", () => {
+      expect(toggle().hasAttribute("aria-label")).toBe(false);
+      expect(toggle().textContent?.trim()).toBe("Active");
+    });
+
+    it("describes what pressing it does", () => {
+      expect(description()).toBe("Deactivate Token");
+
+      (TestBed.inject(TokenService) as unknown as MockTokenService).tokenIsActive.set(false);
+      fixture.detectChanges();
+
+      expect(description()).toBe("Activate Token");
+    });
+  });
 });
