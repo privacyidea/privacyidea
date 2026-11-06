@@ -21,6 +21,8 @@ import { Router } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
+const EXPIRY_WARNING_MS = 30_000;
+
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number | undefined>;
 
@@ -73,7 +75,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly activityExtendsSession = computed(() => {
     const logoutTime = this.logoutTimeMs();
     const jwtLogoutTime = this.jwtLogoutTimeMs();
-    return logoutTime !== null && (jwtLogoutTime === null || logoutTime <= jwtLogoutTime);
+    return logoutTime !== null && (jwtLogoutTime === null || jwtLogoutTime - logoutTime > EXPIRY_WARNING_MS);
   });
   remainingTime = computed(() => {
     if (this.jwtLogoutTimeMs() == null && this.logoutTimeMs() == null) return;
@@ -85,7 +87,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   constructor() {
     effect(() => {
       const remainingTime = this.remainingTime();
-      if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
+      if (remainingTime && remainingTime > EXPIRY_WARNING_MS && remainingTime < EXPIRY_WARNING_MS + 1_000) {
         this.notificationService.warning(
           untracked(() => this.activityExtendsSession())
             ? $localize`:@@session.sessionWillExpireIn30StaySignedIn:Session will expire in 30 seconds. Click, press a key or move the mouse to stay signed in.`

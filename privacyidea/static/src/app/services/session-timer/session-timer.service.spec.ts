@@ -159,6 +159,18 @@ describe("SessionTimerService", () => {
 
       expect(notify.warning).toHaveBeenCalledWith("Session will expire in 30 seconds.");
     });
+
+    it.each([
+      ["at the same moment", 30.5],
+      ["shortly after", 50]
+    ])("does not promise more time when the session limit ends %s", (_, jwtLogoutTimeS) => {
+      authService.logoutTimeS.set(30.5);
+      authService.jwtLogoutTimeS.set(jwtLogoutTimeS);
+
+      warnAt30Seconds();
+
+      expect(notify.warning).toHaveBeenCalledWith("Session will expire in 30 seconds.");
+    });
   });
 
   it("startTimer schedules timeout and triggers logout on expiry", () => {
