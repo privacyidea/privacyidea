@@ -111,4 +111,11 @@ describe("TokenDetailsSelfServiceComponent", () => {
     expect(component).toBeInstanceOf(TokenDetailsComponent);
     expect(fixture.nativeElement.textContent).toContain("Mock serial");
   });
+
+  it("renders the passkey test for a passkey token", () => {
+    component.tokenType.set("passkey");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("app-test-passkey-action button")).not.toBeNull();
+  });
 });

@@ -197,9 +197,7 @@
     <app-token-details-actions
       class="details-card--actions"
       [tokenType]="tokenType"
-      [token]="tokenDetails()"
-      [passkeyTestResult]="passkeyTestResult"
-      (testPasskey)="testPasskey()"></app-token-details-actions>
+      [token]="tokenDetails()"></app-token-details-actions>
 
     @if (descriptionRow(); as desc) {
       <app-token-details-description

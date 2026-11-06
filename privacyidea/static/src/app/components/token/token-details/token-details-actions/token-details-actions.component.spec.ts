@@ -69,7 +69,6 @@ describe("TokenDetailsActionsComponent", () => {
     component = fixture.componentInstance;
 
     component.tokenType = signal("hotp");
-    component.passkeyTestResult = signal(null);
 
     fixture.detectChanges();
   });
@@ -78,11 +77,13 @@ describe("TokenDetailsActionsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("emits testPasskey when triggered", () => {
-    const spy = jest.fn();
-    component.testPasskey.subscribe(spy);
-    component.testPasskey.emit();
-    expect(spy).toHaveBeenCalled();
+  it("renders the passkey test only for a passkey token", () => {
+    expect(fixture.nativeElement.querySelector("app-test-passkey-action")).toBeNull();
+
+    component.tokenType.set("passkey");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("app-test-passkey-action")).not.toBeNull();
   });
 
   describe("hasAnyAction", () => {

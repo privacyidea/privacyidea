@@ -17,13 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, Input, input, output, WritableSignal } from "@angular/core";
+import { Component, inject, Input, input, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
-import { RouterLink } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { ResyncTokenActionComponent } from "@components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component";
+import { TestPasskeyActionComponent } from "@components/token/token-details/token-details-actions/test-passkey-action/test-passkey-action.component";
 import { SetPinActionComponent } from "@components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component";
 import { TestOtpPinActionComponent } from "@components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component";
 import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
@@ -37,10 +36,10 @@ import { TokenDetails } from "@services/token/token.service";
     MatButtonModule,
     MatDivider,
     MatIconModule,
-    RouterLink,
     SetPinActionComponent,
     ResyncTokenActionComponent,
     TestOtpPinActionComponent,
+    TestPasskeyActionComponent,
     VerifyEnrollmentComponent
   ],
   templateUrl: "./token-details-actions.component.html",
@@ -48,15 +47,8 @@ import { TokenDetails } from "@services/token/token.service";
 })
 export class TokenDetailsActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  @Input() tokenType!: WritableSignal<string>;
-  @Input() passkeyTestResult!: WritableSignal<{
-    kind: "success" | "warning";
-    message: string;
-    mismatch?: { serial: string; username: string; realm?: string };
-  } | null>;
+  @Input({ required: true }) tokenType!: WritableSignal<string>;
   token = input<TokenDetails>();
-  testPasskey = output<void>();
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   protected get hasAnyAction(): boolean {
     const type = this.tokenType?.();
