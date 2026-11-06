@@ -105,6 +105,16 @@ describe("ValidateService", () => {
     expect(result).toEqual(apiResp);
   });
 
+  it("testToken should send the transaction ID of an open challenge", () => {
+    postSpy.mockReturnValue(of({}));
+
+    validateService.testToken("QUST1", "test", undefined, "11451135673179897001").subscribe();
+
+    const [url, body] = (http.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/validate/check");
+    expect(body).toEqual({ serial: "QUST1", pass: "test", transaction_id: "11451135673179897001" });
+  });
+
   describe("triggerChallenge", () => {
     it("POSTs the serial to /validate/triggerchallenge and returns the API result", () => {
       const apiResponse = MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {

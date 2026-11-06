@@ -23,18 +23,30 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
-import { TriggerChallengeResponse, ValidateCheckResponse, ValidateService } from "@services/validate/validate.service";
+import {
+  TriggerChallengeResponse,
+  ValidateCheckDetail,
+  ValidateCheckResponse,
+  ValidateService
+} from "@services/validate/validate.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService, MockTokenService, MockValidateService } from "@testing/mock-services";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of } from "rxjs";
-import { TestOtpPinActionComponent } from "./test-otp-pin-action.component";
+import {
+  CONFIRMATION_POLLING_INTERVAL_MS,
+  CONFIRMATION_POLLING_TIMEOUT_MS,
+  TestOtpPinActionComponent
+} from "./test-otp-pin-action.component";
 
-function mockValidateCheckResponse(authentication: "ACCEPT" | "REJECT"): ValidateCheckResponse {
+function mockValidateCheckResponse(
+  authentication: "ACCEPT" | "REJECT" | "CHALLENGE",
+  detail: ValidateCheckDetail = {}
+): ValidateCheckResponse {
   return {
     id: 1,
     jsonrpc: "2.0",
-    detail: {},
+    detail,
     result: { authentication, status: true },
     signature: "",
     time: Date.now(),
@@ -154,13 +166,18 @@ describe("TestOtpPinActionComponent", () => {
       expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     });
 
-    it("notifies success with the message of the challenge", () => {
+    it("opens the challenge with its transaction ID and text", () => {
       component.testWithoutPin();
 
-      expect(notificationService.success).toHaveBeenCalledWith("Challenge triggered. please enter otp: ");
+      expect(component.openChallenge()).toEqual({
+        transactionId: "11451135673179897001",
+        message: "please enter otp: ",
+        waitsForConfirmation: false
+      });
+      expect(notificationService.success).not.toHaveBeenCalled();
     });
 
-    it("notifies a warning if the server created no challenge", () => {
+    it("notifies a warning and opens no challenge if the server created no challenge", () => {
       jest
         .spyOn(validateService, "triggerChallenge")
         .mockReturnValue(of(MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(0, {})));
@@ -170,7 +187,242 @@ describe("TestOtpPinActionComponent", () => {
       expect(notificationService.warning).toHaveBeenCalledWith(
         "No challenge triggered. The token must be active and support challenge-response."
       );
-      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(component.openChallenge()).toBeNull();
+    });
+  });
+
+  describe("open challenge", () => {
+    const buttonLabels = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll(".actions-pin-button button") as NodeListOf<HTMLElement>).map(
+        (button) => button.querySelector("span")?.textContent?.trim() ?? ""
+      );
+
+    beforeEach(() => {
+      tokenService.tokenSerial.set("QUST0001");
+      component.testWithoutPin();
+      fixture.detectChanges();
+    });
+
+    it("shows the challenge text, the response field and only the response buttons", () => {
+      expect(fixture.nativeElement.querySelector(".challenge-message").textContent).toContain("please enter otp:");
+      expect(fixture.nativeElement.querySelector("mat-label").textContent).toContain("Response");
+      expect(buttonLabels()).toEqual(["Send Response", "Cancel"]);
+    });
+
+    it("sends the response with the transaction ID of the challenge", () => {
+      component.otpOrPinToTest.set("test");
+
+      component.sendResponse();
+
+      expect(validateService.testToken).toHaveBeenCalledWith("QUST0001", "test", undefined, "11451135673179897001");
+    });
+
+    it("sends the response when Enter is pressed in the response field", () => {
+      const input: HTMLInputElement = fixture.nativeElement.querySelector("input[matInput]");
+      input.value = "test";
+      input.dispatchEvent(new Event("input"));
+
+      input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
+
+      expect(validateService.testToken).toHaveBeenCalledWith("QUST0001", "test", undefined, "11451135673179897001");
+    });
+
+    it("closes the challenge and notifies success if the response is accepted", () => {
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
+      component.otpOrPinToTest.set("test");
+
+      component.sendResponse();
+      fixture.detectChanges();
+
+      expect(notificationService.success).toHaveBeenCalledWith("The response was accepted.");
+      expect(component.openChallenge()).toBeNull();
+      expect(component.otpOrPinToTest()).toBe("");
+      expect(buttonLabels()).toContain("Test Token");
+    });
+
+    it("keeps the challenge open and notifies a warning if the response is rejected", () => {
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
+
+      component.sendResponse();
+
+      expect(notificationService.warning).toHaveBeenCalledWith("The response was rejected.");
+      expect(component.openChallenge()?.transactionId).toBe("11451135673179897001");
+    });
+
+    it("shows the next challenge if the token asks a further question", () => {
+      jest
+        .spyOn(validateService, "testToken")
+        .mockReturnValue(
+          of(mockValidateCheckResponse("CHALLENGE", { transaction_id: "2222", message: "What is your pet's name?" }))
+        );
+      component.otpOrPinToTest.set("test");
+
+      component.sendResponse();
+
+      expect(component.openChallenge()).toEqual({
+        transactionId: "2222",
+        message: "What is your pet's name?",
+        waitsForConfirmation: false
+      });
+      expect(component.otpOrPinToTest()).toBe("");
+    });
+
+    it("ends the test if a policy starts the enrollment of a new token after the accepted response", () => {
+      jest.spyOn(validateService, "testToken").mockReturnValue(
+        of(
+          mockValidateCheckResponse("CHALLENGE", {
+            client_mode: "poll",
+            enroll_via_multichallenge: true,
+            message: "enroll_via_multichallenge_text test",
+            serial: "PIPU0001",
+            transaction_id: "5555"
+          })
+        )
+      );
+      component.otpOrPinToTest.set("test");
+
+      component.sendResponse();
+
+      expect(notificationService.warning).toHaveBeenCalledWith(
+        "The response was accepted. A policy then started the enrollment of the token PIPU0001 for the user."
+      );
+      expect(component.openChallenge()).toBeNull();
+      expect(validateService.pollTransaction).not.toHaveBeenCalled();
+    });
+
+    it("closes the challenge and clears the field on Cancel", () => {
+      component.otpOrPinToTest.set("partial");
+
+      component.cancelChallenge();
+      fixture.detectChanges();
+
+      expect(component.openChallenge()).toBeNull();
+      expect(component.otpOrPinToTest()).toBe("");
+      expect(fixture.nativeElement.querySelector(".challenge-message")).toBeNull();
+      expect(fixture.nativeElement.querySelector("mat-label").textContent).toContain("PIN and/or OTP");
+    });
+
+    it("closes the challenge when the page shows another token", () => {
+      tokenService.tokenSerial.set("HOTP0002");
+
+      expect(component.openChallenge()).toBeNull();
+    });
+  });
+
+  it("opens a challenge if Test Token with the PIN of a challenge-response token returns a challenge", () => {
+    jest
+      .spyOn(validateService, "testToken")
+      .mockReturnValue(of(mockValidateCheckResponse("CHALLENGE", { transaction_id: "3333", message: "Question?" })));
+
+    component.testToken();
+
+    expect(component.openChallenge()).toEqual({
+      transactionId: "3333",
+      message: "Question?",
+      waitsForConfirmation: false
+    });
+    expect(notificationService.warning).not.toHaveBeenCalled();
+  });
+
+  describe("Verify OTP Value", () => {
+    it("notifies success if the OTP value is accepted", () => {
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
+
+      component.verifyOTPValue();
+
+      expect(notificationService.success).toHaveBeenCalledWith("The OTP value was accepted.");
+    });
+
+    it("notifies a warning if the OTP value is rejected", () => {
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
+
+      component.verifyOTPValue();
+
+      expect(notificationService.warning).toHaveBeenCalledWith("The OTP value was rejected.");
+    });
+  });
+
+  describe("challenge with a confirmation on a device", () => {
+    const pushChallenge = MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {
+      client_mode: "poll",
+      message: "Please confirm the authentication on your mobile device!",
+      transaction_id: "4444"
+    });
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+      tokenService.tokenSerial.set("PIPU0001");
+      jest.spyOn(validateService, "triggerChallenge").mockReturnValue(of(pushChallenge));
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("shows the waiting text and only the Cancel button", () => {
+      jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+
+      component.testWithoutPin();
+      fixture.detectChanges();
+
+      expect(component.openChallenge()?.waitsForConfirmation).toBe(true);
+      expect(fixture.nativeElement.querySelector(".challenge-message").textContent).toContain(
+        "Waiting for the confirmation on the device."
+      );
+      expect(fixture.nativeElement.querySelector("input[matInput]")).toBeNull();
+      const labels = Array.from(
+        fixture.nativeElement.querySelectorAll(".actions-pin-button button") as NodeListOf<HTMLElement>
+      ).map((button) => button.querySelector("span")?.textContent?.trim());
+      expect(labels).toEqual(["Cancel"]);
+    });
+
+    it("completes the authentication with an empty response after the confirmation", () => {
+      const pollTransaction = jest
+        .spyOn(validateService, "pollTransaction")
+        .mockReturnValueOnce(of(false))
+        .mockReturnValue(of(true));
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
+
+      component.testWithoutPin();
+      jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS);
+
+      expect(pollTransaction).toHaveBeenCalledWith("4444");
+      expect(validateService.testToken).toHaveBeenCalledWith("PIPU0001", "", undefined, "4444");
+      expect(notificationService.success).toHaveBeenCalledWith("The response was accepted.");
+      expect(component.openChallenge()).toBeNull();
+    });
+
+    it("closes the challenge if the server rejects the confirmed challenge", () => {
+      jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(true));
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
+
+      component.testWithoutPin();
+      jest.advanceTimersByTime(0);
+
+      expect(notificationService.warning).toHaveBeenCalledWith("The response was rejected.");
+      expect(component.openChallenge()).toBeNull();
+    });
+
+    it("closes the challenge and notifies a warning if the device does not confirm in time", () => {
+      jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+
+      component.testWithoutPin();
+      jest.advanceTimersByTime(CONFIRMATION_POLLING_TIMEOUT_MS);
+
+      expect(notificationService.warning).toHaveBeenCalledWith("The device did not confirm the challenge in time.");
+      expect(component.openChallenge()).toBeNull();
+    });
+
+    it("stops the polling on Cancel", () => {
+      const pollTransaction = jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+      component.testWithoutPin();
+      jest.advanceTimersByTime(0);
+      const pollsBeforeCancel = pollTransaction.mock.calls.length;
+
+      component.cancelChallenge();
+      jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 3);
+
+      expect(pollTransaction.mock.calls.length).toBe(pollsBeforeCancel);
     });
   });
 });

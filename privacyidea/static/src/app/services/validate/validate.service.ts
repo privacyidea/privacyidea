@@ -56,6 +56,8 @@ export interface ValidateCheckDetail {
   transaction_ids?: string[];
   type?: "push" | "poll";
   preferred_client_mode?: "poll" | "push";
+  /** The authentication succeeded, and an enroll_via_multichallenge policy started the enrollment of a new token. */
+  enroll_via_multichallenge?: boolean;
 }
 
 export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
@@ -113,7 +115,12 @@ export interface PasskeyCheckParams {
 }
 
 export interface ValidateServiceInterface {
-  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse>;
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+    transactionId?: string
+  ): Observable<ValidateCheckResponse>;
 
   triggerChallenge(tokenSerial: string): Observable<TriggerChallengeResponse>;
 
@@ -141,7 +148,16 @@ export class ValidateService implements ValidateServiceInterface {
 
   private baseUrl = environment.proxyUrl + "/validate/";
 
-  testToken(tokenSerial: string, otpOrPinToTest: string, otponly?: string): Observable<ValidateCheckResponse> {
+  /**
+   * Checks the value against the token. With a transaction ID, the value is the response to an open challenge of the
+   * token, and the server does not check the PIN.
+   */
+  testToken(
+    tokenSerial: string,
+    otpOrPinToTest: string,
+    otponly?: string,
+    transactionId?: string
+  ): Observable<ValidateCheckResponse> {
     const headers = this.authService.getHeaders();
     return this.http
       .post<ValidateCheckResponse>(
@@ -149,7 +165,8 @@ export class ValidateService implements ValidateServiceInterface {
         {
           serial: tokenSerial,
           pass: otpOrPinToTest,
-          otponly: otponly
+          otponly: otponly,
+          transaction_id: transactionId
         },
         { headers }
       )

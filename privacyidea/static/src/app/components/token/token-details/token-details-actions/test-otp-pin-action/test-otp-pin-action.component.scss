@@ -21,3 +21,15 @@
   align-items: flex-start;
   gap: 8px;
 }
+
+.challenge-message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: var(--input-width-m);
+  overflow-wrap: anywhere;
+
+  p {
+    margin: 0;
+  }
+}
