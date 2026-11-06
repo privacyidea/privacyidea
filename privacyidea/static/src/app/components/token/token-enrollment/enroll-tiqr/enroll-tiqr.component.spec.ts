@@ -26,6 +26,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { MockAuthService, MockSystemService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
+import { axe } from "@testing/axe";
 
 describe("EnrollTiqrComponent", () => {
   let component: EnrollTiqrComponent;
@@ -73,5 +74,11 @@ describe("EnrollTiqrComponent", () => {
 
       expect(warning()).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

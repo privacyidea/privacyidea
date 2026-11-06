@@ -39,6 +39,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
+import { axe } from "@testing/axe";
 
 function makeTokenDetailResponse(tokentype: TokenTypeKey): MockPiResponse<Tokens> {
   return {
@@ -240,5 +241,11 @@ describe("TokenDetailsUserComponent", () => {
     );
     expect(icons).toContain("person_remove");
     expect(icons).not.toContain("person_add");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

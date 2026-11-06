@@ -24,6 +24,7 @@ import { MockNotificationService } from "@testing/mock-services";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
 import { VerifyEnrollmentComponent } from "./verify-enrollment.component";
+import { axe } from "@testing/axe";
 
 describe("VerifyEnrollmentComponent", () => {
   let component: VerifyEnrollmentComponent;
@@ -81,5 +82,11 @@ describe("VerifyEnrollmentComponent", () => {
     fixture.detectChanges();
     const button = fixture.nativeElement.querySelector("button");
     expect(button.disabled).toBe(true);
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

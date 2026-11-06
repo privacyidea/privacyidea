@@ -102,6 +102,7 @@ import { MockResolverService } from "@testing/mock-services/mock-resolver-servic
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { of } from "rxjs";
 import { UserUtilsPanelComponent } from "./user-utils-panel.component";
+import { axe } from "@testing/axe";
 
 describe("UserUtilsPanelComponent", () => {
   let component: UserUtilsPanelComponent;
@@ -486,5 +487,11 @@ describe("UserUtilsPanelComponent", () => {
       sessionTimerService.remainingTime.set(599_999);
       expect(component.sessionTimeFormat()).toBe("m:ss");
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

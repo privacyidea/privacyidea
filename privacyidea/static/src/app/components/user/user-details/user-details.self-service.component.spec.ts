@@ -27,6 +27,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { UserDetailsSelfServiceComponent } from "./user-details.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("UserDetailsSelfServiceComponent", () => {
   let component: UserDetailsSelfServiceComponent;
@@ -221,5 +222,11 @@ describe("UserDetailsSelfServiceComponent", () => {
     expect(component["str"](undefined)).toBe("");
     expect(component["str"]("alice")).toBe("alice");
     expect(component["str"](42)).toBe("42");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

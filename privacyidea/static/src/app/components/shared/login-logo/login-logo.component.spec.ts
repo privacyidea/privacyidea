@@ -20,6 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ConfigService } from "@services/config/config.service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
 import { LoginLogoComponent } from "./login-logo.component";
+import { axe } from "@testing/axe";
 
 describe("LoginLogoComponent", () => {
   let fixture: ComponentFixture<LoginLogoComponent>;
@@ -47,5 +48,11 @@ describe("LoginLogoComponent", () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector(".custom-logo")).toBeTruthy();
     expect(element.querySelector(".logo")).toBeNull();
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

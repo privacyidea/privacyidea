@@ -41,6 +41,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of } from "rxjs";
 import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerDetailsActionsComponent", () => {
   let component: ContainerDetailsActionsComponent;
@@ -174,5 +175,11 @@ describe("ContainerDetailsActionsComponent", () => {
     jest.spyOn(mockNotificationService, "error");
     component.unregisterContainer();
     expect(mockNotificationService.error).toHaveBeenCalledWith("Failed to unregister container.");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

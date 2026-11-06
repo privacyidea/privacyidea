@@ -28,6 +28,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { LoadingService } from "@services/loading/loading-service";
 import { MockAuthService, MockContentService } from "@testing/mock-services";
+import { axe } from "@testing/axe";
 
 @Component({ selector: "app-navigation", template: "", standalone: true })
 class NavigationStubComponent {}
@@ -158,5 +159,11 @@ describe("LayoutComponent", () => {
 
       expect(fixture.nativeElement.querySelector(".subscription-expired-notice")).toBeNull();
     });
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });

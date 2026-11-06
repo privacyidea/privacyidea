@@ -23,6 +23,7 @@ import { By } from "@angular/platform-browser";
 
 import { MaskedInputComponent } from "../masked-input/masked-input.component";
 import { EnrollmentPinComponent } from "./enrollment-pin.component";
+import { axe } from "@testing/axe";
 
 @Component({
   standalone: true,
@@ -136,5 +137,11 @@ describe("EnrollmentPinComponent", () => {
     expect(host.pin()).toBe("1234");
     expect(host.repeatPin()).toBe("1234");
     expect(component.pinMismatchError()).toBe("");
+  });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 });
