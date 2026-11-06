@@ -287,6 +287,11 @@ class SCOPE:
         return valid_scopes
 
 
+# The scopes that grant rights. In these scopes, a policy without actions applies to every action of the scope. In the
+# other scopes, a policy without actions applies to no action.
+SCOPES_WITH_ALL_ACTIONS_FOR_POLICY_WITHOUT_ACTIONS = (SCOPE.ADMIN, SCOPE.USER, SCOPE.CONTAINER)
+
+
 class TYPE:
     INT = "int"
     STRING = "str"
@@ -527,6 +532,9 @@ class PolicyClass:
                     if not policy.get(searchkey):
                         # We also find the policies with no distinct information
                         # about the request value
+                        if (searchkey == "action"
+                                and policy.get("scope") not in SCOPES_WITH_ALL_ACTIONS_FOR_POLICY_WITHOUT_ACTIONS):
+                            continue
                         new_policies.append(policy)
                     else:
                         value_found, value_excluded = self._search_value(policy.get(searchkey), searchvalue)

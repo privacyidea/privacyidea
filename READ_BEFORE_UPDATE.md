@@ -207,6 +207,10 @@
   actions. The option drops the actions and skips a policy that holds only these actions. Without the option, the
   import refuses such a policy.
 
+* **A policy without actions applies to every action only in the `admin`, `user` and `container` scopes.** In the
+  other scopes, a policy without actions has no effect. Before, such a policy made authentication, login and token
+  enrollment requests fail.
+
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
   it exited with status 0.
