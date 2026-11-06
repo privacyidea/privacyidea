@@ -45,6 +45,7 @@ import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { Subject } from "rxjs";
 import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
+import { axe } from "@testing/axe";
 
 describe("ContainerTableSelfServiceComponent", () => {
   let component: ContainerTableSelfServiceComponent;
@@ -136,6 +137,21 @@ describe("ContainerTableSelfServiceComponent", () => {
         ?.getAttribute("href");
     expect(hrefOf("C-1")).toBe("/containers/details/C-1");
     expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+  });
+
+  it("passes the axe accessibility checks with an expanded container row", async () => {
+    (TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService).getDisplayTextForState.mockReturnValue(
+      "Active"
+    );
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    showContainer({
+      states: ["active"],
+      tokens: [{ serial: "T-1", tokentype: "hotp", container_serial: "C-1" }]
+    } as unknown as Partial<ContainerDetailData>);
+    fixture.nativeElement.querySelector("tr[mat-row]").click();
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
   });
 
   describe("state toggle", () => {
