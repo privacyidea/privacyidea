@@ -11,9 +11,10 @@ by running::
 
 To configure privacyIDEA, continue with :ref:`login_webui`.
 
-.. note:: Administrator accounts are used for various purposes in privacyIDEA.
-   Once you need another administrator user, you should consider adding an
-   admin policy to set up the permissions correctly. This is described in
-   :ref:`admin_policies`.
+.. note:: This command creates a local administrator. A local administrator logs in
+   with a password only, without a second factor. Use it for the first setup. For the
+   daily work, set up an admin realm, and then delete the local administrator. See
+   :ref:`faq_admins`.
 
-   You may also read :ref:`faq_admins`.
+   To give administrators different rights, add admin policies, see
+   :ref:`admin_policies`.

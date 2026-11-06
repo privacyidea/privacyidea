@@ -181,7 +181,11 @@ Local Administrators
 .. index:: admin accounts
 
 Local administrators are stored in the privacyIDEA database and log in to the
-WebUI with their name and password, see :ref:`faq_admins`::
+WebUI with their name and password. They log in without a second factor. Use them
+for the first setup and for recovery work only, and delete them when an admin realm
+works, see :ref:`faq_admins`.
+
+Manage them with these commands::
 
    pi-manage admin add <name> [-e <email>]
    pi-manage admin list

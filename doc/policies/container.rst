@@ -11,8 +11,9 @@ rights for containers to use the REST API :ref:`rest_container`.
 
 Technically, container policies are checked using :ref:`code_policy` and :ref:`code_api_policy`.
 
-The container policies respect all policy conditions. However, since no logged-in user is available in the client
-container requests, instead the user is determined by the container owner.
+In the requests of a container client, no user is logged in. privacyIDEA uses the owner of the container
+instead, if the container has exactly one owner. See :ref:`policy_condition_checks` for the data that each request
+has.
 
 The following actions are available in the scope *container*:
 
