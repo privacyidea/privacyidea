@@ -49,6 +49,12 @@ export interface EventHandler {
 export const MAX_ORDERING = 2147483647;
 
 /**
+ * The error code of a ConfigAdminError. The Script handler answers the request for its actions with this code if it
+ * cannot open its script directory, for example because the directory does not exist.
+ */
+export const CONFIG_ADMIN_ERROR_CODE = 302;
+
+/**
  * Whether the value is an ordering a binding can be given: a whole number from 0 up to {@link MAX_ORDERING}.
  */
 export function isValidOrdering(value: number | null): value is number {

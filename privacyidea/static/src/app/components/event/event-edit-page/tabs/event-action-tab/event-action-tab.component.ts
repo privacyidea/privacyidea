@@ -18,6 +18,7 @@
  **/
 
 import { NgClass } from "@angular/common";
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, effect, inject, input, output, signal, untracked } from "@angular/core";
 import { applyEach, FieldTree, form, FormField, metadata, REQUIRED, required, validate } from "@angular/forms/signals";
 import { MatButton } from "@angular/material/button";
@@ -26,7 +27,7 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ActionOptionDetails, EventService } from "@services/event/event.service";
+import { ActionOptionDetails, CONFIG_ADMIN_ERROR_CODE, EventService } from "@services/event/event.service";
 import { ERR } from "@utils/form-rules.utils";
 import { hasError } from "@utils/form-state.utils";
 import { valueDisplayLabel } from "@utils/value-label.utils";
@@ -90,18 +91,24 @@ export class EventActionTabComponent {
   });
 
   /**
-   * The Script handler offers each file in its script directory as an action. If the directory is empty or the
-   * server cannot read it, the tab explains where the scripts go instead of showing an empty dropdown. The server
-   * reads the directory on each request, so new scripts show up after a reload of the actions. A reload keeps the
-   * hint visible. Only a successful answer of the server shows the hint. During the first load, after a failed
-   * request and if the request does not run (for example without eventhandling_read), the tab shows the dropdown.
+   * The Script handler offers each file in its script directory as an action. If the directory is empty, or if the
+   * server answers that it cannot open the directory, the tab explains where the scripts go instead of showing an
+   * empty dropdown. The server reads the directory on each request, so new scripts show up after a reload of the
+   * actions. A reload keeps the hint visible. During the first load, after any other failed request and if the
+   * request does not run (for example without eventhandling_read), the tab shows the dropdown.
    */
   noScriptsFound = computed(() => {
-    const status = this.eventService.moduleActionsResource.status();
+    if (this.eventService.selectedHandlerModule() !== "Script") {
+      return false;
+    }
+    const resource = this.eventService.moduleActionsResource;
+    const status = resource.status();
+    if (status === "error") {
+      const error = resource.error() as HttpErrorResponse | undefined;
+      return error?.error?.result?.error?.code === CONFIG_ADMIN_ERROR_CODE;
+    }
     return (
-      this.eventService.selectedHandlerModule() === "Script" &&
-      (status === "resolved" || status === "reloading") &&
-      Object.keys(this.eventService.moduleActions()).length === 0
+      (status === "resolved" || status === "reloading") && Object.keys(this.eventService.moduleActions()).length === 0
     );
   });
 
