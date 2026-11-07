@@ -17,45 +17,94 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <ng-content select="[panelTitle]"></ng-content>
-<div class="actions-otp-pin-input">
-  <input
-    class="hidden-input"
-    type="text" />
-  <input
-    class="hidden-input"
-    type="password" />
-  <mat-form-field
-    class="input-width-m"
-    subscriptSizing="dynamic">
-    <mat-label i18n="@@token.pinOtp">PIN and/or OTP</mat-label>
+@if (openChallenge(); as challenge) {
+  <div
+    class="challenge-message"
+    role="status">
+    @if (challenge.message) {
+      <p>{{ challenge.message }}</p>
+    }
+    @if (challenge.waitsForConfirmation) {
+      <p i18n="@@token.waitingForConfirmation">Waiting for the confirmation on the device.</p>
+    }
+  </div>
+}
+@if (!openChallenge()?.waitsForConfirmation) {
+  <div class="actions-otp-pin-input">
     <input
-      [formField]="otpOrPinForm"
-      [type]="hide() ? 'password' : 'text'"
-      autocomplete="one-time-code"
-      matInput />
-    <button
-      (click)="hide.set(!hide())"
-      [attr.aria-label]="hide() ? showValueLabel : hideValueLabel"
-      mat-icon-button
-      matSuffix
-      type="button">
-      <mat-icon>{{ hide() ? "visibility_off" : "visibility" }}</mat-icon>
-    </button>
-  </mat-form-field>
-</div>
+      class="hidden-input"
+      type="text" />
+    <input
+      class="hidden-input"
+      type="password" />
+    <mat-form-field
+      class="input-width-m"
+      subscriptSizing="dynamic">
+      @if (openChallenge()) {
+        <mat-label i18n="@@token.response">Response</mat-label>
+      } @else {
+        <mat-label i18n="@@token.pinOtp">PIN and/or OTP</mat-label>
+      }
+      <input
+        (keyup.enter)="openChallenge() && sendResponse()"
+        [formField]="otpOrPinForm"
+        [type]="hide() ? 'password' : 'text'"
+        autocomplete="one-time-code"
+        matInput />
+      <button
+        (click)="hide.set(!hide())"
+        [attr.aria-label]="hide() ? showValueLabel : hideValueLabel"
+        mat-icon-button
+        matSuffix
+        type="button">
+        <mat-icon>{{ hide() ? "visibility_off" : "visibility" }}</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+}
 <div class="actions-pin-button">
-  <button
-    (click)="testToken()"
-    class="action-button-secondary button-width-l"
-    mat-stroked-button>
-    <mat-icon>help_outline</mat-icon>
-    <span i18n="@@token.testToken">Test Token</span>
-  </button>
-  <button
-    (click)="verifyOTPValue()"
-    class="action-button-secondary button-width-l"
-    mat-stroked-button>
-    <mat-icon>help_outline</mat-icon>
-    <span i18n="@@token.verifyOtpValue">Verify OTP Value</span>
-  </button>
+  @if (openChallenge(); as challenge) {
+    @if (!challenge.waitsForConfirmation) {
+      <button
+        (click)="sendResponse()"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>send</mat-icon>
+        <span i18n="@@token.sendResponse">Send Response</span>
+      </button>
+    }
+    <button
+      (click)="cancelChallenge()"
+      class="action-button-secondary button-width-l"
+      mat-stroked-button>
+      <mat-icon>close</mat-icon>
+      <span i18n="@@common.cancel">Cancel</span>
+    </button>
+  } @else {
+    <button
+      (click)="testToken()"
+      class="action-button-secondary button-width-l"
+      mat-stroked-button>
+      <mat-icon>help_outline</mat-icon>
+      <span i18n="@@token.testToken">Test Token</span>
+    </button>
+    @if (showVerifyOtpValue()) {
+      <button
+        (click)="verifyOTPValue()"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>help_outline</mat-icon>
+        <span i18n="@@token.verifyOtpValue">Verify OTP Value</span>
+      </button>
+    }
+    @if (authService.actionAllowed("triggerchallenge")) {
+      <button
+        (click)="testWithoutPin()"
+        class="action-button-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>help_outline</mat-icon>
+        <span i18n="@@token.testWithoutPin">Test without PIN</span>
+      </button>
+    }
+  }
 </div>

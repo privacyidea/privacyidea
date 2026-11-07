@@ -26,10 +26,12 @@ import { Base64Service } from "@services/base64/base64.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockBase64Service, MockLocalService, MockNotificationService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
 import {
   mergeWebAuthnSignRequests,
   PasskeyCheckParams,
+  TriggerChallengeResponse,
   ValidateCheckResponse,
   ValidateService
 } from "./validate.service";
@@ -101,6 +103,51 @@ describe("ValidateService", () => {
     expect(body).toEqual({ otponly: "1", pass: "000000", serial: "HOTP1" });
     expect(opts.headers instanceof HttpHeaders).toBe(true);
     expect(result).toEqual(apiResp);
+  });
+
+  it("testToken should send the transaction ID of an open challenge", () => {
+    postSpy.mockReturnValue(of({}));
+
+    validateService.testToken("QUST1", "test", undefined, "11451135673179897001").subscribe();
+
+    const [url, body] = (http.post as jest.Mock).mock.calls[0];
+    expect(url).toBe("/validate/check");
+    expect(body).toEqual({ serial: "QUST1", pass: "test", transaction_id: "11451135673179897001" });
+  });
+
+  describe("triggerChallenge", () => {
+    it("POSTs the serial to /validate/triggerchallenge and returns the API result", () => {
+      const apiResponse = MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {
+        message: "please enter otp: "
+      });
+      postSpy.mockReturnValue(of(apiResponse));
+
+      let result!: TriggerChallengeResponse;
+      validateService.triggerChallenge("HOTP1").subscribe((response) => (result = response));
+
+      const [url, body, options] = (http.post as jest.Mock).mock.calls[0];
+      expect(url).toBe("/validate/triggerchallenge");
+      expect(body).toEqual({ serial: "HOTP1" });
+      expect(options.headers instanceof HttpHeaders).toBe(true);
+      expect(result).toEqual(apiResponse);
+    });
+
+    it("notifies the API message and rethrows when the request fails", (done) => {
+      postSpy.mockReturnValueOnce(
+        throwError(() => ({ error: { result: { error: { message: "ERR303: Admin actions are defined" } } } }))
+      );
+
+      validateService.triggerChallenge("HOTP1").subscribe({
+        next: () => done.fail("expected error"),
+        error: (error) => {
+          expect((notif.error as jest.Mock).mock.calls[0][0]).toBe(
+            "Failed to trigger a challenge. ERR303: Admin actions are defined"
+          );
+          expect(error).toBeTruthy();
+          done();
+        }
+      });
+    });
   });
 
   describe("authenticatePasskey", () => {
@@ -421,9 +468,7 @@ describe("ValidateService", () => {
           })
         );
 
-        const authSpy = jest
-          .spyOn(auth, "authenticate")
-          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
+        const authSpy = jest.spyOn(auth, "authenticate").mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
         postSpy.mockImplementation(() => {
           throw new Error("should not POST in this branch");
         });
@@ -460,9 +505,7 @@ describe("ValidateService", () => {
           })
         );
 
-        const authSpy = jest
-          .spyOn(auth, "authenticate")
-          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
+        const authSpy = jest.spyOn(auth, "authenticate").mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
 
         await new Promise<void>((resolve) => {
           validateService

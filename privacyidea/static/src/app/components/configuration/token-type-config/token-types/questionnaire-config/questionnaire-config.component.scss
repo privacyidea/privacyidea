@@ -21,7 +21,8 @@
   gap: 16px;
   overflow-x: auto;
 
+  // A percentage width has nothing to resolve against in a max-content column, so the field needs a fixed width.
   mat-form-field {
-    width: var(--input-max-width, 100%);
+    width: var(--input-width-l);
   }
 }
