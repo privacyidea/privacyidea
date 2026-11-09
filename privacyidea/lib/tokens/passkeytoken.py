@@ -218,6 +218,9 @@ class PasskeyTokenClass(TokenClass):
         - FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
         - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PasskeyAction.AttestationConveyancePreference (default: NONE)
+
+        The user verification requirement is stored in the data of the challenge. The second step checks the
+        registration against this stored requirement.
         """
         if self.token.rollout_state == RolloutState.CLIENTWAIT:
             token_user = self.user or user
@@ -228,14 +231,21 @@ class PasskeyTokenClass(TokenClass):
             rp_id = get_required(params, FIDO2PolicyAction.RELYING_PARTY_ID)
             rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)
 
+            # User Verification
+            user_verification: UserVerificationRequirement = UserVerificationRequirement.PREFERRED
+            if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in params:
+                user_verification = UserVerificationRequirement(params[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT])
+
             response_detail: dict = TokenClass.get_init_detail(self, params, token_user)
             response_detail['rollout_state'] = self.token.rollout_state
             nonce_base64 = fido2.challenge.get_fido2_nonce()
             challenge_validity: int = int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                                           get_from_config('DefaultChallengeValidityTime', 120)))
+            challenge_data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification.value}
             challenge = create_challenge(self.token.serial,
                                          transaction_id=None,
                                          challenge=nonce_base64,
+                                         data=challenge_data,
                                          session="",
                                          validitytime=challenge_validity)
 
@@ -254,11 +264,6 @@ class PasskeyTokenClass(TokenClass):
             pub_key_algorithms = get_optional(params, FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
                                               default=[COSEAlgorithmIdentifier.ECDSA_SHA_256,
                                                        COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256])
-
-            # User Verification
-            user_verification: UserVerificationRequirement = UserVerificationRequirement.PREFERRED
-            if FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT in params:
-                user_verification = UserVerificationRequirement(params[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT])
 
             # Attestation (None is recommended for passkeys)
             attestation: AttestationConveyancePreference = AttestationConveyancePreference.NONE
@@ -367,9 +372,13 @@ class PasskeyTokenClass(TokenClass):
         - HTTP_ORIGIN
         - FIDO2PolicyAction.RELYING_PARTY_ID ("webauthn_relying_party_id")
 
+        The registration is checked against the user verification requirement that the first step stored in the
+        challenge. If it is "required", the registration is only accepted if the authenticator data has the user
+        verified flag.
+
         The following parameters are optional in param:
-        - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT ("webauthn_user_verification_requirement"): If it is
-          "required", the registration is only accepted if the authenticator data has the user verified flag.
+        - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT ("webauthn_user_verification_requirement"): Only used if
+          the challenge has no stored user verification requirement.
         - PasskeyAction.AllowedAuthenticatorDeviceTypes: A list of the allowed credential device types.
         """
         response_detail = {"details": {"serial": self.token.serial}}
@@ -398,11 +407,6 @@ class PasskeyTokenClass(TokenClass):
             transaction_id = get_required(param, "transaction_id")
             expected_rp_id = get_required(param, FIDO2PolicyAction.RELYING_PARTY_ID)
             expected_origin = get_required(param, "HTTP_ORIGIN")
-            # Checking policy scope=SCOPE.ENROLL, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
-            # The registration options only ask the browser for user verification. The user verified flag in the
-            # signed authenticator data shows whether the authenticator verified the user.
-            require_user_verification = (get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
-                                         == UserVerificationRequirement.REQUIRED)
 
             serial = self.token.serial
             challenges = [challenge for challenge in get_challenges(serial=serial, transaction_id=transaction_id)
@@ -411,6 +415,17 @@ class PasskeyTokenClass(TokenClass):
             if not len(challenges):
                 raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
             challenge = challenges[0]
+            challenge_data = challenge.get_data()
+
+            # Checking policy scope=SCOPE.ENROLL, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
+            # The registration options only ask the browser for user verification. The user verified flag in the
+            # signed authenticator data shows whether the authenticator verified the user. The requirement is the
+            # one that the first step stored in the challenge, so the policy at the start of the enrollment applies.
+            # A challenge without a stored requirement, for example one created before an update, uses the current
+            # policy value.
+            user_verification = (challenge_data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+                                 or get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT))
+            require_user_verification = user_verification == UserVerificationRequirement.REQUIRED
             try:
                 registration_verification: VerifiedRegistration = verify_registration_response(
                     credential={
@@ -459,9 +474,8 @@ class PasskeyTokenClass(TokenClass):
 
             # Return info if this enroll_via_multichallenge or not
             evm_value = False
-            data = challenge.get_data()
-            if data and isinstance(data, dict) and PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
-                evm_value = data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]
+            if PolicyAction.ENROLL_VIA_MULTICHALLENGE in challenge_data:
+                evm_value = challenge_data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]
             response_detail.update({PolicyAction.ENROLL_VIA_MULTICHALLENGE: evm_value})
 
             # Verification successful, set the token to enrolled and save information returned by the authenticator

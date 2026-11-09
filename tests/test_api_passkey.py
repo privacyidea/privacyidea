@@ -2841,15 +2841,16 @@ class PasskeyAPITest(PasskeyAPITestBase):
     def test_49_token_init_registration_requires_user_verification(self):
         """
         With the enrollment policy webauthn_user_verification_requirement=required, /token/init requests user
-        verification and only completes a registration whose authenticator data has the user verified flag. A
-        requirement in the request does not change the one of the policy. The multi_device fixture credential is
-        registered without user verification, the single_device fixture credential with it.
+        verification and only completes a registration whose authenticator data has the user verified flag. The
+        policy at the first step applies: a policy change before the second step and a requirement in the request do
+        not change it. The multi_device fixture credential is registered without user verification, the single_device
+        fixture credential with it.
         """
-        self.set_policy_with_cleanup("passkey_uv_required", scope=SCOPE.ENROLL,
-                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        uv_required_action = f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required"
+        self.set_policy_with_cleanup("passkey_uv_required", scope=SCOPE.ENROLL, action=uv_required_action)
         detail = self._token_init_step_one(multi_device=True, user_verification="required")["detail"]
         serial = detail["serial"]
-        self.addCleanup(remove_token, serial)
+        delete_policy("passkey_uv_required")
         data = {**self._registration_multi_device(), FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "preferred",
                 "transaction_id": detail["transaction_id"], "type": "passkey", "user": self.user.login,
                 "realm": self.user.realm, "serial": serial}
@@ -2859,17 +2860,27 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(res.json["result"]["status"], res.json)
             self.assertIn("User verification is required", res.json["result"]["error"]["message"], res.json)
         self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+        remove_token(serial)
+
+        # Without the policy at the first step, a policy set before the second step does not apply
+        detail = self._token_init_step_one(multi_device=True)["detail"]
+        serial = detail["serial"]
+        set_policy("passkey_uv_required", scope=SCOPE.ENROLL, action=uv_required_action)
+        self._token_init_step_two(detail["transaction_id"], serial, multi_device=True)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
 
         detail = self._token_init_step_one(user_verification="required")["detail"]
         serial = detail["serial"]
-        self.addCleanup(remove_token, serial)
         self._token_init_step_two(detail["transaction_id"], serial)
         self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
 
     def test_50_enroll_via_multichallenge_requires_user_verification(self):
         """
-        enroll_via_multichallenge takes the user verification requirement from the enrollment policy. A registration
-        without the user verified flag does not enroll the passkey and does not log the user in.
+        enroll_via_multichallenge stores the user verification requirement of the enrollment policy in the enrollment
+        challenge. A registration without the user verified flag does not enroll the passkey and does not log the user
+        in, also if the policy is removed before the answer.
         """
         spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
         self.addCleanup(remove_token, spass_token.get_serial())
@@ -2889,6 +2900,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 passkey_registration = res.json["detail"]["multi_challenge"][0]["passkey_registration"]
                 self.assertEqual("required", passkey_registration["authenticatorSelection"]["userVerification"])
 
+        delete_policy("passkey_uv_required")
         data = {**self._registration_multi_device(), "transaction_id": transaction_id, "serial": serial}
         with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
             res = self.app.full_dispatch_request()

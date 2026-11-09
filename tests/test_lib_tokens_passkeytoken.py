@@ -67,7 +67,12 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         init_detail: dict
         registration_response: dict
 
-    def _initialize_registration(self, get_init_detail_options: dict = None) -> RegistrationRequest:
+    def _initialize_registration(self, get_init_detail_options: dict = None,
+                                 multi_device: bool = False) -> RegistrationRequest:
+        """
+        Starts the enrollment of a passkey and returns the matching registration response of the single_device
+        fixture credential, or of the multi_device fixture credential if multi_device is set.
+        """
         if get_init_detail_options is None:
             get_init_detail_options = {}
         token = init_token({"type": "passkey"}, user=self.user)
@@ -82,17 +87,30 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             FIDO2PolicyAction.RELYING_PARTY_NAME: self.rp_id
         })
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
-            get_nonce.return_value = self.registration_challenge
+            get_nonce.return_value = (self.registration_challenge_multi_device if multi_device
+                                      else self.registration_challenge)
             init_detail = token.get_init_detail(param)
         self.assertIn("serial", init_detail)
         self.assertIn("passkey_registration", init_detail)
         self.assertIn("transaction_id", init_detail)
+        if multi_device:
+            registration = {
+                "attestationObject": self.registration_attestation_multi_device,
+                "clientDataJSON": self.registration_client_data_multi_device,
+                "credential_id": self.credential_id_multi_device,
+                "rawId": self.credential_id_multi_device,
+                "authenticatorAttachment": self.authenticator_attachment_multi_device,
+            }
+        else:
+            registration = {
+                "attestationObject": self.registration_attestation,
+                "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id,
+                "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment,
+            }
         registration_response = {
-            "attestationObject": self.registration_attestation,
-            "clientDataJSON": self.registration_client_data,
-            "credential_id": self.credential_id,
-            "rawId": self.credential_id,
-            "authenticatorAttachment": self.authenticator_attachment,
+            **registration,
             "HTTP_ORIGIN": self.expected_origin,
             FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
             "transaction_id": init_detail["transaction_id"]
@@ -107,30 +125,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             self.assertEqual(challenge["challenge"], self.authentication_challenge_no_uv)
             return challenge
 
-    def _initialize_registration_multi_device(self) -> RegistrationRequest:
-        token = init_token({"type": "passkey"}, user=self.user)
-        self.assertIsInstance(token, PasskeyTokenClass)
-        param = {
-            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
-            FIDO2PolicyAction.RELYING_PARTY_NAME: self.rp_id
-        }
-        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
-            get_nonce.return_value = self.registration_challenge_multi_device
-            init_detail = token.get_init_detail(param)
-        registration_response = {
-            "attestationObject": self.registration_attestation_multi_device,
-            "clientDataJSON": self.registration_client_data_multi_device,
-            "credential_id": self.credential_id_multi_device,
-            "rawId": self.credential_id_multi_device,
-            "authenticatorAttachment": self.authenticator_attachment_multi_device,
-            "HTTP_ORIGIN": self.expected_origin,
-            FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
-            "transaction_id": init_detail["transaction_id"]
-        }
-        return self.RegistrationRequest(token, init_detail, registration_response)
-
     def _create_token_multi_device(self) -> TokenClass:
-        registration_request = self._initialize_registration_multi_device()
+        registration_request = self._initialize_registration(multi_device=True)
         token = registration_request.token
         token.update(registration_request.registration_response)
         self.assertEqual(token.token.rollout_state, RolloutState.ENROLLED)
@@ -923,31 +919,48 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
     def test_28_registration_requires_user_verification(self):
         """
-        With the user verification requirement "required", a registration is only accepted if the authenticator data
-        has the user verified flag. The multi_device fixture credential is registered without user verification, the
+        The first enrollment step stores the user verification requirement in the challenge, and the second step
+        checks the registration against it. With "required", a registration is only accepted if the authenticator data
+        has the user verified flag. A value in the parameters of the second step only applies to a challenge without a
+        stored requirement. The multi_device fixture credential is registered without user verification, the
         single_device fixture credential with it.
         """
-        registration_request = self._initialize_registration_multi_device()
+        uv_required = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"}
+        registration_request = self._initialize_registration(uv_required, multi_device=True)
         token = registration_request.token
-        self.addCleanup(remove_token, serial=token.get_serial())
+        challenge = get_challenges(serial=token.get_serial(),
+                                   transaction_id=registration_request.init_detail["transaction_id"])[0]
+        self.assertEqual("required", challenge.get_data()[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT])
         registration_response = {**registration_request.registration_response,
-                                 FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"}
+                                 FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "preferred"}
         with self.assertRaisesRegex(EnrollmentError, "User verification is required"):
             token.update(registration_response)
         self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
         self.assertFalse(token.is_active())
         self.assertIsNone(get_fido2_token_by_credential_id(self.credential_id_multi_device))
 
-        # With "preferred", the same registration is accepted
-        registration_response[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] = "preferred"
+        # A challenge without a stored requirement uses the value in the parameters
+        challenge_data = challenge.get_data()
+        del challenge_data[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT]
+        challenge.set_data(challenge_data)
+        challenge.save()
+        registration_response[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] = "required"
+        with self.assertRaisesRegex(EnrollmentError, "User verification is required"):
+            token.update(registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        remove_token(serial=token.get_serial())
+
+        # With "preferred" stored in the challenge, "required" in the parameters does not apply
+        registration_request = self._initialize_registration(multi_device=True)
+        token = registration_request.token
+        registration_response = {**registration_request.registration_response, **uv_required}
         token.update(registration_response)
         self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        remove_token(serial=token.get_serial())
 
-        registration_request = self._initialize_registration()
+        registration_request = self._initialize_registration(uv_required)
         token = registration_request.token
-        self.addCleanup(remove_token, serial=token.get_serial())
-        registration_response = {**registration_request.registration_response,
-                                 FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"}
-        token.update(registration_response)
+        token.update(registration_request.registration_response)
         self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
         self.assertTrue(token.is_active())
+        remove_token(serial=token.get_serial())
