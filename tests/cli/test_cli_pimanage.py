@@ -1708,6 +1708,79 @@ class TestPIManageConfigImport:
             assert "cliyamlres" in get_resolver_list()
             delete_resolver("cliyamlres")
 
+    def test_08_import_event_matches_by_name(self, app, tmp_path):
+        # The exported ID belongs to another event on the target instance. The import must not overwrite it, but
+        # create the event, and a second import updates it instead of creating another one.
+        from privacyidea.lib.event import EventConfiguration, delete_event, set_event
+        outfile = tmp_path / "event.json"
+        runner = app.test_cli_runner()
+        with app.app_context():
+            other_id = set_event("cliotherevent", event=["token_init"], handlermodule="UserNotification",
+                                 action="sendmail")
+            event_id = set_event("cliimpevent", event=["token_init"], handlermodule="UserNotification",
+                                 action="sendmail")
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "event", "-n", "cliimpevent", "-o", outfile])
+        assert result.exit_code == 0, result.output
+        data = json.loads(outfile.read_text())
+        data["event"][0]["id"] = other_id
+        outfile.write_text(json.dumps(data))
+        with app.app_context():
+            delete_event(event_id)
+
+        for _ in range(2):
+            result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+            assert result.exit_code == 0, result.output
+            with app.app_context():
+                names = [e["name"] for e in EventConfiguration().events]
+                assert names.count("cliotherevent") == 1
+                assert names.count("cliimpevent") == 1
+
+        # An event whose name is used by more than one event can not be matched and is not imported
+        with app.app_context():
+            set_event("cliimpevent", event=["token_init"], handlermodule="UserNotification", action="sendmail")
+        data["event"][0]["action"] = "sendsms"
+        outfile.write_text(json.dumps(data))
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+        assert result.exit_code == 1, result.output
+        assert "Could not import the following events" in result.output
+        with app.app_context():
+            events = [e for e in EventConfiguration().events if e["name"] == "cliimpevent"]
+            assert [e["action"] for e in events] == ["sendmail", "sendmail"]
+            for event in EventConfiguration().events:
+                if event["name"] in ["cliotherevent", "cliimpevent"]:
+                    delete_event(event["id"])
+
+    def test_09_import_periodictask_matches_by_name(self, app, tmp_path):
+        # The exported ID does not exist on the target instance, the task is created anyway. A second import
+        # updates it.
+        from privacyidea.lib.periodictask import (delete_periodic_task, get_periodic_tasks,
+                                                  set_periodic_task)
+        outfile = tmp_path / "periodictask.json"
+        runner = app.test_cli_runner()
+        with app.app_context():
+            task_id = set_periodic_task("cliimptask", "*/5 * * * *", ["pinode1"], "SimpleStats",
+                                        options={"total_tokens": True})
+        result = runner.invoke(pi_manage, ["config", "export", "-t", "periodictask", "-n", "cliimptask",
+                                           "-o", outfile])
+        assert result.exit_code == 0, result.output
+        data = json.loads(outfile.read_text())
+        data["periodictask"][0]["id"] = 99999
+        outfile.write_text(json.dumps(data))
+        with app.app_context():
+            delete_periodic_task(task_id)
+
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+        assert result.exit_code == 0, result.output
+        data["periodictask"][0]["interval"] = "*/10 * * * *"
+        outfile.write_text(json.dumps(data))
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+        assert result.exit_code == 0, result.output
+        with app.app_context():
+            tasks = get_periodic_tasks(name="cliimptask")
+            assert len(tasks) == 1
+            assert tasks[0]["interval"] == "*/10 * * * *"
+            delete_periodic_task(tasks[0]["id"])
+
 
 class PIManageChallengeTestCase(CliTestCase):
     """

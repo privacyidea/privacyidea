@@ -371,13 +371,20 @@ def export_periodictask(name=None):
 
 @register_import('periodictask')
 def import_periodictask(data, name=None):
-    """Import periodictask configuration"""
+    """
+    Import periodictask configuration
+
+    A periodic task is matched by its unique name, not by the database ID of the exported instance, which may not
+    exist or belong to a different task on this instance.
+    """
     log.debug(f'Import periodictask config: {data!s}')
     for res_data in data:
         if name and name != res_data.get('name'):
             continue
         res_data.pop('last_update')
         res_data.pop('last_runs')
+        existing_task = db.session.scalars(select(PeriodicTask).filter_by(name=res_data.get('name'))).one_or_none()
+        res_data['id'] = existing_task.id if existing_task else None
         rid = set_periodic_task(**res_data)
         log.info('Import of periodictask "{!s}" finished,'
                  ' id: {!s}'.format(res_data['name'], rid))
