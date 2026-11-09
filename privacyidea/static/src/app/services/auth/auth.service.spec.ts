@@ -399,7 +399,7 @@ describe("AuthService", () => {
       id: 0,
       jsonrpc: "2.0",
       signature: "",
-      time: Date.now(),
+      time: Date.now() / 1000,
       version: "1.0",
       versionnumber: "3.12.4",
       detail: {},
@@ -671,7 +671,7 @@ describe("AuthService", () => {
         id: 0,
         jsonrpc: "2.0",
         signature: "",
-        time: Date.now(),
+        time: Date.now() / 1000,
         version: "1.0",
         detail: {},
         result: {
@@ -778,6 +778,146 @@ describe("AuthService", () => {
       authService.logout();
 
       expect(sessionTimer.stopTimers).toHaveBeenCalled();
+    });
+  });
+
+  describe("server clock offset", () => {
+    const SERVER_NOW_MS = Date.parse("2025-06-01T12:00:00Z");
+    const VALIDITY_S = 3600;
+    const SEVEN_HOURS_MS = 7 * 3600 * 1000;
+
+    // The server stamps the JWT exp with its own clock: SERVER_NOW + validity.
+    const serverJwt = (): string => {
+      const payload: JwtData = {
+        username: "alice",
+        realm: "def",
+        nonce: "zz",
+        role: "admin",
+        authtype: "cookie",
+        exp: Math.floor(SERVER_NOW_MS / 1000) + VALIDITY_S,
+        rights: []
+      };
+      return ["hdr", b64url(payload), "sig"].join(".");
+    };
+
+    // `time` is the server's unix time in seconds (python time.time()), omitted when withTime is false.
+    const authResponse = (withTime = true): AuthResponse =>
+      ({
+        id: 0,
+        jsonrpc: "2.0",
+        signature: "",
+        ...(withTime ? { time: SERVER_NOW_MS / 1000 } : {}),
+        version: "1.0",
+        detail: {},
+        result: {
+          status: true,
+          value: {
+            menus: [],
+            realm: "def",
+            rights: [],
+            role: "admin",
+            token: serverJwt(),
+            username: "alice",
+            session_persistence: "tab"
+          }
+        }
+      }) as unknown as AuthResponse;
+
+    // Logs in while the browser clock reads SERVER_NOW + browserAheadMs.
+    const loginWithBrowserAhead = (browserAheadMs: number, withTime = true) => {
+      jest.setSystemTime(SERVER_NOW_MS + browserAheadMs);
+      const sub = authService.authenticate({ username: "alice", password: "x" }).subscribe();
+      httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/auth")).flush(authResponse(withTime));
+      sub.unsubscribe();
+    };
+
+    // A fresh service instance on the same storage, as after a full page reload.
+    const reloadedService = (): AuthService => {
+      const fresh = TestBed.runInInjectionContext(() => new AuthService());
+      fresh.bootstrapSession();
+      return fresh;
+    };
+
+    // The mock storage warns on missing keys, so only count the service's own warnings.
+    const clockWarnings = (warn: jest.SpyInstance) =>
+      warn.mock.calls.filter((c) => !String(c[0]).startsWith("MockLocalService"));
+
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it("counts the session time from server time when the browser clock runs seven hours ahead", () => {
+      jest.spyOn(console, "warn").mockReturnValue();
+
+      loginWithBrowserAhead(SEVEN_HOURS_MS);
+
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.jwtLogoutTimeS()).toBeGreaterThanOrEqual(VALIDITY_S - 1);
+      expect(authService.jwtLogoutTimeS()).toBeLessThanOrEqual(VALIDITY_S);
+    });
+
+    it("counts the session time from server time when the browser clock runs seven hours behind", () => {
+      jest.spyOn(console, "warn").mockReturnValue();
+
+      loginWithBrowserAhead(-SEVEN_HOURS_MS);
+
+      expect(authService.jwtLogoutTimeS()).toBeGreaterThanOrEqual(VALIDITY_S - 1);
+      expect(authService.jwtLogoutTimeS()).toBeLessThanOrEqual(VALIDITY_S);
+    });
+
+    it("counts the session time from the browser clock when the response carries no server time", () => {
+      const warn = jest.spyOn(console, "warn").mockReturnValue();
+
+      loginWithBrowserAhead(-SEVEN_HOURS_MS, false);
+
+      expect(authService.jwtLogoutTimeS()).toBe(VALIDITY_S + SEVEN_HOURS_MS / 1000);
+      expect(clockWarnings(warn)).toHaveLength(0);
+    });
+
+    it("restores a stored session after a reload when it is still valid in server time", () => {
+      jest.spyOn(console, "warn").mockReturnValue();
+      loginWithBrowserAhead(SEVEN_HOURS_MS);
+
+      jest.advanceTimersByTime(60 * 1000);
+      const fresh = reloadedService();
+
+      expect(fresh.isAuthenticated()).toBe(true);
+      expect(fresh.jwtData()?.username).toBe("alice");
+      expect(fresh.jwtLogoutTimeS()).toBeGreaterThanOrEqual(VALIDITY_S - 61);
+      expect(fresh.jwtLogoutTimeS()).toBeLessThanOrEqual(VALIDITY_S - 60);
+    });
+
+    it("drops a stored session after a reload when it has expired in server time", () => {
+      jest.spyOn(console, "warn").mockReturnValue();
+      // Browser behind the server: on the browser clock alone the session would still look valid.
+      loginWithBrowserAhead(-SEVEN_HOURS_MS);
+
+      jest.advanceTimersByTime((VALIDITY_S + 60) * 1000);
+      const fresh = reloadedService();
+
+      expect(fresh.isAuthenticated()).toBe(false);
+      expect(fresh.jwtData()).toBeNull();
+      expect(mockLocal.clearSession).toHaveBeenCalled();
+    });
+
+    it("warns once at login when the browser clock is more than a minute off the server", () => {
+      const warn = jest.spyOn(console, "warn").mockReturnValue();
+
+      loginWithBrowserAhead(SEVEN_HOURS_MS);
+
+      expect(clockWarnings(warn)).toHaveLength(1);
+    });
+
+    it("does not warn when the browser clock is only a few seconds off the server", () => {
+      const warn = jest.spyOn(console, "warn").mockReturnValue();
+
+      loginWithBrowserAhead(2000);
+
+      expect(clockWarnings(warn)).toHaveLength(0);
     });
   });
 });
