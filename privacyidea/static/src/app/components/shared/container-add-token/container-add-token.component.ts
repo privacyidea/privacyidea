@@ -71,6 +71,8 @@ export class ContainerAddTokenComponent {
     computation: (tokenResourceValue, previous) => tokenResourceValue?.tokens ?? previous?.value ?? []
   });
 
+  protected readonly clearInputOnSelect = (): string => "";
+
   onPageEvent(event: PageEvent) {
     this.tokenService.eventPageSize.set(event.pageSize);
     this.tokenService.pageIndex.set(event.pageIndex);

@@ -56,6 +56,8 @@ how the authentication should be processed:
 
    The user must not send a fixed password, only the OTP value.
    A request with PIN and OTP fails.
+   A simple pass token (SPASS) has no OTP value, its PIN is the whole password,
+   so its PIN is still checked.
 
 .. versionadded:: 2.0
 
@@ -489,10 +491,12 @@ type: ``string``
 This is a list of token types that are not allowed to be used during authentication.
 The list is separated by whitespaces like *"hotp totp"*.
 
-``/validate/triggerchallenge`` still creates challenges for these token types, but
-an answer to them is rejected.
+``/validate/triggerchallenge`` does not create challenges for these token types. For a trigger by serial only,
+it applies only the policies that do not name a user, realm or resolver.
 
 .. versionadded:: 3.12
+
+.. versionchanged:: 3.14.1 ``/validate/triggerchallenge`` applies the policy.
 
 .. _policy_force_challenge_response:
 
@@ -524,7 +528,18 @@ will start a challenge response mechanism in which the user is supposed to enter
 PIN two times.
 
 Only if the user successfully changes the PIN the authentication process is finished
-successfully. E.g. if the user enters two different new PINs, the authentication process will fail.
+successfully. For example, if the user enters two different new PINs, the authentication process fails.
+This counts as a failed authentication of the token, and the PIN change starts again with the next login.
+
+Each of the two challenges can be answered once, and only within its validity time. As for any other
+authentication, the token has to be usable and the authorization policies have to allow it.
+
+The authentication that starts the PIN change does not count for the authentication counters of the token
+(``count_auth`` and ``count_auth_success``). The confirmation of the new PIN completes the authentication and counts
+it. A PIN change that the user does not finish does not count.
+
+A registration token does not start a PIN change, because the token deletes itself after the successful
+authentication.
 
 .. note:: The application must support several consecutive challenge response requests.
 
@@ -886,6 +901,9 @@ seconds and check, if the push challenge was confirmed by the user.
 
 This way push tokens can be used with any non-push-capable applications.
 
+If the push token does not create a challenge, the request does not wait and fails at once. This happens if the
+token has no push gateway, or if the push gateway fails and :ref:`policy_auth_push_allow_poll` does not allow polling.
+
 Sensible numbers might be 10 or 20 seconds.
 
 .. note:: This behavior can interfere with other tokentypes. A request that
@@ -900,6 +918,8 @@ Sensible numbers might be 10 or 20 seconds.
    the number of available worker threads!
 
 .. versionadded:: 3.1
+
+.. versionchanged:: 3.14.1 A request without a challenge does not wait.
 
 .. _policy_push_code_to_phone:
 

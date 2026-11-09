@@ -29,7 +29,7 @@ import {
   WritableSignal
 } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { form, FormField, pattern, required } from "@angular/forms/signals";
+import { applyEach, disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
@@ -61,8 +61,13 @@ import {
 } from "@services/periodic-task/periodic-task.service";
 import { SystemService } from "@services/system/system.service";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { ERR, identifierName, requiredNonEmptyArray } from "@utils/form-rules.utils";
+import { clearField, hasError, touchAll } from "@utils/form-state.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { firstValueFrom } from "rxjs";
+
+/** The edited task. `ordering` is `null` while the number input is empty. */
+type PeriodicTaskFormModel = Omit<PeriodicTaskEdit, "ordering"> & { ordering: number | null };
 
 @Component({
   selector: "app-periodic-task-edit",
@@ -106,9 +111,12 @@ export class PeriodicTaskEditComponent implements OnDestroy {
 
   protected readonly Object = Object;
   protected readonly parseBooleanValue = parseBooleanValue;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
+  protected readonly ERR = ERR;
 
   isNewTask = signal<boolean>(false);
-  editTask = signal<PeriodicTaskEdit>({ ...EMPTY_PERIODIC_TASK });
+  editTask = signal<PeriodicTaskFormModel>({ ...EMPTY_PERIODIC_TASK });
 
   readonly title = computed(() =>
     this.isNewTask()
@@ -126,9 +134,22 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   });
 
   editTaskForm = form(this.editTask, (f) => {
-    required(f.name);
-    pattern(f.name, /^[a-zA-Z0-9._-]*$/);
+    identifierName(f.name);
+    required(f.taskmodule);
     required(f.interval);
+    requiredNonEmptyArray(f.nodes);
+    required(f.ordering);
+    disabled(f.active, () => !this.authService.actionAllowed("periodictask_write"));
+    // The options map must hold an entry, and every option the module requires must be present and non-empty.
+    validate(f.options, (ctx) => {
+      const options = ctx.value();
+      const missingRequired = Object.keys(this.requiredOptions()).some((key) => !options[key]);
+      return Object.keys(options).length === 0 || missingRequired ? [{ kind: ERR.required }] : [];
+    });
+    // Each required option reports its own error so its value input can show a message.
+    applyEach(f.options, (option) =>
+      required(option, { when: (ctx) => this.requiredOptions()[ctx.key()] !== undefined })
+    );
   });
 
   taskModules: WritableSignal<PeriodicTaskModule[]> = linkedSignal({
@@ -171,16 +192,14 @@ export class PeriodicTaskEditComponent implements OnDestroy {
       const editName = this.editName();
       if (this.isNewTask() || !editName) return;
       const found = this.findTaskByName(editName);
-      if (found && untracked(() => !this.hasChanges())) {
-        this.loadTask(found);
+      if (found) {
+        untracked(() => {
+          if (!this.hasChanges()) this.loadTask(found);
+        });
       }
     });
 
     this.periodicTaskService.fetchAllModuleOptions();
-  }
-
-  fieldHasError(field: { errors(): { kind: string }[]; dirty(): boolean; touched(): boolean }, kind: string): boolean {
-    return field.errors().some((e) => e.kind === kind) && (field.dirty() || field.touched());
   }
 
   isOptionSet(key: string): boolean {
@@ -200,30 +219,11 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     } else {
       delete options[key];
     }
-    this.editTask.set({ ...this.editTask(), options });
+    this.editTask.update((task) => ({ ...task, options }));
   }
 
-  updateOptionValue(key: string, value: string): void {
-    this.editTask.set({
-      ...this.editTask(),
-      options: { ...this.editTask().options, [key]: value }
-    });
-  }
+  readonly canSave = computed(() => this.editTaskForm().valid());
 
-  canSave = computed(() => {
-    const t = this.editTask();
-    if (t.name === "" || !/^[a-zA-Z0-9._-]*$/.test(t.name)) return false;
-    if (t.taskmodule === "") return false;
-    if (t.interval === "") return false;
-    if (t.nodes.length === 0) return false;
-    if (t.ordering === null) return false;
-    if (Object.keys(t.options).length === 0) return false;
-    for (const key of Object.keys(this.requiredOptions())) {
-      const v = t.options[key];
-      if (v === undefined || v === null || v === "") return false;
-    }
-    return true;
-  });
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
   }
@@ -238,6 +238,7 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   private loadTask(task: PeriodicTaskEdit): void {
     this.originalTask = task;
     this.editTask.set(deepCopy(task));
+    this.editTaskForm().reset();
   }
 
   private findTaskByName(name: string): PeriodicTaskEdit | undefined {
@@ -248,9 +249,15 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   }
 
   async save(): Promise<boolean> {
-    if (!this.canSave()) return false;
+    if (!this.canSave()) {
+      await touchAll(this.editTaskForm);
+      return false;
+    }
     try {
-      const response = await firstValueFrom(this.periodicTaskService.savePeriodicTask(this.editTask()));
+      const task = this.editTask();
+      const response = await firstValueFrom(
+        this.periodicTaskService.savePeriodicTask({ ...task, ordering: Number(task.ordering) })
+      );
       if (response?.result?.value !== undefined) {
         this.periodicTaskService.periodicTasksResource.reload();
         this.pendingChangesService.clearAllRegistrations();
@@ -307,17 +314,12 @@ export class PeriodicTaskEditComponent implements OnDestroy {
 
   // Form actions
 
-  onNodeSelectionChange(nodes: string[]): void {
-    this.editTask.set({ ...this.editTask(), nodes });
-  }
-
   onTaskModuleChange(module: string): void {
-    this.editTask.set({ ...this.editTask(), taskmodule: module });
-    const required: Record<string, string> = {};
-    Object.entries(this.requiredOptions()).forEach(([key, opt]) => {
-      required[key] = opt.value ?? "";
+    const requiredDefaults: Record<string, string> = {};
+    Object.entries(this.periodicTaskService.moduleOptions()[module] ?? {}).forEach(([key, opt]) => {
+      if (opt.required) requiredDefaults[key] = opt.value ?? "";
     });
-    this.editTask.set({ ...this.editTask(), options: { ...required } });
+    this.editTask.update((task) => ({ ...task, options: requiredDefaults }));
   }
 
   getModuleLabel(module: string): string {

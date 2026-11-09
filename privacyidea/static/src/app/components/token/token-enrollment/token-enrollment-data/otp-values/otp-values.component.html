@@ -24,6 +24,8 @@
         @if (otpValues()) {
           <button
             (click)="$event.stopPropagation(); printOtps()"
+            aria-label="Print OTP Values"
+            i18n-aria-label="@@token.printOtpValues"
             mat-icon-button
             class="margin-left-16">
             <mat-icon>print</mat-icon>

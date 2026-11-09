@@ -2194,6 +2194,33 @@ class PolicyTestCase(MyTestCase):
             for name in policies:
                 delete_policy(name)
 
+    def test_41e_list_policies_user_with_additional_realms(self):
+        # With the realms of a token or container, a policy for users matches the user as it does without these
+        # realms: without a realm in every realm, otherwise only in the user realm and not in another realm of the list.
+        policies = {"multi_realm_user": {"user": "cornelius"},
+                    "multi_realm_every_user": {"user": "*"},
+                    "multi_realm_regex": {"user": "corn.*"},
+                    "multi_realm_user_realm1": {"user": "cornelius", "realm": self.realm1},
+                    "multi_realm_every_user_realm1": {"user": "*", "realm": self.realm1},
+                    "multi_realm_case_insensitive": {"user": "Cornelius", "realm": self.realm1,
+                                                     "user_case_insensitive": True},
+                    "multi_realm_user_realm2": {"user": "cornelius", "realm": self.realm2},
+                    "multi_realm_other_user": {"user": "bob"}}
+        for name, attributes in policies.items():
+            set_policy(name=name, scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, **attributes)
+        policy_class = PolicyClass()
+
+        try:
+            matching = {policy["name"] for policy in policy_class.list_policies(
+                action=PolicyAction.DISABLE, user="cornelius", realm=self.realm1,
+                additional_realms=[self.realm1, self.realm2]) if policy["name"].startswith("multi_realm_")}
+            self.assertSetEqual({"multi_realm_user", "multi_realm_every_user", "multi_realm_regex",
+                                 "multi_realm_user_realm1", "multi_realm_every_user_realm1",
+                                 "multi_realm_case_insensitive"}, matching)
+        finally:
+            for name in policies:
+                delete_policy(name)
+
     def test_42_convert_action_dict_to_python_dict_success(self):
         action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
         python_dict = convert_action_dict_to_python_dict(action_dict)
@@ -4054,3 +4081,40 @@ class PolicyValueErrorTestCase(MyTestCase):
         self.assertEqual("Invalid actions for scope 'admin': ['aaa_invalid', 'zzz_invalid']!",
                          exception.exception.message)
         self.assertListEqual([], get_policies(name="invalid_actions"))
+
+
+class PolicyWithoutActionsTestCase(MyTestCase):
+    """
+    A policy without actions applies to every action of its scope in the scopes that grant rights, and to no action
+    in the other scopes.
+    """
+
+    def _matching_names(self, scope: str, action: str) -> list[str]:
+        return [policy["name"] for policy in PolicyClass().match_policies(scope=scope, action=action, active=True)]
+
+    def test_01_applies_to_every_action_in_the_scopes_that_grant_rights(self):
+        for scope, action in ((SCOPE.ADMIN, PolicyAction.DELETE), (SCOPE.USER, PolicyAction.DELETE),
+                              (SCOPE.CONTAINER, PolicyAction.CONTAINER_DELETE)):
+            with self.subTest(scope=scope):
+                set_policy(name="without_actions", scope=scope, action="")
+                try:
+                    self.assertListEqual(["without_actions"], self._matching_names(scope, action))
+                finally:
+                    delete_policy("without_actions")
+
+    def test_02_applies_to_no_action_in_the_other_scopes(self):
+        for scope, action in ((SCOPE.AUTH, PolicyAction.PASSONNOTOKEN), (SCOPE.AUTH, PolicyAction.PASSTHRU),
+                              (SCOPE.AUTHZ, PolicyAction.NODETAILSUCCESS), (SCOPE.ENROLL, PolicyAction.MAXTOKENUSER),
+                              (SCOPE.WEBUI, PolicyAction.SHOW_SEED), (SCOPE.REGISTER, PolicyAction.RESOLVER),
+                              (SCOPE.TOKEN, PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE),
+                              (SCOPE.HARDENING, PolicyAction.HIDE_VERSION),
+                              (SCOPE.CONDITIONAL_ACCESS, PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE)):
+            with self.subTest(scope=scope, action=action):
+                set_policy(name="without_actions", scope=scope, action="")
+                try:
+                    self.assertListEqual([], self._matching_names(scope, action))
+                    # Without an action to match, the policy is still listed
+                    self.assertListEqual(["without_actions"],
+                                         [policy["name"] for policy in PolicyClass().list_policies(scope=scope)])
+                finally:
+                    delete_policy("without_actions")

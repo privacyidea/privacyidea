@@ -103,8 +103,6 @@ export interface TableUtilsServiceInterface {
 
   toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
 
-  isLink(columnKey: string): boolean;
-
   getClassForColumn(columnKey: string, element: TableRow): string;
 
   getTooltipForColumn(columnKey: string, element: TableRow): string;
@@ -193,16 +191,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   public toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue {
     const { keyword, currentValue } = args;
     return currentValue.toggleBooleanKey(keyword);
-  }
-
-  isLink(columnKey: string): boolean {
-    return (
-      columnKey === "container_serial" //||
-      //columnKey === 'username' ||
-      //columnKey === 'user_realm' ||
-      //columnKey === 'users' ||
-      //columnKey === 'realms'
-    );
   }
 
   getClassForColumn(columnKey: string, element: TableRow): string {

@@ -32,8 +32,7 @@
 
   <mat-radio-group
     class="lock-dialog-modes"
-    [value]="mode()"
-    (change)="mode.set($event.value)">
+    [formField]="lockForm.mode">
     <mat-radio-button
       value="permanent"
       i18n="@@user.untilAdministratorUnlocksUser">
@@ -50,15 +49,21 @@
     <mat-form-field
       appearance="fill"
       subscriptSizing="dynamic"
-      class="input-width-s">
+      class="input-width-m">
       <mat-label i18n="@@audit.duration">Duration</mat-label>
       <input
         matInput
         type="number"
-        min="1"
-        [disabled]="durationDisabled()"
-        [value]="durationInput()"
-        (input)="durationInput.set($any($event.target).value)" />
+        [formField]="lockForm.durationInput" />
+      @if (hasError(lockForm.durationInput, ERR.parse)) {
+        <mat-error i18n="@@common.durationNotNumber">Enter a <strong>valid number</strong>.</mat-error>
+      } @else if (hasError(lockForm.durationInput, ERR.required)) {
+        <mat-error i18n="@@common.durationRequired">Duration is <strong>required</strong>.</mat-error>
+      } @else if (hasError(lockForm.durationInput, POSITIVE_INTEGER_ERROR)) {
+        <mat-error i18n="@@common.durationPositiveInteger"
+          >Duration must be a <strong>whole number</strong> greater than zero.</mat-error
+        >
+      }
     </mat-form-field>
 
     <mat-form-field
@@ -66,10 +71,7 @@
       subscriptSizing="dynamic"
       class="input-width-s">
       <mat-label i18n="@@common.unit">Unit</mat-label>
-      <mat-select
-        [disabled]="durationDisabled()"
-        [value]="durationUnit()"
-        (selectionChange)="durationUnit.set($event.value)">
+      <mat-select [formField]="lockForm.durationUnit">
         @for (unit of durationUnits; track unit) {
           <mat-option [value]="unit">{{ unit }}</mat-option>
         }

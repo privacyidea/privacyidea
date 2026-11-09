@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -33,6 +33,8 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 interface ServiceIdFormModel {
   servicename: string;
@@ -65,10 +67,13 @@ export class NewServiceIdComponent implements OnDestroy {
   serviceIdModel = signal<ServiceIdFormModel>({ ...EMPTY_SERVICE_ID_FORM });
 
   serviceIdForm = form(this.serviceIdModel, (f) => {
-    required(f.servicename);
-    pattern(f.servicename, /^[a-zA-Z0-9._-]*$/);
+    identifierName(f.servicename);
     disabled(f.servicename, () => this.isEditMode());
   });
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);

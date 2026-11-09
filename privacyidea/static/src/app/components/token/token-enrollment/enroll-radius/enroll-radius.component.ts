@@ -22,6 +22,7 @@ import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
+import { RouterLink } from "@angular/router";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -38,7 +39,8 @@ import {
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RADIUS_SERVER } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -59,7 +61,8 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
     MatSelect,
     MatHint,
     MatError,
-    FormField
+    FormField,
+    RouterLink
   ],
   templateUrl: "./enroll-radius.component.html",
   providers: [
@@ -71,7 +74,7 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   enrollmentData = input<RadiusEnrollmentData>();
   wizard = input<boolean>(false);
@@ -81,6 +84,10 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
   radiusServerConfiguration = signal<string>("");
   checkPinLocally = signal<boolean>(false);
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  checkPinLocallyForm = form(this.checkPinLocally);
   radiusServerConfigurationForm = form(this.radiusServerConfiguration, (f) => {
     required(f);
     disabled(f, () => this.disabled());
@@ -138,15 +145,5 @@ export class EnrollRadiusComponent extends EnrollTokenBase<RadiusEnrollmentData>
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
-  }
-
-  goToRadiusConfig() {
-    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "radius" });
-  }
-
-  onRadiusConfigKeydown(event: KeyboardEvent) {
-    if (event.key === "Enter" || event.key === " ") {
-      this.goToRadiusConfig();
-    }
   }
 }

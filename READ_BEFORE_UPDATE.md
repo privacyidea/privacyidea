@@ -121,11 +121,11 @@
 
 * **More event handlers fail the request when they fail.** The schema update sets *Abort on error* for the existing
   **request mangler** and **response mangler** handlers and for the **Script** handlers that are configured to raise an
-  error. With 3.14 it was only set for **Federation** handlers. A request mangler changes the parameters the endpoint
-  works with and a response mangler the response the client receives, so the request must not go on without them, and
-  *raise error* makes the script decide whether the request may go on. New request mangler and response mangler bindings
-  start with the option enabled. Clear the option after the update for a handler whose failure should not fail the
-  request.
+  error, also where the option was cleared in 3.14. With 3.14 it was only set for **Federation** handlers. A request
+  mangler changes the parameters the endpoint works with and a response mangler the response the client receives, so
+  the request must not go on without them, and *raise error* makes the script decide whether the request may go on. New
+  request mangler and response mangler bindings start with the option enabled. Clear the option after the update for a
+  handler whose failure should not fail the request.
 
   A handler that could not do what it is configured for now records `success=False` and the reason in the `info` column
   of its audit entry instead of being audited as successful, e.g. a notification without a recipient, a script that
@@ -195,9 +195,21 @@
   value.
 
 * **The policy actions of the `u2f` token type are removed.** The schema update removes `enrollU2F` and the actions
-  starting with `u2f_` from the policies and logs the names of the policies it changed. A configuration exported from an
-  earlier version that still contains them is imported with `pi-manage config import --skip-invalid`, which drops these
-  actions; without the option, the import refuses such a policy.
+  that start with `u2f_` from the policies. It deletes a policy that holds only these actions, together with the
+  conditions and the description of the policy. The update prints the names of the changed and the deleted policies.
+
+  The update keeps such a policy if it is the last active policy of the admin or the user scope. Without an active
+  policy, every administrator or user gets all rights of that scope. The update names these policies in a warning.
+  They allow nothing. Replace their actions with other actions, or add another active policy to the scope and then
+  delete them. Do not save them without actions. A policy without actions allows every action of its scope.
+
+  `pi-manage config import --skip-invalid` imports a configuration that an earlier version exported with these
+  actions. The option drops the actions and skips a policy that holds only these actions. Without the option, the
+  import refuses such a policy.
+
+* **A policy without actions applies to every action only in the `admin`, `user` and `container` scopes.** In the
+  other scopes, a policy without actions has no effect. Before, such a policy made authentication, login and token
+  enrollment requests fail.
 
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
@@ -213,6 +225,28 @@
   and certificate in `CSRDir`/`CertificateDir` under a name chosen by the server, a readable part of the subject
   plus a random suffix (e.g. `DE_Hessen_privacyidea_usercert_3f2a9c1e0b7d5a64.pem`). The certificate itself is
   stored with the token as before. Scripts that look for these files by the subject alone need to be adapted.
+
+* **The audit log download contains the realms that both audit policies grant** — The audit log download
+  (`GET /audit/<file>.csv`) contains the entries of the realms that both the `auditlog_download` and the `auditlog`
+  policies of an administrator grant, plus the entries the administrator caused. An administrator with
+  `auditlog_download` but no matching `auditlog` policy downloads only their own entries; with `auditlog` for every
+  realm and `auditlog_download` for some realms, the download contains these realms. A `realm` parameter filters the
+  download within the granted realms. Nothing changes without admin policies or for administrators with both actions
+  for the same realms. Grant `auditlog_download` together with an `auditlog` policy for the same realms.
+
+* **`hide_tokeninfo` and `hide_audit_columns` with realms, resolvers or users apply in every list** — Such a policy
+  hides its token info keys for the tokens whose owner or token realm it names and its audit columns for the entries
+  of the users and realms it names, also in the token list, the container list and the audit log without a filter.
+  Administrators with such a policy see fewer token info entries and audit columns in these lists. Policies without
+  realm, resolver and user work as before.
+
+* **Policies that name users apply to tokens and containers in more than one realm.** Such a policy matches the
+  owner of these tokens and containers by the same rules as for a token in one realm. A policy without a realm
+  matches the owner in every realm, and `*`, regular expressions and case-insensitive user names match the owner.
+  The user still matches only together with the realm of the user. Admin policies of this kind allow their actions
+  on more tokens and containers. The `change_pin_on_first_use` and `change_pin_every` policies of this kind apply to
+  more tokens. Check the admin policies that name users and have no realm or use `*`, regular expressions or
+  case-insensitive names.
 
 * **Tokens from a container template are checked with their own user and realm** — When a container is created from
   a template, the enrollment policies are checked for each token as for a single token enrollment: against the user
@@ -255,6 +289,70 @@
   *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)* templates. To count the requests, add
   `POST_AUTHENTICATION_FAIL` to the policy. Policies that you create from these templates after the update count it.
 
+* **The PIN change via `/validate/check`** (policy `change_pin_via_validate`) has the checks of any other
+  authentication. Each of its two challenges can be answered once, and only while it is valid. The token has to be
+  usable, that is not disabled, below its fail counter and within its validity period. The authorization policies,
+  for example `tokentype`, have to allow the token. A confirmation that does not match the new PIN counts as a failed
+  authentication and ends the PIN change. The PIN change starts again with the next login.
+  The authentication that starts the PIN change does not count for the authentication counters of the token
+  (`count_auth`, `count_auth_success`). The confirmation of the new PIN counts it. In the authentication log, the
+  steps of a PIN change are `CHALLENGE_TRIGGERED`, `CHALLENGE_CONTINUED` and `LOGIN_SUCCESS`. A refused answer has
+  the event type and the reason of its failure, for example `CHALLENGE_ANSWERED_FAIL` with
+  `CHALLENGE_WRONG_RESPONSE` for a confirmation that does not match.
+
+* **The PIN policies check the PIN that is stored.** `otp_pin_minlength`, `otp_pin_maxlength` and `otp_pin_contents`
+  check `pin` for `/token/init`, `/token/assign` and container templates, and `otppin` for `/token/setpin`. A PIN
+  sent together with `rollover` or `verify` is checked as well, and the token type-specific PIN policies apply
+  whatever the case of the `type` parameter. Requests whose PIN does not match the policies are refused.
+
+* **Simple pass tokens under `otppin=none`.** The authentication policy `otppin=none` drops the PIN in front of an OTP
+  value. A simple pass (SPASS) token has no OTP value, its PIN is the whole password, so its PIN is checked as usual.
+  SPASS tokens with `otppin=userstore` work as before.
+
+* **`POST /container/init` with a template returns the PIN of the template only.** A PIN the server generates (policy
+  `otp_pin_random`) is not part of the `init_params` of a token, as with `/token/init`.
+
+* **The base PIN handler does not write the PIN to the log.** `privacyidea.lib.pinhandling.base.PinHandler`
+  logs the token and the user that a random PIN (policy `otp_pin_random`) was set for. To give random PINs
+  to users, use a PIN handler class that sends them (policy `pinhandling`).
+
+* **PIN handler classes get the token type in lower case.** `PinHandler.send` gets the type as privacyIDEA
+  stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
+
+* **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
+  for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
+  It is now left out of `multi_challenge` and of the serials in the audit and authentication log, instead of being
+  offered with a challenge that does not exist. If it was the only token to trigger a challenge, the response is
+  `authentication` `REJECT` instead of `CHALLENGE`, in the audit log as well. Event handler conditions on
+  `result_authentication` are matched accordingly.
+
+* **A challenge trigger that creates no challenge is logged as a failure** — At `/validate/check` and `/auth`, a request
+  whose PIN matched but for which no token got a challenge is logged as `CHALLENGE_TRIGGER_FAIL` instead of
+  `CHALLENGE_TRIGGERED`. The reasons name why: `CHALLENGE_NOT_DELIVERED` if the SMS, email or push message could not be
+  sent, or the token state if the trigger itself made the token unusable, e.g. `TOKEN_FAILCOUNT_EXCEEDED` with
+  `increase_failcounter_on_challenge`. With `push_wait`, a request no longer waits if the push token creates no
+  challenge. It fails at once, and the response message is "The PIN was correct, but the push notification was not
+  sent." The fail counter of the push token increases only with `increase_failcounter_on_challenge`. At
+  `/validate/triggerchallenge` such a request was logged as `NO_TOKEN` and is now logged as `CHALLENGE_TRIGGER_FAIL` as
+  well. A trigger there for a user whose tokens are all unusable is logged as `NO_USABLE_TOKEN` instead of `NO_TOKEN`,
+  with a reason for each token, among them `TOKEN_NO_CHALLENGE_MODE` for a token type without challenge-response such as
+  a simple pass token, and `TOKEN_NOT_APPLICABLE` for a passkey without `passkey_trigger_by_pin`. A conditional-access
+  policy counts these requests only if `CHALLENGE_TRIGGER_FAIL` is one of its *Tracked Event Types*. Policies from the
+  *Per-User Failed-Attempt Rate Limit* and *Per-IP Failed-Attempt Rate Limit (Distinct Accounts)* templates do not track
+  it. These policies track `NO_TOKEN`, so they no longer count a trigger at `/validate/triggerchallenge` that creates no
+  challenge. To count these requests, add `CHALLENGE_TRIGGER_FAIL` to the *Tracked Event Types* of the policy.
+
+* **`/validate/triggerchallenge` checks the token state before raising the failcounter** — Like `/validate/check`, it
+  now only uses tokens that pass the usual checks: below the failcounter, within the authentication counters and the
+  validity period, and fully enrolled. It also applies `disabled_token_types` and does not challenge a token of a
+  disabled type. Before, the trigger sent the challenge, and `/validate/check` refused the answer. With
+  `increase_failcounter_on_challenge`, only the failcounter of these tokens is raised; a token that can not get a
+  challenge anyway is no longer counted. A failcounter whose reset timeout (`failcounter_clear_timeout`) has passed is
+  reset before the check, as at `/validate/check`. Also as there, why a token was refused (e.g. "Failcounter exceeded")
+  is only the response message if no token got a challenge; it is no longer listed in `detail.messages` next to the
+  challenge texts. At `/validate/check` and `/auth` this now also holds for a token whose failcounter the trigger itself
+  raised to the maximum.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
@@ -285,6 +383,10 @@
   (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
   Build the WebUI from the repository if you need to modify it. This also means the sources are no longer reachable
   over HTTP under `/static/`.
+
+* **privacyIDEA checks `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` at start** — An unknown algorithm or parameter,
+  a parameter for an algorithm that is not in the list, or a value PassLib would adjust stops the server and
+  `pi-manage`, and with it the schema update. Check both settings before updating.
 
 * **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH

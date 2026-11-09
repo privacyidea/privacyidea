@@ -30,6 +30,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { StringUtils } from "@utils/string.utils";
 import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
+import { recordsEqual } from "@utils/record.utils";
 
 const LOCKED_USERS_DEFAULT_PAGE_SIZE = 10;
 
@@ -49,12 +50,6 @@ export type LockState = "permanent" | "temporary" | "expired";
 // Who imposed the restriction now in force: a conditional-access policy, or an administrator by hand.
 // Mirrors privacyidea.lib.conditional_access.authentication_event_types.RestrictionCause.
 export type LockCause = "POLICY" | "MANUAL";
-
-// Shallow value-equality for the flat filter-params record, so a value-less key edit does not re-notify.
-function shallowEqualRecord(a: Record<string, string>, b: Record<string, string>): boolean {
-  const aKeys = Object.keys(a);
-  return aKeys.length === Object.keys(b).length && aKeys.every((key) => a[key] === b[key]);
-}
 
 // One user-lock record, as returned by both `lock/user` (single lookup) and `lock/users` (list).
 export interface LockedUserEntry {
@@ -215,7 +210,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         .filter(([, value]) => StringUtils.validFilterValue(value));
       return Object.fromEntries(entries) as Record<string, string>;
     },
-    { equal: shallowEqualRecord }
+    { equal: recordsEqual }
   );
 
   lockedUsersSort = signal<Sort>({ active: "locked_at", direction: "desc" });

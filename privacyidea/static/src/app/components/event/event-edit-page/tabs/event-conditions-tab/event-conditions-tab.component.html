@@ -48,20 +48,22 @@
     <div class="panel-content">
       @if (availableNonEmptyGroups().length > 1) {
         <div class="selector-row">
-          <app-selector-buttons
-            (selected)="selectedGroup.set($event ?? '')"
-            [initialValue]="selectedGroup()"
+          <app-toggle-group
+            (valueChange)="selectedGroup.set($event ?? '')"
+            [hideSelectionIndicator]="true"
+            [value]="selectedGroup()"
             [values]="availableNonEmptyGroups()"
+            groupLabel="Condition group"
+            i18n-groupLabel="@@event.conditionGroup"
             class="flex-1" />
         </div>
       }
 
       <app-clearable-input
-        (clearButtonClick)="searchTerm.set('')"
+        (clearButtonClick)="clearSearch()"
         [showClearButton]="searchTerm().length > 0">
         <input
-          (ngModelChange)="searchTerm.set($event)"
-          [ngModel]="searchTerm()"
+          [formField]="searchForm.search"
           class="search-input"
           clearableInput
           i18n-placeholder="@@event.searchConditions"
@@ -85,7 +87,7 @@
           @if (searchTerm() !== "") {
             <p i18n="@@event.noConditionsMatch">No conditions match the search filter.</p>
             <button
-              (click)="searchTerm.set('')"
+              (click)="clearSearch()"
               i18n="@@common.clearFilter"
               mat-stroked-button
               >Clear Filter</button

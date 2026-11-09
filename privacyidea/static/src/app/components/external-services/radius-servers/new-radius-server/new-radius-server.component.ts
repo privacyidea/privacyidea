@@ -18,7 +18,7 @@
  **/
 import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -34,7 +34,8 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { reservedNames } from "@utils/reserved-names.utils";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import {
   RadiusServer,
   RadiusServerService,
@@ -104,15 +105,17 @@ export class NewRadiusServerComponent implements OnDestroy {
   radiusModel = signal<RadiusFormModel>({ ...EMPTY_RADIUS_FORM });
 
   radiusForm = form(this.radiusModel, (f) => {
-    required(f.identifier);
-    pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
     // POST /radiusserver/test_request is the connection test endpoint, and browsers drop "." and ".." from the URL,
     // so a server with one of these names is never saved.
-    reservedNames(f.identifier, ["test_request", ".", ".."]);
+    identifierName(f.identifier, { reserved: ["test_request", ".", ".."] });
     required(f.server);
     required(f.secret);
     disabled(f.identifier, () => this.isEditMode());
   });
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);

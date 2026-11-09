@@ -21,7 +21,7 @@ import { CommonModule, NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatOption } from "@angular/material/core";
-import { MatFormField } from "@angular/material/form-field";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -41,6 +41,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
     MatButton,
     MatFormField,
     MatIcon,
+    MatLabel,
     MatOption,
     MatSelect,
     MatIconButton,
