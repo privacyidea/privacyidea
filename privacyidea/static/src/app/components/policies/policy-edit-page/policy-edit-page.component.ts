@@ -49,6 +49,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   checkAllResolversWithoutResolver,
+  hasUnescapedComma,
   PolicyDetail,
   PolicyService,
   PolicyServiceInterface
@@ -126,13 +127,15 @@ export class PolicyEditPageComponent implements OnDestroy {
   readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.editedPolicy()));
   /**
    * The panel reports whether name, priority, scope and the added actions satisfy their rules, the name collision
-   * included. A policy that checks all resolvers of a user needs a resolver.
+   * included. No action value may hold an unescaped comma, since the server would split the value there. A policy
+   * that checks all resolvers of a user needs a resolver.
    */
   readonly canSave = computed(
     () =>
       this.savingName() === null &&
       this.isPolicyEdited() &&
       !!this.panel()?.valid() &&
+      !Object.values(this.editedPolicy().action ?? {}).some(hasUnescapedComma) &&
       !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>

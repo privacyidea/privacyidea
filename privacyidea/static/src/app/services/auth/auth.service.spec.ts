@@ -293,6 +293,36 @@ describe("AuthService", () => {
     await routerMock.navigate.mock.results[0].value;
   });
 
+  describe("logout redirect", () => {
+    let redirectSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      redirectSpy = jest
+        .spyOn(authService as unknown as { redirect: (url: string) => void }, "redirect")
+        .mockImplementation(() => undefined);
+    });
+
+    it("sends the browser to the logout redirect URL once the session is cleared", () => {
+      authService.authData.set({ logout_redirect_url: "https://sso.example.org/logout" } as unknown as AuthData);
+
+      authService.logout();
+
+      expect(redirectSpy).toHaveBeenCalledWith("https://sso.example.org/logout");
+      expect(mockLocal.clearSession.mock.invocationCallOrder[0]).toBeLessThan(
+        redirectSpy.mock.invocationCallOrder[0]
+      );
+    });
+
+    it("stays in the WebUI when no logout redirect URL is set", () => {
+      authService.authData.set({ logout_redirect_url: "" } as unknown as AuthData);
+
+      authService.logout();
+
+      expect(redirectSpy).not.toHaveBeenCalled();
+      expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
+    });
+  });
+
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
     jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
