@@ -712,8 +712,13 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
             "realm": "realm1"
         }
 
-        init_random_pin(req)
+        with LogCapture(level=logging.DEBUG) as log_records:
+            init_random_pin(req)
         pin = req.all_data.get("pin")
+
+        # The PIN handler is called, and the PIN is not written to the log
+        self.assertIn("handling the pin for token", str(log_records))
+        self.assertNotIn(pin, str(log_records))
 
         # check if the pin honors the contents policy
         pin_valid, comment = check_pin_contents(pin, contents_policy)

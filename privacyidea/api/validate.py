@@ -139,8 +139,9 @@ from privacyidea.lib.policies.helper import check_auth_time_limit, check_max_aut
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
-                                   check_otp, create_challenges_from_tokens, get_one_token)
+                                   check_otp, get_one_token, trigger_challenges)
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token.auth import check_token_state
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -164,7 +165,7 @@ from ..lib.conditional_access.request_context import (continue_attempt, confirm_
                                                       confirm_attempt_for_serials, get_ca_context)
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import (create_fido2_challenge, verify_fido2_challenge, ChallengeExpiredError,
-                                   check_fido2_token_state, record_fido2_login_success)
+                                   record_fido2_login_success)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
                               token_belongs_to_user)
@@ -891,7 +892,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             _record_context_reason(context, AuthEventReason.LAST_AUTH_TOO_OLD, policies=last_auth_policies)
             return
 
-        token_state = check_fido2_token_state(token)
+        token_state = check_token_state(token)
         if not token_state.usable:
             log.debug(f"Authentication attempted with unusable token {token.get_serial()}: "
                       f"{token_state.message}")
@@ -1616,6 +1617,7 @@ def check_remember_device():
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
+@prepolicy(disabled_token_types, request=request)
 @prepolicy(check_base_action, request, action=PolicyAction.TRIGGERCHALLENGE)
 @prepolicy(webauthntoken_request, request=request)
 @prepolicy(load_challenge_text, request=request)
@@ -1632,9 +1634,10 @@ def trigger_challenge():
     :ref:`policy_triggerchallenge`. The request must carry a valid
     ``PI-Authorization`` header.
 
-    If the AUTHZ-scope ``increase_failcounter_on_challenge`` policy
-    is active, the fail counter is incremented on every matching
-    token before the challenges are created.
+    Only tokens that are not revoked, of a type that the AUTH-scope ``disabled_token_types`` policy allows, active
+    and usable (failcounter, authentication counters, validity period, completed enrollment) are challenged, as at
+    ``/validate/check``. If the AUTH-scope ``increase_failcounter_on_challenge`` policy is active, the fail counter of
+    these tokens is incremented before the challenges are created.
 
     :jsonparam user: user the challenges should be created for.
     :jsonparam realm: realm of the user; defaults to the default
@@ -1746,26 +1749,21 @@ def trigger_challenge():
     options: dict = {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     options.update({"g": g, "clientip": g.client_ip, "user": user})
 
-    tokens = get_tokens(serial=serial, user=user, active=True, revoked=False, locked=False, tokentype=token_type)
-    # Only use the tokens that are allowed to do challenge
-    challenge_response_token = [token for token in tokens if "challenge" in token.mode]
-    if is_true(options.get("increase_failcounter_on_challenge")):
-        for token in challenge_response_token:
-            token.inc_failcount()
-    create_challenges_from_tokens(challenge_response_token, details, options)
-    triggered_challenges = len(details.get("multi_challenge"))
-
-    event_type = AuthEventType.CHALLENGE_TRIGGERED if triggered_challenges else AuthEventType.NO_TOKEN
-    # Record every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as
-    # only the last challenge it created.
+    tokens = get_tokens(serial=serial, user=user, tokentype=token_type)
+    trigger = trigger_challenges(tokens, details, options)
+    triggered_challenges = len(details["multi_challenge"])
+    # Every challenged serial, not just details["serial"], which create_challenges_from_tokens leaves as only the
+    # last challenge it created.
     challenge_serials = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
 
     log_authentication(
-        event_type,
+        trigger.event_type,
         request,
         user=user,
-        serial=",".join(challenge_serials) or None,
+        serial=",".join(trigger.serials) or None,
         transaction_id=details.get("transaction_id"),
+        reasons=trigger.reasons or None,
+        reason_detail=build_reason_detail(reasons=trigger.token_reasons),
     )
 
     r = send_result(triggered_challenges, rid=2, details=details)
