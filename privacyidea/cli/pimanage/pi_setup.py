@@ -18,6 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import base64
+import binascii
 import pathlib
 import sys
 import click
@@ -63,6 +64,11 @@ def encrypt_enckey(encfile, outfile, password):
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     outfile.write(res)
     outfile.write('\n')
+    out_path = pathlib.Path(outfile.name)
+    if out_path.is_file():
+        # Do not leave the encrypted encryption key readable for others (like create_enckey does)
+        out_path.chmod(0o400)
+        click.secho(f"The file permission of {out_path} was set to 400!", fg="yellow", err=True)
 
 
 @setup_cli.command("create_enckey")
@@ -83,17 +89,21 @@ def create_enckey(ctx, enckey_b64):
         click.secho(f"The file \n\t{enc_file}\nalready exist. We do not overwrite it!",
                     fg="yellow")
         ctx.exit(1)
+    if enckey_b64 is None:
+        bin_enckey = DefaultSecurityModule.random(96)
+    else:
+        click.secho("Warning: Passing enckey via cli input is considered harmful.",
+                    fg="yellow")
+        try:
+            bin_enckey = base64.b64decode(enckey_b64, validate=True)
+        except binascii.Error as e:
+            click.secho(f"Error: enckey is not valid base64: {e}", fg="red")
+            ctx.exit(1)
+        if len(bin_enckey) != 96:
+            click.secho("Error: enckey must be 96 bytes length", fg="red")
+            ctx.exit(1)
     with open(enc_file, "wb") as f:
-        if enckey_b64 is None:
-            f.write(DefaultSecurityModule.random(96))
-        else:
-            click.secho("Warning: Passing enckey via cli input is considered harmful.",
-                        fg="yellow")
-            bin_enckey = base64.b64decode(enckey_b64)
-            if len(bin_enckey) != 96:
-                click.secho("Error: enckey must be 96 bytes length", fg="red")
-                ctx.exit(1)
-            f.write(bin_enckey)
+        f.write(bin_enckey)
     click.secho(f"Encryption key written to {enc_file}", fg="green")
     enc_file.chmod(0o400)
     click.secho(f"The file permission of {enc_file} was set to 400!", fg="yellow")
@@ -114,7 +124,7 @@ def create_pgp_keys(ctx, keysize, force):
     gpg_home = pathlib.Path(current_app.config.get("PI_GNUPG_HOME", "/etc/privacyidea/gpg"))
     if not gpg_home.exists():
         try:
-            gpg_home.mkdir(parents=True)
+            gpg_home.mkdir(mode=0o700, parents=True)
         except OSError as e:
             click.secho(f"Could not create PGP directory {gpg_home}: {e}", fg="red")
             ctx.exit(1)

@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Paul Lettich <paul.lettich@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import base64
 import contextlib
 import csv
 import datetime as dt
@@ -44,7 +45,7 @@ from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
-from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.auth import create_db_admin, delete_db_admin, get_db_admin
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -98,6 +99,32 @@ class PIManageAdminTestCase(CliTestCase):
                       result.output, result)
         self.assertIn("List all administrators.",
                       result.output, result)
+
+    def test_02_delete_unknown_admin_fails_cleanly(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "delete", "unknown_cli_admin"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("unknown_cli_admin", result.output)
+
+    def test_03_add_admin_with_empty_password_is_refused(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "add", "cli_nopw_admin", "--password", ""])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("password", result.output.lower())
+        self.assertIsNone(get_db_admin("cli_nopw_admin"))
+
+    def test_04_change_admin_with_empty_password_keeps_the_password(self):
+        create_db_admin("cli_change_admin", "old@example.com", "secret")
+        password_hash = get_db_admin("cli_change_admin").password
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "change", "cli_change_admin", "-e", "new@example.com",
+                                           "--password", ""])
+        self.assertEqual(0, result.exit_code, result.output)
+        admin = get_db_admin("cli_change_admin")
+        self.assertEqual("new@example.com", admin.email)
+        self.assertEqual(password_hash, admin.password)
+        delete_db_admin("cli_change_admin")
 
 
 class PIManageAuditTestCase(CliTestCase):
@@ -1748,6 +1775,46 @@ class TestPIManageSetupClass:
         gpg.gen_key.assert_called_once()
         gpg.delete_keys.assert_not_called()
 
+    def test_07_create_pgp_keys_creates_the_key_directory_only_accessible_by_the_owner(self, app, tmp_path):
+        gpg_home = tmp_path / "gpg"
+        result, _gpg = self._create_pgp_keys(app, gpg_home, [], [])
+
+        assert result.exit_code == 0, result.output
+        assert gpg_home.stat().st_mode & 0o777 == 0o700
+
+    @pytest.mark.parametrize("enckey_b64", [base64.b64encode(b"x" * 32).decode(), "no+valid+base64!"])
+    def test_08_create_enckey_rejects_an_invalid_key_without_writing_the_key_file(self, app, tmp_path, enckey_b64):
+        enckey = tmp_path / "enckey"
+        runner = app.test_cli_runner()
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}):
+            result = runner.invoke(pi_manage, ["setup", "create_enckey", "--enckey_b64", enckey_b64])
+            assert result.exit_code == 1, result.output
+            assert isinstance(result.exception, SystemExit), result.exception
+            assert not enckey.exists()
+
+            # A retry with a valid key is not refused
+            valid_key = os.urandom(96)
+            result = runner.invoke(pi_manage, ["setup", "create_enckey",
+                                               "--enckey_b64", base64.b64encode(valid_key).decode()])
+            assert result.exit_code == 0, result.output
+            assert enckey.read_bytes() == valid_key
+
+    def test_09_encrypt_enckey_restricts_the_permissions_of_the_output_file(self, app, tmp_path):
+        enckey = tmp_path / "enckey"
+        enckey.write_bytes(os.urandom(96))
+        outfile = tmp_path / "enckey.enc"
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(outfile),
+                                           "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert outfile.read_text().strip()
+        assert outfile.stat().st_mode & 0o777 == 0o400
+
+    def test_10_deprecated_dropdb_names_the_new_command(self, app):
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["dropdb", "--help"])
+        assert "Please use 'pi-manage setup drop_tables' instead." in result.output
+
 
 class TestPIManageDotenv:
     def test_01_pimanage_leaves_a_dotenv_file_alone(self, app, tmp_path, monkeypatch):
@@ -2130,6 +2197,16 @@ class PIManageChallengeTestCase(CliTestCase):
         self.assertNotIn("Deleting expired challenges", res.output, res.output)
         self.assertIn("3 entries deleted", res.output, res.output)
         self.assertEqual(0, Challenge.query.count())
+
+    def test_06_chunksize_below_one_is_rejected(self):
+        self._init_challenges()
+        runner = self.app.test_cli_runner()
+
+        for chunksize in ["0", "-1"]:
+            res = runner.invoke(pi_manage, ["config", "challenge", "cleanup", "--chunksize", chunksize])
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--chunksize", res.output)
+            self.assertEqual(3, Challenge.query.count())
 
 
 class PIManageAuthCacheTestCase(CliTestCase):
@@ -2680,6 +2757,16 @@ class PIManageAuthLogTestCase(CliTestCase):
 
         self.assertEqual(0, res.exit_code, res.output)
         self.assertEqual(2, ConditionalAccessOutcome.query.count(), "--dryrun must not delete anything")
+
+    def test_08_chunksize_below_one_is_rejected(self):
+        self._insert(age_days=10)
+        runner = self.app.test_cli_runner()
+
+        for chunksize in ["0", "-1"]:
+            res = runner.invoke(pi_manage, ["authlog", "cleanup", "--age", "7", "--chunksize", chunksize])
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--chunksize", res.output)
+            self.assertEqual(1, AuthenticationLog.query.count())
 
 
 class PIManageConditionalAccessTestCase(CliTestCase):
