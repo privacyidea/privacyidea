@@ -24,8 +24,9 @@ run them as the user privacyIDEA runs as.
    * - :ref:`pi-tokenjanitor <pi-tokenjanitor>`
      - Find tokens and containers and act on them, import and export tokens,
        clean up orphaned user data
-   * - :ref:`privacyidea-token-janitor <token_janitor>`
-     - The older token janitor
+   * - ``privacyidea-token-janitor``
+     - Deprecated, use ``pi-tokenjanitor`` instead, see
+       :ref:`pi-tokenjanitor_mapping`
    * - :ref:`privacyidea-get-unused-tokens <get_unused_tokens>`
      - Find tokens that have not been used for a while
    * - :ref:`privacyidea-cron <privacyidea_cron>`
@@ -43,6 +44,10 @@ run them as the user privacyIDEA runs as.
      - Collect diagnostic data for support
    * - ``privacyidea-pip-update``, ``privacyidea-schema-upgrade``
      - Upgrade an installation from PyPI, see :ref:`upgrade`
+   * - ``privacyidea-authorizedkeys``
+     - Fetch the SSH keys of a user for the SSH daemon, see :ref:`application_ssh`
+   * - ``privacyidea-create-pwidresolver-user``
+     - Create an entry for a :ref:`flatfile_resolver`
 
 The jobs that have to run regularly are described in :ref:`cleanup_jobs`.
 
@@ -50,522 +55,6 @@ The jobs that have to run regularly are described in :ref:`cleanup_jobs`.
    :hidden:
 
    servertools
-
-.. _token_janitor:
-
-privacyidea-token-janitor
--------------------------
-
-.. index:: orphaned tokens
-
-``privacyidea-token-janitor`` finds tokens by filter criteria, e.g. orphaned tokens, unused
-tokens or tokens of a certain type, and performs an action on all found tokens: mark, disable,
-delete, unassign, export, list them with their owners or set their realms. It has three commands:
-
-``find``
-    Find tokens and perform an action on them, see :ref:`token_janitor_find`.
-``load``
-    Import tokens from a PSKC file, see :ref:`token_janitor_load`.
-``update``
-    Update existing tokens from a YAML export, see :ref:`token_janitor_update`.
-
-.. note:: :ref:`pi-tokenjanitor <pi-tokenjanitor>` is a newer tool for similar tasks. It has
-   different commands and options and is described in its own section below.
-
-.. _token_janitor_find:
-
-Find
-~~~~
-
-``privacyidea-token-janitor find`` searches for tokens that match the given filter parameters.
-You can combine as many filter parameters as you want to, a token is found only if it matches
-all of them. Without ``--action`` the found tokens are listed with their type, description and
-tokeninfo. With ``--csv`` this list is written as CSV.
-
-The list of found tokens and the exported tokens are written to stdout, progress messages go to
-stderr. This way you can redirect the output to a file.
-
-``--serial``, ``--description``, ``--tokeninfo-value`` and ``--tokenattribute-value`` take a
-regular expression, which matches anywhere in the value: ``--serial OATH01`` also finds
-``OATH0123`` and ``XOATH01``. Anchor the expression with ``^`` and ``$`` to match the whole
-value.
-
-``--orphaned``, ``--active`` and ``--assigned`` take ``true`` or ``false``. They also accept
-``1``/``0``, ``yes``/``no``, ``on``/``off``, ``t``/``f`` and ``y``/``n``, in upper or lower case.
-Any other value stops the command with an error. Without the option, the tokens are not filtered
-by it.
-
-.. warning:: The actions, e.g. ``--action delete``, ``--action disable`` or
-   ``--action unassign``, are performed on **all** found tokens, without confirmation and
-   without a dry run. Some filters are ignored if they are not given together:
-   ``--tokeninfo-key`` only filters together with one of the ``--tokeninfo-value`` options, and
-   ``--tokenattribute`` only together with one of the ``--tokenattribute-value`` options. An
-   ignored filter does not reduce the set of found tokens. Always run the same command without
-   ``--action`` first and check the list of found tokens.
-
-``--chunksize N`` reads the tokens from the database in chunks of *N* tokens instead of all at
-once. The action is then performed chunk by chunk, so do not combine it with an export to PSKC
-or with ``--sum``, both would produce a separate result for every chunk.
-
-These are the filter parameters:
-
-Orphaned
-********
-
-Searches for orphaned tokens. An orphaned token is assigned to a user, but the user does not
-exist in the user store anymore. This can happen e.g. if an LDAP user gets deleted in the LDAP
-directory.
-
-Example::
-
-    privacyidea-token-janitor find --orphaned true
-
-This returns all orphaned tokens for later processing. ``--orphaned false`` returns the tokens
-that are not orphaned.
-
-``--orphaned-on-error`` decides whether a token counts as orphaned if its user can not be looked
-up because of an error, e.g. because the LDAP server is not reachable. With the default
-``False`` such a token is not orphaned, with ``--orphaned-on-error True`` it is. The option only
-has an effect together with ``--orphaned``.
-
-.. warning:: Never combine ``--orphaned-on-error True`` with ``--action delete``. If the user
-   store can not be reached while the command runs, the tokens of all its users are deleted.
-
-Active
-******
-
-Searches for tokens that are either active or inactive, this means enabled or disabled.
-
-Example::
-
-    privacyidea-token-janitor find --active False
-
-This returns all disabled tokens. ``--active true`` returns the enabled tokens.
-
-Assigned
-********
-
-Searches for tokens that are either assigned to a user or unassigned.
-
-Example::
-
-    privacyidea-token-janitor find --assigned False
-
-This returns all tokens that are not assigned to a user. ``--assigned true`` returns the assigned
-tokens.
-
-Combined with the tokeninfo ``tokenkind`` this finds the hardware tokens that are still available
-for assignment::
-
-    privacyidea-token-janitor find --assigned False --tokeninfo-key tokenkind --tokeninfo-value '^hardware$'
-
-
-Last_auth
-*********
-
-Searches for all tokens whose last successful authentication is longer ago than the given time.
-Note that the option is written with an underscore.
-
-Example::
-
-    privacyidea-token-janitor find --last_auth 10d
-
-This finds all tokens that did not authenticate within the last 10 days. The time is a number
-followed by one of the units ``s`` (seconds), ``m`` (minutes), ``h`` (hours), ``d`` (days) or
-``y`` (years of 365 days).
-
-privacyIDEA stores the time of the last successful authentication in the tokeninfo
-``last_auth``. A token that has never authenticated successfully has no ``last_auth`` and is
-**not** found.
-
-As ``last_auth`` is a tokeninfo, you can also search for the tokens that did not authenticate
-since a certain point in time::
-
-   privacyidea-token-janitor find --tokeninfo-key last_auth --tokeninfo-value-before '2021-06-01 18:00:00+0200'
-
-
-Description
-***********
-
-Searches for tokens whose description matches the given regular expression.
-
-Example::
-
-    privacyidea-token-janitor find --description '^fo'
-
-Returns all tokens whose description begins with "fo".
-
-Serial
-******
-
-Searches for tokens whose serial matches the given regular expression. To find one specific
-token, anchor the serial with ``^`` and ``$``.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0013B2B4$'
-
-Returns the token with the serial ``OATH0013B2B4``. Without ``^`` and ``$`` it would also return
-e.g. the token ``OATH0013B2B45``.
-
-With a regular expression you can e.g. find all tokens whose serial starts with ``UBOM``,
-regardless of their token type.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^UBOM'
-
-
-Tokentype
-*********
-
-Searches for tokens of the given token type. The type is not a regular expression, upper and
-lower case do not matter.
-
-Example::
-
-    privacyidea-token-janitor find --tokentype hotp
-
-Returns all tokens of the type ``hotp``.
-
-Tokenattribute
-**************
-
-Matches a column of the database table ``token``, e.g. ``rollout_state``, ``failcount``,
-``maxfail``, ``active`` or ``otplen``. Give the column with ``--tokenattribute`` and the condition
-with one of the following options. ``--tokenattribute`` alone does not filter anything. If the
-column does not exist, the command stops and lists the allowed columns.
-
-tokenattribute-value REGEX|INTEGER
-..................................
-
-The value the column has to match. For a text column this is a regular expression. For a number
-column the value has to be an integer and must be equal, for a true/false column use ``1`` or
-``0``.
-
-Example::
-
-    privacyidea-token-janitor find --tokenattribute rollout_state --tokenattribute-value '^clientwait$'
-
-Searches for all tokens whose ``rollout_state`` is ``clientwait``.
-
-tokenattribute-value-less-than INTEGER
-......................................
-
-Match if the value of the column is less than the given integer.
-
-Example::
-
-    privacyidea-token-janitor find --tokenattribute failcount --tokenattribute-value-less-than 3
-
-Searches for all tokens with less than 3 failed authentication attempts.
-
-tokenattribute-value-greater-than INTEGER
-.........................................
-
-Match if the value of the column is greater than the given integer.
-
-Example::
-
-    privacyidea-token-janitor find --tokenattribute failcount --tokenattribute-value-greater-than 9
-
-Searches for all tokens whose fail counter is greater than 9. The fail counter stops at the
-``maxfail`` value of the token, and the token is blocked once the fail counter has reached it.
-With a ``maxfail`` of 10, the default, this finds the blocked tokens.
-
-Tokeninfo
-*********
-
-These filters match the tokeninfo of a token, i.e. the database table ``tokeninfo``.
-
-has-tokeninfo-key
-.................
-
-Filters for tokens that have the given tokeninfo key, no matter which value it has.
-
-Example::
-
-    privacyidea-token-janitor find --has-tokeninfo-key import_time
-
-Searches for all tokens that have the tokeninfo ``import_time``.
-
-has-not-tokeninfo-key
-.....................
-
-Filters for tokens that do not have the given tokeninfo key.
-
-Example::
-
-    privacyidea-token-janitor find --has-not-tokeninfo-key import_time
-
-Searches for all tokens that do not have the tokeninfo ``import_time``.
-
-tokeninfo-key and tokeninfo-value REGEX
-.......................................
-
-``--tokeninfo-key`` names the tokeninfo, ``--tokeninfo-value`` is a regular expression its value
-has to match. ``--tokeninfo-key`` needs one of the ``--tokeninfo-value`` options, alone it does
-not filter anything. A token that does not have the tokeninfo is never found by these filters.
-
-Example::
-
-    privacyidea-token-janitor find --tokeninfo-key tokenkind --tokeninfo-value '^software$'
-
-Searches for all tokens whose tokeninfo ``tokenkind`` is ``software``.
-
-tokeninfo-value-less-than INTEGER
-.................................
-
-Interpret tokeninfo values as integers and match only if they are smaller than the given integer.
-Values that are not integers do not match.
-
-Example::
-
-    privacyidea-token-janitor find --tokeninfo-key timeWindow --tokeninfo-value-less-than 200
-
-Searches for all tokens whose tokeninfo ``timeWindow`` is below ``200``.
-
-tokeninfo-value-greater-than INTEGER
-....................................
-
-Interpret tokeninfo values as integers and match only if they are greater than the given integer.
-Values that are not integers do not match.
-
-Example::
-
-    privacyidea-token-janitor find --tokeninfo-key timeWindow --tokeninfo-value-greater-than 100
-
-Searches for all tokens whose tokeninfo ``timeWindow`` is greater than ``100``.
-
-tokeninfo-value-before and tokeninfo-value-after DATETIME
-.........................................................
-
-Interpret tokeninfo values as a date and time and match only if they are before or after the
-given date and time in ISO 8601 format. Without a time zone offset, local time is assumed.
-
-Example::
-
-    privacyidea-token-janitor find --tokeninfo-key last_auth --tokeninfo-value-after '2021-06-01 18:00:00+0200'
-
-Searches for all tokens that authenticated successfully after this point in time.
-
-Actions
-*******
-
-``--action`` performs one of the following actions on **all** found tokens: ``mark``,
-``disable``, ``delete``, ``unassign``, ``export``, ``listuser`` or ``tokenrealms``. The command
-stops with an error on any other action.
-
-mark
-....
-
-**mark** sets a description, a tokeninfo or both on the found tokens, e.g. to find them again in a
-later run with ``--has-tokeninfo-key``. It takes these options:
-
-``--set-description TEXT``
-    Sets the description of the tokens.
-``--set-tokeninfo-key KEY`` and ``--set-tokeninfo-value VALUE``
-    Adds the tokeninfo, or changes its value if the token already has it. Both options have to
-    be given, one of them alone is ignored.
-
-These options only take effect together with ``--action mark``, every other action ignores them.
-The tokeninfo is also set if the token type maintains an entry of that key itself, e.g.
-``last_auth`` or ``tokenkind``, so a mark should use a key of its own.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0004C934$' --action mark --set-tokeninfo-key unused --set-tokeninfo-value True
-
-This adds the tokeninfo ``unused`` with the value ``True`` to the token ``OATH0004C934``.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0004C934$' --action mark --set-tokeninfo-key import_time --set-tokeninfo-value "$(date --iso-8601=minutes)"
-
-This sets the tokeninfo ``import_time`` of the token ``OATH0004C934`` to the current date and
-time.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0004C934$' --action mark --set-description L4
-
-This sets the description of the token ``OATH0004C934`` to ``L4``.
-
-disable
-.......
-
-**disable** disables the found tokens.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0004C934$' --action disable
-
-The token with the serial ``OATH0004C934`` will be disabled.
-
-delete
-......
-
-**delete** deletes the found tokens.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0004C934$' --action delete
-
-The token with the serial ``OATH0004C934`` will be deleted.
-
-unassign
-........
-
-**unassign** removes the user assignment of the found tokens and resets their PIN and fail
-counter. The tokens keep their realms.
-
-Example::
-
-    privacyidea-token-janitor find --orphaned true --action unassign
-
-This unassigns all orphaned tokens.
-
-.. _token_janitor_export:
-
-export
-......
-
-**export** writes the found tokens to stdout. The format is PSKC, unless you add ``--csv`` or
-``--yaml``:
-
-PSKC (default)
-    Exports HOTP, TOTP and password (PW) tokens, other token types are skipped. The OTP keys are
-    encrypted with a new AES key, which the command prints to stderr. Keep this key, you need it
-    to import the file with :ref:`load <token_janitor_load>`.
-``--csv``
-    Exports HOTP and TOTP tokens, one line per token with the owner (``user@realm`` or ``n/a``),
-    the serial, the OTP key, the token type, the OTP length and, for TOTP tokens, the time step.
-``--yaml``
-    Exports all token types together with their tokeninfo. The file can be read by
-    :ref:`update <token_janitor_update>`.
-
-``--b32`` writes the OTP keys base32 encoded instead of hex. ``update`` expects hex, so do not use
-``--b32`` for a YAML file you want to read with ``update``.
-
-.. warning:: CSV and YAML exports contain the OTP keys in clear text. Protect these files like
-   passwords.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0004C934$' --action export > OATH0004C934.xml
-
-The token with the serial ``OATH0004C934`` is exported to the PSKC file ``OATH0004C934.xml``.
-
-Example::
-
-    privacyidea-token-janitor find --action export --yaml > my-tokens.yaml
-
-All tokens are exported to the YAML file ``my-tokens.yaml``.
-
-.. note:: A YAML export can be used to re-encrypt the token data. See :ref:`faq_reencryption`.
-
-listuser
-........
-
-**listuser** lists the found tokens with their owners, one line per token with the serial, the
-token type and, for an assigned token, the username, given name, surname, user ID, resolver and
-realm of the owner. ``--attributes`` adds further user attributes, given as a comma-separated
-list, e.g. ``--attributes email,mobile``.
-
-Example::
-
-    privacyidea-token-janitor find --action listuser
-
-sum
-___
-
-With ``--sum`` **listuser** writes one line per owner with the number of found tokens of this
-owner. The unassigned tokens are counted in one line starting with ``N/A``.
-
-Example::
-
-    privacyidea-token-janitor find --sum --action listuser
-
-tokenrealms
-...........
-
-**tokenrealms** sets the realms of the found tokens to the realms given in ``--tokenrealms``, a
-comma-separated list. ``--tokenrealms`` is required.
-
-The new list **replaces** the realms of the tokens, only the realm of the token owner is always
-kept. A realm that does not exist is skipped without an error, so check the spelling.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0005B88E$' --action tokenrealms --tokenrealms defrealm
-
-Sets the realms of the token ``OATH0005B88E`` to ``defrealm``.
-
-Example::
-
-    privacyidea-token-janitor find --serial '^OATH0005B88E$' --action tokenrealms --tokenrealms defrealm,realmA,realmB
-
-Sets the realms of the token ``OATH0005B88E`` to ``defrealm``, ``realmA`` and ``realmB``.
-
-Deleting orphaned tokens in two steps
-*************************************
-
-A token can look orphaned while the user store is not working correctly. If you do not want to
-delete orphaned tokens in one step, mark them first::
-
-    privacyidea-token-janitor find --orphaned true --action mark --set-tokeninfo-key orphaned_since --set-tokeninfo-value "$(date --iso-8601=minutes)"
-
-A day later, delete the tokens that are still orphaned and have been marked::
-
-    privacyidea-token-janitor find --orphaned true --has-tokeninfo-key orphaned_since --action delete
-
-.. _token_janitor_load:
-
-Load
-~~~~
-
-``privacyidea-token-janitor load`` imports the tokens from a PSKC file::
-
-    privacyidea-token-janitor load OATH0004C934.xml --preshared_key_hex <AES key>
-
-``--preshared_key_hex``
-    The AES key in hex that the OTP keys in the file are encrypted with, e.g. the key that
-    :ref:`export <token_janitor_export>` printed.
-``--validate_mac``
-    How the HMAC of the tokens in the file is checked. ``check_fail_hard``, the default,
-    imports no token if one HMAC is invalid. ``check_fail_soft`` skips the tokens with an invalid
-    HMAC. ``no_check`` imports every token without checking the HMAC.
-
-A token whose serial does not exist yet is created. An existing token with the same serial and
-type is updated with the data from the file.
-
-.. _token_janitor_update:
-
-Update
-~~~~~~
-
-``privacyidea-token-janitor update`` writes the token data from a YAML file created with
-``find --action export --yaml`` into the existing tokens with the same serial::
-
-    privacyidea-token-janitor update my-tokens.yaml
-
-The OTP key, the OTP length and the description of each entry are written to the token, and so are the
-token info entries that are stored encrypted (marked ``<key>.type: password`` in the file, e.g. the SSH
-key of an SSH key token). They are stored encrypted with the current encryption key, so this can be used
-to re-encrypt the token data, see :ref:`faq_reencryption`. The other values in the file are not written:
-the token keeps its other token info, its active state and its rollout state. A token that does not exist, and an entry
-without a serial, are skipped with a message on stderr. An entry the token can not be updated with,
-e.g. one with an invalid value, is reported on stderr with the cause. In each case the command goes
-on with the next entry. The command does not create tokens and does not change user assignments,
-the owner in the file is ignored.
-
-The fail counter and the token kind (hardware or software) of a token are kept, and so is its
-OTP counter, unless the counter in the file is higher: then the token takes that one. So OTP
-values the token has already used do not become valid again.
-
-.. note:: The PIN of an mOTP token and PINs that are stored encrypted (enrollment
-   policy ``encrypt_pin``) are not part of the file in clear text and are not
-   re-encrypted, see :ref:`faq_reencryption`.
 
 .. _get_unused_tokens:
 
@@ -583,7 +72,12 @@ The age is a number followed by one of the units ``s`` (seconds), ``m`` (minutes
 authenticate within the last 180 days.
 
 The time of the last successful authentication is read from the tokeninfo ``last_auth``. A token
-that has never authenticated successfully has no ``last_auth`` and is **never** found.
+that has never authenticated successfully has no ``last_auth`` and is **never** found. A token
+whose ``last_auth`` can not be read as a date, however, counts as unused and is found, so
+``delete`` deletes it.
+
+If the age is not valid, e.g. ``180`` without a unit, the script prints an error and does
+nothing, but still exits with status ``0``. In a cron job, check the output.
 
 The script has four commands, each takes the age as its argument:
 
@@ -623,9 +117,9 @@ The pi-tokenjanitor Script
 .. versionadded:: 3.11
 
 ``pi-tokenjanitor`` finds tokens, token containers and orphaned user data in the database and acts
-on them. It covers the tasks of :ref:`token_janitor` with a different command and option syntax,
-and adds token containers and the cleanup of orphaned user data. Both scripts are installed. The
-section :ref:`pi-tokenjanitor_mapping` maps the options of the older script to this one.
+on them. It replaces the older script ``privacyidea-token-janitor``, which is still installed but
+deprecated. The section :ref:`pi-tokenjanitor_mapping` maps the options of the older script to
+this one.
 
 The script reads the privacyIDEA configuration in the same way as :ref:`pimanage`. It has these
 commands:
@@ -759,7 +253,7 @@ times has to match every time. The filters with a ``<key><operator><value>`` arg
     Find the tokens whose serial lies in the given range, including both limits, given as
     ``<first>-<last>``. The serials are compared as strings, character by character: ``HOTP9``
     lies after ``HOTP10000000``, and lower case letters lie after upper case letters. A serial
-    that contains ``-`` can not be used as a limit.
+    that contains ``-`` can not be used as a limit, and the range always needs both limits.
 
     Example::
 
@@ -924,6 +418,15 @@ Example::
 
     pi-tokenjanitor find --orphaned true list
     pi-tokenjanitor find --orphaned true delete
+
+A token can look orphaned while the user store is not working correctly. If you do not want to
+delete orphaned tokens in one step, mark them first::
+
+    pi-tokenjanitor find --orphaned true set_tokeninfo --tokeninfo "orphaned_since=$(date --iso-8601=minutes)"
+
+A day later, delete the tokens that are still orphaned and have been marked::
+
+    pi-tokenjanitor find --orphaned true --has-tokeninfo-key orphaned_since delete
 
 unassign
 ********
@@ -1327,11 +830,15 @@ and ``pi-tokenjanitor container --orphaned true``.
    :ref:`cleanup_jobs` for why these commands are not scheduled.
 
 .. _pi-tokenjanitor_mapping:
+.. _token_janitor:
 
-Options of privacyidea-token-janitor
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Migrating from privacyidea-token-janitor
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The table lists the commands and options of :ref:`token_janitor` and how to do the same with
+.. index:: privacyidea-token-janitor
+
+``privacyidea-token-janitor`` is deprecated, use ``pi-tokenjanitor`` instead. The table lists the
+commands and options of ``privacyidea-token-janitor`` and how to do the same with
 ``pi-tokenjanitor``. ``A`` stands for a token attribute, ``K`` for a tokeninfo key.
 
 .. list-table::

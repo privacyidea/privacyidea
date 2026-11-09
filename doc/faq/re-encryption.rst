@@ -20,16 +20,16 @@ user assignments.
 Export tokens
 ~~~~~~~~~~~~~
 
-Use the :ref:`token_janitor` to export the tokens to a YAML file. This file contains the **unencrypted** secret keys
-of the tokens and also the tokeninfos of the tokens.
+Use the :ref:`export <pi-tokenjanitor_export>` of :ref:`pi-tokenjanitor` to export the tokens to a YAML
+file. This file contains the **unencrypted** secret keys of the tokens and also the tokeninfos of the tokens.
 
 You need to handle this file with care!
 
 .. code-block:: bash
 
-    privacyidea-token-janitor find --action export --yaml > my-tokens.yaml
+    pi-tokenjanitor find export --format yaml --file my-tokens.yaml
 
-The tokens are written to stdout, error messages to stderr. Check for error messages!
+Error messages are written to stderr. Check for error messages!
 Do not add ``--b32``, the update command expects the OTP keys in hex.
 
 Updating tokens
@@ -38,10 +38,10 @@ Updating tokens
 You can then turn to the system with the new security module or encryption key.
 Note that the new privacyIDEA system actually has to contain the tokens!
 
-Use the :ref:`update command <token_janitor_update>` to store the secret OTP keys and the encrypted token info with
-the new encryption mechanism::
+Use the :ref:`update command <pi-tokenjanitor_update>` to store the secret OTP keys with the new encryption
+mechanism::
 
-    privacyidea-token-janitor update my-tokens.yaml
+    pi-tokenjanitor update my-tokens.yaml
 
 Check for error messages written to stderr!
 
