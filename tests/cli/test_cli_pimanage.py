@@ -1855,7 +1855,13 @@ class TestPIManageSetupClass:
                                            "--password", "test1234"])
         assert result.exit_code == 0, result.output
         assert outfile.read_text().strip()
-        assert outfile.stat().st_mode & 0o777 == 0o400
+        assert outfile.stat().st_mode & 0o777 == 0o600
+
+        # The owner can write the file again, e.g. with a new password
+        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(outfile),
+                                           "--password", "other1234"])
+        assert result.exit_code == 0, result.output
+        assert outfile.stat().st_mode & 0o777 == 0o600
 
     def test_10_deprecated_dropdb_names_the_new_command(self, app):
         runner = app.test_cli_runner()
