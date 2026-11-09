@@ -357,6 +357,13 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.headers = {"Authorization": token}
         self.assertRaises(PolicyError, api_key_required, req)
 
+        # An expired API key is rejected with a PolicyError, not an unhandled ExpiredSignatureError
+        token = jwt.encode({"role": ROLE.VALIDATE,
+                            "exp": datetime.utcnow() - timedelta(hours=1)},
+                           secret)
+        req.headers = {"Authorization": token}
+        self.assertRaises(PolicyError, api_key_required, req)
+
         delete_policy("pol_api")
 
     def test_12_mangle(self):

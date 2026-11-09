@@ -2252,8 +2252,9 @@ def api_key_required(request=None, action=None):
             g.logged_in_user = {"username": r.get("username", ""),
                                 "realm": r.get("realm", ""),
                                 "role": r.get("role", "")}
-        except (AttributeError, jwt.DecodeError):
-            # PyJWT 1.3.0 raises AttributeError, PyJWT 1.6.4 raises DecodeError.
+        except (AttributeError, jwt.InvalidTokenError):
+            # PyJWT 1.3.0 raises AttributeError, newer versions raise a subclass of InvalidTokenError
+            # (e.g. DecodeError or ExpiredSignatureError).
             raise PolicyError("No valid API key was passed.")
 
         role = g.logged_in_user.get("role")
