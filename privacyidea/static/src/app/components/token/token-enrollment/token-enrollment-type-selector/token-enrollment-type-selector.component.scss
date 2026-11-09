@@ -17,30 +17,18 @@
   }
 }
 
-// A type without an enroll component is a disabled option, Material dims it itself
-// (opacity 0.38 on the primary text). Material also sets pointer-events: none on it, which
-// would silence the tooltip, so it is switched back on. The selector has three classes to
-// beat Material's two without !important. The disabled state still blocks selection.
-::ng-deep .mat-mdc-option.mdc-list-item--disabled.select-option-unsupported {
-  pointer-events: auto;
+// The wrapper keeps mat-icon from being projected into mat-option's leading icon slot. The span comes from this
+// template, so the component scope reaches it inside the overlay. The disabled option is styled in
+// styles/_material-overrides.scss.
+.select-option-unsupported-icon {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
 
-  .mdc-list-item__primary-text {
-    display: flex;
-    align-items: center;
-    width: 100%;
-  }
-
-  // The wrapper keeps mat-icon from being projected into mat-option's leading icon slot.
-  .select-option-unsupported-icon {
-    margin-left: auto;
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-
-    mat-icon {
-      width: 18px;
-      height: 18px;
-      font-size: 18px;
-    }
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
   }
 }
