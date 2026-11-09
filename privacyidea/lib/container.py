@@ -401,7 +401,8 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
                        last_sync_delta: str = None, state: str = None, page: int = 0,
-                       pagesize: int = 0, has_template: bool = None) -> dict[str, int | None | list[TokenContainerClass]]:
+                       pagesize: int = 0,
+                       has_template: bool = None) -> dict[str, int | None | list[TokenContainerClass]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).

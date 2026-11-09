@@ -1569,7 +1569,7 @@ describe("ContainerService", () => {
           _url: string,
           options?: { params?: Record<string, string> }
         ) => {
-          const serial = options?.params?.container_serial as string;
+          const serial = options?.params?.["container_serial"] as string;
           const value: TemplateComparisonResult = { [serial]: { tokens: { equal: true, missing: [], additional: [] } } };
           return of({ result: { value } } as unknown as PiResponse<TemplateComparisonResult>);
         }) as unknown as typeof http.get);

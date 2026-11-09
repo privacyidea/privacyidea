@@ -261,7 +261,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("blocks Enroll and marks form invalid when the selected type has no enrollment component", async () => {
-      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" });
+      tokenService.selectedTokenType.set({ key: "custom_plugin_type", name: "Custom Type", info: "", text: "" } as unknown as TokenType);
       fixture.detectChanges();
       await fixture.whenStable();
 
@@ -1307,14 +1307,16 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.isFormInvalid()).toBe(false);
     });
 
-    it("falls back to the session user where the assignment component is not rendered", () => {
+    it("falls back to the session user where the assignment component is not rendered", async () => {
       const selfService = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
       tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       userService.selectedUser.set(null);
+      await flushFixture(selfService);
 
       expect(selfService.componentInstance.isFormInvalid()).toBe(true);
 
       userService.selectedUser.set({ username: "alice" } as UserData);
+      await flushFixture(selfService);
       expect(selfService.componentInstance.isFormInvalid()).toBe(false);
     });
 
