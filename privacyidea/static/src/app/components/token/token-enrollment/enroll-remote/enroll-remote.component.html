@@ -18,8 +18,7 @@
 -->
 <div class="flex-column">
   <mat-checkbox
-    [checked]="checkPinLocally()"
-    (change)="checkPinLocally.set($event.checked)"
+    [formField]="checkPinLocallyForm"
     class="margin-bottom-16"
     i18n="@@token.checkPinLocally"
     >Check the PIN locally</mat-checkbox
@@ -38,7 +37,7 @@
       <mat-error
         class="red"
         i18n="@@token.remoteServerRequired"
-        >Remote Server is <strong>required</strong></mat-error
+        >Remote Server is <strong>required</strong>.</mat-error
       >
     </mat-form-field>
     <mat-form-field class="input-width-l">
@@ -46,7 +45,7 @@
       <input
         [formField]="remoteSerialForm"
         matInput />
-      <mat-error i18n="@@token.remoteSerialRequired">Remote Serial is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.remoteSerialRequired">Remote Serial is <strong>required</strong>.</mat-error>
     </mat-form-field>
   </div>
   <div class="flex-row gap-16">
@@ -55,7 +54,7 @@
       <input
         [formField]="remoteUserForm"
         matInput />
-      <mat-error i18n="@@token.remoteUserRequired">Remote User is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.remoteUserRequired">Remote User is <strong>required</strong>.</mat-error>
     </mat-form-field>
     <mat-form-field class="input-width-l">
       <mat-label i18n="@@token.remoteRealm">Remote Realm</mat-label>
@@ -68,7 +67,7 @@
       <input
         [formField]="remoteResolverForm"
         matInput />
-      <mat-error i18n="@@token.remoteResolverRequired">Remote Resolver is <strong>required</strong></mat-error>
+      <mat-error i18n="@@token.remoteResolverRequired">Remote Resolver is <strong>required</strong>.</mat-error>
     </mat-form-field>
   </div>
 </div>

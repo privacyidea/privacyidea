@@ -191,8 +191,8 @@ If the ``otp_pin_random`` policy is defined, you can use this policy to
 define, what should happen with the random pin.
 The action value takes the class of a PinHandler like
 ``privacyidea.lib.pinhandling.base.PinHandler``.
-The base PinHandler just logs the PIN to the log file. You can add classes to
-send the PIN via email or print it in a letter.
+The base PinHandler only logs that a random PIN was set for the token, without the PIN.
+You can add classes to send the PIN via email or print it in a letter.
 
 A class of your own is declared in ``PI_PIN_HANDLER_MODULES``, see
 :ref:`picfg_module_allowlist`. Without the declaration it is still used and a warning naming it is

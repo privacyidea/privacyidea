@@ -10,12 +10,12 @@ from smtplib import SMTPException
 from unittest.mock import patch
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ConfigAdminError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer, send_email_identifier,
-                                        send_email_data)
+                                        send_email_data, parse_server_address, TIMEOUT)
 from tests.queuemock import MockQueueTestCase
 from . import smtpmock
 from .base import MyTestCase
@@ -255,6 +255,33 @@ class SMTPServerTestCase(MyTestCase):
             "of as a str.")
 
 
+class ParseServerAddressTestCase(MyTestCase):
+
+    def test_parse_server_address(self):
+        cases = [
+            (("mail.example.com", 25), ("smtp", "mail.example.com", 25)),
+            (("mail.example.com:2525", 25), ("smtp", "mail.example.com", 2525)),
+            (("smtp://mail.example.com", "587"), ("smtp", "mail.example.com", 587)),
+            (("smtps://mail.example.com", 25), ("smtps", "mail.example.com", 25)),
+            (("smtps://mail.example.com:465", 25), ("smtps", "mail.example.com", 465)),
+            (("192.0.2.1", 25), ("smtp", "192.0.2.1", 25)),
+            (("smtp://", 25), ("smtp", None, 25)),
+        ]
+        for (server, port), expected in cases:
+            with self.subTest(server=server):
+                self.assertEqual(expected, parse_server_address(server, port))
+        with self.assertRaises(ValueError):
+            parse_server_address("mail.example.com:99999", 25)
+
+    def test_sending_connects_to_the_parsed_address(self):
+        config = {"identifier": "parsed", "server": "smtps://mail.example.com:465", "port": 25,
+                  "sender": "pi@example.com", "tls": False}
+        with patch("smtplib.SMTP_SSL") as smtp_ssl:
+            smtp_ssl.return_value.sendmail.return_value = {}
+            SMTPServer.test_email(config, "recp@example.com", "subject", "body")
+        smtp_ssl.assert_called_once_with("mail.example.com", port=465, timeout=TIMEOUT)
+
+
 class SMTPServerQueueTestCase(MockQueueTestCase):
     @smtpmock.activate
     def test_01_enqueue_email(self):
@@ -437,3 +464,110 @@ class SMTPServerExportImportTestCase(MyTestCase):
         self.assertEqual(reexported["expsmtp"]["password"], "smtppw")
         self.assertEqual(reexported["expsmtp"]["private_key_password"], "pkppw")
         delete_smtpserver("expsmtp")
+
+    def test_02_identifier_not_addressable_in_url(self):
+        from privacyidea.lib.smtpserver import import_smtpserver
+        with self.assertRaises(ParameterError):
+            add_smtpserver("team/mail", server="mail.example", sender="pi@example.com")
+        with self.assertRaises(ConfigAdminError):
+            import_smtpserver({"team/mail": {"server": "mail.example", "sender": "pi@example.com"}})
+        self.assertEqual([], get_smtpservers(identifier="team/mail"))
+        # POST /smtpserver/send_test_email is the test endpoint
+        with self.assertRaises(ParameterError):
+            add_smtpserver("send_test_email", server="mail.example", sender="pi@example.com")
+        self.assertEqual([], get_smtpservers(identifier="send_test_email"))
+
+    def test_03_censored_password_only_kept_for_same_settings(self):
+        from privacyidea.lib.crypto import CENSORED
+        from privacyidea.lib.smtpserver import export_smtpserver, import_smtpserver, list_smtpservers
+        add_smtpserver("censoredsmtp", server="mail.example", port=587, username="pi", password="secret",
+                       sender="pi@example.com", tls=True)
+
+        # Same settings, and settings that are not given, keep the stored password
+        add_smtpserver("censoredsmtp", server="mail.example", port=587, username="pi", password=CENSORED,
+                       sender="pi@example.com", tls=True, description="kept")
+        add_smtpserver("censoredsmtp", server=None, port=None, username=None, password=CENSORED, tls=None)
+        self.assertEqual("secret", list_smtpservers("censoredsmtp")["censoredsmtp"]["password"])
+
+        # A changed setting is rejected and changes nothing
+        with self.assertRaises(ParameterError):
+            add_smtpserver("censoredsmtp", server="other.example", port=587, username="pi", password=CENSORED,
+                           sender="pi@example.com", tls=True)
+        self.assertEqual("mail.example", list_smtpservers("censoredsmtp")["censoredsmtp"]["server"])
+
+        # A censored export can be imported into the same instance, but not with a changed server
+        export = export_smtpserver(name="censoredsmtp", censor=True)
+        import_smtpserver(export)
+        self.assertEqual("secret", list_smtpservers("censoredsmtp")["censoredsmtp"]["password"])
+        export["censoredsmtp"]["server"] = "other.example"
+        with self.assertRaises(ConfigAdminError):
+            import_smtpserver(export)
+        self.assertEqual("mail.example", list_smtpservers("censoredsmtp")["censoredsmtp"]["server"])
+        delete_smtpserver("censoredsmtp")
+
+    def test_04_import_continues_after_invalid_server(self):
+        from privacyidea.lib.smtpserver import import_smtpserver
+        server = {"server": "mail.example", "sender": "pi@example.com"}
+        with self.assertRaises(ConfigAdminError) as cm:
+            import_smtpserver({"good": server, "mail/relay": server, "send_test_email": server, "after": server})
+        self.assertIn('"mail/relay"', cm.exception.message)
+        self.assertIn("must not contain '/'", cm.exception.message)
+        self.assertIn('"send_test_email"', cm.exception.message)
+        self.assertIn("Successfully imported: ['good', 'after']", cm.exception.message)
+        self.assertEqual(["after", "good"],
+                         sorted(server.config.identifier for server in get_smtpservers()
+                                if server.config.identifier in ("good", "mail/relay", "send_test_email", "after")))
+        delete_smtpserver("good")
+        delete_smtpserver("after")
+
+    def test_05_settings_that_can_not_send_are_not_saved(self):
+        from privacyidea.lib.smtpserver import import_smtpserver
+        invalid = {"port": ({"port": 99999}, "port must be between 1 and 65535"),
+                   "port_text": ({"port": "abc"}, "port must be a whole number"),
+                   "port_fraction": ({"port": 587.9}, "port must be a whole number"),
+                   "port_fraction_text": ({"port": "587.9"}, "port must be a whole number"),
+                   "port_infinite": ({"port": float("inf")}, "port must be a whole number"),
+                   "timeout_bool": ({"timeout": True}, "timeout must be a whole number"),
+                   "timeout": ({"timeout": 0}, "timeout must be between 1 and 3600"),
+                   "server": ({"server": "smtp://"}, "does not contain a host name"),
+                   "server_port": ({"server": "mail.example:99999"}, "must be a number between 1 and 65535"),
+                   "sender": ({"sender": "pi@example.com\r\n"}, "must not contain line breaks"),
+                   "sender_ascii": ({"sender": "pi@exämple.com"}, "can only send emails from and to ASCII addresses"),
+                   "sender_name": ({"sender": "Jörg Müller <pi@example.com>"},
+                                   "The display name 'Jörg Müller' of the sender contains non-ASCII characters"),
+                   "sender_name_and_address": ({"sender": "Jörg <jörg@exämple.com>"},
+                                               "can only send emails from and to ASCII addresses"),
+                   # parseaddr() can not parse two addresses and returns no display name
+                   "sender_two_addresses": ({"sender": '"Jörg" <pi@example.com>, x@example.com'},
+                                            "can only send emails from and to ASCII addresses")}
+        for name, (change, message) in invalid.items():
+            with self.subTest(name=name):
+                settings = dict({"server": "mail.example", "sender": "pi@example.com"}, **change)
+                with self.assertRaises(ParameterError) as cm:
+                    add_smtpserver(f"invalid_{name}", **settings)
+                self.assertIn(message, cm.exception.message)
+                # pi-manage config import uses the same checks
+                with self.assertRaises(ConfigAdminError) as cm:
+                    import_smtpserver({f"invalid_{name}": settings})
+                self.assertIn(message, cm.exception.message)
+                self.assertEqual([], get_smtpservers(identifier=f"invalid_{name}"))
+
+        # An existing server is not changed either
+        add_smtpserver("valid", server="mail.example", port=587, sender="pi@example.com", timeout=20)
+        with self.assertRaises(ParameterError):
+            add_smtpserver("valid", server="mail.example", port=99999)
+        stored = get_smtpserver("valid").config
+        self.assertEqual(587, stored.port)
+        self.assertEqual(20, stored.timeout)
+        # A display name with ASCII characters is accepted
+        add_smtpserver("valid", server="mail.example", sender="privacyIDEA <pi@example.com>")
+        self.assertEqual("privacyIDEA <pi@example.com>", get_smtpserver("valid").config.sender)
+        # A float without fraction is a whole number
+        add_smtpserver("valid", server="mail.example", port=587.0)
+        self.assertEqual(587, get_smtpserver("valid").config.port)
+        # A port given as string, e.g. from an import file, is stored as number
+        add_smtpserver("valid", server="mail.example", port="465", timeout="30")
+        stored = get_smtpserver("valid").config
+        self.assertEqual(465, stored.port)
+        self.assertEqual(30, stored.timeout)
+        delete_smtpserver("valid")

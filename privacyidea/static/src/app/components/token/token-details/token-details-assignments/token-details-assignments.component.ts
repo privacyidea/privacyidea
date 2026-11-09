@@ -16,7 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, signal } from "@angular/core";
+import { RouterLink } from "@angular/router";
+import { Component, computed, effect, inject, input, signal, untracked } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -36,14 +38,17 @@ import { AutofocusDirective } from "@components/shared/directives/app-autofocus.
 import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-token-details-assignments",
   standalone: true,
   imports: [
+    RouterLink,
     DetailsCardComponent,
     DetailFieldRowComponent,
     DetailsListDisplayComponent,
@@ -53,6 +58,7 @@ import { TokenDetails, TokenService, TokenServiceInterface } from "@services/tok
     MatInput,
     MatAutocomplete,
     MatAutocompleteTrigger,
+    FormField,
     MatOption,
     MatCheckbox,
     MatIcon,
@@ -70,12 +76,16 @@ export class TokenDetailsAssignmentsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   readonly tokenDetails = input.required<TokenDetails>();
   readonly userRealm = input("");
   readonly isAnyEditingOrRevoked = input(false);
   readonly selfService = input(false);
+
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+  protected readonly clearField = clearField;
 
   protected readonly containerSerial = computed(() => this.str(this.tokenDetails().container_serial));
 
@@ -125,19 +135,37 @@ export class TokenDetailsAssignmentsComponent {
     }
   });
 
+  /** The container serial being typed; the container service gets it too, as it filters the offered containers. */
+  protected readonly containerInput = signal("");
+  protected readonly containerForm = form(this.containerInput, (f) => requiredNonBlank(f));
+
   protected readonly containerField = injectEditableField({
-    onOpen: () => this.containerService.selectedContainerSerial.set(""),
-    onCancel: () => this.containerService.selectedContainerSerial.set(""),
+    valid: computed(() => this.containerForm().valid()),
+    onOpen: () => this.resetContainerInput(),
+    onCancel: () => this.resetContainerInput(),
+    onInvalid: () => this.containerForm().markAsTouched(),
     onCommit: async () => {
-      const selected = this.containerService.selectedContainerSerial()?.trim() ?? null;
+      const selected = this.containerInput().trim();
       this.containerService.selectedContainerSerial.set(selected);
-      if (selected) {
-        this.containerService.addToken(this.tokenDetails().serial, selected).subscribe({
-          next: () => this.tokenService.tokenDetailResource.reload()
-        });
-      }
+      this.containerService.addToken(this.tokenDetails().serial, selected).subscribe({
+        next: () => this.tokenService.tokenDetailResource.reload()
+      });
     }
   });
+
+  constructor() {
+    effect(() => {
+      const typed = this.containerInput();
+      if (untracked(this.containerField.isEditing)) {
+        this.containerService.selectedContainerSerial.set(typed);
+      }
+    });
+  }
+
+  private resetContainerInput(): void {
+    this.containerForm().reset("");
+    this.containerService.selectedContainerSerial.set("");
+  }
 
   protected str(value: unknown): string {
     return value === null || value === undefined ? "" : String(value);

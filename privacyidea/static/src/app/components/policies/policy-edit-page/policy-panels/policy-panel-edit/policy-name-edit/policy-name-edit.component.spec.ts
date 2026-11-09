@@ -45,6 +45,26 @@ describe("PolicyNameEditComponent", () => {
     expect(spy).toHaveBeenCalledWith("New Name");
   });
 
+  describe("valid", () => {
+    it("should be true for a name with allowed characters", () => {
+      component.policyName.set("help-desk_1.0");
+      expect(component.valid()).toBe(true);
+    });
+
+    it("should be false for an empty name and for characters that are not allowed", () => {
+      component.policyName.set("");
+      expect(component.valid()).toBe(false);
+
+      component.policyName.set("my policy");
+      expect(component.valid()).toBe(false);
+    });
+
+    it("should be false while the parent reports the name as taken", () => {
+      fixture.componentRef.setInput("nameTaken", true);
+      expect(component.valid()).toBe(false);
+    });
+  });
+
   describe("name collision", () => {
     const errorKinds = () =>
       component

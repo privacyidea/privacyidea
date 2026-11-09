@@ -20,11 +20,15 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideRouter } from "@angular/router";
+import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
-import { MockSystemService, MockTokenService, MockContentService } from "@testing/mock-services";
+import { MockAuthService, MockSystemService, MockTokenService, MockContentService } from "@testing/mock-services";
 import { EnrollRadiusComponent } from "./enroll-radius.component";
 import { ContentService } from "@services/content/content.service";
+import { clearOverlays, clickCheckbox, flushFixture, matSelectAt, pickOption } from "@testing/enroll-form-dom";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 
 describe("EnrollRadiusComponent", () => {
   let component: EnrollRadiusComponent;
@@ -36,6 +40,8 @@ describe("EnrollRadiusComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: AuthService, useClass: MockAuthService },
         { provide: SystemService, useClass: MockSystemService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService }
@@ -49,5 +55,80 @@ describe("EnrollRadiusComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("RADIUS token configuration hint", () => {
+    const configLink = (): HTMLAnchorElement | null => fixture.nativeElement.querySelector(".inline-hint a");
+
+    it("links to the RADIUS section of the token configuration with the right to read it", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["configread"] });
+      fixture.detectChanges();
+
+      expect(configLink()?.getAttribute("href")).toBe("/configuration/tokens#radius");
+    });
+
+    it("is hidden without the right to read the configuration", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector(".inline-hint")).toBeNull();
+    });
+  });
+
+  describe("RADIUS server hint", () => {
+    const hint = (): HTMLElement => fixture.nativeElement.querySelector("mat-hint");
+
+    const setRights = (rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+
+    it("links to the RADIUS server configuration with the right to read it", () => {
+      setRights(["radiusserver_read"]);
+
+      expect(hint().querySelector("a")?.getAttribute("href")).toBe("/external-services/radius");
+    });
+
+    it("shows the hint without a link without the right to read the RADIUS server configuration", () => {
+      setRights([]);
+
+      expect(hint().querySelector("a")).toBeNull();
+      expect(hint().textContent).toContain("Select a predefined RADIUS server configuration.");
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the checkbox to the model and marks the field dirty", async () => {
+      expect(component.checkPinLocallyForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture);
+
+      expect(component.checkPinLocally()).toBe(true);
+      expect(component.checkPinLocallyForm().dirty()).toBe(true);
+    });
+
+    it("writes the picked RADIUS server to the model", async () => {
+      (TestBed.inject(SystemService) as unknown as MockSystemService).radiusServers.set(["radius-a", "radius-b"]);
+      await flushFixture(fixture);
+
+      await pickOption(fixture, matSelectAt(fixture), 1);
+
+      expect(component.radiusServerConfiguration()).toBe("radius-b");
+      expect(component.radiusServerConfigurationForm().dirty()).toBe(true);
+    });
+
+    it("renders the required error of the server select once the build was refused", async () => {
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      expect(component.buildEnrollmentArgs({ type: "radius" } as TokenEnrollmentData)).toBeNull();
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("RADIUS Server is required");
+    });
   });
 });

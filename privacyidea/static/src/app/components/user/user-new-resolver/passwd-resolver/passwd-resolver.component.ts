@@ -22,6 +22,8 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { PasswdResolverData } from "@services/resolver/resolver.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 interface PasswdFormModel {
   fileName: string;
@@ -35,6 +37,9 @@ interface PasswdFormModel {
   styleUrl: "./passwd-resolver.component.scss"
 })
 export class PasswdResolverComponent {
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
   data = input<Partial<PasswdResolverData>>({});
 
   model = signal<PasswdFormModel>({ fileName: "" });

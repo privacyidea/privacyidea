@@ -63,13 +63,9 @@
   }
 }
 
-// The dense time-range preset group a chart widget puts beside its brush, so the widgets offering one look alike:
-// shorter and smaller-typed than a form page's toggle group, rounded like the rest of the WebUI, and on the brand
-// primary when checked. Material's default checked tone is the M3 secondary container, which reads as a different
-// accent from the rest of the WebUI. The text is paired with on-primary rather than a hardcoded white: in dark mode
-// primary is a light blue where white text measures about 2.8:1 and fails AA, while this token pair is the one the
-// theme guarantees contrast for (~6:1 in both schemes). Material colours the checkmark from the same text token, so
-// check and label match.
+// The dense time-range preset group a chart widget puts beside its brush: shorter and smaller-typed than a form page's
+// toggle group, so the widgets offering one look alike. The colours and the shape come from the global button-toggle
+// tokens in styles/styles.scss.
 //
 // The label padding that makes four of them fit beside a chart is not here but in styles/buttons.scss, keyed on the
 // .chart-range-presets class: Material hardcodes it with no token to set it by, and a component stylesheet cannot
@@ -77,11 +73,8 @@
 @mixin range-presets($height: 30px) {
   @include mat.button-toggle-overrides(
     (
-      shape: var(--border-radius),
       height: $height,
-      label-text-size: 0.75rem,
-      selected-state-background-color: var(--mat-sys-primary),
-      selected-state-text-color: var(--mat-sys-on-primary)
+      label-text-size: 0.75rem
     )
   );
 }

@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal } from "@angular/core";
+import { form, FormField, validate } from "@angular/forms/signals";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -32,11 +33,13 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-container-template-copy-dialog",
   standalone: true,
-  imports: [MatInputModule, MatButtonModule, MatCardModule, MatFormFieldModule, DialogWrapperComponent],
+  imports: [MatInputModule, MatButtonModule, MatCardModule, MatFormFieldModule, FormField, DialogWrapperComponent],
   templateUrl: "./container-template-copy-dialog.component.html",
   styleUrl: "./container-template-copy-dialog.component.scss"
 })
@@ -45,7 +48,6 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
 
   // --- State Signals ---
-  readonly isNameDirty = signal(false);
   readonly template = linkedSignal<string, ContainerTemplate>({
     source: () => this.data,
     computation: (name) => {
@@ -58,8 +60,23 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
     }
   });
 
-  // --- Computed & Matchers ---
-  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
+  readonly hasError = hasError;
+  readonly ERR = ERR;
+
+  readonly form = form(this.template, (f) => {
+    identifierName(f.name);
+    validate(f.name, (ctx) => (ctx.value() === this.data ? [{ kind: "notChanged" }] : []));
+    // The unchanged original name is reported as "notChanged" only.
+    validate(f.name, (ctx) =>
+      ctx.value() !== this.data && this.containerTemplateService.templates().some((t) => t.name === ctx.value())
+        ? [{ kind: ERR.nameTaken }]
+        : []
+    );
+  });
+
+  // --- Computed ---
+  readonly canSave = computed(() => this.form().valid());
+  readonly isDirty = computed(() => this.template().name !== this.data);
 
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
@@ -70,32 +87,24 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
     }
   ]);
 
-  readonly canSave = computed(() => {
-    const newName = this.template().name.trim();
-    const originalName = this.data;
-    return newName.length > 0 && !this.nameConflict() && !this.nameInvalidPattern() && newName !== originalName;
-  });
+  // Set once the name has differed from the original, so that an error is shown from then on even when the
+  // user types the original name back.
+  private edited = false;
 
-  readonly isDirty = computed(() => {
-    return this.template().name !== this.data;
-  });
-
-  readonly nameConflict = computed(() => {
-    if (!this.isNameDirty()) return false;
-    return this.containerTemplateService.templates().some((t) => t.name === this.template().name);
-  });
-
-  readonly nameErrorMatcher = {
-    isErrorState: () =>
-      this.nameConflict() || (this.isNameDirty() && this.template().name.length > 0 && this.nameInvalidPattern())
-  };
-
-  // --- Methods ---
-  editName(newName: string) {
-    this.isNameDirty.set(true);
-    this.template.set({ ...this.template(), name: newName });
+  constructor() {
+    super();
+    // Copy is disabled for an invalid name, so the reason shows while the field still has focus.
+    effect(() => {
+      if (this.isDirty()) {
+        this.edited = true;
+      }
+      if (this.edited && !this.canSave()) {
+        this.form.name().markAsTouched();
+      }
+    });
   }
 
+  // --- Methods ---
   async onSave() {
     try {
       await this.onAction("copy");

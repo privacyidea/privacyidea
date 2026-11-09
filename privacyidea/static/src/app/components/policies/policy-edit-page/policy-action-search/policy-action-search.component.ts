@@ -18,9 +18,11 @@
  **/
 
 import { Component, ElementRef, inject, model, viewChild } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { clearField } from "@utils/form-state.utils";
 
 /**
  * The search field for policy actions. It filters both action panels, and is rendered either at
@@ -30,12 +32,14 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 @Component({
   selector: "app-policy-action-search",
   standalone: true,
-  imports: [MatFormFieldModule, MatInputModule, ClearableInputComponent],
+  imports: [MatFormFieldModule, MatInputModule, FormField, ClearableInputComponent],
   templateUrl: "./policy-action-search.component.html",
   styleUrl: "./policy-action-search.component.scss"
 })
 export class PolicyActionSearchComponent {
   readonly actionFilter = model<string>("");
+  readonly filterField = form(this.actionFilter);
+  protected readonly clearField = clearField;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly input = viewChild.required<ElementRef<HTMLInputElement>>("input");

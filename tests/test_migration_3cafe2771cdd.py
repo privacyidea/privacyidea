@@ -8,7 +8,7 @@ to
   rollout_state = 'enrolled'
 
 upgrade()   — rewrites ''  → 'enrolled'  and  NULL → 'enrolled'
-downgrade() — reverts  'enrolled'  → ''
+downgrade() — leaves the rollout_state as it is: 3.13 treats '' and 'enrolled' alike once a token is enrolled
 
 Rows with other rollout_state values must be untouched in both directions.
 """
@@ -136,8 +136,8 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         assert self._fetch_rollout_state(engine, "TOK004") == "enrolled"
         engine.dispose()
 
-    def test_downgrade_reverts_enrolled_to_empty_string(self, flask_app):
-        """downgrade() must rewrite rollout_state='enrolled' → ''."""
+    def test_downgrade_keeps_enrolled(self, flask_app):
+        """A token that had an empty rollout_state before the upgrade keeps 'enrolled' after the downgrade."""
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
         self._insert_rows(engine, "token", [_make_token("TOK005", "")])
@@ -147,9 +147,7 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert _is_empty(self._fetch_rollout_state(engine, "TOK005")), (
-            "downgrade() must revert 'enrolled' back to '' in token.rollout_state"
-        )
+        assert self._fetch_rollout_state(engine, "TOK005") == RolloutState.ENROLLED
         engine.dispose()
 
     def test_round_trip_preserves_other_rollout_states(self, flask_app):
@@ -166,9 +164,7 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert _is_empty(self._fetch_rollout_state(engine, "TOK006")), (
-            "Round-trip must restore rows that started as '' back to ''"
-        )
+        assert self._fetch_rollout_state(engine, "TOK006") == RolloutState.ENROLLED
         for state in _NON_ENROLLED_STATES:
             serial = f"TOK_RT_{state}"
             assert self._fetch_rollout_state(engine, serial) == state, (
@@ -206,15 +202,10 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
             f"(2 migrated + 1 pre-existing), got {enrolled_count}"
         )
 
-    def test_downgrade_is_lossy_for_pre_existing_enrolled_rows(self, flask_app):
+    def test_downgrade_keeps_tokens_that_were_enrolled_before(self, flask_app):
         """
-        Pin the (intentional) lossy behaviour of downgrade(): rows that were
-        *already* 'enrolled' before the upgrade are indistinguishable from
-        migrated rows, so downgrade() rewrites them to '' as well.
-
-        This is a property of the migration, not a bug — but it must be pinned
-        so a future change that tries to make downgrade() smarter is forced to
-        update this test deliberately.
+        A token that was already 'enrolled' before the upgrade, as 3.13 sets it for several token types, is still
+        'enrolled' after the downgrade.
         """
         engine = self._engine()
         self._load_seed_and_upgrade_to_parent(engine)
@@ -225,9 +216,5 @@ class TestMigration3cafe2771cdd(MigrationTestBase):
         self._downgrade()
 
         engine = self._engine()
-        assert _is_empty(self._fetch_rollout_state(engine, "TOK_LOSSY")), (
-            "downgrade() rewrites every 'enrolled' row to '' — including rows "
-            "that were already 'enrolled' before the upgrade. If this assertion "
-            "starts failing, the migration's downgrade strategy has changed."
-        )
+        assert self._fetch_rollout_state(engine, "TOK_LOSSY") == RolloutState.ENROLLED
         engine.dispose()

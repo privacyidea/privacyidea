@@ -76,6 +76,11 @@
   padding-top: 8px;
 }
 
+// The input cells align to the top, so the Name and Value inputs stay level when an error line makes one of them taller.
+.add-footer-row td:has(> .add-footer-field) {
+  vertical-align: top;
+}
+
 // The add-row inputs fill their column's col-width-* tier.
 .add-footer-field {
   width: 100%;

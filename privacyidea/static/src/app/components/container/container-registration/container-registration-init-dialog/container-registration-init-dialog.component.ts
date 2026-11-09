@@ -16,11 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ViewChild } from "@angular/core";
-import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
+import { Component, signal } from "@angular/core";
+import { form } from "@angular/forms/signals";
+import {
+  ContainerRegistrationConfigComponent,
+  emptyRegistration,
+  registrationRules
+} from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { touchAll } from "@utils/form-state.utils";
 
 export interface ContainerRegistrationInitDialogData {
   rollover: boolean;
@@ -39,8 +45,10 @@ export interface ContainerRegistrationInitDialogData {
   imports: [ContainerRegistrationConfigComponent, DialogWrapperComponent]
 })
 export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<ContainerRegistrationInitDialogData> {
-  @ViewChild(ContainerRegistrationConfigComponent)
-  registrationConfigComponent!: ContainerRegistrationConfigComponent;
+  readonly registration = signal(emptyRegistration());
+  readonly form = form(this.registration, (f) =>
+    registrationRules(f, { value: this.registration, hasOwner: () => this.data.containerHasOwner })
+  );
 
   getAction(): DialogAction<"register" | "rollover"> {
     if (this.data.rollover) {
@@ -48,7 +56,7 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
         label: $localize`:@@common.rollover:Rollover`,
         value: "rollover",
         type: "confirm",
-        disabled: !this.validInput,
+        disabled: !this.form().valid(),
         primary: true
       };
     } else {
@@ -56,7 +64,7 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
         label: $localize`:@@container.register:Register`,
         value: "register",
         type: "confirm",
-        disabled: !this.validInput,
+        disabled: !this.form().valid(),
         primary: true
       };
     }
@@ -75,17 +83,11 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
   }
 
   onRegister() {
-    this.data.registerContainer(
-      this.registrationConfigComponent.userStorePassphrase(),
-      this.registrationConfigComponent.passphrasePrompt(),
-      this.registrationConfigComponent.passphraseResponse(),
-      this.data.rollover
-    );
-  }
-
-  validInput = true;
-
-  onValidInputChange(isValid: boolean) {
-    this.validInput = isValid;
+    if (!this.form().valid()) {
+      void touchAll(this.form);
+      return;
+    }
+    const registration = this.registration();
+    this.data.registerContainer(registration.store, registration.prompt, registration.response, this.data.rollover);
   }
 }

@@ -671,6 +671,11 @@ describe("UserDetailsComponent", () => {
       expect(fn()).toBe(true);
     });
 
+    it("validChanges is true while editing the user", () => {
+      component.editMode.set(true);
+      expect(getValidChangesFn()()).toBe(true);
+    });
+
     it("save calls setUserAttribute and resolves true on success", async () => {
       component.attributeDraft.keyMode.set("input");
       component.attributeDraft.addKeyInput.set("key");

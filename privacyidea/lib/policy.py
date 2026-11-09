@@ -202,7 +202,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    determine_logged_in_userparams, parse_string_to_dict,
                                    SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, import_entries)
 from .log import log_with
 from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
@@ -463,7 +463,8 @@ class PolicyClass:
 
         If additional_realms are passed as well as a user, all policies applicable to a realm of the additional_realms
         list or applicable to the user realm combination are returned. The user is only matched in combination with the
-        realm parameter and not with the additional realms.
+        realm parameter and not with the additional realms. A policy for users without a realm matches these users in
+        every realm, as it does without additional realms.
 
         :param name: The name of the policy
         :param scope: The scope of the policy
@@ -559,8 +560,12 @@ class PolicyClass:
                         value_found, value_excluded = self._search_value(searchkeys, current_searchvalue)
                         if value_found and not value_excluded:
                             if searchkey == "user" and additional_realms and len(additional_realms) > 1 and realm:
-                                # we need to check if the policy is for the correct user realm
-                                if user in policy.get("user") and realm in policy.get("realm"):
+                                # The user only matches together with the user realm, not with one of the additional
+                                # realms. A policy without realms matches the user in every realm.
+                                policy_realms = policy.get("realm")
+                                realm_found, realm_excluded = (self._search_value(policy_realms, realm)
+                                                               if policy_realms else (True, False))
+                                if realm_found and not realm_excluded:
                                     new_policies.append(policy)
                             else:
                                 new_policies.append(policy)
@@ -2191,8 +2196,8 @@ def get_static_policy_definitions(scope=None):
                                               "group": GROUP.SYSTEM,
                                               'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.AUDIT_DOWNLOAD: {'type': 'bool',
-                                          "desc": _("The admin is allowed to download "
-                                                    "the complete auditlog."),
+                                          "desc": _("The admin is allowed to download the audit log entries "
+                                                    "that their auditlog policies let them see."),
                                           "group": GROUP.SYSTEM,
                                           'mainmenu': [MAIN_MENU.AUDIT]},
             PolicyAction.ADDUSER: {'type': 'bool',
@@ -4064,9 +4069,8 @@ def import_policy(data, name=None, skip_invalid=False):
         skipped without causing a failure.
     """
     log.debug(f'Import policy config: {data!s}')
-    imported = []
+    entries = []
     skipped = []
-    failed = {}
     for res_data in data:
         policy_name = res_data.get('name')
         if name and name != policy_name:
@@ -4086,23 +4090,14 @@ def import_policy(data, name=None, skip_invalid=False):
                             f'remain after dropping {dropped}.')
                 skipped.append(policy_name)
                 continue
-        try:
-            rid = set_policy(**res_data)
-        except Exception as e:
-            log.warning(f'Could not import policy "{policy_name}": {e!r}')
-            failed[policy_name] = e
-            continue
-        # TODO: we have no information if a new policy was created or an
-        #  existing policy updated. We would need to enhance "set_policy()"
-        #  to either force overwriting or not and also return if the policy
-        #  existed before.
-        imported.append(policy_name)
-        log.info(f'Import of policy "{policy_name}" finished, id: {rid!s}')
+        entries.append((policy_name, res_data))
 
     if skipped:
         log.warning(f'Skipped policies with no valid actions: {skipped}')
 
-    if failed:
-        failure_summary = ', '.join(f'"{n}" ({e!r})' for n, e in failed.items())
-        raise PolicyError(f"Could not import the following policies: "
-                          f"{failure_summary}. Successfully imported: {imported}.")
+    # TODO: we have no information if a new policy was created or an
+    #  existing policy updated. We would need to enhance "set_policy()"
+    #  to either force overwriting or not and also return if the policy
+    #  existed before.
+    import_entries(entries, lambda policy_name, res_data: set_policy(**res_data), "policies",
+                   error_class=PolicyError)

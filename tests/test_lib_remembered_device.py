@@ -12,7 +12,7 @@ from privacyidea.lib.remembered_device import (parse_cookie, build_cookie_value,
                                          cleanup_expired_remembered_devices, count_user_devices,
                                          hash_series_id, token_usability, TokenUsability, MissReason,
                                          parse_device_duration,
-                                         remove_idle_devices,
+                                         remove_idle_devices, get_client_devices, get_user_devices,
                                          RESOLVER_MAX_LEN, USER_ID_MAX_LEN, MAX_DEVICE_VALIDITY_DAYS)
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.policies.actions import PolicyAction
@@ -523,6 +523,25 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.assertEqual(kept, {device.series_id for device in RememberedDevice.query.filter(
             RememberedDevice.series_id.in_(kept)).all()})
         self.assertEqual(2, count_user_devices(client_id, tara.resolver, tara.user_id, tara.realm_id))
+
+    def test_the_device_id_orders_devices_created_at_the_same_time(self):
+        # The device ids are not in creation order, so that only the device id gives this order
+        client_id = self._client_id()
+        vera = self._identity("vera")
+        created_at = utc_now()
+        for suffix in ["c", "a", "b"]:
+            device, _cookie = create_remembered_device(vera, client_id)
+            device.device_id = f"{client_id}{suffix}"
+            device.created_at = created_at
+            device.save()
+        expected_ids = [f"{client_id}{suffix}" for suffix in ["c", "b", "a"]]
+
+        list_functions = {"client": lambda page: get_client_devices(client_id, page=page, page_size=2),
+                          "user": lambda page: get_user_devices(vera, page=page, page_size=2)}
+        for name, list_devices in list_functions.items():
+            with self.subTest(list_function=name):
+                pages = [[device.device_id for device in list_devices(page)["devices"]] for page in [1, 2]]
+                self.assertListEqual([expected_ids[:2], expected_ids[2:]], pages)
 
     def test_duration_policy_values_are_checked_when_saved(self):
         self.addCleanup(lambda: delete_policy("duration_check") if get_policies(name="duration_check") else None)
