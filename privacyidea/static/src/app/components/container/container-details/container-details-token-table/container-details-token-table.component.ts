@@ -321,11 +321,18 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   }
 
   toggleActive(token: ContainerDetailToken): void {
-    this.tokenService.toggleActive(token.serial, token.active).subscribe({
-      next: () => {
-        this.containerService.containerDetailsResource.reload();
-      }
-    });
+    if (
+      !token.revoked &&
+      !token.locked &&
+      ((token.active && this.authService.actionAllowed("disable")) ||
+        (!token.active && this.authService.actionAllowed("enable")))
+    ) {
+      this.tokenService.toggleActive(token.serial, token.active).subscribe({
+        next: () => {
+          this.containerService.containerDetailsResource.reload();
+        }
+      });
+    }
   }
 
   deleteAllTokens() {
