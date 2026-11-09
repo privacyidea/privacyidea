@@ -36,7 +36,7 @@ import json
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, UTC
 from collections.abc import Generator, Callable
 
 import click
@@ -133,7 +133,7 @@ def _compare_greater_than(given_value: int | str) -> Callable[[int], bool]:
     :return: a function which returns True if its parameter (converted to an integer)
              is greater than *given_value_string* (converted to an integer).
     """
-    given_value = int(given_value)
+    given_value = _try_convert_to_integer(given_value)
 
     def comparator(value: int) -> bool:
         try:
@@ -149,7 +149,7 @@ def _compare_less_than(given_value: int | str) -> Callable[[int], bool]:
     :return: a function which returns True if its parameter (converted to an integer)
              is less than *given_value_string* (converted to an integer).
     """
-    given_value = int(given_value)
+    given_value = _try_convert_to_integer(given_value)
 
     def comparator(value: int) -> bool:
         try:
@@ -421,15 +421,14 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     # Unable to resolve user, no filter applicable
                     add = False
             if tokencontainer_filter:
+                # The filter keys are the columns of the container table, so they are read from the database row
+                db_containers = token_obj.token.container
                 for tokencontainer_key, tokencontainer_comparator in tokencontainer_filter:
-                    container = find_container_for_token(token_obj.token.serial)
-                    if container is not None:
-                        if value := getattr(container, tokencontainer_key, None):
-                            if not tokencontainer_comparator(value):
-                                add = False
-                        else:
-                            add = False
-                    else:
+                    value = getattr(db_containers[0], tokencontainer_key, None) if db_containers else None
+                    if isinstance(value, datetime):
+                        # The timestamps are stored in UTC without a timezone
+                        value = value.replace(tzinfo=UTC).isoformat()
+                    if value is None or not tokencontainer_comparator(value):
                         add = False
             if orphaned is not None:
                 if token_obj.is_orphaned(orphaned_on_error) != orphaned:
@@ -480,6 +479,9 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
     """
     if range_of_serial:
         range_of_serial = range_of_serial.split("-")
+        if len(range_of_serial) != 2 or not all(range_of_serial):
+            raise click.ClickException('The range of serial numbers requires the syntax "<first serial>-<last serial>", '
+                                       'e.g. HOTP10000000-HOTP20000000')
     ta_filter = []
     if tokenattributes:
         for tokenattribute in tokenattributes:
