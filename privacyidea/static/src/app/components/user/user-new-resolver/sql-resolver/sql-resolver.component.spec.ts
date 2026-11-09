@@ -68,6 +68,27 @@ describe("SqlResolverComponent", () => {
     expect(component.model().Map).toBe("{}");
   });
 
+  it("should offer every password hash type the server supports for editable users", () => {
+    componentRef.setInput("data", { Editable: true });
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector("mat-select .mat-mdc-select-trigger").click();
+    fixture.detectChanges();
+
+    const options = Array.from(document.querySelectorAll("mat-option")).map((option) => option.textContent?.trim());
+    expect(options).toEqual([
+      "PHPASS",
+      "SHA",
+      "SSHA",
+      "SSHA256",
+      "SSHA512",
+      "OTRS",
+      "SHA256CRYPT",
+      "SHA512CRYPT",
+      "MD5CRYPT"
+    ]);
+  });
+
   it("should parse boolean and numeric strings from data input", () => {
     componentRef.setInput("data", {
       Editable: "0",

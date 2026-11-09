@@ -293,7 +293,9 @@ class LocalConfigClass:
         # reduce the dictionary to only public keys!
         reduced_config = {}
         for ckey, cvalue in self.config.items():
-            if role == "admin" or cvalue.get("Type") == "public" or ckey.endswith(".identifier"):
+            # PUBLIC_SYSTEM_SETTINGS also covers entries saved before the setting became public and still have no type
+            if (role == "admin" or cvalue.get("Type") == "public" or ckey.endswith(".identifier")
+                    or ckey in PUBLIC_SYSTEM_SETTINGS):
                 reduced_config[ckey] = self.config[ckey]
         if not reduced_config and role == "admin":
             reduced_config = self.config
@@ -331,6 +333,11 @@ class SYSCONF:
     SPLITATSIGN = "splitAtSign"
     INCFAILCOUNTER = "IncFailCountOnFalsePin"
     RESET_FAILCOUNTER_ON_PIN_ONLY = "ResetFailcounterOnPIN"
+
+
+# System settings that users may read, as the token classes declare it for theirs in get_setting_type. The WebUI
+# presets the OTP length of the HOTP and TOTP enrollment with DefaultOtpLen, also for users.
+PUBLIC_SYSTEM_SETTINGS = {"DefaultOtpLen": "public"}
 
 
 # @cache.cached(key_prefix="allConfig")
@@ -1045,6 +1052,9 @@ def set_privacyidea_config(key, value, typ="", desc=""):
 
     if not typ:
         typ = get_token_setting_type(key)
+
+    if not typ:
+        typ = PUBLIC_SYSTEM_SETTINGS.get(key, "")
 
     if not typ and pi_config:
         # An update that names no type keeps the type of the existing entry, so that the stored

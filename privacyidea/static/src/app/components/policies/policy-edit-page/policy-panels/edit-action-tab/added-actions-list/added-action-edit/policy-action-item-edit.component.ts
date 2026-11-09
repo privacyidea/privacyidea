@@ -30,7 +30,13 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { ToggleGroupComponent } from "@components/shared/toggle-group/toggle-group.component";
-import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  COMMA_UNESCAPING_ACTIONS,
+  hasUnescapedComma,
+  PolicyActionDetail,
+  PolicyService,
+  PolicyServiceInterface
+} from "@services/policies/policies.service";
 import {
   labeledOptions,
   POLICY_VOCABULARY_ACTIONS,
@@ -112,9 +118,19 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
   /** Id of the hint, which the invalid control points to. */
   readonly errorId = computed(() => `${this.action().name}-error`);
 
+  // The value being edited, not the action's, holds an unescaped comma: an invalid value is never emitted, so the
+  // action keeps its last valid value while the comma is typed.
+  readonly valueHasComma = computed(() => hasUnescapedComma(this.valueModel()));
+  readonly commaCanBeEscaped = computed(() => COMMA_UNESCAPING_ACTIONS.has(this.action().name));
+
   /** The error shown below an invalid value input; null while the value is valid. */
   readonly errorHint = computed<string | null>(() => {
     if (this.valid()) return null;
+    if (this.valueHasComma()) {
+      return this.commaCanBeEscaped()
+        ? $localize`:@@policy.actionValueCommaEscape:Commas are not allowed in action values. Write a comma as \\,`
+        : $localize`:@@policy.actionValueComma:Commas are not allowed in action values.`;
+    }
     const unparsable = this.valueForm()
       .errors()
       .some((error) => error.kind === ERR.parse);

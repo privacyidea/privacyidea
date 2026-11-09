@@ -27,7 +27,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -163,7 +163,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      this.selectedName.set(params.get("name") ?? "");
+      this.selectedName.set(params.get(ROUTE_PARAMS.NAME) ?? "");
     });
 
     effect(() => {

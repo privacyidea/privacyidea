@@ -468,7 +468,27 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("second", stored.Value)
         delete_privacyidea_config("PlainToUpdate")
 
-    def test_15_token_password_settings_are_stored_encrypted(self):
+    def test_15_default_otp_length_is_public(self):
+        set_privacyidea_config("DefaultOtpLen", "8")
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assertEqual("public", stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
+
+    def test_16_default_otp_length_stored_without_type_is_public(self):
+        # An entry saved before the setting became public has no type and is still readable by users.
+        Config("DefaultOtpLen", "8", "", "").save()
+        Config("UntypedAdminSetting", "secret", "", "").save()
+
+        stored = db.session.query(Config).filter_by(Key="DefaultOtpLen").one()
+        self.assertEqual("", stored.Type)
+        self.assertEqual("8", get_from_config("DefaultOtpLen", role="user"))
+        self.assertIsNone(get_from_config("UntypedAdminSetting", role="user"))
+        delete_privacyidea_config("DefaultOtpLen")
+        delete_privacyidea_config("UntypedAdminSetting")
+
+    def test_17_token_password_settings_are_stored_encrypted(self):
         from privacyidea.lib.crypto import decryptPassword
         # These token settings are written without a type, as the token configuration of the WebUI does. Their
         # token class declares them a password, so they are stored encrypted and read back decrypted.
@@ -491,7 +511,7 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual("", db.session.query(Config).filter_by(Key="yubico.id").one().Type)
         delete_privacyidea_config("yubico.id")
 
-    def test_16_plain_token_password_setting_is_censored_in_export(self):
+    def test_18_plain_token_password_setting_is_censored_in_export(self):
         from privacyidea.lib.config import export_config, is_password_config_entry
         from privacyidea.lib.crypto import CENSORED
         # An entry stored in plain text and without a type, before its token class declared it a password
