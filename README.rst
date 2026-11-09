@@ -134,18 +134,12 @@ First You need to create a `config-file <https://privacyidea.readthedocs
 
 Then create the database tables and the encryption key::
 
-    ./pi-manage create_tables
-    ./pi-manage create_enckey
-
-If You want to keep the development database upgradable, You should `stamp
-<https://privacyidea.readthedocs.io/en/latest/installation/upgrade.html>`_ it
-to simplify updates::
-
-    ./pi-manage db stamp head -d migrations/
+    ./pi-manage setup create_tables
+    ./pi-manage setup create_enckey
 
 Create the key for the audit log::
 
-    ./pi-manage create_audit_keys
+    ./pi-manage setup create_audit_keys
 
 Create the first administrator::
 
