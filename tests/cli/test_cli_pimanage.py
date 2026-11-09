@@ -51,6 +51,7 @@ from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.security.default import DefaultSecurityModule
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.lib.clients import create_client
@@ -1862,6 +1863,27 @@ class TestPIManageSetupClass:
                                            "--password", "other1234"])
         assert result.exit_code == 0, result.output
         assert outfile.stat().st_mode & 0o777 == 0o600
+
+    def test_09b_encrypt_enckey_into_the_key_file_keeps_the_key(self, app, tmp_path):
+        # The key is read before the output file is opened, so -o can name the key file itself
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey), "-o", str(enckey),
+                                           "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert DefaultSecurityModule.password_decrypt(enckey.read_text().strip(), "test1234") == key
+        assert enckey.stat().st_mode & 0o777 == 0o600
+
+    def test_09c_encrypt_enckey_writes_to_stdout(self, app, tmp_path):
+        enckey = tmp_path / "enckey"
+        key = os.urandom(96)
+        enckey.write_bytes(key)
+        result = app.test_cli_runner().invoke(pi_manage, ["setup", "encrypt_enckey", str(enckey),
+                                                          "--password", "test1234"])
+        assert result.exit_code == 0, result.output
+        assert DefaultSecurityModule.password_decrypt(result.stdout.strip(), "test1234") == key
 
     def test_10_deprecated_dropdb_names_the_new_command(self, app):
         runner = app.test_cli_runner()
