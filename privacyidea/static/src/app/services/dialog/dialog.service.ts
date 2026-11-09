@@ -21,9 +21,12 @@ import { EnvironmentInjector, inject, Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { lastValueFrom, take } from "rxjs";
+import { lastValueFrom, Observable, take } from "rxjs";
 
 export interface DialogServiceInterface {
+  /** Emits when all open dialogs have been closed. */
+  readonly afterAllClosed: Observable<void>;
+
   closeDialog<D, R>(ref: MatDialogRef<AbstractDialogComponent<D, R>, R>, result?: R): boolean;
 
   openDialog<D, R>(args: {
@@ -56,6 +59,7 @@ export class DialogService implements DialogServiceInterface {
   private readonly dialog = inject(MatDialog);
   private readonly injector = inject(EnvironmentInjector);
   public openDialogs = new Set<MatDialogRef<AbstractDialogComponent>>();
+  readonly afterAllClosed: Observable<void> = this.dialog.afterAllClosed;
 
   /**
    * @param ref The MatDialogRef of the dialog to be closed.

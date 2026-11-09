@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { MatDialog } from "@angular/material/dialog";
-import { Subject } from "rxjs";
 import { AuthService } from "@services/auth/auth.service";
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
@@ -28,7 +29,8 @@ import { MockResolverService } from "@testing/mock-services/mock-resolver-servic
 import { NoRealmDialogService } from "./no-realm-dialog.service";
 
 describe("NoRealmDialogService", () => {
-  let dialogMock: { open: jest.Mock; openDialogs: unknown[]; afterAllClosed: Subject<void> };
+  let dialogMock: MockDialogService;
+  let matDialogOpen: jest.Mock;
   let authMock: MockAuthService;
   let realmMock: MockRealmService;
   let resolverMock: MockResolverService;
@@ -39,11 +41,13 @@ describe("NoRealmDialogService", () => {
   };
 
   beforeEach(() => {
-    dialogMock = { open: jest.fn(), openDialogs: [], afterAllClosed: new Subject<void>() };
+    dialogMock = new MockDialogService();
+    matDialogOpen = jest.fn();
     TestBed.configureTestingModule({
       providers: [
         NoRealmDialogService,
-        { provide: MatDialog, useValue: dialogMock },
+        { provide: DialogService, useValue: dialogMock },
+        { provide: MatDialog, useValue: { open: matDialogOpen } },
         { provide: AuthService, useClass: MockAuthService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: ResolverService, useClass: MockResolverService }
@@ -63,61 +67,60 @@ describe("NoRealmDialogService", () => {
   ])("opens for an admin with the right while no realm exists, as $name", ({ resolvers, noResolver }) => {
     if (resolvers.length) resolverMock.setResolverOptions(resolvers);
     start();
-    expect(dialogMock.open).toHaveBeenCalledTimes(1);
-    expect(dialogMock.open).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ data: { noResolver } }));
+    expect(dialogMock.openDialog).toHaveBeenCalledTimes(1);
+    expect(dialogMock.openDialog).toHaveBeenCalledWith(expect.objectContaining({ data: { noResolver } }));
+    expect(matDialogOpen).not.toHaveBeenCalled();
     if (noResolver) expect(resolverMock.loadRequested()).toBe(true);
   });
 
   it("waits for the resolver list before opening", () => {
     resolverMock.resolversResource.isLoading.set(true);
     start();
-    expect(dialogMock.open).not.toHaveBeenCalled();
+    expect(dialogMock.openDialog).not.toHaveBeenCalled();
     resolverMock.resolversResource.isLoading.set(false);
     TestBed.tick();
-    expect(dialogMock.open).toHaveBeenCalledTimes(1);
+    expect(dialogMock.openDialog).toHaveBeenCalledTimes(1);
   });
 
   it("opens only once per session and again after a new login", () => {
     start();
     TestBed.tick();
-    expect(dialogMock.open).toHaveBeenCalledTimes(1);
+    expect(dialogMock.openDialog).toHaveBeenCalledTimes(1);
     authMock.isAuthenticated.set(false);
     TestBed.tick();
+    dialogMock.closeAllDialogs();
     authMock.isAuthenticated.set(true);
     TestBed.tick();
-    expect(dialogMock.open).toHaveBeenCalledTimes(2);
+    expect(dialogMock.openDialog).toHaveBeenCalledTimes(2);
   });
 
   it("waits for an open dialog to close before opening, while the session stays authenticated", () => {
-    dialogMock.openDialogs.push({});
+    dialogMock.isAnyDialogOpen.mockReturnValue(true);
     start();
-    expect(dialogMock.open).not.toHaveBeenCalled();
-    dialogMock.openDialogs.pop();
+    expect(dialogMock.openDialog).not.toHaveBeenCalled();
+    dialogMock.isAnyDialogOpen.mockReturnValue(false);
     dialogMock.afterAllClosed.next();
-    expect(dialogMock.open).toHaveBeenCalledTimes(1);
-    expect(dialogMock.open).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ data: { noResolver: true } })
-    );
+    expect(dialogMock.openDialog).toHaveBeenCalledTimes(1);
+    expect(dialogMock.openDialog).toHaveBeenCalledWith(expect.objectContaining({ data: { noResolver: true } }));
   });
 
   it("does not open after a logout while it waited for another dialog", () => {
-    dialogMock.openDialogs.push({});
+    dialogMock.isAnyDialogOpen.mockReturnValue(true);
     start();
     authMock.isAuthenticated.set(false);
     TestBed.tick();
-    dialogMock.openDialogs.pop();
+    dialogMock.isAnyDialogOpen.mockReturnValue(false);
     dialogMock.afterAllClosed.next();
-    expect(dialogMock.open).not.toHaveBeenCalled();
+    expect(dialogMock.openDialog).not.toHaveBeenCalled();
   });
 
   it("does not open from the deferred callback when the conditions no longer hold", () => {
-    dialogMock.openDialogs.push({});
+    dialogMock.isAnyDialogOpen.mockReturnValue(true);
     start();
     authMock.isAuthenticated.set(false);
-    dialogMock.openDialogs.pop();
+    dialogMock.isAnyDialogOpen.mockReturnValue(false);
     dialogMock.afterAllClosed.next();
-    expect(dialogMock.open).not.toHaveBeenCalled();
+    expect(dialogMock.openDialog).not.toHaveBeenCalled();
   });
 
   it.each<{ name: string; arrange: () => void }>([
@@ -128,6 +131,6 @@ describe("NoRealmDialogService", () => {
   ])("does not open when $name", ({ arrange }) => {
     arrange();
     start();
-    expect(dialogMock.open).not.toHaveBeenCalled();
+    expect(dialogMock.openDialog).not.toHaveBeenCalled();
   });
 });

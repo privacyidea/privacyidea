@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { effect, inject, Injectable } from "@angular/core";
-import { MatDialog } from "@angular/material/dialog";
 import { NoRealmDialogComponent } from "@components/shared/no-realm-dialog/no-realm-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
@@ -30,7 +30,7 @@ import { Subscription, take } from "rxjs";
  */
 @Injectable()
 export class NoRealmDialogService {
-  private readonly dialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly auth: AuthServiceInterface = inject(AuthService);
   private readonly realmService: RealmServiceInterface = inject(RealmService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
@@ -69,8 +69,8 @@ export class NoRealmDialogService {
 
   /** A dialog already open (e.g. the welcome dialog) is not stacked on: this one follows once it is closed. */
   private openWhenFree(): void {
-    if (this.dialog.openDialogs.length > 0) {
-      this.pendingOpen = this.dialog.afterAllClosed.pipe(take(1)).subscribe(() => {
+    if (this.dialogService.isAnyDialogOpen()) {
+      this.pendingOpen = this.dialogService.afterAllClosed.pipe(take(1)).subscribe(() => {
         this.pendingOpen = undefined;
         // The session may have ended or changed while the other dialog was open.
         if (this.mayOpen()) {
@@ -79,9 +79,10 @@ export class NoRealmDialogService {
       });
       return;
     }
-    this.dialog.open(NoRealmDialogComponent, {
-      autoFocus: false,
-      data: { noResolver: this.resolverService.resolverOptions().length === 0 }
+    this.dialogService.openDialog({
+      component: NoRealmDialogComponent,
+      data: { noResolver: this.resolverService.resolverOptions().length === 0 },
+      configOverride: { autoFocus: false }
     });
   }
 }
