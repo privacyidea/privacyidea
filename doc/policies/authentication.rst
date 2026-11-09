@@ -1099,8 +1099,16 @@ The following options are available:
 
 The default is to ``allow`` polling
 
-The smartphone does not send a user when it polls. privacyIDEA does not check the realm,
-resolver and user of this policy. See :ref:`policy_condition_checks`.
+privacyIDEA reads this policy at two points:
+
+* When privacyIDEA creates a push challenge, it checks the policy for the user who
+  authenticates. With ``deny``, privacyIDEA creates the challenge only if the push
+  gateway accepts the message.
+* When the smartphone polls, it sends no user. privacyIDEA then does not check the
+  realm, resolver and user of the policy.
+
+Thus a policy ``push_allow_polling=deny`` for the realm *sales* blocks the poll requests
+of all users. See :ref:`policy_condition_checks`.
 
 .. versionadded:: 3.4
 

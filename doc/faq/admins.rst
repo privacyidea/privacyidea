@@ -20,14 +20,18 @@ in to the WebUI with their name and password.
 
 Local administrators are for the first setup and for recovery work:
 
-* They log in with the password from the database only. The policy
+* They log in with the password from the database. The policy
   :ref:`policy_login_mode` and the authentication policies do not apply to
   them. privacyIDEA can not require a second factor for them.
+* A :ref:`policy_remote_user` policy also lets them log in without a password if
+  the web server sends ``REMOTE_USER`` with their name. privacyIDEA checks this
+  policy with their name and the default realm. Thus a ``remote_user`` policy for
+  the default realm also applies to local administrators.
 * They are in no realm. A policy with an admin realm does not apply to them, and
   they have no user attributes for ``userinfo`` conditions.
 
 .. warning:: Do not keep local administrators in a production system. They log in
-   with a password only. Set up an admin realm, and make sure that its
+   without a second factor. Set up an admin realm, and make sure that its
    administrators can log in. Then delete the local administrators with
    ``pi-manage admin delete``. For recovery work, create a local administrator
    on the server, and delete it after the work.
@@ -74,7 +78,8 @@ Policies for the two kinds
      - Local administrator
      - Administrator of an admin realm
    * - Login to the WebUI
-     - Password from the privacyIDEA database
+     - Password from the privacyIDEA database, or ``REMOTE_USER`` with a
+       :ref:`policy_remote_user` policy that applies to the default realm
      - Like a user of the realm: :ref:`policy_login_mode` and the authentication
        policies apply
    * - Second factor

@@ -179,8 +179,11 @@ kind of request has, and which actions have special rules.
     *vpn-users*. Users of *ldap* that are not listed in *vpn-users* are not
     affected.
 
-  The option needs the login name and the realm of the user. If the request has no
-  user, a policy with the option does not apply.
+  The option needs the login name and the realm of the user. If the request has an
+  empty user, for example an administrator acts on a token without an owner, a policy
+  with the option does not apply. If the request has no user at all, like the WebUI
+  start page, privacyIDEA does not check the resolver, and the policy applies. See
+  :ref:`policy_condition_checks`.
 
   The option only works together with a resolver. In the WebUI it is the
   checkbox below the resolvers of the policy. It can only be selected while a
@@ -307,12 +310,14 @@ kind of request has, and which actions have special rules.
   depending on the plugin. Multiple plugins can be selected from the drop-down list. But you can also add custom
   user agents. The matching is applied to the name, but not to the version. It is case-insensitive.
 
-  The name is the first part of the ``User-Agent`` header of the request, up to the first
-  ``/`` or space. The privacyIDEA plugins send their own name, for example
-  ``privacyIDEA-Keycloak``. Browsers send ``Mozilla``. For an authentication through a
-  plugin, the user agent is the plugin, not the browser of the user. The field does not
-  support ``*`` or exclusions. A request without a user agent only matches policies
-  without a user agent.
+  The name is the first part of the ``User-Agent`` header of the request. It contains only
+  letters, digits, ``_`` and ``-``. It ends at the first other character, like ``/``, a
+  space or a dot. Thus ``PAM.module/1.0`` has the name ``PAM``. The privacyIDEA
+  plugins send their own name, for example ``privacyIDEA-Keycloak``. Browsers send
+  ``Mozilla``. For an authentication through a plugin, the user agent is the plugin, not
+  the browser of the user. The field does not support ``*`` or exclusions. A request
+  without a user agent only matches policies without a user agent. A header that starts
+  with another character counts as no user agent.
 
 .. versionadded:: 3.12
 

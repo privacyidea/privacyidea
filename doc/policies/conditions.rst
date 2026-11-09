@@ -130,7 +130,8 @@ available:
 types in lower case, for example ``hotp``.
 
 For numbers, use the comparators ``<`` and ``>``. For a yes-or-no value, *yes* counts
-as ``1`` and *no* as ``0``.
+as ``1`` and *no* as ``0``. ``equals`` and ``in`` never match a number or a yes-or-no
+value, see `Comparators`_.
 
 **Example**: a policy in the scope *user* with the action ``delete`` and the token
 condition ``active``, ``<``, ``1`` allows users to delete inactive tokens, but not
@@ -191,13 +192,18 @@ for example:
    * - ``type``, ``serial``, ``description``, ``template``
      - text
    * - ``last_authentication``, ``last_synchronization``
-     - date and time in ISO format, or no value if it did not happen yet
+     - date and time in ISO format with the time zone UTC (``+00:00``), or no value if it
+       did not happen yet
    * - ``states``, ``realms``
      - list of texts
 
 A container that never authenticated or synchronized has no value for
 ``last_authentication`` or ``last_synchronization``. The condition then has missing
-data.
+data. These dates have a time zone, so the ``Value`` of ``date_before`` and
+``date_after`` must also have one, for example ``2025-01-31T00:00:00+00:00``.
+
+The actions ``container_create`` and ``container_list`` and the template actions have no
+single container. A ``container`` or ``container_info`` condition then has missing data.
 
 .. versionadded:: 3.12
 
@@ -224,6 +230,9 @@ each endpoint.
   :ref:`policy_setrealm`, to a value from :ref:`policy_mangle` or the
   :ref:`requestmanglerhandler`, and to the default realm. It also applies to the user and
   the realm that privacyIDEA sets for a user who manages their own tokens.
+* When privacyIDEA creates the tokens of a container template, Request Data holds the
+  values of the template for each token, as in a token enrollment. It does not hold the
+  parameters of the request.
 * A client can send any parameter with any value. Do not use a Request Data condition
   to grant a right. Use the ordinary policy attributes for the user and the realm.
 * A request with a JSON body keeps the JSON types. ``{"genkey": 1}`` sends a number,
@@ -238,13 +247,18 @@ The left value comes from the request, the right value is the ``Value`` of the
 condition. The right value is always text.
 
 * ``equals`` is true if the left value is the same text as the right value.
-  ``!equals`` is true if this is not the case.
+  ``!equals`` is true if this is not the case. privacyIDEA does not convert the left
+  value. A number, a yes-or-no value or a list is never equal to the right value. For
+  such a value, ``equals`` is always false and ``!equals`` is always true. Thus a policy
+  that restricts something with ``!equals`` on such a value applies to every request. Use
+  ``<`` and ``>`` for numbers and yes-or-no values, and ``contains`` for lists.
 * ``contains`` is true if the left value is a list that contains the right value.
   ``!contains`` is true if this is not the case. If the left value is not a list,
   privacyIDEA raises an error.
 * ``in`` is true if the left value is in the comma-separated list of the right value.
   You can put a value in double quotes, for example ``"Doe, John",alice``.
-  ``!in`` is true if this is not the case.
+  ``!in`` is true if this is not the case. The left value must be text. For a number, a
+  yes-or-no value or a list, ``in`` is always false and ``!in`` is always true.
 * ``matches`` is true if the left value completely matches the regular expression of the
   right value. ``!matches`` is true if this is not the case. For a match that ignores
   upper and lower case, start the expression with ``(?i)``. If the left value is not
@@ -311,7 +325,8 @@ The data for a condition is missing in these cases:
 ``Handle Missing Data`` has three options:
 
 * ``Raise an error``: privacyIDEA stops the request with a policy error. This is the
-  default. It also applies to conditions from privacyIDEA versions before 3.12.
+  default. It also applies to conditions from privacyIDEA versions before 3.12. For two
+  exceptions, see `Error Handling`_.
 * ``Condition is false``: the policy does not apply.
 * ``Condition is true``: the policy applies.
 
@@ -350,3 +365,13 @@ If a condition is not valid, privacyIDEA raises a policy error and stops the req
   * ``date_before`` or ``date_after`` with only one time zone.
 
 The log file contains the details.
+
+In two cases, a policy error does not stop the request. This applies to an invalid
+condition and to ``Raise an error`` for missing data:
+
+* A policy of the scope :ref:`policies_hardening` on the API: the policy does not apply.
+  Thus the error turns off the protection of the policy.
+* A token that privacyIDEA creates from a container template: if a policy check before
+  the creation fails, privacyIDEA does not create this token. Examples are a token limit,
+  the right to enroll the token type, or a default value. privacyIDEA creates the other
+  tokens of the template, and the response lists only the created tokens.

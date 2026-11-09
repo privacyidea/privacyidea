@@ -27,12 +27,20 @@ depends on the request:
    * - has a user of another realm
      - does not apply
    * - has an empty user, for example an administrator acts on a token without an owner
-     - does not apply. Only policies without realm, resolver and user apply.
+     - does not apply, unless the token is in the realm *sales*
    * - has no user at all, for example the WebUI start page
      - applies. privacyIDEA does not check the realm.
 
 The fields *resolver* and *user* work the same way. Thus a policy for one realm also
 applies to a request that has no user. The sections below list these requests.
+
+An empty user matches a field that is blank or contains ``*``. In the field *user*, an
+empty user also matches an expression that accepts an empty name, like ``.*``. A policy
+with :ref:`check_all_resolvers <check_all_resolvers>` does not apply to an empty user.
+
+If an administrator acts on a token or a container, privacyIDEA also compares the field
+*realm* with the realms of the token or the container. This also applies to a token or a
+container without an owner.
 
 The other fields are checked for every request:
 
@@ -62,9 +70,11 @@ The user of a request
      - User for *realm*, *resolver*, *user* and ``userinfo``
    * - Authentication with ``user`` (``/validate/check``, ``/validate/radiuscheck``,
        ``/validate/triggerchallenge``, ``/auth``)
-     - The user of the parameters ``user`` and ``realm``. Without a realm, the default
-       realm. The policies :ref:`policy_set_realm`, :ref:`policy_setrealm` and
-       :ref:`policy_mangle` can change the user before the other policies.
+     - The user of the parameters ``user`` (``username`` for ``/auth``) and ``realm``.
+       Without a realm, the default realm. :ref:`policy_set_realm` can change the realm
+       before the other policies. On ``/validate/check`` and ``/validate/radiuscheck``,
+       :ref:`policy_setrealm` and :ref:`policy_mangle` can also change the user. They do
+       not run on ``/validate/triggerchallenge`` and ``/auth``.
    * - ``/validate/check`` with ``serial`` and without ``user``
      - The owner of the token. Exception: :ref:`application_tokentype_policy`,
        :ref:`policy_setrealm` and :ref:`policy_mangle` run before privacyIDEA knows the
@@ -86,12 +96,13 @@ The user of a request
    * - User manages their own tokens
      - The logged-in user.
    * - WebUI start page, before the login
-     - No user.
+     - No user. Exception: :ref:`policy_remote_user`, see `WebUI`_.
    * - WebUI login (``/auth``) of a user or of an administrator of an admin realm
      - The user who logs in, in their realm.
    * - WebUI login (``/auth``) of a local administrator
      - The login name with an empty realm. privacyIDEA does not check the resolver, and
-       there are no user attributes. See :ref:`faq_admins`.
+       there are no user attributes. Exception: :ref:`policy_remote_user` uses the
+       default realm. See :ref:`faq_admins`.
    * - Container client requests (``/container/register/finalize``,
        ``/container/register/terminate/client``, ``/container/challenge``,
        ``/container/synchronize``, ``/container/rollover``)
@@ -138,7 +149,7 @@ does not check the condition, and the policy applies as if the condition is true
    * - Administrator or user acts on a container
      - yes, see `The user of a request`_
      - not checked
-     - yes, not for ``container_create``
+     - yes, not for ``container_create``, ``container_list`` and the template actions
    * - Token enrollment (``/token/init``)
      - yes
      - no, the token does not exist yet
@@ -227,8 +238,14 @@ WebUI
   their realm, resolver and user, and they have no user, token and container data. These
   policies are ``realm_dropdown``, ``login_text``, ``gdpr_link``,
   :ref:`webui_custom_menu`, :ref:`webui_custom_baseline`, :ref:`policy_passkey_login`,
-  ``show_node``, ``otp_pin_set_random`` (scope *user*) and ``hide_version`` (scope
-  *hardening*).
+  ``show_node``, ``otp_pin_set_random`` and :ref:`policy_password_reset` (scope
+  *user*) and ``hide_version`` (scope *hardening*).
+* Start page, :ref:`policy_remote_user`: if the web server sends ``REMOTE_USER``,
+  privacyIDEA checks this policy for the account that ``REMOTE_USER`` names. Without a
+  realm in ``REMOTE_USER``, this is the default realm. The ``userinfo`` conditions read
+  this account. For a local administrator or for a name that does not exist in the realm,
+  privacyIDEA checks the login name and the realm. It does not check the resolver, and
+  ``userinfo`` has no data.
 * The WebUI settings of the session, like ``logout_time`` or the page sizes, are fixed at
   the login. A later change of the time or of the client IP does not change them.
 * The WebUI shows the menus and buttons from the rights at the login. For these rights,
@@ -240,5 +257,9 @@ Hardening
 .........
 
 The policies of the scope :ref:`policies_hardening` have no user. A condition that needs a
-user, a token or a container has missing data. With ``Raise an error`` or
-``Condition is false``, the policy does not apply.
+user, a token or a container has missing data. With ``Condition is false``, the policy
+does not apply. With ``Condition is true``, it applies.
+
+On the API, an error in a hardening policy does not stop the request. The policy does not
+apply instead. This includes ``Raise an error`` for missing data and an invalid condition.
+Thus an error turns off the protection of the policy. The log file contains the details.
