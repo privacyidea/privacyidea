@@ -22,8 +22,9 @@ contained in a container, click on the container's row. Clicking on the containe
 serial will open the container details page.
 
 The container list can be filtered by the serial, type, description, state, user, realm of the user, container realm,
-the serial of a contained token, the template and whether a user is assigned. The list can also be sorted by the
-serial, type, and description in ascending and descending order.
+the serial of a contained token and whether a user is assigned. The template filter is only available in the header of
+the *Template* column while the comparison with the templates is shown, see :ref:`container_template_comparison`. The
+list can also be sorted by the serial, type, and description in ascending and descending order.
 
 Container Details
 ~~~~~~~~~~~~~~~~~
@@ -63,6 +64,8 @@ To assign a user, click the *Assign User* button, select a realm in *Select Real
 name in *Enter User*. Select one of the suggested users and save the assignment. Clicking on the assigned
 user's name redirects to the :ref:`user_details` page.
 
+.. _container_template_comparison:
+
 Template
 ........
 
@@ -74,15 +77,17 @@ each token type is compared: for every token the template defines but the contai
 ``MISSING`` is added, and tokens beyond the number the template defines for their type are highlighted, also if the
 type is in the template.
 
-On the container list, the filter menu in the header of the *Template* column, which is shown while the comparison is visible, offers three template filters: containers created with any template,
-containers without a template, or containers created from a selected template. Click *Compare with templates* to compare
-all containers of the current page with their own templates. While the comparison is visible, changing the page, the
-page size, the sort order or the filter compares the containers shown afterwards again. The container list
-then additionally shows the column *Differences* for the compared containers. Token types the template defines but
-the container lacks are marked red with a minus, token types the container has in addition are marked yellow with a
-plus. A container that matches its template is marked *Equal*, and a container without a template shows an empty cell
-in this column and cannot be compared. Containers that were not compared show nothing in this column. Click *Hide comparison*
-to remove the column again.
+Click *Compare with templates* on the container list to compare all containers of the current page with their own
+templates. The button requires the admin right :ref:`policy_container_template_list`. While the comparison is visible,
+changing the page, the page size, the sort order or the filter compares the containers shown afterwards again. The
+container list then additionally shows the column *Differences* for the compared containers. Token types the template
+defines but the container lacks are marked red with a minus, token types the container has in addition are marked yellow
+with a plus. A container that matches its template is marked *Equal*, and a container without a template shows an empty
+cell in this column and cannot be compared. Containers that were not compared show nothing in this column. Click
+*Hide comparison* to remove the column again.
+
+While the comparison is visible, the filter menu in the header of the *Template* column offers three template filters:
+containers created with any template, containers without a template, or containers created from a selected template.
 
 Synchronization
 ...............
@@ -198,9 +203,12 @@ After a successful registration, the tokens are automatically added during synch
    *Container Created With Registration*
 
 On the user details page, *Create New Container* opens this page with the user preselected. On the token details page
-and during the enrollment of a new token, the *Create new container* entry in the container selection opens a dialog
-for a basic container creation, which allows defining the container type, setting a description, and assigning the
-token owner to the container.
+and during the enrollment of a new token, the *Create new container* entry in the container selection opens a dialog for
+a basic container creation, which allows defining the container type, setting a description, and assigning the token
+owner to the container. The *Create new container* entry requires the right ``container_create``
+(:ref:`admin <policy_container_create>` or user policy). Assigning the new container to the token owner additionally
+requires the right ``container_assign_user`` (:ref:`admin <policy_container_assign_user>` or user policy) and a token
+owner.
 
 
 Templates
@@ -251,10 +259,10 @@ after saving the template.
 
 **Containers Created With This Template**
 
-The template page does not list the containers created from the template. To see them, open the container list
-and select the template in the filter menu of the *Template* column. Click *Compare with templates* to compare the
-containers of the current page with their templates. The column *Differences* then shows the missing token types
-with a minus, the additional token types with a plus and *Equal* for matching containers.
+The template page does not list the containers created from the template. To see them, open the container list and click
+*Compare with templates*. Then select the template in the filter menu of the *Template* column. This compares the
+containers of the current page with their templates. The column *Differences* then shows the missing token types with a
+minus, the additional token types with a plus and *Equal* for matching containers.
 
 .. note:: The previous WebUI, see :ref:`legacy_webui`, displays a table of the containers on the template page.
    The button *Compare* adds a column to this table. The row *missing* lists the token types included in the

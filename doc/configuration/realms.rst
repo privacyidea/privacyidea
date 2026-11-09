@@ -266,13 +266,14 @@ system accounts, which often caused surprising results.
 Instead, a dialog appears at each administrator login as long as no
 realm exists and the administrator is allowed to create resolvers. If no
 resolver exists either, the dialog tells the administrator to create a
-resolver first, because a resolver is the source of the users, and offers
-a button *Create resolver* that leads directly to the resolver creation.
-If a resolver already exists, the dialog explains that a realm is needed
-to enroll tokens for users and offers a button *Create realm* that leads
-to the realm management. Nothing is created automatically. Create your
-first resolver and realm pointing to your actual user store (e.g. LDAP,
-Active Directory or SQL) in the WebUI under *Users*.
+resolver first, because a resolver is the source of the users, and
+offers a button *Create resolver* that leads directly to the resolver
+creation. If a resolver already exists, the dialog explains that a realm
+is needed to enroll tokens for users and offers a button *Create realm*
+that leads to the realm management. The button *Later* closes the dialog
+without any action. Nothing is created automatically. Create your first
+resolver and realm pointing to your actual user store (e.g. LDAP, Active
+Directory or SQL) in the WebUI under *Users*.
 
 If you still want a realm based on ``/etc/passwd`` for a quick start or
 demo setup, you can create it on the command line:
