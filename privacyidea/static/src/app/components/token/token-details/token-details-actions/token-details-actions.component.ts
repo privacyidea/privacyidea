@@ -48,11 +48,11 @@ import { TokenDetails } from "@services/token/token.service";
 export class TokenDetailsActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   @Input({ required: true }) tokenType!: WritableSignal<string>;
-  token = input<TokenDetails>();
+  token = input.required<TokenDetails>();
 
   protected get hasAnyAction(): boolean {
     const type = this.tokenType?.();
-    const isVerify = this.token()?.rollout_state === "verify";
+    const isVerify = this.token().rollout_state === "verify";
     const nonWebauthn = type !== "passkey" && type !== "webauthn";
     return (
       isVerify ||

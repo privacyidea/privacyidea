@@ -34,6 +34,7 @@ import {
     MockValidateService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { mockTokenDetails } from "@testing/mock-token-details";
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
 
 describe("TokenDetailsActionsComponent", () => {
@@ -69,6 +70,7 @@ describe("TokenDetailsActionsComponent", () => {
     component = fixture.componentInstance;
 
     component.tokenType = signal("hotp");
+    fixture.componentRef.setInput("token", mockTokenDetails());
 
     fixture.detectChanges();
   });
@@ -128,15 +130,6 @@ describe("TokenDetailsActionsComponent", () => {
     it("returns false for webauthn when no actions are allowed and not in verify state", () => {
       component.tokenType = signal("webauthn");
       fixture.componentRef.setInput("token", { rollout_state: "" } as TokenDetails);
-      const authService = TestBed.inject(AuthService);
-      jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
-      jest.spyOn(authService, "actionsAllowed").mockReturnValue(false);
-      expect(component["hasAnyAction"]).toBe(false);
-    });
-
-    it("returns false for webauthn with no token and no actions allowed", () => {
-      component.tokenType = signal("webauthn");
-      fixture.componentRef.setInput("token", undefined);
       const authService = TestBed.inject(AuthService);
       jest.spyOn(authService, "actionAllowed").mockReturnValue(false);
       jest.spyOn(authService, "actionsAllowed").mockReturnValue(false);
