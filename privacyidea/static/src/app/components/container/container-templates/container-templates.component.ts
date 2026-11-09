@@ -175,6 +175,11 @@ export class ContainerTemplatesComponent {
     allowed: () => this.authService.actionAllowed("container_template_list"),
     resetFilter: () => this.onFilterChange(this.filter().clear())
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_template_create")
+      ? $localize`:@@container.createTemplateRoll:Create a template to roll out containers with a predefined set of tokens.`
+      : ""
+  );
   readonly pageIndex = signal(0);
   readonly pageSize = signal(10);
   readonly pageSizeOptions = signal([5, 10, 25, 100]);

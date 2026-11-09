@@ -195,20 +195,21 @@
     <app-table-state
       [table]="tableState"
       heading="No RADIUS servers yet"
-      hint="Create a RADIUS server to forward authentication requests to it."
+      [hint]="emptyHint()"
       i18n-heading="@@radiusServer.noRADIUSServers"
-      i18n-hint="@@radiusServer.createRADIUSServer"
       icon="vpn_lock">
-      <button
-        (click)="onCreateNewServer()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="icon-badge-pad-3">vpn_lock</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createRadiusServer">Create RADIUS Server</span>
-      </button>
+      @if (authService.actionAllowed("radiusserver_write")) {
+        <button
+          (click)="onCreateNewServer()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="icon-badge-pad-3">vpn_lock</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.createRadiusServer">Create RADIUS Server</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>

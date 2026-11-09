@@ -95,6 +95,11 @@ export class RadiusServersComponent {
     allowed: () => this.authService.actionAllowed("radiusserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("radiusserver_write")
+      ? $localize`:@@radiusServer.createRADIUSServer:Create a RADIUS server to forward authentication requests to it.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -134,6 +139,7 @@ export class RadiusServersComponent {
       icon: "vpn_lock",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("radiusserver_write"),
       run: () => this.onCreateNewServer()
     },
     {
@@ -143,6 +149,7 @@ export class RadiusServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.authService.actionAllowed("radiusserver_write"),
       run: () => this.deleteSelected()
     }
   ]);

@@ -201,20 +201,21 @@
     <app-table-state
       [table]="tableState"
       heading="No privacyIDEA servers yet"
-      hint="Create a privacyIDEA server to forward authentication requests to another instance."
+      [hint]="emptyHint()"
       i18n-heading="@@piServer.noPrivacyIDEAServers"
-      i18n-hint="@@piServer.createPrivacyIDEAServer"
       icon="dns">
-      <button
-        (click)="openEditDialog()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="mdi--pi-logo icon-badge-pad-3"></mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
-      </button>
+      @if (authService.actionAllowed("privacyideaserver_write")) {
+        <button
+          (click)="openEditDialog()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="mdi--pi-logo icon-badge-pad-3"></mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>

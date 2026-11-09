@@ -95,6 +95,11 @@ export class PrivacyideaServersComponent {
     allowed: () => this.authService.actionAllowed("privacyideaserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("privacyideaserver_write")
+      ? $localize`:@@piServer.createPrivacyIDEAServer:Create a privacyIDEA server to forward authentication requests to another instance.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -135,6 +140,7 @@ export class PrivacyideaServersComponent {
       fontIcon: "mdi--pi-logo",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("privacyideaserver_write"),
       run: () => this.openEditDialog()
     },
     {
@@ -144,6 +150,7 @@ export class PrivacyideaServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.authService.actionAllowed("privacyideaserver_write"),
       run: () => this.deleteSelected()
     }
   ]);

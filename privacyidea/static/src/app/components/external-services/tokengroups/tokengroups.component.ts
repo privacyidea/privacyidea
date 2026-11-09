@@ -90,6 +90,11 @@ export class TokengroupsComponent {
     allowed: () => this.authService.actionAllowed("tokengroup_list"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("tokengroup_add")
+      ? $localize`:@@tokenGroup.createTokenGroupHint:Create a token group to group tokens for policies and machine assignments.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -128,6 +133,7 @@ export class TokengroupsComponent {
       icon: "local_police",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("tokengroup_add"),
       run: () => this.onCreateNewTokengroup()
     },
     {
@@ -137,6 +143,7 @@ export class TokengroupsComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.authService.actionAllowed("tokengroup_delete"),
       run: () => this.deleteSelected()
     }
   ]);

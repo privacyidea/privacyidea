@@ -188,17 +188,18 @@
             [status]="tableState.rowStatus()"
             [table]="tableState"
             heading="No container templates yet"
-            hint="Create a template to roll out containers with a predefined set of tokens."
+            [hint]="emptyHint()"
             i18n-heading="@@container.noContainerTemplates"
-            i18n-hint="@@container.createTemplateRoll"
             icon="note_add">
-            <button
-              [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
-              class="action-button-primary button-width-m"
-              mat-stroked-button>
-              <mat-icon>note_add</mat-icon>
-              <span i18n="@@common.createTemplate">Create Template</span>
-            </button>
+            @if (authService.actionAllowed("container_template_create")) {
+              <button
+                [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
+                class="action-button-primary button-width-m"
+                mat-stroked-button>
+                <mat-icon>note_add</mat-icon>
+                <span i18n="@@common.createTemplate">Create Template</span>
+              </button>
+            }
           </app-table-state>
         </td>
       </tr>
@@ -208,17 +209,18 @@
     <app-table-state
       [table]="tableState"
       heading="No container templates yet"
-      hint="Create a template to roll out containers with a predefined set of tokens."
+      [hint]="emptyHint()"
       i18n-heading="@@container.noContainerTemplates"
-      i18n-hint="@@container.createTemplateRoll"
       icon="note_add">
-      <button
-        [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
-        class="action-button-primary button-width-m"
-        mat-stroked-button>
-        <mat-icon>note_add</mat-icon>
-        <span i18n="@@common.createTemplate">Create Template</span>
-      </button>
+      @if (authService.actionAllowed("container_template_create")) {
+        <button
+          [routerLink]="[ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>note_add</mat-icon>
+          <span i18n="@@common.createTemplate">Create Template</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>

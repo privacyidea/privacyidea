@@ -92,6 +92,11 @@ export class SmsGatewaysComponent {
     allowed: () => this.authService.actionAllowed("smsgateway_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("smsgateway_write")
+      ? $localize`:@@smsGateway.createSMSGateway:Create an SMS gateway to send one-time passwords by text message.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -130,6 +135,7 @@ export class SmsGatewaysComponent {
       icon: "sms",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("smsgateway_write"),
       run: () => this.onCreateNewGateway()
     },
     {
@@ -139,6 +145,7 @@ export class SmsGatewaysComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.authService.actionAllowed("smsgateway_write"),
       run: () => this.deleteSelected()
     }
   ]);

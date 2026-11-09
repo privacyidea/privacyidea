@@ -93,6 +93,11 @@ export class CaConnectorsComponent {
     allowed: () => this.authService.actionAllowed("caconnectorread"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("caconnectorwrite")
+      ? $localize`:@@caConnector.createCAConnector:Create a CA connector to issue and manage certificates from privacyIDEA.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -122,6 +127,7 @@ export class CaConnectorsComponent {
       icon: "assured_workload",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("caconnectorwrite"),
       run: () => this.openEditDialog()
     },
     {
@@ -131,6 +137,7 @@ export class CaConnectorsComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.authService.actionAllowed("caconnectordelete"),
       run: () => this.deleteSelected()
     }
   ]);

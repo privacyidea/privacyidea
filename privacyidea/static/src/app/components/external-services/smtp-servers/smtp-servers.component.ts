@@ -88,6 +88,11 @@ export class SmtpServersComponent {
     allowed: () => this.authService.actionAllowed("smtpserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("smtpserver_write")
+      ? $localize`:@@smtpServer.createSMTPServer:Create an SMTP server to send emails and one-time passwords.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -117,6 +122,7 @@ export class SmtpServersComponent {
       icon: "email",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("smtpserver_write"),
       run: () => this.onCreateNewServer()
     },
     {
@@ -126,6 +132,7 @@ export class SmtpServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.authService.actionAllowed("smtpserver_write"),
       run: () => this.deleteSelected()
     }
   ]);

@@ -172,12 +172,21 @@ describe("SmtpServersComponent", () => {
       expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
-    it("shows both actions while the read right is granted", () => {
-      setRights(fixture, ["smtpserver_read"]);
+    it("shows both actions with smtpserver_write", () => {
+      setRights(fixture, ["smtpserver_read", "smtpserver_write"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
       expect(toolbarButton(fixture, "Create SMTP Server")).toBeTruthy();
       expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create and delete without smtpserver_write", () => {
+      setRights(fixture, ["smtpserver_read"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create SMTP Server")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
     });
 
     it("draws no toolbar while the read right is denied", () => {
@@ -188,7 +197,7 @@ describe("SmtpServersComponent", () => {
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(fixture, ["smtpserver_read"]);
+      setRights(fixture, ["smtpserver_read", "smtpserver_write"]);
 
       expect(toolbarAction(component, "create").disabled).toBeFalsy();
       expect(toolbarAction(component, "delete").disabled).toBe(true);
@@ -230,7 +239,7 @@ describe("SmtpServersComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(fixture, ["smtpserver_read"]);
+      setRights(fixture, ["smtpserver_read", "smtpserver_write"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
@@ -240,7 +249,7 @@ describe("SmtpServersComponent", () => {
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(fixture, ["smtpserver_read"]);
+      setRights(fixture, ["smtpserver_read", "smtpserver_write"]);
       component.selector.selectRow(smtpServiceMock.smtpServers()[0]);
       fixture.detectChanges();
 
@@ -249,6 +258,28 @@ describe("SmtpServersComponent", () => {
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      smtpServiceMock.smtpServers.set([]);
+    });
+
+    it("offers the create button and hint with smtpserver_write", () => {
+      setRights(fixture, ["smtpserver_read", "smtpserver_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create SMTP Server");
+      expect(state.textContent).toContain("Create an SMTP server to send emails and one-time passwords.");
+    });
+
+    it("offers neither button nor hint without smtpserver_write", () => {
+      setRights(fixture, ["smtpserver_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create an SMTP server to send emails and one-time passwords.");
     });
   });
 });
