@@ -467,11 +467,13 @@ def import_event(data, name=None):
 
     An event is matched by its name, not by the database ID of the exported instance, which may belong to a
     different event on this instance. An event without a name, or whose name is used by more than one event on this
-    instance, can not be matched and is not imported. The remaining events are still imported, and a
-    ``ConfigAdminError`` listing the events that were not imported is raised at the end.
+    instance or in the imported data, can not be matched and is not imported. The remaining events are still
+    imported, and a ``ConfigAdminError`` listing the events that were not imported is raised at the end.
     """
     log.debug(f'Import event config: {data!s}')
     failed = []
+    # Otherwise the second event of a name would overwrite the first one, which the import has just created
+    imported_names = [res_data.get('name') for res_data in data]
     for res_data in data:
         event_name = res_data.get('name')
         if name and name != event_name:
@@ -483,6 +485,12 @@ def import_event(data, name=None):
             log.warning("Not importing an event without a name, it can not be matched to an existing event.")
             failed.append("<without name>")
             continue
+        if imported_names.count(event_name) > 1:
+            log.warning(f'Not importing event "{event_name}", {imported_names.count(event_name)} events in the '
+                        f'imported data have this name.')
+            if event_name not in failed:
+                failed.append(event_name)
+            continue
         existing_ids = db.session.scalars(select(EventHandler.id).where(EventHandler.name == event_name)).all()
         if len(existing_ids) > 1:
             log.warning(f'Not importing event "{event_name}", {len(existing_ids)} events have this name.')
@@ -493,4 +501,4 @@ def import_event(data, name=None):
 
     if failed:
         raise ConfigAdminError(f"Could not import the following events, as they have no name or more than one "
-                               f"event of this name exists: {', '.join(failed)}")
+                               f"event of this name exists here or in the imported data: {', '.join(failed)}")

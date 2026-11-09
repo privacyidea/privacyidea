@@ -2061,6 +2061,21 @@ class TestPIManageConfigImport:
                 if event["name"] in ["cliotherevent", "cliimpevent"]:
                     delete_event(event["id"])
 
+        # Neither are events whose name is used more than once in the imported data. The other events are imported.
+        duplicate = dict(data["event"][0], action="sendmail")
+        other = dict(data["event"][0], name="cliuniqueevent")
+        outfile.write_text(json.dumps({"event": [data["event"][0], duplicate, other]}))
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(outfile)])
+        assert result.exit_code == 1, result.output
+        assert "cliimpevent" in result.output
+        with app.app_context():
+            names = [e["name"] for e in EventConfiguration().events]
+            assert "cliimpevent" not in names
+            assert names.count("cliuniqueevent") == 1
+            for event in EventConfiguration().events:
+                if event["name"] == "cliuniqueevent":
+                    delete_event(event["id"])
+
     def test_09_import_periodictask_matches_by_name(self, app, tmp_path):
         # The exported ID does not exist on the target instance, the task is created anyway. A second import
         # updates it.
