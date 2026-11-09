@@ -1060,10 +1060,12 @@ def get_tokens_paginate(tokentype: str | None = None, token_type_list: list[str]
             log.warning(f'Unknown sort column "{sortby}". Using "serial" instead.')
             sortby = Token.serial
 
+    # Tokens with the same value in the sort column are ordered by their id. Without a fixed order, the database
+    # can order them differently for each page, and a token then appears on two pages or on none.
     if sortdir == "desc":
-        sql_query = sql_query.order_by(sortby.desc())
+        sql_query = sql_query.order_by(sortby.desc(), Token.id.desc())
     else:
-        sql_query = sql_query.order_by(sortby.asc())
+        sql_query = sql_query.order_by(sortby.asc(), Token.id.asc())
 
     session: Session = db.session
 

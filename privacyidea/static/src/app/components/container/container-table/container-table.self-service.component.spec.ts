@@ -20,9 +20,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
+import { provideRouter } from "@angular/router";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService } from "@services/container/container.service";
+import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -40,9 +40,10 @@ import {
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
-import { of, Subject } from "rxjs";
+import { Subject } from "rxjs";
 import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
 
 describe("ContainerTableSelfServiceComponent", () => {
@@ -70,19 +71,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         { provide: MatDialogRef, useClass: MockMatDialogRef },
-        {
-          provide: Router,
-          useValue: {
-            navigate: jest.fn(),
-            events: of(new NavigationEnd(0, "/", "/"))
-          }
-        },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        },
+        provideRouter([]),
         MockLocalService,
         MockNotificationService
       ]
@@ -105,6 +94,83 @@ describe("ContainerTableSelfServiceComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  const showContainer = (container: Partial<ContainerDetailData>) => {
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list"]
+    });
+    containerService.containerResource.set(
+      MockPiResponse.fromValue({
+        count: 1,
+        containers: [
+          {
+            serial: "C-1",
+            states: [],
+            realms: [],
+            tokens: [],
+            type: "generic",
+            description: "",
+            users: [],
+            ...container
+          } as unknown as ContainerDetailData
+        ]
+      })
+    );
+    fixture.detectChanges();
+  };
+  const stateToggle = (): HTMLElement | null => fixture.nativeElement.querySelector("td span[role=button]");
+
+  it("links the container serial and its tokens to their details pages", () => {
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    showContainer({
+      tokens: [{ serial: "T-1", tokentype: "hotp", container_serial: "C-1" }]
+    } as unknown as Partial<ContainerDetailData>);
+    fixture.nativeElement.querySelector("tr[mat-row]").click();
+    fixture.detectChanges();
+
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+    expect(hrefOf("C-1")).toBe("/containers/details/C-1");
+    expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+  });
+
+  describe("state toggle", () => {
+    let handleStateClick: jest.SpyInstance;
+
+    beforeEach(() => {
+      handleStateClick = jest.spyOn(component, "handleStateClick").mockImplementation(() => {
+        /* empty */
+      });
+    });
+
+    it("toggles the container state with Space", () => {
+      showContainer({ states: ["active"] });
+      const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+
+      stateToggle()!.dispatchEvent(space);
+
+      expect(handleStateClick).toHaveBeenCalledWith(component.containerDataSource().data[0]);
+      expect(space.defaultPrevented).toBe(true);
+    });
+
+    it("toggles the state without expanding the row", () => {
+      showContainer({ states: ["active"] });
+
+      stateToggle()!.click();
+
+      expect(handleStateClick).toHaveBeenCalled();
+      expect(component.expandedElement).toBeNull();
+    });
+
+    it("is not offered for a container without a state, which would leave it without a name", () => {
+      showContainer({ states: [] });
+
+      expect(stateToggle()).toBeNull();
+    });
   });
 
   it("exposes the expected self-service columns", () => {

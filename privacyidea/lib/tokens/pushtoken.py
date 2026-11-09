@@ -98,6 +98,7 @@ log = logging.getLogger(__name__)
 DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please confirm the authentication on your mobile device!")
 ERROR_CHALLENGE_TEXT = lazy_gettext("Use the polling feature of your privacyIDEA Authenticator App"
                                     " to check for a new Login request.")
+NOT_SENT_CHALLENGE_TEXT = lazy_gettext("The PIN was correct, but the push notification was not sent.")
 DEFAULT_MOBILE_TEXT = lazy_gettext("Do you want to confirm the login?")
 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE = lazy_gettext("Enter the code to log in")
 PRIVATE_KEY_SERVER = "private_key_server"
@@ -1231,14 +1232,20 @@ class PushTokenClass(TokenClass):
             log.debug(f"Conditional-access pre-check could not resolve the owner of token {serial}: {ex!r}")
             return User()
 
-    def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
+    def _get_existing_challenge_data(self, transaction_id: str | None, push_mode: PushMode) -> dict | None:
         """
         Load challenge data for the given transaction and push mode.
 
-        Returns the challenge data dict if a matching push challenge is found, or None.
+        :param transaction_id: The transaction to read; without one there is no challenge to read from
+        :param push_mode: The push mode the challenge must have
+        :return: The data of a valid push challenge of the transaction with this mode, or None
         """
+        if not transaction_id:
+            return None
         challenges = get_challenges(transaction_id=transaction_id)
         for c in challenges:
+            if not c.is_valid():
+                continue
             c_data = c.get_data()
             if c_data.get("type", "") == "push" and c_data.get("mode") == push_mode:
                 return c_data
@@ -1482,7 +1489,8 @@ class PushTokenClass(TokenClass):
             return False
         return self.check_pin(passw, user=user, options=options)
 
-    def create_challenge(self, transactionid: str = None, options: dict = None) -> tuple[bool, str, str, dict]:
+    def create_challenge(self, transactionid: str | None = None, options: dict | None = None) -> tuple[
+        bool, str, str | None, dict]:
         """
         This method creates a challenge, which is submitted to the user.
         The submitted challenge will be preserved in the challenge
@@ -1493,14 +1501,15 @@ class PushTokenClass(TokenClass):
 
         :param transactionid: the id of this challenge
         :param options: the request context parameters / data
-        :type options: dict
         :return: tuple of (bool, message, transactionid, attributes)
-        :rtype: tuple
 
         The return tuple builds up like this:
-        ``bool`` if submit was successful;
+        ``bool`` whether a challenge was created in the challenge table. Without a push gateway configured for the
+        token, or if the push gateway fails while polling is not allowed, there is none;
         ``message`` which is displayed in the JSON response;
         additional challenge ``reply_dict``, which is displayed in the JSON challenges response.
+        :raises ConfigAdminError: if the push gateway of the token does not allow push messages
+        :raises ValidateError: if no challenge could be sent and the option ``exception`` is set
         """
         options = options or {}
         # Depending on the mode we have different default messages
@@ -1526,14 +1535,12 @@ class PushTokenClass(TokenClass):
             log.warning("Unable to use 'require_presence' policy with 'push_wait'. "
                         "Disabling 'require_presence' policy!")
         elif is_true(code_to_phone_enabled) and not options.get(PushAction.WAIT):
-            if options.get("push_triggered"):
-                data = self._get_existing_challenge_data(transactionid, PushMode.CODE_TO_PHONE)
-            else:
-                data = {
-                    "type": "push",
-                    "mode": PushMode.CODE_TO_PHONE,
-                    "smartphone_confirmed": False,
-                }
+            # Each token's smartphone confirms its own challenge, so nothing is taken over from another one
+            data = {
+                "type": "push",
+                "mode": PushMode.CODE_TO_PHONE,
+                "smartphone_confirmed": False,
+            }
 
             # push_code_to_phone has a different default message
             default_message = _("Please enter the code displayed on your smartphone.")
@@ -1549,6 +1556,7 @@ class PushTokenClass(TokenClass):
 
         # Initially we assume there is no error from the push gateway
         res = True
+        challenge_created = False
         push_gateway_identifier = self.get_tokeninfo(PushAction.FIREBASE_CONFIG)
         if push_gateway_identifier:
             challenge = b32encode_and_unicode(geturandom())
@@ -1559,7 +1567,7 @@ class PushTokenClass(TokenClass):
                 notification = _build_mobile_notification(self, options)
                 data["notification"] = {
                     "question": _truncate_with_log(notification["question"], MAX_STORED_QUESTION_LENGTH,
-                                                    "notification question"),
+                                                   "notification question"),
                     "title": _truncate_with_log(notification["title"], MAX_STORED_TITLE_LENGTH,
                                                 "notification title")}
                 data = _fit_notification_to_storage_budget(data)
@@ -1605,30 +1613,35 @@ class PushTokenClass(TokenClass):
 
                 # Create the challenge in the database
                 db_challenge = create_challenge(self.token.serial,
-                                               transaction_id=transactionid,
-                                               challenge=challenge,
-                                               data=data,
-                                               session=options.get("session"),
-                                               validitytime=validity)
+                                                transaction_id=transactionid,
+                                                challenge=challenge,
+                                                data=data,
+                                                session=options.get("session"),
+                                                validitytime=validity)
                 self.challenge_janitor()
                 transactionid = db_challenge.transaction_id
+                challenge_created = True
 
             # If sending the Push message failed, we log a warning
             if not res:
                 log.warning(f"Failed to submit message to push gateway for token {self.token.serial}.")
-                message += " " + ERROR_CHALLENGE_TEXT
+                if challenge_created:
+                    message += " " + ERROR_CHALLENGE_TEXT
                 if is_true(options.get("exception")):
                     raise ValidateError("Failed to submit message to push gateway.")
         else:
             log.warning(f"The token {self.token.serial} has no tokeninfo {PushAction.FIREBASE_CONFIG}. "
                         f"The message could not be sent.")
-            message += " " + ERROR_CHALLENGE_TEXT
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via push gateway.")
 
         reply_dict.update({"attributes": {"hideResponseInput": client_mode != ClientMode.INTERACTIVE},
                            "client_mode": client_mode})
-        return True, message, transactionid, reply_dict
+        if not challenge_created:
+            self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_NOT_DELIVERED
+            # Without a challenge, the smartphone has nothing to confirm and nothing to poll
+            message = str(NOT_SENT_CHALLENGE_TEXT)
+        return challenge_created, message, transactionid, reply_dict
 
     @check_token_locked
     def authenticate(self, passw: str, user: User = None, options: dict = None) -> tuple[bool, int, dict | None]:
@@ -1673,7 +1686,12 @@ class PushTokenClass(TokenClass):
                 # We should only do push_wait, if we do not already have successfully authenticated tokens!
                 waiting = int(options.get(PushAction.WAIT, 20))
                 # Trigger the challenge
-                _t, message, transaction_id, _attr = self.create_challenge(options=options)
+                challenge_created, message, transaction_id, _attr = self.create_challenge(options=options)
+                if not challenge_created:
+                    # There is nothing to wait for. create_challenge recorded why, and check_token_list handles the
+                    # request like a challenge request that created no challenge.
+                    self.auth_details[AUTH_EVENT_TYPE_KEY] = AuthEventType.CHALLENGE_TRIGGER_FAIL
+                    return True, -1, {"message": message}
 
                 if code_to_phone_enabled:
                     # code_to_phone: return challenge immediately, no waiting.
@@ -1752,8 +1770,13 @@ class PushTokenClass(TokenClass):
         2. After confirmation, a display_code is stored in the challenge data. The client must send this
            display_code via /validate/check. The display_code is only used for synchronization, the
            security lies in the smartphone confirmation.
+
+        Without a transaction id there is no challenge to scan: the challenges of other transactions of the token
+        must not answer this one.
         """
         state = _PushChallengeState()
+        if not transaction_id:
+            return state
         challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
         for challenge in challenges:
             # Nothing is finalized on an expired challenge. The smartphone answers within the

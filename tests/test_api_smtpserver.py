@@ -1,6 +1,10 @@
 import datetime
 import email
+import email.errors
 import os
+import smtplib
+import socket
+import ssl
 import shutil
 import tempfile
 from unittest import mock
@@ -10,8 +14,9 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
+from privacyidea.api.smtpserver import _describe_smtp_error
 from privacyidea.lib.crypto import encryptPassword, CENSORED
-from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
+from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver, list_smtpservers
 from . import smtpmock
 from .base import MyApiTestCase
 
@@ -147,6 +152,141 @@ class SMTPServerTestCase(MyApiTestCase):
         assert res.status_code == 200
         assert res.json["result"]["value"] is True
 
+    def test_send_test_email_smtp_error(self):
+        """An SMTP error is reported as a readable 400 error instead of a 500."""
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        error = smtplib.SMTPAuthenticationError(535, b"5.7.8 Error: authentication failed")
+        with mock.patch("smtplib.SMTP.login", side_effect=error):
+            res = self._send_test_email()
+        assert res.status_code == 400
+        assert res.json["result"]["status"] is False
+        assert ("Authentication failed for user 'cornelius': 535 5.7.8 Error: authentication failed"
+                in res.json["result"]["error"]["message"])
+
+    def test_send_test_email_connection_error(self):
+        """A server that can not be reached is reported as a readable 400 error."""
+        with mock.patch("smtplib.SMTP.ehlo", side_effect=ConnectionRefusedError(111, "Connection refused")):
+            res = self._send_test_email()
+        assert res.status_code == 400
+        assert "Could not connect to 1.2.3.4:123: connection refused." in res.json["result"]["error"]["message"]
+
+    def test_send_test_email_not_accepted(self):
+        """A message the server did not accept is reported instead of returning a silent False."""
+        self.smtp_mock.setdata(response={"recp@example.com": (550, "User unknown")})
+        res = self._send_test_email()
+        assert res.status_code == 400
+        assert ("The server did not accept the message for recp@example.com."
+                in res.json["result"]["error"]["message"])
+
+    def test_send_test_email_queued(self):
+        """A queued test email is reported as successful, sending is left to the job queue worker."""
+        enqueued = mock.Mock(return_value=True)
+        with mock.patch("privacyidea.lib.smtpserver.has_job_queue", return_value=True), \
+                mock.patch("privacyidea.lib.smtpserver.wrap_job", return_value=enqueued), \
+                mock.patch("smtplib.SMTP.login", side_effect=smtplib.SMTPAuthenticationError(535, b"failed")) as login:
+            res = self._send_test_email(extra_data={"enqueue_job": True})
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
+        enqueued.assert_called_once()
+        login.assert_not_called()
+
+    def test_send_test_email_invalid_parameters(self):
+        """Parameters smtplib or the email package would fail on are rejected before sending."""
+        cases = [
+            ({"recipient": "jörg@exämple.com"},
+             "The recipient 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"sender": "jörg@exämple.com"},
+             "The sender 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"sender": "Jörg Müller <pi@example.com>"},
+             "The display name 'Jörg Müller' of the sender contains non-ASCII characters. "
+             "privacyIDEA can only send emails with an ASCII display name."),
+            ({"recipient": "Jörg <a@example.com> <b@example.com>"},
+             "The recipient 'Jörg <a@example.com> <b@example.com>' contains non-ASCII characters. "
+             "privacyIDEA can only send emails from and to ASCII addresses."),
+            ({"recipient": "a@example.com\nsecond line"},
+             "The recipient must not contain line breaks or other control characters."),
+            ({"sender": "a@example.com\r\nsecond line"},
+             "The sender must not contain line breaks or other control characters."),
+            ({"server": "127.0.0.1:99999"},
+             "The port in the server '127.0.0.1:99999' must be a number between 1 and 65535."),
+            ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
+            ({"port": "abc"}, "The port must be a whole number, not 'abc'."),
+            ({"timeout": "abc"}, "The timeout must be a whole number, not 'abc'."),
+            ({"server": "smtp://"}, "The server 'smtp://' does not contain a host name."),
+        ]
+        for data, expected in cases:
+            with self.subTest(data=data):
+                with mock.patch("smtplib.SMTP.sendmail") as sendmail:
+                    res = self._send_test_email(extra_data=data)
+                assert res.status_code == 400
+                assert expected in res.json["result"]["error"]["message"]
+                sendmail.assert_not_called()
+
+    def test_send_test_email_unexpected_value_error(self):
+        """Errors of the email package or encoding errors while sending are reported as a 400 as well."""
+        errors = [UnicodeEncodeError("ascii", "jörg", 1, 2, "ordinal not in range(128)"),
+                  email.errors.HeaderParseError("header value appears to contain an embedded header")]
+        for error in errors:
+            with self.subTest(error=type(error).__name__):
+                with mock.patch("smtplib.SMTP.sendmail", side_effect=error):
+                    res = self._send_test_email()
+                assert res.status_code == 400
+                message = res.json["result"]["error"]["message"]
+                assert str(error) in message
+
+    def test_describe_smtp_error(self):
+        """Every kind of error the mail server or the network can raise gets its own message."""
+        cert_error = ssl.SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED]")
+        cert_error.verify_message = "unable to get local issuer certificate"
+        version_error = ssl.SSLError(1, "[SSL: WRONG_VERSION_NUMBER] wrong version number")
+        version_error.reason = "WRONG_VERSION_NUMBER"
+        cases = [
+            (smtplib.SMTPAuthenticationError(535, b"5.7.8 Error: authentication failed"),
+             "Authentication failed for user 'helpdesk': 535 5.7.8 Error: authentication failed"),
+            (smtplib.SMTPNotSupportedError("SMTP AUTH extension not supported by server."),
+             "The server does not support authentication (SMTP AUTH). Check whether TLS must be enabled."),
+            (smtplib.SMTPNotSupportedError("STARTTLS extension not supported by server."),
+             "The server does not support STARTTLS."),
+            (socket.gaierror(-2, "Name or service not known"),
+             "Could not resolve the host name 'mx.example.com'."),
+            (ConnectionRefusedError(111, "Connection refused"),
+             "Could not connect to mx.example.com:587: connection refused."),
+            (TimeoutError("timed out"),
+             "Connection to mx.example.com:587 timed out after 10 seconds."),
+            (cert_error,
+             "TLS error: certificate verify failed: unable to get local issuer certificate"),
+            (version_error,
+             "TLS error: WRONG_VERSION_NUMBER. Check whether port and TLS mode (smtps:// or STARTTLS) match."),
+            (smtplib.SMTPServerDisconnected("Connection unexpectedly closed"),
+             "The server closed the connection unexpectedly. "
+             "Check whether port and TLS mode (smtps:// or STARTTLS) match."),
+            (smtplib.SMTPSenderRefused(553, b"5.7.1 Sender address rejected", "pi@example.com"),
+             "The server refused the sender 'pi@example.com': 553 5.7.1 Sender address rejected"),
+            (smtplib.SMTPRecipientsRefused({"x@example.com": (550, b"5.1.1 User unknown")}),
+             "The server refused the recipient 'x@example.com': 550 5.1.1 User unknown"),
+            (smtplib.SMTPDataError(554, b"5.6.0 Message rejected"),
+             "The server rejected the message: 554 5.6.0 Message rejected"),
+            (smtplib.SMTPResponseException(451, b"4.3.0 Try again later"),
+             "SMTP error 451 4.3.0 Try again later"),
+            (smtplib.SMTPException("something else"),
+             "SMTP error: something else"),
+            (email.errors.HeaderParseError("header value appears to contain an embedded header"),
+             "The email could not be created: header value appears to contain an embedded header"),
+            (UnicodeEncodeError("ascii", "jörg", 1, 2, "ordinal not in range(128)"),
+             "The email could not be sent: 'ascii' codec can't encode character '\\xf6' in position 1: "
+             "ordinal not in range(128)"),
+        ]
+        for error, expected in cases:
+            with self.subTest(error=type(error).__name__):
+                self.assertEqual(expected, _describe_smtp_error(error, "smtp://mx.example.com", 587,
+                                                                "helpdesk", 10))
+
+    def test_describe_smtp_error_port_from_url(self):
+        """A port in the server URL takes precedence over the port parameter, as when sending."""
+        message = _describe_smtp_error(ConnectionRefusedError(111, "Connection refused"),
+                                       "smtps://mx.example.com:465", 25, "", 10)
+        self.assertEqual("Could not connect to mx.example.com:465: connection refused.", message)
+
     def test_send_smime_email(self):
         """Sending an S/MIME signed test email succeeds."""
         self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
@@ -171,8 +311,8 @@ class SMTPServerTestCase(MyApiTestCase):
             "private_key": "tests/testdata/ca/cakey.pem",
             "certificate": "tests/testdata/ca",
         })
-        assert res.status_code == 200
-        assert res.json["result"]["value"] is False
+        assert res.status_code == 400
+        assert "S/MIME signature could not be created" in res.json["result"]["error"]["message"]
         assert self.smtp_mock.get_sent_message() is None
 
     def test_sent_email_text_content(self):
@@ -196,6 +336,53 @@ class SMTPServerTestCase(MyApiTestCase):
         body = parsed.get_payload(decode=True).decode("utf-8")
         assert "This is a test email from privacyIDEA." in body
         assert "The configuration someServer is working." in body
+
+    def test_create_server_invalid_parameters(self):
+        """A definition that could not be used to send an email is not saved."""
+        cases = [
+            ({"server": "127.0.0.1:99999"},
+             "The port in the server '127.0.0.1:99999' must be a number between 1 and 65535."),
+            ({"port": "99999"}, "The port must be between 1 and 65535, not 99999."),
+            ({"port": "abc"}, "The port must be a whole number, not 'abc'."),
+            ({"timeout": "0"}, "The timeout must be between 1 and 3600, not 0."),
+            ({"sender": "a@example.com\r\nsecond line"},
+             "The sender must not contain line breaks or other control characters."),
+            ({"sender": "jörg@exämple.com"},
+             "The sender 'jörg@exämple.com' contains non-ASCII characters."),
+            ({"sender": "Jörg Müller <pi@example.com>"},
+             "The display name 'Jörg Müller' of the sender contains non-ASCII characters."),
+        ]
+        for data, expected in cases:
+            with self.subTest(data=data):
+                res = self._create_server(name="invalidserver", extra_data=data)
+                assert res.status_code == 400
+                assert expected in res.json["result"]["error"]["message"]
+
+        from privacyidea.lib.smtpserver import list_smtpservers
+        assert list_smtpservers(identifier="invalidserver") == {}
+
+    def test_numbers_in_json_body_must_be_whole_numbers(self):
+        """A JSON float with a fraction and a boolean are rejected as port and timeout."""
+        cases = [({"port": 587.9}, "The port must be a whole number, not 587.9."),
+                 ({"timeout": True}, "The timeout must be a whole number, not True.")]
+        server = {"server": "mail.example.com", "sender": "pi@example.com"}
+        for data, expected in cases:
+            with self.subTest(data=data):
+                with self.app.test_request_context("/smtpserver/jsonserver", method="POST", json=dict(server, **data),
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn(expected, res.json["result"]["error"]["message"])
+                body = dict(server, identifier="jsonserver", recipient="recp@example.com", **data)
+                with mock.patch("smtplib.SMTP.sendmail") as sendmail:
+                    with self.app.test_request_context("/smtpserver/send_test_email", method="POST", json=body,
+                                                       headers={"Authorization": self.at}):
+                        res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn(expected, res.json["result"]["error"]["message"])
+                sendmail.assert_not_called()
+        from privacyidea.lib.smtpserver import list_smtpservers
+        self.assertEqual({}, list_smtpservers(identifier="jsonserver"))
 
     def test_password_not_overwritten_by_censored(self):
         """Updating an SMTP server with __CENSORED__ password must preserve the original."""
@@ -413,6 +600,83 @@ class SMTPServerTestCase(MyApiTestCase):
         self.assertTrue(value)
         self.assertIn("application/x-pkcs7-signature", self.smtp_mock.get_sent_message().decode())
 
+
+    def test_test_email_with_changed_settings_needs_the_password(self):
+        """The stored password is not sent to a server other than the one it was saved for."""
+        add_smtpserver("savedServer3", server="mail.example.com", port=25, username="u", password="realsecret")
+        self.addCleanup(delete_smtpserver, "savedServer3")
+        changes = [("server", {"server": "other.example"}), ("port", {"port": 587}),
+                   ("username", {"username": "someone-else"}), ("tls", {"tls": True})]
+        for field, change in changes:
+            with self.subTest(field=field):
+                body = self._listed_definition("savedServer3")
+                body.update(identifier="savedServer3", recipient="recp@example.com", **change)
+                with mock.patch("smtplib.SMTP.login") as login:
+                    with self.app.test_request_context("/smtpserver/send_test_email", method="POST", json=body,
+                                                       headers={"Authorization": self.at}):
+                        res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                message = res.json["result"]["error"]["message"]
+                self.assertIn(f"These settings differ from the saved SMTP server 'savedServer3': {field}.", message)
+                self.assertIn("Enter the password to test", message)
+                login.assert_not_called()
+
+    def test_save_with_changed_settings_needs_the_password(self):
+        """Saving __CENSORED__ with other connection settings is rejected and changes nothing."""
+        add_smtpserver("savedServer4", server="mail.example.com", port=25, username="u", password="realsecret",
+                       description="old")
+        self.addCleanup(delete_smtpserver, "savedServer4")
+        changes = [("server", {"server": "other.example"}), ("port", {"port": 587}),
+                   ("username", {"username": "someone-else"}), ("tls", {"tls": True})]
+        for field, change in changes:
+            with self.subTest(field=field):
+                body = self._listed_definition("savedServer4")
+                body.update(description="new", **change)
+                with self.app.test_request_context("/smtpserver/savedServer4", method="POST", json=body,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                message = res.json["result"]["error"]["message"]
+                self.assertIn(f"These settings differ from the saved SMTP server 'savedServer4': {field}.", message)
+                self.assertIn("Enter the password to save", message)
+        stored = list_smtpservers(identifier="savedServer4")["savedServer4"]
+        self.assertEqual("mail.example.com", stored["server"])
+        self.assertEqual("old", stored["description"])
+        self.assertEqual("realsecret", stored["password"])
+
+        # With the password entered, the settings can be changed
+        body = self._listed_definition("savedServer4")
+        body.update(server="other.example", password="newsecret")
+        with self.app.test_request_context("/smtpserver/savedServer4", method="POST", json=body,
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        stored = list_smtpservers(identifier="savedServer4")["savedServer4"]
+        self.assertEqual("other.example", stored["server"])
+        self.assertEqual("newsecret", stored["password"])
+
+    def test_change_settings_of_server_without_password(self):
+        """A server without authentication has no password to enter, so its settings can always be changed."""
+        add_smtpserver("noauth", server="mail.example.com", port=25, username="", password="")
+        self.addCleanup(delete_smtpserver, "noauth")
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        body = self._listed_definition("noauth")
+        self.assertEqual("", body["password"])
+        # An empty password and the placeholder (sent by older clients) both keep the empty password
+        for password, port in (("", 587), (CENSORED, 465)):
+            with self.subTest(password=password):
+                body.update(password=password, port=port)
+                value, logins = self._send_censored_test_email(dict(body, identifier="noauth",
+                                                                    recipient="recp@example.com"))
+                self.assertTrue(value)
+                self.assertEqual([], logins)
+                with self.app.test_request_context("/smtpserver/noauth", method="POST", json=body,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                stored = list_smtpservers(identifier="noauth")["noauth"]
+                self.assertEqual(port, stored["port"])
+                self.assertEqual("", stored["password"])
 
 def _write_smime_key_and_certificate(directory: str, key_password: str) -> tuple[str, str]:
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
