@@ -26,7 +26,7 @@ import {
   provideZonelessChangeDetection
 } from "@angular/core";
 import { MatPaginatorIntl } from "@angular/material/paginator";
-import { provideRouter, TitleStrategy, withExperimentalAutoCleanupInjectors } from "@angular/router";
+import { provideRouter, RouterFeatures, TitleStrategy, withExperimentalAutoCleanupInjectors } from "@angular/router";
 import { localeBaseHref, scriptRoot } from "@core/locale";
 import { PageTitleStrategy } from "@core/page-title";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
@@ -44,6 +44,11 @@ export function baseHrefFactory(): string {
   return scriptRoot() + localeBaseHref(inject(LOCALE_ID));
 }
 
+// Destroys the route injector of LayoutComponent once the navigation to /login has finished, so the
+// services in its providers (filters, selections, cached data) start fresh with the next login.
+// Replace with the stable function once Angular 22 provides it.
+export const routerFeatures: RouterFeatures[] = [withExperimentalAutoCleanupInjectors()];
+
 export const appConfig: ApplicationConfig = {
   providers: [
     // Before the router resolves the first URL: a path asking for a locale bundle the
@@ -59,10 +64,7 @@ export const appConfig: ApplicationConfig = {
       inject(ConfigService).loadConfig();
     }),
     provideZonelessChangeDetection(),
-    // Destroys the route injector of LayoutComponent once the navigation to /login has finished, so the
-    // services in its providers (filters, selections, cached data) start fresh with the next login.
-    // Replace with the stable function once Angular 22 provides it.
-    provideRouter(routes, withExperimentalAutoCleanupInjectors()),
+    provideRouter(routes, ...routerFeatures),
     { provide: TitleStrategy, useExisting: PageTitleStrategy },
     {
       provide: APP_BASE_HREF,

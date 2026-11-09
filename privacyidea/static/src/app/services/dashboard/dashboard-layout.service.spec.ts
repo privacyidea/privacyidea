@@ -618,29 +618,8 @@ describe("DashboardLayoutService", () => {
     });
   });
 
-  describe("next session", () => {
+  describe("load answering late", () => {
     const own = (id: string): WidgetInstance => ({ id, type: "events", x: 2, y: 3, cols: 8, rows: 5 });
-
-    it("should load the stored layout of the admin who logs in next with a new instance", () => {
-      build([own("first")]);
-      expect(service.widgets()).toContainEqual(own("first"));
-
-      // The route injector is destroyed on logout; the next login creates the service again.
-      TestBed.resetTestingModule();
-      TestBed.configureTestingModule({
-        providers: [
-          provideZonelessChangeDetection(),
-          DashboardLayoutService,
-          { provide: AuthService, useClass: MockAuthService },
-          { provide: UserSettingsService, useClass: MockUserSettingsService }
-        ]
-      });
-      (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
-      build([own("second")]);
-
-      expect(service.widgets()).toContainEqual(own("second"));
-      expect(service.widgets()).not.toContainEqual(own("first"));
-    });
 
     it("should not overwrite the stored layout with a layout pruned before it was loaded", () => {
       const late = new Subject<WidgetInstance[] | null>();
@@ -651,8 +630,24 @@ describe("DashboardLayoutService", () => {
       service = TestBed.inject(DashboardLayoutService);
 
       service.pruneForbiddenWidgets();
+      late.next([own("stored")]);
 
       expect(stored()).toEqual([own("stored")]);
+      expect(service.widgets().some((widget) => widget.type === "events")).toBe(false);
+    });
+
+    it("should write nothing when its load answers after it was destroyed", () => {
+      const late = new Subject<WidgetInstance[] | null>();
+      persistence = TestBed.inject(DashboardPersistenceService);
+      jest.spyOn(persistence, "load").mockReturnValueOnce(late);
+      const save = jest.spyOn(persistence, "save");
+      service = TestBed.inject(DashboardLayoutService);
+      service.moveWidgetTo(service.widgets()[0].id, 3, 3);
+
+      TestBed.resetTestingModule();
+      late.next(null);
+
+      expect(save).not.toHaveBeenCalled();
     });
   });
 });

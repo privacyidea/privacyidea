@@ -22,7 +22,7 @@ import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import { catchError, filter, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
+import { catchError, EMPTY, filter, map, Observable, of, shareReplay, tap, throwError } from "rxjs";
 
 /**
  * The settings the backend accepts. It rejects any other top-level key, so a new
@@ -103,7 +103,9 @@ export class UserSettingsService implements UserSettingsServiceInterface {
           // a subscriber: clearCache() has moved on, and the next login must not see the ended session's settings.
           filter(() => epoch === this.epoch),
           tap((settings) => this.store(settings)),
-          catchError((error) => this.fail(error, "Failed to load the user settings.", epoch)),
+          // The failure of a request from an ended session is dropped like its answer would be: nothing of it may
+          // reach the next session, neither the notification nor a subscriber that treats it as an empty answer.
+          catchError((error) => (epoch === this.epoch ? this.fail(error, "Failed to load the user settings.") : EMPTY)),
           shareReplay(1)
         );
     }
@@ -126,7 +128,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.storeIfCurrent(settings, epoch)),
-        catchError((error) => this.fail(error, "Failed to save the user settings.", epoch))
+        catchError((error) => this.failWrite(error, "Failed to save the user settings.", epoch))
       );
   }
 
@@ -141,7 +143,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.storeIfCurrent(settings, epoch)),
-        catchError((error) => this.fail(error, "Failed to save the user settings.", epoch))
+        catchError((error) => this.failWrite(error, "Failed to save the user settings.", epoch))
       );
   }
 
@@ -157,7 +159,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.storeIfCurrent(settings, epoch)),
-        catchError((error) => this.fail(error, "Failed to reset the user settings.", epoch))
+        catchError((error) => this.failWrite(error, "Failed to reset the user settings.", epoch))
       );
   }
 
@@ -180,13 +182,15 @@ export class UserSettingsService implements UserSettingsServiceInterface {
   }
 
   /**
-   * The failure of a request sent before clearCache() is handed to its own subscribers only: it neither
-   * notifies the next session nor resets the request that session has in flight.
+   * The failure of a write sent before clearCache() is handed to its own caller only, so that the caller learns its
+   * last change did not reach the server: it neither notifies the next session nor resets the request that session
+   * has in flight.
    */
-  private fail(error: unknown, message: string, epoch: number): Observable<never> {
-    if (epoch !== this.epoch) {
-      return throwError(() => error);
-    }
+  private failWrite(error: unknown, message: string, epoch: number): Observable<never> {
+    return epoch === this.epoch ? this.fail(error, message) : throwError(() => error);
+  }
+
+  private fail(error: unknown, message: string): Observable<never> {
     this.request = null;
     console.error(message, error);
     const detail = (error as HttpErrorResponse)?.error?.result?.error?.message || "";

@@ -291,12 +291,23 @@ describe("UserSettingsService", () => {
       request.flush("nope", { status: 500, statusText: "Server Error" });
     };
 
+    it("should not hand the failure of a getSettings to its subscribers", () => {
+      const received: unknown[] = [];
+      service.getSettings().subscribe({ next: (v) => received.push(v), error: (e) => received.push(e) });
+      const late = httpMock.expectOne("/user/settings");
+
+      service.clearCache();
+      fail(late);
+
+      expect(received).toEqual([]);
+      expect(notificationService.error).not.toHaveBeenCalled();
+    });
+
     it.each([
-      ["getSettings", () => service.getSettings()],
       ["setSetting", () => service.setSetting("theme", "dark")],
       ["setSettings", () => service.setSettings({ theme: "dark" })],
       ["deleteSetting", () => service.deleteSetting("theme")]
-    ])("should not notify the next session about a failed %s", (_name, call) => {
+    ])("should not notify the next session about a failed %s but tell its caller", (_name, call) => {
       let failed = false;
       call().subscribe({ error: () => (failed = true) });
       const late = httpMock.expectOne((request) => request.url.startsWith("/user/settings"));
