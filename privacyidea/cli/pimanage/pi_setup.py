@@ -95,7 +95,8 @@ def create_enckey(ctx, enckey_b64):
         click.secho("Warning: Passing enckey via cli input is considered harmful.",
                     fg="yellow")
         try:
-            bin_enckey = base64.b64decode(enckey_b64, validate=True)
+            # The base64 command wraps its output, so whitespace is removed before the strict check
+            bin_enckey = base64.b64decode("".join(enckey_b64.split()), validate=True)
         except binascii.Error as e:
             click.secho(f"Error: enckey is not valid base64: {e}", fg="red")
             ctx.exit(1)

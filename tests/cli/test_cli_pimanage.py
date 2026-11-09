@@ -1835,6 +1835,17 @@ class TestPIManageSetupClass:
             assert result.exit_code == 0, result.output
             assert enckey.read_bytes() == valid_key
 
+    def test_08b_create_enckey_accepts_a_wrapped_base64_key(self, app, tmp_path):
+        # The base64 command wraps its output after 76 characters
+        enckey = tmp_path / "enckey"
+        valid_key = os.urandom(96)
+        wrapped = base64.encodebytes(valid_key).decode()
+        assert "\n" in wrapped.strip()
+        with mock.patch.dict(app.config, {"PI_ENCFILE": str(enckey)}):
+            result = app.test_cli_runner().invoke(pi_manage, ["setup", "create_enckey", "--enckey_b64", wrapped])
+        assert result.exit_code == 0, result.output
+        assert enckey.read_bytes() == valid_key
+
     def test_09_encrypt_enckey_restricts_the_permissions_of_the_output_file(self, app, tmp_path):
         enckey = tmp_path / "enckey"
         enckey.write_bytes(os.urandom(96))
