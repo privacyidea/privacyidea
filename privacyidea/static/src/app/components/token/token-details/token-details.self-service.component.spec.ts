@@ -112,6 +112,10 @@ describe("TokenDetailsSelfServiceComponent", () => {
     expect(fixture.nativeElement.textContent).toContain("Mock serial");
   });
 
+  it("offers the scroll-to-top button on its scroll container", () => {
+    expect(fixture.nativeElement.querySelector(".details-container .scroll-to-top-fab")).not.toBeNull();
+  });
+
   it("renders the passkey test for a passkey token", () => {
     component.tokenType.set("passkey");
     fixture.detectChanges();

@@ -20,6 +20,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
 import { Sort } from "@angular/material/sort";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { of } from "rxjs";
@@ -27,6 +29,7 @@ import { of } from "rxjs";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -38,6 +41,7 @@ import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService,
@@ -46,6 +50,7 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { grantRights } from "@testing/toolbar-actions";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -64,6 +69,7 @@ describe("ContainerTableComponent (Jest)", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: DocumentationService, useClass: MockDocumentationService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: TokenService, useClass: MockTokenService },
         {
@@ -123,6 +129,20 @@ describe("ContainerTableComponent (Jest)", () => {
     const row = component.containerDataSource().data[0];
     expect(row.user_name).toBe("alice");
     expect(row.user_realm).toBe("r1");
+  });
+
+  it("names the More Filter button in a tooltip", () => {
+    grantRights(["container_list"]);
+    containerService.containerResource.set(
+      MockPiResponse.fromValue({
+        count: 1,
+        containers: [{ serial: "C-1", states: [], realms: [], tokens: [], type: "generic", description: "", users: [] }]
+      })
+    );
+    fixture.detectChanges();
+
+    const moreFilter = fixture.debugElement.query(By.css('button[aria-label="More Filter"]'));
+    expect(moreFilter.injector.get(MatTooltip, null)?.message).toBe("More Filter");
   });
 
   describe("#handleStateClick", () => {
