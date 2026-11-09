@@ -138,9 +138,7 @@
                           {{ tableUtilsService.getDisplayText(column.key, element.token) }}
                         </span>
                       } @else {
-                        <span
-                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
-                          [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)">
+                        <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)">
                           {{ tableUtilsService.getDisplayText(column.key, element.token) }}
                         </span>
                       }

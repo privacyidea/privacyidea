@@ -293,6 +293,13 @@ describe("ContainerDetailsTokenTableComponent", () => {
       expect(activeCells().length).toBeGreaterThan(0);
       expect(activeCells().some((cell) => cell.hasAttribute("role") || cell.hasAttribute("tabindex"))).toBe(false);
     });
+
+    it("gives the read-only state no tooltip, as that tooltip names the toggle action", () => {
+      const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+      setRights(fixture, ["container_list", "enable"]);
+
+      expect(tableUtils.getTooltipForColumn).not.toHaveBeenCalledWith("active", expect.anything());
+    });
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {
