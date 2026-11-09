@@ -168,6 +168,20 @@ describe("EnrollHotpComponent", () => {
     expect(component.otpLength()).toBe(8);
   });
 
+  it("keeps enrollment data values that equal the preset when the system config loads later", () => {
+    createAndInit();
+    fixture.componentRef.setInput("enrollmentData", { type: "hotp", otpLength: 6, hashAlgorithm: "sha1" });
+    fixture.detectChanges();
+    expect(component.otpLength()).toBe(6);
+    expect(component.hashAlgorithm()).toBe("sha1");
+
+    systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.otpLength()).toBe(6);
+    expect(component.hashAlgorithm()).toBe("sha1");
+  });
+
   it("keeps the policy values over a system config that loads later", () => {
     createAndInit();
     authService.rightsWithValues.set({ hotp_hashlib: "sha256", hotp_otplen: "6" });
@@ -402,6 +416,26 @@ describe("EnrollHotpComponent", () => {
       expect(component.otpLengthForm().dirty()).toBe(true);
       expect(component.hashAlgorithm()).toBe("sha512");
       expect(component.hashAlgorithmForm().dirty()).toBe(true);
+    });
+
+    it("keeps a value the user picked that equals the preset when the system config loads later", async () => {
+      createAndInit();
+
+      // Picking the already selected option emits no change, so the user switches away and back to the preset.
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 0), 0);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+      await pickOption(fixture, matSelectAt(fixture, 1), 0);
+      expect(component.otpLength()).toBe(6);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+
+      systemService.systemConfig.set({ [HOTP_HASHLIB]: "sha256", [DEFAULT_OTP_LENGTH]: "8" });
+      await flushFixture(fixture);
+
+      expect(component.otpLength()).toBe(6);
+      expect(component.hashAlgorithm()).toBe("sha1");
     });
 
     it("renders the OTP key errors once the field was touched", async () => {

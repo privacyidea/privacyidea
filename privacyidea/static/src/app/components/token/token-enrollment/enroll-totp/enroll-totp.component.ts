@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, forwardRef, inject, input, linkedSignal, signal, untracked } from "@angular/core";
 import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -115,18 +115,24 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
       parseInt(this.systemService.systemConfig()[TOTP_TIME_STEP], 10) ||
       30
   );
-  // A preset that changes later (the system config loads after the dialog opened) does not overwrite a user's choice.
+  // A value set by the user or the enrollment data is kept when the preset changes later, even one that equals the preset.
+  private otpLengthChosen = signal(false);
+  private hashAlgorithmChosen = signal(false);
+  private timeStepChosen = signal(false);
   otpLength = linkedSignal<number, number>({
     source: this.defaultOtpLength,
-    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+    computation: (preset, previous): number =>
+      previous && (previous.value !== previous.source || untracked(this.otpLengthChosen)) ? previous.value : preset
   });
   hashAlgorithm = linkedSignal<string, string>({
     source: this.defaultHashAlgorithm,
-    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+    computation: (preset, previous): string =>
+      previous && (previous.value !== previous.source || untracked(this.hashAlgorithmChosen)) ? previous.value : preset
   });
   timeStep = linkedSignal<number, number>({
     source: this.defaultTimeStep,
-    computation: (preset, previous) => (previous && previous.value !== previous.source ? previous.value : preset)
+    computation: (preset, previous): number =>
+      previous && (previous.value !== previous.source || untracked(this.timeStepChosen)) ? previous.value : preset
   });
 
   twoStepDisabled = computed(() => this.disabled() || this.twoStep() === "force");
@@ -191,15 +197,31 @@ export class EnrollTotpComponent extends EnrollTokenBase<TotpEnrollmentData> {
       if (this.twoStep() === "allow" && this.twoStepEnabled()) this.generateOnServer.set(true);
     });
 
+    // A pick in the select marks the field dirty, which keeps its value over a later preset.
+    effect(() => {
+      if (this.otpLengthForm().dirty()) this.otpLengthChosen.set(true);
+      if (this.hashAlgorithmForm().dirty()) this.hashAlgorithmChosen.set(true);
+      if (this.timeStepForm().dirty()) this.timeStepChosen.set(true);
+    });
+
     // Apply initial enrollment data
     effect(() => {
       const data = this.enrollmentData();
       if (data) {
         // Only the values the data contains, so that the presets of policy and system config stay otherwise.
         if (data.generateOnServer !== undefined) this.generateOnServer.set(data.generateOnServer);
-        if (data.otpLength) this.otpLength.set(data.otpLength);
-        if (data.hashAlgorithm) this.hashAlgorithm.set(data.hashAlgorithm);
-        if (data.timeStep) this.timeStep.set(data.timeStep);
+        if (data.otpLength) {
+          this.otpLength.set(data.otpLength);
+          this.otpLengthChosen.set(true);
+        }
+        if (data.hashAlgorithm) {
+          this.hashAlgorithm.set(data.hashAlgorithm);
+          this.hashAlgorithmChosen.set(true);
+        }
+        if (data.timeStep) {
+          this.timeStep.set(data.timeStep);
+          this.timeStepChosen.set(true);
+        }
         if (data.twoStepInit) this.twoStepEnabled.set(data.twoStepInit);
         if (data.otpKey) this.otpKey.set(data.otpKey);
       }
