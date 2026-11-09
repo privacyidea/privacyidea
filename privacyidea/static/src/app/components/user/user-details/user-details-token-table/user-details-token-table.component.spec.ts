@@ -417,20 +417,46 @@ describe("UserDetailsTokenTableComponent", () => {
       fixture.detectChanges();
     };
 
-    it("offers the toggle and the reset as buttons with the enable, disable and reset rights", () => {
-      showsTokenWithRights(["enable", "disable", "reset"]);
+    const tableUtils = (): MockTableUtilsService =>
+      TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
-      expect(cell("active").querySelector('[role="button"]')?.textContent).toContain("active value");
+    it("offers the toggle and the reset as buttons when the token may be toggled and with the reset right", () => {
+      tableUtils().canToggleActive.mockReturnValue(true);
+      showsTokenWithRights(["reset"]);
+
+      expect(cell("active").querySelector("button")?.textContent).toContain("active value");
       expect(cell("failcount").querySelector('[role="button"]')?.textContent).toContain("failcount value");
     });
 
-    it("shows the active state and the fail counter read-only without those rights", () => {
+    it("shows the active state and the fail counter read-only otherwise", () => {
       showsTokenWithRights([]);
 
       expect(cell("active").textContent).toContain("active value");
       expect(cell("failcount").textContent).toContain("failcount value");
-      expect(cell("active").querySelector('[role="button"]')).toBeNull();
+      expect(cell("active").querySelector("button")).toBeNull();
       expect(cell("failcount").querySelector('[role="button"]')).toBeNull();
+    });
+
+    it.each([["enable"], ["disable"]])("offers (de)activating the selection with only the %s right", (right) => {
+      const bulkToggle = (): HTMLButtonElement | undefined =>
+        Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll("button")).find((button) =>
+          button.textContent?.includes("(De)activate")
+        );
+      showsTokenWithRights([]);
+      expect(bulkToggle()).toBeUndefined();
+
+      showsTokenWithRights([right]);
+      expect(bulkToggle()).toBeDefined();
+    });
+
+    it("reloads the user's tokens once the active state was toggled", () => {
+      tableUtils().canToggleActive.mockReturnValue(true);
+      showsTokenWithRights([]);
+
+      cell("active").querySelector("button")!.click();
+
+      expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("T-1", true);
+      expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalled();
     });
   });
 });

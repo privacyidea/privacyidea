@@ -43,7 +43,6 @@ import {
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { grantRights, setRights } from "@testing/toolbar-actions";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { Subject, of } from "rxjs";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
@@ -133,15 +132,14 @@ describe("ContainerDetailsTokenTableComponent", () => {
         (a) => a.textContent?.trim() === text
       );
 
-    it("toggles the token state with Space", () => {
+    it("reloads the container details once the token state was toggled", () => {
+      (TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService).canToggleActive.mockReturnValue(true);
       showTokens("user");
-      const toggleActive = jest.spyOn(component, "toggleActive").mockImplementation(() => { /* empty */ });
-      const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
 
-      fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
+      fixture.nativeElement.querySelector("td.mat-column-active button").click();
 
-      expect(toggleActive).toHaveBeenCalledWith(expect.objectContaining({ serial: "T-1" }));
-      expect(space.defaultPrevented).toBe(true);
+      expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("T-1", true);
+      expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
     });
 
     it("links the token serial to the token details", () => {
@@ -223,19 +221,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
     expect(component.containerTokenData().filter).toBe("testfilter");
   });
 
-  it("delegates to toggleActive when columnKey === 'active'", () => {
-    const toggleSpy = jest.spyOn(component, "toggleActive");
-    const row: Partial<ContainerDetailToken> = { serial: "Mock serial", active: true };
-    component.handleColumnClick("active", row as ContainerDetailToken);
-    expect(toggleSpy).toHaveBeenCalledWith(row);
-  });
-
-  it("does nothing when columnKey !== 'active'", () => {
-    const toggleSpy = jest.spyOn(component, "toggleActive");
-    component.handleColumnClick("username", {} as ContainerDetailToken);
-    expect(toggleSpy).not.toHaveBeenCalled();
-  });
-
   it("isAssignableToAllToken true when assigned user is set and at least one token is unassigned", () => {
     containerServiceMock.containerDetails.set({
       containers: [
@@ -283,74 +268,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
     fixture.detectChanges();
 
     expect(component.isUnassignableFromAllToken()).toBe(false);
-  });
-
-  describe("toggleActive", () => {
-    it("calls the service then reloads container details", () => {
-      grantRights(["disable"]);
-      const t = { serial: "Mock serial", active: true } as ContainerDetailToken;
-      jest.spyOn(tokenServiceMock, "toggleActive");
-
-      component.toggleActive(t);
-      expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("Mock serial", true);
-      expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
-    });
-
-    it("does not disable an active token without the disable right", () => {
-      grantRights(["enable"]);
-      jest.spyOn(tokenServiceMock, "toggleActive");
-
-      component.toggleActive({ serial: "Mock serial", active: true } as ContainerDetailToken);
-
-      expect(tokenServiceMock.toggleActive).not.toHaveBeenCalled();
-    });
-
-    it("does not enable an inactive token without the enable right", () => {
-      grantRights(["disable"]);
-      jest.spyOn(tokenServiceMock, "toggleActive");
-
-      component.toggleActive({ serial: "Another serial", active: false } as ContainerDetailToken);
-
-      expect(tokenServiceMock.toggleActive).not.toHaveBeenCalled();
-    });
-
-    it.each([
-      ["revoked", { revoked: true }],
-      ["locked", { locked: true }]
-    ])("does not toggle a %s token", (_state, flags) => {
-      grantRights(["enable", "disable"]);
-      jest.spyOn(tokenServiceMock, "toggleActive");
-
-      component.toggleActive({ serial: "Mock serial", active: true, ...flags } as ContainerDetailToken);
-
-      expect(tokenServiceMock.toggleActive).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("active cell", () => {
-    const activeCells = (): HTMLElement[] =>
-      Array.from(fixture.nativeElement.querySelectorAll("td.mat-column-active span"));
-
-    it("renders the active state as a button with the enable and disable rights", () => {
-      setRights(fixture, ["container_list", "enable", "disable"]);
-
-      expect(activeCells().length).toBeGreaterThan(0);
-      expect(activeCells().every((cell) => cell.getAttribute("role") === "button")).toBe(true);
-    });
-
-    it("renders the active state read-only without the enable and disable rights", () => {
-      setRights(fixture, ["container_list", "enable"]);
-
-      expect(activeCells().length).toBeGreaterThan(0);
-      expect(activeCells().some((cell) => cell.hasAttribute("role") || cell.hasAttribute("tabindex"))).toBe(false);
-    });
-
-    it("gives the read-only state no tooltip, as that tooltip names the toggle action", () => {
-      const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
-      setRights(fixture, ["container_list", "enable"]);
-
-      expect(tableUtils.getTooltipForColumn).not.toHaveBeenCalledWith("active", expect.anything());
-    });
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {

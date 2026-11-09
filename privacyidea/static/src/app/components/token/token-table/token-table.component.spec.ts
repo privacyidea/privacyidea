@@ -174,44 +174,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(table.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
   });
 
-  it("toggleActive calls service and reloads when allowed & not revoked/locked", () => {
-    const t = { serial: "A", active: true, revoked: false, locked: false } as TokenDetails;
-    authServiceMock.jwtData.set({
-      ...authServiceMock.jwtData(),
-      rights: ["disable", "enable"]
-    } as JwtData);
-
-    table.toggleActive(t);
-
-    expect(tokenService.toggleActive).toHaveBeenCalledWith("A", true);
-    expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
-  });
-
-  it("toggleActive does nothing if action not allowed", () => {
-    const t = { serial: "A", active: true, revoked: false, locked: false } as TokenDetails;
-    authServiceMock.jwtData.set({
-      ...authServiceMock.jwtData(),
-      rights: []
-    } as JwtData);
-
-    table.toggleActive(t);
-
-    expect(tokenService.toggleActive).not.toHaveBeenCalled();
-    expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
-  });
-
-  it("toggleActive does nothing if revoked or locked", () => {
-    authServiceMock.jwtData.set({
-      ...authServiceMock.jwtData(),
-      rights: ["disable", "enable"]
-    } as JwtData);
-
-    table.toggleActive({ serial: "X", active: true, revoked: true, locked: false } as TokenDetails);
-    table.toggleActive({ serial: "Y", active: false, revoked: false, locked: true } as TokenDetails);
-
-    expect(tokenService.toggleActive).not.toHaveBeenCalled();
-  });
-
   it("resetFailCount calls service and reloads when allowed & not revoked/locked", () => {
     const t = { serial: "B", revoked: false, locked: false } as TokenDetails;
     authServiceMock.jwtData.set({
@@ -257,20 +219,31 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       tableFixture.detectChanges();
     };
 
-    it("offers the toggle and the reset as buttons with the enable, disable and reset rights", () => {
-      showsTokenWithRights(["enable", "disable", "reset"]);
+    it("offers the toggle and the reset as buttons when the token may be toggled and with the reset right", () => {
+      tableUtilsService.canToggleActive.mockReturnValue(true);
+      showsTokenWithRights(["reset"]);
 
-      expect(cell("active").querySelector('[role="button"]')?.textContent).toContain("active value");
+      expect(cell("active").querySelector("button")?.textContent).toContain("active value");
       expect(cell("failcount").querySelector('[role="button"]')?.textContent).toContain("failcount value");
     });
 
-    it("shows the active state and the fail counter read-only without those rights", () => {
+    it("shows the active state and the fail counter read-only otherwise", () => {
       showsTokenWithRights([]);
 
       expect(cell("active").textContent).toContain("active value");
       expect(cell("failcount").textContent).toContain("failcount value");
-      expect(cell("active").querySelector('[role="button"]')).toBeNull();
+      expect(cell("active").querySelector("button")).toBeNull();
       expect(cell("failcount").querySelector('[role="button"]')).toBeNull();
+    });
+
+    it("reloads the tokens once the active state was toggled", () => {
+      tableUtilsService.canToggleActive.mockReturnValue(true);
+      showsTokenWithRights([]);
+
+      cell("active").querySelector("button")!.click();
+
+      expect(tokenService.toggleActive).toHaveBeenCalledWith("T-1", true);
+      expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
     });
   });
 

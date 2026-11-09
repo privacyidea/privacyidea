@@ -68,6 +68,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
@@ -80,6 +81,7 @@ interface ContainerDetailTokenData {
 @Component({
   selector: "app-container-details-token-table",
   imports: [
+    TokenActiveToggleComponent,
     RouterLink,
     ScrollFocusableDirective,
     SortByLabelPipe,
@@ -314,27 +316,6 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
           }
         }
       });
-  }
-
-  handleColumnClick(columnKey: string, token: ContainerDetailToken) {
-    if (columnKey === "active") {
-      this.toggleActive(token);
-    }
-  }
-
-  toggleActive(token: ContainerDetailToken): void {
-    if (
-      !token.revoked &&
-      !token.locked &&
-      ((token.active && this.authService.actionAllowed("disable")) ||
-        (!token.active && this.authService.actionAllowed("enable")))
-    ) {
-      this.tokenService.toggleActive(token.serial, token.active).subscribe({
-        next: () => {
-          this.containerService.containerDetailsResource.reload();
-        }
-      });
-    }
   }
 
   deleteAllTokens() {
