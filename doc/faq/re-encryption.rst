@@ -20,34 +20,37 @@ user assignments.
 Export tokens
 ~~~~~~~~~~~~~
 
-Use the :ref:`export <pi-tokenjanitor_export>` of :ref:`pi-tokenjanitor` to export the tokens to a YAML
-file. This file contains the **unencrypted** secret keys of the tokens and also the tokeninfos of the tokens.
-
-You need to handle this file with care!
+Export the tokens to a YAML file with the :ref:`export <pi-tokenjanitor_export>`
+of :ref:`pi-tokenjanitor`:
 
 .. code-block:: bash
 
     pi-tokenjanitor find export --format yaml --file my-tokens.yaml
 
-Error messages are written to stderr. Check for error messages!
-Do not add ``--b32``, the update command expects the OTP keys in hex.
+The file contains the secret OTP keys of the tokens **unencrypted**, and also
+their token info and owner. Keep the file safe.
+
+Error messages are written to stderr, so check them. Do not add ``--b32``. The
+update command needs the OTP keys in hex.
 
 Updating tokens
 ~~~~~~~~~~~~~~~
 
-You can then turn to the system with the new security module or encryption key.
-Note that the new privacyIDEA system actually has to contain the tokens!
+Now go to the system with the new security module or the new encryption key.
+The tokens must already exist on this system. The update does not create
+tokens.
 
-Use the :ref:`update command <pi-tokenjanitor_update>` to store the secret OTP keys with the new encryption
-mechanism::
+Run the :ref:`update command <pi-tokenjanitor_update>` with the exported file::
 
     pi-tokenjanitor update my-tokens.yaml
 
-Check for error messages written to stderr!
+This stores the OTP keys and the encrypted token info again, encrypted with the
+new key. Error messages are written to stderr, so check them.
 
-The update keeps the OTP counter, the fail counter, the token kind, the active state and the rollout state of each
-token, and it does not write back TAN lists or other token info, so OTP values that were already used do not become
-valid again.
+The update keeps the fail counter, the token kind, the active state and the
+rollout state. It also keeps the OTP counter, or takes the one from the file if
+it is higher. So an OTP value that was already used stays invalid. Other token
+info, e.g. a TAN list, is not written back.
 
 .. warning:: The PIN of mOTP tokens and PINs that are stored encrypted
    (enrollment policy ``encrypt_pin``) are not re-encrypted. Set these PINs
