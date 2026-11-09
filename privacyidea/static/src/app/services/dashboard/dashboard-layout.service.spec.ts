@@ -57,6 +57,7 @@ describe("DashboardLayoutService", () => {
     TestBed.configureTestingModule({
       providers: [
         provideZonelessChangeDetection(),
+        DashboardLayoutService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: UserSettingsService, useClass: MockUserSettingsService }
       ]
@@ -617,67 +618,41 @@ describe("DashboardLayoutService", () => {
     });
   });
 
-  describe("session change", () => {
+  describe("next session", () => {
     const own = (id: string): WidgetInstance => ({ id, type: "events", x: 2, y: 3, cols: 8, rows: 5 });
 
-    it("should load the stored layout of the next session after the session ended", () => {
+    it("should load the stored layout of the admin who logs in next with a new instance", () => {
       build([own("first")]);
       expect(service.widgets()).toContainEqual(own("first"));
 
-      auth.isAuthenticated.set(false);
-      TestBed.tick();
-      expect(service.widgets()).not.toContainEqual(own("first"));
-
-      persistence.save([own("second")]).subscribe();
-      auth.isAuthenticated.set(true);
-      TestBed.tick();
-      expect(service.widgets()).toContainEqual(own("second"));
-      expect(service.widgets()).not.toContainEqual(own("first"));
-    });
-
-    it("should drop a load that finishes after the session ended", () => {
-      const late = new Subject<WidgetInstance[] | null>();
-      persistence = TestBed.inject(DashboardPersistenceService);
-      jest.spyOn(persistence, "load").mockReturnValueOnce(late);
-      service = TestBed.inject(DashboardLayoutService);
-
-      auth.isAuthenticated.set(false);
-      TestBed.tick();
-      late.next([own("ended")]);
-
-      expect(service.widgets()).not.toContainEqual(own("ended"));
-    });
-
-    it("should load the stored layout when a change was made while logged out", () => {
+      // The route injector is destroyed on logout; the next login creates the service again.
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          DashboardLayoutService,
+          { provide: AuthService, useClass: MockAuthService },
+          { provide: UserSettingsService, useClass: MockUserSettingsService }
+        ]
+      });
+      (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);
       build([own("second")]);
-      auth.isAuthenticated.set(false);
-      TestBed.tick();
-
-      service.moveWidgetTo(service.widgets()[0].id, 3, 3);
-      auth.isAuthenticated.set(true);
-      TestBed.tick();
 
       expect(service.widgets()).toContainEqual(own("second"));
-      expect(stored()).toEqual([own("second")]);
-    });
-
-    it("should leave edit mode when the session ends", () => {
-      build();
-      service.beginEdit();
-      auth.isAuthenticated.set(false);
-      TestBed.tick();
-      expect(service.editMode()).toBe(false);
-      expect(service.hasPendingChanges()).toBe(false);
+      expect(service.widgets()).not.toContainEqual(own("first"));
     });
 
     it("should not overwrite the stored layout with a layout pruned before it was loaded", () => {
-      build([own("second")]);
-      auth.isAuthenticated.set(false);
-      TestBed.tick();
-      auth.isAuthenticated.set(true);
+      const late = new Subject<WidgetInstance[] | null>();
+      persistence = TestBed.inject(DashboardPersistenceService);
+      persistence.save([own("stored")]).subscribe();
+      jest.spyOn(persistence, "load").mockReturnValueOnce(late);
+      auth.actionAllowed.mockReturnValue(false);
+      service = TestBed.inject(DashboardLayoutService);
+
       service.pruneForbiddenWidgets();
-      TestBed.tick();
-      expect(stored()).toEqual([own("second")]);
+
+      expect(stored()).toEqual([own("stored")]);
     });
   });
 });

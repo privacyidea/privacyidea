@@ -103,7 +103,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
           // a subscriber: clearCache() has moved on, and the next login must not see the ended session's settings.
           filter(() => epoch === this.epoch),
           tap((settings) => this.store(settings)),
-          catchError((error) => this.fail(error, "Failed to load the user settings.")),
+          catchError((error) => this.fail(error, "Failed to load the user settings.", epoch)),
           shareReplay(1)
         );
     }
@@ -126,7 +126,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.storeIfCurrent(settings, epoch)),
-        catchError((error) => this.fail(error, "Failed to save the user settings."))
+        catchError((error) => this.fail(error, "Failed to save the user settings.", epoch))
       );
   }
 
@@ -141,7 +141,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.storeIfCurrent(settings, epoch)),
-        catchError((error) => this.fail(error, "Failed to save the user settings."))
+        catchError((error) => this.fail(error, "Failed to save the user settings.", epoch))
       );
   }
 
@@ -157,7 +157,7 @@ export class UserSettingsService implements UserSettingsServiceInterface {
       .pipe(
         map((response) => response.result?.value ?? {}),
         tap((settings) => this.storeIfCurrent(settings, epoch)),
-        catchError((error) => this.fail(error, "Failed to reset the user settings."))
+        catchError((error) => this.fail(error, "Failed to reset the user settings.", epoch))
       );
   }
 
@@ -179,7 +179,14 @@ export class UserSettingsService implements UserSettingsServiceInterface {
     this.request = null;
   }
 
-  private fail(error: unknown, message: string): Observable<never> {
+  /**
+   * The failure of a request sent before clearCache() is handed to its own subscribers only: it neither
+   * notifies the next session nor resets the request that session has in flight.
+   */
+  private fail(error: unknown, message: string, epoch: number): Observable<never> {
+    if (epoch !== this.epoch) {
+      return throwError(() => error);
+    }
     this.request = null;
     console.error(message, error);
     const detail = (error as HttpErrorResponse)?.error?.result?.error?.message || "";
