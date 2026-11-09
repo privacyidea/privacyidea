@@ -1335,6 +1335,119 @@ class PIManageBackupTestCase(CliTestCase):
             # A successful restore consumes the extracted dump.
             self.assertFalse(sqlfile.exists())
 
+    def _run_mysql_backup_create(self, backup_dir: pathlib.Path, config_dir: pathlib.Path,
+                                 enc_file: pathlib.Path, *args: str) -> Result:
+        """Run ``backup create`` against a MySQL URI with a mocked mysqldump."""
+
+        def fake_dump(cmd: list[str], **kwargs: Any) -> mock.MagicMock:
+            pathlib.Path(cmd[cmd.index("-r") + 1]).write_text("-- dump\n")
+            result = mock.MagicMock()
+            result.returncode = 0
+            return result
+
+        runner = self.app.test_cli_runner()
+        with mock.patch.dict(self.app.config, {
+                "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
+                "PI_ENCFILE": str(enc_file)}):
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run", side_effect=fake_dump):
+                return runner.invoke(pi_manage, ["backup", "create", "-d", str(backup_dir),
+                                                 "-c", str(config_dir), *args])
+
+    def test_18_backup_create_twice_in_the_same_minute(self):
+        """
+        The archive name has a resolution of one minute. A second backup within
+        that minute must fail with a clear message instead of a traceback, keep
+        the first archive and leave no unencrypted database dump behind.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+
+            with mock.patch("privacyidea.cli.pimanage.backup.datetime") as fake_datetime:
+                fake_datetime.now.return_value = dt.datetime(2024, 1, 1, 12, 0)
+                first = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+                self.assertEqual(0, first.exit_code, first.output)
+                archive = backup_dir / "privacyidea-backup-20240101-1200.tgz"
+                archive_content = archive.read_bytes()
+
+                second = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+
+            self.assertEqual(2, second.exit_code, second.output)
+            self.assertIn("already exists", second.output, second.output)
+            self.assertEqual(archive_content, archive.read_bytes())
+            self.assertEqual([], list(backup_dir.glob("dbdump-*")))
+
+    def test_19_enckey_outside_the_config_directory_is_reported(self):
+        """
+        With --enckey, the key is only part of the archive if it lies in the
+        config directory. Otherwise the operator must be told it is missing.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            outside_key = tmp / "enckey"
+            outside_key.write_bytes(b"x" * 96)
+            inside_key = config_dir / "enckey"
+            inside_key.write_bytes(b"x" * 96)
+
+            result = self._run_mysql_backup_create(tmp / "backup1", config_dir, outside_key, "-e")
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertNotIn("Including encryption key in backup", result.output, result.output)
+            self.assertIn(f"{outside_key} is not in the config directory", result.output, result.output)
+
+            result = self._run_mysql_backup_create(tmp / "backup2", config_dir, inside_key, "-e")
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("Including encryption key in backup", result.output, result.output)
+
+    def test_20_keep_db_uri_without_live_config_warns(self):
+        """
+        --keep-db-uri without a config file at the restore location falls back
+        to the URI of the backup, which the operator must be told about.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            live_pi_cfg = pathlib.Path(tmp_dir) / "pi.cfg"
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, "sqlite:////backup/data.sqlite")):
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
+                    result = runner.invoke(pi_manage, ["backup", "restore", "--keep-db-uri", "fake.tgz"])
+
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn(f"--keep-db-uri: no live config found at {live_pi_cfg}", result.output, result.output)
+            self.assertIn("Using database URI from backup", result.output, result.output)
+
+    def test_21_restore_extraction_failure_is_reported(self):
+        """
+        A file that cannot be written during extraction (e.g. a read-only key
+        file when not running as root) aborts the restore with a clear message
+        instead of a traceback, before the database is touched.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            live_pi_cfg = pathlib.Path(tmp_dir) / "pi.cfg"
+            fake_open = self._make_fake_tarfile(live_pi_cfg, "sqlite:////backup/data.sqlite")
+
+            @contextlib.contextmanager
+            def failing_extract(*args: Any, **kwargs: Any) -> Iterator[mock.MagicMock]:
+                with fake_open(*args, **kwargs) as tf:
+                    tf.extractall = mock.MagicMock(
+                        side_effect=PermissionError(13, "Permission denied", "/etc/privacyidea/enckey"))
+                    yield tf
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open", side_effect=failing_extract):
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile") as copyfile:
+                    result = runner.invoke(pi_manage, ["backup", "restore", "fake.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("Extracting the backup file failed", result.output, result.output)
+            self.assertIn("/etc/privacyidea/enckey", result.output, result.output)
+            copyfile.assert_not_called()
+
 
 class PIManageRealmTestCase(CliTestCase):
     def test_01_pimanage_realm_help(self):
