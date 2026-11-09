@@ -604,8 +604,10 @@ export class AuthService implements AuthServiceInterface {
     const serverMs = serverTimeS * 1000;
     const offsetMs = serverMs - browserMs;
     if (Math.abs(offsetMs) > 60_000) {
+      const skewS = Math.round(Math.abs(offsetMs) / 1000);
+      const direction = offsetMs < 0 ? "ahead of" : "behind";
       console.warn(
-        `Browser clock is ${Math.round(-offsetMs / 1000)} s off the server clock ` +
+        `Browser clock is ${skewS} s ${direction} the server clock ` +
           `(server: ${new Date(serverMs).toISOString()}, browser: ${new Date(browserMs).toISOString()}). ` +
           `Session expiry is computed in server time.`
       );
