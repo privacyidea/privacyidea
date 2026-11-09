@@ -77,6 +77,7 @@ from privacyidea.lib.token import (get_dynamic_policy_definitions, init_token, g
                                    set_realms, check_user_pass, unassign_token,
                                    enable_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokens.applicationspecificpasswordtoken import ApplicationSpecificPasswordTokenClass
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.papertoken import PAPERACTION
@@ -138,6 +139,10 @@ tA==
 -----END CERTIFICATE REQUEST-----"""
 
 from .api_lib_policy_common import PrePolicyHelperMixin
+
+
+APPLSPEC_DEFAULT_LENGTH = ApplicationSpecificPasswordTokenClass.default_length
+APPLSPEC_DEFAULT_CONTENTS = ApplicationSpecificPasswordTokenClass.default_contents
 
 
 class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
@@ -1180,8 +1185,8 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Without a policy the defaults of the token class are set
         req.all_data = {"user": "cornelius", "realm": "home", "type": "applspec", "genkey": 1}
         init_token_length_contents(req)
-        self.assertEqual(23, req.all_data.get("applspec.length"))
-        self.assertEqual("cn", req.all_data.get("applspec.contents"))
+        self.assertEqual(APPLSPEC_DEFAULT_LENGTH, req.all_data.get("applspec.length"))
+        self.assertEqual(APPLSPEC_DEFAULT_CONTENTS, req.all_data.get("applspec.contents"))
 
         set_policy(name="applspec_length", scope=SCOPE.ENROLL, action="applspec.length=10")
         set_policy(name="applspec_contents", scope=SCOPE.ENROLL, action="applspec.contents=-s")
@@ -1212,7 +1217,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                                                           DEFAULT_CONTENTS as PW_DEFAULT_CONTENTS)
         expected = {"pw": (PW_DEFAULT_LENGTH, PW_DEFAULT_CONTENTS),
                     "registration": (DEFAULT_LENGTH, DEFAULT_CONTENTS),
-                    "applspec": (23, "cn")}
+                    "applspec": (APPLSPEC_DEFAULT_LENGTH, APPLSPEC_DEFAULT_CONTENTS)}
         for tokentype, (length, contents) in expected.items():
             req.all_data = {"user": "cornelius", "realm": "home", "type": tokentype, "genkey": 1,
                             f"{tokentype}.length": "4", f"{tokentype}.contents": "[0]"}
@@ -1224,8 +1229,8 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         req.all_data = {"user": "cornelius", "realm": "home", "type": "APPLSPEC", "genkey": 1,
                         "applspec.length": "4", "applspec.contents": "[0]"}
         init_token_length_contents(req)
-        self.assertEqual(23, req.all_data.get("applspec.length"))
-        self.assertEqual("cn", req.all_data.get("applspec.contents"))
+        self.assertEqual(APPLSPEC_DEFAULT_LENGTH, req.all_data.get("applspec.length"))
+        self.assertEqual(APPLSPEC_DEFAULT_CONTENTS, req.all_data.get("applspec.contents"))
 
         # A policy also wins over the request parameters
         set_policy(name="applspec_length", scope=SCOPE.ENROLL, action="applspec.length=12")

@@ -76,6 +76,7 @@ from privacyidea.lib.token.const import LOST_TOKEN_FOR
 from privacyidea.lib.token.lifecycle import lost_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.applicationspecificpasswordtoken import ApplicationSpecificPasswordTokenClass
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
@@ -4385,15 +4386,14 @@ class APITokenTestCase(MyApiTestCase):
                                                headers={'Authorization': auth}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code, res.json)
-                remove_token(res.json["detail"]["serial"])
                 return res.json["detail"]["password"]
 
         try:
-            # Without a policy the default of 23 characters is used, also when the request asks for something else
+            # Without a policy the default length is used, also when the request asks for something else
             for auth, data in ((self.at, {"user": "selfservice", "realm": self.realm1, **manipulated}),
                                (self.at_user, manipulated)):
                 password = enroll(auth, data)
-                self.assertEqual(23, len(password), password)
+                self.assertEqual(ApplicationSpecificPasswordTokenClass.default_length, len(password), password)
                 self.assertNotEqual("0000", password)
                 self.assertTrue(set(password) - {"0"}, password)
 
@@ -4407,6 +4407,9 @@ class APITokenTestCase(MyApiTestCase):
                 self.assertEqual(16, len(password), password)
                 self.assertTrue(set(password) <= allowed_characters, password)
         finally:
+            # Also remove the tokens of a test run that failed after the enrollment
+            for token in get_tokens(tokentype="applspec"):
+                token.delete_token()
             for name in ("admin_enroll", "user_enroll", "applspec_password"):
                 if get_policies(name=name):
                     delete_policy(name)

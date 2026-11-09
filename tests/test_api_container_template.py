@@ -21,6 +21,7 @@ from privacyidea.lib.token import (get_tokens_from_serial_or_user,
                                    get_tokeninfo)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.applicationspecificpasswordtoken import ApplicationSpecificPasswordTokenClass
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
@@ -960,22 +961,21 @@ class APIContainerTemplate(APIContainerTest):
                                                             "service_id": "mail",
                                                             "applspec.length": 4,
                                                             "applspec.contents": "[0]"}]}}
+        containers = []
 
         def get_password():
             request_params = json.dumps({"type": "generic", "template": template_params})
             result = self.request_assert_success("/container/init", request_params, self.at, "POST")
             container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            containers.append(container)
             tokens = container.get_tokens()
             self.assertEqual(1, len(tokens))
-            password = result["result"]["value"]["tokens"][tokens[0].get_serial()]["password"]
-            tokens[0].delete_token()
-            container.delete()
-            return password
+            return result["result"]["value"]["tokens"][tokens[0].get_serial()]["password"]
 
         try:
             # Without a policy the default length is used
             password = get_password()
-            self.assertEqual(23, len(password), password)
+            self.assertEqual(ApplicationSpecificPasswordTokenClass.default_length, len(password), password)
             self.assertTrue(set(password) - {"0"}, password)
 
             set_policy("applspec_password", scope=SCOPE.ENROLL, action="applspec.length=16, applspec.contents=-s")
@@ -983,6 +983,10 @@ class APIContainerTemplate(APIContainerTest):
             self.assertEqual(16, len(password), password)
             self.assertTrue(set(password) <= set(string.ascii_letters + string.digits), password)
         finally:
+            for container in containers:
+                for token in container.get_tokens():
+                    token.delete_token()
+                container.delete()
             if get_policies(name="applspec_password"):
                 delete_policy("applspec_password")
             delete_serviceid("mail")
