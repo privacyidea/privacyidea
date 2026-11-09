@@ -1336,6 +1336,30 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertFalse(res["result"]["value"], res)
         self.assertNotIn("multi_challenge", res["detail"], res)
 
+    def test_16_autoresync_totp_expired_is_not_asked_for(self):
+        """
+        A TOTP token waits for the next OTP value of an autoresync only until the AutoResyncTimeout is over, so
+        afterwards no challenge asks for it.
+        """
+        user = User("cornelius", self.realm2)
+        self._setup_resync_challenge_token(user)
+        totp = init_token({"type": "totp", "serial": "resync_totp", "otpkey": self.otpkey, "pin": "clock",
+                           "timeStep": 30}, user)
+        self.addCleanup(remove_token, "resync_totp")
+        login = {"user": user.login, "realm": user.realm}
+        resync_message = "To resync your token, please enter the next OTP value"
+
+        # Ten minutes behind is out of the window, but in the sync window
+        res = self._validate_check({**login, "pass": "clock" + totp.get_otp(time_seconds=time.time() - 600)[2]})
+        self.assertEqual(resync_message, res["detail"]["message"], res)
+        res = self._validate_check({**login, "pass": "clock"})
+        self.assertEqual(resync_message, res["detail"]["multi_challenge"][0]["message"], res)
+        get_one_token(serial="resync_totp").write_tokeninfo("dueDate", int(time.time()) - 1)
+
+        res = self._validate_check({**login, "pass": "clock"})
+        self.assertEqual(AUTH_RESPONSE.CHALLENGE, res["result"]["authentication"], res)
+        self.assertEqual(_("please enter otp: "), res["detail"]["multi_challenge"][0]["message"], res)
+
     @smtpmock.activate
     def test_16_autoresync_email_challenge_asks_for_resync(self):
         """

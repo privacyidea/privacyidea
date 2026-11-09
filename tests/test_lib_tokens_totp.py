@@ -11,7 +11,7 @@ from unittest import mock
 
 from testfixtures import LogCapture
 
-from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)
+from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin, delete_privacyidea_config)
 from privacyidea.lib.policy import (PolicyClass, set_policy, delete_policy, SCOPE)
 from privacyidea.lib.realm import (set_realm)
 from privacyidea.lib.resolver import (save_resolver)
@@ -626,6 +626,8 @@ class TOTPTokenTestCase(MyTestCase):
         r = token.check_otp("032819", window=30,
                             options={"initTime": 47251645 * 30})
         self.assertTrue(r == -1, r)
+        # The invalid AutoResyncTimeout falls back to 300 seconds
+        self.assertAlmostEqual(int(time.time()) + 300, int(token.get_tokeninfo("dueDate")), delta=2)
         # counter = 47251650 => otp = 589836, will NOT _autosync
         r = token.check_otp("589836", window=30,
                             options={"initTime": 47251645 * 30})
@@ -644,7 +646,45 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertEqual(-1, r)
         self.assertNotIn(AUTORESYNC_KEY, token.auth_details)
 
-        # TOTP has no dueDate / AutoResyncTimeout
+        # A value after the dueDate starts a new autoresync, which the next value completes
+        token.token.count = 47251640
+        set_privacyidea_config("AutoResyncTimeout", 300)
+        # counter = 47251649 => otp = 705493, is out of sync
+        r = token.check_otp("705493", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertEqual(-1, r)
+        self.assertTrue(token.has_pending_autoresync())
+        token.write_tokeninfo("dueDate", int(time.time()) - 1)
+        self.assertFalse(token.has_pending_autoresync())
+        token.auth_details.clear()
+        # counter = 47251650 => otp = 589836, is the next value, but the dueDate is over
+        r = token.check_otp("589836", window=30,
+                            options={"initTime": 47251645 * 30})
+        self.assertEqual(-1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual("47251650", token.get_tokeninfo("otp1c"))
+        # counter = 47251651 => otp = 227747, will be autosynced
+        r = token.check_otp("227747", window=30,
+                            options={"initTime": 47251646 * 30})
+        self.assertEqual(47251651, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertNotIn("otp1c", token.get_tokeninfo())
+        self.assertNotIn("dueDate", token.get_tokeninfo())
+
+        # A stored counter without a dueDate is expired, so the next value starts a new autoresync
+        token.token.count = 47251640
+        token.write_tokeninfo("otp1c", 47251648)
+        token.auth_details.clear()
+        # counter = 47251649 => otp = 705493, is the next value, but no dueDate is stored
+        r = token.check_otp("705493", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertEqual(-1, r)
+        self.assertEqual(AutoResyncResult.STARTED, token.auth_details.get(AUTORESYNC_KEY))
+        self.assertEqual("47251649", token.get_tokeninfo("otp1c"))
+        self.assertIn("dueDate", token.get_tokeninfo())
+        token.remove_tokeninfo("otp1c")
+        token.remove_tokeninfo("dueDate")
+        delete_privacyidea_config("AutoResyncTimeout")
 
         # No _autosync
         set_privacyidea_config("AutoResync", False)

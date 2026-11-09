@@ -107,11 +107,11 @@ provides a wrong OTP value. AutoResync works like this:
 * If it is, the token counter is set and the user is successfully authenticated.
 
 .. note:: AutoResync works for all HOTP and TOTP based tokens including SMS and
-   Email tokens. For TOTP tokens the **Auto resync timeout** is not used: the
-   second OTP value must belong to the time step directly after the remembered
-   one and lie within the sync window around the current time, which limits the
-   resync to about two time steps. Day password tokens are not resynchronized
-   automatically.
+   Email tokens. For TOTP tokens, the second OTP value must belong to the time
+   step directly after the remembered one. The token shows each value for one
+   time step only, so the user has about two time steps to enter both values.
+   A shorter **Auto resync timeout** reduces this time. Day password tokens are
+   not resynchronized automatically.
 
 
 .. index:: usercache

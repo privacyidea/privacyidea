@@ -394,21 +394,13 @@ class TotpTokenClass(HotpTokenClass):
             self.write_tokeninfo('timeShift', new_shift)
         return res
 
-    def has_pending_autoresync(self) -> bool:
-        """
-        Check if the token waits for the next OTP value of an autoresync. A TOTP token has no AutoResyncTimeout.
-
-        :return: True if the token stored the first OTP value of an autoresync
-        """
-        return "otp1c" in self.get_tokeninfo()
-
     @log_with(log)
     def _autosync(self, hmac2Otp, anOtpVal):
         """
         synchronize the token based on two otp values automatically.
-        If the OTP is invalid, that OTP counter is stored.
-        If an old OTP counter is stored, it is checked, if the new
-        OTP value is the next value after this counter.
+        If the OTP is invalid, that OTP counter is stored until the AutoResyncTimeout is over.
+        If an OTP counter is stored and the timeout is not over, it is checked, if the new
+        OTP value is the next value after this counter. After the timeout the new OTP value starts a new autoresync.
 
         internal method to realize the _autosync within the
         checkOtp method
@@ -434,8 +426,7 @@ class TotpTokenClass(HotpTokenClass):
         log.debug(f"checked otpval in syncwindow ({syncWindow!r}): {res!r}")
 
         if res != -1:
-            # if former is defined
-            if "otp1c" in info:
+            if self.has_pending_autoresync():
                 # check if this is consecutive
                 otp1c = int(info.get("otp1c"))
                 otp2c = res
@@ -452,20 +443,22 @@ class TotpTokenClass(HotpTokenClass):
                     counter = self._time2counter(server_time, self.timestep)
 
                     shift = otp2c - counter
-                    info["timeShift"] = shift
-                    self.set_tokeninfo(info)
+                    self.write_tokeninfo("timeShift", shift)
                 # A success is recorded by check_otp once the counter is stored
                 if res == -1:
                     self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.FAILED
 
                 # now clean the resync data
-                del info["otp1c"]
-                self.set_tokeninfo(info)
+                self.remove_tokeninfo("otp1c")
+                self.remove_tokeninfo("dueDate")
 
             else:
+                # A stored counter with a dueDate that is over or missing is expired
+                if "otp1c" in info:
+                    log.debug(f"Autoresync of token {self.token.serial!s} expired. This OTP value starts a new one.")
                 log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
-                info["otp1c"] = res
-                self.set_tokeninfo(info)
+                self.write_tokeninfo("otp1c", res)
+                self.write_tokeninfo("dueDate", int(time.time()) + self.get_sync_timeout())
                 self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.STARTED
                 res = -1
 
