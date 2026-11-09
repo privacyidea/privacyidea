@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { RouterLink } from "@angular/router";
 import { Component, computed, effect, inject, input, signal, untracked } from "@angular/core";
 import { form, FormField } from "@angular/forms/signals";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
@@ -38,7 +39,7 @@ import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-butto
 import { ContainerCreateDialogComponent } from "@components/container/container-create-dialog/container-create-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -49,6 +50,7 @@ import { clearField, hasError } from "@utils/form-state.utils";
   selector: "app-token-details-assignments",
   standalone: true,
   imports: [
+    RouterLink,
     DetailsCardComponent,
     DetailFieldRowComponent,
     DetailsListDisplayComponent,
@@ -76,8 +78,8 @@ export class TokenDetailsAssignmentsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   readonly tokenDetails = input.required<TokenDetails>();
   readonly userRealm = input("");

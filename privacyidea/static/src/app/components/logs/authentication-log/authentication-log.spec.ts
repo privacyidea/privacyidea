@@ -161,6 +161,54 @@ describe("AuthenticationLog", () => {
     expect(component.totalLength()).toBe(1);
   });
 
+  it("names the filter input by its visible label and leaves the rows unlabelled", () => {
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [{ id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00" }],
+        count: 1,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    const input = element.querySelector<HTMLInputElement>(".authentication-log-table-filter input")!;
+
+    expect(input.hasAttribute("aria-label")).toBe(false);
+    expect(element.querySelector(`label[for="${input.id}"]`)?.textContent).toContain("Filter Authentication Log");
+    expect(element.querySelectorAll("tr[aria-label]").length).toBe(0);
+  });
+
+  it("links the serial and the user to their details pages", () => {
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [
+          {
+            id: 1,
+            event_type: "LOGIN_SUCCESS",
+            timestamp: "2026-06-22T10:00:00+00:00",
+            serial: "S-1",
+            username: "alice",
+            realm: "r1"
+          }
+        ],
+        count: 1,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+
+    expect(hrefOf("S-1")).toBe("/tokens/details/S-1");
+    expect(hrefOf("alice")).toBe("/users/details/alice?realm=r1");
+  });
+
   it("onPageEvent forwards page size and converts the 0-based event index to the 1-based service page", () => {
     component.onPageEvent({ pageIndex: 3, pageSize: 50 } as PageEvent);
     expect(service.pageSize()).toBe(50);

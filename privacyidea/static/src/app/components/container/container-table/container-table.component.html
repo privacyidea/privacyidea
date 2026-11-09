@@ -18,10 +18,8 @@
 -->
 <div
   appScrollToTop
-  aria-label="Container Table"
   class="container-table-container"
-  [class.comparison-active]="comparisonVisible()"
-  i18n-aria-label="@@container.containerTable">
+  [class.comparison-active]="comparisonVisible()">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <div class="filter-actions-group">
@@ -216,15 +214,9 @@
                     @if (element.serial) {
                       <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(element.serial)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                          (keydown.space)="
-                            $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
-                          "
                           [appTruncationTooltip]="element.serial"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, element.serial]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                       </app-copyable>
@@ -287,16 +279,10 @@
                     @if (element[column.key]) {
                       <app-copyable [copyText]="element[column.key]">
                         <a
-                          (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                          (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                          (keydown.space)="
-                            $event.preventDefault();
-                            contentService.userSelected(element[column.key], element['user_realm'])
-                          "
                           [appTruncationTooltip]="element[column.key]"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [queryParams]="{ realm: element['user_realm'] ?? '' }"
+                          [routerLink]="[ROUTE_PATHS.USERS_DETAILS, element[column.key]]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                         <app-filter-value-button
@@ -307,14 +293,7 @@
                     }
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key) && element[column.key]) {
-                      <a
-                        href="#">
-                        {{ element[column.key] }}
-                      </a>
-                    } @else {
-                      {{ element[column.key] }}
-                    }
+                    {{ element[column.key] }}
                   }
                 }
               </div>
@@ -335,12 +314,7 @@
                   <div class="expanded-token-list">
                     @for (token of element.tokens; track token) {
                       <div class="token-item flex-row flex-nowrap ali-center">
-                        <a
-                          (click)="contentService.tokenSelected(token.serial)"
-                          (keydown.enter)="contentService.tokenSelected(token.serial)"
-                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(token.serial)"
-                          role="button"
-                          tabindex="0">
+                        <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, token.serial]">
                           {{ token.serial }}
                         </a>
                         <app-copy-button [copyText]="token.serial"></app-copy-button>

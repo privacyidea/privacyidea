@@ -45,7 +45,6 @@ import {
   TEMPLATE_FILTER_ANY,
   TEMPLATE_FILTER_NONE
 } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -152,7 +151,6 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
 
