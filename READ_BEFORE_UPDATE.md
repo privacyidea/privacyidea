@@ -121,11 +121,11 @@
 
 * **More event handlers fail the request when they fail.** The schema update sets *Abort on error* for the existing
   **request mangler** and **response mangler** handlers and for the **Script** handlers that are configured to raise an
-  error. With 3.14 it was only set for **Federation** handlers. A request mangler changes the parameters the endpoint
-  works with and a response mangler the response the client receives, so the request must not go on without them, and
-  *raise error* makes the script decide whether the request may go on. New request mangler and response mangler bindings
-  start with the option enabled. Clear the option after the update for a handler whose failure should not fail the
-  request.
+  error, also where the option was cleared in 3.14. With 3.14 it was only set for **Federation** handlers. A request
+  mangler changes the parameters the endpoint works with and a response mangler the response the client receives, so
+  the request must not go on without them, and *raise error* makes the script decide whether the request may go on. New
+  request mangler and response mangler bindings start with the option enabled. Clear the option after the update for a
+  handler whose failure should not fail the request.
 
   A handler that could not do what it is configured for now records `success=False` and the reason in the `info` column
   of its audit entry instead of being audited as successful, e.g. a notification without a recipient, a script that
@@ -195,9 +195,21 @@
   value.
 
 * **The policy actions of the `u2f` token type are removed.** The schema update removes `enrollU2F` and the actions
-  starting with `u2f_` from the policies and logs the names of the policies it changed. A configuration exported from an
-  earlier version that still contains them is imported with `pi-manage config import --skip-invalid`, which drops these
-  actions; without the option, the import refuses such a policy.
+  that start with `u2f_` from the policies. It deletes a policy that holds only these actions, together with the
+  conditions and the description of the policy. The update prints the names of the changed and the deleted policies.
+
+  The update keeps such a policy if it is the last active policy of the admin or the user scope. Without an active
+  policy, every administrator or user gets all rights of that scope. The update names these policies in a warning.
+  They allow nothing. Replace their actions with other actions, or add another active policy to the scope and then
+  delete them. Do not save them without actions. A policy without actions allows every action of its scope.
+
+  `pi-manage config import --skip-invalid` imports a configuration that an earlier version exported with these
+  actions. The option drops the actions and skips a policy that holds only these actions. Without the option, the
+  import refuses such a policy.
+
+* **A policy without actions applies to every action only in the `admin`, `user` and `container` scopes.** In the
+  other scopes, a policy without actions has no effect. Before, such a policy made authentication, login and token
+  enrollment requests fail.
 
 * **`pi-manage config realm delete`** exits with status 1 if the realm does not exist or can not be deleted, e.g.
   because tokens are still assigned to it, or if the deletion of its custom user attributes is not confirmed. With 3.14
@@ -341,6 +353,27 @@
   challenge texts. At `/validate/check` and `/auth` this now also holds for a token whose failcounter the trigger itself
   raised to the maximum.
 
+* **A proxy entry without a mapping target now also maps IPv6 clients.** An
+  [*Override Authorization Client*](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client)
+  entry such as `172.16.0.1` allowed the proxy to report any IPv4 client only. It now covers IPv6 clients as well, as
+  documented. To keep a proxy restricted to IPv4 clients, write the entry as `172.16.0.1 > 0.0.0.0/0`.
+
+* **An X-Forwarded-For entry that is not an IP address, such as `unknown`, now ends the proxy path.** The entries
+  after it are recorded in the authentication log but never become the client IP. If your proxy writes such a value,
+  the client IP of these requests is the proxy's address, so configure the proxy to write the client address
+  instead. Entries with a port (`192.0.2.43:51234`) or in brackets (`[2001:db8::1]`) are now read as addresses. How
+  privacyIDEA determines the client IP and how to configure your proxies for it is described in
+  [Override Authorization Client](https://privacyidea.readthedocs.io/en/latest/configuration/system_config.html#override-client).
+
+* **The client IP of an IPv4 client is now always its IPv4 address.** A dual-stack listener reports an IPv4 client
+  as `::ffff:10.0.0.5`. privacyIDEA now uses `10.0.0.5` as the client IP, with and without
+  *Override Authorization Client*. The authentication log keeps the reported address in `peer_ip` and `ip_chain`.
+  IPv4 networks in *Override Authorization Client* now also contain the mapped form of a proxy address. Policies and
+  event handler conditions with an IPv6 network such as `::/0` no longer contain these clients. If your audit log
+  shows client IPs that start with `::ffff:`, check these policies and event handlers. IP blocks of addresses that
+  start with `::ffff:` no longer apply. Block the IPv4 address instead. Per-IP counts of conditional-access policies
+  start again for these clients.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
@@ -371,6 +404,10 @@
   (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
   Build the WebUI from the repository if you need to modify it. This also means the sources are no longer reachable
   over HTTP under `/static/`.
+
+* **privacyIDEA checks `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` at start** — An unknown algorithm or parameter,
+  a parameter for an algorithm that is not in the list, or a value PassLib would adjust stops the server and
+  `pi-manage`, and with it the schema update. Check both settings before updating.
 
 * **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
