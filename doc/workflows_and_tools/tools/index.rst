@@ -44,10 +44,6 @@ run them as the user privacyIDEA runs as.
      - Collect diagnostic data for support
    * - ``privacyidea-pip-update``, ``privacyidea-schema-upgrade``
      - Upgrade an installation from PyPI, see :ref:`upgrade`
-   * - ``privacyidea-authorizedkeys``
-     - Fetch the SSH keys of a user for the SSH daemon, see :ref:`application_ssh`
-   * - ``privacyidea-create-pwidresolver-user``
-     - Create an entry for a :ref:`flatfile_resolver`
 
 The jobs that have to run regularly are described in :ref:`cleanup_jobs`.
 
