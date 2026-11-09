@@ -90,6 +90,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     await TestBed.configureTestingModule({
       imports: [NavigationComponent],
       providers: [
+        DashboardLayoutService,
         provideRouter([]),
         provideLocationMocks(),
         provideHttpClient(),
