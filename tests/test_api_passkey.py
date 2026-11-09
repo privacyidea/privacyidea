@@ -100,7 +100,8 @@ class PasskeyAPITestBase(ConditionalAccessFixtureMixin, MyApiTestCase, PasskeyTe
         set_policy(name, **kwargs)
         self.addCleanup(self.safe_delete_policy, name)
 
-    def _token_init_step_one(self, exclude_credentials_size: int = 0, multi_device: bool = False):
+    def _token_init_step_one(self, exclude_credentials_size: int = 0, multi_device: bool = False,
+                             user_verification: str = "preferred") -> dict:
         registration_challenge = (self.registration_challenge_multi_device if multi_device
                                   else self.registration_challenge)
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
@@ -116,7 +117,8 @@ class PasskeyAPITestBase(ConditionalAccessFixtureMixin, MyApiTestCase, PasskeyTe
                 self.assertIn("detail", res.json)
                 detail = res.json["detail"]
                 self.assertIn("passkey_registration", detail)
-                self.validate_default_passkey_registration(detail["passkey_registration"], registration_challenge)
+                self.validate_default_passkey_registration(detail["passkey_registration"], registration_challenge,
+                                                           user_verification)
                 self.assertIn("rollout_state", detail)
                 self.assertEqual("clientwait", detail["rollout_state"])
                 passkey_registration = detail["passkey_registration"]
@@ -2829,6 +2831,74 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                             transaction_id=transaction_id, endpoint='/validate/check')
         remove_token(spass_token.get_serial())
         remove_token(passkey_serial)
+
+    def _registration_multi_device(self) -> dict:
+        return {"attestationObject": self.registration_attestation_multi_device,
+                "clientDataJSON": self.registration_client_data_multi_device,
+                "credential_id": self.credential_id_multi_device, "rawId": self.credential_id_multi_device,
+                "authenticatorAttachment": self.authenticator_attachment_multi_device}
+
+    def test_49_token_init_registration_requires_user_verification(self):
+        """
+        With the enrollment policy webauthn_user_verification_requirement=required, /token/init requests user
+        verification and only completes a registration whose authenticator data has the user verified flag. A
+        requirement in the request does not change the one of the policy. The multi_device fixture credential is
+        registered without user verification, the single_device fixture credential with it.
+        """
+        self.set_policy_with_cleanup("passkey_uv_required", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        detail = self._token_init_step_one(multi_device=True, user_verification="required")["detail"]
+        serial = detail["serial"]
+        self.addCleanup(remove_token, serial)
+        data = {**self._registration_multi_device(), FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "preferred",
+                "transaction_id": detail["transaction_id"], "type": "passkey", "user": self.user.login,
+                "realm": self.user.realm, "serial": serial}
+        with self.app.test_request_context('/token/init', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["status"], res.json)
+            self.assertIn("User verification is required", res.json["result"]["error"]["message"], res.json)
+        self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+
+        detail = self._token_init_step_one(user_verification="required")["detail"]
+        serial = detail["serial"]
+        self.addCleanup(remove_token, serial)
+        self._token_init_step_two(detail["transaction_id"], serial)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+
+    def test_50_enroll_via_multichallenge_requires_user_verification(self):
+        """
+        enroll_via_multichallenge takes the user verification requirement from the enrollment policy. A registration
+        without the user verified flag does not enroll the passkey and does not log the user in.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.addCleanup(remove_token, spass_token.get_serial())
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=PASSKEY")
+        self.set_policy_with_cleanup("passkey_uv_required", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge_multi_device
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": "1"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+                serial = res.json["detail"]["serial"]
+                self.addCleanup(remove_token, serial)
+                transaction_id = res.json["detail"]["transaction_id"]
+                passkey_registration = res.json["detail"]["multi_challenge"][0]["passkey_registration"]
+                self.assertEqual("required", passkey_registration["authenticatorSelection"]["userVerification"])
+
+        data = {**self._registration_multi_device(), "transaction_id": transaction_id, "serial": serial}
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+            self.assertNotIn("username", res.json["detail"], res.json)
+        self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+        assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.ENROLLMENT_FAIL],
+                                  transaction_id=transaction_id)
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

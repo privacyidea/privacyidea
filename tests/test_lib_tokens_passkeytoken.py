@@ -107,7 +107,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             self.assertEqual(challenge["challenge"], self.authentication_challenge_no_uv)
             return challenge
 
-    def _create_token_multi_device(self) -> TokenClass:
+    def _initialize_registration_multi_device(self) -> RegistrationRequest:
         token = init_token({"type": "passkey"}, user=self.user)
         self.assertIsInstance(token, PasskeyTokenClass)
         param = {
@@ -127,7 +127,12 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
             "transaction_id": init_detail["transaction_id"]
         }
-        token.update(registration_response)
+        return self.RegistrationRequest(token, init_detail, registration_response)
+
+    def _create_token_multi_device(self) -> TokenClass:
+        registration_request = self._initialize_registration_multi_device()
+        token = registration_request.token
+        token.update(registration_request.registration_response)
         self.assertEqual(token.token.rollout_state, RolloutState.ENROLLED)
         return token
 
@@ -218,8 +223,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         This basically tests that the policies for enrollment are loaded by the prepolicy 'fido2_enroll', that they work
         and that excludeCredentials is set correctly.
         """
-        # UserVerification is ignored by most browsers when residentKey is set to required
-        # However, it can still be configured and is tested here
+        # The user verification requirement is sent to the browser in authenticatorSelection
         # The Key Algorithm are all that are selectable in the policy via
         # privacyidea.lib.tokens.webauthntoken.PUBLIC_KEY_CREDENTIAL_ALGORITHMS
         key_algorithms = [COSEAlgorithmIdentifier.ECDSA_SHA_256,
@@ -916,3 +920,34 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertFalse(token.can_trigger_challenge({}))
         self.assertFalse(token.can_trigger_challenge({PasskeyAction.EnableTriggerByPIN: False}))
         self.assertTrue(token.can_trigger_challenge({PasskeyAction.EnableTriggerByPIN: True}))
+
+    def test_28_registration_requires_user_verification(self):
+        """
+        With the user verification requirement "required", a registration is only accepted if the authenticator data
+        has the user verified flag. The multi_device fixture credential is registered without user verification, the
+        single_device fixture credential with it.
+        """
+        registration_request = self._initialize_registration_multi_device()
+        token = registration_request.token
+        self.addCleanup(remove_token, serial=token.get_serial())
+        registration_response = {**registration_request.registration_response,
+                                 FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"}
+        with self.assertRaisesRegex(EnrollmentError, "User verification is required"):
+            token.update(registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        self.assertFalse(token.is_active())
+        self.assertIsNone(get_fido2_token_by_credential_id(self.credential_id_multi_device))
+
+        # With "preferred", the same registration is accepted
+        registration_response[FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT] = "preferred"
+        token.update(registration_response)
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+
+        registration_request = self._initialize_registration()
+        token = registration_request.token
+        self.addCleanup(remove_token, serial=token.get_serial())
+        registration_response = {**registration_request.registration_response,
+                                 FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"}
+        token.update(registration_response)
+        self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+        self.assertTrue(token.is_active())

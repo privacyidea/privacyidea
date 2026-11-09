@@ -28,12 +28,14 @@ for enrollment.
 Passkeys are eligible for offline use as specified here :ref:`application_offline` as well as
 :ref:`policy_enroll_via_multichallenge`. However, these features also have to be implemented in the client application.
 
-Using passkeys in different browsers and environments can yield different user experiences. Most, if not all browsers,
-will not allow enrollment of a passkey to an authenticator which does not have a PIN set, i.e. user verification is
-always required for enrollment. Therefore, :ref:`policy_webauthn_enroll_user_verification_requirement` does not
-affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_verification_requirement` is available in
-the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
-requires user verification, and so does a login to the WebUI without a username with a WebAuthn token.
+Using passkeys in different browsers and environments can yield different user experiences. With the default value
+``preferred`` of :ref:`policy_webauthn_enroll_user_verification_requirement`, the browser and the authenticator
+decide whether the enrollment asks for user verification, for example a PIN. To make user verification mandatory for
+the enrollment, set this policy to ``required``. privacyIDEA then requests user verification and completes the
+enrollment only if the authenticator reports that it verified the user. The policy
+:ref:`policy_webauthn_authn_user_verification_requirement` in the scope authentication applies to passkey
+authentication. A login to the WebUI with a passkey always requires user verification, and so does a login to the
+WebUI without a username with a WebAuthn token.
 
 .. note:: A login without a username identifies the user by the passkey alone, while every request afterwards looks
     the user up by the login name and realm of the session. In a realm where the same login name exists in several

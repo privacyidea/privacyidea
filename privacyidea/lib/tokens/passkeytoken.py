@@ -366,6 +366,11 @@ class PasskeyTokenClass(TokenClass):
         - transaction_id
         - HTTP_ORIGIN
         - FIDO2PolicyAction.RELYING_PARTY_ID ("webauthn_relying_party_id")
+
+        The following parameters are optional in param:
+        - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT ("webauthn_user_verification_requirement"): If it is
+          "required", the registration is only accepted if the authenticator data has the user verified flag.
+        - PasskeyAction.AllowedAuthenticatorDeviceTypes: A list of the allowed credential device types.
         """
         response_detail = {"details": {"serial": self.token.serial}}
 
@@ -393,6 +398,11 @@ class PasskeyTokenClass(TokenClass):
             transaction_id = get_required(param, "transaction_id")
             expected_rp_id = get_required(param, FIDO2PolicyAction.RELYING_PARTY_ID)
             expected_origin = get_required(param, "HTTP_ORIGIN")
+            # Checking policy scope=SCOPE.ENROLL, action=FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
+            # The registration options only ask the browser for user verification. The user verified flag in the
+            # signed authenticator data shows whether the authenticator verified the user.
+            require_user_verification = (get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+                                         == UserVerificationRequirement.REQUIRED)
 
             serial = self.token.serial
             challenges = [challenge for challenge in get_challenges(serial=serial, transaction_id=transaction_id)
@@ -416,6 +426,7 @@ class PasskeyTokenClass(TokenClass):
                     expected_challenge=challenge.challenge.encode("utf-8"),
                     expected_origin=expected_origin,
                     expected_rp_id=expected_rp_id,
+                    require_user_verification=require_user_verification,
                 )
             except InvalidRegistrationResponse as ex:
                 log.error(f"Invalid registration response: {ex}")

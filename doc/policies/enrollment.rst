@@ -719,7 +719,7 @@ This action configures whether the user's identity should be checked when
 rolling out a new WebAuthn token. If this is set to required, any user rolling
 out a new WebAuthn token will have to provide some form of verification. This
 might be biometric identification, or knowledge-based, depending on the
-authenticator used.
+authenticator used. The action also applies to the enrollment of a passkey.
 
 This defaults to ``preferred``, meaning user verification will be performed if
 supported by the token.
