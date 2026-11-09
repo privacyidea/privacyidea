@@ -7,7 +7,9 @@
 
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  // A window too short for the sections (a zoomed page) scrolls instead of cutting off the controls at the bottom.
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .machine-title {
@@ -23,7 +25,8 @@
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
-  min-height: 0;
+  // The table keeps room for its header and a row when the page is short; the layout scrolls past it.
+  min-height: 160px;
 
   & {
     margin-bottom: 16px;

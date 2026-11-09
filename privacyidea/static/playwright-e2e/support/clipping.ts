@@ -62,17 +62,27 @@ export async function clippedControls(page: Page): Promise<ClipProblem[]> {
       }
       let reachableX = false;
       let reachableY = false;
+      let collapsed = false;
       for (let a = control.parentElement; a && a !== document.documentElement; a = a.parentElement) {
         const s = getComputedStyle(a);
         const c = a.getBoundingClientRect();
         const cutX = !reachableX && cuts(s.overflowX) && (r.left < c.left - TOLERANCE || r.right > c.right + TOLERANCE);
         const cutY = !reachableY && cuts(s.overflowY) && (r.top < c.top - TOLERANCE || r.bottom > c.bottom + TOLERANCE);
-        if (c.width > 0 && (cutX || cutY)) {
+        if (cutX || cutY) {
+          // A wrapper collapsed to no size on purpose (the row actions of a truncating value, which open on hover or
+          // focus) hides its control without cutting anything off.
+          if (c.width === 0 || c.height === 0) {
+            collapsed = true;
+            break;
+          }
           problems.push({ control: label(control), problem: `cut off by ${label(a)}` });
           break;
         }
         reachableX ||= scrolls(s.overflowX);
         reachableY ||= scrolls(s.overflowY);
+      }
+      if (collapsed) {
+        continue;
       }
       // Covering the text of its cell.
       const cell = control.closest("td, th");
@@ -92,8 +102,23 @@ export async function clippedControls(page: Page): Promise<ClipProblem[]> {
         const range = document.createRange();
         range.selectNodeContents(n);
         for (const t of Array.from(range.getClientRects())) {
-          const w = Math.min(t.right, r.right) - Math.max(t.left, r.left);
-          const h = Math.min(t.bottom, r.bottom) - Math.max(t.top, r.top);
+          // Only the part of the text that shows: what an ancestor clips (a truncated value up to its dots, the glyph
+          // of a collapsed button) lies under nothing.
+          let { left, right, top, bottom } = t;
+          for (let a = n.parentElement; a && a !== cell.parentElement; a = a.parentElement) {
+            const s = getComputedStyle(a);
+            const c = a.getBoundingClientRect();
+            if (cuts(s.overflowX)) {
+              left = Math.max(left, c.left);
+              right = Math.min(right, c.right);
+            }
+            if (cuts(s.overflowY)) {
+              top = Math.max(top, c.top);
+              bottom = Math.min(bottom, c.bottom);
+            }
+          }
+          const w = Math.min(right, r.right) - Math.max(left, r.left);
+          const h = Math.min(bottom, r.bottom) - Math.max(top, r.top);
           if (w > 2 && h > 2) {
             problems.push({
               control: label(control),

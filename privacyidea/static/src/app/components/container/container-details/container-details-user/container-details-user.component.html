@@ -40,7 +40,9 @@
           tableUtilsService.getTdClassForKey(element.keyMap.key).concat(host().isEditingUser() ? ['padding-0'] : [])
         "
         mat-cell>
-        <div class="value-row">
+        <div
+          class="value-row"
+          [class.value-row--editing]="host().isEditingUser()">
           <div class="value-content">
             @switch (element.keyMap.key) {
               @case ("user_name") {
@@ -73,6 +75,8 @@
                       (click)="contentService.userSelected(element.value, userRealm())"
                       (keydown.enter)="contentService.userSelected(element.value, userRealm())"
                       (keydown.space)="$event.preventDefault(); contentService.userSelected(element.value, userRealm())"
+                      [appTruncationTooltip]="element.value"
+                      class="cell-truncate"
                       role="button"
                       tabindex="0">
                       {{ element.value }}

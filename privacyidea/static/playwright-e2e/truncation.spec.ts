@@ -104,3 +104,53 @@ test.describe("container details with a long user name", () => {
     await expectEveryControlReachable(page);
   });
 });
+
+// The input that picks a user is as wide as its cell when the container details page is narrow, instead of what the save
+// and cancel buttons leave of it. Only opens the editor; nothing is saved.
+test.describe("container details, choosing a user", () => {
+  test("the user input takes the width of its cell at each zoom", async ({ page }) => {
+    await page.route("**/proxy/container/?container_serial=*", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.result.value.containers[0].users = [];
+      await route.fulfill({ response, json: body });
+    });
+    await openPage(page, "containers");
+    test.skip((await page.locator("tr.mat-mdc-row").count()) === 0, "no container to open");
+    await page.locator("tr.mat-mdc-row td.mat-column-serial").locator("a").first().click();
+    await page.waitForLoadState("networkidle");
+    await settleContent(page);
+    await page.getByRole("button", { name: "Assign User" }).click();
+    const field = page.locator("app-container-details-user mat-form-field").filter({ hasText: "Enter User" });
+    await expect(field).toBeVisible();
+    const realm = page.locator("app-container-details-user mat-form-field").filter({ hasText: "Select Realm of User" });
+
+    await atEachZoom(page, async (zoom) => {
+      // The realm select and the user input, one above the other, are the same width.
+      const [realmWidth, userWidth] = await Promise.all([
+        realm.evaluate((f) => f.getBoundingClientRect().width),
+        field.evaluate((f) => f.getBoundingClientRect().width)
+      ]);
+      expect
+        .soft(
+          Math.abs(realmWidth - userWidth),
+          `${Math.round(zoom * 100)}% zoom: realm ${realmWidth}px, user ${userWidth}px`
+        )
+        .toBeLessThanOrEqual(1);
+      const { input, room } = await field.evaluate((f) => {
+        const cell = f.closest("td")!;
+        const style = getComputedStyle(cell);
+        return {
+          input: f.querySelector("input")!.getBoundingClientRect().width,
+          room: cell.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+        };
+      });
+      // The field is capped at its own maximum width (--input-width-m), and fills a cell narrower than that. The input
+      // is what is left of the field after its padding and the clear button.
+      const wanted = Math.min(room, 240) * 0.7;
+      expect
+        .soft(input, `${Math.round(zoom * 100)}% zoom: the input is ${input}px in ${room}px of room`)
+        .toBeGreaterThan(wanted);
+    });
+  });
+});

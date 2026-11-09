@@ -115,13 +115,18 @@
                         <a
                           (click)="contentService.tokenSelected(element.token.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.token.serial)"
-                          class="cursor-pointer"
+                          [appTruncationTooltip]="element.token[column.key]"
+                          class="cursor-pointer cell-truncate"
                           role="button"
                           tabindex="0">
                           {{ element.token[column.key] }}
                         </a>
                       } @else {
-                        <span> {{ element.token[column.key] }} </span>
+                        <span
+                          [appTruncationTooltip]="element.token[column.key]"
+                          class="cell-truncate">
+                          {{ element.token[column.key] }}
+                        </span>
                       }
                     </app-copyable>
                   }

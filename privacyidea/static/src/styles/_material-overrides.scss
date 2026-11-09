@@ -582,3 +582,11 @@ tr.mat-mdc-row:not(:hover):not(:has(:focus-visible)) app-copyable:has(.cell-trun
   margin-left: 0;
   overflow: hidden;
 }
+
+// A value next to its actions (copy, filter) that does not truncate wraps within its cell, at any character if it has
+// no break (serials, hashes, user names). Without this the value keeps its full width, pushes its actions out of the
+// cell and the cell's clipping hides them.
+app-copyable > .flex-row > :not(.copyable-actions):not(.cell-truncate) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
