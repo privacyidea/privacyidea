@@ -60,6 +60,30 @@ export function policyActionMatchesFilter(
 }
 
 /**
+ * The server stores all actions of a policy as one comma-joined string and splits it at every comma not
+ * preceded by a backslash, so such a comma in a value would turn the rest of the value into separate actions.
+ */
+export function hasUnescapedComma(value: unknown): boolean {
+  return typeof value === "string" && /(?<!\\),/.test(value);
+}
+
+/**
+ * The message actions in which the server turns `\,` back into a comma (the `replace(r"\,", ",")` calls in
+ * tokenclass.py, emailtoken.py, smstoken.py, indexedsecrettoken.py and pushtoken.py). Every other action keeps
+ * the backslash in its value.
+ */
+export const COMMA_UNESCAPING_ACTIONS: ReadonlySet<string> = new Set([
+  "challenge_text",
+  "email_challenge_text",
+  "emailsubject",
+  "emailtext",
+  "indexedsecret_challenge_text",
+  "push_challenge_text",
+  "sms_challenge_text",
+  "smstext"
+]);
+
+/**
  * Whether `name` collides with one of `policies`, ignoring case. `ownName` is the current name of the policy
  * being edited: it never collides with itself, and neither does a name that is left unchanged. A missing name
  * (e.g. from a policy template without one) collides with nothing.
@@ -78,6 +102,31 @@ export function policyNameCollides(policies: PolicyDetail[], name: string, ownNa
  */
 export function checkAllResolversWithoutResolver(policy: Partial<PolicyDetail>): boolean {
   return !!policy.check_all_resolvers && !policy.resolver?.length;
+}
+
+/**
+ * Whether `value` is acceptable for `action`, judged by the action's type: a bool is `true` or `false`, an int is
+ * an integer, a str or text is not blank.
+ */
+export function policyActionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
+  if (!action) return false;
+  const actionType = action.type;
+  if (!actionType) return false;
+  if (actionType === "bool" && typeof value === "boolean") return true;
+  if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
+  if (typeof value !== "string") return false;
+  if (hasUnescapedComma(value)) return false;
+
+  if (actionType === "bool") {
+    return value.toLowerCase() === "true" || value.toLowerCase() === "false";
+  } else if (actionType === "int") {
+    return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
+  } else if (actionType === "str") {
+    return value.trim().length > 0;
+  } else if (actionType === "text") {
+    return value.trim().length > 0;
+  }
+  return false;
 }
 
 export interface PolicyDetail {
@@ -610,23 +659,7 @@ export class PolicyService implements PolicyServiceInterface {
   }
 
   actionValueIsValid(action: PolicyActionDetail, value: string | number | boolean): boolean {
-    if (!action) return false;
-    const actionType = action.type;
-    if (!actionType) return false;
-    if (actionType === "bool" && typeof value === "boolean") return true;
-    if (actionType === "int" && typeof value === "number") return Number.isInteger(value);
-    if (typeof value !== "string") return false;
-
-    if (actionType === "bool") {
-      return value.toLowerCase() === "true" || value.toLowerCase() === "false";
-    } else if (actionType === "int") {
-      return value.trim().length > 0 && !isNaN(Number(value)) && Number.isInteger(Number(value));
-    } else if (actionType === "str") {
-      return value.trim().length > 0;
-    } else if (actionType === "text") {
-      return value.trim().length > 0;
-    }
-    return false;
+    return policyActionValueIsValid(action, value);
   }
 
   async saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean> {

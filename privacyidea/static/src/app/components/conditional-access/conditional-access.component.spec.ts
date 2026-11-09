@@ -143,10 +143,9 @@ describe("ConditionalAccessComponent", () => {
   });
 
   it("should navigate to the edit page for a policy", () => {
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     component.onEditPolicy(samplePolicy);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS + samplePolicy.id
-    );
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_DETAILS, samplePolicy.id]);
   });
 
   it("should disable an enabled policy on toggle", () => {

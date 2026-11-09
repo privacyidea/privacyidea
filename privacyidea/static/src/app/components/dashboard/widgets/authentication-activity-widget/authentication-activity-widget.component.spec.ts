@@ -39,6 +39,7 @@ import { toFilterDisplay } from "@utils/date-format.utils";
 import { of, Subject, throwError } from "rxjs";
 import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
 import { AuthenticationActivityWidgetComponent } from "./authentication-activity-widget.component";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 
 const instance: WidgetInstance = { id: "activity-1", type: "authentication-activity", x: 0, y: 0, cols: 8, rows: 9 };
 
@@ -108,6 +109,7 @@ describe("AuthenticationActivityWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [AuthenticationActivityWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
         // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out

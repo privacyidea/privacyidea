@@ -42,6 +42,11 @@ export class TruncationTooltipDirective {
   // DOM would pick up icon ligatures and other non-text content.
   readonly text = input.required<string>({ alias: "appTruncationTooltip" });
 
+  // For a host that cannot clip itself, such as a Material component whose label lives in an inner element: the
+  // selector of the descendant that clips. The pointer and focus listeners stay on the host, which is where focus
+  // lands, while the width is measured on the descendant. Without it the host itself is measured.
+  readonly clipSelector = input<string>();
+
   private readonly tooltip = inject(MatTooltip);
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -67,7 +72,9 @@ export class TruncationTooltipDirective {
 
   private syncTooltip(): void {
     const host = this.elementRef.nativeElement;
-    const truncated = this.isTruncated(host);
+    const selector = this.clipSelector();
+    const clipper = (selector ? host.querySelector<HTMLElement>(selector) : null) ?? host;
+    const truncated = this.isTruncated(clipper);
     const message = this.text();
     this.tooltip.message = truncated ? message : "";
     this.tooltip.disabled = !truncated || !message;

@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import csv
+import io
 from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta, timezone
 
@@ -625,6 +627,18 @@ class APIAuditTestCase(MyApiTestCase):
             value = res.json.get("result").get("value")
             self.assertEqual(1, value.get("count"), value)
 
+    def test_07a_search_by_the_entry_number(self):
+        Audit.query.delete()
+        for action in ("action1", "action2", "action3"):
+            Audit(action=action, success=1).save()
+        number = Audit.query.filter_by(action="action1").first().id
+        with self.app.test_request_context('/audit/', method='GET',
+                                           query_string={"number": str(number), "action": "action*"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertListEqual(["action1"], [entry["action"] for entry in res.json["result"]["value"]["auditdata"]])
+
     def test_08_an_audit_policy_is_read_with_its_wildcard_and_exclusions(self):
         self.setUp_user_realms()
         Audit.query.delete()
@@ -723,3 +737,165 @@ class APIAuditTestCase(MyApiTestCase):
             delete_policy("audit_operator")
             delete_realm(realm)
             delete_resolver(resolver)
+
+    def test_11_the_realms_of_an_administrator_come_from_their_audit_policies_only(self):
+        # A search key named like the internal list of allowed realms neither widens nor replaces the realms of the
+        # policies, in the search and in the download
+        self.setUp_user_realms()
+        Audit.query.delete()
+        Audit(action="enroll", success=1, realm=self.realm1a).save()
+        Audit(action="enroll", success=1, realm=self.realm2b).save()
+        Audit(action="enroll", success=1, realm=self.realm2b).save()
+        Audit(action="enroll", success=1, realm="").save()
+        set_policy("audit_realm1a", scope=SCOPE.ADMIN, realm=self.realm1a,
+                   action=f"{PolicyAction.AUDIT}, {PolicyAction.AUDIT_DOWNLOAD}")
+        try:
+            for requested_realms in ([self.realm2b], [self.realm1a, self.realm2b, ""]):
+                body = {"action": "enroll", "allowed_audit_realm": requested_realms}
+                with self.subTest(requested_realms=requested_realms):
+                    with self.app.test_request_context('/audit/', method='GET', json=body,
+                                                       headers={'Authorization': self.at}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertListEqual([self.realm1a],
+                                         [entry["realm"] for entry in res.json["result"]["value"]["auditdata"]])
+
+                    with self.app.test_request_context('/audit/audit.csv', method='GET', json=body,
+                                                       headers={'Authorization': self.at}):
+                        res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code)
+                    rows = [row for row in csv.reader(io.StringIO(res.get_data(as_text=True))) if "enroll" in row]
+                    self.assertEqual(1, len(rows), rows)
+                    self.assertIn(self.realm1a, rows[0])
+        finally:
+            delete_policy("audit_realm1a")
+
+
+class AuditDownloadRealmTestCase(MyApiTestCase):
+    """
+    The audit download contains the entries of the realms that both the auditlog_download and the auditlog policies
+    of the administrator grant, and the administrator's own entries.
+    """
+    realm1 = "dlrealm1"
+    realm2 = "dlrealm2"
+    policy_names = ["dl_download", "dl_view"]
+    marks = ["MARK-R1", "MARK-R2", "MARK-NOREALM"]
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": PWFILE})
+        set_realm(self.realm1, [{"name": self.resolvername1}])
+        set_realm(self.realm2, [{"name": self.resolvername1}])
+        # "adminrealm" is a superuser realm of the test configuration: selfservice@adminrealm is a helpdesk admin
+        set_realm("adminrealm", [{"name": self.resolvername1}])
+        Audit.query.delete()
+        for _ in range(2):
+            Audit(action="MARK-R1", success=1, realm=self.realm1).save()
+        for _ in range(3):
+            Audit(action="MARK-R2", success=1, realm=self.realm2).save()
+        Audit(action="MARK-NOREALM", success=1, realm="").save()
+
+    def tearDown(self) -> None:
+        for name in self.policy_names:
+            with suppress(ResourceNotFoundError):
+                delete_policy(name)
+        for realm in [self.realm1, self.realm2, "adminrealm"]:
+            delete_realm(realm)
+        super().tearDown()
+
+    def helpdesk_authorization(self) -> str:
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": "selfservice@adminrealm", "password": "test"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return res.json["result"]["value"]["token"]
+
+    def download(self, authorization: str, query: dict | None = None) -> dict[str, int]:
+        with self.app.test_request_context("/audit/audit.csv", method="GET", query_string=query or {},
+                                           headers={"Authorization": authorization}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code)
+        body = res.get_data(as_text=True)
+        return {mark: body.count(mark) for mark in self.marks}
+
+    def test_01_download_right_without_view_right(self):
+        # Without a matching auditlog policy only the administrator's own entries are downloaded
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        authorization = self.helpdesk_authorization()
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(authorization))
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(authorization, {"action": "MARK-R2"}))
+
+    def test_02_download_and_view_rights_for_different_realms(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        set_policy("dl_view", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm2,
+                   action=PolicyAction.AUDIT)
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(self.helpdesk_authorization()))
+
+    def test_03_local_admin_with_download_right_only(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, realm=self.realm1, action=PolicyAction.AUDIT_DOWNLOAD)
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(self.at))
+
+    def test_04_view_right_for_every_realm_and_download_right_for_one(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        set_policy("dl_view", scope=SCOPE.ADMIN, adminrealm="adminrealm", action=PolicyAction.AUDIT)
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(self.helpdesk_authorization()))
+
+    def test_05_download_and_view_rights_for_the_same_realm(self):
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        set_policy("dl_view", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm=self.realm1,
+                   action=PolicyAction.AUDIT)
+        authorization = self.helpdesk_authorization()
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(authorization))
+        # A download right without a realm: the realms of the view right
+        set_policy("dl_download", scope=SCOPE.ADMIN, adminrealm="adminrealm", realm="",
+                   action=PolicyAction.AUDIT_DOWNLOAD)
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 0, "MARK-NOREALM": 0}, self.download(authorization))
+        # A realm parameter only filters inside the granted realms
+        self.assertDictEqual({"MARK-R1": 0, "MARK-R2": 0, "MARK-NOREALM": 0},
+                             self.download(authorization, {"realm": self.realm2}))
+
+    def test_06_no_admin_policy_at_all(self):
+        self.assertDictEqual({"MARK-R1": 2, "MARK-R2": 3, "MARK-NOREALM": 1}, self.download(self.at))
+
+
+class HideAuditColumnsPerEntryTestCase(MyApiTestCase):
+    """
+    hide_audit_columns restricted to a realm also applies in an audit list that is not filtered by a user or realm:
+    per entry by its user, realm and resolver.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        Audit.query.delete()
+        Audit(action="HIDECOLUMNS", success=1, realm=self.realm1, user="cornelius", resolver=self.resolvername1,
+              info="realm1 info").save()
+        Audit(action="HIDECOLUMNS", success=1, realm=self.realm3, user="root", resolver=self.resolvername3,
+              info="realm3 info").save()
+        set_policy("admin_audit", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT)
+        set_policy("admin_hide_columns", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.HIDE_AUDIT_COLUMNS}=info")
+
+    def tearDown(self) -> None:
+        delete_policy("admin_audit")
+        delete_policy("admin_hide_columns")
+        super().tearDown()
+
+    def test_01_audit_list(self):
+        for query, expected in (({"action": "HIDECOLUMNS"}, {self.realm1: False, self.realm3: True}),
+                                ({"action": "HIDECOLUMNS", "realm": self.realm1}, {self.realm1: False})):
+            with self.subTest(query=query):
+                with self.app.test_request_context("/audit/", method="GET", query_string=query,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertDictEqual(expected, {entry["realm"]: "info" in entry
+                                                for entry in res.json["result"]["value"]["auditdata"]})

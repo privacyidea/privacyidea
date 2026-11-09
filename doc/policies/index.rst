@@ -270,9 +270,8 @@ kind of request has, and which actions have special rules.
 
   Times are the local time of the privacyIDEA server, compared at minute precision with
   both ends included: ``8-18`` means from 08:00 up to and including 18:00, and ``0-23``
-  ends at 23:00. A range can not cross midnight (``22-6`` is rejected). The current WebUI
-  only accepts whole hours (``<dow>: <hh>-<hh>``), so the forms with minutes, like
-  ``0:00-23:59``, can only be set through the API.
+  ends at 23:00. For a whole day, use ``0:00-23:59``. A range can not cross midnight
+  (``22-6`` is rejected).
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before

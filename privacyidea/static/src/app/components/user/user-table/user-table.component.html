@@ -17,9 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  aria-label="User Layout"
-  class="user-layout"
-  i18n-aria-label="@@user.userLayout">
+  class="user-layout">
   <div
     appScrollToTop
     class="user-table-container">
@@ -141,10 +139,10 @@
                       @if (element[column.key]) {
                         <app-copyable [copyText]="element[column.key]">
                           <a
-                            (click)="onClickUsername(element)"
                             [appTruncationTooltip]="element[column.key]"
                             class="cell-truncate"
-                            routerLink="/users/details/{{ element.username }}">
+                            [routerLink]="[ROUTE_PATHS.USERS_DETAILS, element.username]"
+                            [queryParams]="{ realm: userService.selectedUserRealm() }">
                             {{ element[column.key] }}
                           </a>
                         </app-copyable>

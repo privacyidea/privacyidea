@@ -34,6 +34,14 @@ describe("OtpValuesComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("names the print button", () => {
+    fixture.componentRef.setInput("otpValues", ["123456", "654321"]);
+    fixture.detectChanges();
+
+    const printButton: HTMLButtonElement = fixture.nativeElement.querySelector("button[mat-icon-button]");
+    expect(printButton.getAttribute("aria-label")).toBe("Print OTP Values");
+  });
+
   it("printOtps should open window", async () => {
     const mockPrintWindow = {
       document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },

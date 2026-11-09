@@ -26,7 +26,7 @@ import { MatSelectModule } from "@angular/material/select";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ApiClientIssuedKeyBannerComponent } from "@components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component";
 import { ApiClientRememberedDevicesComponent } from "@components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -42,6 +42,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { clearField, hasError } from "@utils/form-state.utils";
+import { ERR } from "@utils/form-rules.utils";
 
 interface ApiClientFormModel {
   display_name: string;
@@ -118,6 +120,19 @@ export class ApiClientEditComponent implements OnDestroy {
     disabled(f.display_name, () => !this.canEditFields());
   });
 
+  // Edit mode shows the integration's label for the immutable client type in a read-only field.
+  private readonly clientTypeLabelModel = linkedSignal(() => ({
+    label: this.integrationsService.labelFor(this.apiClientModel().client_type)
+  }));
+
+  protected readonly clientTypeLabelForm = form(this.clientTypeLabelModel, (f) => {
+    disabled(f.label);
+  });
+
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
+  protected readonly ERR = ERR;
+
   canEditFields(): boolean {
     return this.authService.actionAllowed(this.isEditMode() ? "api_client_edit" : "api_client_add");
   }
@@ -133,7 +148,7 @@ export class ApiClientEditComponent implements OnDestroy {
       // (e.g. navigating directly from one client's detail page to another's),
       // so a plaintext key just issued for the previous client must not linger.
       this.apiClientService.dismissIssuedKey();
-      const id = params.get("id");
+      const id = params.get(ROUTE_PARAMS.ID);
       this.isEditMode.set(!!id);
       this.editClientId.set(id);
       this.apiClientForm().reset();

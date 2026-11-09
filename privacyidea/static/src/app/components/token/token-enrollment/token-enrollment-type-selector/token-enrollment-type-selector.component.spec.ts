@@ -16,13 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { MockTokenService } from "../../../../../testing/mock-services";
-import { TokenService, TokenType } from "../../../../services/token/token.service";
+import { TokenService } from "../../../../services/token/token.service";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector.component";
 
 describe("TokenEnrollmentTypeSelectorComponent", () => {
@@ -55,6 +54,15 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
   });
 
   describe("token type select", () => {
+    it("is named by its visible Token Type label", () => {
+      const select: HTMLElement = fixture.nativeElement.querySelector("mat-select");
+      const labelId = select.getAttribute("aria-labelledby")?.split(" ")[0] ?? "";
+      const label = fixture.nativeElement.querySelector("mat-form-field label");
+
+      expect(label?.textContent?.trim()).toBe("Token Type");
+      expect(label?.id).toBe(labelId);
+    });
+
     it("renders one option per token type", () => {
       const selectInstance: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
       expect(selectInstance.options.length).toBe(tokenService.tokenTypeOptions().length);
@@ -94,13 +102,6 @@ describe("TokenEnrollmentTypeSelectorComponent", () => {
       fixture.detectChanges();
       const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
       expect(button.disabled).toBe(false);
-    });
-
-    it("enroll button is disabled when no token type is selected", () => {
-      (tokenService.selectedTokenType as unknown as WritableSignal<TokenType | null>).set(null);
-      fixture.detectChanges();
-      const button: HTMLButtonElement = fixture.nativeElement.querySelector("button[type='submit']");
-      expect(button.disabled).toBe(true);
     });
   });
 

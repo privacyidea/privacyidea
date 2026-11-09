@@ -97,12 +97,12 @@ describe("MachinesComponent", () => {
 
   it("should navigate to details page", () => {
     const router = TestBed.inject(Router);
-    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    jest.spyOn(router, "navigate").mockResolvedValue(true);
     const machine = machineServiceMock.machines()[0];
     component.openDetailsDialog(machine);
-    expect(router.navigateByUrl).toHaveBeenCalledWith(
-      ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
-    );
+    expect(router.navigate).toHaveBeenCalledWith([ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS, machine.id], {
+      queryParams: { resolver: machine.resolver_name }
+    });
   });
 
   it("should initialize paginator page size to the second page size option", () => {

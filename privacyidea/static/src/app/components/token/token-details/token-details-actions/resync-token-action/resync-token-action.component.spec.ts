@@ -61,6 +61,16 @@ describe("ResyncTokenActionComponent", () => {
     expect(resyncSpy).toHaveBeenCalledWith("Mock serial", "otp1", "otp2");
   });
 
+  it("typing into the OTP fields updates the models", () => {
+    const [first, second] = Array.from(fixture.nativeElement.querySelectorAll("input[matInput]")) as HTMLInputElement[];
+    first.value = "111111";
+    first.dispatchEvent(new Event("input"));
+    second.value = "222222";
+    second.dispatchEvent(new Event("input"));
+    expect(component.firstOTPValue()).toBe("111111");
+    expect(component.secondOTPValue()).toBe("222222");
+  });
+
   it("should resync OTP token on button click", () => {
     component.firstOTPValue.set("otp1");
     component.secondOTPValue.set("otp2");

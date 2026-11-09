@@ -123,10 +123,10 @@ describe("PrivacyideaServersComponent", () => {
   });
 
   it("should navigate to details route on openEditDialog with server", () => {
-    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const spy = jest.spyOn(router, "navigate").mockResolvedValue(true);
     const server = privacyideaServerServiceMock.remoteServerOptions()[0];
     component.openEditDialog(server);
-    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
+    expect(spy).toHaveBeenCalledWith([ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS, server.identifier]);
   });
 
   it("should delete server after confirmation", () => {

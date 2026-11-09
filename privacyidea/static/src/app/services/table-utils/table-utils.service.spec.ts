@@ -271,19 +271,6 @@ describe("TableUtilsService", () => {
 
   describe("column classes", () => {
     it.each([
-      // TODO should be true once these links are reachable
-      ["username", false],
-      ["realms", false],
-      ["unknown", false]
-    ])('isLink("%s") → %s', (key, expected) => {
-      expect(service.isLink(key)).toBe(expected);
-    });
-
-    it('isLink("container_serial") → true', () => {
-      expect(service.isLink("container_serial")).toBe(true);
-    });
-
-    it.each([
       ["description", "details-scrollable-container"],
       ["maxfail", "details-value"],
       ["count_window", "details-value"],

@@ -36,7 +36,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -49,6 +49,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
   checkAllResolversWithoutResolver,
+  hasUnescapedComma,
   PolicyDetail,
   PolicyService,
   PolicyServiceInterface
@@ -124,13 +125,17 @@ export class PolicyEditPageComponent implements OnDestroy {
     );
   });
   readonly checkAllResolversWithoutResolver = computed(() => checkAllResolversWithoutResolver(this.editedPolicy()));
+  /**
+   * The panel reports whether name, priority, scope and the added actions satisfy their rules, the name collision
+   * included. No action value may hold an unescaped comma, since the server would split the value there. A policy
+   * that checks all resolvers of a user needs a resolver.
+   */
   readonly canSave = computed(
     () =>
       this.savingName() === null &&
       this.isPolicyEdited() &&
-      !!this.editedPolicy().name?.trim() &&
-      /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name) &&
-      !this.nameTaken() &&
+      !!this.panel()?.valid() &&
+      !Object.values(this.editedPolicy().action ?? {}).some(hasUnescapedComma) &&
       !this.checkAllResolversWithoutResolver()
   );
   readonly title = computed(() =>
@@ -141,7 +146,7 @@ export class PolicyEditPageComponent implements OnDestroy {
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const name = params.get("name");
+      const name = params.get(ROUTE_PARAMS.NAME);
       if (name) {
         this.mode.set("edit");
         this.editPolicyName = name;

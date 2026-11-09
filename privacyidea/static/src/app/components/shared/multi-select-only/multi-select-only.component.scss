@@ -1,5 +1,11 @@
 @use "@angular/material" as mat;
 
+// A multi-select has no form control, so Material never puts its field into the error state. The hint carries
+// the error text in the colour of a mat-error.
+.error-hint {
+  color: var(--mat-form-field-error-text-color);
+}
+
 .select-header-actions {
   position: sticky;
   top: 0;

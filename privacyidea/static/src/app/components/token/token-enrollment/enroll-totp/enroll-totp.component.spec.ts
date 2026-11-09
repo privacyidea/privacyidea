@@ -20,18 +20,27 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import { DEFAULT_OTP_LENGTH, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollTotpComponent } from "./enroll-totp.component";
+import {
+  clearOverlays,
+  clickCheckbox,
+  flushFixture,
+  matSelectAt,
+  pickOption,
+  typeInto
+} from "@testing/enroll-form-dom";
 
 describe("EnrollTotpComponent", () => {
   let component: EnrollTotpComponent;
   let fixture: ComponentFixture<EnrollTotpComponent>;
   let authService: MockAuthService;
+  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -46,6 +55,7 @@ describe("EnrollTotpComponent", () => {
     }).compileComponents();
 
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
 
     fixture = TestBed.createComponent(EnrollTotpComponent);
     component = fixture.componentInstance;
@@ -70,7 +80,7 @@ describe("EnrollTotpComponent", () => {
   });
 
   it("Uses policy values for hashlib, otplen, and time step", () => {
-    authService.rightsWithValues.set({ [TOTP_HASHLIB]: "sha512", [TOTP_OTP_LENGTH]: "8", [TOTP_TIME_STEP]: "45" });
+    authService.rightsWithValues.set({ totp_hashlib: "sha512", totp_otplen: "8", totp_timestep: "45" });
     fixture = TestBed.createComponent(EnrollTotpComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -93,6 +103,90 @@ describe("EnrollTotpComponent", () => {
     fixture.componentRef.setInput("disabled", false);
     fixture.detectChanges();
     checkPolicyEnforcedValues();
+  });
+
+  it("presets hashlib, otplen and time step from the system config", () => {
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture = TestBed.createComponent(EnrollTotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.hashAlgorithmForm().disabled()).toBe(false);
+    expect(component.timeStep()).toBe(60);
+    expect(component.timeStepForm().disabled()).toBe(false);
+    expect(component.otpLength()).toBe(8);
+    expect(component.otpLengthForm().disabled()).toBe(false);
+  });
+
+  it("keeps the values the user picked when the system config loads later", () => {
+    fixture.detectChanges();
+    component.hashAlgorithm.set("sha512");
+    component.timeStep.set(60);
+    component.otpLength.set(8);
+    // Every preset must change, otherwise the linked signals do not recompute at all.
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "90", [DEFAULT_OTP_LENGTH]: "10" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.timeStep()).toBe(60);
+    expect(component.otpLength()).toBe(8);
+  });
+
+  it("keeps the presets when enrollment data without these values arrives later", () => {
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha512", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture = TestBed.createComponent(EnrollTotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    fixture.componentRef.setInput("enrollmentData", { type: "totp", description: "live-check-rollover" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.timeStep()).toBe(60);
+    expect(component.otpLength()).toBe(8);
+    expect(component.generateOnServer()).toBe(true);
+  });
+
+  it("applies the values the enrollment data contains", () => {
+    fixture.componentRef.setInput("enrollmentData", {
+      type: "totp",
+      generateOnServer: false,
+      otpLength: 8,
+      hashAlgorithm: "sha256",
+      timeStep: 60
+    });
+    fixture.detectChanges();
+
+    expect(component.generateOnServer()).toBe(false);
+    expect(component.hashAlgorithm()).toBe("sha256");
+    expect(component.timeStep()).toBe(60);
+    expect(component.otpLength()).toBe(8);
+  });
+
+  it("keeps enrollment data values that equal the preset when the system config loads later", () => {
+    fixture.componentRef.setInput("enrollmentData", { type: "totp", otpLength: 6, hashAlgorithm: "sha1", timeStep: 30 });
+    fixture.detectChanges();
+    expect(component.otpLength()).toBe(6);
+    expect(component.hashAlgorithm()).toBe("sha1");
+    expect(component.timeStep()).toBe(30);
+
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.otpLength()).toBe(6);
+    expect(component.hashAlgorithm()).toBe("sha1");
+    expect(component.timeStep()).toBe(30);
+  });
+
+  it("keeps the policy values over a system config that loads later", () => {
+    authService.rightsWithValues.set({ totp_hashlib: "sha512", totp_otplen: "6", totp_timestep: "30" });
+    fixture.detectChanges();
+    systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithm()).toBe("sha512");
+    expect(component.timeStep()).toBe(30);
+    expect(component.otpLength()).toBe(6);
   });
 
   it("should disable/enable all controls according to disable input", () => {
@@ -285,6 +379,98 @@ describe("EnrollTotpComponent", () => {
       expect(component.generateOnServer()).toBe(true);
       expect(component.otpLength()).toBe(6);
       expect(component.hashAlgorithm()).toBe("sha1");
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    function recreate() {
+      fixture = TestBed.createComponent(EnrollTotpComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+    }
+
+    it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
+      expect(component.generateOnServerForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.generateOnServerForm().dirty()).toBe(true);
+    });
+
+    it("writes a click on the two-step checkbox to the model", async () => {
+      authService.check2Step.mockReturnValue("allow");
+      recreate();
+
+      await clickCheckbox(fixture, "mat-checkbox:first-of-type");
+
+      expect(component.twoStepEnabled()).toBe(true);
+      expect(component.twoStepEnabledForm().dirty()).toBe(true);
+    });
+
+    it("renders the checkboxes disabled while the policy forces the setting", () => {
+      authService.check2Step.mockReturnValue("force");
+      authService.checkForceServerGenerateOTPKey.mockReturnValue(true);
+      recreate();
+
+      expect(fixture.nativeElement.querySelectorAll("mat-checkbox input[type=checkbox]:disabled").length).toBe(2);
+    });
+
+    it("writes the picked OTP length, hash algorithm and timestep to the model", async () => {
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+      await pickOption(fixture, matSelectAt(fixture, 2), 1);
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.timeStep()).toBe(60);
+      expect(component.timeStepForm().dirty()).toBe(true);
+    });
+
+    it("keeps a value the user picked that equals the preset when the system config loads later", async () => {
+      // Picking the already selected option emits no change, so the user switches away and back to the preset.
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 0), 0);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+      await pickOption(fixture, matSelectAt(fixture, 1), 0);
+      await pickOption(fixture, matSelectAt(fixture, 2), 1);
+      await pickOption(fixture, matSelectAt(fixture, 2), 0);
+      expect(component.otpLength()).toBe(6);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+      expect(component.timeStep()).toBe(30);
+      expect(component.timeStepForm().dirty()).toBe(true);
+
+      systemService.systemConfig.set({ [TOTP_HASHLIB]: "sha256", [TOTP_TIME_STEP]: "60", [DEFAULT_OTP_LENGTH]: "8" });
+      await flushFixture(fixture);
+
+      expect(component.otpLength()).toBe(6);
+      expect(component.hashAlgorithm()).toBe("sha1");
+      expect(component.timeStep()).toBe(30);
+    });
+
+    it("renders the OTP key errors once the field was touched", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      fixture.nativeElement.querySelector("input[matInput]").dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP key is required");
+      expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters long.");
+    });
+
+    it("accepts a typed OTP key of at least 16 characters", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      await typeInto(fixture, fixture.nativeElement.querySelector("input[matInput]"), "0123456789abcdef");
+
+      expect(component.otpKeyForm().valid()).toBe(true);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
     });
   });
 });

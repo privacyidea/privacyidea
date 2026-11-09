@@ -32,11 +32,19 @@ import {
   EnrollmentArgs,
   EnrollTokenBase
 } from "@components/token/token-enrollment/enroll-token-base";
-import { DAYPASSWORD_HASHLIB, DAYPASSWORD_OTP_LENGTH, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
+import {
+  DAYPASSWORD_HASHLIB,
+  DAYPASSWORD_HASHLIB_POLICY,
+  DAYPASSWORD_OTP_LENGTH_POLICY,
+  DAYPASSWORD_TIME_STEP,
+  DAYPASSWORD_TIME_STEP_POLICY
+} from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -95,25 +103,32 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
   hashAlgorithm = linkedSignal<string>(() => this.defaultHashlib());
   timeStep = linkedSignal<string>(() => this.defaultTimeStep());
 
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
+
+  generateOnServerForm = form(this.generateOnServer, (f) => {
+    disabled(f, () => this.disabled() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
+  });
+
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: "minlength" }] : []));
+    validate(f, (ctx) => (ctx.value().length < 16 ? [{ kind: ERR.minLength }] : []));
     disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("daypassword"));
   });
 
   otpLengthForm = form(this.otpLength, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH_POLICY]);
   });
 
   hashAlgorithmForm = form(this.hashAlgorithm, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB_POLICY]);
   });
 
   timeStepForm = form(this.timeStep, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP]);
+    disabled(f, () => this.disabled() || !!this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP_POLICY]);
   });
 
   constructor() {
@@ -121,14 +136,14 @@ export class EnrollDaypasswordComponent extends EnrollTokenBase<DaypasswordEnrol
 
     // Apply policy defaults when rights load
     effect(() => {
-      const hashlib = this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB];
+      const hashlib = this.authService.rightsWithValues()[DAYPASSWORD_HASHLIB_POLICY];
       if (hashlib) this.hashAlgorithm.set(hashlib);
-      const otpLengthPolicy = this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH];
+      const otpLengthPolicy = this.authService.rightsWithValues()[DAYPASSWORD_OTP_LENGTH_POLICY];
       if (otpLengthPolicy) {
         const parsedLength = parseInt(otpLengthPolicy, 10);
         if (!isNaN(parsedLength)) this.otpLength.set(parsedLength);
       }
-      const timeStepPolicy = this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP];
+      const timeStepPolicy = this.authService.rightsWithValues()[DAYPASSWORD_TIME_STEP_POLICY];
       if (timeStepPolicy) this.timeStep.set(timeStepPolicy);
     });
 

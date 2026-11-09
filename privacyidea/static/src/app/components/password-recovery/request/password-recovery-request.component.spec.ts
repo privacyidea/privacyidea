@@ -49,6 +49,14 @@ describe("PasswordRecoveryRequestComponent", () => {
     fixture.detectChanges();
   });
 
+  it("names the submit button by its visible text", () => {
+    const submit = fixture.nativeElement.querySelector("button[type=submit]") as HTMLButtonElement;
+    expect(submit.textContent?.replace(submit.querySelector("mat-icon")?.textContent ?? "", "").trim()).toBe(
+      "Send Email"
+    );
+    expect(submit.hasAttribute("aria-label")).toBe(false);
+  });
+
   it("disables the submit button until the username and the email are given", () => {
     expect(component.isSubmitDisabled()).toBe(true);
     component.username.set("alice");

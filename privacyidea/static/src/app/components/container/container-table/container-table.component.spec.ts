@@ -21,12 +21,12 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-import { of } from "rxjs";
+import { provideRouter } from "@angular/router";
 
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
@@ -38,6 +38,7 @@ import { expectsTableStateGating } from "@testing/table-state-gating";
 import {
   MockContainerService,
   MockContentService,
+  MockDocumentationService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService,
@@ -66,19 +67,8 @@ describe("ContainerTableComponent (Jest)", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: TokenService, useClass: MockTokenService },
-        {
-          provide: Router,
-          useValue: {
-            navigate: jest.fn(),
-            events: of(new NavigationEnd(0, "/", "/"))
-          }
-        },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            params: of({ id: "123" })
-          }
-        },
+        { provide: DocumentationService, useClass: MockDocumentationService },
+        provideRouter([]),
         MockLocalService,
         MockNotificationService
       ]
@@ -99,6 +89,40 @@ describe("ContainerTableComponent (Jest)", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("links the container serial, its user and its tokens to their details pages", () => {
+    (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      rights: ["container_list"]
+    });
+    containerService.containerResource.set(
+      MockPiResponse.fromValue({
+        count: 1,
+        containers: [
+          {
+            serial: "C-1",
+            states: [],
+            realms: [],
+            tokens: [{ serial: "T-1", tokentype: "hotp" }],
+            type: "generic",
+            description: "",
+            users: [{ user_name: "alice", user_realm: "r1", user_resolver: "", user_id: "" }]
+          } as unknown as ContainerDetailData
+        ]
+      })
+    );
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector("tr[mat-row]").click();
+    fixture.detectChanges();
+
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+    expect(hrefOf("C-1")).toBe("/containers/details/C-1");
+    expect(hrefOf("alice")).toBe("/users/details/alice?realm=r1");
+    expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
   });
 
   it("containerDataSource maps user_name/user_realm from first user entry", () => {

@@ -20,19 +20,22 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import {
-  DAYPASSWORD_HASHLIB,
-  DAYPASSWORD_OTP_LENGTH,
-  DAYPASSWORD_TIME_STEP,
-  TOTP_HASHLIB,
-  TOTP_TIME_STEP
-} from "@constants/token.constants";
+import { DAYPASSWORD_HASHLIB, DAYPASSWORD_TIME_STEP, TOTP_HASHLIB, TOTP_TIME_STEP } from "@constants/token.constants";
 import { AuthService } from "@services/auth/auth.service";
 import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
+import {
+  checkboxInput,
+  clearOverlays,
+  clickCheckbox,
+  flushFixture,
+  matSelectAt,
+  pickOption,
+  typeInto
+} from "@testing/enroll-form-dom";
 
 describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
@@ -122,9 +125,9 @@ describe("EnrollDaypasswordComponent", () => {
     };
     systemService.systemConfig.set(mockConfig);
     authService.rightsWithValues.set({
-      [DAYPASSWORD_HASHLIB]: "sha256",
-      [DAYPASSWORD_OTP_LENGTH]: "8",
-      [DAYPASSWORD_TIME_STEP]: "48h"
+      daypassword_hashlib: "sha256",
+      daypassword_otplen: "8",
+      daypassword_timestep: "48h"
     });
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
     component = fixture.componentInstance;
@@ -184,6 +187,59 @@ describe("EnrollDaypasswordComponent", () => {
       expect(component.hashAlgorithm()).toBe("sha256");
       expect(component.timeStep()).toBe("24h");
       expect(component.generateOnServer()).toBe(true);
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
+      expect(component.generateOnServerForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture);
+
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.generateOnServerForm().dirty()).toBe(true);
+    });
+
+    it("renders the checkbox disabled while the policy forces server-side generation", () => {
+      authService.checkForceServerGenerateOTPKey.mockReturnValue(true);
+      fixture = TestBed.createComponent(EnrollDaypasswordComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      expect(checkboxInput(fixture).disabled).toBe(true);
+    });
+
+    it("writes the picked OTP length and hash algorithm to the model", async () => {
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+    });
+
+    it("renders the OTP key errors once the field was touched", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      fixture.nativeElement.querySelector("input[matInput]").dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain("OTP key is required");
+      expect(fixture.nativeElement.textContent).toContain("OTP key must be at least 16 characters long.");
+    });
+
+    it("accepts a typed OTP key of at least 16 characters", async () => {
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+
+      await typeInto(fixture, fixture.nativeElement.querySelector("input[matInput]"), "0123456789abcdef");
+
+      expect(component.otpKeyForm().valid()).toBe(true);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
     });
   });
 });

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnDestroy, signal, untracked } from "@angular/core";
-import { disabled, form, FormField, pattern, required } from "@angular/forms/signals";
+import { disabled, form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -27,12 +27,14 @@ import { MatIconModule } from "@angular/material/icon";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { ERR, identifierName } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 
 interface ServiceIdFormModel {
   servicename: string;
@@ -65,10 +67,13 @@ export class NewServiceIdComponent implements OnDestroy {
   serviceIdModel = signal<ServiceIdFormModel>({ ...EMPTY_SERVICE_ID_FORM });
 
   serviceIdForm = form(this.serviceIdModel, (f) => {
-    required(f.servicename);
-    pattern(f.servicename, /^[a-zA-Z0-9._-]*$/);
+    identifierName(f.servicename);
     disabled(f.servicename, () => this.isEditMode());
   });
+
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
 
   constructor() {
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
@@ -76,7 +81,7 @@ export class NewServiceIdComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const serviceName = params.get("name");
+      const serviceName = params.get(ROUTE_PARAMS.NAME);
       if (serviceName) {
         this.isEditMode.set(true);
         this.editServiceName = serviceName;
