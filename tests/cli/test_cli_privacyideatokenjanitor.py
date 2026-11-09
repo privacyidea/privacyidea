@@ -32,6 +32,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import enable_token, get_one_token, init_token
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import get_version_number
 from privacyidea.models.token import TokenOwner
 
 OTP_KEY = "3132333435363738393031323334353637383930"
@@ -47,6 +48,12 @@ class PITokenJanitorLoadTestCase(CliTestCase):
                       result.output, result)
         self.assertIn("Finds all tokens which match the conditions.",
                       result.output, result)
+
+    def test_02_version_shows_the_privacyidea_version(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_token_janitor, ["--version"])
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn(f"privacyIDEA {get_version_number()}", result.output)
 
 
 class TokenJanitorFindTestCase(CliTestCase):
