@@ -180,18 +180,26 @@ describe("ContainerTableComponent (Jest)", () => {
       fixture.detectChanges();
     });
 
-    it("always shows the template column with the template names and a header filter button, but no differences column and no template toolbar filter before a comparison", () => {
-      const header = fixture.nativeElement.querySelector("th.mat-column-template");
-      expect(header.textContent).toContain("Template");
-      expect(header.querySelector("button.filter-button")).not.toBeNull();
-      expect(header.querySelector("button.sort-button")).toBeNull();
-      expect(cellTexts("template")).toEqual(["base", "base", "", ""]);
+    it("shows neither the template nor the differences column and no template toolbar filter before a comparison", () => {
+      expect(fixture.nativeElement.querySelector("th.mat-column-template")).toBeNull();
       expect(fixture.nativeElement.querySelector("th.mat-column-differences")).toBeNull();
       expect(component.toolbarFilterKeys).not.toContain("template");
       expect(component.toolbarFilterKeys).toContain("assigned");
     });
 
+    it("shows the template column with the template names and a header filter button while the comparison is visible", () => {
+      component.comparisonVisible.set(true);
+      fixture.detectChanges();
+      const header = fixture.nativeElement.querySelector("th.mat-column-template");
+      expect(header.textContent).toContain("Template");
+      expect(header.querySelector("button.filter-button")).not.toBeNull();
+      expect(header.querySelector("button.sort-button")).toBeNull();
+      expect(cellTexts("template")).toEqual(["base", "base", "", ""]);
+    });
+
     it("offers the template filter options in the header filter menu", async () => {
+      component.comparisonVisible.set(true);
+      fixture.detectChanges();
       fixture.nativeElement.querySelector("th.mat-column-template button.filter-button").click();
       fixture.detectChanges();
       await fixture.whenStable();
@@ -238,15 +246,16 @@ describe("ContainerTableComponent (Jest)", () => {
       fixture.detectChanges();
 
       expect(fixture.nativeElement.querySelector("th.mat-column-differences")).toBeNull();
-      expect(fixture.nativeElement.querySelector("th.mat-column-template")).not.toBeNull();
+      expect(fixture.nativeElement.querySelector("th.mat-column-template")).toBeNull();
       expect(component.comparisonByContainerSerial()).toEqual({});
     });
 
-    describe("reset of the comparison", () => {
+    describe("re-compare on list change", () => {
       const compareFirst = () => {
         component.showComparison([comparisonOf("C-1")]);
         fixture.detectChanges();
         expect(fixture.nativeElement.querySelector("th.mat-column-differences")).not.toBeNull();
+        containerService.compareContainersWithTemplates.mockClear();
       };
 
       const triggers: { name: string; trigger: () => void }[] = [
@@ -255,17 +264,31 @@ describe("ContainerTableComponent (Jest)", () => {
         {
           name: "the active filter",
           trigger: () => containerService.activeFilter.set(new FilterValue({ value: "type: smartphone" }))
-        }
+        },
+        { name: "the page size at page index 0", trigger: () => containerService.pageSize.set(25) }
       ];
 
-      it.each(triggers)("resets the comparison when $name changes", ({ trigger }) => {
+      it.each(triggers)("compares the new list again after it loaded when $name changes", async ({ trigger }) => {
         compareFirst();
+        containerService.compareContainersWithTemplates.mockResolvedValue([comparisonOf("C-9")]);
+        const newRows = MockPiResponse.fromValue({ count: 1, containers: [containerWithSerial("C-9", "base")] });
+
+        containerService.containerResource.isLoading.set(true);
         trigger();
         fixture.detectChanges();
+        // Still loading, so the old rows must not be compared.
+        expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
 
-        expect(component.comparisonVisible()).toBe(false);
-        expect(component.comparisonByContainerSerial()).toEqual({});
-        expect(fixture.nativeElement.querySelector("th.mat-column-differences")).toBeNull();
+        containerService.containerResource.set(newRows);
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(containerService.compareContainersWithTemplates).toHaveBeenCalledTimes(1);
+        expect(containerService.compareContainersWithTemplates).toHaveBeenCalledWith(
+          newRows.result?.value?.containers
+        );
+        expect(component.comparisonVisible()).toBe(true);
+        expect(Object.keys(component.comparisonByContainerSerial())).toEqual(["C-9"]);
       });
 
       it("keeps the comparison when the container resource only reloads", () => {
@@ -275,6 +298,7 @@ describe("ContainerTableComponent (Jest)", () => {
 
         expect(component.comparisonVisible()).toBe(true);
         expect(component.comparisonByContainerSerial()["C-1"]).toBeDefined();
+        expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
         expect(fixture.nativeElement.querySelector("th.mat-column-differences")).not.toBeNull();
       });
     });

@@ -24,17 +24,20 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
-import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import {
+  ContainerService,
+  ContainerServiceInterface,
+  ContainerTemplateComparisonRow
+} from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService } from "@services/documentation/documentation.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { ContainerTemplateComparisonRow } from "@services/container/container.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { forkJoin } from "rxjs";
-import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
 import { TableActionsHost } from "../../../shared/table-actions/table-actions-host";
+import { TableAction, TableActionsComponent } from "../../../shared/table-actions/table-actions.component";
 
 @Component({
   selector: "app-container-table-actions",
@@ -59,7 +62,7 @@ export class ContainerTableActionsComponent extends TableActionsHost {
   readonly comparisonActive = input(false);
   readonly comparisonLoaded = output<ContainerTemplateComparisonRow[]>();
   readonly comparisonHidden = output<void>();
-  protected readonly comparingContainers = signal(false);
+  readonly comparingContainers = signal(false);
 
   protected readonly actions = computed<TableAction[]>(() => [
     {
@@ -155,17 +158,39 @@ export class ContainerTableActionsComponent extends TableActionsHost {
     return $localize`:@@container.unknownComparisonError:An unknown error occurred.`;
   }
 
-  private async compareDisplayedContainers(): Promise<void> {
+  private latestCompareRequest = 0;
+
+  async compareDisplayedContainers(): Promise<void> {
     const displayedContainers = this.containerService.containerResource.value()?.result?.value?.containers ?? [];
-    if (displayedContainers.length === 0 || this.comparingContainers()) {
+    // A newer request wins, the result of an older one is dropped.
+    const request = ++this.latestCompareRequest;
+    if (displayedContainers.length === 0) {
+      this.comparingContainers.set(false);
       return;
     }
 
+    const listState = () => ({
+      pageIndex: this.containerService.pageIndex(),
+      pageSize: this.containerService.pageSize(),
+      sort: this.containerService.sort(),
+      filter: this.containerService.activeFilter()
+    });
+    const before = listState();
     this.comparingContainers.set(true);
     try {
       const comparisons: ContainerTemplateComparisonRow[] =
         await this.containerService.compareContainersWithTemplates(displayedContainers);
-      this.comparisonLoaded.emit(comparisons);
+      const after = listState();
+      // The list changed while waiting, so the result belongs to rows no longer shown.
+      if (
+        request === this.latestCompareRequest &&
+        before.pageIndex === after.pageIndex &&
+        before.pageSize === after.pageSize &&
+        before.sort === after.sort &&
+        before.filter === after.filter
+      ) {
+        this.comparisonLoaded.emit(comparisons);
+      }
     } catch (error) {
       console.error("Failed to compare containers with their templates:", error);
       const message = this.comparisonErrorMessage(error);
@@ -173,7 +198,9 @@ export class ContainerTableActionsComponent extends TableActionsHost {
         $localize`:@@container.failedToCompareSelected:Failed to compare selected containers. ${message}:MESSAGE:`
       );
     } finally {
-      this.comparingContainers.set(false);
+      if (request === this.latestCompareRequest) {
+        this.comparingContainers.set(false);
+      }
     }
   }
 

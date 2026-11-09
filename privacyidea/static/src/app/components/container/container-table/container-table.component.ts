@@ -24,6 +24,7 @@ import {
   ElementRef,
   OnDestroy,
   ViewChild,
+  viewChild,
   WritableSignal,
   computed,
   effect,
@@ -95,11 +96,12 @@ const columnsKeyMap = [
   { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
   { key: "user_name", label: $localize`:@@common.user:User`, width: "s" },
   { key: "user_realm", label: $localize`:@@common.realm:Realm`, width: "s" },
-  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" },
-  { key: "template", label: $localize`:@@container.template:Template`, width: "l" }
+  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" }
 ];
 
+// Shown only while the comparison is visible.
 const comparisonColumnsKeyMap = [
+  { key: "template", label: $localize`:@@container.template:Template`, width: "l" },
   { key: "differences", label: $localize`:@@container.differences:Differences`, width: "l" }
 ];
 
@@ -281,18 +283,32 @@ export class ContainerTableComponent implements OnDestroy {
     this.comparisonVisible.set(true);
   }
 
-  private comparisonResetSkipsFirstRun = true;
+  private readonly containerTableActions = viewChild(ContainerTableActionsComponent);
+  private lastListState: unknown[] = [];
 
-  // Paging, sorting or filtering drops the comparison, a plain reload keeps it.
-  private readonly resetComparisonOnListChange = effect(() => {
-    this.containerService.pageIndex();
-    this.containerService.sort();
-    this.containerService.activeFilter();
-    if (this.comparisonResetSkipsFirstRun) {
-      this.comparisonResetSkipsFirstRun = false;
+  // While the comparison is visible, paging, a new page size, sorting or filtering compares the new rows again
+  // as soon as the new list has loaded. A plain reload of the same list keeps the comparison untouched.
+  private readonly recompareOnListChange = effect(() => {
+    const state = [
+      this.containerService.pageIndex(),
+      this.containerService.pageSize(),
+      this.containerService.sort(),
+      this.containerService.activeFilter()
+    ];
+    const loading = this.containerService.containerResource.isLoading();
+    this.containerService.containerResource.value();
+    const changed = state.some((part, i) => part !== this.lastListState[i]);
+    if (!changed || (this.comparisonVisible() && loading)) {
       return;
     }
-    untracked(() => this.hideComparison());
+    this.lastListState = state;
+    if (this.comparisonVisible()) {
+      untracked(() => {
+        // The map is replaced, not merged, so rows of the old list disappear.
+        this.comparisonByContainerSerial.set({});
+        void this.containerTableActions()?.compareDisplayedContainers();
+      });
+    }
   });
 
   hideComparison(): void {

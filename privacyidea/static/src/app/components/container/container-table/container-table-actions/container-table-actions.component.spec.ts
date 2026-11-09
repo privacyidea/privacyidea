@@ -22,10 +22,13 @@ import { MatMenuTrigger } from "@angular/material/menu";
 import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
+import { TableAction } from "@components/shared/table-actions/table-actions.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { of } from "rxjs";
-import { ContainerTableActionsComponent } from "./container-table-actions.component";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
   MockContainerService,
   MockContentService,
@@ -33,11 +36,8 @@ import {
   MockPiResponse,
   MockTableUtilsService
 } from "@testing/mock-services";
-import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TableAction } from "@components/shared/table-actions/table-actions.component";
-import { ContentService } from "@services/content/content.service";
-import { DocumentationService } from "@services/documentation/documentation.service";
-import { DialogService } from "@services/dialog/dialog.service";
+import { of } from "rxjs";
+import { ContainerTableActionsComponent } from "./container-table-actions.component";
 
 describe("ContainerTableActionsComponent", () => {
   let component: ContainerTableActionsComponent;
@@ -146,6 +146,48 @@ describe("ContainerTableActionsComponent", () => {
       expect(loadedSpy).toHaveBeenCalledWith(comparisons);
     });
 
+    it.each([
+      ["page index", () => containerService.pageIndex.set(1)],
+      ["page size", () => containerService.pageSize.set(25)],
+      ["sort", () => containerService.sort.set({ active: "type", direction: "desc" })],
+      ["active filter", () => containerService.activeFilter.set(new FilterValue({ value: "type: smartphone" }))]
+    ])("drops a late comparison result when the %s changed meanwhile", async (_name, change) => {
+      const shown = [{ serial: "CONT-1", template: "baseline" }] as ContainerDetailData[];
+      containerService.containerResource.set(MockPiResponse.fromValue({ containers: shown, count: 1 }));
+      let resolve!: (rows: unknown[]) => void;
+      containerService.compareContainersWithTemplates.mockReturnValue(new Promise((r) => (resolve = r)));
+      const loadedSpy = jest.fn();
+      component.comparisonLoaded.subscribe(loadedSpy);
+
+      const pending = component.toggleComparison();
+      change();
+      resolve([{ containerSerial: "CONT-1" }]);
+      await pending;
+
+      expect(loadedSpy).not.toHaveBeenCalled();
+      expect(component.comparingContainers()).toBe(false);
+    });
+
+    it("lets a newer comparison win over an older one that resolves later", async () => {
+      const shown = [{ serial: "CONT-1", template: "baseline" }] as ContainerDetailData[];
+      containerService.containerResource.set(MockPiResponse.fromValue({ containers: shown, count: 1 }));
+      const resolvers: ((rows: unknown[]) => void)[] = [];
+      containerService.compareContainersWithTemplates.mockImplementation(() => new Promise((r) => resolvers.push(r)));
+      const loadedSpy = jest.fn();
+      component.comparisonLoaded.subscribe(loadedSpy);
+
+      const first = component.compareDisplayedContainers();
+      const second = component.compareDisplayedContainers();
+      resolvers[1]([{ containerSerial: "new" }]);
+      await second;
+      resolvers[0]([{ containerSerial: "old" }]);
+      await first;
+
+      expect(loadedSpy).toHaveBeenCalledTimes(1);
+      expect(loadedSpy).toHaveBeenCalledWith([{ containerSerial: "new" }]);
+      expect(component.comparingContainers()).toBe(false);
+    });
+
     it("emits comparisonHidden instead of comparing while the comparison is shown", async () => {
       fixture.componentRef.setInput("comparisonActive", true);
       const hiddenSpy = jest.fn();
@@ -158,7 +200,11 @@ describe("ContainerTableActionsComponent", () => {
     });
 
     it.each([
-      ["the server message of an HttpErrorResponse", new HttpErrorResponse({ status: 403, error: { result: { error: { message: "no rights for container X" } } } }), "no rights for container X"],
+      [
+        "the server message of an HttpErrorResponse",
+        new HttpErrorResponse({ status: 403, error: { result: { error: { message: "no rights for container X" } } } }),
+        "no rights for container X"
+      ],
       ["the message of a plain Error", new Error("boom"), "boom"],
       ["the unknown-error text for a string", "oops", "unknown error"],
       ["the unknown-error text for an object without a message", { foo: 1 }, "unknown error"]

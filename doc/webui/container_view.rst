@@ -74,10 +74,10 @@ each token type is compared: for every token the template defines but the contai
 ``MISSING`` is added, and tokens beyond the number the template defines for their type are highlighted, also if the
 type is in the template.
 
-On the container list, the filter menu in the header of the *Template* column, which is always shown, offers three template filters: containers created with any template,
+On the container list, the filter menu in the header of the *Template* column, which is shown while the comparison is visible, offers three template filters: containers created with any template,
 containers without a template, or containers created from a selected template. Click *Compare with templates* to compare
-all containers of the current page with their own templates. Repeat the action on other pages to compare their
-containers as well. The container list
+all containers of the current page with their own templates. While the comparison is visible, changing the page, the
+page size, the sort order or the filter compares the containers shown afterwards again. The container list
 then additionally shows the column *Differences* for the compared containers. Token types the template defines but
 the container lacks are marked red with a minus, token types the container has in addition are marked yellow with a
 plus. A container that matches its template is marked *Equal*, and a container without a template shows an empty cell
