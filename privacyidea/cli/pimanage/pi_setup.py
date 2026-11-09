@@ -19,8 +19,8 @@
 
 import base64
 import binascii
+import os
 import pathlib
-import sys
 import click
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -39,7 +39,7 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 
 @setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
 @click.argument("encfile", type=click.File("rb"))
-@click.option("-o", "--outfile", type=click.File("w", lazy=False), default=sys.stdout, show_default=False,
+@click.option("-o", "--outfile", type=click.Path(dir_okay=False, allow_dash=True), default="-", show_default=False,
               help="The file to which the encrypted encryption key will be "
                    "written to (default: stdout)")
 @click.password_option(help="The password to encrypt the encryption key. "
@@ -60,16 +60,19 @@ def encrypt_enckey(encfile, outfile, password):
     # TODO we just print out a string here and assume, the user pipes it into a file.
     #      Maybe we should write the file here so we know what is in there
     # TODO: get the name/path of the encfile from the pi.cfg
-    out_path = pathlib.Path(outfile.name)
-    if out_path.is_file():
-        # Do not make the encrypted encryption key readable for others. The file is restricted before anything is
-        # written to it, and it stays writable for its owner, so that it can be written again.
-        out_path.chmod(0o600)
-        click.secho(f"The file permission of {out_path} was set to 600!", fg="yellow", err=True)
     enckey = encfile.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
-    outfile.write(res)
-    outfile.write('\n')
+    if outfile == "-":
+        click.echo(res)
+        return
+    # The output file is only opened after the key was read, so it can also be the key file itself. It is not
+    # readable for others before anything is written to it, and it stays writable for its owner.
+    out_path = pathlib.Path(outfile)
+    with os.fdopen(os.open(out_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+        out_path.chmod(0o600)
+        f.write(res)
+        f.write('\n')
+    click.secho(f"The file permission of {out_path} was set to 600!", fg="yellow", err=True)
 
 
 @setup_cli.command("create_enckey")
