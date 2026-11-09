@@ -24,6 +24,10 @@ options::
 
 For example ``pi-manage config challenge cleanup --dryrun``. Every level lists
 its commands and options with ``-h``, e.g. ``pi-manage config -h``.
+
+.. note:: ``pi-manage run`` is the exception: there ``-h`` sets the host. Use
+   ``pi-manage run --help`` instead.
+
 ``pi-manage --version`` shows the versions of privacyIDEA, Python and Flask.
 
 In the Docker deployment pi-manage runs in the container of the ``pi``
@@ -265,10 +269,9 @@ installation, with these limits:
 * Only the database of ``SQLALCHEMY_DATABASE_URI`` is dumped. An audit log in
   a database of its own (``PI_AUDIT_SQL_URI``, see :ref:`audit_parameters`) is
   not part of the backup.
-* The restore needs a configuration file named *pi.cfg* in the backed up
-  configuration directory. A configuration file that lives elsewhere or has
-  another name (see ``PRIVACYIDEA_CONFIGFILE`` above) is not backed up, and
-  the archive cannot be restored.
+* The restore needs a file named *pi.cfg* in the backed up configuration
+  directory. A configuration file outside of this directory is not backed up.
+  A file with another name is backed up, but the restore refuses the archive.
 * Besides the database dump, only the configuration directory (and a
   FreeRADIUS directory given with ``-r``) is archived. Files that privacyIDEA
   uses outside of it are not in the backup: the encryption key
@@ -325,9 +328,13 @@ points to::
 
    pi-manage backup restore /var/lib/privacyidea/backup/privacyidea-backup-<YYYYMMDD-HHMM>.tgz
 
-It does not create the database: the database and the database user have to
-exist already, as they do on a machine that has been set up before. Only the
-contents are replaced.
+The database user has to exist. Whether the database has to exist depends on
+the database:
+
+* PostgreSQL: the database has to exist.
+* MySQL/MariaDB: the restore creates a missing database, if the user may do
+  this. See the warning below.
+* SQLite: the restore writes the database file. Its directory has to exist.
 
 .. warning:: The restore extracts every file of the archive to its original
    path and overwrites the file there: the configuration directory with
@@ -337,10 +344,10 @@ contents are replaced.
    back in place yourself.
 
 .. note:: The archive also contains the *pi.cfg* of the machine the backup was
-   taken on, including its ``SQLALCHEMY_DATABASE_URI``. If you restore onto a
-   machine whose database is reached under a different URI, use
-   ``--keep-db-uri`` to keep the URI of the running installation instead of
-   the one from the backup.
+   taken on, including its ``SQLALCHEMY_DATABASE_URI``. If your database has a
+   different URI, use ``--keep-db-uri``. It reads the URI from the *pi.cfg*
+   that the restore overwrites, and writes it into the restored file. If there
+   is no such file, the URI from the backup is used without a message.
 
 .. warning:: On MySQL/MariaDB the dump contains the name of the database it was
    taken from and creates that database if it is missing, so the restore always
@@ -517,6 +524,10 @@ user, client or time condition, e.g.::
 
    pi-manage config policy create helpdesk admin "tokenlist, enable, disable"
 
+If a policy with this name exists, ``create`` changes it: it sets the new
+scope and actions and activates the policy. Realm, user, client and time stay
+as they are, unless the file of ``-f`` sets them. The description is deleted.
+
 With ``-f`` the policy is read from a file that contains a Python dictionary
 with the attributes of the policy. Only ``name``, ``scope``, ``action``,
 ``realm``, ``resolver``, ``user``, ``time``, ``client``, ``active``,
@@ -576,14 +587,14 @@ the WebUI or transferred with ``pi-manage config import``, see
 
    pi-manage config realm list
    pi-manage config realm create <name> [<resolver> ...]
-   pi-manage config realm delete <name> [--delete-custom-attributes]
+   pi-manage config realm delete <name> [--delete-custom-attributes] [--confirm-ca-policies]
    pi-manage config realm set_default <name>
    pi-manage config realm clear_default
 
 ``list`` marks the default realm with ``*``. ``create`` replaces an existing
-realm of the same name. ``delete`` refuses a realm that still has custom user
-attributes and asks whether to delete them as well;
-``--delete-custom-attributes`` deletes them without asking.
+realm of the same name. ``delete`` asks before it deletes a realm that still
+has custom user attributes or that a conditional access policy uses.
+``--delete-custom-attributes`` and ``--confirm-ca-policies`` skip the question.
 
 :ref:`Resolvers <useridresolvers>`::
 
@@ -591,8 +602,8 @@ attributes and asks whether to delete them as well;
    pi-manage config resolver create <name> <type> <file>
    pi-manage config resolver create_internal <name>
 
-``list -v`` also prints the configuration of each resolver; only the values
-named ``bindpw`` and ``password`` are masked. ``create`` reads the parameters
+``list -v`` also prints the configuration of each resolver. Passwords and
+other secrets are shown as ``__CENSORED__``. ``create`` reads the parameters
 of the resolver from a file that contains a Python dictionary; ``<type>`` is
 the resolver type, e.g. ``ldapresolver`` or ``sqlresolver``.
 ``create_internal`` creates an editable SQL resolver whose users are stored in
@@ -615,7 +626,8 @@ for confirmation.
    pi-manage config ca create_crl <name> [-f]
 
 ``create`` with the default type ``local`` asks for the details of a new local
-CA and creates its files as well, see :ref:`local_caconnector`.
+CA and creates its files as well, see :ref:`local_caconnector`. ``list -v``
+shows the configuration, with secrets as ``__CENSORED__``.
 ``create_crl`` creates and publishes a new CRL if the current one is about to
 expire; ``-f`` creates one in any case.
 
@@ -646,7 +658,9 @@ A token whose serial exists already is updated with the data from the file if
 it has the same token type. A serial that exists with another token type ends
 the import with an error at that line: the tokens before it are imported, the
 ones after it are not.
-``-t`` puts the tokens into a realm and can be given several times. The file
+``-t`` puts the tokens into a realm and can be given several times. If a realm
+does not exist, or the file contains an unknown token type, no token is
+imported. The file
 has to be plain text; GPG encrypted files and the other formats are imported
 in the WebUI or through the API, see :ref:`import`.
 
@@ -739,6 +753,12 @@ Existing configuration objects with the same name are overwritten, all other
 existing configuration is kept as is. As with the export, ``-t`` and ``-n``
 restrict the import to certain types or to a single object.
 
+Events and periodic tasks are also found by their name, not by their ID.
+Several events can have the same name. Such an event is not imported, and
+neither is an event without a name. The other events are imported, and the
+command ends with an error. A periodic task keeps its nodes from the export.
+Check them if the target instance uses other node names.
+
 .. note:: In contrast to ``pi-manage backup``, the configuration export does not
    contain any tokens and is not a full disaster-recovery backup. It exports the
    *logical* configuration, which is portable between instances and - in most
@@ -801,9 +821,8 @@ remaining configuration::
 
    pi-manage config import -i backup.json --skip-invalid
 
-Currently ``--skip-invalid`` is evaluated for policies, where it removes policy
-actions that are not available in the running version. A policy that has no
-valid action left after this is skipped.
+``--skip-invalid`` currently only works for policies. It removes actions that this version
+does not know. If no action is left, the policy is not imported.
 
 .. _pimanage_development:
 
