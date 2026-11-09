@@ -153,7 +153,7 @@ def _parse_datetime(key, value):
         # Special case for last_auth: Legacy values are given in UTC time!
         last_auth = parser.parse(value)
         if not last_auth.tzinfo:
-            last_auth.replace(tzinfo=tzutc())
+            last_auth = last_auth.replace(tzinfo=tzutc())
         return last_auth
     else:
         # Other values are given in local time
@@ -371,6 +371,7 @@ def export_user_data(token_list, attributes=None):
             user = token_obj.user
         except Exception:
             sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial!s}.\n")
+            user = None
         if user:
             request_attributes = attributes.split(",") if attributes else []
             request_attributes += ["username", "givenname", "surname"]
