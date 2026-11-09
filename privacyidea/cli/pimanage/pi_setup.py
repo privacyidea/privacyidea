@@ -39,7 +39,7 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 
 @setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
 @click.argument("encfile", type=click.File("rb"))
-@click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout, show_default=False,
+@click.option("-o", "--outfile", type=click.File("w", lazy=False), default=sys.stdout, show_default=False,
               help="The file to which the encrypted encryption key will be "
                    "written to (default: stdout)")
 @click.password_option(help="The password to encrypt the encryption key. "
@@ -60,15 +60,16 @@ def encrypt_enckey(encfile, outfile, password):
     # TODO we just print out a string here and assume, the user pipes it into a file.
     #      Maybe we should write the file here so we know what is in there
     # TODO: get the name/path of the encfile from the pi.cfg
+    out_path = pathlib.Path(outfile.name)
+    if out_path.is_file():
+        # Do not make the encrypted encryption key readable for others. The file is restricted before anything is
+        # written to it, and it stays writable for its owner, so that it can be written again.
+        out_path.chmod(0o600)
+        click.secho(f"The file permission of {out_path} was set to 600!", fg="yellow", err=True)
     enckey = encfile.read()
     res = DefaultSecurityModule.password_encrypt(enckey, password)
     outfile.write(res)
     outfile.write('\n')
-    out_path = pathlib.Path(outfile.name)
-    if out_path.is_file():
-        # Do not leave the encrypted encryption key readable for others (like create_enckey does)
-        out_path.chmod(0o400)
-        click.secho(f"The file permission of {out_path} was set to 400!", fg="yellow", err=True)
 
 
 @setup_cli.command("create_enckey")
