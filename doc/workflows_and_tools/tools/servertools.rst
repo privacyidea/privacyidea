@@ -153,8 +153,11 @@ commands take the directory with ``-i DIR`` (``--instance DIR``).
     part, e.g. the OTP PIN, followed by the OTP value. The command exits with
     ``0`` if the user authenticated successfully, with ``1`` if the
     authentication failed, and with another non-zero status on errors, e.g. if
-    the instance does not exist. ``-r`` (``--response``) prints the JSON
-    response.
+    the instance does not exist. ``-r`` (``--response``) prints the HTTP
+    status and the JSON response. The output is not pure JSON: it starts
+    with the banner of the tool, followed by ``Status: ...`` and ``Data:``,
+    so a script that parses the response has to skip these lines. Use the
+    exit status to decide whether the authentication succeeded.
 
     If ``-u`` or ``-p`` is missing, the command asks for it. Without a
     terminal, e.g. when called from a script, it reads the missing values from
