@@ -47,7 +47,7 @@ audit_cli = AppGroup("audit", help="Manage Audit log")
               help="Read config from the specified yaml file.")
 @click.option('--dryrun', is_flag=True,
               help="Do not actually delete, only show what would be done.")
-@click.option('--chunksize', type=int,
+@click.option('--chunksize', type=click.IntRange(min=1),
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--debug', is_flag=True,
               help="Detailed logging output for the filtering process when using the --config option.")

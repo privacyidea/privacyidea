@@ -465,6 +465,12 @@ class PIManageAuditTestCase(CliTestCase):
                 self.assertEqual(0, res.exit_code, res.output)
                 self.assertEqual({"timeout": 7}, create_engine.call_args.kwargs.get("connect_args"))
 
+    def test_20_rotate_rejects_a_chunksize_below_one(self):
+        for chunksize in ["0", "-1"]:
+            res = self._rotate("--age", "5", "--chunksize", chunksize)
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--chunksize", res.output)
+
 
 class PIManageBackupTestCase(CliTestCase):
     def test_01_pimanage_backup_help(self):
