@@ -99,6 +99,7 @@ export interface AuthData {
   qr_image_ios: string | null;
   qr_image_custom: string | null;
   logout_redirect_url: string;
+  supportmail?: string;
   require_description: string[];
   rss_age: number;
   container_wizard: ContainerWizardConfig;
@@ -251,6 +252,7 @@ export interface AuthServiceInterface {
   readonly qrImageIOS: Signal<string | null>;
   readonly qrImageCustom: Signal<string | null>;
   readonly logoutRedirectUrl: Signal<string>;
+  readonly supportMail: Signal<string>;
   readonly requireDescription: Signal<string[]>;
   readonly rssAge: Signal<number>;
   readonly containerWizard: Signal<{
@@ -363,6 +365,7 @@ export class AuthService implements AuthServiceInterface {
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);
   readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url || "");
+  readonly supportMail = computed(() => this.authData()?.supportmail || "");
   readonly requireDescription = computed(() => this.authData()?.require_description || []);
   readonly rssAge = computed(() => this.authData()?.rss_age || 0);
   readonly containerWizard = computed(
@@ -440,7 +443,13 @@ export class AuthService implements AuthServiceInterface {
   }
 
   logout(): void {
+    const redirectUrl = this.logoutRedirectUrl();
     this.endSession();
+    if (redirectUrl) this.redirect(redirectUrl);
+  }
+
+  protected redirect(url: string): void {
+    window.location.assign(url);
   }
 
   private endSession(): void {

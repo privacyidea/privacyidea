@@ -89,7 +89,12 @@ export const routes: Routes = [
     path: "users",
     children: [
       { path: "", pathMatch: "full", title: PAGE_NAMES.users, component: UserSelfServiceComponent },
-      { path: "details", title: detailsTitle(PAGE_NAMES.users), component: UserDetailsSelfServiceComponent }
+      {
+        path: "details",
+        title: detailsTitle(PAGE_NAMES.users),
+        component: UserDetailsSelfServiceComponent,
+        canDeactivate: [pendingChangesGuard]
+      }
     ]
   },
   {
