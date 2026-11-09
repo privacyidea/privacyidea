@@ -19,9 +19,7 @@
 
 <div
   appScrollToTop
-  aria-label="Policy Table"
-  class="policies-table-layout"
-  i18n-aria-label="@@policy.policyTable">
+  class="policies-table-layout">
   @if (tableState.showTable()) {
     @if (authService.actionAllowed("policyread")) {
       <app-policy-filter

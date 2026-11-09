@@ -1801,6 +1801,35 @@ class TestPIManageConfigImport:
                 delete_event(event_id)
 
 
+    def test_09_import_smtp_and_radius_continue_after_invalid_identifier(self, app, tmp_path):
+        # An identifier the API can not address is rejected, but the servers
+        # after it in the same file are still imported.
+        smtp = {"server": "mail.example", "sender": "pi@example.com"}
+        radius = {"server": "1.2.3.4", "secret": "testing123", "dictionary": "tests/testdata/dictionary"}
+        infile = tmp_path / "servers.json"
+        infile.write_text(json.dumps({
+            "smtpserver": {"cligood": smtp, "cli/relay": smtp, "cliafter": smtp},
+            "radiusserver": {"cligood": radius, "cli/relay": radius, "cliafter": radius}}))
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        # Both types have the same import priority, so their order is not fixed
+        failed_types = result.output.split("Failed configuration types: ")[1].split(".")[0].split(", ")
+        assert sorted(failed_types) == ["radiusserver", "smtpserver"]
+        assert 'Could not import the following SMTP servers: "cli/relay"' in result.output
+        assert 'Could not import the following RADIUS servers: "cli/relay"' in result.output
+        from privacyidea.lib.radiusserver import delete_radius, list_radiusservers
+        from privacyidea.lib.smtpserver import delete_smtpserver, list_smtpservers
+        with app.app_context():
+            for servers in (list_smtpservers(), list_radiusservers()):
+                assert "cligood" in servers
+                assert "cliafter" in servers
+                assert "cli/relay" not in servers
+            for name in ("cligood", "cliafter"):
+                delete_smtpserver(name)
+                delete_radius(name)
+
+
 class PIManageChallengeTestCase(CliTestCase):
     """
     Tests for ``pi-manage config challenge cleanup``.

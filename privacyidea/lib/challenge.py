@@ -185,10 +185,12 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
     sort_expression = Challenge.__table__.columns[sort_column]
+    # Challenges with the same value in the sort column are ordered by their id. Without a fixed order, the database
+    # can order them differently for each page, and a challenge then appears on two pages or on none.
     if sortdir == "desc":
-        stmt = stmt.order_by(sort_expression.desc())
+        stmt = stmt.order_by(sort_expression.desc(), Challenge.id.desc())
     else:
-        stmt = stmt.order_by(sort_expression.asc())
+        stmt = stmt.order_by(sort_expression.asc(), Challenge.id.asc())
 
     pagination = db.paginate(stmt, page=page, per_page=psize, error_out=False)
     challenge_list = [challenge.get() for challenge in pagination.items]
