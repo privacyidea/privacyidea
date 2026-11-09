@@ -543,12 +543,6 @@ export class AuthService implements AuthServiceInterface {
   }
 
   /**
-   * Strip the fields that the bearer token already carries before persisting the auth data.
-   * The token (stored separately) is the source of truth for identity and rights via the
-   * decoded JWT, so the token string and the JWT claims (rights, role, username, realm) are
-   * not duplicated into storage; everything that remains is UI/policy config not in the JWT.
-   */
-  /**
    * The persistence the server asked for. An unknown value -- an older server that sends none,
    * or a policy set to something that is not an allowed value -- falls back to the default
    * rather than being trusted into a storage decision.
@@ -584,6 +578,13 @@ export class AuthService implements AuthServiceInterface {
     }
   }
 
+  /**
+   * Strip the fields that the bearer token already carries before persisting the auth data.
+   * The token (stored separately) is the source of truth for identity and rights via the
+   * decoded JWT, so the token string and the JWT claims (rights, role, username, realm) are
+   * not duplicated into storage. What remains is the UI/policy config that is not in the JWT,
+   * plus the server clock offset.
+   */
   private persistableAuthData(
     authData: AuthData
   ): Omit<AuthData, "token" | "rights" | "role" | "username" | "realm"> & { server_clock_offset_ms: number } {
