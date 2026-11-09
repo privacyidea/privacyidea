@@ -1079,6 +1079,67 @@ def is_true(value):
     return value in [1, "1", True, "True", "true", "TRUE"]
 
 
+def validate_path_identifier(identifier: str, kind: str, reserved: tuple[str, ...] = ()) -> None:
+    """
+    Reject an identifier that could be stored but never addressed by the API again.
+
+    The REST API addresses most resources by their identifier in a single path segment
+    (e.g. ``/smtpserver/<identifier>``). A WSGI server percent-decodes ``PATH_INFO`` before
+    routing, so a ``/`` in the name can not be escaped on the way in and the route no longer
+    matches. The same goes for ``.`` and ``..``, which path normalisation removes, and for
+    control characters, which have no business in a URL at all.
+
+    A name that equals a fixed route of the same resource (e.g. ``/smtpserver/send_test_email``)
+    can not be addressed either, because the router prefers the fixed route over
+    ``/smtpserver/<identifier>``. Pass these names as ``reserved``.
+
+    The restriction is deliberately narrow: spaces, dots, ``#``, ``?`` and non-ASCII letters
+    all survive the round trip once the client encodes them.
+
+    :param identifier: the identifier to check
+    :param kind: the kind of resource, used in the error message (e.g. "SMTP server")
+    :param reserved: the names of fixed routes next to ``/<identifier>`` of this resource
+    :raises ParameterError: if the identifier could not be addressed by the API
+    """
+    for character in ("/", "\\"):
+        if character in identifier:
+            raise ParameterError(f"The {kind} identifier must not contain {character!r}: the API addresses "
+                                 f"it by its name in the URL path, where such a name can not be reached.")
+    if any(ord(character) < 32 or ord(character) == 127 for character in identifier):
+        raise ParameterError(f"The {kind} identifier must not contain control characters: the API "
+                             f"addresses it by its name in the URL path.")
+    if identifier in (".", ".."):
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API addresses it by "
+                             f"its name in the URL path, where it would be removed as a path segment.")
+    if identifier in reserved:
+        raise ParameterError(f"{identifier!r} is not a usable {kind} identifier: the API uses this name "
+                             f"for a route of its own.")
+
+
+def check_stored_secret_settings(kind: str, identifier: str, saved_settings: dict, requested_settings: dict,
+                                 secret_name: str, action: str) -> None:
+    """
+    Make sure that a stored secret is used only with the connection settings it was saved with.
+
+    A client that never received the secret sends the ``__CENSORED__`` placeholder instead, which means "use the
+    stored secret". The stored secret is used only if the request keeps the settings that define where and as whom
+    the secret is used. A requested value of ``None`` means that the setting is not changed.
+
+    :param kind: the kind of definition, used in the error message (e.g. "RADIUS server")
+    :param identifier: the identifier of the saved definition
+    :param saved_settings: the saved values of the connection settings
+    :param requested_settings: the requested values of the same settings
+    :param secret_name: the name of the secret, used in the error message (e.g. "secret")
+    :param action: what the secret is needed for, used in the error message (e.g. "save")
+    :raises ParameterError: if a requested setting differs from the saved one
+    """
+    changed = [key for key, value in requested_settings.items()
+               if value is not None and value != saved_settings.get(key)]
+    if changed:
+        raise ParameterError(f"These settings differ from the saved {kind} '{identifier}': {', '.join(changed)}. "
+                             f"Enter the {secret_name} to {action} the changed settings.")
+
+
 def int_to_hex(serial):
     """
     Converts a string with an integer to a hexstring.

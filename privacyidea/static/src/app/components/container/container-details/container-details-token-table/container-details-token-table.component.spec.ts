@@ -21,7 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
-import { Router } from "@angular/router";
+import { provideRouter } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailToken, ContainerService } from "@services/container/container.service";
@@ -39,7 +39,6 @@ import {
   MockDialogService,
   MockLocalService,
   MockNotificationService,
-  MockRouter,
   MockTableUtilsService,
   MockTokenService
 } from "@testing/mock-services";
@@ -69,7 +68,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: Router, useClass: MockRouter },
+        provideRouter([]),
         { provide: UserService, useClass: class {} },
         { provide: ContentService, useClass: MockContentService },
         { provide: DialogService, useClass: MockDialogService },
@@ -111,6 +110,58 @@ describe("ContainerDetailsTokenTableComponent", () => {
   });
 
   afterEach(() => jest.clearAllMocks());
+
+  describe("token rows", () => {
+    const showTokens = (role: "admin" | "user") => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        role,
+        username: "userA",
+        rights: ["container_list"]
+      });
+      fixture.componentRef.setInput(
+        "containerTokenData",
+        new MatTableDataSource([
+          { serial: "T-1", tokentype: "hotp", active: true, username: "userA", user_realm: "r1" }
+        ] as ContainerDetailToken[])
+      );
+      fixture.detectChanges();
+    };
+    const linkWithText = (text: string): HTMLAnchorElement | undefined =>
+      Array.from<HTMLAnchorElement>(fixture.nativeElement.querySelectorAll("tbody a")).find(
+        (a) => a.textContent?.trim() === text
+      );
+
+    it("toggles the token state with Space", () => {
+      showTokens("user");
+      const toggleActive = jest.spyOn(component, "toggleActive").mockImplementation(() => { /* empty */ });
+      const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+
+      fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
+
+      expect(toggleActive).toHaveBeenCalledWith(expect.objectContaining({ serial: "T-1" }));
+      expect(space.defaultPrevented).toBe(true);
+    });
+
+    it("links the token serial to the token details", () => {
+      showTokens("user");
+
+      expect(linkWithText("T-1")?.getAttribute("href")).toBe("/tokens/details/T-1");
+    });
+
+    it("links admins to the details of the token owner in their realm", () => {
+      showTokens("admin");
+
+      expect(linkWithText("userA")?.getAttribute("href")).toBe("/users/details/userA?realm=r1");
+    });
+
+    it("shows users the token owner as text, since they cannot open user details", () => {
+      showTokens("user");
+
+      expect(linkWithText("userA")).toBeUndefined();
+      expect(fixture.nativeElement.querySelector("tbody").textContent).toContain("userA");
+    });
+  });
 
   it("leaves the empty state once rows appear on the kept data source", () => {
     // The data source is mutated in place and the same reference returned, so the table state can
