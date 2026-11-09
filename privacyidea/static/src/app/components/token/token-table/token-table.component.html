@@ -218,6 +218,10 @@
                         tabindex="0">
                         {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                       </span>
+                    } @else {
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                      </span>
                     }
                   }
                   @case ("failcount") {
@@ -229,6 +233,10 @@
                         [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)"
                         role="button"
                         tabindex="0">
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                      </span>
+                    } @else {
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
                         {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                       </span>
                     }

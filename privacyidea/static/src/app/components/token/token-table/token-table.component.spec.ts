@@ -222,6 +222,38 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
   });
 
+  describe("active and fail counter cells", () => {
+    const cell = (column: string): HTMLElement => tableFixture.nativeElement.querySelector(`td.mat-column-${column}`);
+    const showsTokenWithRights = (rights: string[]): void => {
+      authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist", ...rights] } as JwtData);
+      tableUtilsService.getDisplayText.mockImplementation((columnKey: string) => `${columnKey} value`);
+      const tokens: Tokens = {
+        tokens: [{ serial: "T-1", active: true, failcount: 3 } as TokenDetails],
+        count: 1,
+        current: 1
+      };
+      tokenService.tokenResource.value.set(MockPiResponse.fromValue<Tokens>(tokens));
+      tokenService.tokenResourceValue.set(tokens);
+      tableFixture.detectChanges();
+    };
+
+    it("offers the toggle and the reset as buttons with the enable, disable and reset rights", () => {
+      showsTokenWithRights(["enable", "disable", "reset"]);
+
+      expect(cell("active").querySelector('[role="button"]')?.textContent).toContain("active value");
+      expect(cell("failcount").querySelector('[role="button"]')?.textContent).toContain("failcount value");
+    });
+
+    it("shows the active state and the fail counter read-only without those rights", () => {
+      showsTokenWithRights([]);
+
+      expect(cell("active").textContent).toContain("active value");
+      expect(cell("failcount").textContent).toContain("failcount value");
+      expect(cell("active").querySelector('[role="button"]')).toBeNull();
+      expect(cell("failcount").querySelector('[role="button"]')).toBeNull();
+    });
+  });
+
   it("onPageEvent updates page size, index and service's eventPageSize", () => {
     table.onPageEvent({ pageIndex: 2, pageSize: 25, length: 100 } as PageEvent);
     expect(tokenService.eventPageSize()).toBe(25);

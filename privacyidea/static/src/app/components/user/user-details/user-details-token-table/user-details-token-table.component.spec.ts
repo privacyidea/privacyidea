@@ -399,4 +399,38 @@ describe("UserDetailsTokenTableComponent", () => {
     expect(tokenServiceMock.userTokenResource.reload).toHaveBeenCalledTimes(1);
     expect(notificationServiceMock.error).toHaveBeenCalledWith("1/2 reset fail count failed: A");
   });
+
+  describe("active and fail counter cells", () => {
+    const cell = (column: string): HTMLElement => fixture.nativeElement.querySelector(`td.mat-column-${column}`);
+    const showsTokenWithRights = (rights: string[]): void => {
+      const authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authServiceMock.authData.set({ ...authServiceMock.authData()!, rights: ["tokenlist", ...rights] });
+      const tableUtils = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+      tableUtils.getDisplayText.mockImplementation((columnKey: string) => `${columnKey} value`);
+      tokenServiceMock.userTokenResource.value.set(
+        MockPiResponse.fromValue<Tokens>({
+          count: 1,
+          current: 1,
+          tokens: [{ serial: "T-1", active: true, failcount: 3, maxfail: 10 } as TokenDetails]
+        })
+      );
+      fixture.detectChanges();
+    };
+
+    it("offers the toggle and the reset as buttons with the enable, disable and reset rights", () => {
+      showsTokenWithRights(["enable", "disable", "reset"]);
+
+      expect(cell("active").querySelector('[role="button"]')?.textContent).toContain("active value");
+      expect(cell("failcount").querySelector('[role="button"]')?.textContent).toContain("failcount value");
+    });
+
+    it("shows the active state and the fail counter read-only without those rights", () => {
+      showsTokenWithRights([]);
+
+      expect(cell("active").textContent).toContain("active value");
+      expect(cell("failcount").textContent).toContain("failcount value");
+      expect(cell("active").querySelector('[role="button"]')).toBeNull();
+      expect(cell("failcount").querySelector('[role="button"]')).toBeNull();
+    });
+  });
 });
