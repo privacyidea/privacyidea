@@ -7,7 +7,7 @@ from passlib.crypto.digest import pbkdf2_hmac
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.user import User
@@ -788,3 +788,33 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
 
         delete_policy("force_2step")
         delete_policy("2step_params")
+
+    def test_02_rollover_without_rollover_parameter(self):
+        self.setUp_user_realms()
+        set_policy(name="force_2step",
+                   action=["hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1"],
+                   scope=SCOPE.USER)
+        with self.app.test_request_context('/auth', data={"username": "cornelius",
+                                                          "password": "test"},
+                                           method='POST'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            auth_token = res.json["result"]["value"]["token"]
+        token = init_token({"type": "hotp", "otpkey": self.otpkey},
+                           user=User("cornelius", realm=self.realm1, resolver=self.resolvername1))
+        serial = token.get_serial()
+
+        # A request for a token that is already enrolled rolls it over, so the policy forces the two-step
+        # enrollment also when the request does not contain the rollover parameter
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"serial": serial, "type": "hotp", "genkey": 1},
+                                           headers={'Authorization': auth_token}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            detail = res.json["detail"]
+            self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"))
+            self.assertIn("2step_salt", detail)
+
+        delete_policy("force_2step")
+        remove_token(serial)

@@ -1009,12 +1009,13 @@ def twostep_enrollment_activation(request=None, action=None):
     It is used to decorate the ``/token/init`` endpoint.
 
     If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
-    If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+    With ``force``, it is set for a new token and for a token that is rolled over: like
+    :func:`check_token_init`, a request for a token whose enrollment is not pending rolls it over, with or without the
+    ``rollover`` parameter. If no policy matches, the ``2stepinit`` parameter is removed from the request data.
     """
     user_object = get_user_from_param(request.all_data)
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type", default="hotp")
-    rollover = get_optional(request.all_data, "rollover")
     token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
@@ -1036,9 +1037,9 @@ def twostep_enrollment_activation(request=None, action=None):
             # The user is allowed to pass 2stepinit=1
             pass
         elif enabled_setting == "force":
-            # We force 2stepinit to be 1 if the token does not exist yet or
-            # if a token rollover is triggered and the token is not in 'clientwait' state
-            if not token or (token.rollout_state != RolloutState.CLIENTWAIT and rollover):
+            # A token in a pending enrollment state is in the second step of its enrollment or in its
+            # verification, every other token is rolled over
+            if not token or token.rollout_state not in RolloutState.enrollment_pending_states():
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError(f"Unknown 2step policy setting: {enabled_setting}")
