@@ -769,7 +769,7 @@ def get_auth_token():
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
             # LOG_AUTORESYNC_KEY stays in details until the exit that writes the audit info: on a failure that is
             # auth_error, which appends it after the failure message.
-            if 'multi_challenge' in details:
+            if details.get("multi_challenge"):
                 serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
                 token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
                                         if challenge_info.get("type")])

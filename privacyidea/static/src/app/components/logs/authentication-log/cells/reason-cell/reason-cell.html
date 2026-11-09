@@ -26,20 +26,19 @@
     }
   </div>
   <!-- Only for an entry that actually recorded a detail: a button that opened an empty dialog would be a promise the
-    row cannot keep. The placeholder link and the icon button, where both render, share this single tooltip host so
+    row cannot keep. The placeholder and the icon button, where both render, share this single tooltip host so
     hovering either - or the gap between them - reads as one target rather than two flickering separately. -->
   @if (detail(); as reasonDetail) {
   <span
     class="reason-detail-trigger"
     [matTooltip]="detailLabel">
     @if (showsPlaceholder()) {
-    <a
+    <button
       class="reason-placeholder margin-right-4"
-      href
-      [attr.aria-label]="detailLabel"
-      (click)="$event.preventDefault(); openDetail(reasonDetail)"
+      type="button"
+      (click)="openDetail(reasonDetail)"
       i18n="@@authLog.seeDetails"
-      >see details</a
+      >see details</button
     >
     }
     <button

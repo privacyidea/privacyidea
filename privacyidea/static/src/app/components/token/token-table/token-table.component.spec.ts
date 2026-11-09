@@ -126,6 +126,26 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableFixture.detectChanges();
   };
 
+  it("links the serial, the container serial and the user to their details pages", () => {
+    authServiceMock.jwtData.set({ ...authServiceMock.jwtData(), rights: ["tokenlist"] } as JwtData);
+    const tokens: Tokens = {
+      tokens: [{ serial: "T-1", container_serial: "C-1", username: "alice", user_realm: "r1" } as TokenDetails],
+      count: 1,
+      current: 1
+    };
+    tokenService.tokenResource.value.set(MockPiResponse.fromValue<Tokens>(tokens));
+    tokenService.tokenResourceValue.set(tokens);
+    tableFixture.detectChanges();
+
+    const hrefOf = (text: string) =>
+      Array.from<HTMLAnchorElement>(tableFixture.nativeElement.querySelectorAll("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+    expect(hrefOf("T-1")).toBe("/tokens/details/T-1");
+    expect(hrefOf("C-1")).toBe("/containers/details/C-1");
+    expect(hrefOf("alice")).toBe("/users/details/alice?realm=r1");
+  });
+
   it("gates the table on its read right, row count and filter", () => {
     expectsTableStateGating({
       state: table.tableState,

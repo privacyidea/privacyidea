@@ -62,7 +62,10 @@ def create(identifier=None):
     :param identifier: path component, the unique name of the definition.
     :jsonparam server: hostname or IP of the RADIUS server (required).
     :jsonparam port: UDP port of the RADIUS server, default ``1812``.
-    :jsonparam secret: shared RADIUS secret (required).
+    :jsonparam secret: shared RADIUS secret (required). The ``__CENSORED__``
+        placeholder returned by ``GET /radiusserver/`` keeps the stored secret,
+        but only if ``server`` and ``port`` stay the same. Otherwise the secret
+        has to be entered again.
     :jsonparam retries: number of retries on timeout, default ``3``.
     :jsonparam timeout: per-attempt timeout in seconds, default ``5``.
     :jsonparam dictionary: server-side filesystem path to the FreeRADIUS
@@ -70,6 +73,8 @@ def create(identifier=None):
     :jsonparam description: free-form description.
     :jsonparam options: optional dictionary of additional connection options.
     :status 200: ``True`` on success.
+    :status 400: the secret is censored, but server or port differ from the
+        saved definition.
     """
     param = request.all_data
     identifier = identifier.replace(" ", "_")
@@ -153,7 +158,10 @@ def test():
         saved (used for logging/audit only).
     :jsonparam server: hostname or IP of the RADIUS server (required).
     :jsonparam port: UDP port, default ``1812``.
-    :jsonparam secret: shared RADIUS secret (required).
+    :jsonparam secret: shared RADIUS secret (required). ``__CENSORED__``, as
+        ``GET /radiusserver/`` returns it, uses the stored secret of the
+        definition ``identifier``, but only if ``server`` and ``port`` match the
+        definition. Otherwise the secret has to be entered again.
     :jsonparam retries: number of retries on timeout, default ``3``.
     :jsonparam timeout: per-attempt timeout in seconds, default ``5``.
     :jsonparam dictionary: server-side filesystem path to the FreeRADIUS
@@ -163,6 +171,8 @@ def test():
     :jsonparam password: password / OTP to test (required).
     :status 200: ``True`` if the RADIUS server accepted the credentials,
         ``False`` otherwise.
+    :status 400: the secret is censored, but server or port differ from the
+        saved definition.
     """
     param = request.all_data
     identifier = get_required(param, "identifier")

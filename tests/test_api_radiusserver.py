@@ -1,7 +1,7 @@
 from .base import MyApiTestCase
 from . import radiusmock
 from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.radiusserver import delete_radius
+from privacyidea.lib.radiusserver import add_radius, delete_radius, list_radiusservers
 from privacyidea.lib.crypto import CENSORED
 
 DICT_FILE = "tests/testdata/dictionary"
@@ -135,3 +135,24 @@ class RADIUSServerTestCase(MyApiTestCase):
             self.assertIn("do not have the necessary role", result["error"]["message"])
 
         delete_radius("server1")
+
+    @radiusmock.activate
+    def test_censored_secret_needs_the_saved_server_and_port(self):
+        add_radius("savedRadius", server="1.2.3.4", port=1812, secret="radsecret", dictionary=DICT_FILE)
+        self.addCleanup(delete_radius, "savedRadius")
+        radiusmock.setdata(response=radiusmock.AccessAccept)
+        save_body = {"server": "5.6.7.8", "port": 1812, "secret": CENSORED, "dictionary": DICT_FILE}
+        test_body = {"identifier": "savedRadius", "server": "1.2.3.4", "port": 1645, "secret": CENSORED,
+                     "dictionary": DICT_FILE, "username": "testuser", "password": "testpassword"}
+        for path, body, action in [("/radiusserver/savedRadius", save_body, "save"),
+                                   ("/radiusserver/test_request", test_body, "test")]:
+            with self.subTest(path=path):
+                with self.app.test_request_context(path, method="POST", json=body,
+                                                   headers={"Authorization": self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn(f"Enter the secret to {action} the changed settings",
+                              res.json["result"]["error"]["message"])
+        stored = list_radiusservers()["savedRadius"]
+        self.assertEqual("1.2.3.4", stored["server"])
+        self.assertEqual("radsecret", stored["secret"])

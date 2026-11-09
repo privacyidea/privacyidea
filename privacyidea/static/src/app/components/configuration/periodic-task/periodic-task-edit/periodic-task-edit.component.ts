@@ -40,7 +40,7 @@ import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip, MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -170,7 +170,7 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave());
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const name = params.get("name");
+      const name = params.get(ROUTE_PARAMS.NAME);
       if (name) {
         this.isNewTask.set(false);
         this.editName.set(name);

@@ -16,10 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="Container Details Token Table"
-  class="container-details-token-table-layout"
-  i18n-aria-label="@@container.containerDetailsToken">
+<div class="container-details-token-table-layout">
   <div class="flex-column">
     <!-- The card title keeps its place next to the actions; only the actions themselves,
          which all operate on existing tokens, go away with the table. -->
@@ -112,12 +109,7 @@
                         element.status !== "missing" &&
                         (element.token.username === authService.username() || authService.role() === "admin")
                       ) {
-                        <a
-                          (click)="contentService.tokenSelected(element.token.serial)"
-                          (keydown.enter)="contentService.tokenSelected(element.token.serial)"
-                          class="cursor-pointer"
-                          role="button"
-                          tabindex="0">
+                        <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.token.serial]">
                           {{ element.token[column.key] }}
                         </a>
                       } @else {
@@ -131,6 +123,7 @@
                         <span
                           (click)="toggleActive(element.token)"
                           (keydown.enter)="toggleActive(element.token)"
+                          (keydown.space)="$event.preventDefault(); toggleActive(element.token)"
                           [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element.token)"
                           [ngClass]="tableUtilsService.getClassForColumn(column.key, element.token)"
                           role="button"
@@ -148,18 +141,15 @@
                     <div class="flex-row ali-center">
                       @if (element.status !== "missing") {
                         @if (element.token[column.key]) {
-                          <a
-                            (click)="
-                              contentService.userSelected(element.token[column.key], element.token['user_realm'])
-                            "
-                            (keydown.enter)="
-                              contentService.userSelected(element.token[column.key], element.token['user_realm'])
-                            "
-                            class="cursor-pointer"
-                            role="button"
-                            tabindex="0">
-                            {{ element.token[column.key] }}
-                          </a>
+                          @if (authService.role() === "admin") {
+                            <a
+                              [queryParams]="{ realm: element.token['user_realm'] ?? '' }"
+                              [routerLink]="[ROUTE_PATHS.USERS_DETAILS, element.token[column.key]]">
+                              {{ element.token[column.key] }}
+                            </a>
+                          } @else {
+                            <span>{{ element.token[column.key] }}</span>
+                          }
                         } @else if (containerHasSingleUser()) {
                           <button
                             mat-icon-button
@@ -175,14 +165,7 @@
                   }
                   @default {
                     @if (element.status !== "missing") {
-                      @if (tableUtilsService.isLink(column.key) && element.token[column.key]) {
-                        <a
-                          href="#">
-                          {{ element.token[column.key] }}
-                        </a>
-                      } @else {
-                        <span> {{ element.token[column.key] }} </span>
-                      }
+                      <span> {{ element.token[column.key] }} </span>
                     } @else if (column.key === "tokentype") {
                       <span> {{ element.token.tokentype }} </span>
                     }

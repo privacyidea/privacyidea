@@ -59,6 +59,10 @@ describe("CopyButtonComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("does not submit a surrounding form", () => {
+    expect(fixture.nativeElement.querySelector("button").getAttribute("type")).toBe("button");
+  });
+
   it("onCopy toggles copied to true, then back to false after 1600ms", () => {
     jest.useFakeTimers();
 
