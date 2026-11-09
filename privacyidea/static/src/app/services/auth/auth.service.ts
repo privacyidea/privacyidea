@@ -300,6 +300,9 @@ export class AuthService implements AuthServiceInterface {
   readonly jwtData = signal<JwtData | null>(null);
   readonly authData = signal<AuthData | null>(null);
   readonly authenticationAccepted = signal<boolean>(false);
+  // Server clock minus browser clock in ms, taken at login: the JWT exp is in server time, so
+  // comparing it with an unadjusted browser clock that runs ahead logs the user out at once.
+  private readonly serverClockOffsetMs = signal<number>(0);
   // Computed signals
   readonly jwtNonce = computed(() => this.jwtData()?.nonce || "");
   readonly authtype = computed(() => (this.jwtData()?.authtype || this.jwtData() ? "cookie" : "none"));
@@ -310,8 +313,8 @@ export class AuthService implements AuthServiceInterface {
   readonly jwtLogoutTimeS = computed(() => {
     const expiration = this.jwtExpDate();
     if (expiration == null) return null;
-    const now = new Date();
-    return Math.max(0, Math.floor((expiration.getTime() - now.getTime()) / 1000));
+    const serverNow = Date.now() + this.serverClockOffsetMs();
+    return Math.max(0, Math.floor((expiration.getTime() - serverNow) / 1000));
   });
   readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
   readonly isAuthenticated = computed(() => this.authenticationAccepted() && !!this.authData());
@@ -399,6 +402,7 @@ export class AuthService implements AuthServiceInterface {
         tap((response) => {
           const value = response.result?.value;
           if (response?.result?.status && value) {
+            this.serverClockOffsetMs.set(this.clockOffsetOf(response));
             this.acceptAuthentication();
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
@@ -450,6 +454,7 @@ export class AuthService implements AuthServiceInterface {
     this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
+    this.serverClockOffsetMs.set(0);
     this.clearStoredSession();
     this.authenticationAccepted.set(false);
     this.clearUserScopedCaches();
@@ -579,10 +584,32 @@ export class AuthService implements AuthServiceInterface {
     }
   }
 
-  private persistableAuthData(authData: AuthData): Omit<AuthData, "token" | "rights" | "role" | "username" | "realm"> {
+  private persistableAuthData(
+    authData: AuthData
+  ): Omit<AuthData, "token" | "rights" | "role" | "username" | "realm"> & { server_clock_offset_ms: number } {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { token, rights, role, username, realm, ...rest } = authData;
-    return rest;
+    // The offset travels with the session so a reload still checks the JWT exp in server time.
+    return { ...rest, server_clock_offset_ms: this.serverClockOffsetMs() };
+  }
+
+  /** Server time (`time`, unix seconds) minus browser time in ms, 0 when the response has none. */
+  private clockOffsetOf(response: AuthResponse): number {
+    const serverTimeS = response.time;
+    if (typeof serverTimeS !== "number" || !Number.isFinite(serverTimeS)) {
+      return 0;
+    }
+    const browserMs = Date.now();
+    const serverMs = serverTimeS * 1000;
+    const offsetMs = serverMs - browserMs;
+    if (Math.abs(offsetMs) > 60_000) {
+      console.warn(
+        `Browser clock is ${Math.round(-offsetMs / 1000)} s off the server clock ` +
+          `(server: ${new Date(serverMs).toISOString()}, browser: ${new Date(browserMs).toISOString()}). ` +
+          `Session expiry is computed in server time.`
+      );
+    }
+    return offsetMs;
   }
 
   /**
@@ -598,19 +625,28 @@ export class AuthService implements AuthServiceInterface {
         return;
       }
       const jwt = this.decodeJwtPayload(token);
+      const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
+      const stored = storedAuthData
+        ? (JSON.parse(storedAuthData) as AuthData & { server_clock_offset_ms?: unknown })
+        : null;
+      // A session stored before the offset was persisted has none: fall back to the browser clock.
+      const storedOffset = stored?.server_clock_offset_ms;
+      const offsetMs = typeof storedOffset === "number" && Number.isFinite(storedOffset) ? storedOffset : 0;
       // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
-      if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
+      if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now() + offsetMs) {
         this.clearStoredSession();
         return;
       }
-      const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
-      if (!storedAuthData) {
+      if (!stored) {
         // A token without its auth data cannot be restored; clear it so getHeaders() does not
         // keep sending a bearer token for a session the UI considers logged out.
         this.clearStoredSession();
         return;
       }
-      this.authData.set(JSON.parse(storedAuthData) as AuthData);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { server_clock_offset_ms, ...restoredAuthData } = stored;
+      this.serverClockOffsetMs.set(offsetMs);
+      this.authData.set(restoredAuthData);
       this.jwtData.set(jwt);
       this.authenticationAccepted.set(true);
     } catch {
