@@ -42,7 +42,7 @@ from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
                                     DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE, LOGINMODE)
-from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
+from privacyidea.lib.subscriptions import EXPIRE_MESSAGE, delete_subscription
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    check_user_pass, unassign_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
@@ -1255,9 +1255,29 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
         self.assertNotIn("supportmail", jresult.get("result").get("value"))
+        self.assertFalse(jresult.get("result").get("value").get("has_subscription"))
+
+        # A subscription of a plugin alone gives the system support, but the support mail is about the server
+        from privacyidea.models import Subscription
+        Subscription(application="privacyidea-cp",
+                     for_name="testuser",
+                     for_email="admin@example.com",
+                     for_phone="0",
+                     by_name="privacyIDEA project",
+                     by_email="privacyidea@example.com",
+                     date_from=datetime.utcnow(),
+                     date_till=datetime.utcnow() + timedelta(days=365),
+                     num_users=100,
+                     num_tokens=100,
+                     num_clients=100
+                     ).save()
+        new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        self.assertTrue(jresult.get("result").get("value").get("has_subscription"))
+        self.assertNotIn("supportmail", jresult.get("result").get("value"))
+        delete_subscription("privacyidea-cp")
 
         # Add a subscription
-        from privacyidea.models import Subscription
         Subscription(application="privacyidea",
                      for_name="testuser",
                      for_email="admin@example.com",
@@ -1272,6 +1292,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                      ).save()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
+        self.assertTrue(jresult.get("result").get("value").get("has_subscription"))
         supportmail = jresult.get("result").get("value").get("supportmail")
         self.assertIn("privacyidea@example.com", supportmail)
         # The subscription holds, so the mail is about the running version

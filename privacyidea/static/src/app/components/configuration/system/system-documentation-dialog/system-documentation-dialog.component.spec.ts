@@ -19,11 +19,14 @@
 import { Clipboard, PendingCopy } from "@angular/cdk/clipboard";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import {
   COPY_ATTEMPTS,
+  SUPPORT_EMAIL_ADDRESS,
   SystemDocumentationDialogComponent,
   systemDocumentationFileName
 } from "./system-documentation-dialog.component";
@@ -33,6 +36,7 @@ describe("SystemDocumentationDialogComponent", () => {
   let component: SystemDocumentationDialogComponent;
   let dialogRef: MockMatDialogRef<SystemDocumentationDialogComponent>;
   let notificationService: MockNotificationService;
+  let authService: MockAuthService;
   let clickedAnchors: HTMLAnchorElement[];
   let createdBlobs: Blob[];
   const originalCreateObjectURL = window.URL.createObjectURL;
@@ -53,13 +57,15 @@ describe("SystemDocumentationDialogComponent", () => {
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: { documentation: "Some documentation" } },
         { provide: MatDialogRef, useValue: dialogRef },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(SystemDocumentationDialogComponent);
     component = fixture.componentInstance;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     fixture.detectChanges();
 
     // The retries of a copy and the release of a download run on timers
@@ -214,6 +220,22 @@ describe("SystemDocumentationDialogComponent", () => {
     expect(mailto.target).toBe("_blank");
     expect(decodeURIComponent(mailto.href)).toContain(component.fileName);
     expect(notificationService.info).toHaveBeenCalled();
+  });
+
+  it("addresses the email to the support when the system has a subscription", () => {
+    authService.authData.update((data) => (data ? { ...data, has_subscription: true } : data));
+
+    component.onAction("mail");
+
+    expect(clickedAnchors[1].href.startsWith(`mailto:${SUPPORT_EMAIL_ADDRESS}?subject=`)).toBe(true);
+  });
+
+  it("leaves the recipient of the email empty when the system has no subscription", () => {
+    authService.authData.update((data) => (data ? { ...data, has_subscription: false } : data));
+
+    component.onAction("mail");
+
+    expect(clickedAnchors[1].href.startsWith("mailto:?subject=")).toBe(true);
   });
 });
 

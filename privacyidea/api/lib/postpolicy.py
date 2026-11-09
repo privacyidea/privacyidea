@@ -945,6 +945,9 @@ def get_webui_settings(request, response):
         content["result"]["value"]["container_wizard"] = container_wizard
 
         if role == ROLE.ADMIN:
+            # Any subscription, also one of a plugin or one that expired, means that the system has support. The
+            # WebUI then addresses the email with the system documentation to the support.
+            content["result"]["value"]["has_subscription"] = len(get_subscription()) > 0
             # Add a support mailto, for administrators with systemwrite rights.
             subscriptions = get_subscription("privacyidea")
             if len(subscriptions) == 1:

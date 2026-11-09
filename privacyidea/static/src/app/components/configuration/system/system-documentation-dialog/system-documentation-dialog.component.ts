@@ -26,6 +26,7 @@ import { MatInput } from "@angular/material/input";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { downloadBlob } from "@utils/download.utils";
 
@@ -35,6 +36,11 @@ export type SystemDocumentationAction = "copy" | "share" | "download" | "mail";
  * Copying a long text to the clipboard can fail on the first attempt, so it is tried a few times.
  */
 export const COPY_ATTEMPTS = 3;
+
+/**
+ * A system with a subscription has support, so the email with the documentation is addressed to the support.
+ */
+export const SUPPORT_EMAIL_ADDRESS = "support@netknights.it";
 
 /**
  * Names the file after the server and the day, so that the documentation of several installations can be told apart.
@@ -55,6 +61,7 @@ export class SystemDocumentationDialogComponent
   implements AfterViewInit
 {
   private readonly clipboard = inject(Clipboard);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
@@ -189,11 +196,13 @@ export class SystemDocumentationDialogComponent
    * the documentation is downloaded, and the email program is opened with a message that asks to attach it.
    * The email link opens in a new window. Opened in the window of the WebUI, it would ask whether to leave a page
    * with unsaved changes, a web mail service would replace the WebUI, and the download could be cut off.
+   * With a subscription, the email is addressed to the support. Without one, the admin enters the recipient.
    */
   sendDocumentationByEmail(): void {
     this.downloadDocumentation();
     const anchor = document.createElement("a");
-    anchor.href = `mailto:?subject=${encodeURIComponent(this.emailSubject)}&body=${encodeURIComponent(this.emailBody(this.fileName))}`;
+    const recipient = this.authService.hasSubscription() ? SUPPORT_EMAIL_ADDRESS : "";
+    anchor.href = `mailto:${recipient}?subject=${encodeURIComponent(this.emailSubject)}&body=${encodeURIComponent(this.emailBody(this.fileName))}`;
     anchor.target = "_blank";
     anchor.rel = "noopener";
     anchor.click();
