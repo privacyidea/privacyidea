@@ -351,6 +351,12 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "type": "hotp"}
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
+        # The token type is compared in lower case
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "type": "HOTP"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
 
         # enrolling the same HOTP token would succeed
         req.all_data = {"user": "cornelius",
@@ -476,6 +482,13 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "realm": self.realm1,
                         "serial": "NEW003",
                         "type": "hotp"}
+        self.assertRaises(PolicyError,
+                          check_max_token_user, req)
+        # also when the request names the token type in upper case
+        req.all_data = {"user": "cornelius",
+                        "realm": self.realm1,
+                        "serial": "NEW003",
+                        "type": "HOTP"}
         self.assertRaises(PolicyError,
                           check_max_token_user, req)
 
@@ -1291,6 +1304,21 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertIsNone(require_description(req))
 
         # This should not work, a description is required for hotp
+        req.all_data = {"type": "hotp"}
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: Description required for hotp token.",
+                               require_description, req)
+
+        # The token type of the request is compared in lower case
+        req.all_data = {"type": "HOTP"}
+        self.assertRaisesRegex(PolicyError,
+                               "ERR303: Description required for hotp token.",
+                               require_description, req)
+
+        # and so are the token types of the policy
+        set_policy(name="require_description",
+                   scope=SCOPE.ENROLL,
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION}=HOTP"])
         req.all_data = {"type": "hotp"}
         self.assertRaisesRegex(PolicyError,
                                "ERR303: Description required for hotp token.",

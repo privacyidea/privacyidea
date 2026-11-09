@@ -1177,10 +1177,12 @@ def check_max_token_user(request=None, action=None, token_type=None):
                 tokentype = get_token_type(serial) or "hotp"
             else:
                 tokentype = "hotp"
+        # Token types are stored in lower case, and so are the names of the type-specific policy actions
+        tokentype = tokentype.lower()
 
         # check maximum number of type specific tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
-                                action=f"{tokentype.lower()!s}_{PolicyAction.MAXTOKENUSER!s}",
+                                action=f"{tokentype!s}_{PolicyAction.MAXTOKENUSER!s}",
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens of this specific type the user already has assigned!
@@ -3046,8 +3048,9 @@ def require_description(request=None, action=None):
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
-    token_types = list(action_values.keys())
-    type_value = request.all_data.get("type") or 'hotp'
+    # Token types are stored in lower case, so both the request and the policy are compared in lower case
+    token_types = [token_type.lower() for token_type in action_values.keys()]
+    type_value = (request.all_data.get("type") or 'hotp').lower()
     if type_value in token_types:
         token = None
         serial = get_optional(params, "serial")
