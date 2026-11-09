@@ -587,14 +587,17 @@ the WebUI or transferred with ``pi-manage config import``, see
 
    pi-manage config realm list
    pi-manage config realm create <name> [<resolver> ...]
-   pi-manage config realm delete <name> [--delete-custom-attributes] [--confirm-ca-policies]
+   pi-manage config realm delete <name> [--delete-custom-attributes]
+                                        [--ignore-conditional-access-policies]
    pi-manage config realm set_default <name>
    pi-manage config realm clear_default
 
 ``list`` marks the default realm with ``*``. ``create`` replaces an existing
 realm of the same name. ``delete`` asks before it deletes a realm that still
 has custom user attributes or that a conditional access policy uses.
-``--delete-custom-attributes`` and ``--confirm-ca-policies`` skip the question.
+``--delete-custom-attributes`` and ``--ignore-conditional-access-policies`` skip
+the question. The conditional access policies are not changed and still name
+the deleted realm.
 
 :ref:`Resolvers <useridresolvers>`::
 

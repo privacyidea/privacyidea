@@ -1528,7 +1528,7 @@ class PIManageRealmTestCase(CliTestCase):
             # The flags delete the realm without asking
             set_realm("carealm", [{"name": "resolver1"}])
             result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm",
-                                               "--confirm-ca-policies"])
+                                               "--ignore-conditional-access-policies"])
             self.assertEqual(0, result.exit_code, result.output)
             self.assertNotIn("carealm", get_realms())
         finally:

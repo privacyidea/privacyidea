@@ -193,25 +193,26 @@ def realm_create(name, resolvers):
 @click.argument("realm", type=str)
 @click.option("--delete-custom-attributes", is_flag=True, default=False,
               help="Also delete the realm's custom user attributes instead of refusing the deletion.")
-@click.option("--confirm-ca-policies", is_flag=True, default=False,
+@click.option("--ignore-conditional-access-policies", is_flag=True, default=False,
               help="Delete the realm although conditional-access policies still reference it "
-                   "instead of refusing the deletion.")
+                   "instead of refusing the deletion. The policies are not changed and still "
+                   "name the deleted realm.")
 @click.pass_context
-def realm_delete(ctx, realm, delete_custom_attributes, confirm_ca_policies):
+def realm_delete(ctx, realm, delete_custom_attributes, ignore_conditional_access_policies):
     """
     Delete the given REALM
     """
     while True:
         try:
             delete_realm(realm, delete_custom_attributes=delete_custom_attributes,
-                         confirm_ca_policies=confirm_ca_policies)
+                         confirm_ca_policies=ignore_conditional_access_policies)
         except UserError as e:
             # The realm still has custom user attributes or is referenced by
             # conditional-access policies. Ask for confirmation and try again.
             if e.id == Error.REALM_DELETE_CUSTOM_ATTRIBUTES and click.confirm(e.message):
                 delete_custom_attributes = True
             elif e.id == Error.REALM_DELETE_CA_POLICY_REFERENCE and click.confirm(e.message):
-                confirm_ca_policies = True
+                ignore_conditional_access_policies = True
             else:
                 click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
                 ctx.exit(1)
