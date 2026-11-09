@@ -127,6 +127,14 @@ class PIManageAdminTestCase(CliTestCase):
         self.assertEqual(password_hash, admin.password)
         delete_db_admin("cli_change_admin")
 
+    def test_05_change_unknown_admin_with_empty_password_is_refused(self):
+        # change creates an unknown administrator, but not one without a password
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["admin", "change", "cli_new_nopw_admin", "--password", ""])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIn("password", result.output.lower())
+        self.assertIsNone(get_db_admin("cli_new_nopw_admin"))
+
 
 class PIManageAuditTestCase(CliTestCase):
     """

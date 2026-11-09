@@ -20,7 +20,7 @@
 from flask.cli import AppGroup
 import click
 from privacyidea.lib.auth import (create_db_admin, get_all_db_admins,
-                                  delete_db_admin)
+                                  delete_db_admin, get_db_admin)
 from privacyidea.lib.error import ResourceNotFoundError
 
 admin_cli = AppGroup("admin", help="Manage local administrators")
@@ -72,8 +72,13 @@ def delete_admin(ctx, username):
 @click.argument('username')
 @click.option("-e", "--email", "email")
 @click.password_option()
-def change_admin(username, email, password):
+@click.pass_context
+def change_admin(ctx, username, email, password):
     """
     Change the email address or the password of an existing administrator USERNAME.
     """
+    # An empty password keeps the password of an existing administrator, but change also creates an unknown one
+    if not password and not get_db_admin(username):
+        click.secho("Error: The password of an administrator must not be empty.", fg="red", err=True)
+        ctx.exit(1)
     create_db_admin(username, email, password)
