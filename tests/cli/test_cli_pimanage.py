@@ -410,6 +410,34 @@ class PIManageAuditTestCase(CliTestCase):
         self.assertEqual(2, res.exit_code, res.output)
         self.assertIn("Could not parse timelimit (five days)", res.output)
 
+    def test_18_dump_refuses_an_audit_module_that_can_not_be_read(self):
+        # The logger audit module only writes, it has no entries to dump.
+        import unittest.mock as mock
+
+        with mock.patch.dict(self.app.config, {"PI_AUDIT_MODULE": "privacyidea.lib.auditmodules.loggeraudit"}):
+            res = self.app.test_cli_runner().invoke(pi_manage, ["audit", "dump"])
+
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIsInstance(res.exception, SystemExit, res.exception)
+        self.assertIn("privacyidea.lib.auditmodules.loggeraudit can not be dumped", res.output)
+
+    def test_19_rotate_uses_the_engine_options_of_the_audit_module(self):
+        # Like the SQL audit module, rotate takes the engine options from PI_AUDIT_SQL_OPTIONS and falls back to
+        # SQLALCHEMY_ENGINE_OPTIONS.
+        import unittest.mock as mock
+
+        for config_key in ["PI_AUDIT_SQL_OPTIONS", "SQLALCHEMY_ENGINE_OPTIONS"]:
+            with self.subTest(config_key=config_key), \
+                    mock.patch.dict(self.app.config, {config_key: {"connect_args": {"timeout": 7}}}), \
+                    mock.patch("privacyidea.cli.pimanage.audit.create_engine",
+                               wraps=sa.create_engine) as create_engine:
+                if config_key == "SQLALCHEMY_ENGINE_OPTIONS":
+                    self.app.config.pop("PI_AUDIT_SQL_OPTIONS", None)
+                res = self._rotate("--age", "5")
+
+                self.assertEqual(0, res.exit_code, res.output)
+                self.assertEqual({"timeout": 7}, create_engine.call_args.kwargs.get("connect_args"))
+
 
 class PIManageBackupTestCase(CliTestCase):
     def test_01_pimanage_backup_help(self):
