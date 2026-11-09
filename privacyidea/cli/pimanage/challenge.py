@@ -31,7 +31,7 @@ challenge_cli = AppGroup("challenge", help="Manage challenge data")
                        help="Clean up all expired challenges in the database. "
                             "Redis-cached challenges expire automatically via TTL "
                             "and are not affected by this command.")
-@click.option('--chunksize', type=int,
+@click.option('--chunksize', type=click.IntRange(min=1),
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--age', type=int,
               help="Instead of deleting expired challenges "
