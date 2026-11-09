@@ -349,7 +349,8 @@ the database:
    taken on, including its ``SQLALCHEMY_DATABASE_URI``. If your database has a
    different URI, use ``--keep-db-uri``. It reads the URI from the *pi.cfg*
    that the restore overwrites, and writes it into the restored file. If there
-   is no such file, the URI from the backup is used without a message.
+   is no such file, the restore shows a warning and uses the URI from the
+   backup.
 
 .. warning:: On MySQL/MariaDB the dump contains the name of the database it was
    taken from and creates that database if it is missing, so the restore always
