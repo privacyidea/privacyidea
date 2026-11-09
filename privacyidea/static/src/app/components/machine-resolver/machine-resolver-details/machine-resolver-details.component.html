@@ -19,10 +19,7 @@
 @if (showInitialLoading()) {
   <!-- Shares the .machine-resolver-details-container class so it renders at exactly the width the
     loaded page will take, rather than a narrower box that jumps wider once the data arrives. -->
-  <div
-    aria-label="Machine Resolver Editor"
-    class="machine-resolver-details-layout"
-    i18n-aria-label="@@machine.machineResolverEditor">
+  <div class="machine-resolver-details-layout">
     <div
       class="machine-resolver-details-container machine-resolver-details-container--loading"
       role="status">
@@ -34,10 +31,7 @@
     </div>
   </div>
 } @else {
-  <div
-    aria-label="Machine Resolver Editor"
-    class="machine-resolver-details-layout"
-    i18n-aria-label="@@machine.machineResolverEditor">
+  <div class="machine-resolver-details-layout">
     <div
       appScrollToTop
       class="machine-resolver-details-container">

@@ -25,7 +25,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
@@ -38,7 +38,6 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
@@ -51,6 +50,7 @@ import { ScrollFocusableDirective } from "@components/shared/directives/scroll-f
   selector: "app-container-table-self-service",
   standalone: true,
   imports: [
+    RouterLink,
     ScrollFocusableDirective,
     SortByLabelPipe,
     TruncationTooltipDirective,
@@ -75,7 +75,6 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected override readonly authService: AuthServiceInterface = inject(AuthService);

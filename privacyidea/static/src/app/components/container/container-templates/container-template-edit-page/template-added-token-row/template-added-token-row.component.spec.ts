@@ -86,6 +86,13 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(component.tokenTypeDescription()).toContain("HOTP");
     });
 
+    it("names the delete button", () => {
+      fixture.detectChanges();
+
+      const deleteBtn: HTMLButtonElement = fixture.nativeElement.querySelector("button[mat-icon-button]");
+      expect(deleteBtn.getAttribute("aria-label")).toBe("Remove Token");
+    });
+
     it("should emit removeToken when delete button is clicked", () => {
       fixture.componentRef.setInput("index", 5);
       const spy = jest.spyOn(component.removeToken, "emit");
