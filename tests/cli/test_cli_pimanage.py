@@ -1470,6 +1470,53 @@ class PIManageRealmTestCase(CliTestCase):
         self.assertEqual(0, CustomUserAttribute.query.filter_by(Key="department").count())
         delete_resolver("resolver1")
 
+    def test_04_pimanage_realm_delete_ca_policy_reference(self):
+        from privacyidea.lib.conditional_access.policy import delete_conditional_access_policy
+        from privacyidea.lib.realm import get_realms
+        from privacyidea.lib.user import User
+        save_resolver({"resolver": "resolver1", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("carealm", [{"name": "resolver1"}])
+        policy_id = create_conditional_access_policy(
+            name="cli_ca_realm_pol", time_window_seconds=3600, counter_types_to_track=["MFA_FAIL"],
+            stages=[{"failure_threshold": 3,
+                     "actions": [{"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600}}]}],
+            target="user", priority=4711,
+            conditions=[{"condition_type": "USER_REALM", "operator": "IN", "value": ["carealm"]}])
+        runner = self.app.test_cli_runner()
+        try:
+            # Declining the confirmation keeps the realm and exits non-zero without a traceback
+            result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm"], input="n\n")
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIsInstance(result.exception, SystemExit, result.exception)
+            self.assertIn("cli_ca_realm_pol", result.output, result.output)
+            self.assertIn("carealm", get_realms())
+
+            # Both confirmations (custom attributes, then conditional-access policies) in one go
+            User("cornelius", "carealm").set_attribute("department", "sales")
+            result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm"], input="y\ny\n")
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("Realm 'carealm' successfully deleted.", result.output, result.output)
+            self.assertNotIn("carealm", get_realms())
+
+            # The flags delete the realm without asking
+            set_realm("carealm", [{"name": "resolver1"}])
+            result = runner.invoke(pi_manage, ["config", "realm", "delete", "carealm",
+                                               "--confirm-ca-policies"])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertNotIn("carealm", get_realms())
+        finally:
+            delete_conditional_access_policy(policy_id)
+            if "carealm" in get_realms():
+                delete_realm("carealm", delete_custom_attributes=True, confirm_ca_policies=True)
+            delete_resolver("resolver1")
+
+    def test_05_pimanage_realm_unknown_exits_nonzero(self):
+        runner = self.app.test_cli_runner()
+        for cmd in ("delete", "set_default"):
+            result = runner.invoke(pi_manage, ["config", "realm", cmd, "nosuchrealm"])
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIn("Could not", result.output, result.output)
+
 
 class PIManageBaseTestCase(CliTestCase):
     def test_01_pimanage_help(self):
@@ -1972,6 +2019,31 @@ class TestPIManageConfigImport:
             assert tasks[0]["interval"] == "*/10 * * * *"
             delete_periodic_task(tasks[0]["id"])
 
+    def test_20_import_python_literal_keeps_none(self, app, tmp_path):
+        # A python dict literal is also valid YAML. It must be parsed as python,
+        # otherwise None would be imported as the string "None".
+        infile = tmp_path / "policy.py"
+        infile.write_text("{'policy': [{'name': 'clipypol', 'scope': 'admin', "
+                          "'action': 'enable', 'realm': None, 'active': True}]}")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 0, result.output
+        from privacyidea.lib.policy import PolicyClass, delete_policy
+        with app.app_context():
+            pols = {p["name"]: p for p in PolicyClass().match_policies()}
+            assert "clipypol" in pols
+            assert pols["clipypol"]["realm"] == [], pols["clipypol"]["realm"]
+            delete_policy("clipypol")
+
+    def test_21_import_non_dict_data_exits(self, app, tmp_path):
+        # Plain text is a valid YAML scalar, but not an importable configuration
+        infile = tmp_path / "plain.txt"
+        infile.write_text("hello world, this is no policy")
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        assert "Could not determine input format" in result.output
+
 
 class PIManageChallengeTestCase(CliTestCase):
     """
@@ -2421,6 +2493,101 @@ class PIManageConfigCRUDTestCase(CliTestCase):
             result = runner.invoke(pi_manage, ["config", "policy", "list"])
             self.assertNotIn("clibadpol", result.output)
         finally:
+            os.unlink(pol_path)
+
+    def test_20_resolver_list_verbose_censors_secrets(self):
+        # Every secret of a resolver is censored, not only "bindpw"/"password"
+        save_resolver({"resolver": "cliscimres", "type": "scimresolver",
+                       "Authserver": "https://auth.example", "Resourceserver": "https://res.example",
+                       "Client": "cliclient", "Secret": "scimsupersecret"})
+        runner = self.app.test_cli_runner()
+        try:
+            result = runner.invoke(pi_manage, ["config", "resolver", "list", "-v"])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("cliscimres", result.output)
+            self.assertIn("cliclient", result.output)
+            self.assertNotIn("scimsupersecret", result.output)
+        finally:
+            delete_resolver("cliscimres")
+
+    def test_21_ca_list_verbose_censors_secrets(self):
+        from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
+        save_caconnector({"caconnector": "climsca", "type": "microsoft",
+                          "hostname": "ca.example", "port": "50061",
+                          "ssl_client_key_password": "mscakeypassword"})
+        runner = self.app.test_cli_runner()
+        try:
+            result = runner.invoke(pi_manage, ["config", "ca", "list", "-v"])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("ca.example", result.output)
+            self.assertNotIn("mscakeypassword", result.output)
+        finally:
+            delete_caconnector("climsca")
+
+    def test_22_ca_unknown_and_existing_name(self):
+        from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "ca", "create_crl", "nosuchca"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("nosuchca", result.output, result.output)
+
+        save_caconnector({"caconnector": "cliexistingca", "type": "microsoft",
+                          "hostname": "ca.example", "port": "50061"})
+        try:
+            result = runner.invoke(pi_manage, ["config", "ca", "create", "cliexistingca"])
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIn("already exists", result.output, result.output)
+        finally:
+            delete_caconnector("cliexistingca")
+
+    def test_23_policy_create_invalid_without_file(self):
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "policy", "create", "clibadpol", "admin", "nosuchaction"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("Could not create the policy", result.stderr, result.output)
+        self.assertIn("nosuchaction", result.stderr, result.output)
+        result = runner.invoke(pi_manage, ["config", "policy", "create", "clibadpol", "nosuchscope", "enable"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        result = runner.invoke(pi_manage, ["config", "policy", "list"])
+        self.assertNotIn("clibadpol", result.output)
+
+    def test_24_unknown_policy_and_event_exit_nonzero(self):
+        runner = self.app.test_cli_runner()
+        for cmd in ("enable", "disable", "delete"):
+            result = runner.invoke(pi_manage, ["config", "policy", cmd, "nosuchpolicy"])
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIn("Could not", result.output, result.output)
+            result = runner.invoke(pi_manage, ["config", "event", cmd, "987654"])
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIn("Could not", result.output, result.output)
+
+    def test_25_policy_create_from_file_same_values_message(self):
+        # Values in the file that equal the CLI arguments are not reported as missing
+        runner = self.app.test_cli_runner()
+        with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+            pol_file.write("{'name': 'clisamepol', 'scope': 'admin', 'action': 'enable'}")
+            pol_path = pol_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create",
+                                               "clisamepol", "admin", "enable", "-f", pol_path])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertNotIn("not defined in file", result.output)
+        finally:
+            os.unlink(pol_path)
+        with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+            pol_file.write("{'scope': 'admin', 'action': 'enable'}")
+            pol_path = pol_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create",
+                                               "clisamepol", "admin", "enable", "-f", pol_path])
+            self.assertEqual(0, result.exit_code, result.output)
+            self.assertIn("name not defined in file", result.output)
+            self.assertNotIn("scope not defined in file", result.output)
+        finally:
+            delete_policy("clisamepol")
             os.unlink(pol_path)
 
 
