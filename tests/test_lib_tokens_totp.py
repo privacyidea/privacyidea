@@ -687,6 +687,23 @@ class TOTPTokenTestCase(MyTestCase):
         self.assertIn("dueDate", token.get_tokeninfo())
         token.remove_tokeninfo("otp1c")
         token.remove_tokeninfo("dueDate")
+
+        # A timeout shorter than three time steps of 30 seconds is extended to them
+        token.token.count = 47251640
+        set_privacyidea_config("AutoResyncTimeout", 0)
+        self.assertEqual(90, token.get_autoresync_timeout())
+        # counter = 47251649 => otp = 705493, is out of sync
+        r = token.check_otp("705493", window=30,
+                            options={"initTime": 47251644 * 30})
+        self.assertEqual(-1, r)
+        self.assertAlmostEqual(int(time.time()) + 90, int(token.get_tokeninfo("dueDate")), delta=2)
+        # counter = 47251650 => otp = 589836, will be autosynced
+        r = token.check_otp("589836", window=30,
+                            options={"initTime": 47251645 * 30})
+        self.assertEqual(47251650, r)
+        self.assertEqual(AutoResyncResult.SUCCESSFUL, token.auth_details.get(AUTORESYNC_KEY))
+        set_privacyidea_config("AutoResyncTimeout", 120)
+        self.assertEqual(120, token.get_autoresync_timeout())
         delete_privacyidea_config("AutoResyncTimeout")
 
         # No _autosync

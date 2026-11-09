@@ -50,6 +50,10 @@ from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 
 log = logging.getLogger(__name__)
 
+# The shortest time for an autoresync of a TOTP token, in time steps: the token shows each of the two values for one
+# time step, and one more time step is left for the requests
+AUTORESYNC_MIN_TIME_STEPS = 3
+
 
 class TotpTokenClass(HotpTokenClass):
     # In contrast to the HOTP the counter does not contain the next OTP value,
@@ -394,11 +398,22 @@ class TotpTokenClass(HotpTokenClass):
             self.write_tokeninfo('timeShift', new_shift)
         return res
 
+    def get_autoresync_timeout(self) -> int:
+        """
+        Get the time in seconds in which the next OTP value can complete an autoresync. This is the
+        AutoResyncTimeout, but at least AUTORESYNC_MIN_TIME_STEPS time steps, so that a short timeout does not prevent
+        the autoresync of a TOTP token.
+
+        :return: The timeout in seconds
+        """
+        return max(self.get_sync_timeout(), AUTORESYNC_MIN_TIME_STEPS * self.timestep)
+
     @log_with(log)
     def _autosync(self, hmac2Otp, anOtpVal):
         """
         synchronize the token based on two otp values automatically.
-        If the OTP is invalid, that OTP counter is stored until the AutoResyncTimeout is over.
+        If the OTP is invalid, that OTP counter is stored until the autoresync timeout is over, see
+        get_autoresync_timeout.
         If an OTP counter is stored and the timeout is not over, it is checked, if the new
         OTP value is the next value after this counter. After the timeout the new OTP value starts a new autoresync.
 
@@ -452,7 +467,7 @@ class TotpTokenClass(HotpTokenClass):
                     log.debug(f"Autoresync of token {self.token.serial!s} expired. This OTP value starts a new one.")
                 log.debug(f"Autoresync started for token {self.token.serial!s}. Waiting for the next OTP value.")
                 self.write_tokeninfo("otp1c", res)
-                self.write_tokeninfo("dueDate", int(time.time()) + self.get_sync_timeout())
+                self.write_tokeninfo("dueDate", int(time.time()) + self.get_autoresync_timeout())
                 self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.STARTED
                 res = -1
 
