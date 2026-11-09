@@ -167,28 +167,35 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         else:
             _dump_postgresql(url, sqlfile)
 
-        with tarfile.open(backup_file, "x:gz") as tf:
-            tf.add(sqlfile)
-            if radius_dir:
-                # Simply append the radius directory to the backup command
-                tf.add(radius_dir, recursive=True)
+        # The archive holds pi.cfg and the dump, so it is only readable by its owner from the start
+        archive_fd = os.open(backup_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        try:
+            with os.fdopen(archive_fd, "wb") as archive, tarfile.open(fileobj=archive, mode="w:gz") as tf:
+                tf.add(sqlfile)
+                if radius_dir:
+                    # Simply append the radius directory to the backup command
+                    tf.add(radius_dir, recursive=True)
 
-            if not enckey:
-                # Exclude enckey from backup
+                if not enckey:
+                    # Exclude enckey from backup
 
-                def exclude_encfile(t):
-                    if enc_file.match(t.name):
-                        return None
-                    return t
+                    def exclude_encfile(t):
+                        if enc_file.match(t.name):
+                            return None
+                        return t
 
-                tf.add(conf_dir, recursive=True, filter=exclude_encfile)
-            else:
-                if enc_file.resolve().is_relative_to(conf_dir.resolve()):
-                    click.secho("Including encryption key in backup", fg="yellow")
+                    tf.add(conf_dir, recursive=True, filter=exclude_encfile)
                 else:
-                    click.secho(f"The encryption key {enc_file} is not in the config directory "
-                                f"{conf_dir} and is NOT included in the backup!", fg="yellow")
-                tf.add(conf_dir, recursive=True)
+                    if enc_file.resolve().is_relative_to(conf_dir.resolve()):
+                        click.secho("Including encryption key in backup", fg="yellow")
+                    else:
+                        click.secho(f"The encryption key {enc_file} is not in the config directory "
+                                    f"{conf_dir} and is NOT included in the backup!", fg="yellow")
+                    tf.add(conf_dir, recursive=True)
+        except BaseException:
+            # Do not leave a partial archive behind
+            backup_file.unlink(missing_ok=True)
+            raise
     finally:
         sqlfile.unlink(missing_ok=True)
 

@@ -1442,6 +1442,36 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertEqual(archive_content, archive.read_bytes())
             self.assertEqual([], list(backup_dir.glob("dbdump-*")))
 
+    def test_18b_failed_backup_leaves_no_archive(self):
+        """
+        The archive holds pi.cfg and the database dump. It is only readable by
+        its owner while it is written, and a partial archive is removed if
+        writing it fails.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            backup_dir = tmp / "backup"
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = tmp / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            archive_modes = []
+            add = tarfile.TarFile.add
+
+            def failing_add(tf, name, *args, **kwargs):
+                archive_modes.extend(p.stat().st_mode & 0o777 for p in backup_dir.glob("*.tgz"))
+                if pathlib.Path(name) == config_dir:
+                    raise OSError("No space left on device")
+                return add(tf, name, *args, **kwargs)
+
+            with mock.patch.object(tarfile.TarFile, "add", failing_add):
+                result = self._run_mysql_backup_create(backup_dir, config_dir, enc_file)
+
+            self.assertNotEqual(0, result.exit_code, result.output)
+            self.assertTrue(archive_modes)
+            self.assertEqual({0o600}, set(archive_modes))
+            self.assertEqual([], list(backup_dir.iterdir()))
+
     def test_19_enckey_outside_the_config_directory_is_reported(self):
         """
         With --enckey, the key is only part of the archive if it lies in the
