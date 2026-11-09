@@ -27,7 +27,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { ActivatedRoute, Router } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
+import { ROUTE_PARAMS, ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -111,7 +111,7 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
-      const identifier = params.get("identifier");
+      const identifier = params.get(ROUTE_PARAMS.IDENTIFIER);
       if (identifier) {
         this.isEditMode.set(true);
         this.editIdentifier = identifier;
