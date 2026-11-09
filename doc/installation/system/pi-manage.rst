@@ -195,8 +195,9 @@ WebUI with their name and password, see :ref:`faq_admins`::
 ``-p`` (``add``) or ``--password`` (``change``), which leaves it in the shell
 history. Both commands create the administrator if the name does not exist, and
 otherwise set a new password and, if ``-e`` is given, a new email address;
-``add`` does not check whether the name is taken. ``change`` always sets the
-password, so enter the current one again to change only the email address.
+``add`` does not check whether the name is taken. A new administrator needs a
+password. To change only the email address of an existing administrator, use
+``change`` with ``--password ''``.
 ``delete`` does not ask for confirmation and ends with an error if the name
 does not exist.
 
