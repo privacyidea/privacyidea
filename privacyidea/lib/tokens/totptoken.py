@@ -438,13 +438,7 @@ class TotpTokenClass(HotpTokenClass):
                     # The resync was done with previous (old) OTP values
                     log.debug(f"Autoresync failed for token {self.token.serial!s}. Previous OTP values used.")
                     res = -1
-                else:
-                    server_time = time.time()
-                    counter = self._time2counter(server_time, self.timestep)
-
-                    shift = otp2c - counter
-                    self.write_tokeninfo("timeShift", shift)
-                # A success is recorded by check_otp once the counter is stored
+                # check_otp records a success and the new time shift once the counter is stored
                 if res == -1:
                     self.auth_details[AUTORESYNC_KEY] = AutoResyncResult.FAILED
 
