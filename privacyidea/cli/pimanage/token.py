@@ -19,8 +19,10 @@
 """CLI commands for managing tokens"""
 import click
 from flask.cli import AppGroup
+from privacyidea.lib.error import TokenImportException
 from privacyidea.lib.token import import_token
 from privacyidea.lib.importotp import parseOATHcsv
+from privacyidea.lib.realm import realm_is_defined
 
 
 token_cli = AppGroup("token", short_help="Manage tokens in privacyIDEA",
@@ -32,15 +34,26 @@ token_cli = AppGroup("token", short_help="Manage tokens in privacyIDEA",
 @click.option("-t", "--tokenrealm", multiple=True, default=[],
               help="The realms in which the tokens should be imported (can be "
                    "used multiple times)")
-def import_tokens(file, tokenrealm):
+@click.pass_context
+def import_tokens(ctx, file, tokenrealm):
     """
     Import Tokens from CSV data in FILE
     """
+    unknown_realms = [realm for realm in tokenrealm if not realm_is_defined(realm)]
+    if unknown_realms:
+        click.secho(f"Error: The realm(s) {', '.join(unknown_realms)} do not exist. No tokens were imported.",
+                    fg="red", err=True)
+        ctx.exit(1)
     contents = file.read()
-    tokens = parseOATHcsv(contents)
+    try:
+        tokens = parseOATHcsv(contents)
+    except TokenImportException as e:
+        click.secho(f"Error: {e.message} No tokens were imported.", fg="red", err=True)
+        ctx.exit(1)
     i = 0
     for serial in tokens:
         i += 1
         print(f"{i!s}/{len(tokens)!s} Importing token {serial!s}")
 
-        import_token(serial, tokens[serial], tokenrealms=tokenrealm)
+        # click passes a multiple option as a tuple, but init_token only assigns realms given as a list
+        import_token(serial, tokens[serial], tokenrealms=list(tokenrealm))

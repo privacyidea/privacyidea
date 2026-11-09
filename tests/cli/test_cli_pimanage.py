@@ -49,9 +49,11 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
+from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.lib.clients import create_client
+from privacyidea.lib.token import get_one_token, remove_token
 from privacyidea.models import (db, Audit, AuthCache, Challenge, AuthenticationLog, Client, ConditionalAccessOutcome,
                                 Realm, RememberedDevice)
 from privacyidea.models.metric_aggregate import MetricAggregate
@@ -1440,6 +1442,54 @@ class PIManageTokenTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["token"])
         self.assertIn("Commands to manage token in privacyIDEA", result.output, result)
         self.assertIn("Import tokens from a file", result.output, result)
+
+    def test_02_pimanage_token_import_into_realms(self):
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm("realm1", resolvers=[{"name": "resolver1"}])
+        set_realm("realm2", resolvers=[{"name": "resolver1"}])
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token", "import", "tests/testdata/import.oath",
+                                           "-t", "realm1", "-t", "realm2"])
+        self.assertEqual(0, result.exit_code, result.output)
+        for serial in ["token01", "token02", "token03"]:
+            self.assertEqual(["realm1", "realm2"], sorted(get_one_token(serial=serial).get_realms()))
+            remove_token(serial)
+        delete_realm("realm1")
+        delete_realm("realm2")
+        delete_resolver("resolver1")
+
+    def test_03_pimanage_token_import_into_unknown_realm_fails(self):
+        save_resolver({"resolver": "resolver1",
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm("realm1", resolvers=[{"name": "resolver1"}])
+        runner = self.app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["token", "import", "tests/testdata/import.oath",
+                                           "-t", "realm1", "-t", "unknown_realm"])
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("unknown_realm", result.output)
+        # Nothing was imported
+        for serial in ["token01", "token02", "token03"]:
+            self.assertRaises(ResourceNotFoundError, get_one_token, serial=serial)
+        delete_realm("realm1")
+        delete_resolver("resolver1")
+
+    def test_04_pimanage_token_import_unknown_token_type_fails(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as import_file:
+            import_file.write("token01, 3132333435363738393031323334353637383930, hotp, 6\n"
+                              "token02, 3132333435363738393031323334353637383930, unknowntype, 6\n")
+        try:
+            runner = self.app.test_cli_runner()
+            result = runner.invoke(pi_manage, ["token", "import", import_file.name])
+        finally:
+            os.unlink(import_file.name)
+        self.assertEqual(1, result.exit_code, result.output)
+        self.assertIsInstance(result.exception, SystemExit, result.exception)
+        self.assertIn("Unknown token type 'unknowntype' of token token02.", result.output)
+        self.assertRaises(ResourceNotFoundError, get_one_token, serial="token01")
 
 
 @pytest.fixture(scope="function")

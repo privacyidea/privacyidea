@@ -606,6 +606,10 @@ class ImportOTPTestCase(MyTestCase):
         self.assertEqual(tokens.get("tok1").get("user").get("resolver"), "resolver1")
         self.assertEqual(tokens.get("tok3").get("user").get("resolver"), "resolver3")
 
+    def test_00_import_oath_unknown_token_type(self):
+        with self.assertRaisesRegex(TokenImportException, "Unknown token type 'nosuchtype' of token tok2."):
+            parseOATHcsv("tok1, 1212, hotp, 6\ntok2, 1212, nosuchtype, 6\n")
+
     def test_01_import_aladdin_xml(self):
         self.assertRaises(TokenImportException, parseSafeNetXML, 'no xml')
         tokens = parseSafeNetXML(ALADDINXML)
