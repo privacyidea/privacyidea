@@ -68,7 +68,7 @@ def ca_list(verbose):
     """
     List the Certificate Authorities.
     """
-    lst = get_caconnector_list()
+    lst = get_caconnector_list(censor=True)
     for ca in lst:
         click.echo(f"{ca.get('connectorname')} (type {ca.get('type')})")
         if verbose:
@@ -113,11 +113,15 @@ def ca_create(ctx, name, catype):
 @click.argument("name", type=str)
 @click.option("-f", "--force", is_flag=True,
               help="Enforce creation of a new CRL")
-def ca_create_crl(name, force):
+@click.pass_context
+def ca_create_crl(ctx, name, force):
     """
     Create and publish the CRL for the CA NAME.
     """
     ca_obj = get_caconnector_object(name)
+    if not ca_obj:
+        click.secho(f"A CA connector with the name '{name}' does not exist.", fg="red")
+        ctx.exit(1)
     r = ca_obj.create_crl(check_validity=not force)
     if not r:
         click.secho("The CRL was not created.", fg="yellow")
@@ -189,30 +193,40 @@ def realm_create(name, resolvers):
 @click.argument("realm", type=str)
 @click.option("--delete-custom-attributes", is_flag=True, default=False,
               help="Also delete the realm's custom user attributes instead of refusing the deletion.")
-def realm_delete(realm, delete_custom_attributes):
+@click.option("--confirm-ca-policies", is_flag=True, default=False,
+              help="Delete the realm although conditional-access policies still reference it "
+                   "instead of refusing the deletion.")
+@click.pass_context
+def realm_delete(ctx, realm, delete_custom_attributes, confirm_ca_policies):
     """
     Delete the given REALM
     """
-    try:
-        delete_realm(realm, delete_custom_attributes=delete_custom_attributes)
-    except UserError as e:
-        # The realm still has custom user attributes. Offer to delete them too.
-        if e.id == Error.REALM_DELETE_CUSTOM_ATTRIBUTES and click.confirm(e.message):
-            delete_realm(realm, delete_custom_attributes=True)
-        else:
+    while True:
+        try:
+            delete_realm(realm, delete_custom_attributes=delete_custom_attributes,
+                         confirm_ca_policies=confirm_ca_policies)
+        except UserError as e:
+            # The realm still has custom user attributes or is referenced by
+            # conditional-access policies. Ask for confirmation and try again.
+            if e.id == Error.REALM_DELETE_CUSTOM_ATTRIBUTES and click.confirm(e.message):
+                delete_custom_attributes = True
+            elif e.id == Error.REALM_DELETE_CA_POLICY_REFERENCE and click.confirm(e.message):
+                confirm_ca_policies = True
+            else:
+                click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
+                ctx.exit(1)
+        except ResourceNotFoundError as e:
             click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
-            sys.exit(1)
-        click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
-    except ResourceNotFoundError as e:
-        click.secho(f"Could not delete realm '{realm}': {e!r}", fg="red")
-        sys.exit(1)
-    else:
-        click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
+            ctx.exit(1)
+        else:
+            click.secho(f"Realm '{realm}' successfully deleted.", fg="green")
+            return
 
 
 @realm_cli.command("set_default")
 @click.argument("realm", type=str)
-def realm_set_default(realm):
+@click.pass_context
+def realm_set_default(ctx, realm):
     """
     Set the given REALM as the default realm
     """
@@ -220,6 +234,7 @@ def realm_set_default(realm):
         set_default_realm(realm)
     except ResourceNotFoundError as e:
         click.secho(f"Could not set realm {realm} as default: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Realm {realm} set as default realm.", fg="green")
 
@@ -245,7 +260,7 @@ def resolver_list(verbose):
     """
     List the available resolvers and their type.
     """
-    reso_list = get_resolver_list()
+    reso_list = get_resolver_list(censor=verbose)
 
     if not verbose:
         for (name, resolver) in reso_list.items():
@@ -256,8 +271,6 @@ def resolver_list(verbose):
             click.echo("." * 32)
             data = resolver.get("data", {})
             for (k, v) in data.items():
-                if k.lower() in ["bindpw", "password"]:
-                    v = "xxxxx"
                 click.echo(f"{k:>24}: {v!r}")
             click.echo("\n")
 
@@ -390,7 +403,8 @@ def event_list():
 
 @event_cli.command("enable")
 @click.argument("eid", type=int)
-def event_enable(eid):
+@click.pass_context
+def event_enable(ctx, eid):
     """
     Enable event with id EID
     """
@@ -398,13 +412,15 @@ def event_enable(eid):
         r = enable_event(eid)
     except ResourceNotFoundError as e:
         click.secho(f"Could not enable event {eid}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Enabled Event with ID {r}", fg="green")
 
 
 @event_cli.command("disable")
 @click.argument("eid", type=int)
-def event_disable(eid):
+@click.pass_context
+def event_disable(ctx, eid):
     """
     Disable event with id EID
     """
@@ -412,13 +428,15 @@ def event_disable(eid):
         r = enable_event(eid, enable=False)
     except ResourceNotFoundError as e:
         click.secho(f"Could not disable event {eid}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Disabled Event with ID {r}", fg="green")
 
 
 @event_cli.command("delete")
 @click.argument("eid", type=int)
-def event_delete(eid):
+@click.pass_context
+def event_delete(ctx, eid):
     """
     Delete event with id EID
     """
@@ -426,6 +444,7 @@ def event_delete(eid):
         r = delete_event(eid)
     except ResourceNotFoundError as e:
         click.secho(f"Could not delete event with ID {eid}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Deleted Event with ID {r}", fg="green")
 
@@ -451,7 +470,8 @@ def policy_list():
 
 @policy_cli.command("enable")
 @click.argument("name", type=str)
-def policy_enable(name):
+@click.pass_context
+def policy_enable(ctx, name):
     """
     enable the policy NAME.
     """
@@ -459,13 +479,15 @@ def policy_enable(name):
         enable_policy(name)
     except ResourceNotFoundError as e:
         click.secho(f"Could not enable policy {name}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Successfully enabled policy '{name}'", fg="green")
 
 
 @policy_cli.command("disable")
 @click.argument("name", type=str)
-def policy_disable(name):
+@click.pass_context
+def policy_disable(ctx, name):
     """
     disable the policy NAME
     """
@@ -473,13 +495,15 @@ def policy_disable(name):
         enable_policy(name, enable=False)
     except ResourceNotFoundError as e:
         click.secho(f"Could not disable policy {name}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Successfully disabled policy '{name}'", fg="green")
 
 
 @policy_cli.command("delete")
 @click.argument("name", type=str)
-def policy_delete(name):
+@click.pass_context
+def policy_delete(ctx, name):
     """
     delete the policy NAME
     """
@@ -487,6 +511,7 @@ def policy_delete(name):
         delete_policy(name)
     except ResourceNotFoundError as e:
         click.secho(f"Could not delete policy {name}: {e!r}", fg="red")
+        ctx.exit(1)
     else:
         click.secho(f"Successfully deleted policy '{name}'", fg="green")
 
@@ -516,25 +541,28 @@ def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: 
         try:
             contents = file.read()
             params = ast.literal_eval(contents)
-            if params.get("name") and params.get("name") != name:
-                print("Found name '{!s}' in file, will use that instead of "
-                      "'{!s}'.".format(params.get("name"), name))
+            if params.get("name"):
+                if params.get("name") != name:
+                    print("Found name '{!s}' in file, will use that instead of "
+                          "'{!s}'.".format(params.get("name"), name))
             else:
                 print("name not defined in file, will use the cli value "
                       f"{name!s}.")
                 params["name"] = name
 
-            if params.get("scope") and params.get("scope") != scope:
-                print("Found scope '{!s}' in file, will use that instead of "
-                      "'{!s}'.".format(params.get("scope"), scope))
+            if params.get("scope"):
+                if params.get("scope") != scope:
+                    print("Found scope '{!s}' in file, will use that instead of "
+                          "'{!s}'.".format(params.get("scope"), scope))
             else:
                 print("scope not defined in file, will use the cli value "
                       f"{scope!s}.")
                 params["scope"] = scope
 
-            if params.get("action") and params.get("action") != action:
-                print("Found action in file: '{!s}', will use that instead "
-                      "of: '{!s}'.".format(params.get("action"), action))
+            if params.get("action"):
+                if params.get("action") != action:
+                    print("Found action in file: '{!s}', will use that instead "
+                          "of: '{!s}'.".format(params.get("action"), action))
             else:
                 print("action not defined in file, will use the cli value "
                       f"{action!s}.")
@@ -560,16 +588,21 @@ def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: 
             ctx.exit(1)
 
     else:
-        r = set_policy(name, scope, action)
-        return r
+        try:
+            return set_policy(name, scope, action)
+        except Exception as e:
+            click.secho(f"Could not create the policy {name}: {e!r}", fg="red", err=True)
+            ctx.exit(1)
 
 
 config_cli.add_command(policy_cli)
 
+# The order matters: a python dict literal is also valid YAML, but YAML would
+# e.g. read None as the string "None". So python must be tried before YAML.
 imp_fmt_dict = {
     'json': json.loads,
-    'yaml': yaml.safe_load,
-    'python': ast.literal_eval
+    'python': ast.literal_eval,
+    'yaml': yaml.safe_load
 }
 
 
@@ -613,9 +646,12 @@ def config_import(ctx, infile, types, name, skip_invalid):
     for fmt in imp_fmt_dict:
         try:
             data = imp_fmt_dict[fmt](content)
-            break
-        except (SyntaxError, ValueError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
+        except (SyntaxError, ValueError, TypeError, json.decoder.JSONDecodeError, yaml.error.YAMLError) as _e:
             continue
+        # e.g. plain text is valid YAML, but only a dictionary is a valid configuration
+        if isinstance(data, dict):
+            break
+        data = None
     if not data:
         click.secho("Could not determine input format! ", fg="red")
         click.secho(f"Accepted formats are: {', '.join(imp_fmt_dict.keys())}.",
