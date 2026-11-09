@@ -18,6 +18,7 @@
  **/
 import { DatePipe } from "@angular/common";
 import { Component, computed, inject, input, linkedSignal } from "@angular/core";
+import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -40,6 +41,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
   selector: "app-api-client-remembered-devices",
   standalone: true,
   imports: [
+    FormField,
     TooltipAriaLabelDirective,
     MatTableModule,
     MatButtonModule,
@@ -63,14 +65,15 @@ export class ApiClientRememberedDevicesComponent {
 
   clientId = input.required<string>();
 
-  // Reset to the first page / no realm filter whenever the viewed client changes,
-  // so a stale page number or realm from a previous client (e.g. the router reusing
-  // this instance across a same-route client-to-client navigation) can't carry over.
+  // The realm filter resets to "All realms" whenever the viewed client changes, so a stale realm from a
+  // previous client (e.g. the router reusing this instance across a same-route client-to-client navigation)
+  // can't carry over. The page index resets to the first page on that change and on every realm filter change.
   realmFilter = linkedSignal({ source: () => this.clientId(), computation: () => "" });
+  realmFilterForm = form(this.realmFilter);
 
   private readonly list = new RememberedDevicesList({
     apiClientService: this.apiClientService,
-    scope: () => this.clientId(),
+    scope: () => ({ clientId: this.clientId(), realm: this.realmFilter() }),
     request: () => {
       if (!this.clientId() || !this.authService.actionAllowed("remembered_device_list")) return undefined;
       return { clientId: this.clientId(), realm: this.realmFilter() || undefined };
@@ -95,7 +98,7 @@ export class ApiClientRememberedDevicesComponent {
     count: () => this.count(),
     filterActive: () => !!this.realmFilter(),
     allowed: () => this.authService.actionAllowed("remembered_device_list"),
-    resetFilter: () => this.onRealmFilterChange("")
+    resetFilter: () => this.realmFilter.set("")
   });
 
   userDevicesTooltip(): string {
@@ -109,11 +112,6 @@ export class ApiClientRememberedDevicesComponent {
 
   onPage(event: PageEvent): void {
     this.list.onPage(event);
-  }
-
-  onRealmFilterChange(realm: string): void {
-    this.realmFilter.set(realm);
-    this.pageIndex.set(0);
   }
 
   revokeDevice(device: RememberedDevice): void {

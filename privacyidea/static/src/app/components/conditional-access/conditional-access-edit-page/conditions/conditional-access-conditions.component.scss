@@ -1,5 +1,4 @@
 @use "styles-api" as styles;
-@use "@angular/material" as mat;
 
 .ca-conditions {
   display: flex;
@@ -31,20 +30,6 @@
   gap: 16px;
   // add hint height as offset here, to center with the selection input only
   padding-bottom: 19.5px;
-}
-
-// The operator toggle takes the border radius of all buttons. Material's default checked tone is the M3 secondary
-// container, which reads as a different accent from the rest of the WebUI, so the selected operator is brought onto
-// the brand primary like the other toggle groups, paired with on-primary (~6:1 in both schemes). Material colours the
-// checkmark from the same text token, so check and label match.
-mat-button-toggle-group {
-  @include mat.button-toggle-overrides(
-    (
-      shape: var(--border-radius),
-      selected-state-background-color: var(--mat-sys-primary),
-      selected-state-text-color: var(--mat-sys-on-primary)
-    )
-  );
 }
 
 // A shared minimum width lines the operator controls of the rows up with each other.

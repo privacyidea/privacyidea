@@ -27,6 +27,14 @@ import { SystemService } from "@services/system/system.service";
 import { TokenService } from "@services/token/token.service";
 import { MockSystemService, MockTokenService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import {
+  checkboxInput,
+  clearOverlays,
+  clickCheckbox,
+  flushFixture,
+  matSelectAt,
+  pickOption
+} from "@testing/enroll-form-dom";
 
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
@@ -274,6 +282,66 @@ describe("EnrollHotpComponent", () => {
       expect(component.generateOnServer()).toBe(true);
       expect(component.otpLength()).toBe(6);
       expect(component.hashAlgorithm()).toBe("sha1");
+    });
+  });
+
+  describe("bound controls", () => {
+    afterEach(clearOverlays);
+
+    it("writes a click on the generate checkbox to the model and marks the field dirty", async () => {
+      createAndInit();
+      expect(component.generateOnServerForm().dirty()).toBe(false);
+
+      await clickCheckbox(fixture, "mat-checkbox.server-checkbox");
+
+      expect(component.generateOnServer()).toBe(false);
+      expect(component.generateOnServerForm().dirty()).toBe(true);
+    });
+
+    it("writes a click on the two-step checkbox to the model", async () => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
+      createAndInit();
+
+      await clickCheckbox(fixture, "mat-checkbox:not(.server-checkbox)");
+
+      expect(component.twoStepEnabled()).toBe(true);
+      expect(component.twoStepEnabledForm().dirty()).toBe(true);
+    });
+
+    it("renders the checkboxes disabled while the policy forces the setting", () => {
+      const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
+      auth.check2Step.mockReturnValue("force");
+      auth.checkForceServerGenerateOTPKey.mockReturnValue(true);
+      createAndInit();
+
+      expect(checkboxInput(fixture, "mat-checkbox.server-checkbox").disabled).toBe(true);
+      expect(checkboxInput(fixture, "mat-checkbox:not(.server-checkbox)").disabled).toBe(true);
+    });
+
+    it("writes the picked OTP length and hash algorithm to the model", async () => {
+      createAndInit();
+
+      await pickOption(fixture, matSelectAt(fixture, 0), 1);
+      await pickOption(fixture, matSelectAt(fixture, 1), 2);
+
+      expect(component.otpLength()).toBe(8);
+      expect(component.otpLengthForm().dirty()).toBe(true);
+      expect(component.hashAlgorithm()).toBe("sha512");
+      expect(component.hashAlgorithmForm().dirty()).toBe(true);
+    });
+
+    it("renders the OTP key errors once the field was touched", async () => {
+      createAndInit();
+      component.generateOnServer.set(false);
+      await flushFixture(fixture);
+      expect(fixture.nativeElement.querySelector("mat-error")).toBeNull();
+
+      fixture.nativeElement.querySelector("input[matInput]").dispatchEvent(new Event("blur"));
+      await flushFixture(fixture);
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain("OTP key is required");
+      expect(text).toContain("OTP key must be at least 16 characters long.");
     });
   });
 });

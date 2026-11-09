@@ -16,29 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, input, output } from "@angular/core";
-
+import { Component, computed, input } from "@angular/core";
+import { FormField } from "@angular/forms/signals";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { TokenTypeConfigForm } from "@components/configuration/token-type-config/token-type-config.form";
 import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
 
 @Component({
   selector: "app-webauthn-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, FormField],
   templateUrl: "./webauthn-config.component.html"
 })
 export class WebauthnConfigComponent {
   protected readonly WEBAUTHN_TRUST_ANCHOR_DIR = WEBAUTHN_TRUST_ANCHOR_DIR;
 
-  formData = input.required<Record<string, string | undefined>>();
-  formDataChange = output<Record<string, string | undefined>>();
+  config = input.required<TokenTypeConfigForm>();
 
-  trustAnchorDir = computed(() => this.formData()[WEBAUTHN_TRUST_ANCHOR_DIR] ?? "");
-
-  updateFormData(fieldName: string, value: string): void {
-    const newValue = { ...this.formData(), [fieldName]: value };
-    this.formDataChange.emit(newValue);
-  }
+  trustAnchorDir = computed(() => this.config().values[WEBAUTHN_TRUST_ANCHOR_DIR]().value());
 }

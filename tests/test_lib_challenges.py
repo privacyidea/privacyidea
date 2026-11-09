@@ -99,6 +99,27 @@ class ChallengeTestCase(MyTestCase):
         for serial in serials:
             delete_challenges(serial=serial)
 
+    def test_01c_the_challenge_id_orders_equal_sort_values(self):
+        # The transaction ids are not in alphabetical order, so that only the id gives this order
+        now = utc_now()
+        transaction_ids = ["txn_tie_c", "txn_tie_a", "txn_tie_b"]
+        for transaction_id in transaction_ids:
+            challenge = Challenge(serial="TIE_01", transaction_id=transaction_id)
+            challenge.timestamp = now
+            challenge.save()
+        self.addCleanup(delete_challenges, serial="TIE_01")
+
+        # All challenges have the same serial and timestamp, so only the id gives the pages a fixed order
+        for sortby in ["serial", "timestamp"]:
+            for sortdir, expected_ids in [("asc", transaction_ids), ("desc", transaction_ids[::-1])]:
+                with self.subTest(sortby=sortby, sortdir=sortdir):
+                    pages = [[challenge["transaction_id"]
+                              for challenge in get_challenges_paginate(serial="TIE_*", sortby=sortby,
+                                                                       sortdir=sortdir, psize=2,
+                                                                       page=page)["challenges"]]
+                             for page in [1, 2]]
+                    self.assertListEqual([expected_ids[:2], expected_ids[2:]], pages)
+
     def test_02_extract_answered_challenges(self):
         token = init_token({"genkey": 1, "serial": "CHAL2", "pin": "pin"})
         # no challenges yet

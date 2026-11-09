@@ -53,6 +53,7 @@ class SpassTokenClass(TokenClass):
     succeed. Of course, an OTP PIN can be used.
     """
     mode = [AuthenticationMode.AUTHENTICATE]
+    pin_is_whole_credential = True
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)

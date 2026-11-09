@@ -18,9 +18,10 @@
 -->
 <mat-expansion-panel
   id="yubico"
-  [expanded]="expanded()">
+  [expanded]="expanded() || panel.revealed()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n="@@tokenTypeConfig.yubico">Yubico</mat-panel-title>
+    <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n="@@tokenTypeConfig.yubicoTokenYubikey"
@@ -46,15 +47,12 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.apiKey">API Key</mat-label>
         <input
-          #apiKeyInput
-          [value]="formData()[YUBICO_SECRET] ?? ''"
-          (input)="updateFormData(YUBICO_SECRET, $any($event.target).value)"
+          [formField]="config().values[YUBICO_SECRET]"
           matInput
           i18n-placeholder="@@tokenTypeConfig.apiKey"
-          placeholder="API Key"
-          required />
-        @if (apiKeyInput.validity.valueMissing) {
-          <mat-error i18n="@@tokenTypeConfig.apiKeyRequired">API Key is <strong>required</strong></mat-error>
+          placeholder="API Key" />
+        @if (hasError(config().values[YUBICO_SECRET], ERR.required)) {
+          <mat-error i18n="@@tokenTypeConfig.apiKeyRequired">API Key is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
 
@@ -63,15 +61,12 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.apiClientId">API Client ID</mat-label>
         <input
-          #clientIdInput
-          [value]="formData()[YUBICO_ID] ?? ''"
-          (input)="updateFormData(YUBICO_ID, $any($event.target).value)"
+          [formField]="config().values[YUBICO_ID]"
           matInput
           i18n-placeholder="@@tokenTypeConfig.clientIdPlaceholderLong"
-          placeholder="The client ID"
-          required />
-        @if (clientIdInput.validity.valueMissing) {
-          <mat-error i18n="@@tokenTypeConfig.apiClientIdRequired">API Client ID is <strong>required</strong></mat-error>
+          placeholder="The client ID" />
+        @if (hasError(config().values[YUBICO_ID], ERR.required)) {
+          <mat-error i18n="@@tokenTypeConfig.apiClientIdRequired">API Client ID is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
     </div>
@@ -82,16 +77,10 @@
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.yubicoUrl">Yubico URL</mat-label>
         <input
-          #urlInput
-          [value]="formData()[YUBICO_URL] ?? ''"
-          (input)="updateFormData(YUBICO_URL, $any($event.target).value)"
+          [formField]="config().values[YUBICO_URL]"
           matInput
           placeholder="https://api.yubico.com/wsapi/2.0/verify"
-          required
           type="url" />
-        @if (urlInput.validity.valueMissing) {
-          <mat-error i18n="@@tokenTypeConfig.yubicoUrlRequired">Yubico URL is <strong>required</strong></mat-error>
-        }
       </mat-form-field>
     </div>
   </div>

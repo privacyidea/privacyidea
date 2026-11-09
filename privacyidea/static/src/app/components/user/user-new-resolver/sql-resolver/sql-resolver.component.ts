@@ -25,6 +25,8 @@ import { MatHint, MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ResolverService, SQLResolverData } from "@services/resolver/resolver.service";
+import { ERR } from "@utils/form-rules.utils";
+import { clearField, hasError } from "@utils/form-state.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 interface SqlPreset {
@@ -106,6 +108,9 @@ export class SqlResolverComponent {
       map: "{\"userid\": \"uid\", \"username\": \"name\", \"email\": \"mail\", \"password\": \"pass\" }"
     }
   ];
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
+  protected readonly clearField = clearField;
   data = input<Partial<SQLResolverData>>({});
   isEditMode = computed(() => !!this.resolverService.selectedResolverName());
   model = signal<SqlFormModel>({
@@ -168,13 +173,10 @@ export class SqlResolverComponent {
   getValue = () => this.model();
 
   applySqlPreset(preset: SqlPreset): void {
-    this.model.update((m) => ({
-      ...m,
-      Table: preset.table,
-      Map: preset.map,
-      poolSize: "5",
-      poolTimeout: "10",
-      poolRecycle: "7200"
-    }));
+    clearField(this.sqlForm.Table, preset.table);
+    clearField(this.sqlForm.Map, preset.map);
+    clearField(this.sqlForm.poolSize, "5");
+    clearField(this.sqlForm.poolTimeout, "10");
+    clearField(this.sqlForm.poolRecycle, "7200");
   }
 }

@@ -19,11 +19,8 @@
 <mat-form-field class="input-width-l margin-bottom-32">
   <mat-label i18n="@@common.action">Action</mat-label>
   <mat-select
-    (openedChange)="$event === false && selectedActionForm().markAsTouched()"
     (selectionChange)="onActionSelectionChange($event.value)"
-    [appErrorState]="showActionError()"
-    [value]="selectedAction()"
-    required>
+    [formField]="selectedActionForm">
     @for (action of Object.keys(eventService.moduleActions()); track action) {
       <mat-option [value]="action">
         {{ action }}
@@ -31,19 +28,18 @@
     }
   </mat-select>
   <mat-hint i18n="@@event.selectActionExecuted">Select an action to be executed on the specified events.</mat-hint>
-  @if (selectedActionForm().errors().some(e => e.kind === "required") && selectedActionForm().touched()) {
+  @if (hasError(selectedActionForm, ERR.required)) {
     <mat-error i18n="@@event.selectingAction">Selecting an action is <strong>required</strong>.</mat-error>
   }
 </mat-form-field>
 
 <div class="flex-column gap-16">
-  @for (optionName of Object.keys(actionOptions()); track optionName) {
+  @for (optionName of optionNames(); track optionName) {
     @if (checkOptionVisibility(optionName)) {
       <div class="pad-0">
         @if (actionOptions()[optionName].type === "bool") {
           <mat-checkbox
-            (change)="setOption(optionName, $event.checked)"
-            [checked]="!!selectedOptions()[optionName]"
+            [formField]="optionsForm[optionName]"
             class="margin-0">
             {{ optionName }}
           </mat-checkbox>
@@ -57,12 +53,7 @@
               {{ optionName }}
             </mat-label>
             @if (actionOptions()[optionName].value) {
-              <mat-select
-                (openedChange)="$event === false && markOptionTouched(optionName)"
-                (selectionChange)="setOption(optionName, $event.value); markOptionTouched(optionName)"
-                [appErrorState]="showOptionError(optionName)"
-                [required]="actionOptions()[optionName].required || false"
-                [value]="selectedOptions()[optionName]">
+              <mat-select [formField]="optionsForm[optionName]">
                 @for (valueOption of optionValueOptions()[optionName]; track valueOption.value) {
                   <mat-option [value]="valueOption.value">
                     {{ valueOption.label }}
@@ -73,38 +64,29 @@
               @switch (actionOptions()[optionName].type) {
                 @case ("int") {
                   <input
-                    (blur)="markOptionTouched(optionName)"
-                    (input)="setOption(optionName, $any($event.target).valueAsNumber)"
-                    [appErrorState]="showOptionError(optionName)"
-                    [required]="actionOptions()[optionName].required || false"
-                    [value]="selectedOptions()[optionName]"
+                    [formField]="numberField(optionName)"
                     matInput
                     type="number" />
                 }
                 @case ("text") {
                   <textarea
-                    (blur)="markOptionTouched(optionName)"
-                    (input)="setOption(optionName, $any($event.target).value)"
-                    [appErrorState]="showOptionError(optionName)"
-                    [required]="actionOptions()[optionName].required || false"
-                    [value]="selectedOptions()[optionName]"
+                    [formField]="textField(optionName)"
                     matInput
                     rows="3"></textarea>
                 }
                 @default {
                   <input
-                    (blur)="markOptionTouched(optionName)"
-                    (input)="setOption(optionName, $any($event.target).value)"
-                    [appErrorState]="showOptionError(optionName)"
-                    [required]="actionOptions()[optionName].required || false"
-                    [value]="selectedOptions()[optionName]"
+                    [formField]="textField(optionName)"
                     matInput
                     type="text" />
                 }
               }
             }
-            @if (showOptionError(optionName)) {
+            @if (hasError(optionsForm[optionName], ERR.required) && !hasError(optionsForm[optionName], ERR.parse)) {
               <mat-error i18n="@@event.isRequired">{{ optionName }} is <strong>required</strong>.</mat-error>
+            }
+            @if (hasError(optionsForm[optionName], ERR.parse)) {
+              <mat-error i18n="@@event.optionNotANumber">Enter a <strong>valid number</strong>.</mat-error>
             }
           </mat-form-field>
         }

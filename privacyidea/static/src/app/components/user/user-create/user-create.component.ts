@@ -45,6 +45,8 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
 import { RealmService } from "@services/realm/realm.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { EditUserData, UserService } from "@services/user/user.service";
+import { ERR, requiredNonBlank } from "@utils/form-rules.utils";
+import { hasError, touchAll } from "@utils/form-state.utils";
 
 @Component({
   selector: "app-user-create",
@@ -77,22 +79,22 @@ export class UserCreateComponent implements OnInit, OnDestroy {
 
   realm = linkedSignal(() => this.userService.selectedUserRealm() || "");
 
-  username = signal<string>("");
-  resolver = signal<string>("");
+  protected readonly ERR = ERR;
+  protected readonly hasError = hasError;
 
-  usernameForm = form(this.username, (f) => {
-    required(f);
+  readonly userModel = signal({ username: "", resolver: "" });
+  readonly userForm = form(this.userModel, (f) => {
+    requiredNonBlank(f.username);
+    required(f.resolver);
   });
-  resolverForm = form(this.resolver, (f) => {
-    required(f);
-  });
+  readonly resolver = computed(() => this.userModel().resolver);
 
-  canSave = computed(() => this.usernameForm().valid() && this.resolverForm().valid());
+  canSave = computed(() => this.userForm().valid());
   editedUserData: WritableSignal<EditUserData> = linkedSignal(() => ({ username: "" }));
   editUserDataIsEmpty = computed(() =>
     Object.values(this.editedUserData()).every((value) => value === "" || value === undefined)
   );
-  isDirty = computed(() => this.usernameForm().dirty() || this.resolverForm().dirty() || !this.editUserDataIsEmpty());
+  isDirty = computed(() => this.userForm().dirty() || !this.editUserDataIsEmpty());
   correspondingRealms: Signal<string[]> = computed(() => {
     const realms = this.realmService.realms();
     const result: string[] = [];
@@ -109,7 +111,7 @@ export class UserCreateComponent implements OnInit, OnDestroy {
     if (realm) {
       const realmConfig = this.realmService.realms()[realm];
       const firstResolver = realmConfig?.resolver[0]?.name;
-      if (firstResolver) this.resolver.set(firstResolver);
+      if (firstResolver) this.userModel.update((model) => ({ ...model, resolver: firstResolver }));
     }
   }
 
@@ -125,14 +127,13 @@ export class UserCreateComponent implements OnInit, OnDestroy {
 
   async onSave(): Promise<boolean> {
     if (!this.canSave()) {
-      this.usernameForm().markAsTouched();
-      this.resolverForm().markAsTouched();
+      void touchAll(this.userForm);
       this.notificationService.warning($localize`:@@common.pleaseFillAll:Please fill in all required fields.`);
       return false;
     }
-    this.editedUserData().username = this.username();
+    const { username, resolver } = this.userModel();
     return new Promise((resolve) => {
-      this.userService.createUser(this.resolver(), this.editedUserData()).subscribe({
+      this.userService.createUser(resolver, { ...this.editedUserData(), username }).subscribe({
         next: (success) => {
           if (success) {
             this.userService.usersResource.reload();

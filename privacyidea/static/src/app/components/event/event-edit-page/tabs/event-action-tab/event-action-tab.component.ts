@@ -18,14 +18,15 @@
  **/
 
 import { NgClass } from "@angular/common";
-import { Component, computed, effect, inject, input, output, signal } from "@angular/core";
-import { form, required } from "@angular/forms/signals";
+import { Component, computed, effect, inject, input, output, signal, untracked } from "@angular/core";
+import { applyEach, FieldTree, form, FormField, metadata, REQUIRED, required, validate } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { ActionOptionDetails, EventService } from "@services/event/event.service";
+import { ERR } from "@utils/form-rules.utils";
+import { hasError } from "@utils/form-state.utils";
 import { valueDisplayLabel } from "@utils/value-label.utils";
 
 /**
@@ -44,24 +45,15 @@ export type EventActionOptionValues = Record<string, EventActionOptionValue>;
 @Component({
   selector: "app-event-action-tab",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatHint,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatInput,
-    MatCheckbox,
-    MatError,
-    NgClass,
-    ErrorStateDirective
-  ],
+  imports: [MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatInput, MatCheckbox, MatError, NgClass, FormField],
   templateUrl: "./event-action-tab.component.html",
   styleUrl: "./event-action-tab.component.scss"
 })
 export class EventActionTabComponent {
   protected readonly eventService = inject(EventService);
   protected readonly Object = Object;
+  protected readonly hasError = hasError;
+  protected readonly ERR = ERR;
   action = input.required<string>();
   options = input.required<EventActionOptionValues>();
   newAction = output<string>();
@@ -72,13 +64,15 @@ export class EventActionTabComponent {
     required(f);
   });
 
-  showActionError = computed(() => {
-    const actionForm = this.selectedActionForm();
-    return actionForm.errors().some((error) => error.kind === "required") && actionForm.touched();
-  });
-
   selectedOptions = signal<EventActionOptionValues>({});
-  touchedOptions = signal<Record<string, boolean>>({});
+  optionsForm = form(this.selectedOptions, (f) => {
+    applyEach(f, (option) => {
+      metadata(option, REQUIRED, (ctx) => this.isOptionRequired(ctx.key()));
+      validate(option, (ctx) =>
+        this.isOptionRequired(ctx.key()) && this.isEmpty(ctx.value()) ? { kind: ERR.required } : undefined
+      );
+    });
+  });
 
   actionOptions = computed(() => {
     const action = this.selectedAction();
@@ -101,16 +95,7 @@ export class EventActionTabComponent {
     return optionMap;
   });
 
-  optionsAreValid = computed(() => {
-    const optionDefinitions = this.actionOptions();
-    const values = this.selectedOptions();
-    for (const name of Object.keys(optionDefinitions)) {
-      if (optionDefinitions[name].required && this.checkOptionVisibility(name) && this.isEmpty(values[name])) {
-        return false;
-      }
-    }
-    return true;
-  });
+  optionNames = computed(() => Object.keys(this.selectedOptions()).filter((name) => name in this.actionOptions()));
 
   constructor() {
     // Sync the selectedAction signal with the input
@@ -136,38 +121,32 @@ export class EventActionTabComponent {
         }
       }
       this.selectedOptions.set(rebuilt);
-      this.touchedOptions.set({});
+      untracked(() => this.optionsForm().reset());
     });
 
     // Emit options + validity to the parent whenever they change
     effect(() => {
       const values = this.selectedOptions();
-      this.optionsValid.emit(this.optionsAreValid());
+      this.optionsValid.emit(this.optionsForm().valid());
       this.newOptions.emit(this.optionsToDict(values));
     });
   }
 
-  setOption(name: string, value: EventActionOptionValue): void {
-    this.selectedOptions.update((current) => ({ ...current, [name]: value }));
+  // The model holds text, numbers and booleans, so the native inputs take the field of an option as a typed view
+  textField(name: string): FieldTree<string> {
+    return this.optionsForm[name] as unknown as FieldTree<string>;
   }
 
-  markOptionTouched(name: string): void {
-    this.touchedOptions.update((current) => ({ ...current, [name]: true }));
-  }
-
-  isOptionInvalid(name: string): boolean {
-    const definition = this.actionOptions()[name];
-    if (!definition || !definition.required) return false;
-    if (!this.checkOptionVisibility(name)) return false;
-    return this.isEmpty(this.selectedOptions()[name]);
+  numberField(name: string): FieldTree<string | number | null> {
+    return this.optionsForm[name] as unknown as FieldTree<string | number | null>;
   }
 
   showOptionError(name: string): boolean {
-    return !!this.touchedOptions()[name] && this.isOptionInvalid(name);
+    const field = this.optionsForm[name];
+    return !!field && field().touched() && field().invalid();
   }
 
   onActionSelectionChange(value: string): void {
-    this.selectedAction.set(value);
     this.newAction.emit(value);
   }
 
@@ -177,6 +156,10 @@ export class EventActionTabComponent {
     if (optionDetails.visibleValue === undefined) return true;
     const dependent = this.selectedOptions()[optionDetails.visibleIf];
     return dependent === optionDetails.visibleValue;
+  }
+
+  private isOptionRequired(name: string): boolean {
+    return !!this.actionOptions()[name]?.required && this.checkOptionVisibility(name);
   }
 
   private isEmpty(value: EventActionOptionValue | undefined): boolean {

@@ -277,10 +277,12 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n="@@realm.realmName">Realm Name</mat-label>
                       <input
-                        (input)="newRealmName.set($any($event.target).value)"
-                        [value]="newRealmName()"
+                        [formField]="newRealmForm"
                         matInput />
-                      @if (newRealmNameHasPatternError()) {
+                      @if (hasError(newRealmForm, ERR.required)) {
+                        <mat-error i18n="@@common.nameRequired">Name is <strong>required</strong>.</mat-error>
+                      }
+                      @if (hasError(newRealmForm, ERR.pattern)) {
                         <mat-error i18n="@@common.invalidCharacters">Invalid characters.</mat-error>
                       }
                     </mat-form-field>
