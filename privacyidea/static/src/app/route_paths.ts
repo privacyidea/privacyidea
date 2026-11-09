@@ -16,6 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+/**
+ * The names of the route parameters that the edit pages of `admin.routes.ts` read through `ActivatedRoute.paramMap`.
+ * The routes and the pages both use these constants. The token, container and user details pages read their key from
+ * the URL through `ContentService`, so their `:serial` and `:username` parameters are not listed.
+ */
+export const ROUTE_PARAMS = {
+  ID: "id",
+  NAME: "name",
+  IDENTIFIER: "identifier"
+} as const;
+
 export const ROUTE_PATHS = {
   LOGIN: "/login",
   PASSWORD_RECOVERY: "/recover",
