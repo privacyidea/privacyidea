@@ -48,4 +48,14 @@ describe("NavigationSelfServiceButtonComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  it("marks the link as the current page only while its route is shown", () => {
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector("a");
+    expect(link.hasAttribute("aria-current")).toBe(false);
+
+    (TestBed.inject(ContentService) as unknown as MockContentService).routeUrl.set("tokens");
+    fixture.detectChanges();
+
+    expect(link.getAttribute("aria-current")).toBe("page");
+  });
 });

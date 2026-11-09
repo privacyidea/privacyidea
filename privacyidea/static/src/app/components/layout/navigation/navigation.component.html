@@ -62,6 +62,7 @@
         [attr.data-section]="item.section"
         [class.active]="activeSection() === item.section">
         <a
+          [attr.aria-current]="activeSection() === item.section ? 'true' : null"
           [ngClass]="{ 'nav-active': activeSection() === item.section }"
           [routerLink]="[item.route]"
           class="nav-button">
@@ -87,6 +88,7 @@
           <button
             mat-menu-item
             [routerLink]="[item.route]"
+            [attr.aria-current]="activeSection() === item.section ? 'true' : null"
             [ngClass]="{ 'overflow-item-active': activeSection() === item.section }">
             <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
             <span>{{ item.label }}</span>
