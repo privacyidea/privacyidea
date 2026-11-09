@@ -163,6 +163,16 @@ describe("SmsGatewaysComponent", () => {
       expect(toolbarButton(fixture, "Delete")).toBeUndefined();
     });
 
+    it("offers row selection only with smsgateway_write, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["smsgateway_read"]);
+      expect(selectColumn()).toBeNull();
+    });
+
     it("draws no toolbar while the read right is denied", () => {
       setRights(fixture, []);
 

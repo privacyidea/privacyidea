@@ -79,7 +79,7 @@
         class="service-ids-table"
         mat-table
         matSort>
-          <ng-container matColumnDef="select">
+        <ng-container matColumnDef="select">
           <th
             *matHeaderCellDef
             class="table-checkbox"
@@ -166,10 +166,10 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="displayedColumns; sticky: true"
+          *matHeaderRowDef="displayedColumns(); sticky: true"
           mat-header-row></tr>
         <tr
-          *matRowDef="let row; columns: displayedColumns"
+          *matRowDef="let row; columns: displayedColumns()"
           mat-row></tr>
 
         <tr *matNoDataRow>

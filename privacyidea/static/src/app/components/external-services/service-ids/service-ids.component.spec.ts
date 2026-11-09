@@ -166,6 +166,16 @@ describe("ServiceIdsComponent", () => {
       expect(toolbarButton(fixture, "Create Service ID")).toBeTruthy();
     });
 
+    it("offers row selection only with serviceid_delete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["serviceid_list", "serviceid_delete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["serviceid_list", "serviceid_add"]);
+      expect(selectColumn()).toBeNull();
+    });
+
     it("draws no toolbar while the read right is denied", () => {
       setRights(fixture, []);
 

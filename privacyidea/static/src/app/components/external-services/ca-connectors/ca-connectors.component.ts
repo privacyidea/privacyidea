@@ -103,7 +103,11 @@ export class CaConnectorsComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "connectorname", "type"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("caconnectordelete"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["connectorname", "type"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   caConnectorDataSource = computed(() => {
     const connectors = this.caConnectorService.caConnectors();
@@ -137,7 +141,7 @@ export class CaConnectorsComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
-      visible: this.authService.actionAllowed("caconnectordelete"),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

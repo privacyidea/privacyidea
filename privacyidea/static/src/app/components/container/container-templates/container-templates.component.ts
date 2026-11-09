@@ -162,7 +162,13 @@ export class ContainerTemplatesComponent {
     tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false, width: undefined }
   } as const;
 
-  readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
+  readonly columnKeys = computed(() => {
+    const columns = Object.keys(this.columns);
+    const canActOnSelection =
+      this.authService.actionAllowed("container_template_create") ||
+      this.authService.actionAllowed("container_template_delete");
+    return canActOnSelection ? ["select", ...columns] : columns;
+  });
 
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })

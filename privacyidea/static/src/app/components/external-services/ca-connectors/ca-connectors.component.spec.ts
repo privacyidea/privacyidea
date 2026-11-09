@@ -164,6 +164,16 @@ describe("CaConnectorsComponent", () => {
       expect(toolbarButton(fixture, "Create CA Connector")).toBeTruthy();
     });
 
+    it("offers row selection only with caconnectordelete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["caconnectorread", "caconnectordelete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["caconnectorread", "caconnectorwrite"]);
+      expect(selectColumn()).toBeNull();
+    });
+
     it("draws no toolbar while the read right is denied", () => {
       setRights(fixture, []);
 

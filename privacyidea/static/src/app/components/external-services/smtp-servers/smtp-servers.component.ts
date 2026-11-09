@@ -98,7 +98,11 @@ export class SmtpServersComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "identifier", "server", "sender", "tls", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("smtpserver_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["identifier", "server", "sender", "tls", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   smtpDataSource = computed(() => {
     const servers = this.smtpService.smtpServers();
@@ -132,7 +136,7 @@ export class SmtpServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
-      visible: this.authService.actionAllowed("smtpserver_write"),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

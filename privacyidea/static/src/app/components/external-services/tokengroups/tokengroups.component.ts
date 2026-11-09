@@ -100,7 +100,11 @@ export class TokengroupsComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["select", "id", "groupname", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("tokengroup_delete"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["id", "groupname", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
   // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
@@ -143,7 +147,7 @@ export class TokengroupsComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
-      visible: this.authService.actionAllowed("tokengroup_delete"),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

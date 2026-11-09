@@ -336,6 +336,21 @@ describe("ContainerTemplatesComponent", () => {
     expect(component.filter().hasKey("container_type")).toBe(false);
   });
 
+  it.each([["container_template_create"], ["container_template_delete"]])(
+    "offers row selection with %s, which copy or delete the selection",
+    (right) => {
+      setRights(fixture, ["container_template_list", right]);
+
+      expect(component.columnKeys()).toContain("select");
+    }
+  );
+
+  it("offers no row selection without the rights to copy or delete templates", () => {
+    setRights(fixture, ["container_template_list"]);
+
+    expect(component.columnKeys()).not.toContain("select");
+  });
+
   describe("empty state", () => {
     beforeEach(() => {
       templatesSignal.set([]);

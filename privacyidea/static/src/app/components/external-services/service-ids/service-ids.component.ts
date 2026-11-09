@@ -100,7 +100,11 @@ export class ServiceIdsComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "id", "servicename", "description"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("serviceid_delete"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["id", "servicename", "description"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   serviceIdDataSource = computed(() => {
     const services = this.serviceIdService.serviceIds();
@@ -134,7 +138,7 @@ export class ServiceIdsComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
-      visible: this.authService.actionAllowed("serviceid_delete"),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);

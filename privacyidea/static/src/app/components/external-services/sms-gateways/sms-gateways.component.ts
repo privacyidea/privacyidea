@@ -102,7 +102,11 @@ export class SmsGatewaysComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
-  displayedColumns: string[] = ["select", "name", "description", "providermodule"];
+  private readonly canDelete = computed(() => this.authService.actionAllowed("smsgateway_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = ["name", "description", "providermodule"];
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
   // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
@@ -145,7 +149,7 @@ export class SmsGatewaysComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
-      visible: this.authService.actionAllowed("smsgateway_write"),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);
