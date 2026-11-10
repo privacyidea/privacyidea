@@ -2,20 +2,23 @@
 @use "@angular/material" as mat;
 
 // Material paints the panel from these two tokens and its shadow rule outranks a plain
-// .mat-expansion-panel selector, so the raised step is handed over as tokens. On :root, so a
+// .mat-expansion-panel selector, so the treatment is handed over as tokens. On :root, so a
 // container setting them on an ancestor still overrides them by inheritance.
+// No elevation: the panel reads as a header over its content rather than a card of its own, so
+// the content inside it is what carries the raised step.
 :root {
   @include mat.expansion-overrides(
     (
       container-background-color: var(--surface-raised),
-      container-elevation-shadow: var(--elevation-3)
+      container-elevation-shadow: none
     )
   );
 }
 
-// The content group inside an expansion panel.
+// The content group inside an expansion panel. Raised, not recessed: the panel around it does not
+// stand off the page, so a sunk group would have nothing to sink into.
 .expansion-well {
-  @include cards.card-recessed(3);
+  @include cards.card-raised(3);
   padding: 16px;
 }
 
@@ -35,14 +38,43 @@
   padding: var(--expansion-panel-body-padding, 0 24px 16px);
 }
 
-// Keep this slot in step with --mat-expansion-container-elevation-shadow on :root above.
+// Keep the shadow in step with --mat-expansion-container-elevation-shadow on :root above: the
+// panel is a header for the group below it, not a card, so it takes the surface without the lift.
 .mat-expansion-panel {
-  @include cards.card-raised(3);
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--surface-raised);
+  box-shadow: none;
   @include mat.expansion-overrides(
     (
       container-shape: var(--border-radius)
     )
   );
+}
+
+// The expand/collapse chevron reads as the icon button it behaves like: the same 40px round state
+// layer, tinted so it stands off the header, and the icon centred in it. Material owns the
+// rotation, which a circle absorbs invisibly while still turning the chevron inside.
+.mat-expansion-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--mat-sys-surface-container);
+  transition: background 200ms ease;
+
+  // Material sizes the glyph from its own box, so the padding the circle adds must not push it.
+  svg {
+    display: block;
+    margin: 0;
+  }
+}
+
+.mat-expansion-panel-header:hover .mat-expansion-indicator {
+  background: var(--mat-sys-surface-container-high);
 }
 
 // An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's

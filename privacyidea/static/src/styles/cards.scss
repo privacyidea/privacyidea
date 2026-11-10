@@ -7,7 +7,7 @@
 //   page container     raised 5   routed pages and the table containers on them
 //   dialog             raised 3   lifts off its own scrim, which does the separating
 //   sticky header      raised 3   floats over the page while scrolled
-//   expansion panel    raised 3   floats over the page too; its content recesses
+//   expansion panel    flat       a header for its content, which takes the raised step
 //   group on a page    inset 3    a set of fields or controls, also inside a raised panel
 //   group in a group   inset 5    one level further in
 //   group in that      inset 8    the deepest step
