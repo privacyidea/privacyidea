@@ -46,8 +46,11 @@
     gap: 8px;
   }
 
+  // The label of an outlined field sits on the field's top border and reaches above the field's box. The content area
+  // scrolls and cuts off what leaves it, so the body keeps that much room above its first element.
   .pi-dialog-body {
     margin-left: 16px;
+    padding-top: 8px;
   }
 }
 
