@@ -134,7 +134,7 @@
                               <span>{{ group.label }}</span>
                             </div>
 
-                            <mat-form-field class="node-resolvers-select">
+                            <mat-form-field appearance="fill" class="node-resolvers-select">
                               <mat-label i18n="@@common.resolvers">Resolvers</mat-label>
                               <mat-select
                                 (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
@@ -270,6 +270,7 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
+                      appearance="fill"
                       class="table-cell-field margin-top-16"
                       subscriptSizing="dynamic">
                       <mat-label i18n="@@realm.realmName">Realm Name</mat-label>
@@ -298,6 +299,7 @@
                           </div>
 
                           <mat-form-field
+                            appearance="fill"
                             class="input-width-l"
                             subscriptSizing="dynamic">
                             <mat-label i18n="@@common.resolvers">Resolvers</mat-label>

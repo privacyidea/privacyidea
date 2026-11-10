@@ -167,7 +167,7 @@
             } @else {
               @if (token.application === "ssh") {
                 <div class="flex-column margin-top-16 gap-8">
-                  <mat-form-field>
+                  <mat-form-field appearance="fill">
                     <mat-label i18n="@@common.serviceId">Service ID</mat-label>
                     <mat-select
                       [value]="editedOptions[token.id]['service_id']"
@@ -179,7 +179,7 @@
                       }
                     </mat-select>
                   </mat-form-field>
-                  <mat-form-field>
+                  <mat-form-field appearance="fill">
                     <mat-label i18n="@@common.user">User</mat-label>
                     <input
                       [value]="editedOptions[token.id]['user']"

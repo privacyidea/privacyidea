@@ -694,6 +694,25 @@ app-details-card .details-header {
   white-space: nowrap;
 }
 
+// A form field in a table cell stands in for the cell's value, so it is not drawn as a box of its own: the filled
+// appearance without a container colour lets the cell's background through, and the underline alone marks the value as
+// editable. The cell hands its padding over to the field, which fills it from edge to edge and keeps the text at the
+// same inset through its own padding. The value side of a details row is such a cell too.
+td:has(> .mat-form-field-appearance-fill),
+.detail-field-value:has(.mat-form-field-appearance-fill) {
+  padding: 0;
+}
+
+td .mat-form-field-appearance-fill,
+.detail-field-value .mat-form-field-appearance-fill {
+  margin: 0;
+  @include mat.form-field-overrides(
+    (
+      filled-container-color: transparent
+    )
+  );
+}
+
 // A form field inside a col-width-* cell fills the cell instead of asking for Material's own 180px
 // infix, which would widen the column past its tier.
 .table-cell-field {

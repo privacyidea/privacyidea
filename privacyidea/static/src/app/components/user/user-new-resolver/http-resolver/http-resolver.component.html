@@ -193,6 +193,7 @@
           mat-cell>
           @if (!row.isCustom) {
             <mat-form-field
+              appearance="fill"
               class="height-57"
               subscriptSizing="dynamic">
               <mat-select
@@ -217,6 +218,7 @@
 
           @if (row.isCustom) {
             <mat-form-field
+              appearance="fill"
               subscriptSizing="dynamic">
               <app-clearable-input
                 (clearButtonClick)="setCustomAttr(i, '')"
@@ -246,6 +248,7 @@
           class="col-width-xl"
           mat-cell>
           <mat-form-field
+            appearance="fill"
             subscriptSizing="dynamic">
             <app-clearable-input
               (clearButtonClick)="row.userStoreAttr = ''; onMappingChanged()"

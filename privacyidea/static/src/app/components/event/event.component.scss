@@ -73,8 +73,8 @@
 }
 
 .event-handler-table {
-  // A form field at its default height fills the row from border to border, so the
-  // ordering input is shortened and inset to sit inside the cell instead of filling it.
+  // A form field at its default height is taller than the other rows, so the ordering input is
+  // shortened to keep the row at their height.
   td.mat-mdc-cell.mat-column-ordering mat-form-field {
     @include mat.form-field-overrides(
       (
@@ -82,7 +82,5 @@
         container-vertical-padding: 8px
       )
     );
-
-    margin: 4px 0;
   }
 }
