@@ -18,10 +18,13 @@
   margin-top: 4px;
 }
 
+// The stage around the actions is a sunk surface and an action has no content group of its own, so
+// the panel itself is the card and takes the raised step.
 .ca-action-item.mat-expansion-panel {
   @include mat.expansion-overrides(
     (
-      container-background-color: var(--mat-sys-surface-container-lowest)
+      container-background-color: var(--surface-raised),
+      container-elevation-shadow: var(--elevation-3)
     )
   );
 }
