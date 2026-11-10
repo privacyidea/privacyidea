@@ -1,24 +1,30 @@
-@use "cards";
 @use "@angular/material" as mat;
 
 // Material paints the panel from these two tokens and its shadow rule outranks a plain
 // .mat-expansion-panel selector, so the treatment is handed over as tokens. On :root, so a
 // container setting them on an ancestor still overrides them by inheritance.
-// No elevation: the panel reads as a header over its content rather than a card of its own, so
-// the content inside it is what carries the raised step.
+// No surface and no elevation: the panel is a title over its content rather than a card of its
+// own, so it shows the surface it sits on and the content inside it carries the depth step.
 :root {
   @include mat.expansion-overrides(
     (
-      container-background-color: var(--surface-raised),
+      container-background-color: transparent,
       container-elevation-shadow: none
     )
   );
+
+  // A page is a raised card, so a group on it is sunk until a card mixin says otherwise.
+  --well-surface: var(--inset-surface-3);
+  --well-shadow: var(--inset-shadow-3);
 }
 
-// The content group inside an expansion panel. Raised, not recessed: the panel around it does not
-// stand off the page, so a sunk group would have nothing to sink into.
+// The content group inside an expansion panel. It takes the opposite treatment of the card it sits
+// on: sunk into a raised card, raised off a sunk one. The card mixins hand both values down.
 .expansion-well {
-  @include cards.card-raised(3);
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--well-surface);
+  box-shadow: var(--well-shadow);
   padding: 16px;
 }
 
@@ -27,23 +33,23 @@
 }
 
 .mat-expansion-panel-header {
-  padding: var(--expansion-panel-header-padding, 0 24px);
+  padding: var(--expansion-panel-header-padding, 0 16px);
 }
 
-// Material's own padding, handed to a token so a panel whose content carries its own width can
-// take the inset off without reaching into the component's internals. Material sets it from a
+// Header and body share one inset, so the title lines up with the content below it. Handed to a
+// token so a panel whose content carries its own width can take the inset off without reaching
+// into the component's internals. Material sets it from a
 // lone .mat-expansion-panel-body and injects that at runtime, after this sheet, so the panel is
 // named too: equal specificity would leave the winner up to load order.
 .mat-expansion-panel .mat-expansion-panel-body {
-  padding: var(--expansion-panel-body-padding, 0 24px 16px);
+  padding: var(--expansion-panel-body-padding, 0 16px 16px);
 }
 
 // Keep the shadow in step with --mat-expansion-container-elevation-shadow on :root above: the
-// panel is a header for the group below it, not a card, so it takes the surface without the lift.
+// panel is a title for the group below it, not a card, so it has neither a border nor a lift.
 .mat-expansion-panel {
   border: 0;
   border-radius: var(--border-radius);
-  background: var(--surface-raised);
   box-shadow: none;
   @include mat.expansion-overrides(
     (
@@ -52,9 +58,10 @@
   );
 }
 
-// The expand/collapse chevron reads as the icon button it behaves like: the same 40px round state
-// layer, tinted so it stands off the header, and the icon centred in it. Material owns the
-// rotation, which a circle absorbs invisibly while still turning the chevron inside.
+// The expand/collapse chevron reads as the icon button it behaves like: no background at rest and
+// Material's 40px round state layer while the header is hovered or focused, with the icon centred
+// in it. Material owns the rotation, which a circle absorbs invisibly while still turning the
+// chevron inside.
 .mat-expansion-indicator {
   display: inline-flex;
   align-items: center;
@@ -63,7 +70,6 @@
   height: 40px;
   flex: none;
   border-radius: 50%;
-  background: var(--mat-sys-surface-container);
   transition: background 200ms ease;
 
   // Material sizes the glyph from its own box, so the padding the circle adds must not push it.
@@ -73,8 +79,9 @@
   }
 }
 
-.mat-expansion-panel-header:hover .mat-expansion-indicator {
-  background: var(--mat-sys-surface-container-high);
+.mat-expansion-panel-header:hover .mat-expansion-indicator,
+.mat-expansion-panel-header.cdk-keyboard-focused .mat-expansion-indicator {
+  background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
 }
 
 // An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's

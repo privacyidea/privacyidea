@@ -7,8 +7,8 @@
 //   page container     raised 5   routed pages and the table containers on them
 //   dialog             raised 3   lifts off its own scrim, which does the separating
 //   sticky header      raised 3   floats over the page while scrolled
-//   expansion panel    flat       a header for its content, which takes the raised step
-//   group on a page    inset 3    a set of fields or controls, also inside a raised panel
+//   expansion panel    none       a title for its content, which takes the step opposite its card
+//   group on a page    inset 3    a set of fields or controls
 //   group in a group   inset 5    one level further in
 //   group in that      inset 8    the deepest step
 //
@@ -19,6 +19,9 @@
   border-radius: var(--border-radius);
   background: var(--surface-raised);
   box-shadow: var(--elevation-#{$slot});
+  // What a content group standing on this card looks like (.expansion-well in panel.scss).
+  --well-surface: var(--inset-surface-3);
+  --well-shadow: var(--inset-shadow-3);
 }
 
 @mixin card-recessed($slot: 3) {
@@ -26,4 +29,6 @@
   border-radius: var(--border-radius);
   background: var(--inset-surface-#{$slot});
   box-shadow: var(--inset-shadow-#{$slot});
+  --well-surface: var(--surface-raised);
+  --well-shadow: var(--elevation-3);
 }
