@@ -62,6 +62,7 @@ from privacyidea.lib.token import (
     check_serial_pass,
     enable_token,
     get_one_token,
+    get_realms_of_token,
     get_tokens,
     get_tokens_from_serial_or_user,
     init_token,
@@ -5110,16 +5111,16 @@ class APIRolloutState(MyApiTestCase):
         self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
         self.assertNotIn("removing the token failed", res.json["result"]["error"]["message"])
 
-    def test_08_token_init_event_runs_only_if_postpolicies_succeed(self):
+    def test_08_token_init_event_skipped_only_if_verify_enrollment_fails(self):
         error_condition = [(ConditionSection.REQUEST_DATA, "absentkey", PrimaryComparators.EQUALS, "z", True,
                             "raise_error")]
         serials = ["ROLLOUT_EVT08A", "ROLLOUT_EVT08B", "ROLLOUT_EVT08C"]
 
         def set_postpolicies(verify_fails: bool, pin_change_fails: bool):
             set_policy("verify_hotp_event", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp",
-                       conditions=error_condition if verify_fails else None)
+                       conditions=error_condition if verify_fails else [])
             set_policy("pin_first_use_event", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
-                       conditions=error_condition if pin_change_fails else None)
+                       conditions=error_condition if pin_change_fails else [])
 
         event_id = set_event("log_token_init", ["token_init"], "Logging", "logging", position="post")
         self.addCleanup(delete_event, event_id)
@@ -5140,11 +5141,27 @@ class APIRolloutState(MyApiTestCase):
             self.assertEqual(403, res.status_code, res.json)
             mock_do.assert_not_called()
 
-            # save_pin_change fails
+            # save_pin_change fails: it runs after the handler, the new token is still removed
             set_postpolicies(verify_fails=False, pin_change_fails=True)
             res = self._init_request({"type": "hotp", "genkey": 1, "serial": serials[2]})
             self.assertEqual(403, res.status_code, res.json)
-            mock_do.assert_not_called()
+            mock_do.assert_called_once()
+            self.assertFalse(token_exist(serials[2]))
+
+    def test_09_pin_change_policy_matches_realm_set_by_token_init_event(self):
+        serial = "ROLLOUT_EVT09"
+        self._remove_token_on_cleanup(serial)
+        event_id = set_event("token_init_set_realm", ["token_init"], "Token", "set tokenrealm",
+                             options={"realm": self.realm1}, position="post")
+        self.addCleanup(delete_event, event_id)
+        set_policy("pin_first_use_realm", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                   realm=self.realm1)
+        self._delete_policy_on_cleanup("pin_first_use_realm")
+
+        res = self._init_request({"type": "hotp", "genkey": 1, "serial": serial})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertIn(self.realm1, get_realms_of_token(serial))
+        self.assertTrue(get_one_token(serial=serial).get_tokeninfo("next_pin_change"))
 
 
 @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
