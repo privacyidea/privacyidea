@@ -275,7 +275,7 @@ body {
 
   @include mat.form-field-overrides(
     (
-      outlined-outline-color: var(--input-border),
+      outlined-outline-color: var(--input-border-shadow),
       outlined-focus-outline-color: var(--mat-sys-primary-light)
     )
   );
