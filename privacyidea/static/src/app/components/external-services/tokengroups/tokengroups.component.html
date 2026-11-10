@@ -159,10 +159,10 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="displayedColumns; sticky: true"
+          *matHeaderRowDef="displayedColumns(); sticky: true"
           mat-header-row></tr>
         <tr
-          *matRowDef="let row; columns: displayedColumns"
+          *matRowDef="let row; columns: displayedColumns()"
           mat-row></tr>
 
         <tr *matNoDataRow>
@@ -178,20 +178,21 @@
     <app-table-state
       [table]="tableState"
       heading="No token groups yet"
-      hint="Create a token group to group tokens for policies and machine assignments."
+      [hint]="emptyHint()"
       i18n-heading="@@tokenGroup.noTokenGroups"
-      i18n-hint="@@tokenGroup.createTokenGroupHint"
       icon="local_police">
-      <button
-        (click)="onCreateNewTokengroup()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="icon-badge-pad-3">local_police</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@tokenGroup.createTokenGroup">Create Token Group</span>
-      </button>
+      @if (authService.actionAllowed("tokengroup_add")) {
+        <button
+          (click)="onCreateNewTokengroup()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="icon-badge-pad-3">local_police</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@tokenGroup.createTokenGroup">Create Token Group</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>

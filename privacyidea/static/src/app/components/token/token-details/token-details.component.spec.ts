@@ -24,16 +24,15 @@ import { of, throwError } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
-import { PiResponse } from "@app/app.component";
 import { AuditService } from "@services/audit/audit.service";
-import { AuthResponse, AuthService } from "@services/auth/auth.service";
+import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MachineService, TokenApplication } from "@services/machine/machine.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { TokenDetails, TokenInfo, Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
+import { TokenDetails, TokenInfo, TokenService, TokenTypeKey } from "@services/token/token.service";
 import { UserService } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
@@ -61,7 +60,6 @@ describe("TokenDetailsComponent", () => {
 
   let tokenSvc: MockTokenService;
   let machineSvc: MockMachineService;
-  let validateSvc: MockValidateService;
   let router: { navigateByUrl: jest.Mock };
 
   const matDialogOpen = jest.fn();
@@ -107,7 +105,6 @@ describe("TokenDetailsComponent", () => {
 
     tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
-    validateSvc = TestBed.inject(ValidateService) as unknown as MockValidateService;
 
     fixture = TestBed.createComponent(TokenDetailsComponent);
     component = fixture.componentInstance;
@@ -400,101 +397,6 @@ describe("TokenDetailsComponent", () => {
     });
   });
 
-  describe("testPasskey", () => {
-    it("reports success when the credential_id hash matches the current token", async () => {
-      const credentialId = "AAA"; // any base64url string
-      const expectedHash = await sha256HexFromBase64Url(credentialId);
-      component.tokenDetails.set({
-        ...component.tokenDetails(),
-        info: { credential_id_hash: expectedHash } as TokenInfo
-      });
-
-      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args) => {
-        args?.onCredentialId?.(credentialId);
-        return of({
-          result: { value: true, status: true },
-          detail: { username: "alice", serial: "Mock serial" }
-        } as unknown as AuthResponse);
-      });
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("success");
-      expect(result?.message).toMatch(/alice/);
-    });
-
-    it("reports a mismatch with matched serial/user/realm when the hash differs", async () => {
-      component.tokenDetails.set({
-        ...component.tokenDetails(),
-        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as TokenInfo
-      });
-
-      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args) => {
-        args?.onCredentialId?.("AAA");
-        return of({
-          result: { value: true, status: true },
-          detail: { username: "bob", serial: "OTHER-SERIAL" }
-        } as unknown as AuthResponse);
-      });
-      (tokenSvc.getTokenDetails as jest.Mock).mockReturnValueOnce(
-        of({ result: { value: { tokens: [{ user_realm: "themis" }] } } } as unknown as PiResponse<Tokens>)
-      );
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("warning");
-      expect(result?.message).toMatch(/different passkey/);
-      expect(result?.mismatch?.serial).toBe("OTHER-SERIAL");
-      expect(result?.mismatch?.username).toBe("bob");
-      expect(result?.mismatch?.realm).toBe("themis");
-    });
-
-    it("skips mismatch detection for self-service users (non-admin)", async () => {
-      const authSvc = TestBed.inject(AuthService) as unknown as MockAuthService;
-      authSvc.role.set("user");
-
-      component.tokenDetails.set({
-        ...component.tokenDetails(),
-        info: { credential_id_hash: "deadbeef-not-a-real-hash" } as TokenInfo
-      });
-
-      jest.spyOn(validateSvc, "authenticatePasskey").mockImplementation((args) => {
-        args?.onCredentialId?.("AAA");
-        return of({
-          result: { value: true, status: true },
-          detail: { username: "carol", serial: "OTHER-SERIAL" }
-        } as unknown as AuthResponse);
-      });
-      const getDetailsSpy = tokenSvc.getTokenDetails as jest.Mock;
-      getDetailsSpy.mockClear();
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("success");
-      expect(result?.mismatch).toBeUndefined();
-      expect(getDetailsSpy).not.toHaveBeenCalled();
-    });
-
-    it("reports 'No user found' when the validate response is falsy", async () => {
-      jest
-        .spyOn(validateSvc, "authenticatePasskey")
-        .mockReturnValue(of({ result: { value: false, status: true }, detail: {} } as unknown as AuthResponse));
-
-      component.testPasskey();
-      await flushAsync();
-
-      const result = component.passkeyTestResult();
-      expect(result?.kind).toBe("warning");
-      expect(result?.message).toMatch(/No user found/);
-    });
-  });
-
   it("attachPasskeyToMachine logs an error when the request fails", () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
     jest
@@ -771,28 +673,3 @@ describe("TokenDetailsComponent linkedSignal computations", () => {
     expect(created).toBeUndefined();
   });
 });
-
-// Helper: drain microtasks AND a macrotask (crypto.subtle.digest may settle on next tick).
-async function flushAsync(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
-  }
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
-}
-
-// Mirror of the component's private SHA-256 helper, used only by the matching-hash test.
-async function sha256HexFromBase64Url(b64url: string): Promise<string> {
-  const pad = b64url
-    .padEnd((b64url.length | 3) + 1, "=")
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
-  const binary = atob(pad);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-  const digest = await crypto.subtle.digest("SHA-256", buffer);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}

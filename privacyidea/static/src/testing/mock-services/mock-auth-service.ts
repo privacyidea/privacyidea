@@ -72,6 +72,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios ?? null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom ?? null);
   readonly logoutRedirectUrl = computed(() => this.authData()?.logout_redirect_url ?? "");
+  readonly supportMail = computed(() => this.authData()?.supportmail ?? "");
   readonly requireDescription = computed(() => this.authData()?.require_description ?? []);
   readonly rssAge = computed(() => this.authData()?.rss_age ?? 0);
   readonly containerWizard = computed(

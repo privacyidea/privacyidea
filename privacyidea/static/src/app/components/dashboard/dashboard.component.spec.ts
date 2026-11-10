@@ -100,6 +100,7 @@ describe("DashboardComponent", () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         provideRouter([]),
         PendingChangesService,
