@@ -19,6 +19,7 @@
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { PAGE_NAMES } from "@core/route-titles";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { LayoutComponent } from "./components/layout/layout.component";
 import { LoginComponent } from "./components/login/login.component";
 import { PasswordRecoveryRequestComponent } from "./components/password-recovery/request/password-recovery-request.component";
@@ -90,6 +91,7 @@ export const routes: Routes = [
       ContainerService,
       ContainerTemplateService,
       ContentService,
+      DashboardLayoutService,
       DialogService,
       DocumentationService,
       EventService,

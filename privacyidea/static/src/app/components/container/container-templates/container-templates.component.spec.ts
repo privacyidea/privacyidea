@@ -31,6 +31,7 @@ import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-s
 import { ContainerTemplatesComponent } from "./container-templates.component";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { setRights } from "@testing/toolbar-actions";
 import { AXE_TIMEOUT, axe } from "@testing/axe";
 
 describe("ContainerTemplatesComponent", () => {
@@ -334,6 +335,45 @@ describe("ContainerTemplatesComponent", () => {
 
     component.onContainerTypeSelected(undefined);
     expect(component.filter().hasKey("container_type")).toBe(false);
+  });
+
+  it.each([["container_template_create"], ["container_template_delete"]])(
+    "offers row selection with %s, which copy or delete the selection",
+    (right) => {
+      setRights(fixture, ["container_template_list", right]);
+
+      expect(component.columnKeys()).toContain("select");
+    }
+  );
+
+  it("offers no row selection without the rights to copy or delete templates", () => {
+    setRights(fixture, ["container_template_list"]);
+
+    expect(component.columnKeys()).not.toContain("select");
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      templatesSignal.set([]);
+    });
+
+    it("offers the create button and hint with container_template_create", () => {
+      setRights(fixture, ["container_template_list", "container_template_create"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Template");
+      expect(state.textContent).toContain("Create a template to roll out containers with a predefined set of tokens.");
+    });
+
+    it("offers neither button nor hint without container_template_create", () => {
+      setRights(fixture, ["container_template_list"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a template to roll out containers with a predefined set of tokens."
+      );
+    });
   });
 
   it(

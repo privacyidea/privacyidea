@@ -91,6 +91,7 @@ export interface LDAPResolverData extends ResolverData {
   SERVERPOOL_ROUNDS?: number;
   SERVERPOOL_SKIP?: number;
   SERVERPOOL_PERSISTENT?: boolean;
+  SERVERPOOL_STRATEGY?: string;
   OBJECT_CLASSES?: string;
   DN_TEMPLATE?: string;
   MULTIVALUEATTRIBUTES?: string;

@@ -46,6 +46,7 @@ import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, Subject, throwError } from "rxjs";
 import { ACTIVITY_RANGES } from "@components/dashboard/widgets/activity-range";
 import { ConditionalAccessWidgetComponent, RESTRICTION_KINDS } from "./conditional-access-widget.component";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { axe } from "@testing/axe";
 
 const instance: WidgetInstance = {
@@ -156,6 +157,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ConditionalAccessWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
         // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out

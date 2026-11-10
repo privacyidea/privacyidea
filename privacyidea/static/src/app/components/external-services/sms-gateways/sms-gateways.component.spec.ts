@@ -147,12 +147,31 @@ describe("SmsGatewaysComponent", () => {
       expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
-    it("shows both actions while the read right is granted", () => {
-      setRights(fixture, ["smsgateway_read"]);
+    it("shows both actions with smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
       expect(toolbarButton(fixture, "Create SMS Gateway")).toBeTruthy();
       expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create and delete without smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create SMS Gateway")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+    });
+
+    it("offers row selection only with smsgateway_write, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["smsgateway_read"]);
+      expect(selectColumn()).toBeNull();
     });
 
     it("draws no toolbar while the read right is denied", () => {
@@ -163,7 +182,7 @@ describe("SmsGatewaysComponent", () => {
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(fixture, ["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
 
       expect(toolbarAction(component, "create").disabled).toBeFalsy();
       expect(toolbarAction(component, "delete").disabled).toBe(true);
@@ -205,7 +224,7 @@ describe("SmsGatewaysComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(fixture, ["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
@@ -215,7 +234,7 @@ describe("SmsGatewaysComponent", () => {
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(fixture, ["smsgateway_read"]);
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
       component.selector.selectRow(smsGatewayServiceMock.smsGateways()[0]);
       fixture.detectChanges();
 
@@ -224,6 +243,28 @@ describe("SmsGatewaysComponent", () => {
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
       );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      smsGatewayServiceMock.smsGateways.set([]);
+    });
+
+    it("offers the create button and hint with smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read", "smsgateway_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create SMS Gateway");
+      expect(state.textContent).toContain("Create an SMS gateway to send one-time passwords by text message.");
+    });
+
+    it("offers neither button nor hint without smsgateway_write", () => {
+      setRights(fixture, ["smsgateway_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain("Create an SMS gateway to send one-time passwords by text message.");
     });
   });
 

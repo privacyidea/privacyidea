@@ -70,6 +70,7 @@ describe("TokensWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [TokensWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },

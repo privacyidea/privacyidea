@@ -68,6 +68,7 @@ describe("ResolverTimingWidgetComponent", () => {
     await TestBed.configureTestingModule({
       imports: [ResolverTimingWidgetComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
         // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out

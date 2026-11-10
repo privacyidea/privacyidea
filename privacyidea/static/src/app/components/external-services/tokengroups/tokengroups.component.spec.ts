@@ -140,12 +140,38 @@ describe("TokengroupsComponent", () => {
       expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
-    it("shows both actions while the read right is granted", () => {
-      setRights(fixture, ["tokengroup_list"]);
+    it("shows both actions with tokengroup_add and tokengroup_delete", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
       expect(toolbarButton(fixture, "Create Token Group")).toBeTruthy();
       expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create without tokengroup_add", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_delete"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create Token Group")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides delete without tokengroup_delete", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add"]);
+
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+      expect(toolbarButton(fixture, "Create Token Group")).toBeTruthy();
+    });
+
+    it("offers row selection only with tokengroup_delete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["tokengroup_list", "tokengroup_delete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["tokengroup_list", "tokengroup_add"]);
+      expect(selectColumn()).toBeNull();
     });
 
     it("draws no toolbar while the read right is denied", () => {
@@ -156,7 +182,7 @@ describe("TokengroupsComponent", () => {
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(fixture, ["tokengroup_list"]);
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
 
       expect(toolbarAction(component, "create").disabled).toBeFalsy();
       expect(toolbarAction(component, "delete").disabled).toBe(true);
@@ -198,7 +224,7 @@ describe("TokengroupsComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(fixture, ["tokengroup_list"]);
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
@@ -208,7 +234,7 @@ describe("TokengroupsComponent", () => {
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(fixture, ["tokengroup_list"]);
+      setRights(fixture, ["tokengroup_list", "tokengroup_add", "tokengroup_delete"]);
       component.selector.selectRow(tokengroupServiceMock.tokengroups()[0]);
       fixture.detectChanges();
 
@@ -216,6 +242,30 @@ describe("TokengroupsComponent", () => {
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      tokengroupServiceMock.tokengroups.set([]);
+    });
+
+    it("offers the create button and hint with tokengroup_add", () => {
+      setRights(fixture, ["tokengroup_list", "tokengroup_add"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create Token Group");
+      expect(state.textContent).toContain("Create a token group to group tokens for policies and machine assignments.");
+    });
+
+    it("offers neither button nor hint without tokengroup_add", () => {
+      setRights(fixture, ["tokengroup_list"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a token group to group tokens for policies and machine assignments."
       );
     });
   });

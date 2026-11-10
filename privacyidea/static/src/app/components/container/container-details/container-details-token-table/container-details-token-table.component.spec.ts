@@ -140,15 +140,14 @@ describe("ContainerDetailsTokenTableComponent", () => {
       expect(await axe(fixture.nativeElement)).toHaveNoViolations();
     });
 
-    it("toggles the token state with Space", () => {
+    it("reloads the container details once the token state was toggled", () => {
+      (TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService).canToggleActive.mockReturnValue(true);
       showTokens("user");
-      const toggleActive = jest.spyOn(component, "toggleActive").mockImplementation(() => { /* empty */ });
-      const space = new KeyboardEvent("keydown", { key: " ", cancelable: true });
 
-      fixture.nativeElement.querySelector("td span[role=button]").dispatchEvent(space);
+      fixture.nativeElement.querySelector("td.mat-column-active button").click();
 
-      expect(toggleActive).toHaveBeenCalledWith(expect.objectContaining({ serial: "T-1" }));
-      expect(space.defaultPrevented).toBe(true);
+      expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("T-1", true);
+      expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
     });
 
     it("links the token serial to the token details", () => {
@@ -230,19 +229,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
     expect(component.containerTokenData().filter).toBe("testfilter");
   });
 
-  it("delegates to toggleActive when columnKey === 'active'", () => {
-    const toggleSpy = jest.spyOn(component, "toggleActive");
-    const row: Partial<ContainerDetailToken> = { serial: "Mock serial", active: true };
-    component.handleColumnClick("active", row as ContainerDetailToken);
-    expect(toggleSpy).toHaveBeenCalledWith(row);
-  });
-
-  it("does nothing when columnKey !== 'active'", () => {
-    const toggleSpy = jest.spyOn(component, "toggleActive");
-    component.handleColumnClick("username", {} as ContainerDetailToken);
-    expect(toggleSpy).not.toHaveBeenCalled();
-  });
-
   it("isAssignableToAllToken true when assigned user is set and at least one token is unassigned", () => {
     containerServiceMock.containerDetails.set({
       containers: [
@@ -290,15 +276,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
     fixture.detectChanges();
 
     expect(component.isUnassignableFromAllToken()).toBe(false);
-  });
-
-  it("toggleActive calls service then reloads container details", () => {
-    const t = { serial: "Mock serial", active: true } as ContainerDetailToken;
-    jest.spyOn(tokenServiceMock, "toggleActive");
-
-    component.toggleActive(t);
-    expect(tokenServiceMock.toggleActive).toHaveBeenCalledWith("Mock serial", true);
-    expect(containerServiceMock.containerDetailsResource.reload).toHaveBeenCalledTimes(1);
   });
 
   it("removeTokenFromContainer confirms and removes on confirm=true", () => {

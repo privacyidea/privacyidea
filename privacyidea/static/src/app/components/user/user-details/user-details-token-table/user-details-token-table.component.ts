@@ -47,7 +47,6 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatTooltip } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -62,6 +61,7 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, map, Observable, of } from "rxjs";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 interface BulkActionResult {
   serial: string;
@@ -84,6 +84,7 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
 @Component({
   selector: "app-user-details-token-table",
   imports: [
+    TokenActiveToggleComponent,
     ScrollFocusableDirective,
     SortByLabelPipe,
     CopyableComponent,
@@ -100,7 +101,6 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
     MatRow,
     MatRowDef,
     MatTable,
-    MatTooltip,
     NgClass,
     NgTemplateOutlet,
     MatHeaderCellDef,
@@ -236,19 +236,6 @@ export class UserDetailsTokenTableComponent {
     forkJoin(serials.map((s) => this.runBulkAction(s, this.tokenService.resetFailCount(s, false)))).subscribe({
       next: (results) => this.finishBulkAction("resetFailCount", results)
     });
-  }
-
-  toggleActive(tokenDetails: TokenDetails): void {
-    if (
-      !tokenDetails.revoked &&
-      !tokenDetails.locked &&
-      ((tokenDetails.active && this.authService.actionAllowed("disable")) ||
-        (!tokenDetails.active && this.authService.actionAllowed("enable")))
-    ) {
-      this.tokenService.toggleActive(tokenDetails.serial, tokenDetails.active).subscribe({
-        next: () => this.tokenService.userTokenResource.reload()
-      });
-    }
   }
 
   resetFailCount(tokenDetails: TokenDetails): void {

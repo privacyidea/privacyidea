@@ -91,6 +91,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     await TestBed.configureTestingModule({
       imports: [NavigationComponent],
       providers: [
+        DashboardLayoutService,
         provideRouter([]),
         provideLocationMocks(),
         provideHttpClient(),
@@ -122,6 +123,31 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("openSupport", () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      openSpy = jest.spyOn(window, "open").mockImplementation(() => null);
+    });
+
+    afterEach(() => openSpy.mockRestore());
+
+    it("opens the support mail of the subscription when the server sends one", () => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.update((data) => ({ ...data!, supportmail: "mailto:support@vendor.example?subject=Help" }));
+
+      component.openSupport();
+
+      expect(openSpy).toHaveBeenCalledWith("mailto:support@vendor.example?subject=Help", "_self");
+    });
+
+    it("opens the support page without a support mail", () => {
+      component.openSupport();
+
+      expect(openSpy).toHaveBeenCalledWith("https://netknights.it/support_link_admin", "_blank");
+    });
   });
 
   it("should move the active item from overflow to visible list", () => {
