@@ -42,7 +42,7 @@
           ><strong>None of the tokens of the template was created:</strong></p
         >
       } @else {
-        <p i18n="@@container.tokensNotCreatedNotice">These tokens of the template were not created:</p>
+        <p i18n="@@container.tokensNotCreatedNotice">{data()!.tokensNotCreated!.length, plural, =1 {This token of the template was not created:} other {These tokens of the template were not created:}}</p>
       }
       <ul>
         @for (entry of data()!.tokensNotCreated; track $index) {

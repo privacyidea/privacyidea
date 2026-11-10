@@ -322,6 +322,21 @@ describe("ContainerTokensEnrolledDialogComponent", () => {
       expect(text).toContain("totp (Maximum number of tokens reached)");
     });
 
+    it("uses the singular when one token was not created", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: [notCreated[0]] });
+
+      const n = el.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("This token of the template was not created:");
+      expect(n.textContent).not.toContain("These tokens");
+    });
+
+    it("uses the plural when several tokens were not created", () => {
+      const el = createWith({ ...threeTokens, tokensNotCreated: notCreated });
+
+      const n = el.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("These tokens of the template were not created:");
+    });
+
     it.each([[undefined], [[]]])("shows no notice when tokensNotCreated is %j", (value) => {
       const el = createWith({ ...threeTokens, tokensNotCreated: value });
 

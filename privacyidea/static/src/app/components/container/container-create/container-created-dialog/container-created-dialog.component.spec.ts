@@ -129,6 +129,21 @@ describe("ContainerCreatedDialogComponent", () => {
       expect(fixture.nativeElement.querySelector(".error-message")).toBeNull();
     });
 
+    it("uses the singular when one token was not created", () => {
+      setData({ tokensNotCreated: [notCreated[0]] });
+
+      const n = fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("This token of the template was not created:");
+      expect(n.textContent).not.toContain("These tokens");
+    });
+
+    it("uses the plural when several tokens were not created", () => {
+      setData({ tokensNotCreated: notCreated });
+
+      const n = fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("These tokens of the template were not created:");
+    });
+
     it("highlights as an error when none of the tokens was created", () => {
       setData({ tokensNotCreated: notCreated, allTokensFailed: true });
 
@@ -344,6 +359,21 @@ describe("ContainerCreatedDialogWizardComponent", () => {
       expect(text()).toContain("hotp (Policy hotp_blocked forbids it)");
       expect(text()).toContain("totp (Maximum number of tokens reached)");
       expect(fixture.nativeElement.querySelector(".error-message")).toBeNull();
+    });
+
+    it("uses the singular when one token was not created", () => {
+      setData({ tokensNotCreated: [notCreated[0]] });
+
+      const n = fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("This token of the template was not created:");
+      expect(n.textContent).not.toContain("These tokens");
+    });
+
+    it("uses the plural when several tokens were not created", () => {
+      setData({ tokensNotCreated: notCreated });
+
+      const n = fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(n.textContent).toContain("These tokens of the template were not created:");
     });
 
     it("highlights as an error when none of the tokens was created", () => {

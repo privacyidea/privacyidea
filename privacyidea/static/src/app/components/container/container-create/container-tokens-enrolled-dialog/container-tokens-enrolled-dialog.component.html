@@ -41,7 +41,7 @@
     <div
       class="inline-callout inline-callout-error"
       data-testid="tokens-not-created">
-      <p i18n="@@container.tokensNotCreatedNotice">These tokens of the template were not created:</p>
+      <p i18n="@@container.tokensNotCreatedNotice">{tokensNotCreated.length, plural, =1 {This token of the template was not created:} other {These tokens of the template were not created:}}</p>
       <ul>
         @for (entry of tokensNotCreated; track $index) {
           <li>{{ entry.type }} ({{ entry.error }})</li>
