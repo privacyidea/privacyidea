@@ -3091,8 +3091,9 @@ def require_description_on_edit(request=None, action=None):
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
-    token_types = list(action_values.keys())
-    type_value = request.all_data.get("type") or 'hotp'
+    # Token types are stored in lower case, so both the token and the policy are compared in lower case
+    token_types = [token_type.lower() for token_type in action_values.keys()]
+    type_value = (request.all_data.get("type") or 'hotp').lower()
     if type_value in token_types:
         description = request.all_data.get("description", "").strip()
         if not description:

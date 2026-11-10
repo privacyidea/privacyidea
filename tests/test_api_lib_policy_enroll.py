@@ -1361,6 +1361,18 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
             result = res.json.get("result")
             self.assertIn("Description required for hotp token.", result.get("error").get("message"))
 
+        # The token types of the policy are compared in lower case
+        set_policy(name="require_description_on_edit",
+                   scope=SCOPE.TOKEN,
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION_ON_EDIT}=HOTP"])
+        with self.app.test_request_context('token/description/' + serial,
+                                           method='POST',
+                                           data={'description': ""},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertIn("Description required for hotp token.", res.json["result"]["error"]["message"])
+
         remove_token(serial=serial)
         delete_policy("require_description_on_edit")
         delete_policy("set_description")
