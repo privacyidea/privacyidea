@@ -9,7 +9,11 @@ template enrolls the tokens from the template in the new container. Each token i
 of the user or administrator who creates the container. A token they are not allowed to enroll (e.g. the token type is
 not allowed, the maximum number of tokens is reached, or a required description is missing) or that can not be created
 is skipped without an error: the container is created with the remaining tokens, and the response lists only the
-tokens that were created.
+tokens that were created. The same applies to a token for which an enrollment policy that is checked after the creation
+fails (e.g. ``verify_enrollment`` or ``change_pin_on_first_use``): the token is deleted again. Each skipped token is
+reported in ``tokens_not_created`` of the response with its type, the error and its serial if it is known. This entry
+contains no enrollment data of the token. If all tokens were created, ``tokens_not_created`` is not contained in the
+response.
 
 Using container templates in combination with the synchronization feature allows for a simplified token rollout. The
 user only needs to scan the QR code for the container and gets all tokens on his smartphone without the need to scan

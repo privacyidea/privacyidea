@@ -1,5 +1,7 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import base64
+import binascii
 import copy
 import json
 from unittest import mock
@@ -16,7 +18,7 @@ from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, PolicyClass
 from privacyidea.lib.privacyideaserver import add_privacyideaserver
 from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.token import (get_tokens_from_serial_or_user,
+from privacyidea.lib.token import (get_tokens, get_tokens_from_serial_or_user,
                                    get_tokeninfo)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -948,3 +950,194 @@ class APIContainerTemplate(APIContainerTest):
 
         container.delete()
         [token.delete_token() for token in tokens]
+
+    def _init_generic_container_with_template(self, tokens: list) -> dict:
+        template_params = {"name": "tmpl_postpolicies",
+                           "container_type": "generic",
+                           "template_options": {"tokens": tokens}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+        return self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+    @staticmethod
+    def _cleanup_container_and_tokens(container_serial: str | None, serials: list[str]):
+        if container_serial:
+            find_container_by_serial(container_serial).delete()
+        for serial in serials:
+            for token in get_tokens(serial=serial):
+                token.delete_token()
+
+    def test_26_create_container_with_template_reports_token_failing_postpolicies(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT26A"
+        totp_serial = "TMPLREPORT26B"
+        hotp_key = "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432"
+        hotp_key_base32 = base64.b32encode(binascii.unhexlify(hotp_key)).decode().strip("=")
+        # The hotp token has no description, so the condition raises an error for it
+        set_policy("verify_hotp_report", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "x", True,
+                                "raise_error")])
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "otpkey": hotp_key, "serial": hotp_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial, "description": "kept"}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            # Only the created token is in the tokens of the response
+            self.assertEqual([totp_serial], list(value["tokens"].keys()))
+            # The token that was not created is reported with its type, serial and the error
+            not_created = value["tokens_not_created"]
+            self.assertEqual(1, len(not_created), not_created)
+            self.assertEqual("hotp", not_created[0]["type"])
+            self.assertEqual(hotp_serial, not_created[0]["serial"])
+            self.assertIsInstance(not_created[0]["error"], str)
+            self.assertTrue(not_created[0]["error"])
+            self.assertNotIn("googleurl", not_created[0])
+            self.assertNotIn("otpkey", not_created[0])
+            # No enrollment data of the token that was not created is anywhere in the response
+            response_text = json.dumps(result)
+            self.assertNotIn(hotp_key, response_text.lower())
+            self.assertNotIn(hotp_key_base32, response_text)
+            self.assertNotIn("otpauth://hotp", response_text)
+            self.assertEqual(0, len(get_tokens(serial=hotp_serial)))
+            # The container contains only the token that was created
+            container = find_container_by_serial(container_serial)
+            self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
+        finally:
+            delete_policy("verify_hotp_report")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
+
+    def test_27_create_container_with_template_reports_token_failing_prepolicies_or_init(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT27A"
+        tiqr_serial = "TMPLREPORT27B"
+        totp_serial = "TMPLREPORT27C"
+        # The pre-policy fails for the hotp token without a description, the tiqr token fails in init_token as it
+        # requires a user
+        set_policy("require_desc_hotp", scope=SCOPE.ENROLL, action=f"{PolicyAction.REQUIRE_DESCRIPTION}=hotp")
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": hotp_serial},
+                {"type": "tiqr", "serial": tiqr_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            self.assertEqual([totp_serial], list(value["tokens"].keys()))
+            not_created = value["tokens_not_created"]
+            self.assertEqual(["hotp", "tiqr"], sorted(entry["type"] for entry in not_created), not_created)
+            for entry in not_created:
+                self.assertIsInstance(entry["error"], str)
+                self.assertTrue(entry["error"], entry)
+        finally:
+            delete_policy("require_desc_hotp")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, tiqr_serial, totp_serial])
+
+    def test_28_create_container_with_template_without_errors_omits_tokens_not_created(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT28A"
+        totp_serial = "TMPLREPORT28B"
+        set_policy("verify_hotp_ok", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"})
+        set_policy("pin_first_use_ok", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": hotp_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            # The response is unchanged if all tokens are created
+            self.assertNotIn("tokens_not_created", value)
+            self.assertSetEqual({hotp_serial, totp_serial}, set(value["tokens"].keys()))
+            self.assertIsInstance(value["tokens"][hotp_serial]["verify"], dict)
+            self.assertEqual(RolloutState.VERIFY_PENDING, value["tokens"][hotp_serial]["rollout_state"])
+            self.assertNotIn("verify", value["tokens"][totp_serial])
+            self.assertIsNotNone(get_tokeninfo(hotp_serial, "next_pin_change"))
+            self.assertIsNotNone(get_tokeninfo(totp_serial, "next_pin_change"))
+        finally:
+            delete_policy("verify_hotp_ok")
+            delete_policy("pin_first_use_ok")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
+
+    def test_29_create_container_with_template_removes_token_failing_pin_change_policy(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLREPORT29A"
+        totp_serial = "TMPLREPORT29B"
+        # verify_enrollment succeeds, only change_pin_on_first_use fails for the hotp token without a description
+        set_policy("verify_hotp_plain", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"})
+        set_policy("pin_first_use_failing", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "y", True,
+                                "raise_error")])
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": hotp_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial, "description": "kept"}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+            container = find_container_by_serial(container_serial)
+
+            # The token is neither in the database, nor in the container, nor in the tokens of the response
+            self.assertEqual(0, len(get_tokens(serial=hotp_serial)))
+            self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
+            self.assertEqual([totp_serial], list(value["tokens"].keys()))
+            self.assertEqual([hotp_serial], [entry.get("serial") for entry in value["tokens_not_created"]])
+        finally:
+            delete_policy("verify_hotp_plain")
+            delete_policy("pin_first_use_failing")
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial, totp_serial])
+
+    def test_30_create_container_with_template_keeps_existing_token_on_postpolicy_error(self):
+        self.setUp_user_realms()
+        existing_serial = "TMPLEXIST30A"
+        totp_serial = "TMPLEXIST30B"
+        init_token({"type": "hotp", "genkey": True, "serial": existing_serial})
+        set_policy("verify_hotp_exist", scope=SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp"},
+                   conditions=[(ConditionSection.REQUEST_DATA, "description", PrimaryComparators.EQUALS, "x", True,
+                                "raise_error")])
+        container_serial = None
+
+        try:
+            result = self._init_generic_container_with_template([
+                {"type": "hotp", "genkey": True, "serial": existing_serial},
+                {"type": "totp", "genkey": True, "serial": totp_serial, "description": "kept"}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+            container = find_container_by_serial(container_serial)
+
+            # The token existed before and must not be deleted, but it is not part of the new container
+            self.assertEqual(1, len(get_tokens(serial=existing_serial)))
+            self.assertEqual([totp_serial], [token.get_serial() for token in container.get_tokens()])
+            self.assertEqual([existing_serial], [entry.get("serial") for entry in value["tokens_not_created"]])
+        finally:
+            delete_policy("verify_hotp_exist")
+            self._cleanup_container_and_tokens(container_serial, [existing_serial, totp_serial])
+
+    def test_31_create_container_with_template_hides_internal_error_details(self):
+        self.setUp_user_realms()
+        hotp_serial = "TMPLINTERNAL31"
+        container_serial = None
+
+        try:
+            with mock.patch("privacyidea.lib.container.init_token", side_effect=RuntimeError("internal detail xyz")):
+                result = self._init_generic_container_with_template([
+                    {"type": "hotp", "genkey": True, "serial": hotp_serial}])
+            value = result["result"]["value"]
+            container_serial = value["container_serial"]
+
+            not_created = value["tokens_not_created"]
+            self.assertEqual(1, len(not_created), not_created)
+            self.assertIsInstance(not_created[0]["error"], str)
+            self.assertTrue(not_created[0]["error"])
+            self.assertNotIn("internal detail xyz", not_created[0]["error"])
+            self.assertNotIn("internal detail xyz", json.dumps(result))
+        finally:
+            self._cleanup_container_and_tokens(container_serial, [hotp_serial])

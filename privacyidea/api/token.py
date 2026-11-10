@@ -62,7 +62,7 @@ from werkzeug.datastructures import FileStorage
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
-                                            postpolicy)
+                                            postpolicy, remove_new_token_on_error)
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
                                            check_copy_token_action,
                                            check_token_init, check_token_upload,
@@ -86,7 +86,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params,
                                            resolver_realm_access,
-                                           force_server_generate_key)
+                                           force_server_generate_key, remember_existing_token)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
                                        get_challenges_paginate, cleanup_expired_challenges)
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
@@ -191,9 +191,10 @@ overall policy concept.
 @prepolicy(required_piv_attestation, request)
 @prepolicy(verify_enrollment, request)
 @prepolicy(force_server_generate_key, request)
-@postpolicy(save_pin_change, request)
+@prepolicy(remember_existing_token, request)
 @event("token_init", request, g)
-@postpolicy(check_verify_enrollment, request)
+@postpolicy(remove_new_token_on_error(save_pin_change), request)
+@postpolicy(remove_new_token_on_error(check_verify_enrollment), request)
 @CheckSubscription(request)
 @log_with(log, log_entry=False)
 def init():

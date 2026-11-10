@@ -47,6 +47,7 @@ from privacyidea.lib.container import (
 )
 from privacyidea.lib.error import ParameterError, ResolverError, ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.event import EventConfiguration, delete_event, set_event
+from privacyidea.lib.eventhandler.logginghandler import LoggingEventHandler
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, set_policy
@@ -4997,6 +4998,153 @@ class APIRolloutState(MyApiTestCase):
             result = res.json.get("result")
             # we have two tokens
             self.assertEqual(3, result.get("value").get("count"))
+
+    def _remove_token_on_cleanup(self, serial: str) -> None:
+        def _remove():
+            if token_exist(serial):
+                remove_token(serial)
+
+        self.addCleanup(_remove)
+
+    def _delete_policy_on_cleanup(self, name: str) -> None:
+        def _delete():
+            try:
+                delete_policy(name)
+            except ResourceNotFoundError:
+                pass
+
+        self.addCleanup(_delete)
+
+    def _set_enroll_postpolicies(self, raise_error: bool) -> None:
+        conditions = None
+        if raise_error:
+            # The key is missing in the request data and the condition demands an error in this case
+            conditions = [(ConditionSection.REQUEST_DATA, "nonexistent", PrimaryComparators.EQUALS, "x", True,
+                           "raise_error")]
+        set_policy("verify_hotp", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp",
+                   conditions=conditions)
+        self._delete_policy_on_cleanup("verify_hotp")
+        set_policy("pin_first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
+        self._delete_policy_on_cleanup("pin_first_use")
+
+    def _init_request(self, data: dict) -> Response:
+        if data.get("serial"):
+            self._remove_token_on_cleanup(data["serial"])
+        with self.app.test_request_context('/token/init', method='POST', data=data,
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_02_enroll_applies_verify_enrollment_and_pin_change(self):
+        self._set_enroll_postpolicies(raise_error=False)
+
+        res = self._init_request({"type": "hotp", "genkey": 1, "serial": "ROLLOUT_POST01"})
+        self.assertEqual(200, res.status_code, res.json)
+        token = get_one_token(serial="ROLLOUT_POST01")
+        self.assertEqual(RolloutState.VERIFY_PENDING, token.token.rollout_state)
+        self.assertIsNotNone(token.get_tokeninfo("next_pin_change"))
+
+    def test_03_enroll_removes_new_token_on_postpolicy_error(self):
+        self._set_enroll_postpolicies(raise_error=True)
+
+        res = self._init_request({"type": "hotp", "genkey": 1, "serial": "ROLLOUT_POST02"})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        # A token the request created must not stay active without the enrollment policies applied
+        self.assertFalse(token_exist("ROLLOUT_POST02"))
+
+    def test_04_reinit_keeps_existing_token_on_postpolicy_error(self):
+        self._remove_token_on_cleanup("ROLLOUT_POST03")
+        init_token({"serial": "ROLLOUT_POST03", "type": "hotp", "genkey": 1})
+        self._set_enroll_postpolicies(raise_error=True)
+
+        # A rollover of an existing token runs into the same post-policy error
+        res = self._init_request({"type": "hotp", "genkey": 1, "serial": "ROLLOUT_POST03"})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        # The token existed before the request and must not be deleted
+        self.assertTrue(token_exist("ROLLOUT_POST03"))
+
+    def test_05_enroll_removes_new_token_on_pin_change_policy_error(self):
+        serial = "ROLLOUT_PIN05"
+        # Only the change_pin_on_first_use policy fails, verify_enrollment is applied to the token before
+        set_policy("verify_hotp_plain", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp")
+        self._delete_policy_on_cleanup("verify_hotp_plain")
+        set_policy("pin_first_use_failing", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                   conditions=[(ConditionSection.REQUEST_DATA, "absentpinkey", PrimaryComparators.EQUALS, "y", True,
+                                "raise_error")])
+        self._delete_policy_on_cleanup("pin_first_use_failing")
+
+        res = self._init_request({"type": "hotp", "genkey": 1, "serial": serial})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        # The token neither stays active nor waits for the verification of the enrollment
+        self.assertFalse(token_exist(serial))
+        self.assertEqual(0, len(get_tokens(serial=serial, rollout_state=RolloutState.VERIFY_PENDING)))
+
+    def test_06_enroll_without_serial_removes_generated_token_on_postpolicy_error(self):
+        existing = {tok.get_serial() for tok in get_tokens(tokentype="hotp")}
+
+        def _remove_new_tokens():
+            for tok in get_tokens(tokentype="hotp"):
+                if tok.get_serial() not in existing:
+                    remove_token(tok.get_serial())
+
+        self.addCleanup(_remove_new_tokens)
+        self._set_enroll_postpolicies(raise_error=True)
+
+        # The serial is generated by the server
+        res = self._init_request({"type": "hotp", "genkey": 1})
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        self.assertEqual(len(existing), len(get_tokens(tokentype="hotp")))
+
+    def test_07_enroll_returns_policy_error_if_removing_new_token_fails(self):
+        serial = "ROLLOUT_RMV07"
+        self._set_enroll_postpolicies(raise_error=True)
+
+        with mock.patch("privacyidea.api.lib.postpolicy.remove_token",
+                        side_effect=Exception("removing the token failed")):
+            res = self._init_request({"type": "hotp", "genkey": 1, "serial": serial})
+        # The original policy error is returned, not the error of the failed removal
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        self.assertNotIn("removing the token failed", res.json["result"]["error"]["message"])
+
+    def test_08_token_init_event_runs_only_if_postpolicies_succeed(self):
+        error_condition = [(ConditionSection.REQUEST_DATA, "absentkey", PrimaryComparators.EQUALS, "z", True,
+                            "raise_error")]
+        serials = ["ROLLOUT_EVT08A", "ROLLOUT_EVT08B", "ROLLOUT_EVT08C"]
+
+        def set_postpolicies(verify_fails: bool, pin_change_fails: bool):
+            set_policy("verify_hotp_event", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp",
+                       conditions=error_condition if verify_fails else None)
+            set_policy("pin_first_use_event", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                       conditions=error_condition if pin_change_fails else None)
+
+        event_id = set_event("log_token_init", ["token_init"], "Logging", "logging", position="post")
+        self.addCleanup(delete_event, event_id)
+        self._delete_policy_on_cleanup("verify_hotp_event")
+        self._delete_policy_on_cleanup("pin_first_use_event")
+        with mock.patch.object(LoggingEventHandler, "do", return_value=True) as mock_do:
+            # Both post-policies succeed: the handler runs as before
+            set_postpolicies(verify_fails=False, pin_change_fails=False)
+            res = self._init_request({"type": "hotp", "genkey": 1, "serial": serials[0]})
+            self.assertEqual(200, res.status_code, res.json)
+            mock_do.assert_called_once()
+            self.assertEqual("logging", mock_do.call_args[0][0])
+            mock_do.reset_mock()
+
+            # check_verify_enrollment fails
+            set_postpolicies(verify_fails=True, pin_change_fails=False)
+            res = self._init_request({"type": "hotp", "genkey": 1, "serial": serials[1]})
+            self.assertEqual(403, res.status_code, res.json)
+            mock_do.assert_not_called()
+
+            # save_pin_change fails
+            set_postpolicies(verify_fails=False, pin_change_fails=True)
+            res = self._init_request({"type": "hotp", "genkey": 1, "serial": serials[2]})
+            self.assertEqual(403, res.status_code, res.json)
+            mock_do.assert_not_called()
 
 
 @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,

@@ -38,11 +38,12 @@ from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContain
                                                        SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge)
+                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge, PrivacyIDEAError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
-                                   convert_token_objects_to_dicts, init_token)
+                                   convert_token_objects_to_dicts, init_token, token_exist)
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
@@ -688,19 +689,47 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     return res
 
 
-def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
-                                          user_role: str) -> dict[str, dict]:
+def _report_token_not_created(tokens_not_created: list[dict] | None, token_info: dict, token: TokenClass | None,
+                              exception: Exception):
+    """
+    Append an entry for a template token that was not created to the given list. The message of a privacyIDEA error is
+    returned to the client. Any other error is only logged, as its message may contain internal details.
+
+    :param tokens_not_created: The list to append the entry to. Nothing is done if it is None.
+    :param token_info: The enroll information of the token from the template
+    :param token: The token object if the token was already created, otherwise None
+    :param exception: The error that prevented the creation of the token
+    """
+    if tokens_not_created is None:
+        return
+    if isinstance(exception, PrivacyIDEAError):
+        error = str(exception)
+    else:
+        error = "Unexpected error while creating the token. Check the server log for details."
+    entry = {"type": token.get_type() if token else token_info.get("type"), "error": error}
+    serial = token.get_serial() if token else token_info.get("serial")
+    if serial:
+        entry["serial"] = serial
+    tokens_not_created.append(entry)
+
+
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request, user_role: str,
+                                          tokens_not_created: list[dict] | None = None) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
-    tokens.
+    tokens. A token that fails the pre-policies, the creation or the post-policies is not created: a token the
+    function created is deleted again, and a token that existed before is only removed from the container.
 
     :param container_serial: The serial of the container
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
         contains the details for a token to be enrolled
     :param request: The request object
     :param user_role: The role of the user ('admin' or 'user')
+    :param tokens_not_created: Optional list to which an entry is appended for each template token that was not
+        created, in the format ``{"type": <token_type>, "error": <error message>, "serial": <token_serial>}``. The
+        serial is only contained if it is known. The entry contains no enrollment data of the token.
     :return: A dictionary containing the enroll details for each created token in the format:
 
     ::
@@ -801,31 +830,33 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 force_server_generate_key(request, None)
             except Exception as ex:
                 log.warning(f"Error checking pre-policies for token {token_info} created from template: {ex}")
+                _report_token_not_created(tokens_not_created, token_info, None, ex)
                 continue
 
             init_params = request.all_data
             init_params["policies"] = g.policies
+            # A token with a fixed serial from the template may exist already. It must not be deleted on an error.
+            token_existed = token_exist(init_params.get("serial"))
             try:
                 token = init_token(init_params, user)
                 init_result[token.get_serial()] = {"type": token.get_type()}
                 init_result[token.get_serial()].update(token.get_init_detail(init_params, user))
                 container.add_token(token)
-            except Exception as ex:
-                log.warning(f"Error creating token {token_info} from template: {ex}")
-                if token:
-                    if init_result.get(token.get_serial()):
-                        del init_result[token.get_serial()]
-                    token.delete_token()
-                continue
 
-            # Post-policy checks
-            try:
+                # Post-policy checks
                 # Post-policy decorators require a response object containing the result of the token creation.
                 response = send_result(True, details=init_result[token.get_serial()])
                 check_verify_enrollment(request, response)
                 save_pin_change(request, response)
             except Exception as ex:
-                log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
+                log.warning(f"Error creating token {token_info} from template or checking its post-policies: {ex}")
+                if token:
+                    if init_result.get(token.get_serial()):
+                        del init_result[token.get_serial()]
+                    container.remove_token(token.get_serial())
+                    if not token_existed:
+                        token.delete_token()
+                _report_token_not_created(tokens_not_created, token_info, token, ex)
                 continue
 
             init_result[token.get_serial()].update(response.json["detail"])

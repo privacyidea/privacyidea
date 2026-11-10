@@ -76,7 +76,7 @@ from privacyidea.lib.remembered_device import (CookieAction, apply_cookie_action
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            EXPIRE_MESSAGE)
-from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
+from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token, remove_token
 from privacyidea.lib.tokenclass import ChallengeSession, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -153,6 +153,37 @@ class postpolicy:
             return self.function(self.request, response, *args, **kwds)
 
         return policy_wrapper
+
+
+def remove_new_token_on_error(function: callable) -> callable:
+    """
+    Wraps a post-policy function of the /token/init endpoint. If the policy function raises an error, a token that was
+    created by the request is deleted, so that it does not stay active without the enrollment policies applied. A
+    token that existed before the request (rollover, second step of a 2step enrollment or verify enrollment) is never
+    deleted. The prepolicy remember_existing_token records whether the token existed. The error is raised again.
+
+    :param function: The post-policy function to wrap
+    :return: The wrapped post-policy function
+    """
+
+    @functools.wraps(function)
+    def policy_wrapper(request, response, *args, **kwds):
+        try:
+            return function(request, response, *args, **kwds)
+        except Exception:
+            if not getattr(g, "token_existed", True):
+                serial = request.all_data.get("serial") or response.json.get("detail", {}).get("serial")
+                if serial:
+                    log.warning(f"Post-policy {function.__name__} failed, deleting the new token {serial}.")
+                    try:
+                        remove_token(serial=serial)
+                    except Exception as ex:
+                        # The error of the policy is returned to the client, not the error of the removal
+                        log.warning(f"Failed to delete the new token {serial}: {ex}")
+                        log.debug(traceback.format_exc())
+            raise
+
+    return policy_wrapper
 
 
 class postrequest:
