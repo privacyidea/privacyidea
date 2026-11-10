@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, Signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { PiResponse } from "@app/app.component";
@@ -25,7 +25,8 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import {
   ContainerRegisterData,
   ContainerService,
-  ContainerServiceInterface
+  ContainerServiceInterface,
+  ContainerTokenNotCreated
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 
@@ -33,6 +34,9 @@ export interface ContainerCreationDialogData {
   response: PiResponse<ContainerRegisterData>;
   containerSerial: WritableSignal<string>;
   registerContainer: (containerSerial: string, regenerate: boolean) => void;
+  tokensNotCreated?: ContainerTokenNotCreated[];
+  /** True when the template created no token at all, so tokensNotCreated is not empty and no token exists. */
+  allTokensFailed?: boolean;
 }
 
 @Component({
@@ -45,6 +49,12 @@ export class ContainerCreatedDialogComponent extends AbstractDialogComponent<
 > {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private contentService = inject(ContentService);
+
+  readonly dialogTitle = computed(() =>
+    this.data()?.allTokensFailed
+      ? $localize`:@@container.containerCreatedWithoutTokens:Container Created Without Tokens`
+      : $localize`:@@container.containerSuccessfully:Container Successfully Created`
+  );
 
   constructor() {
     super();

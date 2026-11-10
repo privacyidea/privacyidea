@@ -20,8 +20,7 @@
   (actionTriggered)="onAction()"
   [actions]="actions"
   [showCloseButton]="false"
-  i18n-title="@@container.containerSuccessfully"
-  title="Container Successfully Created"
+  [title]="dialogTitle()"
   width="l">
   @let postTopHtml = postTopHtml$ | async;
   @if (postTopHtml?.hasContent) {
@@ -41,6 +40,26 @@
     >
   }
 
+  @if (data()?.tokensNotCreated?.length) {
+    <div
+      class="inline-callout inline-callout-error"
+      data-testid="tokens-not-created">
+      @if (data()?.allTokensFailed) {
+        <p
+          class="error-message"
+          i18n="@@container.noTokenCreatedNotice"
+          ><strong>None of the tokens of the template was created:</strong></p
+        >
+      } @else {
+        <p i18n="@@container.tokensNotCreatedNotice">These tokens of the template were not created:</p>
+      }
+      <ul>
+        @for (entry of data()!.tokensNotCreated; track $index) {
+          <li>{{ entry.type }} ({{ entry.error }})</li>
+        }
+      </ul>
+    </div>
+  }
   <div class="flex-row gap-16">
     @if (data()?.response?.result?.value?.container_url?.img) {
       <img

@@ -26,6 +26,7 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { DialogAction } from "@models/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ContainerTokenNotCreated } from "@services/container/container.service";
 import { EnrollTokenArguments } from "@services/token/token.service";
 
 export type EnrolledTokenInfo = EnrollmentResponseDetail & {
@@ -37,6 +38,7 @@ export type EnrolledTokenInfo = EnrollmentResponseDetail & {
 export interface ContainerTokensEnrolledDialogData {
   enrolledTokens: EnrolledTokenInfo[];
   containerSerial: string;
+  tokensNotCreated?: ContainerTokenNotCreated[];
 }
 
 @Component({
@@ -50,6 +52,8 @@ export class ContainerTokensEnrolledDialogComponent extends AbstractDialogCompon
 
   readonly currentIndex = signal(0);
   readonly enrolledTokens = signal<EnrolledTokenInfo[]>(this.data.enrolledTokens);
+
+  readonly tokensNotCreated = this.data.tokensNotCreated ?? [];
 
   readonly currentToken = computed(() => this.enrolledTokens()[this.currentIndex()]);
   readonly total = computed(() => this.enrolledTokens().length);

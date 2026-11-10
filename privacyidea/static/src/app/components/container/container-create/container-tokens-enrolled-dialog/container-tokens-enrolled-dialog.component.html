@@ -37,6 +37,18 @@
     [value]="progress()"
     mode="determinate"
     class="progress-bar" />
+  @if (tokensNotCreated.length) {
+    <div
+      class="inline-callout inline-callout-error"
+      data-testid="tokens-not-created">
+      <p i18n="@@container.tokensNotCreatedNotice">These tokens of the template were not created:</p>
+      <ul>
+        @for (entry of tokensNotCreated; track $index) {
+          <li>{{ entry.type }} ({{ entry.error }})</li>
+        }
+      </ul>
+    </div>
+  }
   <div class="enrollment-data">
     <p i18n="@@container.tokenSuccessfully"
       >Token <strong>{{ currentToken().serial }}</strong> successfully enrolled.</p

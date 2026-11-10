@@ -35,6 +35,25 @@
   outline-offset: -1px;
 }
 
+// Callout styled like the outlined delete and warn action buttons: card surface, a thin border and text in the
+// status color.
+.inline-callout {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: var(--mat-sys-surface-container-lowest);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+}
+
+.inline-callout-error {
+  border-color: var(--red-base);
+  background-color: color-mix(in srgb, var(--red-base) 10%, transparent);
+
+  .error-message {
+    color: var(--red-base);
+  }
+}
+
 .inline-success {
   background: var(--green-fill);
   outline: 1px solid var(--green-edge);

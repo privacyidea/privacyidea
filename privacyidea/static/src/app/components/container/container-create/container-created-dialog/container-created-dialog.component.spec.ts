@@ -27,6 +27,7 @@ import { firstValueFrom, Subject } from "rxjs";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { MockContainerService, MockContentService } from "@testing/mock-services";
+import { ContainerTokenNotCreated } from "@services/container/container.service";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 
@@ -99,6 +100,108 @@ describe("ContainerCreatedDialogComponent", () => {
     component.regenerateQRCode();
     expect(registerContainer).toHaveBeenCalledWith("C-123", true);
     expect(dialogClose).not.toHaveBeenCalled();
+  });
+
+  describe("tokens the template did not create", () => {
+    const notCreated: ContainerTokenNotCreated[] = [
+      { type: "hotp", error: "Policy hotp_blocked forbids it", serial: "OATH0009" },
+      { type: "totp", error: "Maximum number of tokens reached" }
+    ];
+    const baseData = () => ({
+      response: { result: { value: { container_url: { img: "" } } } },
+      containerSerial: signal("C-001"),
+      registerContainer
+    });
+    const setData = (extra: Record<string, unknown>) => {
+      matDialogData.set({ ...baseData(), ...extra } as unknown as ReturnType<typeof matDialogData>);
+      fixture.detectChanges();
+    };
+    const text = () => fixture.nativeElement.textContent as string;
+    const NONE = "None of the tokens of the template was created";
+
+    afterEach(() => matDialogData.set(baseData()));
+
+    it("lists every token that was not created as '<type> (<error>)'", () => {
+      setData({ tokensNotCreated: notCreated });
+
+      expect(text()).toContain("hotp (Policy hotp_blocked forbids it)");
+      expect(text()).toContain("totp (Maximum number of tokens reached)");
+      expect(fixture.nativeElement.querySelector(".error-message")).toBeNull();
+    });
+
+    it("highlights as an error when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      const error = fixture.nativeElement.querySelector(".error-message") as HTMLElement;
+      expect(error).toBeTruthy();
+      expect(error.textContent).toContain(NONE);
+      expect(text()).toContain("hotp (Policy hotp_blocked forbids it)");
+    });
+
+    it("shows a single heading when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      const notice = fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(notice.textContent).toContain("None of the tokens of the template was created:");
+      expect(notice.textContent).not.toContain("These tokens of the template were not created");
+    });
+
+    it.each([[undefined], [[]]])("shows no notice when tokensNotCreated is %j", (value) => {
+      setData({ tokensNotCreated: value });
+
+      expect(text()).not.toContain("not created");
+      expect(text()).not.toContain(NONE);
+      expect(fixture.nativeElement.querySelector(".error-message")).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]')).toBeNull();
+    });
+
+    const withQr = { response: { result: { value: { container_url: { img: "data:image/png;base64,AAAA" } } } } };
+    const notice = () => fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+    const title = () => (fixture.nativeElement.querySelector("[mat-dialog-title]") as HTMLElement).textContent!.trim();
+
+    it("places the notice before the QR code", () => {
+      setData({ ...withQr, tokensNotCreated: notCreated });
+
+      const qr = fixture.nativeElement.querySelector("img.qr-code") as HTMLElement;
+      expect(notice()).toBeTruthy();
+      expect(qr).toBeTruthy();
+      expect(notice().compareDocumentPosition(qr) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("uses the red callout bar when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      expect(notice().classList).toContain("inline-callout-error");
+      expect(notice().classList).toContain("inline-callout");
+      expect(notice().classList).not.toContain("inline-warning");
+      expect(notice().classList).not.toContain("inline-caution");
+      expect(notice().classList).not.toContain("inline-callout-caution");
+    });
+
+    it("uses the red callout box when only some tokens were not created", () => {
+      setData({ tokensNotCreated: notCreated });
+
+      expect(notice().classList).toContain("inline-callout-error");
+      expect(notice().classList).toContain("inline-callout");
+      expect(notice().classList).not.toContain("inline-warning");
+      expect(notice().classList).not.toContain("inline-caution");
+      expect(notice().classList).not.toContain("inline-callout-caution");
+    });
+
+    it("titles the dialog 'Container Created Without Tokens' when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      expect(title()).toBe("Container Created Without Tokens");
+    });
+
+    it.each([["partial failure", { tokensNotCreated: notCreated }], ["no failure", {}]])(
+      "keeps the title 'Container Successfully Created' on %s",
+      (_name, extra) => {
+        setData(extra);
+
+        expect(title()).toBe("Container Successfully Created");
+      }
+    );
   });
 });
 
@@ -212,5 +315,109 @@ describe("ContainerCreatedDialogWizardComponent", () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain("Container Successfully Created");
+  });
+
+  describe("tokens the template did not create", () => {
+    const notCreated: ContainerTokenNotCreated[] = [
+      { type: "hotp", error: "Policy hotp_blocked forbids it", serial: "OATH0009" },
+      { type: "totp", error: "Maximum number of tokens reached" }
+    ];
+    const baseData = () => ({
+      response: { result: { value: { container_url: { img: "" } } } },
+      containerSerial: signal("C-001"),
+      registerContainer
+    });
+    const setData = (extra: Record<string, unknown>) => {
+      httpMock.expectOne("/static/public/customize/container-create.wizard.post.top.html").flush("");
+      httpMock.expectOne("/static/public/customize/container-create.wizard.post.bottom.html").flush("");
+      matDialogData.set({ ...baseData(), ...extra } as unknown as ReturnType<typeof matDialogData>);
+      fixture.detectChanges();
+    };
+    const text = () => fixture.nativeElement.textContent as string;
+    const NONE = "None of the tokens of the template was created";
+
+    afterEach(() => matDialogData.set(baseData()));
+
+    it("lists every token that was not created as '<type> (<error>)'", () => {
+      setData({ tokensNotCreated: notCreated });
+
+      expect(text()).toContain("hotp (Policy hotp_blocked forbids it)");
+      expect(text()).toContain("totp (Maximum number of tokens reached)");
+      expect(fixture.nativeElement.querySelector(".error-message")).toBeNull();
+    });
+
+    it("highlights as an error when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      const error = fixture.nativeElement.querySelector(".error-message") as HTMLElement;
+      expect(error).toBeTruthy();
+      expect(error.textContent).toContain(NONE);
+      expect(text()).toContain("hotp (Policy hotp_blocked forbids it)");
+    });
+
+    it("shows a single heading when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      const notice = fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+      expect(notice.textContent).toContain("None of the tokens of the template was created:");
+      expect(notice.textContent).not.toContain("These tokens of the template were not created");
+    });
+
+    it.each([[undefined], [[]]])("shows no notice when tokensNotCreated is %j", (value) => {
+      setData({ tokensNotCreated: value });
+
+      expect(text()).not.toContain("not created");
+      expect(text()).not.toContain(NONE);
+      expect(fixture.nativeElement.querySelector(".error-message")).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]')).toBeNull();
+    });
+
+    const withQr = { response: { result: { value: { container_url: { img: "data:image/png;base64,AAAA" } } } } };
+    const notice = () => fixture.nativeElement.querySelector('[data-testid="tokens-not-created"]') as HTMLElement;
+    const title = () => (fixture.nativeElement.querySelector("[mat-dialog-title]") as HTMLElement).textContent!.trim();
+
+    it("places the notice before the QR code", () => {
+      setData({ ...withQr, tokensNotCreated: notCreated });
+
+      const qr = fixture.nativeElement.querySelector("img.qr-code") as HTMLElement;
+      expect(notice()).toBeTruthy();
+      expect(qr).toBeTruthy();
+      expect(notice().compareDocumentPosition(qr) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("uses the red callout bar when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      expect(notice().classList).toContain("inline-callout-error");
+      expect(notice().classList).toContain("inline-callout");
+      expect(notice().classList).not.toContain("inline-warning");
+      expect(notice().classList).not.toContain("inline-caution");
+      expect(notice().classList).not.toContain("inline-callout-caution");
+    });
+
+    it("uses the red callout box when only some tokens were not created", () => {
+      setData({ tokensNotCreated: notCreated });
+
+      expect(notice().classList).toContain("inline-callout-error");
+      expect(notice().classList).toContain("inline-callout");
+      expect(notice().classList).not.toContain("inline-warning");
+      expect(notice().classList).not.toContain("inline-caution");
+      expect(notice().classList).not.toContain("inline-callout-caution");
+    });
+
+    it("titles the dialog 'Container Created Without Tokens' when none of the tokens was created", () => {
+      setData({ tokensNotCreated: notCreated, allTokensFailed: true });
+
+      expect(title()).toBe("Container Created Without Tokens");
+    });
+
+    it.each([["partial failure", { tokensNotCreated: notCreated }], ["no failure", {}]])(
+      "keeps the title 'Container Successfully Created' on %s",
+      (_name, extra) => {
+        setData(extra);
+
+        expect(title()).toBe("Container Successfully Created");
+      }
+    );
   });
 });
