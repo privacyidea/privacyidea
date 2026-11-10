@@ -1011,7 +1011,8 @@ def twostep_enrollment_activation(request=None, action=None):
     If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
     With ``force``, it is set for a new token and for a token that is rolled over: like
     :func:`check_token_init`, a request for a token whose enrollment is not pending rolls it over, with or without the
-    ``rollover`` parameter. If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+    ``rollover`` parameter. Such a request must not contain ``verify``, because only a token in the state ``verify``
+    is verified. If no policy matches, the ``2stepinit`` parameter is removed from the request data.
     """
     user_object = get_user_from_param(request.all_data)
     serial = get_optional(request.all_data, "serial")
@@ -1039,7 +1040,10 @@ def twostep_enrollment_activation(request=None, action=None):
         elif enabled_setting == "force":
             # A token in a pending enrollment state is in the second step of its enrollment or in its
             # verification, every other token is rolled over
-            if not token or token.rollout_state not in RolloutState.enrollment_pending_states():
+            rolled_over = token is not None and token.rollout_state not in RolloutState.enrollment_pending_states()
+            if rolled_over and get_optional(request.all_data, "verify"):
+                raise ParameterError(f"The token {serial} is not waiting for the verification of its enrollment.")
+            if not token or rolled_over:
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError(f"Unknown 2step policy setting: {enabled_setting}")

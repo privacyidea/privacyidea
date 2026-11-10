@@ -320,10 +320,11 @@
   stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
 
 * **Two-step enrollment for every token rollover.** If a `hotp_2step` or `totp_2step` policy has the value `force`,
-  every request to `/token/init` for a token that is already enrolled starts the two-step enrollment, with or without
-  the `rollover` parameter. The rollover in the WebUI does not change, because the WebUI always sends the `rollover`
-  parameter. If a script rolls over such tokens through the API, make sure that it sends the client component in a
-  second request.
+  every rollover of an enrolled token uses the two-step enrollment. This applies to each request to `/token/init` for
+  such a token, with or without the `rollover` parameter. The rollover in the WebUI does not change, because the
+  WebUI always sends the `rollover` parameter. If a script rolls over such tokens through the API, make sure that it
+  sends the client component in a second request. The server refuses a request that sends its own key (`otpkey`) for
+  such a token, as for a new token.
 
 * **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
   for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
