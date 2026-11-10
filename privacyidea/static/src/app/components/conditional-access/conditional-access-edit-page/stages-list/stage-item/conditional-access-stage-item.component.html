@@ -26,7 +26,6 @@
     <div class="ca-stage-name">
       @if (!stage().id().value() || editingName()) {
         <mat-form-field
-          appearance="fill"
           subscriptSizing="dynamic"
           class="ca-stage-name-field input-width-m margin-bottom-16">
           <mat-label i18n="@@conditionalAccess.stageName">Stage Name</mat-label>
@@ -82,7 +81,6 @@
 
   <div class="ca-stage-fields margin-left-8">
     <mat-form-field
-      appearance="fill"
       subscriptSizing="dynamic"
       class="input-width-m">
       <mat-label i18n="@@conditionalAccess.failureThreshold">Failure Threshold</mat-label>
@@ -129,7 +127,6 @@
 
       <div class="ca-stage-error-message-row">
         <mat-form-field
-          appearance="fill"
           subscriptSizing="dynamic"
           class="input-width-xl">
           <mat-label i18n="@@common.errorMessage">Error Message</mat-label>

@@ -167,7 +167,7 @@
             } @else {
               @if (token.application === "ssh") {
                 <div class="flex-column margin-top-16 gap-8">
-                  <mat-form-field appearance="fill">
+                  <mat-form-field>
                     <mat-label i18n="@@common.serviceId">Service ID</mat-label>
                     <mat-select
                       [value]="editedOptions[token.id]['service_id']"
@@ -179,7 +179,7 @@
                       }
                     </mat-select>
                   </mat-form-field>
-                  <mat-form-field appearance="fill">
+                  <mat-form-field>
                     <mat-label i18n="@@common.user">User</mat-label>
                     <input
                       [value]="editedOptions[token.id]['user']"
@@ -259,7 +259,6 @@
       <h3 i18n="@@machine.attachNewToken">Attach a New Token</h3>
       <div class="flex-row ali-center gap-16">
         <mat-form-field
-          appearance="fill"
           class="input-width-l">
           <mat-label i18n="@@machine.tokenSerial">Token Serial</mat-label>
           <input
@@ -276,7 +275,6 @@
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill"
           class="input-width-s">
           <mat-label i18n="@@common.application">Application</mat-label>
           <mat-select [formField]="attachForm.application">

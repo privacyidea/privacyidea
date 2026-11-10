@@ -46,7 +46,6 @@
 
     <div class="flex-row gap-16">
       <mat-form-field
-        appearance="fill"
         subscriptSizing="dynamic"
         class="input-width-l margin-bottom-16">
         <mat-label i18n="@@common.action">Action</mat-label>
@@ -93,7 +92,6 @@
       @switch (valueMode()) {
         @case ("duration") {
           <mat-form-field
-            appearance="fill"
             subscriptSizing="dynamic"
             class="input-width-l">
             <mat-label i18n="@@audit.duration">Duration</mat-label>
@@ -115,7 +113,6 @@
           </mat-form-field>
 
           <mat-form-field
-            appearance="fill"
             subscriptSizing="dynamic"
             class="input-width-s">
             <mat-label i18n="@@common.unit">Unit</mat-label>
@@ -148,7 +145,6 @@
             @switch (field.kind) {
               @case ("textarea") {
                 <mat-form-field
-                  appearance="fill"
                   subscriptSizing="dynamic"
                   class="input-width-xxl">
                   <mat-label>{{ field.label }}</mat-label>
@@ -164,7 +160,6 @@
               }
               @case ("smtp") {
                 <mat-form-field
-                  appearance="fill"
                   subscriptSizing="dynamic"
                   class="input-width-l">
                   <mat-label>{{ field.label }}</mat-label>
@@ -206,7 +201,6 @@
               }
               @case ("select") {
                 <mat-form-field
-                  appearance="fill"
                   subscriptSizing="dynamic"
                   class="input-width-l">
                   <mat-label>{{ field.label }}</mat-label>
@@ -224,7 +218,6 @@
               }
               @default {
                 <mat-form-field
-                  appearance="fill"
                   subscriptSizing="dynamic"
                   class="input-width-l">
                   <mat-label>{{ field.label }}</mat-label>
