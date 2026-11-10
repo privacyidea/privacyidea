@@ -10,7 +10,7 @@
 // One card per condition kind, on the page container.
 .conditions-container {
   @include styles.card-recessed(3);
-  padding: 8px 12px;
+  padding: 16px;
 
   .conditions-title {
     font-size: 1.2em;
