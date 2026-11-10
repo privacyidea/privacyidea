@@ -270,4 +270,10 @@ describe("CaConnectorsComponent", () => {
       );
     });
   });
+
+  it("passes the axe accessibility checks", async () => {
+    fixture.detectChanges();
+
+    expect(await axe(fixture.nativeElement)).toHaveNoViolations();
+  });
 });
