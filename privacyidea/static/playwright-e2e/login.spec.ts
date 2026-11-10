@@ -58,18 +58,19 @@ test.describe("login", () => {
     await expect(page.locator("#username")).toBeFocused();
 
     const reached: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       await page.keyboard.press("Tab");
       reached.push(
         await page.evaluate(() => {
           const e = document.activeElement as HTMLElement;
-          return e.id || e.getAttribute("aria-label") || e.tagName.toLowerCase();
+          return e.id || e.getAttribute("aria-label") || e.textContent?.trim() || e.tagName.toLowerCase();
         })
       );
     }
     // The submit button is disabled until the form is filled in, so Tab passes it.
     expect(reached[0]).toBe("password");
     expect(reached[1]).toMatch(/password/i);
-    expect(reached[2]).toMatch(/passkey/i);
+    // With password recovery set up, the link to it comes before the passkey button.
+    expect(/passkey/i.test(reached[2]) ? reached[2] : reached[3]).toMatch(/passkey/i);
   });
 });
