@@ -18,6 +18,7 @@
  **/
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
+import { MatTooltip } from "@angular/material/tooltip";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
@@ -38,7 +39,6 @@ import {
   ContainerService,
   ContainerServiceInterface
 } from "@services/container/container.service";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -99,6 +99,7 @@ const columnsKeyMap = [
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
+    MatTooltip,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
@@ -134,7 +135,6 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
 

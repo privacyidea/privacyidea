@@ -57,5 +57,6 @@ export class TiqrConfigComponent {
   protected readonly hasError = hasError;
 
   config = input.required<TokenTypeConfigForm>();
+  expanded = input<boolean>(false);
   protected readonly panel = panelCompleteness(this.config, () => TIQR_KEYS);
 }

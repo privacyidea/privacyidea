@@ -4273,3 +4273,18 @@ class FreeRADIUSSubscriptionTestCase(MyApiTestCase):
             response = self.app.full_dispatch_request()
         self.assertEqual(200, response.status_code, response.json)
         self.assertEqual(1, response.json["result"]["value"]["subscription_status"], response.json)
+
+
+class AuthenticationPolicyWithoutActionsTestCase(MyApiTestCase):
+    """An authentication policy without actions does not change how /validate/check decides."""
+
+    def test_01_user_without_token_is_rejected(self):
+        self.setUp_user_realms()
+        set_policy("without_actions", scope=SCOPE.AUTH, action="")
+        self.addCleanup(delete_policy, "without_actions")
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1, "pass": "wrong"}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertFalse(response.json["result"]["value"], response.json)
+        self.assertEqual("The user has no tokens assigned", response.json["detail"]["message"], response.json)

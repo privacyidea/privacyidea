@@ -202,7 +202,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    determine_logged_in_userparams, parse_string_to_dict,
                                    SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, import_entries)
 from .log import log_with
 from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
@@ -285,6 +285,11 @@ class SCOPE:
         valid_scopes = [cls.AUTHZ, cls.ADMIN, cls.AUTH, cls.AUDIT, cls.USER, cls.ENROLL, cls.WEBUI, cls.REGISTER,
                         cls.CONTAINER, cls.TOKEN, cls.HARDENING, cls.CONDITIONAL_ACCESS]
         return valid_scopes
+
+
+# The scopes that grant rights. In these scopes, a policy without actions applies to every action of the scope. In the
+# other scopes, a policy without actions applies to no action.
+SCOPES_WITH_ALL_ACTIONS_FOR_POLICY_WITHOUT_ACTIONS = (SCOPE.ADMIN, SCOPE.USER, SCOPE.CONTAINER)
 
 
 class TYPE:
@@ -527,6 +532,9 @@ class PolicyClass:
                     if not policy.get(searchkey):
                         # We also find the policies with no distinct information
                         # about the request value
+                        if (searchkey == "action"
+                                and policy.get("scope") not in SCOPES_WITH_ALL_ACTIONS_FOR_POLICY_WITHOUT_ACTIONS):
+                            continue
                         new_policies.append(policy)
                     else:
                         value_found, value_excluded = self._search_value(policy.get(searchkey), searchvalue)
@@ -4069,9 +4077,8 @@ def import_policy(data, name=None, skip_invalid=False):
         skipped without causing a failure.
     """
     log.debug(f'Import policy config: {data!s}')
-    imported = []
+    entries = []
     skipped = []
-    failed = {}
     for res_data in data:
         policy_name = res_data.get('name')
         if name and name != policy_name:
@@ -4091,23 +4098,14 @@ def import_policy(data, name=None, skip_invalid=False):
                             f'remain after dropping {dropped}.')
                 skipped.append(policy_name)
                 continue
-        try:
-            rid = set_policy(**res_data)
-        except Exception as e:
-            log.warning(f'Could not import policy "{policy_name}": {e!r}')
-            failed[policy_name] = e
-            continue
-        # TODO: we have no information if a new policy was created or an
-        #  existing policy updated. We would need to enhance "set_policy()"
-        #  to either force overwriting or not and also return if the policy
-        #  existed before.
-        imported.append(policy_name)
-        log.info(f'Import of policy "{policy_name}" finished, id: {rid!s}')
+        entries.append((policy_name, res_data))
 
     if skipped:
         log.warning(f'Skipped policies with no valid actions: {skipped}')
 
-    if failed:
-        failure_summary = ', '.join(f'"{n}" ({e!r})' for n, e in failed.items())
-        raise PolicyError(f"Could not import the following policies: "
-                          f"{failure_summary}. Successfully imported: {imported}.")
+    # TODO: we have no information if a new policy was created or an
+    #  existing policy updated. We would need to enhance "set_policy()"
+    #  to either force overwriting or not and also return if the policy
+    #  existed before.
+    import_entries(entries, lambda policy_name, res_data: set_policy(**res_data), "policies",
+                   error_class=PolicyError)

@@ -18,9 +18,7 @@
 -->
 <div
   appScrollToTop
-  aria-label="Create Container"
-  class="container-create-container"
-  i18n-aria-label="@@common.createContainer">
+  class="container-create-container">
   @let preTopHtml = preTopHtml$ | async;
   @if (preTopHtml?.hasContent) {
     <div

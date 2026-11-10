@@ -259,8 +259,7 @@ describe("AuditComponent (template rendering)", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
-    const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
+  const showRows = (rows: AuditData[]) =>
     mockAuditService.auditResource.value.set({
       detail: undefined,
       id: 0,
@@ -279,6 +278,9 @@ describe("AuditComponent (template rendering)", () => {
         status: true
       }
     });
+
+  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
+    showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
     fixture.detectChanges();
 
     const startdateColumnIndex = component.columnKeysMap.findIndex((c) => c.key === "startdate");
@@ -287,5 +289,52 @@ describe("AuditComponent (template rendering)", () => {
 
     expect(cellText).toContain("2026-01-15 10:00:00");
     expect(cellText).not.toContain("2026-01-15T10:00:00");
+  });
+
+  it.each([
+    ["admin", AuditComponent],
+    ["self-service", AuditSelfServiceComponent]
+  ])("names the %s filter input by its visible label", (_, componentType) => {
+    showRows([{ startdate: "2026-01-15T10:00:00.123456" } as AuditData]);
+    const filterFixture = TestBed.createComponent<AuditComponent>(componentType);
+    filterFixture.detectChanges();
+    const element: HTMLElement = filterFixture.nativeElement;
+    const input = element.querySelector<HTMLInputElement>(".mat-mdc-form-field input")!;
+
+    expect(input.hasAttribute("aria-label")).toBe(false);
+    expect(element.querySelector(`label[for="${input.id}"]`)?.textContent).toContain("Filter Audit Log");
+  });
+
+  describe("links", () => {
+    const hrefOf = (element: HTMLElement, text: string) =>
+      Array.from(element.querySelectorAll<HTMLAnchorElement>("tbody a"))
+        .find((a) => a.textContent?.trim() === text)
+        ?.getAttribute("href");
+
+    beforeEach(() => showRows([{ serial: "S-1", container_serial: "C-1", user: "alice", realm: "r1" } as AuditData]));
+
+    it.each([
+      ["admin", AuditComponent],
+      ["self-service", AuditSelfServiceComponent]
+    ])("links the %s token and container serials to their details pages", (_, componentType) => {
+      const linkFixture = TestBed.createComponent<AuditComponent>(componentType);
+      linkFixture.detectChanges();
+
+      expect(hrefOf(linkFixture.nativeElement, "S-1")).toBe("/tokens/details/S-1");
+      expect(hrefOf(linkFixture.nativeElement, "C-1")).toBe("/containers/details/C-1");
+    });
+
+    it("links admins to the details of the user in their realm", () => {
+      fixture.detectChanges();
+
+      expect(hrefOf(fixture.nativeElement, "alice")).toBe("/users/details/alice?realm=r1");
+    });
+
+    it("links users to their own details", () => {
+      const selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
+      selfFixture.detectChanges();
+
+      expect(hrefOf(selfFixture.nativeElement, "alice")).toBe("/users/details");
+    });
   });
 });

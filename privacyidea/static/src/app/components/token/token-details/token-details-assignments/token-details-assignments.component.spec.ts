@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideRouter } from "@angular/router";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
@@ -62,6 +63,7 @@ describe("TokenDetailsAssignmentsComponent", () => {
       imports: [TokenDetailsAssignmentsComponent],
       providers: [
         provideHttpClient(),
+        provideRouter([]),
         provideHttpClientTesting(),
         DetailsEditRegistry,
         { provide: TokenService, useClass: MockTokenService },
@@ -234,6 +236,21 @@ describe("TokenDetailsAssignmentsComponent", () => {
     expect(tokenService.setTokengroup).toHaveBeenCalledWith("TOK-2", ["group2"]);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     expect(internals.tokengroupField.isEditing()).toBe(false);
+  });
+
+  it.each([
+    ["admin", false],
+    ["self-service", true]
+  ])("names the %s container link by the serial it shows and links to the container", (_, selfService) => {
+    containerService.containerBelongsToUser.mockReturnValue(true);
+    fixture.componentRef.setInput("selfService", selfService);
+    fixture.componentRef.setInput("tokenDetails", mockTokenDetails({ container_serial: "CONT-1" }));
+    fixture.detectChanges();
+
+    const link: HTMLElement = fixture.nativeElement.querySelector(".container-serial-row a");
+    expect(link.hasAttribute("aria-label")).toBe(false);
+    expect(link.textContent?.trim()).toBe("CONT-1");
+    expect(link.getAttribute("href")).toBe("/containers/details/CONT-1");
   });
 
   describe("container input", () => {

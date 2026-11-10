@@ -5,6 +5,21 @@ Version 3.14.1
     instead of one lookup per token (#1653)
 
   Fixes:
+  * The stored password of an SMTP server is only used for the server it was saved for. Saving a
+    definition or sending a test email with the censored placeholder is rejected if server, port,
+    username or TLS flag differ from the saved definition, also in "pi-manage config import". (#3544)
+  * The SMTP server test email reports SMTP, network and TLS errors and invalid parameters with a
+    readable message instead of an internal server error. If S/MIME signing fails and "Don't send on
+    signing error" is set, it now returns HTTP 400 instead of HTTP 200 with the value false. (#3544)
+  * Saving an SMTP server, also with "pi-manage config import", rejects ports outside 1-65535,
+    timeouts outside 1-3600 seconds, server URLs without a host name and senders with line breaks
+    or non-ASCII characters, which made every email sent through the server fail. (#3544)
+  * SMTP and RADIUS servers whose identifier contains "/", "\" or control characters, is "." or "..",
+    or equals a route of the API ("send_test_email", "test_request") are rejected, because they could
+    not be updated through the API afterwards. "pi-manage config import" now imports the other servers
+    if one of them fails. (#3544)
+  * WebUI: Changing only a checkbox of an SMTP server now asks for confirmation before leaving the
+    page with unsaved changes. (#3544)
   * If an HTTP, Keycloak or Entra ID user store answers with an error other than 404, `--orphaned-on-error`
     decides whether the token janitors treat the token, the `user-settings`, the `custom-attributes` and the
     `internal-attributes` of a user as orphaned, as for LDAP and SQL. `container --orphaned` reports such an
