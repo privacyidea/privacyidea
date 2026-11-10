@@ -216,10 +216,10 @@
 // The outline of a field keeps the two tones of the flat depth border and follows the light source the same way: the
 // shadow tone on the sides the light falls away from, the light tone on the two it reaches. Material draws the outline
 // as three pieces, each with its own borders, so every side takes its tone from the sign of the light direction: a
-// sign of 1 gives the whole shadow tone, -1 the whole light tone. Focused, invalid and disabled fields keep
+// sign of 1 gives the whole shadow tone, -1 the whole light tone. Hovered, focused, invalid and disabled fields keep
 // Material's own single colour.
 .mat-mdc-form-field:not(.mat-focused):not(.mat-form-field-invalid):not(.mat-form-field-disabled)
-  .mdc-text-field--outlined
+  .mdc-text-field--outlined:not(:hover)
   .mdc-notched-outline {
   --input-border-left: color-mix(
     in srgb,
