@@ -1,0 +1,13 @@
+.session-timer {
+  font-size: 14px;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+  // The countdown changes on every tick and changes shape at the hour and ten-minute marks. Even
+  // digits of differing width would shove the buttons beside it around, so it holds one width and
+  // its digits all take the same space.
+  display: inline-block;
+  min-width: 5.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

@@ -36,7 +36,11 @@ describe("WidgetPaletteComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [WidgetPaletteComponent],
-      providers: [provideZonelessChangeDetection(), { provide: AuthService, useClass: MockAuthService }]
+      providers: [
+        DashboardLayoutService,
+        provideZonelessChangeDetection(),
+        { provide: AuthService, useClass: MockAuthService }
+      ]
     }).compileComponents();
 
     (TestBed.inject(AuthService) as unknown as MockAuthService).actionAllowed.mockReturnValue(true);

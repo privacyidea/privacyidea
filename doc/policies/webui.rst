@@ -229,9 +229,6 @@ type: ``string``
 The URL of an SSO provider, to which the WebUI redirects the user after logout. The URL must start
 with ``http://`` or ``https://``.
 
-.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
-   described in :ref:`legacy_webui`.
-
 .. versionadded:: 3.8
 
 .. index:: Default tokentype

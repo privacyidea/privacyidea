@@ -20,6 +20,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { PageEvent } from "@angular/material/paginator";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
 import { Sort } from "@angular/material/sort";
 import { provideRouter } from "@angular/router";
 
@@ -49,6 +51,7 @@ import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
+import { grantRights } from "@testing/toolbar-actions";
 
 describe("ContainerTableComponent (Jest)", () => {
   let component: ContainerTableComponent;
@@ -323,6 +326,20 @@ describe("ContainerTableComponent (Jest)", () => {
         expect(fixture.nativeElement.querySelector("th.mat-column-differences")).not.toBeNull();
       });
     });
+  });
+
+  it("names the More Filter button in a tooltip", () => {
+    grantRights(["container_list"]);
+    containerService.containerResource.set(
+      MockPiResponse.fromValue({
+        count: 1,
+        containers: [{ serial: "C-1", states: [], realms: [], tokens: [], type: "generic", description: "", users: [] }]
+      })
+    );
+    fixture.detectChanges();
+
+    const moreFilter = fixture.debugElement.query(By.css('button[aria-label="More Filter"]'));
+    expect(moreFilter.injector.get(MatTooltip, null)?.message).toBe("More Filter");
   });
 
   describe("#handleStateClick", () => {

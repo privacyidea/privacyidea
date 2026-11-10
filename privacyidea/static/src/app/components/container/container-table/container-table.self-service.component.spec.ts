@@ -176,8 +176,32 @@ describe("ContainerTableSelfServiceComponent", () => {
     });
   });
 
-  it("exposes the expected self-service columns", () => {
-    expect(component.columnKeysSelfService).toEqual(["serial", "type", "states", "description", "delete"]);
+  describe("delete column", () => {
+    const deleteButton = (): HTMLElement | null =>
+      fixture.nativeElement.querySelector('button[aria-label="Delete Container"]');
+    const grant = (rights: string[]) => {
+      (TestBed.inject(AuthService) as unknown as MockAuthService).authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        rights
+      });
+      fixture.detectChanges();
+    };
+
+    it("is shown with the right to delete containers", () => {
+      showContainer({});
+      grant(["container_list", "container_delete"]);
+
+      expect(component.columnKeysSelfService()).toEqual(["serial", "type", "states", "description", "delete"]);
+      expect(deleteButton()).not.toBeNull();
+    });
+
+    it("is hidden without the right to delete containers", () => {
+      showContainer({});
+
+      expect(component.columnKeysSelfService()).toEqual(["serial", "type", "states", "description"]);
+      expect(fixture.nativeElement.querySelector("td")).not.toBeNull();
+      expect(deleteButton()).toBeNull();
+    });
   });
 
   it("deleteContainer opens confirmation dialog, deletes and reloads when confirmed", () => {

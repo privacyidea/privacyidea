@@ -197,10 +197,10 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="displayedColumns; sticky: true"
+          *matHeaderRowDef="displayedColumns(); sticky: true"
           mat-header-row></tr>
         <tr
-          *matRowDef="let row; columns: displayedColumns"
+          *matRowDef="let row; columns: displayedColumns()"
           mat-row></tr>
 
         <tr *matNoDataRow>
@@ -216,20 +216,21 @@
     <app-table-state
       [table]="tableState"
       heading="No SMTP servers yet"
-      hint="Create an SMTP server to send emails and one-time passwords."
+      [hint]="emptyHint()"
       i18n-heading="@@smtpServer.noSMTPServers"
-      i18n-hint="@@smtpServer.createSMTPServer"
       icon="email">
-      <button
-        (click)="onCreateNewServer()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="icon-badge-pad-3">email</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
-      </button>
+      @if (authService.actionAllowed("smtpserver_write")) {
+        <button
+          (click)="onCreateNewServer()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="icon-badge-pad-3">email</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
+        </button>
+      }
     </app-table-state>
   }
 </div>
