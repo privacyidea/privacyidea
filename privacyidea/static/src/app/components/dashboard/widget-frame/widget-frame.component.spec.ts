@@ -98,6 +98,7 @@ describe("WidgetFrameComponent", () => {
     await TestBed.configureTestingModule({
       imports: [WidgetFrameComponent],
       providers: [
+        DashboardLayoutService,
         provideZonelessChangeDetection(),
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },

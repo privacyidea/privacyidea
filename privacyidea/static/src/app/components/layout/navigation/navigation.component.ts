@@ -255,7 +255,12 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   }
 
   openSupport(): void {
-    window.open("https://netknights.it/support_link_admin", "_blank");
+    const supportMail = this.authService.supportMail();
+    if (supportMail) {
+      window.open(supportMail, "_self");
+    } else {
+      window.open("https://netknights.it/support_link_admin", "_blank");
+    }
   }
 
   openExternalLink(url: string): void {

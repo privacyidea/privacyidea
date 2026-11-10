@@ -81,6 +81,28 @@ describe("PolicyActionItemEditComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  describe("comma hint", () => {
+    const commaHint = () => fixture.debugElement.query(By.css("mat-error"))?.nativeElement.textContent.trim();
+
+    beforeEach(() => {
+      fixture.componentRef.setInput("actionDetail", { type: "str", desc: "" });
+    });
+
+    it("should explain the escape in a message the server unescapes", () => {
+      fixture.componentRef.setInput("action", { name: "email_challenge_text", value: "Hello, World" });
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values. Write a comma as \\,");
+    });
+
+    it("should not mention the escape in an action the server does not unescape", () => {
+      fixture.componentRef.setInput("action", { name: "passkey_challenge_text", value: "Hello, World" });
+      fixture.detectChanges();
+
+      expect(commaHint()).toBe("Commas are not allowed in action values.");
+    });
+  });
+
   it("should identify boolean actions correctly", () => {
     fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "" });
     fixture.detectChanges();
