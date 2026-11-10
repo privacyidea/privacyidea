@@ -678,12 +678,6 @@ app-details-card .details-header {
   padding: 10px;
 }
 
-// The filter input's info icon lines up with the typed text and the clear button, which sit below the floating label,
-// rather than with the middle of the whole field.
-.mat-mdc-text-field-wrapper:has(app-clearable-input) .mat-mdc-form-field-icon-suffix:has(> app-info-hint) {
-  align-self: flex-end;
-}
-
 // A cell value cut to the width its column leaves it, kept on one line with an ellipsis instead of breaking anywhere.
 // Paired with appTruncationTooltip for the rest of the value. A flex item of the copyable row, hence min-width: 0 to
 // let it shrink below its content. Also the hook the collapsed cell actions key on (see styles.scss).
