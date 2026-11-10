@@ -8,7 +8,7 @@
 }
 
 .mat-mdc-checkbox.mat-mdc-checkbox-disabled label,
-.mdc-text-field--filled.mdc-text-field--disabled .mdc-floating-label,
+.mdc-text-field--outlined.mdc-text-field--disabled .mdc-floating-label,
 *:disabled {
   color: var(--mat-sys-on-surface) !important;
 }

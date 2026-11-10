@@ -75,14 +75,11 @@
 .event-handler-table {
   // A form field at its default height fills the row from border to border, so the
   // ordering input is shortened and inset to sit inside the cell instead of filling it.
-  // Its filled background is dropped as well, leaving the underline and the hover tint
-  // to mark the value as editable.
   td.mat-mdc-cell.mat-column-ordering mat-form-field {
     @include mat.form-field-overrides(
       (
         container-height: 40px,
-        container-vertical-padding: 8px,
-        filled-container-color: transparent
+        container-vertical-padding: 8px
       )
     );
 

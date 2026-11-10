@@ -275,8 +275,8 @@ body {
 
   @include mat.form-field-overrides(
     (
-      filled-container-color: var(--mat-sys-surface-container-low),
-      filled-focus-active-indicator-color: var(--mat-sys-primary-light)
+      outlined-outline-color: var(--input-border),
+      outlined-focus-outline-color: var(--mat-sys-primary-light)
     )
   );
   @include mat.tabs-overrides(
@@ -305,7 +305,6 @@ body {
       focused-arrow-color: var(--mat-sys-primary-light)
     )
   );
-  --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
   --mat-sys-corner-extra-small: var(--border-radius);
   --drawer-width-self-service: 256px;
 

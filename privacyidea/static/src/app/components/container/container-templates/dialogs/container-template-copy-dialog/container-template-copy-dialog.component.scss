@@ -9,11 +9,6 @@
 
 mat-form-field {
   width: 100%;
-  @include mat.form-field-overrides(
-    (
-      filled-container-color: transparent
-    )
-  );
 }
 
 .flex-fix-size {

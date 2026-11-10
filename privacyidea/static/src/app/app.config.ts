@@ -25,6 +25,7 @@ import {
   provideAppInitializer,
   provideZonelessChangeDetection
 } from "@angular/core";
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from "@angular/material/form-field";
 import { MatPaginatorIntl } from "@angular/material/paginator";
 import { provideRouter, RouterFeatures, TitleStrategy, withExperimentalAutoCleanupInjectors } from "@angular/router";
 import { localeBaseHref, scriptRoot } from "@core/locale";
@@ -72,6 +73,7 @@ export const appConfig: ApplicationConfig = {
     },
     AuthService,
     { provide: MatPaginatorIntl, useFactory: createPaginatorIntl },
+    { provide: MAT_FORM_FIELD_DEFAULT_OPTIONS, useValue: { appearance: "outline" } },
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor, unauthorizedInterceptor])),
     provideAppInitializer(() => {
       const themeService = inject(ThemeService);

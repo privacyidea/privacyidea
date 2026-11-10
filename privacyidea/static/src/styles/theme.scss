@@ -82,6 +82,8 @@ html {
     --mat-sys-shadow: light-dark(#d1d1d1, #1c1c1c);
 
     --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 40%));
+    // The outline of a text field, held at 3:1 or more against the page and the card.
+    --input-border: light-dark(hsl(0, 0%, 12%), hsl(0, 0%, 52%));
     --nav-item-border: light-dark(#d0d0d0, #333333);
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
@@ -168,6 +170,7 @@ html {
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
     --mat-sys-shadow: #d1d1d1;
     --mat-sys-outline: hsl(246, 4%, 48%);
+    --input-border: hsl(0, 0%, 12%);
     --nav-item-border: #d0d0d0;
 
     --inline-hint-bg: hsl(200, 65%, 91%);
@@ -254,6 +257,7 @@ html {
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
     --mat-sys-shadow: #1c1c1c;
     --mat-sys-outline: hsl(0, 0%, 40%);
+    --input-border: hsl(0, 0%, 52%);
     --nav-item-border: #363636;
 
     --inline-hint-bg: hsl(200, 65%, 20%);

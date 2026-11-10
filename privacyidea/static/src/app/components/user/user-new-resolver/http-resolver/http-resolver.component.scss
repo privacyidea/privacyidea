@@ -31,11 +31,6 @@
   td,
   th {
     background: var(--table-color);
-    @include mat.form-field-overrides(
-      (
-        filled-container-color: var(--table-color)
-      )
-    );
   }
 }
 
