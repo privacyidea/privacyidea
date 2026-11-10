@@ -18,6 +18,7 @@
  **/
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
+import { MatTooltip } from "@angular/material/tooltip";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
@@ -98,6 +99,7 @@ const columnsKeyMap = [
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
+    MatTooltip,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,

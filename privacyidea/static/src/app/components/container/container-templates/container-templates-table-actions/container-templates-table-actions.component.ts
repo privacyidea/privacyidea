@@ -20,6 +20,7 @@
 import { Component, computed, inject, input } from "@angular/core";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerTemplateCopyDialogComponent } from "@components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import {
@@ -38,6 +39,7 @@ import { TableActionsHost } from "@components/shared/table-actions/table-actions
   imports: [TableActionsComponent]
 })
 export class ContainerTemplatesTableActionsComponent extends TableActionsHost {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly router = inject(Router);
@@ -46,6 +48,7 @@ export class ContainerTemplatesTableActionsComponent extends TableActionsHost {
 
   protected readonly actions = computed<TableAction[]>(() => {
     const noSelection = this.selectedTemplates().length < 1;
+    const canCreate = this.authService.actionAllowed("container_template_create");
     return [
       {
         id: "create",
@@ -53,6 +56,7 @@ export class ContainerTemplatesTableActionsComponent extends TableActionsHost {
         tone: "primary",
         width: "m",
         icon: "note_add",
+        visible: canCreate,
         run: () => this.onClickCreateTemplate()
       },
       {
@@ -62,6 +66,7 @@ export class ContainerTemplatesTableActionsComponent extends TableActionsHost {
         width: "m",
         icon: "content_copy",
         disabled: noSelection,
+        visible: canCreate,
         run: () => this.openCopyTemplateDialog()
       },
       {
@@ -71,6 +76,7 @@ export class ContainerTemplatesTableActionsComponent extends TableActionsHost {
         width: "m",
         icon: "delete",
         disabled: noSelection,
+        visible: this.authService.actionAllowed("container_template_delete"),
         run: () => this.openDeleteTemplateDialog()
       }
     ];

@@ -95,6 +95,11 @@ export class PrivacyideaServersComponent {
     allowed: () => this.authService.actionAllowed("privacyideaserver_read"),
     resetFilter: () => this.resetFilter()
   });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("privacyideaserver_write")
+      ? $localize`:@@piServer.createPrivacyIDEAServer:Create a privacyIDEA server to forward authentication requests to another instance.`
+      : ""
+  );
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
@@ -105,13 +110,16 @@ export class PrivacyideaServersComponent {
   // description) that can run arbitrarily long, so they keep flowing into the table's remaining
   // space instead of being clipped to a fixed tier.
   columnKeysMap: { key: string; width?: string }[] = [
-    { key: "select" },
     { key: "identifier", width: "m" },
     { key: "url" },
     { key: "tls", width: "s" },
     { key: "description" }
   ];
-  displayedColumns: string[] = this.columnKeysMap.map((column) => column.key);
+  private readonly canDelete = computed(() => this.authService.actionAllowed("privacyideaserver_write"));
+  readonly displayedColumns = computed(() => {
+    const columns = this.columnKeysMap.map((column) => column.key);
+    return this.canDelete() ? ["select", ...columns] : columns;
+  });
 
   privacyideaDataSource = computed(() => {
     const servers = this.privacyideaServerService.remoteServerOptions();
@@ -135,6 +143,7 @@ export class PrivacyideaServersComponent {
       fontIcon: "mdi--pi-logo",
       iconClass: "icon-badge-pad-3",
       badge: true,
+      visible: this.authService.actionAllowed("privacyideaserver_write"),
       run: () => this.openEditDialog()
     },
     {
@@ -144,6 +153,7 @@ export class PrivacyideaServersComponent {
       width: "l",
       icon: "delete_sweep",
       disabled: !this.selector.hasSelection(),
+      visible: this.canDelete(),
       run: () => this.deleteSelected()
     }
   ]);
