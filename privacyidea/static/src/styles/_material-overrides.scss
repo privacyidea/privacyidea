@@ -590,3 +590,10 @@ app-copyable > .flex-row > :not(.copyable-actions):not(.cell-truncate) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+// The focus state layer of a tab is white (see the tabs overrides), which does not show on a light surface, so
+// keyboard focus is marked with an outline. It sits inside the tab because the tab header clips what leaves it.
+.mat-mdc-tab:focus-visible {
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: -2px;
+}
