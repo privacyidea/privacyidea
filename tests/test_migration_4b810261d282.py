@@ -37,6 +37,7 @@ BEFORE_INTERNAL_USER_ATTRIBUTE_MIGRATION = "3cafe2771cdd"
 class TestMigration4b810261d282(MigrationTestBase):
     REVISION = "4b810261d282"
     PARENT_REVISION = "9e8487714b46"
+    STARTS_BEFORE = "7d4e9b2c1a3f"
 
     def test_upgrade_lets_the_model_add_internal_user_attributes(self, flask_app):
         """
@@ -64,7 +65,8 @@ class TestMigration4b810261d282(MigrationTestBase):
             db.session.commit()
 
         engine = self._engine()
-        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM internaluserattribute") == 7
+        assert self._fetch_scalar(engine, "SELECT COUNT(*) FROM internaluserattribute WHERE user_id LIKE 'moved%' "
+                                          "OR user_id LIKE 'new%'") == 7
         engine.dispose()
 
     def test_upgrade_lets_the_model_add_token_info(self, flask_app):

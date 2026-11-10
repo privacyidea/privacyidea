@@ -21,6 +21,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsAssignmentsComponent } from "./token-details-assignments/token-details-assignments.component";
@@ -45,7 +46,8 @@ import { TokenDetailsComponent } from "./token-details.component";
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    ScrollToTopDirective
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./token-details.self-service.component.html",

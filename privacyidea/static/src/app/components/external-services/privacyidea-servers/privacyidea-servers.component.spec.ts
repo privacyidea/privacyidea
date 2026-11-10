@@ -147,12 +147,31 @@ describe("PrivacyideaServersComponent", () => {
       expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
-    it("shows both actions while the read right is granted", () => {
-      setRights(fixture, ["privacyideaserver_read"]);
+    it("shows both actions with privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
       expect(toolbarButton(fixture, "Create PrivacyIDEA Server")).toBeTruthy();
       expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create and delete without privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create PrivacyIDEA Server")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+    });
+
+    it("offers row selection only with privacyideaserver_write, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["privacyideaserver_read"]);
+      expect(selectColumn()).toBeNull();
     });
 
     it("draws no toolbar while the read right is denied", () => {
@@ -163,7 +182,7 @@ describe("PrivacyideaServersComponent", () => {
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(fixture, ["privacyideaserver_read"]);
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
 
       expect(toolbarAction(component, "create").disabled).toBeFalsy();
       expect(toolbarAction(component, "delete").disabled).toBe(true);
@@ -205,7 +224,7 @@ describe("PrivacyideaServersComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(fixture, ["privacyideaserver_read"]);
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
@@ -215,7 +234,7 @@ describe("PrivacyideaServersComponent", () => {
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(fixture, ["privacyideaserver_read"]);
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
       component.selector.selectRow(privacyideaServerServiceMock.remoteServerOptions()[0]);
       fixture.detectChanges();
 
@@ -223,6 +242,32 @@ describe("PrivacyideaServersComponent", () => {
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      privacyideaServerServiceMock.remoteServerOptions.set([]);
+    });
+
+    it("offers the create button and hint with privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read", "privacyideaserver_write"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create PrivacyIDEA Server");
+      expect(state.textContent).toContain(
+        "Create a privacyIDEA server to forward authentication requests to another instance."
+      );
+    });
+
+    it("offers neither button nor hint without privacyideaserver_write", () => {
+      setRights(fixture, ["privacyideaserver_read"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a privacyIDEA server to forward authentication requests to another instance."
       );
     });
   });

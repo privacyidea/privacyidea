@@ -789,7 +789,9 @@ works on the instance the data was exported from, because that is where the
 original secrets still exist:
 
 * When importing into the **same** instance, the existing secret is kept and the
-  rest of the configuration is updated.
+  rest of the configuration is updated. For an SMTP server this only applies if
+  server, port, username and TLS flag are unchanged, see
+  :ref:`smtpserver_password`. Otherwise the import of the SMTP servers fails.
 * When importing into a **different or fresh** instance, there is no stored
   secret to keep. A censored entry of the global configuration is not imported
   at all, and the other affected objects are created without a usable secret.

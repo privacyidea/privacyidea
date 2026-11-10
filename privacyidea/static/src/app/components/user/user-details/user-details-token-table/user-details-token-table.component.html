@@ -16,10 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  aria-label="User Details Token Table"
-  class="user-details-token-table-layout"
-  i18n-aria-label="@@user.userDetailsToken">
+<div class="user-details-token-table-layout">
   <div class="flex-column">
     <div class="details-header">
       <h4 i18n="@@user.tokensUser">Tokens of User</h4>
@@ -51,7 +48,7 @@
             <span i18n="@@common.unassign">Unassign</span>
           </button>
         }
-        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+        @if (authService.actionAllowed("enable") || authService.actionAllowed("disable")) {
           <button
             (click)="toggleActiveSelected()"
             [disabled]="!selector.hasSelection()"
@@ -150,18 +147,9 @@
                         }
                       }
                       @case ("active") {
-                        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
-                          <span
-                            (click)="toggleActive(element)"
-                            (keydown.enter)="toggleActive(element)"
-                            (keydown.space)="$event.preventDefault(); toggleActive(element)"
-                            [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
-                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
-                            role="button"
-                            tabindex="0">
-                            {{ tableUtilsService.getDisplayText(column.key, element) }}
-                          </span>
-                        }
+                        <app-token-active-toggle
+                          (toggled)="tokenService.userTokenResource.reload()"
+                          [token]="element" />
                       }
                       @case ("failcount") {
                         @if (authService.actionAllowed("reset")) {
@@ -172,6 +160,10 @@
                             [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
                             role="button"
                             tabindex="0">
+                            {{ tableUtilsService.getDisplayText(column.key, element) }}
+                          </span>
+                        } @else {
+                          <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                             {{ tableUtilsService.getDisplayText(column.key, element) }}
                           </span>
                         }

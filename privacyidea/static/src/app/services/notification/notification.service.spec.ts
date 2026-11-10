@@ -98,7 +98,7 @@ describe("NotificationService", () => {
 
       expect(snackBar.open).toHaveBeenCalledWith(
         "Test message",
-        "🗙",
+        "Close",
         expect.objectContaining({
           horizontalPosition: "center",
           verticalPosition: "bottom",

@@ -1795,6 +1795,24 @@ class TokenTestCase(MyTestCase):
 
         self.assertEqual('A8', tokens[0].get("serial"), tokens[0])
 
+    def test_42b_the_token_id_orders_equal_sort_values(self):
+        # The serials are not in alphabetical order, so that only the id gives this order
+        serials = ["QS_C", "QS_A", "QS_B"]
+        for serial in serials:
+            init_token({"type": "spass", "serial": serial, "description": "same"})
+
+        # All tokens have the same type and description, so only the id gives the pages a fixed order
+        for sortby in ["tokentype", "description"]:
+            for sortdir, expected_serials in [("asc", serials), ("desc", serials[::-1])]:
+                pages = [[token["serial"] for token in get_tokens_paginate(serial="QS*", sortby=sortby,
+                                                                           sortdir=sortdir, psize=2,
+                                                                           page=page)["tokens"]]
+                         for page in [1, 2]]
+                self.assertListEqual([expected_serials[:2], expected_serials[2:]], pages, f"{sortby} {sortdir}")
+
+        for serial in serials:
+            remove_token(serial)
+
     def test_43_encryptpin(self):
         serial = "ENC01"
         # encrypt pin on init

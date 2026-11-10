@@ -19,9 +19,7 @@
 <div
   #scrollContainer
   appScrollToTop
-  aria-label="Token Enrollment"
-  class="token-enrollment-container"
-  i18n-aria-label="@@common.tokenEnrollment">
+  class="token-enrollment-container">
   @let preTopHtml = preTopHtml$ | async;
   @if (preTopHtml?.hasContent) {
     <div

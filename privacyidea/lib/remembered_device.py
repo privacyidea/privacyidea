@@ -776,7 +776,10 @@ def _device_page(query: Query, page: int, page_size: int) -> dict:
     """Return one page of the devices *query* selects, newest first, with the total count and the adjacent pages."""
     total_count = query.count()
     offset = (page - 1) * page_size
-    devices = query.order_by(RememberedDevice.created_at.desc()).limit(page_size).offset(offset).all()
+    # Devices created at the same time are ordered by their device id, so that each page query returns the same
+    # order and a device appears on exactly one page.
+    devices = (query.order_by(RememberedDevice.created_at.desc(), RememberedDevice.device_id.desc())
+               .limit(page_size).offset(offset).all())
     return {
         "devices": devices,
         "count": total_count,

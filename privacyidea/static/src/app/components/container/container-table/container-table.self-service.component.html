@@ -18,9 +18,7 @@
 -->
 <div
   appScrollToTop
-  aria-label="Container Table"
-  class="container-table-container"
-  i18n-aria-label="@@container.containerTable">
+  class="container-table-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
       <div class="filter-actions-group">
@@ -65,7 +63,7 @@
         i18n-aria-label="@@container.containerData"
         mat-table
         multiTemplateDataRows>
-        @for (column of columnKeysMapSelfService; track column) {
+        @for (column of columnKeysMapSelfService(); track column) {
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
@@ -97,37 +95,26 @@
                     @if (element.serial) {
                       <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(element.serial)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
                           [appTruncationTooltip]="element.serial"
-                          class="cell-truncate"
-                          role="button"
-                          tabindex="0">
+                          [routerLink]="[ROUTE_PATHS.CONTAINERS_DETAILS, element.serial]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
                         </a>
                       </app-copyable>
                     }
                   }
-                  @case ("realms") {
-                    <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
-                      @for (realm of element[column.key]; track realm; let idx = $index) {
-                        <a
-                          href="#">
-                          {{ realm }}
-                        </a>
-                        <br class="realm-break" />
-                      }
-                    </div>
-                  }
                   @case ("states") {
-                    <span
-                      (click)="handleStateClick(element)"
-                      (keydown.enter)="handleStateClick(element)"
-                      [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
-                      role="button"
-                      tabindex="0">
-                      {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
-                    </span>
+                    @if (element[column.key]?.length) {
+                      <span
+                        (click)="handleStateClick(element); $event.stopPropagation()"
+                        (keydown.enter)="handleStateClick(element); $event.stopPropagation()"
+                        (keydown.space)="$event.preventDefault(); handleStateClick(element); $event.stopPropagation()"
+                        [ngClass]="tableUtilsService.getSpanClassForState(element[column.key][0], true)"
+                        role="button"
+                        tabindex="0">
+                        {{ tableUtilsService.getDisplayTextForState(element[column.key][0]) }}
+                      </span>
+                    }
                   }
                   @case ("delete") {
                     <button
@@ -139,14 +126,7 @@
                     </button>
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key) && element[column.key]) {
-                      <a
-                        href="#">
-                        {{ element[column.key] }}
-                      </a>
-                    } @else {
-                      {{ element[column.key] }}
-                    }
+                    {{ element[column.key] }}
                   }
                 }
               </div>
@@ -156,7 +136,7 @@
         <ng-container matColumnDef="expandedDetail">
           <td
             *matCellDef="let element"
-            [attr.colspan]="columnKeysSelfService.length"
+            [attr.colspan]="columnKeysSelfService().length"
             mat-cell>
             @if (expandedElement === element) {
               <div
@@ -168,11 +148,7 @@
                     @for (token of element.tokens; track token) {
                       <div class="token-item">
                         @if (containerService.containerBelongsToUser(token.container_serial)) {
-                          <a
-                            (click)="contentService.tokenSelected(token.serial)"
-                            (keydown.enter)="contentService.tokenSelected(token.serial)"
-                            role="button"
-                            tabindex="0">
+                          <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, token.serial]">
                             {{ token.serial }}
                           </a>
                         } @else {
@@ -199,12 +175,12 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="columnKeysSelfService; sticky: true"
+          *matHeaderRowDef="columnKeysSelfService(); sticky: true"
           mat-header-row></tr>
 
         <tr
           (click)="expandedElement = expandedElement === row ? null : row"
-          *matRowDef="let row; columns: columnKeysSelfService"
+          *matRowDef="let row; columns: columnKeysSelfService()"
           [class.example-expanded-row]="expandedElement === row"
           class="example-element-row"
           mat-row></tr>
@@ -215,7 +191,7 @@
           mat-row></tr>
 
         <tr *matNoDataRow>
-          <td [attr.colspan]="columnKeysSelfService.length">
+          <td [attr.colspan]="columnKeysSelfService().length">
             <app-table-state
               [hint]="emptyHint()"
               [status]="tableState.rowStatus()"
