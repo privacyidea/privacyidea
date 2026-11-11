@@ -276,7 +276,9 @@ body {
   @include mat.form-field-overrides(
     (
       outlined-outline-color: var(--input-border-shadow),
-      outlined-focus-outline-color: var(--mat-sys-primary-light)
+      outlined-focus-outline-color: var(--mat-sys-primary-light),
+      // The fields left in fill (in table cells and detail rows) focus in the same blue as the outlined ones.
+      filled-focus-active-indicator-color: var(--mat-sys-primary-light)
     )
   );
   @include mat.tabs-overrides(

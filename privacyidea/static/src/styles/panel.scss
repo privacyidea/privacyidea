@@ -34,25 +34,24 @@
   background: var(--mat-sys-surface-container-high);
 }
 
-.mat-expansion-panel-header {
+// Header and body share one inset, so the title lines up with the content below it. Handed to
+// tokens so a panel whose content carries its own width can take the inset off without reaching
+// into the component's internals. Material sets both from a lone .mat-expansion-panel-header /
+// -body and injects that at runtime, after this sheet, so the panel is named too: equal
+// specificity would leave the winner up to load order.
+.mat-expansion-panel .mat-expansion-panel-header {
   padding: var(--expansion-panel-header-padding, 0 16px);
 }
 
-// Header and body share one inset, so the title lines up with the content below it. Handed to a
-// token so a panel whose content carries its own width can take the inset off without reaching
-// into the component's internals. Material sets it from a
-// lone .mat-expansion-panel-body and injects that at runtime, after this sheet, so the panel is
-// named too: equal specificity would leave the winner up to load order.
 .mat-expansion-panel .mat-expansion-panel-body {
   padding: var(--expansion-panel-body-padding, 0 16px 16px);
 }
 
-// Keep the shadow in step with --mat-expansion-container-elevation-shadow on :root above: the
-// panel is a title for the group below it, not a card, so it has neither a border nor a lift.
+// The panel is a title for the group below it, not a card, so it has no border; its lift is
+// taken off by --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
   border: 0;
   border-radius: var(--border-radius);
-  box-shadow: none;
   @include mat.expansion-overrides(
     (
       container-shape: var(--border-radius)
@@ -72,9 +71,16 @@
   height: 40px;
   flex: none;
   border-radius: 50%;
-  transition: background 200ms ease;
+}
 
-  // Material sizes the glyph from its own box, so the padding the circle adds must not push it.
+// Material's own rules for the chevron (its turn, the glyph's -8px margins) carry up to two classes and are injected
+// after this sheet, so these name the panel and the header as well to win. The circle fades in alongside the turn.
+.mat-expansion-panel .mat-expansion-panel-header .mat-expansion-indicator {
+  transition:
+    transform 225ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 200ms ease;
+
+  // The circle centres the glyph; Material's margins would pull it out of the middle.
   svg {
     display: block;
     margin: 0;

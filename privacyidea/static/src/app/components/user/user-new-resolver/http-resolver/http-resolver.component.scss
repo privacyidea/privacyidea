@@ -1,6 +1,4 @@
-@use "styles-api" as styles;
 @use "table";
-@use "@angular/material" as mat;
 
 :host {
   display: block;
@@ -40,12 +38,6 @@
   gap: 0.25rem;
   justify-content: center;
   align-items: center;
-}
-
-// Sits inside a raised expansion panel, so the shallow recess.
-.auth-panel-body {
-  @include styles.card-recessed(3);
-  padding: 16px;
 }
 
 .auth-description {
