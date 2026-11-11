@@ -848,6 +848,94 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.enrolledDialogData()?.response).toEqual(response);
     });
 
+    describe("input reset after enrollment", () => {
+      const lastStepData = () => ({
+        response: {} as unknown as EnrollmentResponse,
+        enrollParameters: {} as unknown as EnrollTokenArguments,
+        tokenType: "hotp"
+      });
+      const fillInputs = (c: TokenEnrollmentComponent) => {
+        c.descriptionForm().controlValue.set("my token");
+        c.setPin.set("1234");
+        c.repeatPin.set("1234");
+        c.selectedStartDate.set(new Date());
+        c.selectedEndTime.set("12:00");
+      };
+      const openLastStep = (c: TokenEnrollmentComponent) =>
+        (c as unknown as TokenEnrollmentComponentInternals).openLastStepDialog({
+          detail: {}
+        } as unknown as EnrollmentResponse);
+
+      it("resets the inputs when the last step dialog of a new enrollment opens", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        fillInputs(component);
+        const generation = component["inputsGeneration"]();
+
+        openLastStep(component);
+
+        expect(component.description()).toBe("");
+        expect(component.setPin()).toBe("");
+        expect(component.repeatPin()).toBe("");
+        expect(component.selectedStartDate()).toBeNull();
+        expect(component.selectedEndTime()).toBe("23:59");
+        expect(component.isDirty()).toBe(false);
+        expect(component["inputsGeneration"]()).toBe(generation + 1);
+      });
+
+      it("keeps the inputs for the next token when the last step dialog is reopened", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        openLastStep(component);
+        fillInputs(component);
+        const generation = component["inputsGeneration"]();
+
+        openLastStep(component);
+
+        expect(component.description()).toBe("my token");
+        expect(component.setPin()).toBe("1234");
+        expect(component["inputsGeneration"]()).toBe(generation);
+      });
+
+      it("registers the unsaved-changes guard again for the next token", () => {
+        component.enrolledDialogData.set(lastStepData());
+        component["inputsResetPending"] = true;
+        (pendingChangesService.registerHasChanges as jest.Mock).mockClear();
+
+        openLastStep(component);
+
+        expect(pendingChangesService.registerHasChanges).toHaveBeenCalledTimes(1);
+        const hasChanges = (pendingChangesService.registerHasChanges as jest.Mock).mock.calls[0][0] as () => boolean;
+        expect(hasChanges()).toBe(false);
+        component.descriptionForm().controlValue.set("next token");
+        expect(hasChanges()).toBe(true);
+      });
+
+      it("does not reset after a cancelled enrollment", () => {
+        component["inputsResetPending"] = true;
+        component.resetEnrollment();
+        component.enrolledDialogData.set(lastStepData());
+        fillInputs(component);
+
+        openLastStep(component);
+
+        expect(component.description()).toBe("my token");
+      });
+
+      it("resets the inputs in self service", () => {
+        const selfComponent = TestBed.createComponent(TokenEnrollmentSelfServiceComponent).componentInstance;
+        selfComponent.enrolledDialogData.set(lastStepData());
+        selfComponent["inputsResetPending"] = true;
+        fillInputs(selfComponent);
+
+        openLastStep(selfComponent);
+
+        expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+        expect(selfComponent.description()).toBe("");
+        expect(selfComponent.setPin()).toBe("");
+      });
+    });
+
     it("reopenEnrollmentDialog: uses reopen function when provided", () => {
       const fn = jest.fn().mockReturnValue(of(null));
       installStrategy(component, { reopenDialog: () => fn });

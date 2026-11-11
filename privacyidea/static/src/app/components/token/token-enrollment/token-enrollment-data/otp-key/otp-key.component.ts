@@ -24,10 +24,11 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
   selector: "app-otp-key",
-  imports: [MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle],
+  imports: [MatIconModule, MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle],
   templateUrl: "./otp-key.component.html",
   styleUrl: "./otp-key.component.scss"
 })

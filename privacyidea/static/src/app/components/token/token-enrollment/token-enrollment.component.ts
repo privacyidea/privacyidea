@@ -90,6 +90,10 @@ import {
   USER_REQUIRED_TOKEN_TYPES
 } from "./token-enrollment.constants";
 
+const DEFAULT_TIMEZONE_OFFSET = "+00:00";
+const DEFAULT_START_TIME = "00:00";
+const DEFAULT_END_TIME = "23:59";
+
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
   display: {
@@ -217,11 +221,17 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   setPin = signal<string>("");
   repeatPin = signal<string>("");
   selectedContainer = signal<string>(this.containerService.selectedContainerSerial() ?? "");
-  selectedTimezoneOffset = signal<string>("+00:00");
+  selectedTimezoneOffset = signal<string>(DEFAULT_TIMEZONE_OFFSET);
   selectedStartDate = signal<Date | null>(null);
-  selectedStartTime = signal<string>("00:00");
+  selectedStartTime = signal<string>(DEFAULT_START_TIME);
   selectedEndDate = signal<Date | null>(null);
-  selectedEndTime = signal<string>("23:59");
+  selectedEndTime = signal<string>(DEFAULT_END_TIME);
+
+  // Bumped after each enrollment so the type-specific inputs are created anew with their defaults.
+  protected readonly inputsGeneration = signal(0);
+  // Set by each new enrollment and consumed when its last step dialog first opens, so reopening
+  // that dialog later keeps the inputs the user has entered for the next token.
+  private inputsResetPending = false;
 
   protected readonly hasError = hasError;
   protected readonly ERR = ERR;
@@ -298,6 +308,10 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.registerPendingChanges();
+  }
+
+  private registerPendingChanges(): void {
     this.pendingChangesService.registerHasChanges(() => this.isDirty());
     this.pendingChangesService.registerValidChanges(
       () => !!this.tokenService.selectedTokenType()?.key && !this.isFormInvalid()
@@ -433,6 +447,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       showEnrollData: strategy.showEnrollDataInLastStep,
       onEnrollmentResponseChange: (response) => this.updateEnrollmentResponse(response)
     });
+    this.inputsResetPending = true;
 
     // Complete enrollment
     // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
@@ -445,9 +460,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       }
       enrollmentResponse = stepResult;
     }
+    // The inputs of the enrolled token are not saved changes any more. The last step dialog
+    // resets them and registers the guard again for the next token.
+    this.pendingChangesService.clearAllRegistrations();
     // two step enrollment + handles further enrollment steps (verify + success dialog)
     this.handleCompleteEnrollment(enrollmentResponse);
-    this.pendingChangesService.clearAllRegistrations();
     return true;
   }
 
@@ -523,6 +540,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   }
 
   resetEnrollment(): void {
+    this.inputsResetPending = false;
     this.enrollResponse.set(null);
     this.enrolledDialogData.set(null);
     this.enrollSwitch()?.currentStrategy()?.reopenDialog.set(undefined);
@@ -542,6 +560,26 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       void touchAll(assignment.realmForm);
       void touchAll(assignment.userFilterForm);
     }
+  }
+
+  // Clears the inputs of the enrolled token once, when its last step dialog first opens, so the
+  // next enrollment starts from the defaults. User, realm and container stay selected, so several
+  // tokens can be enrolled for them in a row.
+  protected resetInputsAfterEnrollment(): void {
+    if (!this.inputsResetPending) {
+      return;
+    }
+    this.inputsResetPending = false;
+    this.descriptionForm().reset("");
+    this.setPinForm().reset("");
+    this.repeatPinForm().reset("");
+    this.selectedTimezoneOffsetForm().reset(DEFAULT_TIMEZONE_OFFSET);
+    this.selectedStartDateForm().reset(null);
+    this.selectedStartTimeForm().reset(DEFAULT_START_TIME);
+    this.selectedEndDateForm().reset(null);
+    this.selectedEndTimeForm().reset(DEFAULT_END_TIME);
+    this.inputsGeneration.update((generation) => generation + 1);
+    this.registerPendingChanges();
   }
 
   protected lastStepDialogIsDismissable(): boolean {
@@ -564,6 +602,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       data: this.enrolledDialogData(),
       configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
     });
+    this.resetInputsAfterEnrollment();
   }
 
   protected _handleEnrollmentResponse(response: EnrollmentResponse): void {

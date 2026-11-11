@@ -170,6 +170,62 @@ describe("TokenEnrolledTextComponent", () => {
     });
   });
 
+  describe("summary and cards", () => {
+    const text = () => fixture.nativeElement.textContent as string;
+    const labels = () =>
+      Array.from(fixture.nativeElement.querySelectorAll(".enrolled__card-label") as NodeListOf<HTMLElement>).map((l) =>
+        l.textContent?.trim()
+      );
+
+    it("shows the user summary and the user and realm cards when a user was assigned", () => {
+      fixture.componentRef.setInput("serial", "HOTP1");
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.detectChanges();
+      expect(text()).toContain("enrolled and assigned to the user");
+      expect(labels()).toEqual(["Token", "User", "Realm"]);
+    });
+
+    it("shows the realm summary and only the realm card in realm-only mode", () => {
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.componentRef.setInput("onlyAddToRealm", true);
+      fixture.detectChanges();
+      expect(text()).toContain("enrolled and assigned to the realm");
+      expect(labels()).toEqual(["Token", "Realm"]);
+    });
+
+    it("shows the plain summary and the container card without a user", () => {
+      fixture.componentRef.setInput("containerSerial", "CONT1");
+      fixture.detectChanges();
+      expect(text()).toContain("The token has been successfully enrolled.");
+      expect(labels()).toEqual(["Token", "Container"]);
+      expect(text()).toContain("CONT1");
+    });
+
+    it("shows the rollover summary over the user summary", () => {
+      fixture.componentRef.setInput("username", "alice");
+      fixture.componentRef.setInput("userRealm", "realm1");
+      fixture.componentRef.setInput("rollover", true);
+      fixture.detectChanges();
+      expect(text()).toContain("successfully rolled over");
+      expect(text()).not.toContain("assigned to the user");
+    });
+
+    it("shows a neutral pending summary while the enrollment still has to be verified", () => {
+      const summary = () => fixture.nativeElement.querySelector(".enrolled__summary") as HTMLElement;
+      const icon = () => fixture.nativeElement.querySelector(".enrolled__status-icon")?.textContent?.trim();
+      fixture.detectChanges();
+      expect(icon()).toBe("check_circle");
+      expect(summary().classList).not.toContain("enrolled__summary--pending");
+
+      fixture.componentRef.setInput("verificationPending", true);
+      fixture.detectChanges();
+      expect(icon()).toBe("pending");
+      expect(summary().classList).toContain("enrolled__summary--pending");
+    });
+  });
+
   describe("user and realm link rendering", () => {
     beforeEach(() => {
       fixture.componentRef.setInput("username", "alice");
