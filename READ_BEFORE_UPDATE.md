@@ -2,6 +2,12 @@
 
 ## Update from 3.14 to 3.14.1
 
+* **Container templates decide on the PIN change of their tokens** — Each token of a container template has the new
+  option *Change PIN on first use*. The policy `change_pin_on_first_use` no longer applies to tokens created from a
+  container template. A token without the option, as in every template saved before this version, gets no PIN change,
+  also if an administrator creates the container. **Check your container templates** and set the option for the tokens
+  whose PIN must be changed on first use.
+
 * **Passkey and WebAuthn logins now apply the token's own limits** — A login answered with a credential ID is checked
   like every other authentication: a revoked or disabled token, or one outside its validity period, over its
   failcounter or past its authentication counter limits, is refused, and a successful login increases the token's
