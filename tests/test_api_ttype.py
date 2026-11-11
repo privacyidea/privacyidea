@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config)
 from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -29,6 +30,7 @@ from privacyidea.lib.tokens.pushtoken import (PushAction,
                                               POLL_ONLY)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, to_bytes, to_unicode
+from privacyidea.lib.utils.compare import PrimaryComparators
 from .base import MyApiTestCase
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
@@ -500,6 +502,23 @@ class TtypePushAPITestCase(MyApiTestCase):
                                            headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
             self.app.full_dispatch_request()
         self.assertEqual(0, len(get_clientapplication()))
+
+    def test_06_poll_policy_condition_on_request_header(self):
+        set_policy("deny_polling_header", scope=SCOPE.AUTH, action=f"{PushAction.ALLOW_POLLING}=deny",
+                   conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS,
+                                "blocked-app", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        query = {"serial": "PIPU-unknown", "timestamp": datetime.now(timezone.utc).isoformat(), "signature": "AA"}
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           headers={"User-Agent": "blocked-app/1.0"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual("Polling not allowed!", res.json["result"]["error"]["message"])
+
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
+            res = self.app.full_dispatch_request()
+        self.assertNotEqual("Polling not allowed!", res.json["result"]["error"]["message"], res.json)
+        delete_policy("deny_polling_header")
 
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()

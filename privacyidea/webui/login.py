@@ -37,8 +37,8 @@ from markupsafe import escape
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.postpolicy import hide_version
-from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token,
-                                       get_auth_token_from_request, logged_in_user_from_token)
+from privacyidea.api.lib.utils import (send_html, send_result, verify_auth_token, get_all_params,
+                                       get_auth_token_from_request, logged_in_user_from_token, set_request_context)
 from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value
@@ -120,6 +120,8 @@ def before_request():
     g.policy_object = PolicyClass()
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
+    set_request_context()
+    g.request_data = get_all_params(request)
     # The page names no token, but the check of the remote user matches the policies with g.serial
     g.serial = None
     # Populate the user agent so that policies restricted by user agent (e.g. a

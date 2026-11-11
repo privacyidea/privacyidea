@@ -16,8 +16,10 @@ from flask_babel import refresh
 
 from privacyidea.app import create_app
 from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
-from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
+from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies, delete_policy
 from privacyidea.lib.utils import to_unicode, get_version_number
+from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import db, save_config_timestamp
 from .base import MyTestCase, MyApiTestCase
 
@@ -174,6 +176,36 @@ class LoginUITestCase(MyTestCase):
             with self.app.test_request_context('/', method='GET'):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
+
+    def test_11_conditions_on_request_header_and_data(self):
+        delete_all_policies()
+        set_policy("logtext_header", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello browser",
+                   conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS,
+                                "Mozilla", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        with self.app.test_request_context('/', method='GET', headers={"User-Agent": "Mozilla/5.0"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res)
+        self.assertIn(b"Hello browser", res.data)
+
+        with self.app.test_request_context('/', method='GET', headers={"User-Agent": "curl/8.5.0"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res)
+        self.assertNotIn(b"Hello browser", res.data)
+        delete_policy("logtext_header")
+
+        set_policy("logtext_data", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello kiosk",
+                   conditions=[(ConditionSection.REQUEST_DATA, "kiosk", PrimaryComparators.EQUALS, "1", True,
+                                ConditionHandleMissingData.IS_FALSE.value)])
+        with self.app.test_request_context('/', method='GET', query_string={"kiosk": "1"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res)
+        self.assertIn(b"Hello kiosk", res.data)
+
+        with self.app.test_request_context('/', method='GET'):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res)
+        self.assertNotIn(b"Hello kiosk", res.data)
+        delete_policy("logtext_data")
 
 
 class LanguageTestCase(MyApiTestCase):
