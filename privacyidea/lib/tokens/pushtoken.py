@@ -401,6 +401,9 @@ def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
     if req_headers:
         req_environment = req_headers.environ
         request = req_environment.get("werkzeug.request")
+    # A request without a user, like the poll of the smartphone, is not the one of the authenticating client
+    if not hasattr(request, "User"):
+        request = None
     if request:
         user = request.User
     else:

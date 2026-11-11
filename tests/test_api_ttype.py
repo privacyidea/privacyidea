@@ -16,6 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config)
+from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.conditions import ConditionHandleMissingData, ConditionSection
 from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
@@ -31,6 +32,7 @@ from privacyidea.lib.tokens.pushtoken import (PushAction,
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, to_bytes, to_unicode
 from privacyidea.lib.utils.compare import PrimaryComparators
+from privacyidea.models import Challenge
 from .base import MyApiTestCase
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
@@ -519,6 +521,32 @@ class TtypePushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
         self.assertNotEqual("Polling not allowed!", res.json["result"]["error"]["message"], res.json)
         delete_policy("deny_polling_header")
+
+    def test_07_poll_challenge_without_stored_notification(self):
+        set_policy("push_poll_enroll", scope=SCOPE.ENROLL, action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_poll_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}=login from {{client_ip}} via {{ua_browser}} at {{action}}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+        Challenge(serial, challenge=b32encode_and_unicode(geturandom())).save()
+        self.assertEqual({}, get_challenges(serial=serial)[0].get_data())
+
+        timestamp = datetime.now(timezone.utc).isoformat()
+        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode(), padding.PKCS1v15(),
+                                                     hashes.SHA256())
+        with self.app.test_request_context('/ttype/push', method='GET',
+                                           query_string={"serial": serial, "timestamp": timestamp,
+                                                         "signature": b32encode(signature)},
+                                           headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("login from  via  at ", res.json["result"]["value"][0]["question"])
+
+        delete_policy("push_poll_text")
+        delete_policy("push_poll_enroll")
+        remove_token(serial)
 
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()
