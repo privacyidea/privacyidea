@@ -28,6 +28,14 @@
         i18n="@@container.assignToUser"
         >Assign to user</mat-checkbox
       >
+      <mat-checkbox
+        [formField]="changePinOnFirstUseField"
+        (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
+        i18n="@@container.changePinOnFirstUse"
+        >Change PIN on first use</mat-checkbox
+      >
       <button
         mat-icon-button
         aria-label="Remove Token"
