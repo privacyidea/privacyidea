@@ -691,8 +691,9 @@ app-details-card .details-header {
 // A form field in a table cell stands in for the cell's value, so it is not drawn as a box of its own: the filled
 // appearance without a container colour lets the cell's background through, and the underline alone marks the value as
 // editable. The cell hands its padding over to the field, which fills it from edge to edge and keeps the text at the
-// same inset through its own padding. The value side of a details row is such a cell too.
-td:has(> .mat-form-field-appearance-fill),
+// same inset through its own padding, also when it sits in a wrapper inside the cell. The value side of a details row is
+// such a cell too.
+td:has(.mat-form-field-appearance-fill),
 .detail-field-value:has(.mat-form-field-appearance-fill) {
   padding: 0;
 }

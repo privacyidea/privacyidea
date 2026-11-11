@@ -1,5 +1,3 @@
-@use "@angular/material" as mat;
-
 // Each action is a collapsible panel: the header shows the action type and its
 // one-line description, the body holds the type select and value fields.
 .ca-action-row {
@@ -13,20 +11,9 @@
   }
 }
 
-// Level with the panel's 64px header.
+// Centred on the header's chevron: the 64px header less its 1px divider, around the 40px button.
 .ca-action-remove {
-  margin-top: 12px;
-}
-
-// The stage around the actions is a sunk surface and an action has no content group of its own, so
-// the panel itself is the card and takes the raised step.
-.ca-action-item.mat-expansion-panel {
-  @include mat.expansion-overrides(
-    (
-      container-background-color: var(--surface-raised),
-      container-elevation-shadow: var(--elevation-3)
-    )
-  );
+  margin-top: calc((64px - 1px - 40px) / 2);
 }
 
 .ca-action-panel-description {
