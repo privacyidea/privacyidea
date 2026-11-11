@@ -63,7 +63,9 @@ test.describe("attribute mapping table", () => {
 });
 
 test.describe("conditional access action", () => {
-  test("the re-trigger hint stays on the row of its checkbox at every zoom", async ({ page }) => {
+  test("the re-trigger checkbox stays beside the action select, and its hint beside it, at every zoom", async ({
+    page
+  }) => {
     await openPage(page, "policies/conditional-access/new");
     await page.getByRole("button", { name: "Add Stage" }).click();
     const stage = page.locator(".ca-stage-item").first();
@@ -78,6 +80,7 @@ test.describe("conditional access action", () => {
     }
     const checkbox = action.locator("mat-checkbox", { hasText: "Re-trigger" });
     const hint = action.getByRole("button", { name: "About re-triggering" });
+    const select = action.locator("mat-form-field").first();
     await expect(checkbox).toBeVisible();
     await expect(hint).toBeVisible();
 
@@ -95,6 +98,10 @@ test.describe("conditional access action", () => {
       expect.soft(iconMiddle, `${at}: the hint is level with its checkbox`).toBeLessThan(box.y + box.height);
       expect.soft(icon.x - (box.x + box.width), `${at}: the hint follows the label, px apart`).toBeLessThanOrEqual(8);
       expect.soft(icon.x, `${at}: the hint comes after the checkbox`).toBeGreaterThanOrEqual(box.x + box.width - 1);
+      const field = (await select.boundingBox())!;
+      expect
+        .soft(box.y, `${at}: the checkbox sits beside the action select, not below it`)
+        .toBeLessThan(field.y + field.height);
     }
   });
 });
