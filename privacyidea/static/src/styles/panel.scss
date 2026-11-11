@@ -30,8 +30,18 @@
   padding: 16px;
 }
 
-.mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-  background: var(--mat-sys-surface-container-high);
+// The header ends in a Material divider line, so it reads as a title over its group. The hover
+// layer sits on that line, so it is rounded on top only and meets the divider square.
+.mat-expansion-panel .mat-expansion-panel-header {
+  border-bottom: 1px solid var(--mat-divider-color, var(--mat-sys-outline-variant));
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  box-sizing: border-box;
+}
+
+// Material paints the hover layer on a closed header only; an open header takes the same layer, so
+// every header answers the pointer alike.
+.mat-expansion-panel .mat-expansion-panel-header:not([aria-disabled="true"]):hover {
+  background: var(--mat-expansion-header-hover-state-layer-color, color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent));
 }
 
 // Header and body share one inset, so the title lines up with the content below it. Handed to
@@ -44,17 +54,17 @@
 }
 
 .mat-expansion-panel .mat-expansion-panel-body {
-  padding: var(--expansion-panel-body-padding, 0 16px 16px);
+  padding: var(--expansion-panel-body-padding, 16px);
 }
 
 // The panel is a title for the group below it, not a card, so it has no border; its lift is
 // taken off by --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
   border: 0;
-  border-radius: var(--border-radius);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
   @include mat.expansion-overrides(
     (
-      container-shape: var(--border-radius)
+      container-shape: var(--border-radius) var(--border-radius) 0 0
     )
   );
 }
@@ -93,7 +103,8 @@
   background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 20%, transparent);
 }
 
-// An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's
+// An accordion joins its panels flat and rounds only the top corners; the last panel ends in its
+// header's divider, so its bottom stays square. Material rounds a panel's
 // own corners with .mat-accordion .mat-expansion-panel:first-of-type / :last-of-type, which outranks
 // these selectors and is injected after this sheet, and every panel wrapped in
 // its own component is both first and last of its type, so the radii below need !important to win.
@@ -106,12 +117,6 @@
 .mat-accordion > .mat-expansion-panel:first-child {
   border-top-left-radius: var(--border-radius) !important;
   border-top-right-radius: var(--border-radius) !important;
-}
-
-.mat-accordion > *:last-child .mat-expansion-panel,
-.mat-accordion > .mat-expansion-panel:last-child {
-  border-bottom-left-radius: var(--border-radius) !important;
-  border-bottom-right-radius: var(--border-radius) !important;
 }
 
 mat-panel-title.mat-expansion-panel-header-title .mat-icon {

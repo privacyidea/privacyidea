@@ -825,9 +825,5 @@ $status-colors: (
   text-align: left;
 }
 
-.user-details-panel {
-  --expansion-panel-body-padding: 0 16px 16px;
-}
-
 // Last, so a Material override wins every tie with the shared rules above it.
 @include meta.load-css("material-overrides.scss");
