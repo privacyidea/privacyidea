@@ -7,7 +7,7 @@ from passlib.crypto.digest import pbkdf2_hmac
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, get_one_token, remove_token
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.user import User
@@ -788,3 +788,106 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
 
         delete_policy("force_2step")
         delete_policy("2step_params")
+
+    def _init(self, data):
+        with self.app.test_request_context('/token/init', method='POST', data=data,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json
+
+    def _set_force_2step_policies(self):
+        set_policy(name="force_2step_existing", scope=SCOPE.ADMIN,
+                   action=["hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1", "delete"])
+
+    def test_02_force_2step_on_existing_token_without_rollover(self):
+        serial = "TWOSTEP0001"
+        # Enroll in one step before the force policy exists
+        detail = self._init({"type": "hotp", "genkey": "1", "serial": serial})["detail"]
+        self.assertNotIn("2step_salt", detail)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state)
+
+        self._set_force_2step_policies()
+        try:
+            # Re-init without the rollover parameter must be forced into the 2step process
+            detail = self._init({"type": "hotp", "genkey": "1", "serial": serial})["detail"]
+            self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"), detail)
+            self.assertEqual(10000, detail.get("2step_difficulty"), detail)
+            self.assertEqual(8, detail.get("2step_salt"), detail)
+            self.assertEqual(20, detail.get("2step_output"), detail)
+            self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=serial).token.rollout_state)
+
+            # Second step with the client component completes the enrollment
+            client_component = binascii.hexlify(b"VRYSECRT")
+            detail = self._init({"serial": serial, "otpkey": client_component})["detail"]
+            self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state, detail)
+
+            # With rollover the forced 2step process is also started
+            detail = self._init({"type": "hotp", "genkey": "1", "serial": serial, "rollover": "1"})["detail"]
+            self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"), detail)
+            self.assertEqual(10000, detail.get("2step_difficulty"), detail)
+            detail = self._init({"serial": serial, "otpkey": client_component, "rollover": "1"})["detail"]
+            self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state, detail)
+        finally:
+            delete_policy("force_2step_existing")
+            remove_token(serial)
+
+    def test_03_verify_with_rollover_does_not_restart_forced_2step(self):
+        serial = "TWOSTEP0002"
+        set_policy(name="verify_enroll_2step", scope=SCOPE.ENROLL,
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp")
+        try:
+            # Enroll in one step so that the token waits for the verification
+            detail = self._init({"type": "hotp", "genkey": "1", "serial": serial})["detail"]
+            self.assertEqual(RolloutState.VERIFY_PENDING, detail.get("rollout_state"), detail)
+            otpkey = detail.get("otpkey", {}).get("value").split("/")[2]
+            otpkey_before = get_one_token(serial=serial).token.get_otpkey().getKey()
+            otp_value = HmacOtp().generate(key=binascii.unhexlify(otpkey), counter=1)
+
+            self._set_force_2step_policies()
+            detail = self._init({"serial": serial, "verify": otp_value, "rollover": "1"})["detail"]
+            self.assertNotIn("2step_salt", detail, detail)
+            self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
+            token = get_one_token(serial=serial)
+            self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+            self.assertEqual(otpkey_before, token.token.get_otpkey().getKey())
+        finally:
+            delete_policy("force_2step_existing")
+            delete_policy("verify_enroll_2step")
+            remove_token(serial)
+
+    def test_04_force_2step_realm_policy_applies_to_rollover_by_serial(self):
+        self.setUp_user_realms()
+        serial = "TWOSTEP0003"
+        client_component = binascii.hexlify(b"VRYSECRT")
+        # Enroll in one step before the force policy exists
+        detail = self._init({"type": "hotp", "genkey": "1", "serial": serial,
+                             "user": "cornelius", "realm": self.realm1})["detail"]
+        self.assertNotIn("2step_salt", detail)
+        self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state)
+
+        set_policy(name="force_2step_realm", scope=SCOPE.ADMIN, action="hotp_2step=force", realm=self.realm1)
+        set_policy(name="rollover_rights_realm", scope=SCOPE.ADMIN,
+                   action=["enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1", "delete"])
+        try:
+            # Rollover by serial only (no user/realm in the request) and without/with the rollover parameter
+            for extra in ({}, {"rollover": "1"}):
+                detail = self._init({"type": "hotp", "genkey": "1", "serial": serial, **extra})["detail"]
+                self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"), (extra, detail))
+                self.assertIn("2step_salt", detail, detail)
+                self.assertIn("2step_difficulty", detail, detail)
+                self.assertIn("2step_output", detail, detail)
+                self.assertEqual(RolloutState.CLIENTWAIT, get_one_token(serial=serial).token.rollout_state)
+                detail = self._init({"serial": serial, "otpkey": client_component, **extra})["detail"]
+                self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state, detail)
+
+            # Guard: with user and realm in the request the policy applies as well
+            detail = self._init({"type": "hotp", "genkey": "1", "serial": serial,
+                                 "user": "cornelius", "realm": self.realm1})["detail"]
+            self.assertEqual(RolloutState.CLIENTWAIT, detail.get("rollout_state"), detail)
+            detail = self._init({"serial": serial, "otpkey": client_component})["detail"]
+            self.assertEqual(RolloutState.ENROLLED, get_one_token(serial=serial).token.rollout_state, detail)
+        finally:
+            delete_policy("force_2step_realm")
+            delete_policy("rollover_rights_realm")
+            remove_token(serial)

@@ -238,8 +238,14 @@ def init():
         a two-step enrollment (see :ref:`2step_enrollment`).
     :jsonparam otpkeyformat: alternate encoding for the supplied
         ``otpkey`` (``hex`` or ``base32check``).
-    :jsonparam rollover: ``1`` or ``true`` to roll over a token that
-        is already in the ``clientwait`` state.
+    :jsonparam rollover: ``1`` or ``true``. Together with ``2stepinit=1``
+        (needs ``<type>_2step`` allow or force) it restarts the two-step
+        enrollment of a token in the ``clientwait`` state. Without a PIN in
+        the request it skips the PIN policies. A new ``/token/init`` for an
+        existing token that is not in an enrollment pending state is always a
+        rollover, whether this parameter is sent or not: the rollover needs
+        the ``token_rollover`` policy, and for hotp and totp it uses the
+        two-step enrollment if ``<type>_2step=force`` applies.
     :jsonparam container_serial: optional, attach the new token to
         this container. Requires the
         :ref:`policy_container_add_token` policy on the caller; if

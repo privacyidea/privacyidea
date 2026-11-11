@@ -869,7 +869,7 @@ def get_webui_settings(request, response):
         audit_page_size = DEFAULT_AUDIT_PAGE_SIZE
         token_page_size = DEFAULT_PAGE_SIZE
         user_page_size = DEFAULT_PAGE_SIZE
-        require_description = list(require_description.keys())
+        require_description = [token_type.lower() for token_type in require_description.keys()]
         default_tokentype = DEFAULT_TOKENTYPE
         default_container_type = DEFAULT_CONTAINER_TYPE
         logout_redirect_url = ""

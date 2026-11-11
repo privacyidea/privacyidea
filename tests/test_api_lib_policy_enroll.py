@@ -504,6 +504,30 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         remove_token("NEW001")
         remove_token("NEW002")
 
+    def test_04b_check_max_active_token_user_type_case(self):
+        g.logged_in_user = {"username": "admin1",
+                            "realm": "",
+                            "role": "admin"}
+        builder = EnvironBuilder(method='POST', data={}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        set_policy(name="pol_case",
+                   scope=SCOPE.ENROLL,
+                   action="hotp_{0!s}={1!s}".format(PolicyAction.MAXACTIVETOKENUSER, 1))
+        g.policy_object = PolicyClass()
+        init_token({"serial": "CASE0001", "type": "hotp", "otpkey": "1234567890123456"},
+                   user=User(login="cornelius", realm=self.realm1))
+        try:
+            for token_type in ["hotp", "HOTP", "HoTp"]:
+                req.all_data = {"user": "cornelius", "realm": self.realm1, "type": token_type}
+                with self.assertRaises(PolicyError, msg=f"type {token_type!r} must hit the limit"):
+                    check_max_token_user(req)
+        finally:
+            delete_policy("pol_case")
+            remove_token("CASE0001")
+
     def test_05_check_max_token_realm(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -1166,6 +1190,27 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("pw_length")
         delete_policy("pw_contents")
 
+    def test_37a_init_length_contents_type_case(self):
+        g.logged_in_user = {"username": "admin1", "realm": "", "role": "admin"}
+        env = EnvironBuilder(method='POST', data={}, headers={}).get_environ()
+        req = Request(env)
+        set_policy(name="pw_length_case", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PolicyAction.PASSWORD_LENGTH, 7))
+        set_policy(name="reg_length_case", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(PolicyAction.REGISTRATIONCODE_LENGTH, 9))
+        try:
+            for token_type in ["pw", "PW", "Pw"]:
+                req.all_data = {"user": "cornelius", "realm": "home", "type": token_type}
+                init_token_length_contents(req)
+                self.assertEqual("7", req.all_data.get("pw.length"), f"type {token_type!r}")
+            for token_type in ["registration", "REGISTRATION"]:
+                req.all_data = {"user": "cornelius", "realm": "home", "type": token_type}
+                init_token_length_contents(req)
+                self.assertEqual("9", req.all_data.get("registration.length"), f"type {token_type!r}")
+        finally:
+            delete_policy("pw_length_case")
+            delete_policy("reg_length_case")
+
     def test_50_enroll_ca_connector(self):
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -1297,6 +1342,32 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                                require_description, req)
 
         delete_policy("require_description")
+
+    def test_61b_required_description_token_type_case_insensitive(self):
+        g.logged_in_user = {"username": "cornelius", "role": "user"}
+        env = EnvironBuilder(method='POST', headers={}).get_environ()
+        req = Request(env)
+        req.User = User("cornelius")
+        try:
+            # lower case policy value, upper case request type
+            set_policy(name="require_description_case", scope=SCOPE.ENROLL,
+                       action=["{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION)])
+            req.all_data = {"type": "HOTP"}
+            with self.assertRaises(PolicyError, msg="upper case type without description"):
+                require_description(req)
+            req.all_data = {"type": "HOTP", "description": "test"}
+            self.assertIsNone(require_description(req))
+
+            # upper case policy value, lower case request type
+            set_policy(name="require_description_case", scope=SCOPE.ENROLL,
+                       action=["{0!s}=HOTP".format(PolicyAction.REQUIRE_DESCRIPTION)])
+            req.all_data = {"type": "hotp"}
+            with self.assertRaises(PolicyError, msg="upper case policy value without description"):
+                require_description(req)
+            req.all_data = {"type": "hotp", "description": "test"}
+            self.assertIsNone(require_description(req))
+        finally:
+            delete_policy("require_description_case")
 
     def test_61a_required_description_on_edit(self):
         self.setUp_user_realms()

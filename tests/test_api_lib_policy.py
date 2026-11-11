@@ -1086,6 +1086,28 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(SESSION_PERSISTENCE.TAB, new_response.json["result"]["value"]["session_persistence"])
         delete_policy("pol_session_persistence")
 
+    def test_08a_get_webui_settings_require_description_lower_case(self):
+        self.setUp_user_realms()
+        env = EnvironBuilder(method='POST', data={}, headers={}).get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"user": "cornelius", "pass": "offline287082"}
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "user", "username": "cornelius", "realm": self.realm1}},
+               "version": "privacyIDEA test", "detail": {"serial": None}, "id": 1}
+        set_policy(name="pol_reqdesc_case", scope=SCOPE.ENROLL,
+                   action="{0!s}=HOTP TOTP".format(PolicyAction.REQUIRE_DESCRIPTION))
+        g.policy_object = PolicyClass()
+        try:
+            new_response = get_webui_settings(req, jsonify(res))
+            value = new_response.json.get("result").get("value")
+            self.assertEqual(["hotp", "totp"], sorted(value.get("require_description")))
+        finally:
+            delete_policy("pol_reqdesc_case")
+
     def test_08b_get_webui_settings_session_persistence_per_principal(self):
         # The whole point of the policy is that it can differ per principal
         self.setUp_user_realms()

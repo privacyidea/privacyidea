@@ -882,7 +882,7 @@ def init_token_length_contents(request=None, action=None):
     no_content_policy = True
     no_length_policy = True
     params = request.all_data
-    tokentype = params.get("type")
+    tokentype = (params.get("type") or "").lower()
 
     if tokentype == 'registration':
         from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
@@ -1002,6 +1002,15 @@ def init_subject_components(request=None, action=None):
             request.all_data["subject_components"] = list(subject_pols)
 
 
+def is_enrollment_pending(token) -> bool:
+    """
+    True if the token is in an enrollment pending state (clientwait, pending, verify).
+    A new ``/token/init`` for such a token continues the enrollment,
+    otherwise it is a rollover.
+    """
+    return token.token.rollout_state in RolloutState.enrollment_pending_states()
+
+
 def twostep_enrollment_activation(request=None, action=None):
     """
     This policy function enables the two-step enrollment process according
@@ -1011,10 +1020,10 @@ def twostep_enrollment_activation(request=None, action=None):
     If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
     If no policy matches, the ``2stepinit`` parameter is removed from the request data.
     """
-    user_object = get_user_from_param(request.all_data)
+    # The token owner for a rollover by serial, see before_request
+    user_object = request.User
     serial = get_optional(request.all_data, "serial")
     token_type = get_optional(request.all_data, "type", default="hotp")
-    rollover = get_optional(request.all_data, "rollover")
     token = None
     if serial:
         tokensobject_list = get_tokens(serial=serial)
@@ -1036,9 +1045,9 @@ def twostep_enrollment_activation(request=None, action=None):
             # The user is allowed to pass 2stepinit=1
             pass
         elif enabled_setting == "force":
-            # We force 2stepinit to be 1 if the token does not exist yet or
-            # if a token rollover is triggered and the token is not in 'clientwait' state
-            if not token or (token.rollout_state != RolloutState.CLIENTWAIT and rollover):
+            # We force 2stepinit for a new token and for every rollover of an enrolled token.
+            # A token in an enrollment pending state continues its enrollment.
+            if not token or not is_enrollment_pending(token):
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError(f"Unknown 2step policy setting: {enabled_setting}")
@@ -1177,10 +1186,12 @@ def check_max_token_user(request=None, action=None, token_type=None):
                 tokentype = get_token_type(serial) or "hotp"
             else:
                 tokentype = "hotp"
+        # Token types are stored in lower case, and so are the names of the type-specific policy actions
+        tokentype = tokentype.lower()
 
         # check maximum number of type specific tokens of user
         limit_list = Match.user(g, scope=SCOPE.ENROLL,
-                                action=f"{tokentype.lower()!s}_{PolicyAction.MAXTOKENUSER!s}",
+                                action=f"{tokentype!s}_{PolicyAction.MAXTOKENUSER!s}",
                                 user_object=user_object).action_values(unique=False, write_to_audit_log=False)
         if limit_list:
             # we need to check how many tokens of this specific type the user already has assigned!
@@ -2131,7 +2142,7 @@ def check_token_init(request=None, action=None):
     if not existing_token:
         return True
 
-    enrollment_pending = existing_token.token.rollout_state in RolloutState.enrollment_pending_states()
+    enrollment_pending = is_enrollment_pending(existing_token)
     token_action = action if enrollment_pending else PolicyAction.TOKENROLLOVER
     if role == ROLE.USER:
         # A user continues the enrollment of, or rolls over, only a token they own
@@ -3046,8 +3057,8 @@ def require_description(request=None, action=None):
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
-    token_types = list(action_values.keys())
-    type_value = request.all_data.get("type") or 'hotp'
+    token_types = [token_type.lower() for token_type in action_values]
+    type_value = (request.all_data.get("type") or "hotp").lower()
     if type_value in token_types:
         token = None
         serial = get_optional(params, "serial")
