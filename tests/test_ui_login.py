@@ -207,6 +207,17 @@ class LoginUITestCase(MyTestCase):
         self.assertNotIn(b"Hello kiosk", res.data)
         delete_policy("logtext_data")
 
+    def test_start_page_ignores_request_body(self):
+        set_policy("logtext_body", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello body")
+        self.addCleanup(delete_policy, "logtext_body")
+        for body in (b"", b"{broken"):
+            with self.subTest(body=body):
+                with self.app.test_request_context('/', method='GET', data=body,
+                                                   headers={"Content-Type": "application/json"}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                self.assertIn(b"Hello body", res.data)
+
 
 class LanguageTestCase(MyApiTestCase):
 
