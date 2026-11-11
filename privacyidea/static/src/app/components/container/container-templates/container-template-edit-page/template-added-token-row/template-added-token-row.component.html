@@ -25,6 +25,8 @@
       <mat-checkbox
         [formField]="userAssignField"
         (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
         i18n="@@container.assignToUser"
         >Assign to user</mat-checkbox
       >

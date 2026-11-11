@@ -189,20 +189,25 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
     });
 
-    for (const [key, keyCode] of [
-      ["Enter", 13],
-      [" ", 32]
+    for (const [name, checkbox] of [
+      ["assign-to-user", assignCheckbox],
+      ["change-PIN", changePinCheckbox]
     ] as const) {
-      it(`pressing "${key}" on the change-PIN checkbox leaves the expansion panel closed`, () => {
-        fixture.detectChanges();
-        const event = new KeyboardEvent("keydown", { key, keyCode, bubbles: true, cancelable: true });
+      for (const [key, keyCode] of [
+        ["Enter", 13],
+        [" ", 32]
+      ] as const) {
+        it(`pressing "${key}" on the ${name} checkbox leaves the expansion panel closed`, () => {
+          fixture.detectChanges();
+          const event = new KeyboardEvent("keydown", { key, keyCode, bubbles: true, cancelable: true });
 
-        changePinCheckbox().dispatchEvent(event);
-        fixture.detectChanges();
+          checkbox().dispatchEvent(event);
+          fixture.detectChanges();
 
-        expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
-        expect(event.defaultPrevented).toBe(false);
-      });
+          expect(fixture.debugElement.query(By.css("mat-expansion-panel")).componentInstance.expanded).toBe(false);
+          expect(event.defaultPrevented).toBe(false);
+        });
+      }
     }
 
     it("getCurrentPayload falls back to the input payload (with template flags) when no strategy is available", () => {
