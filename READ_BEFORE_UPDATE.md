@@ -30,6 +30,13 @@
       that completes an enrollment via multichallenge. A passkey login at `/auth` without a username matches
       `last_auth` for the owner as well.
 
+* **Request header, environment and request data conditions work on the WebUI start page and the push poll** — Until
+  now these conditions had no data on the WebUI start page, and header and environment conditions had none on the
+  poll of the smartphone (`GET /ttype/push`). Depending on *Handle Missing Data*, a policy with such a condition
+  applied there to every request (*Condition is true*), to none (*Condition is false*), or the start page returned
+  403 (*Raise an error*). Now these policies apply according to the request. **Check WebUI policies and policies
+  for the push poll, like `push_allow_polling`, that have such a condition before updating.**
+
 * **A user store error is no longer an unknown user** — When the SQL, LDAP, Keycloak, HTTP or Entra ID user store
   returns an error for the lookup of a login name, the request now fails with an error instead of treating the user
   as one that does not exist. Policies for unknown users (`passOnNoUser`) do not apply, and a realm does not continue
