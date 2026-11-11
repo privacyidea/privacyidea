@@ -9,7 +9,9 @@
   @include mat.expansion-overrides(
     (
       container-background-color: transparent,
-      container-elevation-shadow: none
+      container-elevation-shadow: none,
+      // A collapsed header is as tall as an expanded one, so opening a panel does not move its title.
+      header-collapsed-state-height: 64px
     )
   );
 
@@ -79,9 +81,10 @@
   }
 }
 
+// The hovered header of a collapsed panel is tinted itself, so the circle takes a stronger step to stand out on it.
 .mat-expansion-panel-header:hover .mat-expansion-indicator,
 .mat-expansion-panel-header.cdk-keyboard-focused .mat-expansion-indicator {
-  background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 8%, transparent);
+  background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 20%, transparent);
 }
 
 // An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's
