@@ -1592,10 +1592,15 @@ def create_container_template(container_type: str, template_name: str, options: 
         ::
 
             {
-                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...]
+                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256", "change_pin_on_first_use": False},
+                           ...]
             }
 
+    "change_pin_on_first_use" of a token is optional and must be a boolean; a missing value means False.
+
     :return: ID of the created template
+    :raises EnrollmentError: If the container type is invalid or a template with the name already exists
+    :raises ParameterError: If the options are invalid
     """
     # Check container type
     if container_type.lower() not in get_container_classes().keys():

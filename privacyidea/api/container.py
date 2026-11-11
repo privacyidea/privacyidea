@@ -1426,7 +1426,8 @@ def get_template():
         {
           "templates": [
             {"name": "template1", "container_type": "smartphone",
-             "template_options": {"tokens": [{"type": "hotp", "genkey": true}, ...]}},
+             "template_options": {"tokens": [{"type": "hotp", "genkey": true,
+                                              "change_pin_on_first_use": false}, ...]}},
             {"name": "template2", "container_type": "yubikey", ...}
           ],
           "count": 25,
@@ -1471,11 +1472,15 @@ def create_template_with_name(container_type, template_name):
     :jsonparam template_options: dict carrying the template options
         (most importantly ``tokens`` — the list of token specs to
         create when a container is built from this template).
+        The optional boolean ``change_pin_on_first_use`` of a token marks
+        its PIN to be changed on first use; it defaults to ``false``.
         Defaults to an empty dict.
     :jsonparam default: ``True`` to mark this template as the default
         for the container type.
     :status 200: ``{"template_id": <id>}`` in ``result.value``.
-    :status 400: ``template_options`` is not a dictionary.
+    :status 400: ``template_options`` is not a dictionary, a token
+        type is not supported for the container type or
+        ``change_pin_on_first_use`` of a token is not a boolean.
     """
     params = request.all_data
     template_options = get_optional(params, "template_options") or {}

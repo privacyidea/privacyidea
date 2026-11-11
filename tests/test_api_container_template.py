@@ -7,7 +7,7 @@ from unittest import mock
 from flask import g, request
 
 from privacyidea.lib.container import (create_container_template, get_template_obj,
-                                       create_container_tokens_from_template)
+                                       create_container_tokens_from_template, get_templates_by_query)
 from privacyidea.lib.container import (init_container, find_container_by_serial)
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
@@ -986,6 +986,46 @@ class APIContainerTemplate(APIContainerTest):
         delete_policy("user")
         container.delete()
         [token.delete_token() for token in tokens.values()]
+
+    def test_27_save_template_change_pin_on_first_use_must_be_boolean(self):
+        url = "/container/generic/template/test"
+        audit_action = "POST /container/<string:container_type>/template/<string:template_name>"
+        invalid_options = {"tokens": [{"type": "hotp", "change_pin_on_first_use": "true"}]}
+
+        # Create
+        self.request_assert_error(400, url, json.dumps({"template_options": invalid_options}), self.at, "POST",
+                                  error_code=905)
+        self.assert_audit_entry(audit_action, success=0, info=self.contains("ERR905"))
+        self.assertListEqual([], get_templates_by_query(name="test")["templates"])
+
+        # Update
+        valid_options = {"tokens": [{"type": "hotp", "change_pin_on_first_use": True}, {"type": "totp"}]}
+        self.request_assert_success(url, json.dumps({"template_options": valid_options}), self.at, "POST")
+        self.request_assert_error(400, url, json.dumps({"template_options": invalid_options}), self.at, "POST",
+                                  error_code=905)
+        self.assertDictEqual(valid_options, get_template_obj("test").get_template_options_as_dict())
+
+        get_template_obj("test").delete()
+
+    def test_28_create_container_with_template_name_without_change_pin_on_first_use(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True})
+        create_container_template(container_type="generic", template_name="test",
+                                  options={"tokens": [{"type": "hotp", "genkey": True}]})
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1, "template_name": "test"})
+
+        result = self.request_assert_success("/container/init", request_params, self.at, "POST")
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = container.get_tokens()
+        self.assertEqual(1, len(tokens))
+        self.assertEqual("test", container.template.name)
+        # Neither the template nor the policy sets a PIN change
+        self.assertIsNone(get_tokeninfo(tokens[0].get_serial(), "next_pin_change"))
+
+        delete_policy("change_pin")
+        container.delete()
+        tokens[0].delete_token()
+        get_template_obj("test").delete()
 
     def _create_container_tokens_from_template_as_user(self, container_serial: str, template_tokens: list[dict],
                                                        user: User) -> dict[str, dict]:

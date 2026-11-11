@@ -81,6 +81,9 @@ class ContainerTemplateBase:
             token_type = token.get("type", None)
             if token.get("type", None) not in supported_token_types:
                 raise ParameterError(f"Unsupported token type {token_type} for {self.get_class_type()} templates!")
+            if "change_pin_on_first_use" in token and not isinstance(token["change_pin_on_first_use"], bool):
+                raise ParameterError(f"'change_pin_on_first_use' of the {token_type} token in the template must be "
+                                     "true or false!")
         validated_options["tokens"] = tokens
 
         self._db_template.options = json.dumps(validated_options)
