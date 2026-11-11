@@ -22,7 +22,7 @@ from privacyidea.lib.policies.conditions import ConditionHandleMissingData, Cond
 from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.token import (get_tokens, init_token, remove_token)
+from privacyidea.lib.token import (create_challenge, get_tokens, init_token, remove_token)
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.pushtoken import (PushAction,
                                               strip_pem_headers,
@@ -32,7 +32,6 @@ from privacyidea.lib.tokens.pushtoken import (PushAction,
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, to_bytes, to_unicode
 from privacyidea.lib.utils.compare import PrimaryComparators
-from privacyidea.models import Challenge
 from .base import MyApiTestCase
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
@@ -505,10 +504,11 @@ class TtypePushAPITestCase(MyApiTestCase):
             self.app.full_dispatch_request()
         self.assertEqual(0, len(get_clientapplication()))
 
-    def test_06_poll_policy_condition_on_request_header(self):
+    def test_poll_policy_condition_on_request_header(self):
         set_policy("deny_polling_header", scope=SCOPE.AUTH, action=f"{PushAction.ALLOW_POLLING}=deny",
                    conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS,
                                 "blocked-app", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        self.addCleanup(delete_policy, "deny_polling_header")
         query = {"serial": "PIPU-unknown", "timestamp": datetime.now(timezone.utc).isoformat(), "signature": "AA"}
         with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
                                            headers={"User-Agent": "blocked-app/1.0"}):
@@ -519,18 +519,22 @@ class TtypePushAPITestCase(MyApiTestCase):
         with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
                                            headers={"User-Agent": "privacyIDEA-App/1.2.3"}):
             res = self.app.full_dispatch_request()
-        self.assertNotEqual("Polling not allowed!", res.json["result"]["error"]["message"], res.json)
-        delete_policy("deny_polling_header")
+        self.assertEqual("ERR10: Could not verify signature!", res.json["result"]["error"]["message"], res.json)
 
-    def test_07_poll_challenge_without_stored_notification(self):
+    def test_poll_challenge_without_stored_notification(self):
+        self.setUp_user_realms()
         set_policy("push_poll_enroll", scope=SCOPE.ENROLL, action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self.addCleanup(delete_policy, "push_poll_enroll")
         set_policy("push_poll_text", scope=SCOPE.AUTH,
                    action=f"{PushAction.MOBILE_TEXT}=login from {{client_ip}} via {{ua_browser}} at {{action}}")
+        self.addCleanup(delete_policy, "push_poll_text")
         token = self._create_push_token()
+        serial = token.get_serial()
+        self.addCleanup(remove_token, serial)
         token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.add_user(User("cornelius", self.realm1))
-        serial = token.get_serial()
-        Challenge(serial, challenge=b32encode_and_unicode(geturandom())).save()
+        # A challenge created before the notification was stored with it
+        create_challenge(serial, challenge=b32encode_and_unicode(geturandom()))
         self.assertEqual({}, get_challenges(serial=serial)[0].get_data())
 
         timestamp = datetime.now(timezone.utc).isoformat()
@@ -543,10 +547,6 @@ class TtypePushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual("login from  via  at ", res.json["result"]["value"][0]["question"])
-
-        delete_policy("push_poll_text")
-        delete_policy("push_poll_enroll")
-        remove_token(serial)
 
     def test_04_api_poll_declined_chal(self):
         self.setUp_user_realms()

@@ -177,39 +177,55 @@ class LoginUITestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 200)
 
-    def test_11_conditions_on_request_header_and_data(self):
+    def _set_login_text_policy(self, text: str, conditions: list | None = None) -> None:
         delete_all_policies()
-        set_policy("logtext_header", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello browser",
-                   conditions=[(ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS,
-                                "Mozilla", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        set_policy("logtext", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}={text}", conditions=conditions)
+        self.addCleanup(delete_policy, "logtext")
+
+    def test_condition_on_request_header(self):
+        self._set_login_text_policy("Hello browser", [
+            (ConditionSection.HTTP_REQUEST_HEADER, "User-Agent", PrimaryComparators.STRING_CONTAINS, "Mozilla", True,
+             ConditionHandleMissingData.RAISE_ERROR.value)])
         with self.app.test_request_context('/', method='GET', headers={"User-Agent": "Mozilla/5.0"}):
             res = self.app.full_dispatch_request()
-        self.assertEqual(200, res.status_code, res)
+        self.assertEqual(200, res.status_code, res.data)
         self.assertIn(b"Hello browser", res.data)
 
         with self.app.test_request_context('/', method='GET', headers={"User-Agent": "curl/8.5.0"}):
             res = self.app.full_dispatch_request()
-        self.assertEqual(200, res.status_code, res)
+        self.assertEqual(200, res.status_code, res.data)
         self.assertNotIn(b"Hello browser", res.data)
-        delete_policy("logtext_header")
 
-        set_policy("logtext_data", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello kiosk",
-                   conditions=[(ConditionSection.REQUEST_DATA, "kiosk", PrimaryComparators.EQUALS, "1", True,
-                                ConditionHandleMissingData.IS_FALSE.value)])
+    def test_condition_on_http_environment(self):
+        self._set_login_text_policy("Hello start page", [
+            (ConditionSection.HTTP_ENVIRONMENT, "PATH_INFO", PrimaryComparators.EQUALS, "/", True,
+             ConditionHandleMissingData.RAISE_ERROR.value)])
+        with self.app.test_request_context('/', method='GET'):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.data)
+        self.assertIn(b"Hello start page", res.data)
+
+        with self.app.test_request_context('/config', method='GET'):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("", res.json["result"]["value"]["login_text"])
+
+    def test_condition_on_request_data(self):
+        self._set_login_text_policy("Hello kiosk", [
+            (ConditionSection.REQUEST_DATA, "kiosk", PrimaryComparators.EQUALS, "1", True,
+             ConditionHandleMissingData.IS_FALSE.value)])
         with self.app.test_request_context('/', method='GET', query_string={"kiosk": "1"}):
             res = self.app.full_dispatch_request()
-        self.assertEqual(200, res.status_code, res)
+        self.assertEqual(200, res.status_code, res.data)
         self.assertIn(b"Hello kiosk", res.data)
 
         with self.app.test_request_context('/', method='GET'):
             res = self.app.full_dispatch_request()
-        self.assertEqual(200, res.status_code, res)
+        self.assertEqual(200, res.status_code, res.data)
         self.assertNotIn(b"Hello kiosk", res.data)
-        delete_policy("logtext_data")
 
     def test_start_page_ignores_request_body(self):
-        set_policy("logtext_body", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGIN_TEXT}=Hello body")
-        self.addCleanup(delete_policy, "logtext_body")
+        self._set_login_text_policy("Hello body")
         for body in (b"", b"{broken"):
             with self.subTest(body=body):
                 with self.app.test_request_context('/', method='GET', data=body,
