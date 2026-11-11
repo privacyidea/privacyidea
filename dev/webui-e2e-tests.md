@@ -51,6 +51,14 @@ tables skip their row-dependent checks rather than fail.
   cell (#6275): every table page and detail page at each browser zoom, plus the container details page with a very
   long user name (the backend response is rewritten by route interception). Scrolling areas and collapsed
   (`inert`) cards are not clipping; see `support/clipping.ts`.
+- `playwright-e2e/surface-contrast.spec.ts` - a label (`--mat-sys-on-surface-variant`) keeps 7:1 (WCAG AAA) against
+  the less favourable end of every surface gradient, in both themes at each depth level of the UI settings. The
+  theme and depth classes are set on `<html>` for the measurement; nothing is stored.
+- `playwright-e2e/panels.spec.ts` - an expansion panel header is as tall closed as open, its chevron's circle stands
+  out on the hovered header (read from a screenshot, as the colours are translucent layers), and the policy form's
+  "Add Actions" panel shows the number of actions it lists while no scope is chosen.
+- `playwright-e2e/form-layout.spec.ts` - the form fields in the resolver attribute mapping table fill their row, and
+  the info icon of the conditional access re-trigger checkbox stays on the checkbox's row at each zoom.
 - `playwright-e2e/overlays.spec.ts` - menus (opened from the keyboard, first item focused, Escape returns focus, items
   named, axe on the overlay) and the delete confirmations (named, focus trapped, Escape closes; nothing is confirmed),
   in both themes.
