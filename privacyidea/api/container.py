@@ -1473,9 +1473,9 @@ def create_template_with_name(container_type, template_name):
     :jsonparam template_options: dict carrying the template options
         (most importantly ``tokens`` — the list of token specs to
         create when a container is built from this template).
+        Defaults to an empty dict.
         The optional boolean ``change_pin_on_first_use`` of a token marks
         its PIN to be changed on first use; it defaults to ``false``.
-        Defaults to an empty dict.
     :jsonparam default: ``True`` to mark this template as the default
         for the container type.
     :status 200: ``{"template_id": <id>}`` in ``result.value``.
