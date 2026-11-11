@@ -208,12 +208,13 @@ describe("PolicyActionItemComponent", () => {
       ["str", "input[type=text]"],
       ["int", "input[type=number]"],
       ["text", "textarea"]
-    ] as const)("wraps the %s control in a dynamic fill form field", (actionType, selector) => {
+    ] as const)("wraps the %s control in a dynamic form field", (actionType, selector) => {
       setType(actionType);
 
       const field = fixture.debugElement.query(By.css(".detail-value mat-form-field"));
       const element = control(selector);
-      expect(field.nativeElement.classList).toContain("mat-form-field-appearance-fill");
+      // The field takes the app's default appearance (outline), so the template names none of its own.
+      expect(field.nativeElement.hasAttribute("appearance")).toBe(false);
       expect(field.componentInstance.subscriptSizing).toBe("dynamic");
       expect(element).not.toBeNull();
       expect(element.classList).toContain("mat-mdc-input-element");
