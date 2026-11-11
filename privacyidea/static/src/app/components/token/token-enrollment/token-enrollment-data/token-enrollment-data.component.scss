@@ -1,0 +1,10 @@
+.enrollment-data__qr {
+  flex: none;
+}
+
+// Shrinks so the QR code text and the regenerate button fit next to the QR code, and wraps
+// below it only when the dialog is too narrow for both.
+.enrollment-data__details {
+  flex: 1 1 280px;
+  min-width: 0;
+}
