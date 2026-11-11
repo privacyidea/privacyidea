@@ -64,6 +64,14 @@
   color: var(--mat-sys-error);
 }
 
+// The checkbox and its info icon stay together as one control: the icon follows the label it explains instead of
+// wrapping to a row of its own, and a label too long for the row wraps inside the checkbox.
+.ca-action-retrigger {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
 // Holds the per-action-type value fields (duration, or the several email
 // fields), wrapping them so they flow below the type select.
 .ca-action-value {

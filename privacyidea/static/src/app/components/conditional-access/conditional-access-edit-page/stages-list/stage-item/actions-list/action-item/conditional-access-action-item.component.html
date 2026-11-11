@@ -73,19 +73,19 @@
         <p class="ca-action-target-error">{{ conflictMessage() }}</p>
       }
 
-      <mat-checkbox
-        class="margin-top-8"
-        [checked]="retriggerChecked()"
-        (change)="onRetriggerChange($event.checked)"
-        i18n="@@conditionalAccess.reTriggerWhileAbove">
-        Re-trigger while above the threshold (until escalation to the next stage)
-      </mat-checkbox>
-      <app-info-hint
-        class="margin-top-8"
-        text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Deny defaults to on; the lock, email and block actions default to off."
-        i18n-text="@@conditionalAccess.whenOffActionRuns"
-        ariaLabel="About re-triggering"
-        i18n-ariaLabel="@@conditionalAccess.aboutReTriggering" />
+      <div class="ca-action-retrigger margin-top-8">
+        <mat-checkbox
+          [checked]="retriggerChecked()"
+          (change)="onRetriggerChange($event.checked)"
+          i18n="@@conditionalAccess.reTriggerWhileAbove">
+          Re-trigger while above the threshold (until escalation to the next stage)
+        </mat-checkbox>
+        <app-info-hint
+          text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Deny defaults to on; the lock, email and block actions default to off."
+          i18n-text="@@conditionalAccess.whenOffActionRuns"
+          ariaLabel="About re-triggering"
+          i18n-ariaLabel="@@conditionalAccess.aboutReTriggering" />
+      </div>
     </div>
 
     <div class="ca-action-value">
