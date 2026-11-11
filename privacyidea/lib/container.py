@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from datetime import timezone, datetime
 from collections.abc import Generator
 
-from flask import g
+from flask import g, Request
 from sqlalchemy import func, select, and_, false, true
 from sqlalchemy.sql import Select
 
@@ -688,13 +688,16 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     return res
 
 
-def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request: Request,
                                           user_role: str) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
     tokens.
+
+    The PIN of a token is marked to be changed on first use if its template entry sets "change_pin_on_first_use".
+    The policy change_pin_on_first_use does not apply to tokens created from a template.
 
     :param container_serial: The serial of the container
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
@@ -742,6 +745,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         for token_info in template_tokens:
             token = None
             user = User()
+            change_pin_on_first_use = token_info.pop("change_pin_on_first_use", False)
             if user_role == "user" and request_user_original:
                 # Users are always assigned to the tokens, only admins can create tokens without a user
                 user = request_user_original
@@ -823,7 +827,9 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 # Post-policy decorators require a response object containing the result of the token creation.
                 response = send_result(True, details=init_result[token.get_serial()])
                 check_verify_enrollment(request, response)
-                save_pin_change(request, response)
+                save_pin_change(request, response, check_first_use_policy=False)
+                if change_pin_on_first_use:
+                    token.set_next_pin_change(diff="0d")
             except Exception as ex:
                 log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
                 continue

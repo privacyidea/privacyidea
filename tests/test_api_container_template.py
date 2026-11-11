@@ -514,12 +514,12 @@ class APIContainerTemplate(APIContainerTest):
         set_policy("admin", scope=SCOPE.ADMIN,
                    action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True})
         set_policy("enrollPIN", SCOPE.ADMIN, action=PolicyAction.ENROLLPIN)
-        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True})
 
         # correct pin
         template_params = {"name": "test",
                            "container_type": "smartphone",
-                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "pin": "1234"}]}}
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True, "pin": "1234",
+                                                            "change_pin_on_first_use": True}]}}
         request_params = json.dumps({"type": "smartphone", "user": "hans", "realm": self.realm1,
                                      "template": template_params})
         result = self.request_assert_success('/container/init',
@@ -532,7 +532,6 @@ class APIContainerTemplate(APIContainerTest):
         self.assertEqual(1, len(tokens))
         self.assertNotEqual(-1, tokens[0].token.get_pin())
         self.assertIsNotNone(get_tokeninfo(tokens[0].get_serial(), "next_pin_change"))
-        delete_policy("change_pin")
 
         # pin too short
         template_params = {"name": "test",
@@ -758,19 +757,20 @@ class APIContainerTemplate(APIContainerTest):
         self.assertTrue(isinstance(template_token_types["generic"]["description"], str))
         self.assertTrue(isinstance(template_token_types["generic"]["token_types"], list))
 
-    def test_18_create_container_with_template_change_pin_container_condition(self):
-        set_policy("admin", scope=SCOPE.ADMIN, action={PolicyAction.CONTAINER_CREATE: True, "enrollHOTP": True})
-        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+    def test_18_create_container_with_template_change_pin_every_container_condition(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        set_policy("user", scope=SCOPE.USER, action={PolicyAction.ENROLLPIN: True, "enrollHOTP": True})
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_EVERY: "30d"},
                    conditions=[(ConditionSection.CONTAINER, "type", PrimaryComparators.EQUALS, "smartphone", True)])
 
         def create_container(container_type):
-            template_params = {"name": "test",
-                               "container_type": container_type,
-                               "template_options": {"tokens": [{"type": "hotp", "genkey": True, "user": True}]}}
-            request_params = json.dumps({"type": container_type, "user": "hans", "realm": self.realm1,
-                                         "template": template_params})
-            result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
-            container = find_container_by_serial(result["result"]["value"]["container_serial"])
+            container_serial = init_container({"type": container_type, "user": "hans",
+                                               "realm": self.realm1})["container_serial"]
+            self._create_container_tokens_from_template_as_user(container_serial,
+                                                                [{"type": "hotp", "genkey": True, "pin": "1234"}],
+                                                                hans)
+            container = find_container_by_serial(container_serial)
             tokens = container.get_tokens()
             self.assertEqual(1, len(tokens))
             return container, tokens[0]
@@ -784,14 +784,14 @@ class APIContainerTemplate(APIContainerTest):
         self.assertIsNone(get_tokeninfo(generic_token.get_serial(), "next_pin_change"))
 
         delete_policy("change_pin")
-        delete_policy("admin")
+        delete_policy("user")
         smartphone.delete()
         generic.delete()
         smartphone_token.delete_token()
         generic_token.delete_token()
 
     def test_19_create_container_with_template_request_data_condition(self):
-        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True},
+        set_policy("enrollment", SCOPE.ENROLL, action={PolicyAction.VERIFY_ENROLLMENT: "hotp totp"},
                    conditions=[(ConditionSection.REQUEST_DATA, "type", PrimaryComparators.EQUALS, "hotp", True)])
         template_params = {"name": "test",
                            "container_type": "generic",
@@ -806,10 +806,10 @@ class APIContainerTemplate(APIContainerTest):
         tokens = {token.get_tokentype(): token for token in container.get_tokens()}
         self.assertSetEqual({"hotp", "totp"}, set(tokens))
         # The condition is evaluated against the parameters of each template token
-        self.assertIsNotNone(get_tokeninfo(tokens["hotp"].get_serial(), "next_pin_change"))
-        self.assertIsNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+        self.assertEqual(RolloutState.VERIFY_PENDING, tokens["hotp"].rollout_state)
+        self.assertNotEqual(RolloutState.VERIFY_PENDING, tokens["totp"].rollout_state)
 
-        delete_policy("change_pin")
+        delete_policy("enrollment")
         container.delete()
         [token.delete_token() for token in tokens.values()]
 
@@ -923,20 +923,7 @@ class APIContainerTemplate(APIContainerTest):
         hans = User("hans", self.realm1)
         container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
         template_tokens = [{"type": "hotp", "genkey": True, "user": True}, {"type": "totp", "genkey": True}]
-        request_data = {"type": "generic", "user": "hans", "realm": self.realm1}
-
-        with self.app.test_request_context("/container/init", method="POST"):
-            request.all_data = copy.deepcopy(request_data)
-            request.User = hans
-            g.request_data = copy.deepcopy(request_data)
-            g.policies = {}
-            g.client_ip = "127.0.0.1"
-            g.serial = None
-            g.audit_object = self.audit_object
-            g.policy_object = PolicyClass()
-            g.logged_in_user = {"role": "user", "username": "hans", "realm": self.realm1,
-                                "resolver": self.resolvername1}
-            create_container_tokens_from_template(container_serial, template_tokens, request, "user")
+        self._create_container_tokens_from_template_as_user(container_serial, template_tokens, hans)
 
         # All tokens of a user are assigned to the user, also if the container has no owner and independent of the
         # user flag
@@ -948,3 +935,70 @@ class APIContainerTemplate(APIContainerTest):
 
         container.delete()
         [token.delete_token() for token in tokens]
+
+    def test_25_create_container_with_template_change_pin_on_first_use(self):
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_FIRST_USE: True})
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True,
+                                                            "change_pin_on_first_use": True},
+                                                           {"type": "totp", "genkey": True}]}}
+        request_params = json.dumps({"type": "generic", "user": "hans", "realm": self.realm1,
+                                     "template": template_params})
+
+        result = self.request_assert_success('/container/init', request_params, self.at, 'POST')
+
+        container = find_container_by_serial(result["result"]["value"]["container_serial"])
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        # The template decides on the PIN change, the policy does not apply
+        self.assertIsNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+        for serial, token_result in result["result"]["value"]["tokens"].items():
+            self.assertNotIn("change_pin_on_first_use", token_result["init_params"])
+            self.assertIsNone(get_tokeninfo(serial, "change_pin_on_first_use"))
+
+        delete_policy("change_pin")
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+
+    def test_26_create_container_tokens_from_template_change_pin_on_first_use_for_user(self):
+        self.setUp_user_realms()
+        hans = User("hans", self.realm1)
+        set_policy("user", scope=SCOPE.USER,
+                   action={PolicyAction.ENROLLPIN: True, "enrollHOTP": True, "enrollTOTP": True})
+        set_policy("change_pin", SCOPE.ENROLL, action={PolicyAction.CHANGE_PIN_EVERY: "30d"})
+        container_serial = init_container({"type": "generic", "user": "hans", "realm": self.realm1})["container_serial"]
+        template_tokens = [{"type": "hotp", "genkey": True, "pin": "1234", "change_pin_on_first_use": True},
+                           {"type": "totp", "genkey": True, "pin": "1234"}]
+
+        self._create_container_tokens_from_template_as_user(container_serial, template_tokens, hans)
+
+        container = find_container_by_serial(container_serial)
+        tokens = {token.get_tokentype(): token for token in container.get_tokens()}
+        self.assertSetEqual({"hotp", "totp"}, set(tokens))
+        # The flag wins over the PIN the user sets and over change_pin_every
+        self.assertTrue(tokens["hotp"].is_pin_change())
+        self.assertIsNotNone(get_tokeninfo(tokens["totp"].get_serial(), "next_pin_change"))
+        self.assertFalse(tokens["totp"].is_pin_change())
+
+        delete_policy("change_pin")
+        delete_policy("user")
+        container.delete()
+        [token.delete_token() for token in tokens.values()]
+
+    def _create_container_tokens_from_template_as_user(self, container_serial: str, template_tokens: list[dict],
+                                                       user: User) -> dict[str, dict]:
+        request_data = {"user": user.login, "realm": user.realm}
+        with self.app.test_request_context("/container/init", method="POST"):
+            request.all_data = copy.deepcopy(request_data)
+            request.User = user
+            g.request_data = copy.deepcopy(request_data)
+            g.policies = {}
+            g.client_ip = "127.0.0.1"
+            g.serial = None
+            g.audit_object = self.audit_object
+            g.policy_object = PolicyClass()
+            g.logged_in_user = {"role": "user", "username": user.login, "realm": user.realm,
+                                "resolver": user.resolver}
+            return create_container_tokens_from_template(container_serial, template_tokens, request, "user")
