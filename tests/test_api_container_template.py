@@ -7,7 +7,8 @@ from unittest import mock
 from flask import g, request
 
 from privacyidea.lib.container import (create_container_template, get_template_obj,
-                                       create_container_tokens_from_template, get_templates_by_query)
+                                       create_container_tokens_from_template, get_templates_by_query,
+                                       get_all_containers)
 from privacyidea.lib.container import (init_container, find_container_by_serial)
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.containers.smartphone import SmartphoneOptions
@@ -1026,6 +1027,18 @@ class APIContainerTemplate(APIContainerTest):
         container.delete()
         tokens[0].delete_token()
         get_template_obj("test").delete()
+
+    def test_29_create_container_with_template_change_pin_on_first_use_must_be_boolean(self):
+        template_params = {"name": "test",
+                           "container_type": "generic",
+                           "template_options": {"tokens": [{"type": "hotp", "genkey": True,
+                                                            "change_pin_on_first_use": "false"}]}}
+        request_params = json.dumps({"type": "generic", "template": template_params})
+        containers_before = len(get_all_containers(ctype="generic")["containers"])
+
+        self.request_assert_error(400, "/container/init", request_params, self.at, "POST", error_code=905)
+
+        self.assertEqual(containers_before, len(get_all_containers(ctype="generic")["containers"]))
 
     def _create_container_tokens_from_template_as_user(self, container_serial: str, template_tokens: list[dict],
                                                        user: User) -> dict[str, dict]:

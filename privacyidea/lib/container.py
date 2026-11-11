@@ -603,6 +603,9 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
                 "container_serial": "CONT0001",
                 "template_tokens": [{"type": "hotp", ...}, ...]
             }
+    :raises EnrollmentError: If the type is missing or invalid or a container with the serial already exists
+    :raises ParameterError: If both template and template_name are given or change_pin_on_first_use of a template token
+        is not a boolean
     """
     ctype = params.get("type")
     if not ctype:
@@ -614,6 +617,9 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     template_name = params.get("template_name")
     if template_dict and template_name:
         raise ParameterError("Both template and template_name are given. Choose only one!")
+    if template_dict:
+        for token in template_dict.get("template_options", {}).get("tokens", []):
+            ContainerTemplateBase.check_change_pin_on_first_use(token)
 
     desc = params.get("description") or ""
     serial = params.get("container_serial")

@@ -376,8 +376,9 @@ def init():
     :status 200: ``{"container_serial": ..., "tokens": [...]}`` in
         ``result.value``; ``tokens`` is only present when a template
         was used.
-    :status 400: invalid type, serial collision, or both ``template``
-        and ``template_name`` supplied.
+    :status 400: invalid type, serial collision, both ``template``
+        and ``template_name`` supplied, or ``change_pin_on_first_use``
+        of a token in ``template`` is not a boolean.
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
