@@ -43,6 +43,11 @@ class PasswordTokenClass(TokenClass):
     This Token does use a fixed Password as the OTP value.
     In addition, the OTP PIN can be used with this token.
     This Token can be used for a scenario like losttoken
+
+    The enrollment policies ``<type>.length`` and ``<type>.contents`` define a generated password, see
+    get_password_policy_actions(). The prepolicy applies them to every subclass and ignores request parameters with
+    these names. A subclass must therefore add get_password_policy_definitions() to the enrollment policies in its
+    get_class_info(). Otherwise an administrator can not set these policies and the defaults of the class apply.
     """
 
     password_detail_key = "password"  # nosec B105 # key name
@@ -190,22 +195,17 @@ class PasswordTokenClass(TokenClass):
             f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
         if force_genkey or not otp_key:
             param["genkey"] = True
+        # The prepolicy sets the length and the contents for every enrollment, also when the client sets the password.
+        # They only define a generated password, so they are removed here and TokenClass.update does not write them
+        # to the token info.
+        length_param, contents_param = self.get_password_policy_actions()
+        size = param.pop(length_param, self.otp_len)
+        contents = param.pop(contents_param, self.otp_contents)
         genkey = is_true(param.get("genkey"))
         if genkey:
             # Otherwise genkey and otpkey will raise an exception in
             # PasswordTokenClass
             del param["genkey"]
-            length_param, contents_param = self.get_password_policy_actions()
-            if length_param in param:
-                size = param[length_param]
-                del param[length_param]
-            else:
-                size = self.otp_len
-            if contents_param in param:
-                contents = param[contents_param]
-                del param[contents_param]
-            else:
-                contents = self.otp_contents
             param["otpkey"] = _generate_pin_from_policy(contents, size=int(size))
         if "otpkey" in param:
             param["otplen"] = len(param.get("otpkey"))

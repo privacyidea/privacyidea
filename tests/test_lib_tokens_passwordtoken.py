@@ -6,6 +6,8 @@ import logging
 
 from testfixtures import log_capture
 
+from privacyidea.lib.config import get_token_class
+from privacyidea.lib.serviceid import delete_serviceid, set_serviceid
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
 from privacyidea.lib.tokens.passwordtoken import PasswordTokenClass
 from privacyidea.lib.tokens.passwordtoken import log as pwt_log
@@ -126,3 +128,25 @@ class PasswordTokenTestCase(MyTestCase):
 
         # Clean up
         remove_token(passwordtoken.token.serial)
+
+    def test_06_length_and_contents_not_in_tokeninfo(self):
+        # The prepolicy passes the length and the contents of a generated password with every enrollment. They only
+        # define a generated password and are not written to the token info, also when the client sets the password.
+        set_serviceid("mail", "the service of the application specific password token")
+        serials = []
+        try:
+            for token_type, extra_params in (("pw", {}), ("applspec", {"service_id": "mail"})):
+                length_param, contents_param = get_token_class(token_type).get_password_policy_actions()
+                enroll_params = {"type": token_type, length_param: "4", contents_param: "[0]", **extra_params}
+                for password_params, expected_password in (({"otpkey": self.password}, self.password),
+                                                           ({"genkey": 1}, "0000")):
+                    token = init_token({**enroll_params, **password_params})
+                    serials.append(token.get_serial())
+                    self.assertEqual(expected_password, token.token.get_otpkey().getKey().decode("utf-8"))
+                    tokeninfo = token.get_tokeninfo()
+                    self.assertNotIn(length_param, tokeninfo)
+                    self.assertNotIn(contents_param, tokeninfo)
+        finally:
+            for serial in serials:
+                remove_token(serial)
+            delete_serviceid("mail")
