@@ -85,6 +85,7 @@ export interface ContainerTemplateComparisonRow {
   additional: string[];
   containerSerial: string;
   equal: boolean | null;
+  error?: string;
   missing: string[];
   templateName: string;
 }
@@ -608,16 +609,39 @@ export class ContainerService extends FilterableTableService implements Containe
     });
   });
 
+  // The wildcard search above returns only its first page, so an exactly typed serial can be missing
+  // from it. This looks the typed serial up on its own so the picker can always offer it.
+  containerPickerExactResource = httpResource<PiResponse<ContainerDetails>>(() => {
+    const filter = this.containerPickerFilter()?.trim();
+    if (!filter || !this.authService.actionAllowed("container_list")) {
+      return undefined;
+    }
+    return this.containerRequest({
+      page: 1,
+      pagesize: 1,
+      no_token: 1,
+      container_serial: filter
+    });
+  });
+
   pickableContainerDetails: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
       value: this.containerPickerResource.hasValue() ? this.containerPickerResource.value() : undefined,
       isLoading: this.containerPickerResource.isLoading(),
-      error: this.containerPickerResource.error()
+      error: this.containerPickerResource.error(),
+      exactHit: this.containerPickerExactResource.hasValue()
+        ? this.containerPickerExactResource.value()?.result?.value?.containers?.[0]
+        : undefined
     }),
     computation: (source, previous): ContainerDetailData[] => {
       if (source.error) return [];
       if (!source.value) return source.isLoading ? (previous?.value ?? []) : [];
-      return source.value.result?.value?.containers ?? [];
+      const containers = source.value.result?.value?.containers ?? [];
+      const exactHit = source.exactHit;
+      if (!exactHit || containers.some((container) => container.serial === exactHit.serial)) {
+        return containers;
+      }
+      return [exactHit, ...containers];
     }
   });
 
@@ -1261,28 +1285,55 @@ export class ContainerService extends FilterableTableService implements Containe
           };
         }
 
-        const response = await lastValueFrom(
-          this.http.get<PiResponse<TemplateComparisonResult>>(
-            `${this.containerTemplateBaseUrl}${encodeURIComponent(templateName)}/compare`,
-            {
-              headers: this.authService.getHeaders(),
-              params: { container_serial: container.serial }
-            }
-          )
-        );
-        const comparison = response.result?.value?.[container.serial];
-        if (!comparison) {
-          throw new Error(`No comparison result was returned for container ${container.serial}.`);
+        try {
+          const response = await lastValueFrom(
+            this.http.get<PiResponse<TemplateComparisonResult>>(
+              `${this.containerTemplateBaseUrl}${encodeURIComponent(templateName)}/compare`,
+              {
+                headers: this.authService.getHeaders(),
+                params: { container_serial: container.serial }
+              }
+            )
+          );
+          const comparison = response.result?.value?.[container.serial];
+          if (!comparison) {
+            throw new Error(`No comparison result was returned for container ${container.serial}.`);
+          }
+          return {
+            additional: comparison.tokens.additional,
+            containerSerial: container.serial,
+            equal: comparison.tokens.equal,
+            missing: comparison.tokens.missing,
+            templateName
+          };
+        } catch (error) {
+          // One failed comparison must not hide the results of the other containers.
+          return {
+            additional: [],
+            containerSerial: container.serial,
+            equal: null,
+            error: this.comparisonErrorMessage(error),
+            missing: [],
+            templateName
+          };
         }
-        return {
-          additional: comparison.tokens.additional,
-          containerSerial: container.serial,
-          equal: comparison.tokens.equal,
-          missing: comparison.tokens.missing,
-          templateName
-        };
       })
     );
+  }
+
+  private comparisonErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const serverMessage: unknown = (error.error as { result?: { error?: { message?: unknown } } } | null)?.result
+        ?.error?.message;
+      if (typeof serverMessage === "string" && serverMessage) {
+        return serverMessage;
+      }
+      return error.message;
+    }
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+    return $localize`:@@container.unknownComparisonError:An unknown error occurred.`;
   }
 
   readonly templateComparison = linkedSignal<string, TemplateComparisonResult | null>({

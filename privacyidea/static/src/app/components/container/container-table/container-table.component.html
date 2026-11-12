@@ -261,6 +261,13 @@
                     @let comparison = comparisonByContainerSerial()[element.serial];
                     @if (comparison) {
                       @if (!comparison.templateName) {
+                      } @else if (comparison.error) {
+                        <span
+                          [matTooltip]="comparison.error"
+                          class="highlight-false comparison-failed">
+                          <mat-icon aria-hidden="true">error</mat-icon>
+                          <span i18n="@@container.comparisonFailed">Comparison failed</span>
+                        </span>
                       } @else if (comparison.missing.length === 0 && comparison.additional.length === 0) {
                         <span i18n="@@container.equal">Equal</span>
                       } @else {

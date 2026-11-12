@@ -254,6 +254,26 @@ describe("ContainerTableComponent (Jest)", () => {
       expect(additional.textContent.trim()).toBe("+ totp");
     });
 
+    it("does not report a container as equal when its comparison failed", () => {
+      component.showComparison([
+        {
+          containerSerial: "C-1",
+          templateName: "base",
+          equal: null,
+          missing: [],
+          additional: [],
+          error: "live-check-compare-failed"
+        },
+        comparisonOf("C-2")
+      ]);
+      fixture.detectChanges();
+
+      const texts = cellTexts("differences");
+      expect(texts[0]).not.toContain("Equal");
+      expect(texts[0]).not.toBe("");
+      expect(texts[1]).toBe("Equal");
+    });
+
     it("keeps earlier results when further containers are compared", () => {
       component.showComparison([comparisonOf("C-1")]);
       component.showComparison([comparisonOf("C-2", "other")]);

@@ -1445,7 +1445,23 @@ describe("ContainerService", () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
     });
 
-    const pickerRequest = () => httpMock.expectOne((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+    // The wildcard list request: no serial filter at all, or one wrapped in '*'.
+    const pickerRequest = () =>
+      httpMock.expectOne(
+        (r) =>
+          r.url === "/container/" &&
+          r.params.get("no_token") === "1" &&
+          (r.params.get("container_serial") ?? "*").includes("*")
+      );
+
+    const pickerContainer = (serial: string): ContainerDetailData => ({
+      serial,
+      type: "generic",
+      realms: [],
+      states: [],
+      tokens: [],
+      users: []
+    });
 
     const flushRemainingContainerRequests = () =>
       httpMock
@@ -1481,6 +1497,29 @@ describe("ContainerService", () => {
       TestBed.tick();
 
       expect(pickerRequest().request.params.get("container_serial")).toBe("*CONT*");
+      flushRemainingContainerRequests();
+    });
+
+    it("offers an exactly typed serial even when the wildcard search does not list it on its first page", async () => {
+      containerService.containerPickerFilter.set("CONT1");
+      TestBed.tick();
+
+      const wildcardPage = Array.from({ length: 10 }, (_, i) => pickerContainer(`CONT1${i}`));
+      const pickerRequests = httpMock.match((r) => r.url === "/container/" && r.params.get("no_token") === "1");
+      const wildcardRequest = pickerRequests.find((r) => r.request.params.get("container_serial") === "*CONT1*");
+      const exactRequest = pickerRequests.find((r) => r.request.params.get("container_serial") === "CONT1");
+
+      expect(wildcardRequest).toBeDefined();
+      wildcardRequest?.flush(MockPiResponse.fromValue({ containers: wildcardPage, count: 25 }));
+      expect(exactRequest).toBeDefined();
+      exactRequest?.flush(MockPiResponse.fromValue({ containers: [pickerContainer("CONT1")], count: 1 }));
+      await Promise.resolve();
+      TestBed.tick();
+
+      expect(containerService.pickableContainers()).toContain("CONT1");
+      expect(containerService.pickableContainers()).toEqual(
+        expect.arrayContaining(wildcardPage.map((container) => container.serial))
+      );
       flushRemainingContainerRequests();
     });
   });
@@ -1552,16 +1591,66 @@ describe("ContainerService", () => {
         ]);
       });
 
-      it("rejects when the response has no entry for the container serial", async () => {
+      it("marks the row as failed when the response has no entry for the container serial", async () => {
         jest
           .spyOn(http, "get")
           .mockReturnValue(of({ result: { value: {} } } as unknown as PiResponse<TemplateComparisonResult>));
 
-        await expect(
-          containerService.compareContainersWithTemplates([
-            { serial: "CONT-1", template: "baseline", states: [], realms: [], tokens: [], type: "", users: [] }
-          ])
-        ).rejects.toThrow("No comparison result was returned for container CONT-1.");
+        const comparisons = await containerService.compareContainersWithTemplates([
+          { serial: "CONT-1", template: "baseline", states: [], realms: [], tokens: [], type: "", users: [] }
+        ]);
+
+        expect(comparisons).toEqual([
+          {
+            additional: [],
+            containerSerial: "CONT-1",
+            equal: null,
+            error: expect.any(String),
+            missing: [],
+            templateName: "baseline"
+          }
+        ]);
+        expect(comparisons[0].error).not.toBe("");
+      });
+
+      it("keeps the other rows when the comparison of one container fails", async () => {
+        const pending = containerService.compareContainersWithTemplates([
+          { serial: "CONT-LC-1", template: "live-check-a", states: [], realms: [], tokens: [], type: "", users: [] },
+          { serial: "CONT-LC-2", template: "live-check-b", states: [], realms: [], tokens: [], type: "", users: [] }
+        ]);
+
+        const compareUrl = (template: string) => `${containerService.containerTemplateBaseUrl}${template}/compare`;
+        httpMock
+          .expectOne((r) => r.url === compareUrl("live-check-a"))
+          .flush(
+            { result: { status: false, error: { message: "live-check-server-error" } } },
+            { status: 500, statusText: "Internal Server Error" }
+          );
+        httpMock.expectOne((r) => r.url === compareUrl("live-check-b")).flush(
+          MockPiResponse.fromValue({
+            "CONT-LC-2": { tokens: { additional: [], equal: true, missing: [] } }
+          } as TemplateComparisonResult)
+        );
+
+        const comparisons = await pending;
+
+        expect(comparisons).toHaveLength(2);
+        expect(comparisons[0]).toEqual({
+          additional: [],
+          containerSerial: "CONT-LC-1",
+          equal: null,
+          error: expect.any(String),
+          missing: [],
+          templateName: "live-check-a"
+        });
+        expect(comparisons[0].error).not.toBe("");
+        expect(comparisons[1]).toEqual({
+          additional: [],
+          containerSerial: "CONT-LC-2",
+          equal: true,
+          missing: [],
+          templateName: "live-check-b"
+        });
       });
 
       it("sends exactly one request per templated container", async () => {

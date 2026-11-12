@@ -119,3 +119,11 @@ tr.example-detail-row td {
 .realm-break {
   margin-top: 3px;
 }
+
+// The chip's global display:inline-block (.highlight-false) would stack the icon above the text, so it becomes a row.
+.highlight-false.comparison-failed {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
