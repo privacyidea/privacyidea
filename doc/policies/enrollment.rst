@@ -330,6 +330,8 @@ This is the length of a password that the server generates for an application sp
 token).
 The default length is 23.
 
+.. versionadded:: 3.14.1
+
 applspec.contents
 ~~~~~~~~~~~~~~~~~
 
@@ -344,6 +346,8 @@ The value uses the syntax of :ref:`admin_policies_otp_pin_contents`. A plain lis
 least one character of each listed group. The other characters can come from all groups, including special
 characters. To generate passwords from letters and digits only, use ``-s``. A list in brackets (``[...]``) is a
 literal list of characters and not a regular expression class. You must write out every allowed character.
+
+.. versionadded:: 3.14.1
 
 .. note:: For ``POST /token/init`` and for tokens from container templates, the policies ``registration.*``,
    ``pw.*`` and ``applspec.*`` define a generated password. If no policy is set, the defaults of the token type apply.
