@@ -69,9 +69,7 @@ for (const scheme of ["light", "dark"] as const) {
         await expect(panel.getByRole("heading").first()).toBeVisible();
         await expect(panel.getByRole("button", { name: /.+/ }).first()).toBeVisible();
         // The failed request also raises a toast; let it finish its enter animation and announcement before looking.
-        await expect(page.locator(".mat-mdc-snack-bar-container").first())
-          .toBeVisible({ timeout: 3_000 })
-          .catch(() => undefined);
+        await expect(page.locator(".mat-mdc-snack-bar-container").first()).toBeVisible();
         await settle(page);
         await expectNoNewViolations(page, `${route.name} (error)`, scheme, testInfo);
       });
