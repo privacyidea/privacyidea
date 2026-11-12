@@ -165,7 +165,9 @@
 
 * **`/validate/check` with `otponly=1` checks the token like any other authentication.** This is the *test OTP*
   action of the WebUI. A disabled, expired or revoked token, or one past its fail counter, is refused, and a
-  wrong value increases the fail counter of the token.
+  wrong value increases the fail counter of the token. The request also needs a session token from `/auth` in the
+  `PI-Authorization` or `Authorization` header: of an administrator with the admin right `tokenlist` for the token,
+  or of the owner of the token. Other requests with `otponly` are refused.
 
 * **Users assign only tokens and containers of their own realm.** As documented for the user actions `assign` and
   `container_assign_user`, the token or container has to be in the user's realm or in no realm. A pool of spare
