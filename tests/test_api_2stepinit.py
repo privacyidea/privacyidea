@@ -891,3 +891,39 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
             delete_policy("force_2step_realm")
             delete_policy("rollover_rights_realm")
             remove_token(serial)
+
+    def test_05_repeated_verification_after_enrollment_is_rejected(self):
+        serial = "TWOSTEP0004"
+        set_policy(name="verify_enroll_2step", scope=SCOPE.ENROLL,
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp")
+        try:
+            # Enroll in one step before the force policy exists, the token then waits for its verification
+            otpkey = "3132333435363738393031323334353637383930"
+            init_token({"type": "hotp", "otpkey": otpkey, "serial": serial})
+            token = get_one_token(serial=serial)
+            token.token.rollout_state = RolloutState.VERIFY_PENDING
+            token.token.save()
+            otp_value = HmacOtp().generate(key=binascii.unhexlify(otpkey), counter=1)
+
+            self._set_force_2step_policies()
+            detail = self._init({"serial": serial, "verify": otp_value})["detail"]
+            self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
+            otpkey_before = get_one_token(serial=serial).token.get_otpkey().getKey()
+
+            # The token is enrolled now. The same request again (double click or retry) is refused
+            # and leaves the token as it is
+            with self.app.test_request_context('/token/init', method='POST',
+                                               data={"serial": serial, "verify": otp_value},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn("is not waiting for the verification of its enrollment",
+                              res.json["result"]["error"]["message"])
+            token = get_one_token(serial=serial)
+            self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+            self.assertTrue(token.token.active)
+            self.assertEqual(otpkey_before, token.token.get_otpkey().getKey())
+        finally:
+            delete_policy("force_2step_existing")
+            delete_policy("verify_enroll_2step")
+            remove_token(serial)

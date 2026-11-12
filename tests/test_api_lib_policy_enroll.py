@@ -53,7 +53,8 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            check_token_action, check_user_params,
                                            check_client_container_action, container_registration_config,
                                            smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key, verify_enrollment)
+                                           hide_container_info, force_server_generate_key, verify_enrollment,
+                                           require_description_on_edit)
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
@@ -1407,6 +1408,32 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         remove_token(serial=serial)
         delete_policy("require_description_on_edit")
         delete_policy("set_description")
+
+    def test_61c_required_description_on_edit_token_type_case_insensitive(self):
+        g.logged_in_user = {"username": "cornelius", "role": "user"}
+        env = EnvironBuilder(method='POST', headers={}).get_environ()
+        req = Request(env)
+        req.User = User("cornelius")
+        try:
+            # lower case policy value, upper case request type
+            set_policy(name="require_description_on_edit_case", scope=SCOPE.TOKEN,
+                       action=["{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION_ON_EDIT)])
+            req.all_data = {"type": "HOTP"}
+            with self.assertRaises(PolicyError, msg="upper case type without description"):
+                require_description_on_edit(req)
+            req.all_data = {"type": "HOTP", "description": "test"}
+            self.assertIsNone(require_description_on_edit(req))
+
+            # upper case policy value, lower case request type
+            set_policy(name="require_description_on_edit_case", scope=SCOPE.TOKEN,
+                       action=["{0!s}=HOTP".format(PolicyAction.REQUIRE_DESCRIPTION_ON_EDIT)])
+            req.all_data = {"type": "hotp"}
+            with self.assertRaises(PolicyError, msg="upper case policy value without description"):
+                require_description_on_edit(req)
+            req.all_data = {"type": "hotp", "description": "test"}
+            self.assertIsNone(require_description_on_edit(req))
+        finally:
+            delete_policy("require_description_on_edit_case")
 
     def test_01_sms_identifier(self):
         # every admin is allowed to enroll sms token with gw1 or gw2

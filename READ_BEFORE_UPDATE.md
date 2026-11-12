@@ -319,6 +319,20 @@
 * **PIN handler classes get the token type in lower case.** `PinHandler.send` gets the type as privacyIDEA
   stores it, for example `hotp`. If the request has no type, the PIN handler gets `hotp`.
 
+* **Two-step enrollment for every token rollover.** If a `hotp_2step` or `totp_2step` policy has the value `force`,
+  every rollover of an enrolled token uses the two-step enrollment. This applies to each request to `/token/init` for
+  an existing token that is not in an enrollment pending state (`clientwait`, `pending`, `verify`), with or without the
+  `rollover` parameter. Before, only a request with `rollover` did. If a script rolls over such tokens through the
+  API, make sure that it sends the client component in a second request. A request that sends its own key (`otpkey`)
+  for such a token is refused with a parameter error, as for a new token. Only with the policy
+  `force_server_generate` the `otpkey` is ignored instead.
+  A request with `verify` for such a token that is not waiting for the verification is refused with a parameter
+  error, so a repeated verification request does not restart the enrollment.
+
+* **Token type in the enrollment policies is compared in lower case.** The maximum number of tokens of a type per
+  user, `require_description`, `require_description_on_edit` and the policies for the length and contents of the key
+  apply whatever the case of the `type` parameter of `/token/init`.
+
 * **A push token that could not create a challenge is no longer offered as one** — If no push gateway is configured
   for the token, or the push gateway fails while polling is not allowed, no challenge is created for the push token.
   It is now left out of `multi_challenge` and of the serials in the audit and authentication log, instead of being

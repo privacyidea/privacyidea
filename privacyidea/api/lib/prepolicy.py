@@ -1019,6 +1019,8 @@ def twostep_enrollment_activation(request=None, action=None):
 
     If a ``<type>_2step`` policy matches, the ``2stepinit`` parameter is handled according to the policy.
     If no policy matches, the ``2stepinit`` parameter is removed from the request data.
+    With the setting ``force``, a ``verify`` request for a token that is not waiting for the verification
+    of its enrollment is refused with a parameter error.
     """
     # The token owner for a rollover by serial, see before_request
     user_object = request.User
@@ -1047,7 +1049,12 @@ def twostep_enrollment_activation(request=None, action=None):
         elif enabled_setting == "force":
             # We force 2stepinit for a new token and for every rollover of an enrolled token.
             # A token in an enrollment pending state continues its enrollment.
-            if not token or not is_enrollment_pending(token):
+            rolled_over = token is not None and not is_enrollment_pending(token)
+            # A verify request of a token that is already enrolled would count as a rollover
+            # and restart the enrollment, so it is refused.
+            if rolled_over and get_optional(request.all_data, "verify"):
+                raise ParameterError(f"The token {serial} is not waiting for the verification of its enrollment.")
+            if not token or rolled_over:
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError(f"Unknown 2step policy setting: {enabled_setting}")
@@ -3098,8 +3105,9 @@ def require_description_on_edit(request=None, action=None):
                                   realm=realm,
                                   user_object=user_object).action_values(unique=False)
 
-    token_types = list(action_values.keys())
-    type_value = request.all_data.get("type") or 'hotp'
+    # Token types are stored in lower case, so both the token and the policy are compared in lower case
+    token_types = [token_type.lower() for token_type in action_values.keys()]
+    type_value = (request.all_data.get("type") or 'hotp').lower()
     if type_value in token_types:
         description = request.all_data.get("description", "").strip()
         if not description:
