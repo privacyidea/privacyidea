@@ -401,7 +401,8 @@ def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
     if req_headers:
         req_environment = req_headers.environ
         request = req_environment.get("werkzeug.request")
-    # A request without a user, like the poll of the smartphone, is not the one of the authenticating client
+    # The blueprints that create challenges set request.User, also to None. The poll of the smartphone does not set
+    # it, and its request is not the one of the authenticating client.
     if not hasattr(request, "User"):
         request = None
     if request:

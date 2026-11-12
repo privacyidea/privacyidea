@@ -521,6 +521,23 @@ class TtypePushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
         self.assertEqual("ERR10: Could not verify signature!", res.json["result"]["error"]["message"], res.json)
 
+    def test_poll_policy_condition_on_http_environment(self):
+        set_policy("deny_polling_environment", scope=SCOPE.AUTH, action=f"{PushAction.ALLOW_POLLING}=deny",
+                   conditions=[(ConditionSection.HTTP_ENVIRONMENT, "REMOTE_ADDR", PrimaryComparators.EQUALS,
+                                "10.0.0.1", True, ConditionHandleMissingData.RAISE_ERROR.value)])
+        self.addCleanup(delete_policy, "deny_polling_environment")
+        query = {"serial": "PIPU-unknown", "timestamp": datetime.now(timezone.utc).isoformat(), "signature": "AA"}
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           environ_overrides={"REMOTE_ADDR": "10.0.0.1"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual("Polling not allowed!", res.json["result"]["error"]["message"])
+
+        with self.app.test_request_context('/ttype/push', method='GET', query_string=query,
+                                           environ_overrides={"REMOTE_ADDR": "10.0.0.2"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual("ERR10: Could not verify signature!", res.json["result"]["error"]["message"], res.json)
+
     def test_poll_challenge_without_stored_notification(self):
         self.setUp_user_realms()
         set_policy("push_poll_enroll", scope=SCOPE.ENROLL, action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
