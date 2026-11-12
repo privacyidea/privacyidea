@@ -139,6 +139,11 @@ privacyIDEA can only check a condition if the request has the data for it. For e
 the WebUI start page has no user. :ref:`policy_condition_checks` shows which data each
 kind of request has, and which actions have special rules.
 
+.. toctree::
+   :maxdepth: 1
+
+   condition_checks
+
 **realm**
 
   This is the realm, for which this policy is valid.
@@ -293,8 +298,12 @@ kind of request has, and which actions have special rules.
   ``10.2.0.0/16, !10.2.0.1, 192.168.0.1``). Host names are not supported.
 
   A field with only exclusions matches no client. To match every client except one, add
-  the networks of all clients, like ``0.0.0.0/0, ::/0, !10.2.0.1``. An IPv4 network does
-  not match an IPv6 client.
+  the networks of all clients, like ``0.0.0.0/0, ::/0, !10.2.0.1``.
+
+  A web server that accepts IPv4 and IPv6 on one socket reports an IPv4 client as
+  ``::ffff:a.b.c.d``. privacyIDEA uses the IPv4 address ``a.b.c.d`` as the client IP, so
+  the IPv4 entries apply. An IPv4 network does not match a client with a native IPv6
+  address, and ``::/0`` does not match an IPv4 client.
 
   The client is the IP address from which privacyIDEA receives the request. Behind a
   reverse proxy, this is the proxy. For an authentication through a RADIUS server or
@@ -325,12 +334,11 @@ kind of request has, and which actions have special rules.
   Using conditions you can specify more advanced rules that determine whether
   a policy is valid for a request.
 
-  Conditions are described on the following pages:
+  Conditions are described on the following page:
 
 .. toctree::
     :maxdepth: 1
 
     conditions
-    condition_checks
 
 .. versionadded:: 3.1

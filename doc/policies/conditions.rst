@@ -25,6 +25,13 @@ The data for a section is not available in every request. For example, a request
 lists all tokens names no single token. Before you add a condition, read
 :ref:`policy_condition_checks`. It shows which data each kind of request has.
 
+The actions ``container_add_token`` and ``container_remove_token`` have a token and a
+container. privacyIDEA checks these actions twice, once for the token and once for the
+container. The check of the token uses the ``token`` and ``tokeninfo`` conditions. The
+check of the container uses the ``container`` and ``container_info`` conditions. Both
+checks use the ``userinfo`` conditions, for the owner of the token and for the owner of
+the container. The action is allowed only if both checks are successful.
+
 Sections
 ~~~~~~~~
 
@@ -96,10 +103,6 @@ the group. Members of the group with another email address can still log in.
 A user can lack the attribute ``email`` or ``groups``, for example because of an error
 in the attribute mapping. The condition then has missing data, see
 `Handle Missing Data`_.
-
-For the actions ``container_add_token`` and ``container_remove_token``, privacyIDEA
-checks the userinfo condition for the owner of the token and for the owner of the
-container. The action is allowed only if both checks are successful.
 
 .. versionadded:: 3.1
 
@@ -256,9 +259,14 @@ condition. The right value is always text.
   ``!contains`` is true if this is not the case. If the left value is not a list,
   privacyIDEA raises an error.
 * ``in`` is true if the left value is in the comma-separated list of the right value.
-  You can put a value in double quotes, for example ``"Doe, John",alice``.
   ``!in`` is true if this is not the case. The left value must be text. For a number, a
   yes-or-no value or a list, ``in`` is always false and ``!in`` is always true.
+
+  To put a comma in a value, put the value in double quotes. ``"Doe, John",alice`` is
+  the list *Doe, John* and *alice*. Without the quotes, it is the list *Doe*, *John* and
+  *alice*. To put a double quote in a quoted value, write ``\"``. privacyIDEA removes
+  the spaces after a comma, but not the spaces before a comma. Thus in ``alice ,bob``
+  the first value is ``alice`` with a space at the end, and ``alice`` does not match.
 * ``matches`` is true if the left value completely matches the regular expression of the
   right value. ``!matches`` is true if this is not the case. For a match that ignores
   upper and lower case, start the expression with ``(?i)``. If the left value is not
@@ -361,6 +369,7 @@ If a condition is not valid, privacyIDEA raises a policy error and stops the req
   * ``<`` or ``>`` on a value that is not a whole number,
   * ``matches`` or ``string_contains`` on a value that is not text,
   * ``matches`` with an expression that is not valid,
+  * ``in`` with a double quote that has no closing double quote, like ``a,"b``,
   * a date that is not in ISO format,
   * ``date_before`` or ``date_after`` with only one time zone.
 

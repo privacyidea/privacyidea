@@ -82,15 +82,21 @@ The user of a request
    * - ``/validate/triggerchallenge`` with ``serial`` and without ``user``
      - An empty user.
    * - Administrator acts on a token: ``enable``, ``disable``, ``delete``, ``assign``,
-       ``set``, ``tokenrealms`` and the other token actions, also
-       ``container_add_token`` and ``container_remove_token``
+       ``set``, ``tokenrealms`` and the other token actions
      - The owner of the token. The realm field also matches the realms of the token.
        For a token without an owner: an empty user and the realms of the token.
    * - Administrator acts on a container
      - The owner of the container and the realms of the container.
        ``container_create``: the user of the parameters.
-   * - Other administrator requests, for example the configuration, the audit log or the
-       policies
+   * - Administrator adds a token to a container or removes a token from a container
+       (``container_add_token``, ``container_remove_token``)
+     - Two checks: the owner and the realms of the token, and the owner and the realms
+       of the container. Both checks must allow the action. ``/token/init`` with a
+       ``container_serial`` checks only the container.
+   * - Administrator reads the audit log or the authentication log (``auditlog``,
+       ``auditlog_download``, ``authentication_log_read``)
+     - No user. See `Administration`_.
+   * - Other administrator requests, for example the configuration or the policies
      - The parameters ``user`` and ``realm``. Without a ``realm`` parameter, the first
        realm of the token of the ``serial`` parameter. ``userinfo`` has no user.
    * - User manages their own tokens
@@ -132,12 +138,18 @@ does not check the condition, and the policy applies as if the condition is true
        :ref:`passonnouser`, :ref:`policy_auth_cache`, the challenge texts and the SMS,
        email and push texts
      - yes
+     - only with a ``serial`` parameter
      - no
-     - no
-   * - Authentication with ``serial``: the same policies
+   * - Authentication with ``serial`` and without ``user``: the same policies
      - yes, the owner
      - yes
      - no
+   * - Authentication: :ref:`policy_change_pin_via_validate`,
+       :ref:`policy_resync_via_multichallenge` and the PIN change of
+       :ref:`policy_change_pin_every`
+     - yes, the owner of the token
+     - yes
+     - yes, if the token is in a container
    * - Authorization checks after the authentication, like :ref:`authorized_policy`
      - yes
      - the token of the result, see `Authentication and authorization`_
@@ -150,6 +162,11 @@ does not check the condition, and the policy applies as if the condition is true
      - yes, see `The user of a request`_
      - not checked
      - yes, not for ``container_create``, ``container_list`` and the template actions
+   * - Administrator or user adds a token to a container or removes a token from a
+       container
+     - yes, see `The user of a request`_
+     - yes
+     - yes
    * - Token enrollment (``/token/init``)
      - yes
      - no, the token does not exist yet
@@ -200,8 +217,13 @@ Authentication and authorization
 * The other authorization checks after the authentication read the token of the result.
   A successful authentication through :ref:`passthru_policy`,
   :ref:`passonnotoken`, :ref:`passonnouser` or :ref:`policy_auth_cache` has no token.
-* ``/validate/triggerchallenge`` with only a ``serial`` uses an empty user. Only
-  policies without realm, resolver and user apply.
+* ``/validate/triggerchallenge`` with only a ``serial`` uses an empty user. Only the
+  policies whose realm, resolver and user accept an empty user apply, see
+  `Conditions without a value in the request`_.
+* :ref:`policy_change_pin_via_validate`, :ref:`policy_resync_via_multichallenge` and the
+  PIN change of :ref:`policy_change_pin_every`: privacyIDEA matches the owner and the
+  realms of the token, not the user of the request. The conditions have the data of the
+  token and of its container.
 * WebUI login with the login mode privacyIDEA: the token types read some values during
   the login, like the push texts, ``push_ssl_verify`` or the challenge texts. For these
   values, privacyIDEA does not check the realm, resolver and user of the policy.
@@ -217,6 +239,17 @@ Administration
   not checked.
 * Container actions: privacyIDEA matches the owner and the realms of the container.
   ``token`` and ``tokeninfo`` conditions are not checked.
+* ``container_add_token`` and ``container_remove_token`` are token actions and container
+  actions. privacyIDEA checks them twice, once as a token action and once as a container
+  action. Both checks must allow the action. Thus the ``token`` conditions apply to the
+  token, the ``container`` conditions to the container, and the ``userinfo`` conditions
+  to both owners. If the token moves from another container, privacyIDEA also checks
+  ``container_remove_token`` for the old container.
+* :ref:`policy_auditlog`, :ref:`policy_auditlog_download` and
+  :ref:`policy_authentication_log_read` for an administrator: privacyIDEA does not
+  compare the realm, resolver and user of the policy with the request. It uses these
+  fields to select the entries that the administrator can read. The description of each
+  action explains the rules.
 * ``assign``, ``copytokenuser`` and ``copytokenpin`` on a token without an owner:
   privacyIDEA checks only the realms of the token, not the user and the resolver of the
   policy. A ``userinfo`` condition has no user in this step, and only
