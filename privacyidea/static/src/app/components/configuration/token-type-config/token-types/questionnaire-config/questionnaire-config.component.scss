@@ -15,13 +15,8 @@
   }
 }
 
+// One question for each row: a question can be long, and the field shrinks with the panel.
 .questionnaire-grid {
   display: grid;
-  grid-template-columns: repeat(2, max-content);
   gap: 16px;
-  overflow-x: auto;
-
-  mat-form-field {
-    width: var(--input-max-width, 100%);
-  }
 }

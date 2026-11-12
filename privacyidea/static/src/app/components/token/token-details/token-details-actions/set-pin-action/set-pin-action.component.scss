@@ -26,6 +26,12 @@
   width: 100%;
 }
 
+// The fields are text fields that only look like password fields, so password managers do not offer to save the value.
+// The PIN of a token is no password of the admin.
+input.masked-input {
+  -webkit-text-security: disc;
+}
+
 .set-pin-buttons {
   display: flex;
   flex-direction: row;

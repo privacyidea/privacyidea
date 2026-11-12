@@ -16,6 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
+from flask import Response
 from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
@@ -273,7 +274,8 @@ class ValidateAPITestCase(MyApiTestCase):
                                            method='POST',
                                            data={"serial": "otponly",
                                                  "otponly": "1",
-                                                 "pass": "359152"}):
+                                                 "pass": "359152"},
+                                           headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -1381,7 +1383,8 @@ class ValidateAPITestCase(MyApiTestCase):
         # counter = 8, is out of sync
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           data={"serial": serial, "otponly": "1", "pass": "399871"}):
+                                           data={"serial": serial, "otponly": "1", "pass": "399871"},
+                                           headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
             self.assertFalse(res.json.get("result").get("value"))
@@ -1393,7 +1396,8 @@ class ValidateAPITestCase(MyApiTestCase):
         # counter = 9, will be autosynced
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           data={"serial": serial, "otponly": "1", "pass": "520489"}):
+                                           data={"serial": serial, "otponly": "1", "pass": "520489"},
+                                           headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code)
             self.assertTrue(res.json.get("result").get("value"))
@@ -3944,7 +3948,8 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
 
     def _check_otp_only(self, otp: str, serial: str = "OTPONLY1"):
         with self.app.test_request_context("/validate/check", method="POST",
-                                           data={"serial": serial, "otponly": "1", "pass": otp}):
+                                           data={"serial": serial, "otponly": "1", "pass": otp},
+                                           headers={"Authorization": self.at}):
             return self.app.full_dispatch_request()
 
     def test_01_active_token_is_accepted(self):
@@ -3991,6 +3996,98 @@ class OtpOnlyTokenStateTestCase(MyApiTestCase):
         self.assertTrue(response.json["result"]["value"], response.json)
         # The registration token deletes itself after its one successful use
         self.assertIsNone(get_one_token(serial="OTPONLYREG", silent_fail=True))
+
+
+class OtpOnlySessionTestCase(MyApiTestCase):
+    """
+    /validate/check accepts otponly=1 only with the session of an administrator who may list the token, or of the
+    owner of the token. Every other request is refused before the token is checked.
+    """
+    # RFC 4226 test key, counter 0
+    otp_key = "3132333435363738393031323334353637383930"
+    otp = "755224"
+    refusal = ("The parameter otponly requires the session of an administrator who may list the token, "
+               "or of the owner of the token.")
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        init_token({"serial": "OTPSESSION1", "otpkey": self.otp_key, "pin": "pin"},
+                   user=User("selfservice", self.realm1))
+        self.addCleanup(remove_token, "OTPSESSION1")
+
+    def _check_otp_only(self, headers: dict | None = None, serial: str = "OTPSESSION1") -> Response:
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"serial": serial, "otponly": "1", "pass": self.otp},
+                                           headers=headers or {}):
+            return self.app.full_dispatch_request()
+
+    def _assert_refused(self, response: Response, serial: str = "OTPSESSION1") -> None:
+        self.assertEqual(403, response.status_code, response.json)
+        self.assertEqual(self.refusal, response.json["result"]["error"]["message"], response.json)
+        # Refused before the check: the value is not used, and the fail counter does not change
+        token = get_one_token(serial=serial)
+        self.assertEqual(0, token.token.failcount)
+        self.assertEqual(0, token.token.count)
+
+    def _assert_accepted(self, response: Response) -> None:
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+
+    def _set_admin_tokenlist_policy(self, name: str, realm: str) -> None:
+        set_policy(name, scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=realm)
+        self.addCleanup(delete_policy, name)
+
+    def _init_second_token(self, user: User | None) -> str:
+        serial = "OTPSESSION2"
+        init_token({"serial": serial, "otpkey": self.otp_key, "pin": "pin"}, user=user)
+        self.addCleanup(remove_token, serial)
+        return serial
+
+    def test_01_refused_without_session(self):
+        self._assert_refused(self._check_otp_only())
+
+    def test_02_refused_with_an_invalid_session(self):
+        self._assert_refused(self._check_otp_only({"Authorization": "not a session token"}))
+
+    def test_03_refused_with_an_expired_session(self):
+        expired_session = jwt.encode({"username": self.testadmin, "realm": "", "role": ROLE.ADMIN,
+                                      "exp": datetime.datetime.now(datetime.timezone.utc)
+                                      - datetime.timedelta(minutes=1)},
+                                     self.app.secret_key, algorithm="HS256")
+        self._assert_refused(self._check_otp_only({"Authorization": expired_session}))
+
+    def test_04_refused_with_an_api_key(self):
+        api_key = jwt.encode({"username": "integration", "role": ROLE.VALIDATE,
+                              "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)},
+                             self.app.secret_key, algorithm="HS256")
+        self._assert_refused(self._check_otp_only({"Authorization": api_key}))
+
+    def test_05_accepted_for_an_admin_without_admin_policies(self):
+        # The WebUI sends the session in the PI-Authorization header
+        self._assert_accepted(self._check_otp_only({"PI-Authorization": self.at}))
+
+    def test_06_admin_needs_tokenlist_for_a_realm_of_the_token(self):
+        self._set_admin_tokenlist_policy("tokenlist_realm2", self.realm2)
+        self._assert_refused(self._check_otp_only({"Authorization": self.at}))
+
+        self._set_admin_tokenlist_policy("tokenlist_realm1", self.realm1)
+        self._assert_accepted(self._check_otp_only({"Authorization": self.at}))
+
+    def test_07_accepted_for_the_owner(self):
+        self.authenticate_selfservice_user()
+        self._assert_accepted(self._check_otp_only({"Authorization": self.at_user}))
+
+    def test_08_refused_for_a_user_who_does_not_own_the_token(self):
+        serial = self._init_second_token(User("cornelius", self.realm1))
+        self.authenticate_selfservice_user()
+        self._assert_refused(self._check_otp_only({"Authorization": self.at_user}, serial=serial), serial=serial)
+
+    def test_09_refused_for_a_user_on_a_token_without_owner(self):
+        serial = self._init_second_token(None)
+        self.authenticate_selfservice_user()
+        self._assert_refused(self._check_otp_only({"Authorization": self.at_user}, serial=serial), serial=serial)
 
 
 class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
@@ -4135,9 +4232,9 @@ class SerialTokenOwnerPoliciesTestCase(MyApiTestCase):
     def test_08_auth_max_fail_with_otponly(self):
         self._set_policy("max_fail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=1/1m")
         self.app_context.g.audit_object.clear()
-        response = self._check_serial("000000", otponly="1")
+        response = self._check_serial("000000", headers={"Authorization": self.at}, otponly="1")
         self.assertFalse(response.json["result"]["value"], response.json)
-        response = self._check_serial(self.otps[0], otponly="1")
+        response = self._check_serial(self.otps[0], headers={"Authorization": self.at}, otponly="1")
         self.assertEqual(200, response.status_code, response.json)
         self.assertEqual(AUTH_RESPONSE.REJECT, response.json["result"]["authentication"], response.json)
         self.assertEqual("Only 1 failed authentications per 0:01:00 allowed.", response.json["detail"]["message"],
