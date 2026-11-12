@@ -11,6 +11,12 @@
   align-items: flex-start;
 }
 
+// The field is a text field that only looks like a password field, so password managers do not offer to save the
+// value. A PIN or OTP value is no password of the admin.
+input.masked-input {
+  -webkit-text-security: disc;
+}
+
 .actions-visibility-button {
   display: flex;
 }
@@ -31,5 +37,11 @@
 
   p {
     margin: 0;
+  }
+
+  // The status region stays in the page, so screen readers announce the challenge text that it gets later. While it is
+  // empty, it takes no place in the column of the section.
+  &:empty {
+    position: absolute;
   }
 }

@@ -17,26 +17,21 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <ng-content select="[panelTitle]"></ng-content>
-@if (openChallenge(); as challenge) {
-  <div
-    class="challenge-message"
-    role="status">
+<div
+  [id]="challengeMessageId"
+  class="challenge-message"
+  role="status">
+  @if (openChallenge(); as challenge) {
     @if (challenge.message) {
       <p>{{ challenge.message }}</p>
     }
     @if (challenge.waitsForConfirmation) {
       <p i18n="@@token.waitingForConfirmation">Waiting for the confirmation on the device.</p>
     }
-  </div>
-}
+  }
+</div>
 @if (!openChallenge()?.waitsForConfirmation) {
   <div class="actions-otp-pin-input">
-    <input
-      class="hidden-input"
-      type="text" />
-    <input
-      class="hidden-input"
-      type="password" />
     <mat-form-field
       class="input-width-m"
       subscriptSizing="dynamic">
@@ -46,11 +41,14 @@
         <mat-label i18n="@@token.pinOtp">PIN and/or OTP</mat-label>
       }
       <input
+        #valueInput
         (keyup.enter)="openChallenge() && sendResponse()"
+        [aria-describedby]="openChallenge() ? challengeMessageId : ''"
+        [class.masked-input]="hide()"
         [formField]="otpOrPinForm"
-        [type]="hide() ? 'password' : 'text'"
         autocomplete="one-time-code"
-        matInput />
+        matInput
+        type="text" />
       <button
         (click)="hide.set(!hide())"
         [attr.aria-label]="hide() ? showValueLabel : hideValueLabel"
@@ -74,6 +72,7 @@
       </button>
     }
     <button
+      #cancelButton
       (click)="cancelChallenge()"
       class="action-button-secondary button-width-l"
       mat-stroked-button>
@@ -82,6 +81,7 @@
     </button>
   } @else {
     <button
+      #testTokenButton
       (click)="testToken()"
       class="action-button-secondary button-width-l"
       mat-stroked-button>

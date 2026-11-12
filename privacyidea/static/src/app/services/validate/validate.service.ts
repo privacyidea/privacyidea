@@ -66,6 +66,19 @@ export type ValidateCheckResponse = PiResponse<boolean, ValidateCheckDetail>;
 export type TriggerChallengeResponse = PiResponse<number, ValidateCheckDetail>;
 
 /**
+ * The state of the challenges of a transaction. "accept": the user confirmed a challenge. "declined": the user declined a
+ * challenge that they did not start. "cancelled": the user stopped a challenge that they started. "pending": no
+ * challenge is answered, or no valid challenge exists.
+ */
+export type ChallengeStatus = "accept" | "declined" | "cancelled" | "pending";
+
+export interface PollTransactionDetail {
+  challenge_status?: ChallengeStatus;
+}
+
+export type PollTransactionResponse = PiResponse<boolean, PollTransactionDetail>;
+
+/**
  * Each WebAuthn token of the user gets its own entry in multi_challenge. The browser can only be asked once, so the
  * allowed credentials of the entries are combined into one sign request; otherwise only the first token could be used.
  * Only entries with the same rpId and challenge can be combined. Each token keeps the rpId it was enrolled with, and
@@ -134,6 +147,8 @@ export interface ValidateServiceInterface {
   }): Observable<AuthResponse>;
 
   pollTransaction(transactionId: string): Observable<boolean>;
+
+  pollTransactionStatus(transactionId: string): Observable<ChallengeStatus>;
 }
 
 @Injectable({
@@ -324,18 +339,28 @@ export class ValidateService implements ValidateServiceInterface {
   }
 
   pollTransaction(transactionId: string): Observable<boolean> {
+    return this.requestPollTransaction(transactionId).pipe(
+      map((response) => response.result?.authentication === "ACCEPT" && response.result?.value === true)
+    );
+  }
+
+  /** Reports if the user confirmed, declined or cancelled the challenge of the transaction on the device. */
+  pollTransactionStatus(transactionId: string): Observable<ChallengeStatus> {
+    return this.requestPollTransaction(transactionId).pipe(
+      map((response) => response.detail?.challenge_status ?? "pending")
+    );
+  }
+
+  private requestPollTransaction(transactionId: string): Observable<PollTransactionResponse> {
     const headers = this.authService.getHeaders();
     return this.http
-      .get<PiResponse<boolean>>(`${this.baseUrl}polltransaction`, {
+      .get<PollTransactionResponse>(`${this.baseUrl}polltransaction`, {
         params: {
           transaction_id: transactionId
         },
         headers
       })
       .pipe(
-        map((response) => {
-          return response.result?.authentication === "ACCEPT" && response.result?.value === true;
-        }),
         catchError((error: HttpErrorResponse) => {
           console.error("Failed to poll transaction.", error);
           const message = error.error?.result?.error?.message || "Polling for transaction failed.";

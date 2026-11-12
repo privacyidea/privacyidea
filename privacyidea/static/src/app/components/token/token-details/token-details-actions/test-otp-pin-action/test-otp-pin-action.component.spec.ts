@@ -32,12 +32,18 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockNotificationService, MockTokenService, MockValidateService } from "@testing/mock-services";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
-import { of } from "rxjs";
+import { map, of, throwError, timer } from "rxjs";
 import {
   CONFIRMATION_POLLING_INTERVAL_MS,
   CONFIRMATION_POLLING_TIMEOUT_MS,
   TestOtpPinActionComponent
 } from "./test-otp-pin-action.component";
+
+const pushChallenge = MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {
+  client_mode: "poll",
+  message: "Please confirm the authentication on your mobile device!",
+  transaction_id: "4444"
+});
 
 function mockValidateCheckResponse(
   authentication: "ACCEPT" | "REJECT" | "CHALLENGE",
@@ -100,14 +106,25 @@ describe("TestOtpPinActionComponent", () => {
   it("the toggle button switches the input between masked and plain text", () => {
     const input: HTMLInputElement = fixture.nativeElement.querySelector("input[matInput]");
     const toggle: HTMLButtonElement = fixture.nativeElement.querySelector("button[matSuffix]");
-    expect(input.type).toBe("password");
+    expect(input.classList).toContain("masked-input");
     toggle.click();
     fixture.detectChanges();
     expect(component.hide()).toBe(false);
-    expect(input.type).toBe("text");
+    expect(input.classList).not.toContain("masked-input");
     toggle.click();
     fixture.detectChanges();
-    expect(input.type).toBe("password");
+    expect(input.classList).toContain("masked-input");
+  });
+
+  it("has no password field, so password managers do not offer to save the value", () => {
+    const toggle: HTMLButtonElement = fixture.nativeElement.querySelector("button[matSuffix]");
+    expect(fixture.nativeElement.querySelector("input[type='password']")).toBeNull();
+    expect(fixture.nativeElement.querySelector("input[matInput]").type).toBe("text");
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("input[type='password']")).toBeNull();
   });
 
   it("should test and verify token", () => {
@@ -291,7 +308,7 @@ describe("TestOtpPinActionComponent", () => {
         "The response was accepted. A policy then started the enrollment of the token PIPU0001 for the user."
       );
       expect(component.openChallenge()).toBeNull();
-      expect(validateService.pollTransaction).not.toHaveBeenCalled();
+      expect(validateService.pollTransactionStatus).not.toHaveBeenCalled();
     });
 
     it("closes the challenge and clears the field on Cancel", () => {
@@ -302,8 +319,16 @@ describe("TestOtpPinActionComponent", () => {
 
       expect(component.openChallenge()).toBeNull();
       expect(component.otpOrPinToTest()).toBe("");
-      expect(fixture.nativeElement.querySelector(".challenge-message")).toBeNull();
+      expect(fixture.nativeElement.querySelector(".challenge-message").textContent.trim()).toBe("");
       expect(fixture.nativeElement.querySelector("mat-label").textContent).toContain("PIN and/or OTP");
+    });
+
+    it("refers to the challenge text from the response field", () => {
+      const statusRegion: HTMLElement = fixture.nativeElement.querySelector(".challenge-message");
+      const input: HTMLInputElement = fixture.nativeElement.querySelector("input[matInput]");
+
+      expect(statusRegion.id).toBeTruthy();
+      expect(input.getAttribute("aria-describedby")?.split(" ")).toContain(statusRegion.id);
     });
 
     it("closes the challenge when the page shows another token", () => {
@@ -370,12 +395,6 @@ describe("TestOtpPinActionComponent", () => {
   });
 
   describe("challenge with a confirmation on a device", () => {
-    const pushChallenge = MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(1, {
-      client_mode: "poll",
-      message: "Please confirm the authentication on your mobile device!",
-      transaction_id: "4444"
-    });
-
     beforeEach(() => {
       jest.useFakeTimers();
       tokenService.tokenSerial.set("PIPU0001");
@@ -387,7 +406,7 @@ describe("TestOtpPinActionComponent", () => {
     });
 
     it("shows the waiting text and only the Cancel button", () => {
-      jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+      jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
 
       component.testWithoutPin();
       fixture.detectChanges();
@@ -404,23 +423,36 @@ describe("TestOtpPinActionComponent", () => {
     });
 
     it("completes the authentication with an empty response after the confirmation", () => {
-      const pollTransaction = jest
-        .spyOn(validateService, "pollTransaction")
-        .mockReturnValueOnce(of(false))
-        .mockReturnValue(of(true));
+      const pollTransactionStatus = jest
+        .spyOn(validateService, "pollTransactionStatus")
+        .mockReturnValueOnce(of("pending"))
+        .mockReturnValue(of("accept"));
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
       component.testWithoutPin();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS);
 
-      expect(pollTransaction).toHaveBeenCalledWith("4444");
+      expect(pollTransactionStatus).toHaveBeenCalledWith("4444");
       expect(validateService.testToken).toHaveBeenCalledWith("PIPU0001", "", undefined, "4444");
       expect(notificationService.success).toHaveBeenCalledWith("The response was accepted.");
       expect(component.openChallenge()).toBeNull();
     });
 
+    it("waits for a poll that takes longer than the polling interval", () => {
+      const slowPoll = timer(CONFIRMATION_POLLING_INTERVAL_MS * 1.5).pipe(map(() => "accept" as const));
+      const pollTransactionStatus = jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(slowPoll);
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
+
+      component.testWithoutPin();
+      jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 2);
+
+      expect(pollTransactionStatus).toHaveBeenCalledTimes(1);
+      expect(validateService.testToken).toHaveBeenCalledWith("PIPU0001", "", undefined, "4444");
+      expect(notificationService.success).toHaveBeenCalledWith("The response was accepted.");
+    });
+
     it("closes the challenge if the server rejects the confirmed challenge", () => {
-      jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(true));
+      jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("accept"));
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
 
       component.testWithoutPin();
@@ -430,8 +462,35 @@ describe("TestOtpPinActionComponent", () => {
       expect(component.openChallenge()).toBeNull();
     });
 
+    it.each([
+      ["declined" as const, "The challenge was declined on the device."],
+      ["cancelled" as const, "The challenge was cancelled on the device."]
+    ])("closes the challenge and notifies a warning if the challenge was %s on the device", (status, message) => {
+      const pollTransactionStatus = jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of(status));
+
+      component.testWithoutPin();
+      jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 3);
+
+      expect(notificationService.warning).toHaveBeenCalledWith(message);
+      expect(component.openChallenge()).toBeNull();
+      expect(validateService.testToken).not.toHaveBeenCalled();
+      expect(pollTransactionStatus).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes the challenge and stops the polling if a poll fails", () => {
+      const pollTransactionStatus = jest
+        .spyOn(validateService, "pollTransactionStatus")
+        .mockReturnValue(throwError(() => new Error("Polling for transaction failed.")));
+
+      component.testWithoutPin();
+      jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 3);
+
+      expect(component.openChallenge()).toBeNull();
+      expect(pollTransactionStatus).toHaveBeenCalledTimes(1);
+    });
+
     it("closes the challenge and notifies a warning if the device does not confirm in time", () => {
-      jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+      jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
 
       component.testWithoutPin();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_TIMEOUT_MS);
@@ -441,15 +500,96 @@ describe("TestOtpPinActionComponent", () => {
     });
 
     it("stops the polling on Cancel", () => {
-      const pollTransaction = jest.spyOn(validateService, "pollTransaction").mockReturnValue(of(false));
+      const pollTransactionStatus = jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
       component.testWithoutPin();
       jest.advanceTimersByTime(0);
-      const pollsBeforeCancel = pollTransaction.mock.calls.length;
+      const pollsBeforeCancel = pollTransactionStatus.mock.calls.length;
 
       component.cancelChallenge();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 3);
 
-      expect(pollTransaction.mock.calls.length).toBe(pollsBeforeCancel);
+      expect(pollTransactionStatus.mock.calls.length).toBe(pollsBeforeCancel);
+    });
+  });
+
+  it("keeps the status region in the page, so screen readers announce the text of a new challenge", () => {
+    const statusRegion: HTMLElement = fixture.nativeElement.querySelector(".challenge-message");
+    expect(statusRegion.getAttribute("role")).toBe("status");
+    expect(statusRegion.textContent?.trim()).toBe("");
+
+    component.testWithoutPin();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector(".challenge-message")).toBe(statusRegion);
+    expect(statusRegion.textContent).toContain("please enter otp:");
+  });
+
+  describe("focus", () => {
+    const button = (label: string): HTMLButtonElement | undefined =>
+      Array.from(
+        fixture.nativeElement.querySelectorAll(".actions-pin-button button") as NodeListOf<HTMLButtonElement>
+      ).find((candidate) => candidate.textContent?.includes(label));
+
+    const render = async (): Promise<void> => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+
+    const click = async (label: string): Promise<void> => {
+      const target = button(label);
+      target?.focus();
+      target?.click();
+      await render();
+    };
+
+    beforeEach(() => {
+      authService.actionAllowed.mockImplementation((action: string) => action === "triggerchallenge");
+      fixture.componentRef.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+    });
+
+    it("moves the focus to the response field when a challenge opens", async () => {
+      await click("Test without PIN");
+
+      expect(document.activeElement).toBe(fixture.nativeElement.querySelector("input[matInput]"));
+    });
+
+    it("moves the focus to Cancel while the device confirms the challenge", async () => {
+      jest.spyOn(validateService, "triggerChallenge").mockReturnValue(of(pushChallenge));
+      jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
+
+      await click("Test without PIN");
+
+      expect(document.activeElement).toBe(button("Cancel"));
+      component.cancelChallenge();
+    });
+
+    it("moves the focus to Test Token when the challenge ends", async () => {
+      await click("Test without PIN");
+
+      await click("Cancel");
+
+      expect(document.activeElement).toBe(button("Test Token"));
+    });
+
+    it("keeps the focus on Verify OTP Value after a test without a challenge", async () => {
+      jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
+
+      await click("Verify OTP Value");
+
+      expect(document.activeElement).toBe(button("Verify OTP Value"));
+    });
+
+    it("does not move the focus if the admin moved it out of the section", async () => {
+      const elementOutsideOfSection = document.createElement("button");
+      document.body.appendChild(elementOutsideOfSection);
+      elementOutsideOfSection.focus();
+
+      component.testWithoutPin();
+      await render();
+
+      expect(document.activeElement).toBe(elementOutsideOfSection);
+      elementOutsideOfSection.remove();
     });
   });
 });

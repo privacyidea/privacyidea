@@ -29,8 +29,10 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { mockWebAuthnChallenge, mockWebAuthnSignRequest } from "@testing/mock-webauthn-challenge";
 import {
+  ChallengeStatus,
   mergeWebAuthnSignRequests,
   PasskeyCheckParams,
+  PollTransactionDetail,
   TriggerChallengeResponse,
   ValidateCheckResponse,
   ValidateService
@@ -609,6 +611,52 @@ describe("ValidateService", () => {
             done();
           }
         });
+      });
+    });
+
+    describe("pollTransactionStatus", () => {
+      it.each(["accept", "declined", "cancelled", "pending"] as const)(
+        "returns the challenge status %s of the server",
+        (status) => {
+          const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
+          httpGet.mockReturnValueOnce(
+            of(
+              MockPiResponse.fromValue<boolean, PollTransactionDetail>(status === "accept", {
+                challenge_status: status
+              })
+            )
+          );
+          const statuses: ChallengeStatus[] = [];
+
+          validateService.pollTransactionStatus("tid").subscribe((result) => statuses.push(result));
+
+          expect(httpGet).toHaveBeenCalledWith(
+            expect.stringContaining("polltransaction"),
+            expect.objectContaining({ params: { transaction_id: "tid" } })
+          );
+          expect(statuses).toEqual([status]);
+        }
+      );
+
+      it("returns pending if the server reports no status", () => {
+        const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
+        httpGet.mockReturnValueOnce(of({ result: { value: false } } as unknown as PiResponse<boolean>));
+        const statuses: ChallengeStatus[] = [];
+
+        validateService.pollTransactionStatus("tid").subscribe((result) => statuses.push(result));
+
+        expect(statuses).toEqual(["pending"]);
+      });
+
+      it("notifies and rethrows on GET failure", () => {
+        const httpGet = jest.spyOn(TestBed.inject(HttpClient), "get");
+        httpGet.mockReturnValueOnce(throwError(() => ({ error: { result: { error: { message: "poll failed" } } } })));
+        const errors: unknown[] = [];
+
+        validateService.pollTransactionStatus("tid").subscribe({ error: (error) => errors.push(error) });
+
+        expect(notif.error).toHaveBeenCalledWith("poll failed");
+        expect(errors).toHaveLength(1);
       });
     });
   });

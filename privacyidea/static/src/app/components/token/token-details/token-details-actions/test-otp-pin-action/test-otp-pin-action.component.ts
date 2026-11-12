@@ -16,7 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, DestroyRef, effect, inject, input, linkedSignal, signal, untracked } from "@angular/core";
+import {
+  afterNextRender,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  linkedSignal,
+  signal,
+  untracked,
+  viewChild
+} from "@angular/core";
 import { form, FormField } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -32,10 +46,12 @@ import {
   ValidateServiceInterface
 } from "@services/validate/validate.service";
 import { EMPTY, Subscription, timer } from "rxjs";
-import { catchError, filter, switchMap, take, timeout } from "rxjs/operators";
+import { catchError, exhaustMap, filter, switchMap, take, timeout } from "rxjs/operators";
 
 export const CONFIRMATION_POLLING_INTERVAL_MS = 1000;
 export const CONFIRMATION_POLLING_TIMEOUT_MS = 5 * 60 * 1000;
+
+let nextChallengeMessageId = 0;
 
 /**
  * Token types that the server can not check by the OTP value alone, so "Verify OTP Value" never gives a result for
@@ -83,6 +99,12 @@ export class TestOtpPinActionComponent {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly hostElement: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly injector = inject(Injector);
+  private readonly valueInput = viewChild("valueInput", { read: ElementRef<HTMLInputElement> });
+  private readonly cancelButton = viewChild("cancelButton", { read: ElementRef<HTMLButtonElement> });
+  private readonly testTokenButton = viewChild("testTokenButton", { read: ElementRef<HTMLButtonElement> });
+  protected readonly challengeMessageId = `test-otp-pin-challenge-message-${nextChallengeMessageId++}`;
   tokenType = input<string>("");
   showVerifyOtpValue = computed(() => !TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK.has(this.tokenType()));
   hide = signal(true);
@@ -155,8 +177,7 @@ export class TestOtpPinActionComponent {
 
   cancelChallenge(): void {
     this.stopConfirmationPolling();
-    this.openChallenge.set(null);
-    this.otpOrPinToTest.set("");
+    this.endChallenge();
   }
 
   /**
@@ -168,8 +189,7 @@ export class TestOtpPinActionComponent {
   private evaluateCheckResponse(response: ValidateCheckResponse, messages: CheckResultMessages): void {
     const authentication = response.result?.authentication;
     if (authentication === "CHALLENGE" && response.detail?.enroll_via_multichallenge) {
-      this.openChallenge.set(null);
-      this.otpOrPinToTest.set("");
+      this.endChallenge();
       const enrolledSerial = response.detail.serial ?? "";
       this.notificationService.warning(
         `${messages.accepted} ` +
@@ -178,8 +198,7 @@ export class TestOtpPinActionComponent {
     } else if (authentication === "CHALLENGE" && response.detail?.transaction_id) {
       this.startChallenge(response.detail);
     } else if (authentication === "ACCEPT") {
-      this.openChallenge.set(null);
-      this.otpOrPinToTest.set("");
+      this.endChallenge();
       this.notificationService.success(messages.accepted);
     } else {
       this.notificationService.warning(messages.rejected);
@@ -192,25 +211,72 @@ export class TestOtpPinActionComponent {
     const waitsForConfirmation = detail.client_mode === "poll";
     this.otpOrPinToTest.set("");
     this.openChallenge.set({ transactionId, message: detail.message ?? "", waitsForConfirmation });
+    this.moveFocusAfterRender(() => (waitsForConfirmation ? this.cancelButton() : this.valueInput()));
     if (waitsForConfirmation) {
       this.startConfirmationPolling(transactionId);
     }
   }
 
-  /** After the confirmation on the device, an empty response with the transaction ID completes the authentication. */
+  /** "Test Token" replaces the buttons of the challenge, so it gets the focus when a challenge ends. */
+  private endChallenge(): void {
+    const challengeWasOpen = this.openChallenge() !== null;
+    this.openChallenge.set(null);
+    this.otpOrPinToTest.set("");
+    if (challengeWasOpen) {
+      this.moveFocusAfterRender(() => this.testTokenButton());
+    }
+  }
+
+  /**
+   * The button that the admin used can disappear with the next render, and the focus then goes to the page. So the
+   * focus moves to the control that continues the test. If the admin moved the focus out of the section, it stays there.
+   */
+  private moveFocusAfterRender(target: () => ElementRef<HTMLElement> | undefined): void {
+    afterNextRender(
+      () => {
+        const focusedElement = document.activeElement;
+        const focusIsOutsideOfSection =
+          focusedElement !== null &&
+          focusedElement !== document.body &&
+          focusedElement.isConnected &&
+          !this.hostElement.nativeElement.contains(focusedElement);
+        if (!focusIsOutsideOfSection) {
+          target()?.nativeElement.focus();
+        }
+      },
+      { injector: this.injector }
+    );
+  }
+
+  /**
+   * After the confirmation on the device, an empty response with the transaction ID completes the authentication. A new
+   * poll starts only after the previous poll returned, so a slow server can still report the confirmation.
+   */
   private startConfirmationPolling(transactionId: string): void {
     this.stopConfirmationPolling();
     const tokenSerial = this.tokenService.tokenSerial();
     this.confirmationPolling = timer(0, CONFIRMATION_POLLING_INTERVAL_MS)
       .pipe(
-        switchMap(() => this.validateService.pollTransaction(transactionId)),
-        filter((confirmed) => confirmed),
+        exhaustMap(() => this.validateService.pollTransactionStatus(transactionId)),
+        filter((status) => status !== "pending"),
         take(1),
         timeout(CONFIRMATION_POLLING_TIMEOUT_MS),
-        switchMap(() => this.validateService.testToken(tokenSerial, "", undefined, transactionId)),
+        switchMap((status) => {
+          if (status === "accept") {
+            return this.validateService.testToken(tokenSerial, "", undefined, transactionId);
+          }
+          this.endChallenge();
+          this.notificationService.warning(
+            status === "declined"
+              ? $localize`:@@token.confirmationDeclined:The challenge was declined on the device.`
+              : $localize`:@@token.confirmationCancelled:The challenge was cancelled on the device.`
+          );
+          return EMPTY;
+        }),
         catchError((error: Error) => {
+          // The validate service shows the error of a failed request.
+          this.endChallenge();
           if (error.name === "TimeoutError") {
-            this.openChallenge.set(null);
             this.notificationService.warning(
               $localize`:@@token.confirmationTimedOut:The device did not confirm the challenge in time.`
             );
@@ -223,7 +289,7 @@ export class TestOtpPinActionComponent {
           this.evaluateCheckResponse(response, this.responseMessages());
           // Nothing is left to confirm, unless the server started a new challenge.
           if (this.openChallenge()?.transactionId === transactionId) {
-            this.openChallenge.set(null);
+            this.endChallenge();
           }
         }
       });

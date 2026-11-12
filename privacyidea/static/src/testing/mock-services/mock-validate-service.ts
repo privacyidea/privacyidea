@@ -18,6 +18,7 @@
  **/
 import { AuthData, AuthDetail, AuthResponse, AuthRole, ContainerWizardConfig } from "@services/auth/auth.service";
 import {
+  ChallengeStatus,
   TriggerChallengeResponse,
   ValidateCheckResponse,
   ValidateServiceInterface
@@ -108,4 +109,6 @@ export class MockValidateService implements ValidateServiceInterface {
     );
 
   pollTransaction = jest.fn().mockReturnValue(of(true));
+
+  pollTransactionStatus = jest.fn().mockReturnValue(of<ChallengeStatus>("accept"));
 }
