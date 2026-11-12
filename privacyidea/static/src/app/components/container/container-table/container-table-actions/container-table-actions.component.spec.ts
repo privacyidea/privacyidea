@@ -19,23 +19,25 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatMenuTrigger } from "@angular/material/menu";
 
-import { provideHttpClient } from "@angular/common/http";
+import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute } from "@angular/router";
+import { TableAction } from "@components/shared/table-actions/table-actions.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { of } from "rxjs";
-import { ContainerTableActionsComponent } from "./container-table-actions.component";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { DocumentationService } from "@services/documentation/documentation.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import {
   MockContainerService,
   MockContentService,
   MockDocumentationService,
+  MockPiResponse,
   MockTableUtilsService
 } from "@testing/mock-services";
-import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { ContentService } from "@services/content/content.service";
-import { DocumentationService } from "@services/documentation/documentation.service";
-import { DialogService } from "@services/dialog/dialog.service";
+import { of } from "rxjs";
+import { ContainerTableActionsComponent } from "./container-table-actions.component";
 
 describe("ContainerTableActionsComponent", () => {
   let component: ContainerTableActionsComponent;
@@ -99,6 +101,130 @@ describe("ContainerTableActionsComponent", () => {
 
       expect(containerService.deleteContainer).not.toHaveBeenCalled();
       expect(containerService.containerSelection.selectedCount()).toBe(1);
+    });
+  });
+
+  describe("toggleComparison", () => {
+    // The toolbar is rendered by app-table-actions from the action list, so the list is what is checked here.
+    const compareAction = (): TableAction | undefined =>
+      (component as unknown as { actions: () => TableAction[] }).actions().find((action) => action.id === "compare");
+
+    it.each([
+      [false, "Compare with templates"],
+      [true, "Hide comparison"]
+    ])("with comparisonActive=%s the enabled action without a selection is labelled %s", (active, label) => {
+      expect(containerService.containerSelection.hasSelection()).toBe(false);
+      fixture.componentRef.setInput("comparisonActive", active);
+      fixture.detectChanges();
+
+      expect(compareAction()?.label).toBe(label);
+      expect(compareAction()?.disabled).toBe(false);
+    });
+
+    it("emits the comparison results of all containers on the page", async () => {
+      const selected = [
+        { serial: "CONT-1", template: "baseline" },
+        { serial: "CONT-2", template: "" }
+      ] as ContainerDetailData[];
+      containerService.containerResource.set(MockPiResponse.fromValue({ containers: selected, count: 2 }));
+      const comparisons = [
+        {
+          additional: [],
+          containerSerial: "CONT-1",
+          equal: true,
+          missing: [],
+          templateName: "baseline"
+        }
+      ];
+      containerService.compareContainersWithTemplates.mockResolvedValue(comparisons);
+      const loadedSpy = jest.fn();
+      component.comparisonLoaded.subscribe(loadedSpy);
+
+      await component.toggleComparison();
+
+      expect(containerService.compareContainersWithTemplates).toHaveBeenCalledWith(selected);
+      expect(loadedSpy).toHaveBeenCalledWith(comparisons);
+    });
+
+    it.each([
+      ["page index", () => containerService.pageIndex.set(1)],
+      ["page size", () => containerService.pageSize.set(25)],
+      ["sort", () => containerService.sort.set({ active: "type", direction: "desc" })],
+      ["active filter", () => containerService.activeFilter.set(new FilterValue({ value: "type: smartphone" }))]
+    ])("drops a late comparison result when the %s changed meanwhile", async (_name, change) => {
+      const shown = [{ serial: "CONT-1", template: "baseline" }] as ContainerDetailData[];
+      containerService.containerResource.set(MockPiResponse.fromValue({ containers: shown, count: 1 }));
+      let resolve!: (rows: unknown[]) => void;
+      containerService.compareContainersWithTemplates.mockReturnValue(new Promise((r) => (resolve = r)));
+      const loadedSpy = jest.fn();
+      component.comparisonLoaded.subscribe(loadedSpy);
+
+      const pending = component.toggleComparison();
+      change();
+      resolve([{ containerSerial: "CONT-1" }]);
+      await pending;
+
+      expect(loadedSpy).not.toHaveBeenCalled();
+      expect(component.comparingContainers()).toBe(false);
+    });
+
+    it("lets a newer comparison win over an older one that resolves later", async () => {
+      const shown = [{ serial: "CONT-1", template: "baseline" }] as ContainerDetailData[];
+      containerService.containerResource.set(MockPiResponse.fromValue({ containers: shown, count: 1 }));
+      const resolvers: ((rows: unknown[]) => void)[] = [];
+      containerService.compareContainersWithTemplates.mockImplementation(() => new Promise((r) => resolvers.push(r)));
+      const loadedSpy = jest.fn();
+      component.comparisonLoaded.subscribe(loadedSpy);
+
+      const first = component.compareDisplayedContainers();
+      const second = component.compareDisplayedContainers();
+      resolvers[1]([{ containerSerial: "new" }]);
+      await second;
+      resolvers[0]([{ containerSerial: "old" }]);
+      await first;
+
+      expect(loadedSpy).toHaveBeenCalledTimes(1);
+      expect(loadedSpy).toHaveBeenCalledWith([{ containerSerial: "new" }]);
+      expect(component.comparingContainers()).toBe(false);
+    });
+
+    it("emits comparisonHidden instead of comparing while the comparison is shown", async () => {
+      fixture.componentRef.setInput("comparisonActive", true);
+      const hiddenSpy = jest.fn();
+      component.comparisonHidden.subscribe(hiddenSpy);
+
+      await component.toggleComparison();
+
+      expect(hiddenSpy).toHaveBeenCalledTimes(1);
+      expect(containerService.compareContainersWithTemplates).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [
+        "the server message of an HttpErrorResponse",
+        new HttpErrorResponse({ status: 403, error: { result: { error: { message: "no rights for container X" } } } }),
+        "no rights for container X"
+      ],
+      ["the message of a plain Error", new Error("boom"), "boom"],
+      ["the unknown-error text for a string", "oops", "unknown error"],
+      ["the unknown-error text for an object without a message", { foo: 1 }, "unknown error"]
+    ])("reports comparison errors: shows %s", async (_name, reason, expected) => {
+      containerService.containerResource.set(
+        MockPiResponse.fromValue({ containers: [{ serial: "CONT-1" }] as ContainerDetailData[], count: 1 })
+      );
+      containerService.compareContainersWithTemplates.mockRejectedValue(reason);
+      const errorSpy = jest.spyOn(
+        (component as unknown as { notificationService: { error: (msg: string) => void } }).notificationService,
+        "error"
+      );
+      jest.spyOn(console, "error").mockImplementation();
+
+      await component.toggleComparison();
+
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining(expected));
+      if (expected !== "unknown error") {
+        expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining("unknown error"));
+      }
     });
   });
 

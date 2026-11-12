@@ -103,6 +103,8 @@ export interface TableUtilsServiceInterface {
 
   toggleBooleanInFilter(args: { keyword: string; currentValue: FilterValue }): FilterValue;
 
+  canToggleActive(token: TableRow): boolean;
+
   getClassForColumn(columnKey: string, element: TableRow): string;
 
   getTooltipForColumn(columnKey: string, element: TableRow): string;
@@ -193,20 +195,20 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return currentValue.toggleBooleanKey(keyword);
   }
 
+  canToggleActive(token: TableRow): boolean {
+    if (token["locked"] || token["revoked"] || typeof token["active"] !== "boolean") return false;
+    return this.authService.actionAllowed(token["active"] ? "disable" : "enable");
+  }
+
   getClassForColumn(columnKey: string, element: TableRow): string {
     if (element["locked"] || element["revoked"]) return "highlight-disabled";
 
     switch (columnKey) {
-      case "active":
-        if (element["active"]) {
-          if (this.authService.actionAllowed("disable")) return "highlight-true-clickable";
-          else return "highlight-true";
-        }
-        if (element["active"] === false) {
-          if (this.authService.actionAllowed("enable")) return "highlight-false-clickable";
-          else return "highlight-false";
-        }
-        return "";
+      case "active": {
+        if (typeof element["active"] !== "boolean") return "";
+        const highlight = element["active"] ? "highlight-true" : "highlight-false";
+        return this.canToggleActive(element) ? `${highlight}-clickable` : highlight;
+      }
 
       case "failcount": {
         const raw = element["failcount"];

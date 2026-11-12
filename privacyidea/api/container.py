@@ -166,6 +166,8 @@ def list_containers():
         this serial (case-insensitive, ``*`` wildcard).
     :query template: filter by the name of the template the
         container was created from (case-sensitive, ``*`` wildcard).
+    :query has_template: ``true`` or ``false`` to limit the result to
+        containers created with or without a template.
     :query realm: filter by the realm of the assigned user (exact,
         case-insensitive). May be given without ``user`` to list the
         containers of all users of that realm; a realm that does not exist
@@ -218,6 +220,9 @@ def list_containers():
         ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
+    has_template = get_optional(param, "has_template")
+    if has_template is not None:
+        has_template = is_true(has_template)
     realm = get_optional(param, "container_realm")
     description = get_optional(param, "description")
     resolver = get_optional(param, "resolver")
@@ -248,6 +253,7 @@ def list_containers():
     result = get_all_containers(user=user, serial=cserial, ctype=ctype, ctype_exact=ctype_exact,
                                 token_serial=token_serial,
                                 realm=realm, allowed_realms=allowed_container_realms, template=template,
+                                has_template=has_template,
                                 description=description, resolver=resolver, assigned=assigned, info=info,
                                 last_auth_delta=last_auth_delta, last_sync_delta=last_sync_delta, state=state,
                                 sortby=sortby, sortdir=sortdir, pagesize=psize, page=page)
@@ -382,8 +388,10 @@ def init():
         ``{"type": ..., "error": ..., "serial": ...}`` with one entry
         per such token. The ``serial`` is only present if it is known.
         The key is missing if all tokens were created.
-    :status 400: invalid type, serial collision, or both ``template``
-        and ``template_name`` supplied.
+    :status 400: invalid type, serial collision, both ``template``
+        and ``template_name`` supplied, or ``change_pin_on_first_use``
+        of a token in a ``template`` of the container type is not a
+        boolean.
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -1436,7 +1444,8 @@ def get_template():
         {
           "templates": [
             {"name": "template1", "container_type": "smartphone",
-             "template_options": {"tokens": [{"type": "hotp", "genkey": true}, ...]}},
+             "template_options": {"tokens": [{"type": "hotp", "genkey": true,
+                                              "change_pin_on_first_use": false}, ...]}},
             {"name": "template2", "container_type": "yubikey", ...}
           ],
           "count": 25,
@@ -1482,10 +1491,16 @@ def create_template_with_name(container_type, template_name):
         (most importantly ``tokens`` — the list of token specs to
         create when a container is built from this template).
         Defaults to an empty dict.
+        If the optional boolean ``change_pin_on_first_use`` of a token is
+        ``true``, the PIN of the token must be changed on first use. The
+        default is ``false``. Then the policy ``change_pin_on_first_use``
+        decides, as for a single token enrollment.
     :jsonparam default: ``True`` to mark this template as the default
         for the container type.
     :status 200: ``{"template_id": <id>}`` in ``result.value``.
-    :status 400: ``template_options`` is not a dictionary.
+    :status 400: ``template_options`` is not a dictionary, a token
+        type is not supported for the container type or
+        ``change_pin_on_first_use`` of a token is not a boolean.
     """
     params = request.all_data
     template_options = get_optional(params, "template_options") or {}

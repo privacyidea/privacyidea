@@ -16,3 +16,22 @@
     width: calc(308px + 2 * 12px);
   }
 }
+
+// The wrapper keeps mat-icon from being projected into mat-option's leading icon slot. The span comes from this
+// template, so the component scope reaches it inside the overlay. The disabled option is styled in
+// styles/_material-overrides.scss.
+.select-option-unsupported-icon {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+
+  mat-icon {
+    // Material gives every mat-icon in an option margin-right: 16px (room for a leading icon), which pushed the
+    // info icon 16px left of the check mark. The check sits flush against the option's end padding, so this does too.
+    margin: 0;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}

@@ -54,7 +54,7 @@ import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, splitExactMatch, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { formatList, pluralize } from "@utils/i18n.utils";
 import { StringUtils } from "@utils/string.utils";
-import { tokenTypes } from "@utils/token.utils";
+import { tokenTypeDisplayLabel, tokenTypes } from "@utils/token.utils";
 import {
   catchError,
   firstValueFrom,
@@ -726,14 +726,15 @@ export class TokenService extends FilterableTableService implements TokenService
     return Object.entries(obj)
       .map(([key, info]) => {
         const infoString = String(info);
+        const name = tokenTypes.find((t) => t.key === key)?.name || key;
         return {
           value: {
             key: key as TokenTypeKey,
-            name: tokenTypes.find((t) => t.key === key)?.name || key,
+            name,
             info: infoString,
             text: tokenTypes.find((t) => t.key === key)?.text || ""
           },
-          label: infoString.split(":")[0]
+          label: tokenTypeDisplayLabel(infoString, name)
         };
       })
       .sort((a, b) => a.label.localeCompare(b.label))

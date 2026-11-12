@@ -27,9 +27,17 @@ import { EditableField } from "@components/shared/details-shared/field-editing/e
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { RealmService } from "@services/realm/realm.service";
 import { TokenGroup, TokenGroups, TokenService } from "@services/token/token.service";
-import { MockContainerService, MockContentService, MockRealmService, MockTokenService } from "@testing/mock-services";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import {
+  MockContainerService,
+  MockContentService,
+  MockDialogService,
+  MockRealmService,
+  MockTokenService
+} from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { mockTokenDetails } from "@testing/mock-token-details";
@@ -48,6 +56,7 @@ interface AssignmentsFieldInternals {
   selectedTokengroup: WritableSignal<string[]>;
   str: (value: unknown) => string;
   removeContainer: () => void;
+  openContainerCreateDialog: () => void;
 }
 
 describe("TokenDetailsAssignmentsComponent", () => {
@@ -57,6 +66,7 @@ describe("TokenDetailsAssignmentsComponent", () => {
   let tokenService: MockTokenService;
   let realmService: MockRealmService;
   let containerService: MockContainerService;
+  let dialogService: MockDialogService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -70,7 +80,8 @@ describe("TokenDetailsAssignmentsComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -80,6 +91,7 @@ describe("TokenDetailsAssignmentsComponent", () => {
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     realmService = TestBed.inject(RealmService) as unknown as MockRealmService;
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     fixture.componentRef.setInput("tokenDetails", mockTokenDetails());
     fixture.detectChanges();
   });
@@ -433,5 +445,33 @@ describe("TokenDetailsAssignmentsComponent", () => {
     expect(internals.str(undefined)).toBe("");
     expect(internals.str(123)).toBe("123");
     expect(internals.str("abc")).toBe("abc");
+  });
+
+  it("openContainerCreateDialog() passes the token owner to the dialog and selects the created serial", () => {
+    fixture.componentRef.setInput("tokenDetails", mockTokenDetails({ username: "alice", user_realm: "realm1" }));
+    fixture.detectChanges();
+
+    internals.openContainerCreateDialog();
+
+    expect(dialogService.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { username: "alice", userRealm: "realm1" } })
+    );
+    const dialogRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+    dialogRef.close("CONT-NEW");
+
+    expect(containerService.selectedContainerSerial()).toBe("CONT-NEW");
+    expect(internals.containerInput()).toBe("CONT-NEW");
+  });
+
+  it("openContainerCreateDialog() passes no user when the token is unassigned and keeps the selection on cancel", () => {
+    containerService.selectedContainerSerial.set("CONT-OLD");
+
+    internals.openContainerCreateDialog();
+
+    expect(dialogService.openDialog).toHaveBeenCalledWith(expect.objectContaining({ data: {} }));
+    const dialogRef = dialogService.openDialog.mock.results[0].value as MockMatDialogRef<unknown, string>;
+    dialogRef.close(undefined);
+
+    expect(containerService.selectedContainerSerial()).toBe("CONT-OLD");
   });
 });

@@ -33,7 +33,7 @@
   </mat-chip-set>
 }
 <div class="added-tokens-list">
-  @for (token of tokens(); track $index) {
+  @for (token of tokens(); track token) {
     <app-template-added-token-row
       [tokenEnrollmentPayload]="token"
       [index]="$index"

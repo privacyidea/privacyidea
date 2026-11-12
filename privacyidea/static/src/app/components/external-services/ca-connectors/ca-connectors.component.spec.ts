@@ -140,12 +140,38 @@ describe("CaConnectorsComponent", () => {
       expect(toolbarAction(component, "delete").label).toBe("Delete");
     });
 
-    it("shows both actions while the read right is granted", () => {
-      setRights(fixture, ["caconnectorread"]);
+    it("shows both actions with caconnectorwrite and caconnectordelete", () => {
+      setRights(fixture, ["caconnectorread", "caconnectorwrite", "caconnectordelete"]);
 
       expect(component["toolbarActions"]().every((action) => action.visible !== false)).toBe(true);
       expect(toolbarButton(fixture, "Create CA Connector")).toBeTruthy();
       expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides create without caconnectorwrite", () => {
+      setRights(fixture, ["caconnectorread", "caconnectordelete"]);
+
+      expect(toolbarAction(component, "create").visible).toBe(false);
+      expect(toolbarButton(fixture, "Create CA Connector")).toBeUndefined();
+      expect(toolbarButton(fixture, "Delete")).toBeTruthy();
+    });
+
+    it("hides delete without caconnectordelete", () => {
+      setRights(fixture, ["caconnectorread", "caconnectorwrite"]);
+
+      expect(toolbarAction(component, "delete").visible).toBe(false);
+      expect(toolbarButton(fixture, "Delete")).toBeUndefined();
+      expect(toolbarButton(fixture, "Create CA Connector")).toBeTruthy();
+    });
+
+    it("offers row selection only with caconnectordelete, the right of the one action that uses it", () => {
+      const selectColumn = (): Element | null => fixture.nativeElement.querySelector("th.mat-column-select");
+
+      setRights(fixture, ["caconnectorread", "caconnectordelete"]);
+      expect(selectColumn()).not.toBeNull();
+
+      setRights(fixture, ["caconnectorread", "caconnectorwrite"]);
+      expect(selectColumn()).toBeNull();
     });
 
     it("draws no toolbar while the read right is denied", () => {
@@ -156,7 +182,7 @@ describe("CaConnectorsComponent", () => {
     });
 
     it("keeps create enabled and disables delete until a row is selected", () => {
-      setRights(fixture, ["caconnectorread"]);
+      setRights(fixture, ["caconnectorread", "caconnectorwrite", "caconnectordelete"]);
 
       expect(toolbarAction(component, "create").disabled).toBeFalsy();
       expect(toolbarAction(component, "delete").disabled).toBe(true);
@@ -198,7 +224,7 @@ describe("CaConnectorsComponent", () => {
     });
 
     it("runs create from its rendered button", () => {
-      setRights(fixture, ["caconnectorread"]);
+      setRights(fixture, ["caconnectorread", "caconnectorwrite", "caconnectordelete"]);
       const navigate = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       navigate.mockClear();
 
@@ -208,7 +234,7 @@ describe("CaConnectorsComponent", () => {
     });
 
     it("runs delete from its rendered button once a row is selected", () => {
-      setRights(fixture, ["caconnectorread"]);
+      setRights(fixture, ["caconnectorread", "caconnectorwrite", "caconnectordelete"]);
       component.selector.selectRow(caConnectorServiceMock.caConnectors()[0]);
       fixture.detectChanges();
 
@@ -216,6 +242,30 @@ describe("CaConnectorsComponent", () => {
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({ component: SimpleConfirmationDialogComponent })
+      );
+    });
+  });
+
+  describe("empty state", () => {
+    beforeEach(() => {
+      caConnectorServiceMock.caConnectors.set([]);
+    });
+
+    it("offers the create button and hint with caconnectorwrite", () => {
+      setRights(fixture, ["caconnectorread", "caconnectorwrite"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")?.textContent).toContain("Create CA Connector");
+      expect(state.textContent).toContain("Create a CA connector to issue and manage certificates from privacyIDEA.");
+    });
+
+    it("offers neither button nor hint without caconnectorwrite", () => {
+      setRights(fixture, ["caconnectorread"]);
+
+      const state: HTMLElement = fixture.nativeElement.querySelector("app-table-state");
+      expect(state.querySelector("button")).toBeNull();
+      expect(state.textContent).not.toContain(
+        "Create a CA connector to issue and manage certificates from privacyIDEA."
       );
     });
   });

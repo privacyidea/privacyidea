@@ -22082,6 +22082,219 @@
           <context context-type="linenumber">511</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="common.addToContainer" datatype="html">
+        <source>Add to Container</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.html</context>
+          <context context-type="linenumber">81</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.addTokensToContainer" datatype="html">
+        <source>Add Tokens to Container</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/dialog/container-picker-dialog/container-picker-dialog.component.ts</context>
+          <context context-type="linenumber">71</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.all" datatype="html">
+        <source>All</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create-dialog/container-create-dialog.component.ts</context>
+          <context context-type="linenumber">86</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.assignContainerToUser" datatype="html">
+        <source>Assign Container to this user</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/dialog/container-picker-dialog/container-picker-dialog.component.html</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.assignNewContainerToUser" datatype="html">
+        <source>Assign the new container to <x id="INTERPOLATION" equiv-text="{{ data?.username }}"/> in realm <x id="INTERPOLATION_1" equiv-text="{{ data?.userRealm }}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create-dialog/container-create-dialog.component.html</context>
+          <context context-type="linenumber">58</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.belongsToOtherUser" datatype="html">
+        <source>This container belongs to <x id="OWNER" equiv-text="owner"/>.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/dialog/container-picker-dialog/container-picker-dialog.component.ts</context>
+          <context context-type="linenumber">118</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.containerType" datatype="html">
+        <source>Container Type</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create-dialog/container-create-dialog.component.html</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.createNewContainerDialog" datatype="html">
+        <source>Create New Container</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create-dialog/container-create-dialog.component.html</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.createNewContainerOption" datatype="html">
+        <source>Create new container</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-details/token-details-assignments/token-details-assignments.component.html</context>
+          <context context-type="linenumber">114</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
+          <context context-type="linenumber">102</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
+          <context context-type="linenumber">100</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.failedToAddTokensTo" datatype="html">
+        <source>Failed to add tokens to container. <x id="MESSAGE" equiv-text="message"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/container/container.service.ts</context>
+          <context context-type="linenumber">974</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.supportedTokenTypes" datatype="html">
+        <source>Supported Token Types:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-create-dialog/container-create-dialog.component.html</context>
+          <context context-type="linenumber">37</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.willBeReassignedFrom" datatype="html">
+        <source>This container belongs to <x id="OWNER" equiv-text="owner"/> and will be moved to this user.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/dialog/container-picker-dialog/container-picker-dialog.component.ts</context>
+          <context context-type="linenumber">117</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.createRealm" datatype="html">
+        <source>Create realm</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
+          <context context-type="linenumber">64</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/no-realm-dialog/no-realm-dialog.component.ts</context>
+          <context context-type="linenumber">45</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="token.enrollmentUnsupportedType" datatype="html">
+        <source>Enrollment is not available for this token type.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.ts</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
+          <context context-type="linenumber">257</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="user.bulkAddToContainerFailed" datatype="html">
+        <source><x id="COUNT" equiv-text="failed.length"/>/<x id="TOTAL" equiv-text="total"/> add to container failed: <x id="SERIALS" equiv-text="serials"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.ts</context>
+          <context context-type="linenumber">329</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.compareWithTemplates" datatype="html">
+        <source>Compare with templates</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
+          <context context-type="linenumber">54</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
+          <context context-type="linenumber">85</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.differences" datatype="html">
+        <source>Differences</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.ts</context>
+          <context context-type="linenumber">96</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.equal" datatype="html">
+        <source>Equal</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
+          <context context-type="linenumber">279</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.hideComparison" datatype="html">
+        <source>Hide comparison</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
+          <context context-type="linenumber">55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.html</context>
+          <context context-type="linenumber">90</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.failedToCompareSelected" datatype="html">
+        <source>Failed to compare selected containers. <x id="MESSAGE" equiv-text="message"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.ts</context>
+          <context context-type="linenumber">120</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.noTemplatesAvailable" datatype="html">
+        <source>No templates available</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
+          <context context-type="linenumber">434</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.unknownComparisonError" datatype="html">
+        <source>An unknown error occurred.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.ts</context>
+          <context context-type="linenumber">118</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.withAnyTemplate" datatype="html">
+        <source>With template</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
+          <context context-type="linenumber">417</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.withoutTemplate" datatype="html">
+        <source>Without template</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
+          <context context-type="linenumber">422</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="noRealmDialog.explanation" datatype="html">
+        <source>No realm exists yet. A realm is needed to enroll tokens for users. You can create one in the realm management.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/no-realm-dialog/no-realm-dialog.component.html</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="noRealmDialog.later" datatype="html">
+        <source>Later</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/no-realm-dialog/no-realm-dialog.component.ts</context>
+          <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="noRealmDialog.title" datatype="html">
+        <source>No realm exists yet</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/shared/no-realm-dialog/no-realm-dialog.component.ts</context>
+          <context context-type="linenumber">39</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="common.edit" datatype="html">
         <source>Edit</source>
         <context-group purpose="location">
@@ -23355,6 +23568,13 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-remembered-devices/user-details-remembered-devices.component.ts</context>
           <context context-type="linenumber">130</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.changePinOnFirstUse" datatype="html">
+        <source>Change PIN on first use</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-templates/container-template-edit-page/template-added-token-row/template-added-token-row.component.html</context>
+          <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
     </body>
