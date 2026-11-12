@@ -28,14 +28,19 @@ setting is only applied to admin users. For normal users, all tokens of the temp
 container, if it has one. A token without *Assign to user* gets neither a user nor a realm.
 
 For each token in the template, you can also choose whether its PIN must be changed on first use (*Change PIN on first
-use*). This applies to tokens created by administrators and by users, also when a user enrolls a container via
-multichallenge, so that a user who gets a token without a PIN from a template sets one. The policy
-:ref:`policy_change_pin_first_use` does not apply to tokens created from a template; only this option decides. The user
-is only asked for the new PIN if the application honors the PIN change or the policy
-:ref:`policy_change_pin_via_validate` is set.
+use*). The option applies to tokens that administrators create and to tokens that users create, also when a user enrolls
+a container via multichallenge. With this option, a user who gets a token without a PIN from a template must set a PIN.
+The option is in addition to the policy :ref:`policy_change_pin_first_use`, which still applies when an administrator
+creates a token from a template. If the option is not set, the policy decides as for a single token. The user is asked
+for the new PIN only if the application honors the PIN change or the policy :ref:`policy_change_pin_via_validate` is
+set.
 
-.. versionchanged:: 3.14.1 The option *Change PIN on first use* decides on the PIN change of a token created from a
-   template, instead of the policy :ref:`policy_change_pin_first_use`.
+.. note:: privacyIDEA enforces the option only if it reads the template from the database. This is the case if a
+   container is created with the template name, as the :ref:`container_wizard` does, and for the enrollment via
+   multichallenge (:ref:`policy_enroll_via_multichallenge`). In the other cases, the client sends the template with the
+   request. Hence, a user who can create containers can also send the template without the option.
+
+.. versionadded:: 3.14.1 The option *Change PIN on first use*.
 
 The enrollment policies are checked for each token as for a single token enrollment: against the user and the realm the
 token gets, not against the user of the container. Hence, an administrator whose policies are restricted to certain

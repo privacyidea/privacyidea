@@ -665,8 +665,7 @@ def no_detail_on_fail(request, response):
     return response
 
 
-def save_pin_change(request: Request, response: Response, serial: str | None = None,
-                    check_first_use_policy: bool = True) -> Response:
+def save_pin_change(request, response, serial=None):
     """
     This policy function checks if the next_pin_change date should be
     stored in the tokeninfo table.
@@ -681,12 +680,10 @@ def save_pin_change(request: Request, response: Response, serial: str | None = N
     This function decorates /token/init and /token/setpin. The parameter
     "pin" and "otppin" is investigated.
 
-    :param request: The request object
-    :param response: The response object of the token request
-    :param serial: The serial of the token, if not contained in the request or the response
-    :param check_first_use_policy: False to skip ACTION.CHANGE_PIN_FIRST_USE, e.g. for tokens created from a container
-        template, which decides on the PIN change itself
-    :return: The unmodified response
+    :param request:
+    :param response:
+    :param serial:
+    :return:
     """
     serial = serial or request.all_data.get("serial")
     if not serial:
@@ -699,8 +696,9 @@ def save_pin_change(request: Request, response: Response, serial: str | None = N
         token = get_one_token(serial=serial, silent_fail=True)
 
         if g.logged_in_user.get("role") == ROLE.ADMIN:
-            if check_first_use_policy and Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
-                                                      token=token).policies():
+            policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE,
+                                 token=token).policies()
+            if policy:
                 token.set_next_pin_change(diff="0d")
 
         elif g.logged_in_user.get("role") == ROLE.USER:

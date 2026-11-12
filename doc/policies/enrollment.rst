@@ -225,12 +225,11 @@ trigger the change of the PIN using the API */token/setpin*. See
 .. note:: privacyIDEA also allows forcing the user to
    change the PIN in such a case using the policy :ref:`policy_change_pin_via_validate`.
 
-.. note:: The policy does not apply to tokens created from a container template. The template decides for each token
-   whether its PIN must be changed on first use, see :ref:`container_templates`.
+.. note:: The policy also applies to tokens that an administrator creates from a container template. In addition, a
+   container template can demand the PIN change for each of its tokens, also for tokens that a user creates. See
+   :ref:`container_templates`.
 
 .. versionadded:: 2.13
-
-.. versionchanged:: 3.14.1 The policy no longer applies to tokens created from a container template.
 
 .. _policy_change_pin_every:
 

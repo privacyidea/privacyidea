@@ -604,8 +604,8 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
                 "template_tokens": [{"type": "hotp", ...}, ...]
             }
     :raises EnrollmentError: If the type is missing or invalid or a container with the serial already exists
-    :raises ParameterError: If both template and template_name are given or change_pin_on_first_use of a template token
-        is not a boolean
+    :raises ParameterError: If both template and template_name are given, or if the template has the container type
+        and change_pin_on_first_use of one of its tokens is not a boolean
     """
     ctype = params.get("type")
     if not ctype:
@@ -617,8 +617,9 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     template_name = params.get("template_name")
     if template_dict and template_name:
         raise ParameterError("Both template and template_name are given. Choose only one!")
-    if template_dict:
-        for token in template_dict.get("template_options", {}).get("tokens", []):
+    if template_dict and template_dict.get("container_type") == ctype:
+        # Only a template of the container type is used. The check runs before the container is created.
+        for token in (template_dict.get("template_options") or {}).get("tokens") or []:
             ContainerTemplateBase.check_change_pin_on_first_use(token)
 
     desc = params.get("description") or ""
@@ -702,8 +703,10 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
     tokens.
 
-    The PIN of a token is marked to be changed on first use if its template entry sets "change_pin_on_first_use".
-    The policy change_pin_on_first_use does not apply to tokens created from a template.
+    The post-policies apply as for a single token enrollment, for example change_pin_on_first_use for an admin. In
+    addition, the PIN of a token is marked to be changed on first use if its template entry sets
+    "change_pin_on_first_use" to True. This applies after the post-policies, so it also wins over a PIN set by a user
+    and over change_pin_every.
 
     :param container_serial: The serial of the container
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
@@ -833,8 +836,10 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 # Post-policy decorators require a response object containing the result of the token creation.
                 response = send_result(True, details=init_result[token.get_serial()])
                 check_verify_enrollment(request, response)
-                save_pin_change(request, response, check_first_use_policy=False)
-                if change_pin_on_first_use:
+                save_pin_change(request, response)
+                # Only True sets the PIN change. A stored template is not validated again when it is used, so it can
+                # hold another value, for example the string "false".
+                if change_pin_on_first_use is True:
                     token.set_next_pin_change(diff="0d")
             except Exception as ex:
                 log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
@@ -1602,7 +1607,7 @@ def create_container_template(container_type: str, template_name: str, options: 
                            ...]
             }
 
-    "change_pin_on_first_use" of a token is optional and must be a boolean; a missing value means False.
+    "change_pin_on_first_use" of a token is optional and must be a boolean. A missing value means False.
 
     :return: ID of the created template
     :raises EnrollmentError: If the container type is invalid or a template with the name already exists
