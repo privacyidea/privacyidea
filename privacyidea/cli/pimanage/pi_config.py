@@ -48,6 +48,7 @@ from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
+import privacyidea.lib.webhook  # noqa: F401
 from privacyidea.cli.pimanage.challenge import challenge_cli
 from privacyidea.cli.pimanage.metrics import metrics_cli
 from privacyidea.cli.pimanage.remembered_device import remembered_device_cli

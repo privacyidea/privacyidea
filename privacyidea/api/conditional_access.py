@@ -416,12 +416,13 @@ def create_policy():
         Thresholds must be unique within the policy and are the evaluation order
         (highest first). A threshold starts at 1, except on a stage whose every
         action is ``DENY``, where 0 means "always". Required. Within one stage an
-        action type may appear only once, except ``EMAIL_ADMIN``/``EMAIL_USER``;
+        action type may appear only once, except ``EMAIL_ADMIN``/``EMAIL_USER``/``WEBHOOK``;
         and ``LOCK_USER``/``PERMANENT_LOCK_USER`` and ``BLOCK_IP``/``PERMANENT_BLOCK_IP``
         may not be combined in the same stage. ``action_value`` is checked against what the
         action can actually do: ``LOCK_USER``/``BLOCK_IP`` need a positive number of seconds (an integer, a
         numeric string, or an object with ``duration_seconds``), ``EMAIL_ADMIN``/``EMAIL_USER`` an object with
-        a non-empty ``subject`` and ``body``, and the ``PERMANENT_*``/``DENY`` actions no value at all.
+        a non-empty ``subject`` and ``body``, ``WEBHOOK`` an object with a non-empty ``webhook`` identifier and an
+        optional ``payload``, and the ``PERMANENT_*``/``DENY`` actions no value at all.
     :jsonparam enabled: whether the policy is evaluated (default true).
     :jsonparam dry_run: log-only mode, nothing is enforced (default false).
     :jsonparam reset_on_success: whether a completed login clears the events
