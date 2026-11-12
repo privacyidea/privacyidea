@@ -19,8 +19,8 @@
 .machines-container {
   @include table.base-table-structure(".tokens-table");
 
-  // The parent layout is a flex column with overflow: hidden, so this is the one section that
-  // grows into the remaining space and hosts the actual scrolling - .table-scroll-region's own
+  // The parent layout is a flex column, so this is the one section that grows into the remaining
+  // space and hosts the table's scrolling - .table-scroll-region's own
   // flex: 1 1 auto only has an effect once its parent is a flex container itself.
   display: flex;
   flex-direction: column;

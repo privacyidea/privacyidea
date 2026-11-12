@@ -28,14 +28,19 @@ login session (`playwright-e2e/.auth/`) are ignored by git.
 The browser is Chromium (`npx playwright install chromium`). The instance should hold some data: tests on empty
 tables skip their row-dependent checks rather than fail.
 
+The suite runs in the team's k3s cluster, not on GitHub Actions. The cluster job sets `CI` and points `BASE_URL` at
+the WebUI of the seeded instance there (`https://<instance>/app/v2/`); with `CI` set and no `BASE_URL`, the run stops
+instead of testing localhost. The tests that force loading, error and empty states intercept the API both behind the
+`/proxy/` prefix of `ng serve` and at the root of an instance that serves the WebUI and the API from one origin.
+
 ## Specs
 
 - `playwright-e2e/pages.spec.ts` - the main spec. Every page is loaded once and all of its checks run against that
   load: language, title and landmarks, table name and `aria-sort`, the accessibility tree (names, heading outline),
   nothing animating under reduced motion, `col-width-*` tiers, Tab order, a visible focus indicator on the controls of
   the page content, and last the layout at 100/125/150/200% browser zoom and at 320 CSS px (no sideways page scroll,
-  filter row inside its card, paginator range, columns stable under row hover). A last test checks that every page has
-  a title of its own. A failing test attaches the URL and a screenshot of the shared page.
+  filter row inside its card, paginator range, columns stable under row hover). That every page has a title of its own
+  is checked by the Jest spec `src/app/route-titles.spec.ts`. A failing test attaches the URL and a screenshot of the shared page.
 - `playwright-e2e/accessibility.spec.ts` - axe-core (WCAG 2.2 A/AA) on every page, light and dark theme.
 - `playwright-e2e/login.spec.ts` - the login page without a session: axe in both themes, the heading that names the
   page, and the keyboard order of the form.
@@ -49,7 +54,9 @@ tables skip their row-dependent checks rather than fail.
   row that does not open a `/details/` or `/edit/` page fails.
 - `playwright-e2e/truncation.spec.ts` - no control is cut off by a clipping ancestor or covers the text of its own
   cell (#6275): every table page and detail page at each browser zoom, plus the container details page with a very
-  long user name (the backend response is rewritten by route interception). Scrolling areas and collapsed
+  long user name and a token with a very long serial (the backend response is rewritten by route interception), and
+  the container details page with the user editor open, whose user input must be as wide as the realm select above
+  it and fill its cell. Scrolling areas and collapsed
   (`inert`) cards are not clipping; see `support/clipping.ts`.
 - `playwright-e2e/surface-contrast.spec.ts` - a label (`--mat-sys-on-surface-variant`) keeps 7:1 (WCAG AAA) against
   the less favourable end of every surface gradient, in both themes at each depth level of the UI settings. The
