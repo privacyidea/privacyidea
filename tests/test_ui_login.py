@@ -234,6 +234,18 @@ class LoginUITestCase(MyTestCase):
                 self.assertEqual(200, res.status_code, res.data)
                 self.assertIn(b"Hello body", res.data)
 
+    def test_password_parameter_with_plugin_user_agent(self):
+        # The policy check removes the password from a copy of the request data. For the user agents of the plugins,
+        # the request data are not unquoted, which must not leave the query of the request as the request data.
+        self._set_login_text_policy("Hello plugin")
+        for path, key in (("/", "password"), ("/config", "pass")):
+            with self.subTest(path=path):
+                with self.app.test_request_context(path, method='GET', query_string={key: "x"},
+                                                   headers={"User-Agent": "privacyidea-cp/1.0"}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                self.assertIn(b"Hello plugin", res.data)
+
 
 class LanguageTestCase(MyApiTestCase):
 

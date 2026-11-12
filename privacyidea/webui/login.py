@@ -122,7 +122,7 @@ def before_request():
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     set_request_context()
     # The pages are only requested with GET, so a body, even a broken one, must not fail them
-    g.request_data = check_unquote(request, request.args)
+    g.request_data = check_unquote(request, request.args.to_dict())
     # The page names no token, but the check of the remote user matches the policies with g.serial
     g.serial = None
     # Populate the user agent so that policies restricted by user agent (e.g. a
