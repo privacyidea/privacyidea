@@ -49,7 +49,9 @@ tables skip their row-dependent checks rather than fail.
   row that does not open a `/details/` or `/edit/` page fails.
 - `playwright-e2e/truncation.spec.ts` - no control is cut off by a clipping ancestor or covers the text of its own
   cell (#6275): every table page and detail page at each browser zoom, plus the container details page with a very
-  long user name (the backend response is rewritten by route interception). Scrolling areas and collapsed
+  long user name and a token with a very long serial (the backend response is rewritten by route interception), and
+  the container details page with the user editor open, whose user input must be as wide as the realm select above
+  it and fill its cell. Scrolling areas and collapsed
   (`inert`) cards are not clipping; see `support/clipping.ts`.
 - `playwright-e2e/overlays.spec.ts` - menus (opened from the keyboard, first item focused, Escape returns focus, items
   named, axe on the overlay) and the delete confirmations (named, focus trapped, Escape closes; nothing is confirmed),

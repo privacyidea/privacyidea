@@ -85,14 +85,36 @@ test.describe("detail pages: no control is clipped or covered", () => {
 
 // A user name far longer than any cell: the edit and unassign buttons of the container's user row must not cover it.
 const LONG_USER = "a.very.long.user.name.of.a.person.with.a.long.last.name@example-company-department.example.org";
+// A serial far longer than its cell: the copy button of the container's token row must stay reachable. The token is
+// injected so the check has a row even when the first container holds no token.
+const LONG_SERIAL = "TOTP0000LONGSERIAL0000000000000000000000000000000000000000000000000001";
+const LONG_SERIAL_TOKEN = {
+  active: true,
+  container_serial: "",
+  count: 0,
+  count_window: 10,
+  description: "",
+  failcount: 0,
+  id: 999999,
+  revoked: false,
+  serial: LONG_SERIAL,
+  sync_window: 1000,
+  tokengroup: [],
+  tokentype: "totp",
+  user_editable: false,
+  user_id: "",
+  user_realm: "",
+  username: ""
+};
 
-test.describe("container details with a long user name", () => {
-  test("the user row keeps its buttons clear of the name at each zoom", async ({ page }) => {
+test.describe("container details with a long user name and serial", () => {
+  test("the user and token rows keep their buttons clear of the text at each zoom", async ({ page }) => {
     await page.route("**/proxy/container/?container_serial=*", async (route) => {
       const response = await route.fetch();
       const body = await response.json();
       const container = body.result.value.containers[0];
       container.users = [{ user_name: LONG_USER, user_realm: "realm1", user_resolver: "resolver1", user_id: "0" }];
+      container.tokens = [{ ...LONG_SERIAL_TOKEN, container_serial: container.serial }, ...(container.tokens ?? [])];
       await route.fulfill({ response, json: body });
     });
     await openPage(page, "containers");
@@ -101,6 +123,10 @@ test.describe("container details with a long user name", () => {
     await page.waitForLoadState("networkidle");
     await settleContent(page);
     await expect(page.getByText(LONG_USER)).toBeVisible();
+    const serialCell = page
+      .locator("app-container-details-token-table td.mat-column-serial")
+      .filter({ hasText: LONG_SERIAL });
+    await expect(serialCell.locator("app-copy-button button")).toHaveCount(1);
     await expectEveryControlReachable(page);
   });
 });
