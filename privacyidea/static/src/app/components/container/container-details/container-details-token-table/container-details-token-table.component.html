@@ -109,11 +109,18 @@
                         element.status !== "missing" &&
                         (element.token.username === authService.username() || authService.role() === "admin")
                       ) {
-                        <a [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.token.serial]">
+                        <a
+                          [appTruncationTooltip]="element.token[column.key]"
+                          [routerLink]="[ROUTE_PATHS.TOKENS_DETAILS, element.token.serial]"
+                          class="cell-truncate">
                           {{ element.token[column.key] }}
                         </a>
                       } @else {
-                        <span> {{ element.token[column.key] }} </span>
+                        <span
+                          [appTruncationTooltip]="element.token[column.key]"
+                          class="cell-truncate">
+                          {{ element.token[column.key] }}
+                        </span>
                       }
                     </app-copyable>
                   }

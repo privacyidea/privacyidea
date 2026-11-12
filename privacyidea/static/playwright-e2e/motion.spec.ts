@@ -31,6 +31,8 @@ test.describe("forced colors", () => {
     ["tokens", "policies", "users", "dashboard", "policy create"].includes(r.name)
   )) {
     test(`${route.name}: a focused control is still marked`, async ({ page }) => {
+      // Two captures for each of up to 40 controls take most of the default timeout on a page with many controls.
+      test.slow();
       await openPage(page, route.path);
       expect(await page.evaluate(() => matchMedia("(forced-colors: active)").matches)).toBe(true);
       const { misses, checked } = await focusIndicatorMisses(page);

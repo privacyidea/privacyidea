@@ -35,6 +35,13 @@
   min-width: 0;
 }
 
+// While a user is chosen every row holds the room of the save and cancel buttons, so the realm select and the user
+// input, whose row has the buttons, are the same width.
+.value-row--editing .value-edit {
+  justify-content: flex-end;
+  min-width: calc(2 * var(--button-width-xs));
+}
+
 .value-edit {
   flex: 0 0 auto;
   display: flex;
