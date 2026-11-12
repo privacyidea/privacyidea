@@ -55,6 +55,14 @@ export class TemplateAddedTokenRowComponent {
   readonly userAssignField = form(this.userAssign);
   readonly changePinOnFirstUse = linkedSignal(() => this.tokenEnrollmentPayload().change_pin_on_first_use === true);
   readonly changePinOnFirstUseField = form(this.changePinOnFirstUse);
+  // The checkboxes reach the template only at save time, so the page asks the rows for unsaved changes.
+  readonly hasCheckboxChanges = computed(() => {
+    const payload = this.tokenEnrollmentPayload();
+    return (
+      this.userAssign() !== (payload.user === true) ||
+      this.changePinOnFirstUse() !== (payload.change_pin_on_first_use === true)
+    );
+  });
 
   readonly tokenTypeDescription = computed(() => {
     const type = this.tokenEnrollmentPayload().type;

@@ -180,6 +180,25 @@ describe("TemplateAddedTokenRowComponent", () => {
       expect(changePinCheckbox().checked).toBe(false);
     });
 
+    it("hasCheckboxChanges is true while a checkbox differs from the payload", () => {
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", user: true });
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(false);
+
+      changePinCheckbox().click();
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(true);
+
+      changePinCheckbox().click();
+      assignCheckbox().click();
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(true);
+
+      assignCheckbox().click();
+      fixture.detectChanges();
+      expect(component.hasCheckboxChanges()).toBe(false);
+    });
+
     it("clicking the change-PIN checkbox leaves the expansion panel closed", () => {
       fixture.detectChanges();
 
