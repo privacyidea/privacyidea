@@ -23,6 +23,9 @@
       <mat-panel-title>
         <p i18n="@@policy.addActionsPolicy">Add Actions to This Policy</p>
       </mat-panel-title>
+      @if (!policyScope()) {
+        <mat-panel-description>{{ allScopeActions().length }}</mat-panel-description>
+      }
     </mat-expansion-panel-header>
     <div class="panel-content">
       @if (hasActionsToAdd()) {

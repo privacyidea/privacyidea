@@ -155,21 +155,21 @@ body {
     color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--table-color))
   );
 
-  // Each step mixes more of the surrounding container tone into the card white, so nesting stays
-  // legible where the shadows are soft. The clamp stops a deep step overshooting that tone.
+  // Each step mixes more of its --inset-base-* tone (theme.scss) into the card white, so nesting
+  // stays legible where the shadows are soft. The clamp stops a deep step overshooting that tone.
   --inset-tone-8: color-mix(
     in srgb,
-    var(--mat-sys-surface-container-highest) clamp(0%, calc(45% * var(--depth-tone-scale)), 100%),
+    var(--inset-base-8) clamp(0%, calc(45% * var(--depth-tone-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
   );
   --inset-tone-5: color-mix(
     in srgb,
-    var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-tone-scale)), 100%),
+    var(--inset-base-5) clamp(0%, calc(40% * var(--depth-tone-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
   );
   --inset-tone-3: color-mix(
     in srgb,
-    var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-tone-scale)), 100%),
+    var(--inset-base-3) clamp(0%, calc(50% * var(--depth-tone-scale)), 100%),
     var(--mat-sys-surface-container-lowest)
   );
   --inset-surface-8: linear-gradient(
@@ -275,7 +275,9 @@ body {
 
   @include mat.form-field-overrides(
     (
-      filled-container-color: var(--mat-sys-surface-container-low),
+      outlined-outline-color: var(--input-border-shadow),
+      outlined-focus-outline-color: var(--mat-sys-primary-light),
+      // The fields left in fill (in table cells and detail rows) focus in the same blue as the outlined ones.
       filled-focus-active-indicator-color: var(--mat-sys-primary-light)
     )
   );
@@ -305,7 +307,6 @@ body {
       focused-arrow-color: var(--mat-sys-primary-light)
     )
   );
-  --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
   --mat-sys-corner-extra-small: var(--border-radius);
   --drawer-width-self-service: 256px;
 
@@ -822,10 +823,6 @@ $status-colors: (
 .multiline-tooltip {
   white-space: pre-line;
   text-align: left;
-}
-
-.user-details-panel {
-  --expansion-panel-body-padding: 0 16px 16px;
 }
 
 // Last, so a Material override wins every tie with the shared rules above it.

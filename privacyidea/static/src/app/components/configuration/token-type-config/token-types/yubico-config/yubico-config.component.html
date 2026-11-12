@@ -23,7 +23,7 @@
     <mat-panel-title i18n="@@tokenTypeConfig.yubico">Yubico</mat-panel-title>
     <app-panel-incomplete [incomplete]="panel.incomplete()" />
   </mat-expansion-panel-header>
-  <div class="panel-content expansion-well">
+  <div class="panel-content expansion-well margin-top-8">
     <p i18n="@@tokenTypeConfig.yubicoTokenYubikey"
       >The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p
     >
@@ -43,7 +43,6 @@
 
     <div class="flex-row gap-16 ali-center margin-bottom-16">
       <mat-form-field
-        appearance="fill"
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.apiKey">API Key</mat-label>
         <input
@@ -57,7 +56,6 @@
       </mat-form-field>
 
       <mat-form-field
-        appearance="fill"
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.apiClientId">API Client ID</mat-label>
         <input
@@ -73,7 +71,6 @@
 
     <div class="flex-row gap-16 ali-center">
       <mat-form-field
-        appearance="fill"
         class="input-width-xl">
         <mat-label i18n="@@tokenTypeConfig.yubicoUrl">Yubico URL</mat-label>
         <input

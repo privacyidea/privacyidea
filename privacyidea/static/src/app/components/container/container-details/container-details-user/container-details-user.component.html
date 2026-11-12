@@ -48,6 +48,7 @@
               @case ("user_name") {
                 @if (host().isEditingUser() && userService.selectedUserRealm() !== "") {
                   <mat-form-field
+                    appearance="fill"
                     class="input-width-m details-field-height"
                     subscriptSizing="dynamic">
                     <mat-label i18n="@@common.enterUser">Enter User</mat-label>
@@ -87,6 +88,7 @@
               @case ("user_realm") {
                 @if (host().isEditingUser()) {
                   <mat-form-field
+                    appearance="fill"
                     class="input-width-m details-field-height"
                     subscriptSizing="dynamic">
                     <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>

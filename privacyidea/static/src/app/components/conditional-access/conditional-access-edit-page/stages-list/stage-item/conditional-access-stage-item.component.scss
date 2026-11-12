@@ -1,11 +1,9 @@
+@use "styles-api" as styles;
+
+// A stage is a sunk group on the page card, so the panels and wells inside it take the raised step.
 .ca-stage-item {
-  // Recessed panel one step shallower than the dashboard well: the mid inset-shadow
-  // level over a surface tone halfway between the surrounding grey and the card white,
-  // so each stage reads as a "well" holding its card without the full dashboard depth.
-  background: var(--inset-surface-3);
-  border-radius: var(--border-radius);
+  @include styles.card-recessed(3);
   padding: 16px;
-  box-shadow: var(--inset-shadow-3);
 }
 
 .ca-stage-header {

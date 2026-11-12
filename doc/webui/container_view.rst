@@ -97,7 +97,7 @@ scan this QR code with the privacyIDEA Authenticator app to complete the registr
 .. figure:: images/container_details_synchronization.png
    :width: 500
 
-   *Synchronization Section on the Container Details Page*
+   *The Register Container Dialog*
 
 If the smartphone is successfully registered, the *Registration State* changes from ``client_wait``
 to ``registered``. In case the QR code gets lost or the passphrase needs to be changed, the QR code can be regenerated

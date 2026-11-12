@@ -57,7 +57,6 @@
             <p i18n="@@event.noValuesAvailable">No values available for this condition.</p>
           } @else if (conditionDetails?.type === "multi") {
             <mat-form-field
-              appearance="fill"
               class="input-width-m"
               subscriptSizing="dynamic">
               <mat-select
@@ -77,7 +76,6 @@
           } @else {
             <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
             <mat-form-field
-              appearance="fill"
               class="input-width-m"
               subscriptSizing="dynamic">
               <mat-select
@@ -96,7 +94,6 @@
           }
         } @else {
           <mat-form-field
-            appearance="fill"
             class="input-width-m"
             subscriptSizing="dynamic">
             @switch (conditionDetails?.type) {

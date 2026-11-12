@@ -24,9 +24,8 @@
       <div class="filter-actions-group">
         <mat-form-field
           subscriptSizing="dynamic"
-          appearance="fill"
           class="challenges-table-filter">
-          <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
+          <mat-label i18n="@@token.filterChallenges">Filter Challenges</mat-label>
           <app-clearable-input
             (clearButtonClick)="challengesService.clearFilter()"
             [showClearButton]="challengesService.filterDraft().isNotEmpty">

@@ -1,5 +1,3 @@
-@use "@angular/material" as mat;
-
 // Each action is a collapsible panel: the header shows the action type and its
 // one-line description, the body holds the type select and value fields.
 .ca-action-row {
@@ -13,17 +11,9 @@
   }
 }
 
-// Level with the panel's 48px header.
+// Centred on the header's chevron: the 64px header less its 1px divider, around the 40px button.
 .ca-action-remove {
-  margin-top: 4px;
-}
-
-.ca-action-item.mat-expansion-panel {
-  @include mat.expansion-overrides(
-    (
-      container-background-color: var(--mat-sys-surface-container-lowest)
-    )
-  );
+  margin-top: calc((64px - 1px - 40px) / 2);
 }
 
 .ca-action-panel-description {
@@ -59,6 +49,17 @@
 // select's trigger.
 .ca-action-stale-tag {
   color: var(--mat-sys-error);
+}
+
+// The checkbox and its info icon stay together as one control beside the action select: the icon follows the label it
+// explains, and where the row is short of room the label wraps inside the checkbox rather than the control moving to a
+// row of its own. It moves below the select only once less than 240px are left.
+.ca-action-retrigger {
+  align-items: center;
+  align-self: flex-start;
+  display: flex;
+  flex: 1 1 240px;
+  min-width: 0;
 }
 
 // Holds the per-action-type value fields (duration, or the several email

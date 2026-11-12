@@ -1,51 +1,110 @@
-@use "cards";
 @use "@angular/material" as mat;
 
 // Material paints the panel from these two tokens and its shadow rule outranks a plain
-// .mat-expansion-panel selector, so the raised step is handed over as tokens. On :root, so a
+// .mat-expansion-panel selector, so the treatment is handed over as tokens. On :root, so a
 // container setting them on an ancestor still overrides them by inheritance.
+// No surface and no elevation: the panel is a title over its content rather than a card of its
+// own, so it shows the surface it sits on and the content inside it carries the depth step.
 :root {
   @include mat.expansion-overrides(
     (
-      container-background-color: var(--surface-raised),
-      container-elevation-shadow: var(--elevation-3)
+      container-background-color: transparent,
+      container-elevation-shadow: none,
+      // A collapsed header is as tall as an expanded one, so opening a panel does not move its title.
+      header-collapsed-state-height: 64px
     )
   );
+
+  // A page is a raised card, so a group on it is sunk until a card mixin says otherwise.
+  --well-surface: var(--inset-surface-3);
+  --well-shadow: var(--inset-shadow-3);
 }
 
-// The content group inside an expansion panel.
+// The content group inside an expansion panel. It takes the opposite treatment of the card it sits
+// on: sunk into a raised card, raised off a sunk one. The card mixins hand both values down.
 .expansion-well {
-  @include cards.card-recessed(3);
+  border: 0;
+  border-radius: var(--border-radius);
+  background: var(--well-surface);
+  box-shadow: var(--well-shadow);
   padding: 16px;
 }
 
-.mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-  background: var(--mat-sys-surface-container-high);
+// The header ends in a Material divider line, so it reads as a title over its group. The hover
+// layer sits on that line, so it is rounded on top only and meets the divider square.
+.mat-expansion-panel .mat-expansion-panel-header {
+  border-bottom: 1px solid var(--mat-divider-color, var(--mat-sys-outline-variant));
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  box-sizing: border-box;
 }
 
-.mat-expansion-panel-header {
-  padding: var(--expansion-panel-header-padding, 0 24px);
+// Material paints the hover layer on a closed header only; an open header takes the same layer, so
+// every header answers the pointer alike.
+.mat-expansion-panel .mat-expansion-panel-header:not([aria-disabled="true"]):hover {
+  background: var(--mat-expansion-header-hover-state-layer-color, color-mix(in srgb, var(--mat-sys-on-surface) 8%, transparent));
 }
 
-// Material's own padding, handed to a token so a panel whose content carries its own width can
-// take the inset off without reaching into the component's internals. Material sets it from a
-// lone .mat-expansion-panel-body and injects that at runtime, after this sheet, so the panel is
-// named too: equal specificity would leave the winner up to load order.
+// Header and body share one inset, so the title lines up with the content below it. Handed to
+// tokens so a panel whose content carries its own width can take the inset off without reaching
+// into the component's internals. Material sets both from a lone .mat-expansion-panel-header /
+// -body and injects that at runtime, after this sheet, so the panel is named too: equal
+// specificity would leave the winner up to load order.
+.mat-expansion-panel .mat-expansion-panel-header {
+  padding: var(--expansion-panel-header-padding, 0 16px);
+}
+
 .mat-expansion-panel .mat-expansion-panel-body {
-  padding: var(--expansion-panel-body-padding, 0 24px 16px);
+  padding: var(--expansion-panel-body-padding, 16px);
 }
 
-// Keep this slot in step with --mat-expansion-container-elevation-shadow on :root above.
+// The panel is a title for the group below it, not a card, so it has no border; its lift is
+// taken off by --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
-  @include cards.card-raised(3);
+  border: 0;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
   @include mat.expansion-overrides(
     (
-      container-shape: var(--border-radius)
+      container-shape: var(--border-radius) var(--border-radius) 0 0
     )
   );
 }
 
-// An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's
+// The expand/collapse chevron reads as the icon button it behaves like: no background at rest and
+// Material's 40px round state layer while the header is hovered or focused, with the icon centred
+// in it. Material owns the rotation, which a circle absorbs invisibly while still turning the
+// chevron inside.
+.mat-expansion-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+}
+
+// Material's own rules for the chevron (its turn, the glyph's -8px margins) carry up to two classes and are injected
+// after this sheet, so these name the panel and the header as well to win. The circle fades in alongside the turn.
+.mat-expansion-panel .mat-expansion-panel-header .mat-expansion-indicator {
+  transition:
+    transform 225ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 200ms ease;
+
+  // The circle centres the glyph; Material's margins would pull it out of the middle.
+  svg {
+    display: block;
+    margin: 0;
+  }
+}
+
+// The hovered header of a collapsed panel is tinted itself, so the circle takes a stronger step to stand out on it.
+.mat-expansion-panel-header:hover .mat-expansion-indicator,
+.mat-expansion-panel-header.cdk-keyboard-focused .mat-expansion-indicator {
+  background: color-mix(in srgb, var(--mat-sys-on-surface-variant) 20%, transparent);
+}
+
+// An accordion joins its panels flat and rounds only the top corners; the last panel ends in its
+// header's divider, so its bottom stays square. Material rounds a panel's
 // own corners with .mat-accordion .mat-expansion-panel:first-of-type / :last-of-type, which outranks
 // these selectors and is injected after this sheet, and every panel wrapped in
 // its own component is both first and last of its type, so the radii below need !important to win.
@@ -58,12 +117,6 @@
 .mat-accordion > .mat-expansion-panel:first-child {
   border-top-left-radius: var(--border-radius) !important;
   border-top-right-radius: var(--border-radius) !important;
-}
-
-.mat-accordion > *:last-child .mat-expansion-panel,
-.mat-accordion > .mat-expansion-panel:last-child {
-  border-bottom-left-radius: var(--border-radius) !important;
-  border-bottom-right-radius: var(--border-radius) !important;
 }
 
 mat-panel-title.mat-expansion-panel-header-title .mat-icon {

@@ -19,11 +19,6 @@
   border-radius: var(--border-radius);
 
   mat-form-field {
-    @include mat.form-field-overrides(
-      (
-        filled-container-color: transparent
-      )
-    );
     flex: 1;
   }
 
@@ -93,11 +88,6 @@
   border-radius: var(--border-radius);
 
   mat-form-field {
-    @include mat.form-field-overrides(
-      (
-        filled-container-color: transparent
-      )
-    );
     flex: 1;
   }
 
@@ -134,11 +124,6 @@
   border-radius: var(--border-radius);
 
   mat-form-field {
-    @include mat.form-field-overrides(
-      (
-        filled-container-color: transparent
-      )
-    );
     flex: 1;
   }
 
