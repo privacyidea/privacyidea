@@ -59,7 +59,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
@@ -135,7 +134,6 @@ const comparisonColumnsKeyMap = [
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    MatTooltip,
     MatDividerModule,
     ScrollEdgesDirective,
     TableStateComponent,
