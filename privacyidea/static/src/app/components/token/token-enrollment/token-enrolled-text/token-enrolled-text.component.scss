@@ -1,3 +1,73 @@
+.enrolled {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.enrolled__summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: var(--border-radius);
+}
+
+.enrolled__status-icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+}
+
+// The token exists but cannot be used until its enrollment is verified, so the summary is neutral.
+.enrolled__summary--pending {
+  background: var(--mat-sys-surface-container);
+
+  .enrolled__status-icon {
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.enrolled__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 220px));
+  gap: 8px;
+}
+
+.enrolled__card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+}
+
+.enrolled__card-icon {
+  grid-row: span 2;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.enrolled__card-label {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: var(--mat-sys-body-small-size);
+  line-height: 1.2;
+}
+
+.enrolled__card-value {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+a.enrolled__card-value {
+  cursor: pointer;
+}
+
 // While the dialog refuses to close, its links cannot be followed without losing the data it
 // shows, so they stop looking and behaving like links.
 .link-inert {

@@ -17,42 +17,75 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-@if (!rollover()) {
-  <div class="margin-bottom-16">
-    <span i18n="@@token.tokenWasSuccessfullyEnrolled"
-      >The token was successfully enrolled with serial number
+<div class="enrolled">
+  <div
+    class="enrolled__summary"
+    [class.inline-success]="!verificationPending()"
+    [class.enrolled__summary--pending]="verificationPending()">
+    <mat-icon
+      class="enrolled__status-icon"
+      aria-hidden="true"
+      >{{ verificationPending() ? "pending" : "check_circle" }}</mat-icon
+    >
+    <span>
+      @if (rollover()) {
+        <ng-container i18n="@@token.enrolledSummaryRollover">The token has been successfully rolled over.</ng-container>
+      } @else if (showUser()) {
+        <ng-container i18n="@@token.enrolledSummaryUser"
+          >The token has been successfully enrolled and assigned to the user.</ng-container
+        >
+      } @else if (showRealmOnly()) {
+        <ng-container i18n="@@token.enrolledSummaryRealm"
+          >The token has been successfully enrolled and assigned to the realm.</ng-container
+        >
+      } @else {
+        <ng-container i18n="@@token.enrolledSummary">The token has been successfully enrolled.</ng-container>
+      }
+    </span>
+  </div>
+
+  <div class="enrolled__cards">
+    <div class="enrolled__card">
+      <mat-icon class="enrolled__card-icon" aria-hidden="true">shield</mat-icon>
+      <span class="enrolled__card-label" i18n="@@common.token">Token</span>
       <a
+        class="enrolled__card-value"
         role="button"
         [class.link-inert]="navigationBlocked()"
         [attr.aria-disabled]="navigationBlocked()"
         tabindex="0"
         (click)="tokenSelected()"
         (keydown.enter)="tokenSelected()"
-        (keydown.space)="$event.preventDefault(); tokenSelected()">
-        {{ serial() }} </a
-      >.</span
-    >
+        (keydown.space)="$event.preventDefault(); tokenSelected()"
+        >{{ serial() }}</a
+      >
+    </div>
+
     @if (containerSerial()) {
-      <div i18n="@@token.hasBeenEnrolled"
-        >It has been enrolled in the container
+      <div class="enrolled__card">
+        <mat-icon class="enrolled__card-icon" aria-hidden="true">inventory_2</mat-icon>
+        <span class="enrolled__card-label" i18n="@@common.container">Container</span>
         <a
+          class="enrolled__card-value"
           role="button"
           [class.link-inert]="navigationBlocked()"
           [attr.aria-disabled]="navigationBlocked()"
           tabindex="0"
           (click)="natigateContainerDetails()"
           (keydown.enter)="natigateContainerDetails()"
-          (keydown.space)="$event.preventDefault(); natigateContainerDetails()">
-          {{ containerSerial() }}
-        </a>
-        .</div
-      >
+          (keydown.space)="$event.preventDefault(); natigateContainerDetails()"
+          >{{ containerSerial() }}</a
+        >
+      </div>
     }
-    @if (username() && userRealm() !== "" && !onlyAddToRealm()) {
-      <div i18n="@@token.userRealmWasAssigned"
-        >The user
+
+    @if (showUser()) {
+      <div class="enrolled__card">
+        <mat-icon class="enrolled__card-icon" aria-hidden="true">person</mat-icon>
+        <span class="enrolled__card-label" i18n="@@common.user">User</span>
         @if (authService.actionAllowed("userlist")) {
           <a
+            class="enrolled__card-value"
             role="button"
             [class.link-inert]="navigationBlocked()"
             [attr.aria-disabled]="navigationBlocked()"
@@ -60,15 +93,21 @@
             (click)="navigateUserDetails()"
             (keydown.enter)="navigateUserDetails()"
             (keydown.space)="$event.preventDefault(); navigateUserDetails()"
-            class="text-link-button cursor-pointer"
             >{{ username() }}</a
           >
         } @else {
-          <span>{{ username() }}</span>
+          <span class="enrolled__card-value">{{ username() }}</span>
         }
-        in the realm
+      </div>
+    }
+
+    @if (showUser() || showRealmOnly()) {
+      <div class="enrolled__card">
+        <mat-icon class="enrolled__card-icon" aria-hidden="true">public</mat-icon>
+        <span class="enrolled__card-label" i18n="@@common.realm">Realm</span>
         @if (authService.role() === "admin") {
           <a
+            class="enrolled__card-value"
             role="button"
             [class.link-inert]="navigationBlocked()"
             [attr.aria-disabled]="navigationBlocked()"
@@ -76,51 +115,12 @@
             (click)="navigateRealms()"
             (keydown.enter)="navigateRealms()"
             (keydown.space)="$event.preventDefault(); navigateRealms()"
-            class="text-link-button cursor-pointer"
             >{{ userRealm() }}</a
           >
         } @else {
-          <span>{{ userRealm() }}</span>
+          <span class="enrolled__card-value">{{ userRealm() }}</span>
         }
-        was assigned to the token.</div
-      >
-    } @else if (userRealm() && onlyAddToRealm()) {
-      <div i18n="@@token.tokenWasAssigned"
-        >The token was assigned to the realm
-        @if (authService.role() === "admin") {
-          <a
-            role="button"
-            [class.link-inert]="navigationBlocked()"
-            [attr.aria-disabled]="navigationBlocked()"
-            tabindex="0"
-            (click)="navigateRealms()"
-            (keydown.enter)="navigateRealms()"
-            (keydown.space)="$event.preventDefault(); navigateRealms()"
-            class="text-link-button cursor-pointer"
-            >{{ userRealm() }}</a
-          >
-        } @else {
-          <span>{{ userRealm() }}</span>
-        }
-        .</div
-      >
+      </div>
     }
   </div>
-} @else {
-  <div class="margin-bottom-16">
-    <span i18n="@@token.tokenSerialNumber"
-      >The token with serial number
-      <a
-        role="button"
-        [class.link-inert]="navigationBlocked()"
-        [attr.aria-disabled]="navigationBlocked()"
-        tabindex="0"
-        (click)="tokenSelected()"
-        (keydown.enter)="tokenSelected()"
-        (keydown.space)="$event.preventDefault(); tokenSelected()">
-        {{ serial() }}
-      </a>
-      was successfully rolled over.</span
-    >
-  </div>
-}
+</div>
