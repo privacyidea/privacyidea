@@ -18,4 +18,8 @@
  **/
 
 // Where the suite points: the WebUI under test, its login, and the workers it uses.
+// On CI (the k3s cluster job) the instance must be named: a missing BASE_URL fails instead of testing localhost.
+if (process.env["CI"] && !process.env["BASE_URL"]) {
+  throw new Error("BASE_URL must point at the WebUI under test, for example https://<instance>/app/v2/");
+}
 export const BASE_URL = process.env["BASE_URL"] ?? "https://localhost:4200/app/v2/";

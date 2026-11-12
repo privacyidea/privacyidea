@@ -106,6 +106,9 @@ export async function expectNoNewViolations(
   );
   for (const id of known.filter((id) => !found.includes(id))) {
     testInfo.annotations.push({ type: "stale baseline", description: `${id} no longer fails here` });
+    console.warn(
+      `Stale accessibility baseline: ${name} (${scheme}) no longer fails ${id}; remove it from the baseline.`
+    );
   }
   expect(report, report.join("\n")).toEqual([]);
 }

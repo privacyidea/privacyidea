@@ -18,6 +18,7 @@
  **/
 
 import { expect, Page } from "@playwright/test";
+import { BASE_URL } from "./env";
 
 // Opens a page and waits until its content (table, form or panel) has rendered and settled.
 export async function openPage(page: Page, path: string): Promise<void> {
@@ -87,12 +88,33 @@ export async function forceTheme(page: Page): Promise<void> {
     );
 }
 
-// Waits until the page has laid itself out after a change of size or state: two animation frames, so style and layout
-// have run, and a short pause for the observers (ResizeObserver, the paginator's compact range) that answer them.
+// Waits until the page has laid itself out after a change of size or state, including what the observers
+// (ResizeObserver, the paginator's compact range) change in answer: until the size of the document and of the main
+// content stays the same for three animation frames in a row, at most two seconds.
 export async function settle(page: Page): Promise<void> {
   await page.evaluate(
     () =>
-      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 150))))
+      new Promise<void>((resolve) => {
+        const deadline = performance.now() + 2_000;
+        const measure = () => {
+          const main = document.querySelector("main")?.getBoundingClientRect();
+          const root = document.documentElement;
+          return [root.scrollWidth, root.scrollHeight, main?.width, main?.height].join();
+        };
+        let last = "";
+        let stable = 0;
+        const frame = () => {
+          const now = measure();
+          stable = now === last ? stable + 1 : 0;
+          last = now;
+          if (stable >= 3 || performance.now() > deadline) {
+            resolve();
+          } else {
+            requestAnimationFrame(frame);
+          }
+        };
+        requestAnimationFrame(frame);
+      })
   );
 }
 
@@ -189,27 +211,43 @@ const SHELL_ENDPOINTS = [
   "policy/defs"
 ];
 
+// The API path of a request (no query): the part after the /proxy/ prefix of the dev server, or after the root of an
+// instance that serves the WebUI and the API from one origin. Null for other origins and for the WebUI's own files.
+function apiEndpoint(url: URL): string | null {
+  if (url.origin !== new URL(BASE_URL).origin) {
+    return null;
+  }
+  const path = url.pathname.replace(/^\/(proxy\/)?/, "");
+  if (path === "" || path.startsWith("app/") || path.startsWith("static/") || /\.[a-z0-9]+$/i.test(path)) {
+    return null;
+  }
+  return path;
+}
+
 // Fails ("error") or never answers ("loading") the GET requests a page loads its data with, so the page stays in the
 // error or loading state of its table panel. Held requests are dropped when the test ends.
 export async function holdApi(page: Page, mode: "error" | "loading"): Promise<void> {
-  await page.route("**/proxy/**", (route) => {
-    const request = route.request();
-    const endpoint = new URL(request.url()).pathname.replace(/^.*\/proxy\//, "");
-    if (request.method() !== "GET" || SHELL_ENDPOINTS.some((e) => endpoint.startsWith(e))) {
-      return route.continue();
+  await page.route(
+    (url) => apiEndpoint(url) !== null,
+    (route) => {
+      const request = route.request();
+      const endpoint = apiEndpoint(new URL(request.url())) as string;
+      if (request.method() !== "GET" || SHELL_ENDPOINTS.some((e) => endpoint.startsWith(e))) {
+        return route.continue();
+      }
+      if (mode === "error") {
+        return route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({
+            result: { status: false, error: { code: 1, message: "Forced by the e2e test" } },
+            id: 1
+          })
+        });
+      }
+      return undefined;
     }
-    if (mode === "error") {
-      return route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({
-          result: { status: false, error: { code: 1, message: "Forced by the e2e test" } },
-          id: 1
-        })
-      });
-    }
-    return undefined;
-  });
+  );
 }
 
 // Puts the starting point of sequential focus navigation back at the top of the document, so that the next Tab lands
@@ -227,7 +265,7 @@ export async function resetFocusStart(page: Page): Promise<void> {
 
 const PAGED = { count: 0, current: 1, next: null, prev: null };
 
-// The GET request each table page loads its rows with (the path after /proxy/, no query) and what a privacyIDEA
+// The GET request each table page loads its rows with (its API path, see apiEndpoint) and what a privacyIDEA
 // instance without data answers to it. Requests of the same page for other things (realms, resolvers, filter
 // choices) are left alone.
 const EMPTY_LISTS: Record<string, { endpoint: string; value: unknown }> = {
@@ -267,22 +305,24 @@ export function hasEmptyList(name: string): boolean {
 // panel of an instance without data (app-table-state, status "empty"). The rest of the backend stays real.
 export async function emptyApi(page: Page, name: string): Promise<void> {
   const list = EMPTY_LISTS[name];
-  await page.route("**/proxy/**", (route) => {
-    const request = route.request();
-    const endpoint = new URL(request.url()).pathname.replace(/^.*\/proxy\//, "");
-    if (request.method() !== "GET" || endpoint !== list.endpoint) {
-      return route.continue();
+  await page.route(
+    (url) => apiEndpoint(url) === list.endpoint,
+    (route) => {
+      const request = route.request();
+      if (request.method() !== "GET") {
+        return route.continue();
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: 1,
+          jsonrpc: "2.0",
+          result: { status: true, value: list.value },
+          time: 0,
+          version: "e2e"
+        })
+      });
     }
-    return route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: 1,
-        jsonrpc: "2.0",
-        result: { status: true, value: list.value },
-        time: 0,
-        version: "e2e"
-      })
-    });
-  });
+  );
 }
