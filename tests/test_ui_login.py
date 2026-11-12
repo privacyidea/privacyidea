@@ -224,6 +224,12 @@ class LoginUITestCase(MyTestCase):
         self.assertEqual(200, res.status_code, res.data)
         self.assertNotIn(b"Hello kiosk", res.data)
 
+        # The new WebUI sends the query of the page with its request to /config
+        with self.app.test_request_context('/config', method='GET', query_string={"kiosk": "1"}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("Hello kiosk", res.json["result"]["value"]["login_text"])
+
     def test_start_page_ignores_request_body(self):
         self._set_login_text_policy("Hello body")
         for body in (b"", b"{broken"):
@@ -356,6 +362,19 @@ class NewUIRoutingTestCase(MyTestCase):
                 res = self.app.full_dispatch_request()
         self.assertEqual(res.status_code, 302)
         self.assertIn("/app/v2/de/", res.location)
+
+    def test_root_redirect_keeps_query_string(self):
+        cases = (("de", "kiosk=1&next=%2Ftokens", "/app/v2/de/?kiosk=1&next=%2Ftokens"),
+                 ("en", "kiosk=1", "/app/v2/?kiosk=1"),
+                 ("en", "", "/app/v2/"))
+        for language, query_string, location in cases:
+            with self.subTest(language=language, query_string=query_string):
+                with mock.patch("privacyidea.webui.login.os.path.isfile", return_value=True):
+                    with self.app.test_request_context("/", method="GET", query_string=query_string,
+                                                       headers={"Accept-Language": language}):
+                        res = self.app.full_dispatch_request()
+                self.assertEqual(302, res.status_code)
+                self.assertEqual(location, res.location)
 
     def test_root_does_not_redirect_when_build_missing(self):
         """GET / with German Accept-Language falls back to old UI when no build."""

@@ -345,6 +345,16 @@ def is_new_webui_served() -> bool:
     return os.path.isfile(os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, "en", "index.html"))
 
 
+def _with_query_string(path: str) -> str:
+    """
+    Appends the query string of the request to *path*, so that a redirect to the WebUI keeps the parameters of the
+    page. The WebUI sends them with its request to /config, where the request data conditions of the WebUI policies
+    read them.
+    """
+    query_string = request.query_string.decode()
+    return f"{path}?{query_string}" if query_string else path
+
+
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application() -> Response:
     if current_app.config.get("PI_UI_DEACTIVATED"):
@@ -357,9 +367,9 @@ def single_page_application() -> Response:
         url_locale = locale.replace("_", "-")
         dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, url_locale)
         if os.path.isfile(os.path.join(dist, "index.html")):
-            return redirect(f"{request.script_root}/app/v2/{url_locale}/")
+            return redirect(_with_query_string(f"{request.script_root}/app/v2/{url_locale}/"))
     if is_new_webui_served():
-        return redirect(f"{request.script_root}/app/v2/")
+        return redirect(_with_query_string(f"{request.script_root}/app/v2/"))
     # Fallback to the classic AngularJS UI: no new-UI build exists, so render the
     # legacy index template from the server.
     render_context = get_render_context()
@@ -383,11 +393,7 @@ def single_page_application_locale(locale: str, subpath: str | None = None) -> R
             return _serve_locale(preferred) or _serve_locale("en") or abort(404)
         abort(404)
     if canonical != locale or subpath is None:
-        path = f"{request.script_root}/app/v2/{canonical}/" + (subpath or "")
-        qs = request.query_string.decode()
-        if qs:
-            path += "?" + qs
-        return redirect(path)
+        return redirect(_with_query_string(f"{request.script_root}/app/v2/{canonical}/{subpath or ''}"))
     return _serve_locale(locale) or abort(404)
 
 
