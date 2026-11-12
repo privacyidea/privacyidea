@@ -14,6 +14,7 @@ from privacyidea.lib.crypto import (DEFAULT_HASH_ALGO_LIST, DEFAULT_HASH_ALGO_PA
                                     verify_pass_hash)
 from privacyidea.models import AuthCache
 import datetime
+import time
 
 
 class AuthCacheTestCase(MyTestCase):
@@ -43,6 +44,8 @@ class AuthCacheTestCase(MyTestCase):
 
     def test_01_write_update_delete_cache(self):
         teststart = datetime.datetime.utcnow()
+        # The clock of Windows ticks every 15 ms, the entry has to be written after the start of the test
+        time.sleep(0.05)
 
         r = add_to_cache(self.username, self.realm, self.resolver, self.password)
 
@@ -83,6 +86,8 @@ class AuthCacheTestCase(MyTestCase):
 
         first_auth = datetime.datetime.utcnow() - datetime.timedelta(hours=4)
         last_auth = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+        # The clock of Windows ticks every 15 ms, last_auth has to change
+        time.sleep(0.05)
 
         r = verify_in_cache(self.username, self.realm, self.resolver,
                             self.password, first_auth=first_auth,

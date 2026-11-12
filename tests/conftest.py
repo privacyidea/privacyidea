@@ -37,7 +37,9 @@ _worker = os.environ.get("PYTEST_XDIST_WORKER")
 if _worker:
     _base = os.environ.get("TEST_DATABASE_URL", "")
     if not _base:
-        os.environ["TEST_DATABASE_URL"] = f"sqlite:////tmp/pi-test-{_worker}.sqlite"
+        # "/tmp" on Linux, the temporary directory (with forward slashes) on Windows
+        _tmpdir = "/tmp" if os.name != "nt" else tempfile.gettempdir().replace("\\", "/")
+        os.environ["TEST_DATABASE_URL"] = f"sqlite:///{_tmpdir}/pi-test-{_worker}.sqlite"
     elif _base.startswith("sqlite"):
         os.environ["TEST_DATABASE_URL"] = _base.replace(".sqlite", f"-{_worker}.sqlite")
     elif _base.startswith("oracle"):

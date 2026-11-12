@@ -160,7 +160,7 @@ class FirebaseProvider(ISMSProvider):
         }
 
         file_path = self.smsgateway.option_dict.get(FirebaseConfig.JSON_CONFIG)
-        with open(file_path) as config_file:
+        with open(file_path, encoding="utf-8") as config_file:
             server_config = json.load(config_file)
         url = FIREBASE_URL_SEND.format(server_config["project_id"])
         response = authed_session.post(url, data=json.dumps(fcm_message),
@@ -185,7 +185,7 @@ class FirebaseProvider(ISMSProvider):
             raise ConfigAdminError(description="No JSON config file provided.")
         server_config = None
         try:
-            with open(file_path) as config_file:
+            with open(file_path, encoding="utf-8") as config_file:
                 server_config = json.load(config_file)
         except FileNotFoundError as error:
             log.error("The JSON config file could not be found: %s", error)

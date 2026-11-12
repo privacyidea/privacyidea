@@ -24,6 +24,7 @@ doc/_build/
 *.sqlite.*
 tests/testdata/gpg/.gpg-v*-migrated
 tests/testdata/gpg/private-keys-v*.d
+tests/testdata/gpg/S.*
 tests/testdata/tmp_directory*
 node_modules
 po/*.mo

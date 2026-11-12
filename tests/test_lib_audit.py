@@ -6,6 +6,7 @@ This tests the files
 import csv
 import datetime
 import io
+import logging
 import os
 import types
 import unittest
@@ -805,6 +806,9 @@ class AuditFileTestCase(OverrideConfigTestCase):
         with open("audit.log") as file:
             c = file.readlines()
             self.assertIn("action1", c[-1])
+        # Windows does not remove a file that is still open
+        for handler in logging.getLogger("privacyidea.lib.auditmodules.loggeraudit").handlers:
+            handler.close()
         os.unlink('audit.log')
 
     def test_20_logger_audit(self):
@@ -911,6 +915,9 @@ class ContainerAuditTestCase(OverrideConfigTestCase):
             self.assertIn("something_test_35", c[-1])
             self.assertIn("some detail", c[-1])
             self.assertIn("some policy", c[-1])
+        # Windows does not remove a file that is still open
+        for handler in logging.getLogger("privacyidea.lib.auditmodules.loggeraudit").handlers:
+            handler.close()
         os.unlink('audit.log')
 
         # check the CSV output
