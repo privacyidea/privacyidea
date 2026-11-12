@@ -2957,6 +2957,33 @@ class TokenContainerTemplateTestCase(MyTestCase):
         class_options = YubikeyContainerTemplate.get_template_class_options()
         self.assertDictEqual({}, class_options)
 
+    def test_24_template_options_change_pin_on_first_use_must_be_boolean(self):
+        invalid_tokens = [{"type": "hotp", "change_pin_on_first_use": None},
+                          {"type": "hotp", "change_pin_on_first_use": "true"},
+                          {"type": "hotp", "change_pin_on_first_use": 1}]
+
+        # Create: the template is not stored
+        for token in invalid_tokens:
+            with self.subTest(token=token):
+                self.assertRaises(ParameterError, create_container_template, container_type="generic",
+                                  template_name="test", options={"tokens": [token]})
+                self.assertRaises(ResourceNotFoundError, get_template_obj, "test")
+
+        # Update: the stored options stay unchanged
+        valid_options = {"tokens": [{"type": "hotp", "change_pin_on_first_use": True},
+                                    {"type": "totp", "change_pin_on_first_use": False},
+                                    {"type": "spass"}]}
+        create_container_template(container_type="generic", template_name="test", options=valid_options)
+        template = get_template_obj("test")
+        self.assertDictEqual(valid_options, template.get_template_options_as_dict())
+        for token in invalid_tokens:
+            with self.subTest(token=token):
+                self.assertRaises(ParameterError, setattr, template, "template_options",
+                                  {"tokens": [{"type": "totp"}, token]})
+                self.assertDictEqual(valid_options, get_template_obj("test").get_template_options_as_dict())
+
+        template.delete()
+
 
 class ContainerGeneratorAndOrphanTestCase(MyTestCase):
 
