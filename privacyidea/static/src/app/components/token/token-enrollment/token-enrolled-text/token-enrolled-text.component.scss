@@ -9,10 +9,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin: 0;
   padding: 6px 12px;
   border-radius: var(--border-radius);
-  background: color-mix(in srgb, var(--green-base) 12%, transparent);
-  color: var(--mat-sys-on-surface);
 }
 
 .enrolled__status-icon {
@@ -20,7 +19,6 @@
   width: 24px;
   height: 24px;
   font-size: 24px;
-  color: var(--green-base);
 }
 
 // The token exists but cannot be used until its enrollment is verified, so the summary is neutral.

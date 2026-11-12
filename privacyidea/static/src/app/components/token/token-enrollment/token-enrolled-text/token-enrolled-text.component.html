@@ -20,6 +20,7 @@
 <div class="enrolled">
   <div
     class="enrolled__summary"
+    [class.inline-success]="!verificationPending()"
     [class.enrolled__summary--pending]="verificationPending()">
     <mat-icon
       class="enrolled__status-icon"
