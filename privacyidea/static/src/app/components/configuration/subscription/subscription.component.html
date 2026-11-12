@@ -28,7 +28,11 @@
 
   @if (tableState.showTable()) {
     <div class="flex-row ali-center gap-32 just-space-between">
-      <h3 i18n="@@common.subscriptions">Subscriptions</h3>
+      <h2
+        class="subscriptions-title"
+        i18n="@@common.subscriptions"
+        >Subscriptions</h2
+      >
 
       <button
         (click)="fileInput.click()"
@@ -44,12 +48,12 @@
       @for (subscription of subscriptions(); track subscription.application) {
         <div class="subscription-details">
           <div class="margin-left-16 flex-row ali-center gap-16">
-            <h4
-              class="margin-0"
+            <h3
+              class="margin-0 application-title"
               i18n="@@subscription.application"
-              >Application:</h4
+              >Application:</h3
             >
-            <h4 class="margin-0 application-color">{{ subscription.application }}</h4>
+            <h3 class="margin-0 application-title application-color">{{ subscription.application }}</h3>
 
             @if (authService.actionAllowed("delete")) {
               <button

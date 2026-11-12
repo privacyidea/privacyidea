@@ -36,14 +36,17 @@ const painted = (page: Page) =>
     await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
   });
 
-// The box of the focused control once two frames in a row agree on it.
+// The box of the focused control once two frames in a row agree on it. A text field marks focus on its own box (its
+// underline or outline), so for an input that box is the control.
 async function settledRect(page: Page): Promise<{ x: number; y: number; width: number; height: number }> {
   const measure = () =>
     page.evaluate(
       () =>
         new Promise<{ x: number; y: number; width: number; height: number }>((done) =>
           requestAnimationFrame(() => {
-            const r = (document.activeElement as HTMLElement).getBoundingClientRect();
+            const e = document.activeElement as HTMLElement;
+            const field = e.matches("input, textarea") ? e.closest(".mat-mdc-text-field-wrapper") : null;
+            const r = (field ?? e).getBoundingClientRect();
             done({ x: r.left, y: r.top, width: r.width, height: r.height });
           })
         )

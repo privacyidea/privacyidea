@@ -68,6 +68,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { TokenActiveToggleComponent } from "@components/token/token-active-toggle/token-active-toggle.component";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
@@ -81,6 +82,7 @@ interface ContainerDetailTokenData {
 @Component({
   selector: "app-container-details-token-table",
   imports: [
+    TruncationTooltipDirective,
     TokenActiveToggleComponent,
     RouterLink,
     ScrollFocusableDirective,

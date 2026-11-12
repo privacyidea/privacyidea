@@ -252,6 +252,8 @@ for (const route of ALL_PAGES) {
     });
 
     test("a keyboard-focused control shows a focus indicator", async () => {
+      // Two captures for each of up to 40 controls take most of the default timeout on a page with many controls.
+      test.slow();
       await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
       await resetFocusStart(page);
       const { misses, checked } = await focusIndicatorMisses(page);
