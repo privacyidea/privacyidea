@@ -154,10 +154,10 @@ describe("TestOtpPinActionComponent", () => {
     expect(notificationService.warning).toHaveBeenCalled();
   });
 
-  describe("Test without PIN", () => {
-    const testWithoutPinButton = (): HTMLButtonElement | undefined =>
+  describe("Trigger Challenge", () => {
+    const triggerChallengeButton = (): HTMLButtonElement | undefined =>
       Array.from(fixture.nativeElement.querySelectorAll("button") as NodeListOf<HTMLButtonElement>).find((button) =>
-        button.textContent?.includes("Test without PIN")
+        button.textContent?.includes("Trigger Challenge")
       );
 
     // The rights are no signal, so the view has to be marked for the next check after the mock changes
@@ -169,26 +169,26 @@ describe("TestOtpPinActionComponent", () => {
 
     it("hides the button without the triggerchallenge right", () => {
       allowTriggerChallenge(false);
-      expect(testWithoutPinButton()).toBeUndefined();
+      expect(triggerChallengeButton()).toBeUndefined();
     });
 
     it("shows the button with the triggerchallenge right", () => {
       allowTriggerChallenge(true);
-      expect(testWithoutPinButton()).toBeDefined();
+      expect(triggerChallengeButton()).toBeDefined();
     });
 
     it("triggers a challenge for the token when the button is clicked", () => {
       allowTriggerChallenge(true);
       tokenService.tokenSerial.set("HOTP0001");
 
-      testWithoutPinButton()?.click();
+      triggerChallengeButton()?.click();
 
       expect(validateService.triggerChallenge).toHaveBeenCalledWith("HOTP0001");
       expect(tokenService.tokenDetailResource.reload).toHaveBeenCalled();
     });
 
     it("opens the challenge with its transaction ID and text", () => {
-      component.testWithoutPin();
+      component.triggerChallenge();
 
       expect(component.openChallenge()).toEqual({
         transactionId: "11451135673179897001",
@@ -203,7 +203,7 @@ describe("TestOtpPinActionComponent", () => {
         .spyOn(validateService, "triggerChallenge")
         .mockReturnValue(of(MockPiResponse.fromValue<number, TriggerChallengeResponse["detail"]>(0, {})));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
 
       expect(notificationService.warning).toHaveBeenCalledWith(
         "No challenge triggered. The token must be active and support challenge-response."
@@ -220,7 +220,7 @@ describe("TestOtpPinActionComponent", () => {
 
     beforeEach(() => {
       tokenService.tokenSerial.set("QUST0001");
-      component.testWithoutPin();
+      component.triggerChallenge();
       fixture.detectChanges();
     });
 
@@ -408,7 +408,7 @@ describe("TestOtpPinActionComponent", () => {
     it("shows the waiting text and only the Cancel button", () => {
       jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       fixture.detectChanges();
 
       expect(component.openChallenge()?.waitsForConfirmation).toBe(true);
@@ -429,7 +429,7 @@ describe("TestOtpPinActionComponent", () => {
         .mockReturnValue(of("accept"));
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS);
 
       expect(pollTransactionStatus).toHaveBeenCalledWith("4444");
@@ -443,7 +443,7 @@ describe("TestOtpPinActionComponent", () => {
       const pollTransactionStatus = jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(slowPoll);
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("ACCEPT")));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 2);
 
       expect(pollTransactionStatus).toHaveBeenCalledTimes(1);
@@ -455,7 +455,7 @@ describe("TestOtpPinActionComponent", () => {
       jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("accept"));
       jest.spyOn(validateService, "testToken").mockReturnValue(of(mockValidateCheckResponse("REJECT")));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(0);
 
       expect(notificationService.warning).toHaveBeenCalledWith("The response was rejected.");
@@ -468,7 +468,7 @@ describe("TestOtpPinActionComponent", () => {
     ])("closes the challenge and notifies a warning if the challenge was %s on the device", (status, message) => {
       const pollTransactionStatus = jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of(status));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 3);
 
       expect(notificationService.warning).toHaveBeenCalledWith(message);
@@ -482,7 +482,7 @@ describe("TestOtpPinActionComponent", () => {
         .spyOn(validateService, "pollTransactionStatus")
         .mockReturnValue(throwError(() => new Error("Polling for transaction failed.")));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_INTERVAL_MS * 3);
 
       expect(component.openChallenge()).toBeNull();
@@ -492,7 +492,7 @@ describe("TestOtpPinActionComponent", () => {
     it("closes the challenge and notifies a warning if the device does not confirm in time", () => {
       jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(CONFIRMATION_POLLING_TIMEOUT_MS);
 
       expect(notificationService.warning).toHaveBeenCalledWith("The device did not confirm the challenge in time.");
@@ -501,7 +501,7 @@ describe("TestOtpPinActionComponent", () => {
 
     it("stops the polling on Cancel", () => {
       const pollTransactionStatus = jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
-      component.testWithoutPin();
+      component.triggerChallenge();
       jest.advanceTimersByTime(0);
       const pollsBeforeCancel = pollTransactionStatus.mock.calls.length;
 
@@ -517,7 +517,7 @@ describe("TestOtpPinActionComponent", () => {
     expect(statusRegion.getAttribute("role")).toBe("status");
     expect(statusRegion.textContent?.trim()).toBe("");
 
-    component.testWithoutPin();
+    component.triggerChallenge();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector(".challenge-message")).toBe(statusRegion);
@@ -549,7 +549,7 @@ describe("TestOtpPinActionComponent", () => {
     });
 
     it("moves the focus to the response field when a challenge opens", async () => {
-      await click("Test without PIN");
+      await click("Trigger Challenge");
 
       expect(document.activeElement).toBe(fixture.nativeElement.querySelector("input[matInput]"));
     });
@@ -558,14 +558,14 @@ describe("TestOtpPinActionComponent", () => {
       jest.spyOn(validateService, "triggerChallenge").mockReturnValue(of(pushChallenge));
       jest.spyOn(validateService, "pollTransactionStatus").mockReturnValue(of("pending"));
 
-      await click("Test without PIN");
+      await click("Trigger Challenge");
 
       expect(document.activeElement).toBe(button("Cancel"));
       component.cancelChallenge();
     });
 
     it("moves the focus to Test Token when the challenge ends", async () => {
-      await click("Test without PIN");
+      await click("Trigger Challenge");
 
       await click("Cancel");
 
@@ -585,7 +585,7 @@ describe("TestOtpPinActionComponent", () => {
       document.body.appendChild(elementOutsideOfSection);
       elementOutsideOfSection.focus();
 
-      component.testWithoutPin();
+      component.triggerChallenge();
       await render();
 
       expect(document.activeElement).toBe(elementOutsideOfSection);

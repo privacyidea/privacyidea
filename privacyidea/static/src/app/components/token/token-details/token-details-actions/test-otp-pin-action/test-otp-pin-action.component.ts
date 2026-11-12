@@ -57,7 +57,7 @@ let nextChallengeMessageId = 0;
  * Token types that the server can not check by the OTP value alone, so "Verify OTP Value" never gives a result for
  * them. A Simple Pass token has no OTP value and accepts every value. Push, questionnaire, indexed secret, 4 eyes,
  * certificate and SSH key tokens have no OTP check of their own. OCRA and TiQR tokens need the challenge. U2F tokens
- * are deprecated and refuse every authentication. Challenge-response tokens are tested with "Test without PIN".
+ * are deprecated and refuse every authentication. Challenge-response tokens are tested with "Trigger Challenge".
  */
 export const TOKEN_TYPES_WITHOUT_OTP_VALUE_CHECK: ReadonlySet<string> = new Set([
   "spass",
@@ -138,7 +138,7 @@ export class TestOtpPinActionComponent {
     });
   }
 
-  testWithoutPin(): void {
+  triggerChallenge(): void {
     this.validateService.triggerChallenge(this.tokenService.tokenSerial()).subscribe({
       next: (response) => {
         if (response.result?.value && response.detail?.transaction_id) {
@@ -229,7 +229,8 @@ export class TestOtpPinActionComponent {
 
   /**
    * The button that the admin used can disappear with the next render, and the focus then goes to the page. So the
-   * focus moves to the control that continues the test. If the admin moved the focus out of the section, it stays there.
+   * focus moves to the control that continues the test. If the admin moved the focus out of the section, it stays
+   * there.
    */
   private moveFocusAfterRender(target: () => ElementRef<HTMLElement> | undefined): void {
     afterNextRender(
