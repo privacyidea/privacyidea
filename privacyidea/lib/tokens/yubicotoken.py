@@ -89,6 +89,11 @@ class YubicoTokenClass(TokenClass):
         return "UBCM"
 
     @staticmethod
+    def get_setting_type(key: str) -> str:
+        settings = {"yubico.secret": "password"}
+        return settings.get(key, "")
+
+    @staticmethod
     @log_with(log)
     def get_class_info(key=None, ret='all'):
         """

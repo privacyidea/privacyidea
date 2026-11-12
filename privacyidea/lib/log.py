@@ -31,7 +31,7 @@ import functools
 import inspect
 import re
 from collections.abc import Mapping
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, urlencode, urlparse
 
 log = logging.getLogger(__name__)
 
@@ -134,6 +134,9 @@ SENSITIVE_KEY_NAMES = frozenset({
     "answer", "answers", "authorization", "bindpw", "cakey", "cookie", "credential", "fbtoken",
     "key_enc", "key_iv", "otp", "otp1", "otp2", "otpkey", "otpvalue", "pass", "passphrase",
     "passw", "passwd", "password", "pin", "privatekey", "questions", "recoverycode", "secret",
+    # The pre-shared key of a PSKC token file decrypts the OTP keys in it: "psk" is the request parameter,
+    # "preshared_key" the parameter of the parser
+    "psk", "preshared_key",
     # "series_id" is the secret half of the remember-device cookie (series_id:counter); logging it
     # at DEBUG would write a replayable bearer token to the log.
     "series_id",
@@ -315,6 +318,36 @@ def _all_items(value):
         return value.items()
 
 
+def get_key_names(values: object) -> list:
+    """
+    Return the keys of a dict, for a log message that names what the dict holds without its values, like the
+    parameters of a request or the settings of a configuration. Anything that is no dict gives an empty list.
+
+    :param values: the dict
+    :return: the keys of the dict
+    """
+    return list(values) if isinstance(values, dict) else []
+
+
+def get_url_origin(url: str) -> str:
+    """
+    Return the scheme, the host and the port of a URL, for a log message about a request to it.
+
+    A URL that privacyIDEA calls can hold a credential in the user info, in the path or in the query, like the URL
+    of a WebHook, which is the credential of the receiving service, or the API key of an SMS gateway. None of these
+    is part of the result.
+
+    :param url: the URL a request is sent to
+    :return: the URL reduced to its scheme, host and port
+    """
+    try:
+        parsed_url = urlparse(str(url))
+        port = f":{parsed_url.port}" if parsed_url.port else ""
+    except ValueError:
+        return "<URL that can not be parsed>"
+    return f"{parsed_url.scheme}://{parsed_url.hostname}{port}"
+
+
 def redact_url(url: str) -> str:
     """
     Replace the value of every sensitive query parameter of a URL.
@@ -429,9 +462,10 @@ class log_with:
         :type log_entry: bool
         :param log_exit: Whether the result of the function should be logged
         :type log_exit: bool
-        :param hide_args: Indices of parameters to hide completely, for values that the name based
-            hiding cannot recognise, such as the key in ``aes_cbc_decrypt(key, iv, data)``.
-        :type hide_args: list of int
+        :param hide_args: Parameters to hide completely, for values that the name based hiding
+            cannot recognise, such as the key in ``aes_cbc_decrypt(key, iv, data)``. An index hides
+            the positional argument, a parameter name hides the argument however it is passed.
+        :type hide_args: list of int or str
         """
         self.logger = logger
         self.log_exit = log_exit
@@ -462,6 +496,12 @@ class log_with:
             parameter_names = []
         sensitive_positions = {index for index, name in enumerate(parameter_names)
                                if is_sensitive_key(name)}
+        hidden_names = {name for name in self.hide_args if isinstance(name, str)}
+        hidden_positions = [index for index in self.hide_args if isinstance(index, int)]
+        hidden_name_positions = {index for index, name in enumerate(parameter_names) if name in hidden_names}
+        if parameter_names and hidden_names - set(parameter_names):
+            log.warning(f"{getattr(func, '__name__', func)!r} has no parameter "
+                        f"{', '.join(sorted(hidden_names - set(parameter_names)))} to hide")
 
         # Resolved on the first DEBUG call and then remembered. The line a function is defined on
         # cannot change while the process runs, but reading it costs a source file read and parse,
@@ -510,8 +550,14 @@ class log_with:
                     if arg_index < len(log_args):
                         log_args[arg_index] = HIDDEN
                 # Whole parameters named by the decorator are hidden on top of the denylist.
-                for arg_index in self.hide_args:
+                for arg_index in hidden_positions:
                     log_args[arg_index] = HIDDEN
+                # A parameter named by its name may also be passed as keyword, or not at all
+                for arg_index in hidden_name_positions:
+                    if arg_index < len(log_args):
+                        log_args[arg_index] = HIDDEN
+                for name in hidden_names & set(log_kwds):
+                    log_kwds[name] = HIDDEN
             except Exception as exx:
                 # Hiding failed, so nothing about this call is trustworthy enough to log. Report
                 # the failure instead of dropping the arguments silently, because a decorator

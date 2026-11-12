@@ -24,7 +24,7 @@ import logging
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.utils.export import (register_import, register_export)
+from privacyidea.lib.utils.export import (register_import, register_export, get_import_names)
 import json
 import requests
 
@@ -242,7 +242,7 @@ def export_privacyideaservers(name=None):
 @register_import('privacyideaserver')
 def import_privacyideaservers(data, name=None):
     """Import privacyideaservers configuration"""
-    log.debug(f'Import privacyideaservers config: {data!s}')
+    log.debug(f'Import privacyideaservers config: {get_import_names(data)}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue

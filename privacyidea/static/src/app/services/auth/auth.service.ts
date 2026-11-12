@@ -95,6 +95,8 @@ export interface AuthData {
   show_seed: boolean;
   show_node: string;
   subscription_status: number;
+  /** Whether any subscription is installed, also one of a plugin or one that expired. Sent to admins only. */
+  has_subscription?: boolean;
   qr_image_android: string | null;
   qr_image_ios: string | null;
   qr_image_custom: string | null;
@@ -248,6 +250,7 @@ export interface AuthServiceInterface {
   readonly showSeed: Signal<boolean>;
   readonly showNode: Signal<string>;
   readonly subscriptionStatus: Signal<number>;
+  readonly hasSubscription: Signal<boolean>;
   readonly qrImageAndroid: Signal<string | null>;
   readonly qrImageIOS: Signal<string | null>;
   readonly qrImageCustom: Signal<string | null>;
@@ -364,6 +367,7 @@ export class AuthService implements AuthServiceInterface {
   readonly showSeed = computed(() => this.authData()?.show_seed || false);
   readonly showNode = computed(() => this.authData()?.show_node || "");
   readonly subscriptionStatus = computed(() => this.authData()?.subscription_status || 0);
+  readonly hasSubscription = computed(() => this.authData()?.has_subscription || false);
   readonly qrImageAndroid = computed(() => this.authData()?.qr_image_android || null);
   readonly qrImageIOS = computed(() => this.authData()?.qr_image_ios || null);
   readonly qrImageCustom = computed(() => this.authData()?.qr_image_custom || null);

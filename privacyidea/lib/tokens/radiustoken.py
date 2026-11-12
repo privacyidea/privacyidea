@@ -92,6 +92,11 @@ class RadiusTokenClass(RemoteTokenClass):
         return "PIRA"
 
     @staticmethod
+    def get_setting_type(key: str) -> str:
+        settings = {"radius.secret": "password"}
+        return settings.get(key, "")
+
+    @staticmethod
     @log_with(log)
     def get_class_info(key=None, ret='all'):
         """

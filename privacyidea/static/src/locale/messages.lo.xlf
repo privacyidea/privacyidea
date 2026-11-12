@@ -2819,11 +2819,11 @@
         <target>ເອກະສານລະບົບ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">24</context>
+          <context context-type="linenumber">26</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">32</context>
+          <context context-type="linenumber">34</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.documentationContains" datatype="html">
@@ -2831,15 +2831,7 @@
         <target>ເອກະສານນີ້ປະກອບດ້ວຍການກຳນົດຄ່າປັດຈຸບັນຂອງລະບົບໃນຮູບແບບ restructured text. ທ່ານສາມາດໃຊ້ສິ່ງນີ້ເພື່ອບັນທຶກຂໍ້ມູນລະບົບທີ່ຕິດຕັ້ງແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">27</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="systemConfig.copySystemDocumentation" datatype="html">
-        <source>Copy System Documentation:</source>
-        <target>ຄັດລອກເອກະສານລະບົບ:</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">45</context>
+          <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.close" datatype="html">
@@ -2847,7 +2839,7 @@
         <target>ປິດ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.html</context>
-          <context context-type="linenumber">22</context>
+          <context context-type="linenumber">24</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
@@ -5928,6 +5920,10 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
           <context context-type="linenumber">76</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">81</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-table-actions/container-templates-table-actions.component.ts</context>
@@ -17359,7 +17355,7 @@
         <target>ບໍ່ສາມາດດາວໂຫຼດ audit log ໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/audit/audit.service.ts</context>
-          <context context-type="linenumber">234</context>
+          <context context-type="linenumber">229</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.successfullySaved" datatype="html">
@@ -23651,7 +23647,7 @@
         <target state="new">Download the certificate.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">95</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingPkcs12Download" datatype="html">
@@ -23659,7 +23655,7 @@
         <target state="new">Download the PKCS#12 file.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">97</context>
+          <context context-type="linenumber">98</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pendingPassphrase" datatype="html">
@@ -23667,7 +23663,7 @@
         <target state="new">Show or copy the passphrase.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">100</context>
+          <context context-type="linenumber">101</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.hidePassphrase" datatype="html">
@@ -23675,7 +23671,7 @@
         <target state="new">Hide passphrase</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">116</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.showPassphrase" datatype="html">
@@ -23683,7 +23679,7 @@
         <target state="new">Show passphrase</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedPkcs12Download" datatype="html">
@@ -23691,7 +23687,7 @@
         <target state="new">The PKCS#12 container of this token is damaged and cannot be downloaded.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.ts</context>
-          <context context-type="linenumber">142</context>
+          <context context-type="linenumber">143</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.lockUser" datatype="html">
@@ -25136,6 +25132,94 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditions/conditional-access-conditions.component.html</context>
           <context context-type="linenumber">42</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.sendDocumentationByEmail" datatype="html">
+        <source>Send by email</source>
+        <target state="new">Send by email</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">96</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.downloadDocumentation" datatype="html">
+        <source>Download</source>
+        <target state="new">Download</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">103</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationCopied" datatype="html">
+        <source>The system documentation was copied to the clipboard.</source>
+        <target state="new">The system documentation was copied to the clipboard.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">155</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationNotCopied" datatype="html">
+        <source>The system documentation could not be copied to the clipboard.</source>
+        <target state="new">The system documentation could not be copied to the clipboard.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">159</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailSubject" datatype="html">
+        <source>privacyIDEA system documentation of <x id="server" equiv-text="this.server"/> from <x id="date" equiv-text="this.date"/></source>
+        <target state="new">privacyIDEA system documentation of <x id="server" equiv-text="this.server"/> from <x id="date" equiv-text="this.date"/></target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">66</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailBody" datatype="html">
+        <source>The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="fileName"/>.</source>
+        <target state="new">The system documentation of privacyIDEA is attached as <x id="fileName" equiv-text="fileName"/>.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">206</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationEmailAttach" datatype="html">
+        <source>The system documentation was downloaded as <x id="fileName" equiv-text="this.fileName"/>. Attach it to the email.</source>
+        <target state="new">The system documentation was downloaded as <x id="fileName" equiv-text="this.fileName"/>. Attach it to the email.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">201</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="subscription.notValidAnymore" datatype="html">
+        <source>Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please check, if you need to renew your <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;subscriptionPath&quot;&gt;"/>subscription<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>.</source>
+        <target state="new">Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please check, if you need to renew your <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;subscriptionPath&quot;&gt;"/>subscription<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="subscription.notValidAnymoreNoRight" datatype="html">
+        <source>Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please contact an administrator who can manage the subscription.</source>
+        <target state="new">Your subscription is not valid anymore. Either you exceeded the number of tokens or the subscription expired. Please contact an administrator who can manage the subscription.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/layout/subscription-expired-notice/subscription-expired-notice.component.html</context>
+          <context context-type="linenumber">31</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.shareDocumentation" datatype="html">
+        <source>Share</source>
+        <target state="new">Share</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">88</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="systemConfig.documentationNotShared" datatype="html">
+        <source>The system documentation could not be shared.</source>
+        <target state="new">The system documentation could not be shared.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/system/system-documentation-dialog/system-documentation-dialog.component.ts</context>
+          <context context-type="linenumber">177</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.enterWholeNumber" datatype="html">

@@ -2,7 +2,9 @@
 This test file tests the lib.tokens.smstoken
 """
 import datetime
+from email import message_from_string
 import logging
+import re
 
 import mock
 from dateutil.tz import tzlocal
@@ -368,6 +370,24 @@ class EmailTokenTestCase(MyTestCase):
         # check for the challenges response
         r = token.check_challenge_response(passw=otp)
         self.assertTrue(r, r)
+
+    @smtpmock.activate
+    def test_18c_otp_is_not_logged(self):
+        # Sending the OTP by email does not write it to the log, neither in the message nor in the subject
+        smtpmock.setdata(response={"pi_tester@privacyidea.org": (200, "OK")})
+        add_smtpserver("emaillog", "localhost")
+        set_privacyidea_config("email.identifier", "emaillog")
+        token = init_token({"type": "email", "serial": "EMAILLOG01", "email": "pi_tester@privacyidea.org"})
+        try:
+            with self.assertLogs("privacyidea", level="DEBUG") as captured:
+                self.assertTrue(token.create_challenge("123456098714")[0])
+        finally:
+            remove_token("EMAILLOG01")
+            delete_privacyidea_config("email.identifier")
+            delete_smtpserver("emaillog")
+        sent_body = message_from_string(smtpmock.get_sent_message()).get_payload(decode=True).decode()
+        sent_otp = re.search(r"\b[0-9]{6}\b", sent_body).group(0)
+        self.assertNotIn(sent_otp, "\n".join(captured.output))
 
     @smtpmock.activate
     def test_18a_challenge_request_dynamic(self):
