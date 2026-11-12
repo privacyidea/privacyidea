@@ -1,0 +1,658 @@
+{
+  "api client create": {
+    "light": [],
+    "dark": []
+  },
+  "api client details": {
+    "light": [],
+    "dark": []
+  },
+  "api clients": {
+    "light": [],
+    "dark": []
+  },
+  "api clients (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "api clients (error)": {
+    "light": [],
+    "dark": []
+  },
+  "api clients (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "api clients (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "audit": {
+    "light": [],
+    "dark": []
+  },
+  "audit (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "audit (error)": {
+    "light": [],
+    "dark": []
+  },
+  "audit (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "authentication log": {
+    "light": [],
+    "dark": []
+  },
+  "authentication log (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "authentication log (error)": {
+    "light": [],
+    "dark": []
+  },
+  "authentication log (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "blocklist": {
+    "light": [],
+    "dark": []
+  },
+  "blocklist (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "blocklist (error)": {
+    "light": [],
+    "dark": []
+  },
+  "blocklist (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "ca connector create": {
+    "light": [],
+    "dark": []
+  },
+  "ca connectors": {
+    "light": [],
+    "dark": []
+  },
+  "ca connectors (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "ca connectors (error)": {
+    "light": [],
+    "dark": []
+  },
+  "ca connectors (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "ca connectors (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "challenges": {
+    "light": [],
+    "dark": []
+  },
+  "challenges (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "challenges (error)": {
+    "light": [],
+    "dark": []
+  },
+  "challenges (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "clients": {
+    "light": [],
+    "dark": []
+  },
+  "clients (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "clients (error)": {
+    "light": [],
+    "dark": []
+  },
+  "clients (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "conditional access": {
+    "light": [],
+    "dark": []
+  },
+  "conditional access (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "conditional access (error)": {
+    "dark": [],
+    "light": []
+  },
+  "conditional access (filtered)": {
+    "dark": []
+  },
+  "conditional access (loading)": {
+    "dark": [],
+    "light": []
+  },
+  "conditional access create": {
+    "light": [],
+    "dark": []
+  },
+  "conditional access details": {
+    "light": [],
+    "dark": []
+  },
+  "container create": {
+    "light": [],
+    "dark": []
+  },
+  "container details": {
+    "light": [],
+    "dark": []
+  },
+  "container template create": {
+    "light": [],
+    "dark": []
+  },
+  "container template details": {
+    "light": [],
+    "dark": []
+  },
+  "container templates": {
+    "light": [],
+    "dark": []
+  },
+  "container templates (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "container templates (error)": {
+    "light": [],
+    "dark": []
+  },
+  "container templates (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "containers": {
+    "light": [],
+    "dark": []
+  },
+  "containers (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "containers (error)": {
+    "light": [],
+    "dark": []
+  },
+  "containers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "dashboard": {
+    "light": [],
+    "dark": []
+  },
+  "delete policies (dialog)": {
+    "light": [],
+    "dark": []
+  },
+  "event create": {
+    "light": [],
+    "dark": []
+  },
+  "event details": {
+    "light": [],
+    "dark": []
+  },
+  "events": {
+    "light": [],
+    "dark": []
+  },
+  "events (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "events (error)": {
+    "light": [],
+    "dark": []
+  },
+  "events (filtered)": {
+    "dark": [],
+    "light": []
+  },
+  "events (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "locked users": {
+    "light": [],
+    "dark": []
+  },
+  "locked users (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "locked users (error)": {
+    "light": [],
+    "dark": []
+  },
+  "locked users (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "machine details": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolver create": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolver details": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolvers": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolvers (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolvers (error)": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolvers (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "machine resolvers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "machines": {
+    "light": [],
+    "dark": []
+  },
+  "machines (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "machines (error)": {
+    "light": [],
+    "dark": []
+  },
+  "machines (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "machines (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "news": {
+    "light": [],
+    "dark": []
+  },
+  "periodic task create": {
+    "dark": [],
+    "light": []
+  },
+  "periodic task details": {
+    "light": [],
+    "dark": []
+  },
+  "periodic tasks": {
+    "light": [],
+    "dark": []
+  },
+  "periodic tasks (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "periodic tasks (error)": {
+    "light": [],
+    "dark": []
+  },
+  "periodic tasks (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "periodic tasks (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "policies": {
+    "light": [],
+    "dark": []
+  },
+  "policies (empty)": {
+    "dark": [],
+    "light": []
+  },
+  "policies (error)": {
+    "dark": [],
+    "light": []
+  },
+  "policies (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "policies (loading)": {
+    "dark": [],
+    "light": []
+  },
+  "policy create": {
+    "light": [],
+    "dark": []
+  },
+  "policy details": {
+    "light": [],
+    "dark": []
+  },
+  "policy scope filter (menu)": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea server create": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea server details": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea servers": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea servers (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea servers (error)": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea servers (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea servers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "radius create": {
+    "light": [],
+    "dark": []
+  },
+  "radius server details": {
+    "light": [],
+    "dark": []
+  },
+  "radius servers": {
+    "light": [],
+    "dark": []
+  },
+  "radius servers (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "radius servers (error)": {
+    "light": [],
+    "dark": []
+  },
+  "radius servers (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "radius servers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "realms": {
+    "light": [],
+    "dark": []
+  },
+  "realms (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "resolver create": {
+    "light": [],
+    "dark": []
+  },
+  "resolver details": {
+    "light": [],
+    "dark": []
+  },
+  "resolvers": {
+    "light": [],
+    "dark": []
+  },
+  "resolvers (empty)": {
+    "dark": [],
+    "light": []
+  },
+  "resolvers (error)": {
+    "dark": [],
+    "light": []
+  },
+  "resolvers (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "resolvers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "service id create": {
+    "light": [],
+    "dark": []
+  },
+  "service ids": {
+    "light": [],
+    "dark": []
+  },
+  "service ids (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "service ids (error)": {
+    "light": [],
+    "dark": []
+  },
+  "service ids (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "service ids (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "sms create": {
+    "light": [],
+    "dark": []
+  },
+  "sms gateway details": {
+    "light": [],
+    "dark": []
+  },
+  "sms gateways": {
+    "light": [],
+    "dark": []
+  },
+  "sms gateways (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "sms gateways (error)": {
+    "light": [],
+    "dark": []
+  },
+  "sms gateways (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "sms gateways (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "smtp create": {
+    "dark": [],
+    "light": []
+  },
+  "smtp server details": {
+    "light": [],
+    "dark": []
+  },
+  "smtp servers": {
+    "light": [],
+    "dark": []
+  },
+  "smtp servers (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "smtp servers (error)": {
+    "light": [],
+    "dark": []
+  },
+  "smtp servers (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "smtp servers (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "subscription": {
+    "dark": [],
+    "light": []
+  },
+  "system config": {
+    "light": [],
+    "dark": []
+  },
+  "token actions (menu)": {
+    "light": []
+  },
+  "token applications": {
+    "light": [],
+    "dark": []
+  },
+  "token details": {
+    "light": [],
+    "dark": []
+  },
+  "token enrollment": {
+    "light": [],
+    "dark": []
+  },
+  "token get serial": {
+    "light": [],
+    "dark": []
+  },
+  "token import": {
+    "light": [],
+    "dark": []
+  },
+  "token more filter (menu)": {
+    "dark": []
+  },
+  "token type config": {
+    "dark": [],
+    "light": []
+  },
+  "tokengroup create": {
+    "light": [],
+    "dark": []
+  },
+  "tokengroups": {
+    "light": [],
+    "dark": []
+  },
+  "tokengroups (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "tokengroups (error)": {
+    "light": [],
+    "dark": []
+  },
+  "tokengroups (filtered)": {
+    "light": [],
+    "dark": []
+  },
+  "tokengroups (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "tokens": {
+    "light": [],
+    "dark": []
+  },
+  "tokens (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "tokens (error)": {
+    "light": [],
+    "dark": []
+  },
+  "tokens (loading)": {
+    "light": [],
+    "dark": []
+  },
+  "ui settings": {
+    "light": [],
+    "dark": []
+  },
+  "user create": {
+    "light": [],
+    "dark": []
+  },
+  "user details": {
+    "light": [],
+    "dark": []
+  },
+  "users": {
+    "light": [],
+    "dark": []
+  },
+  "users (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "users (error)": {
+    "light": [],
+    "dark": []
+  },
+  "users (filtered)": {
+    "dark": []
+  },
+  "users (loading)": {
+    "light": [],
+    "dark": []
+  }
+}
