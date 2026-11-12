@@ -382,8 +382,10 @@ def init():
     :status 200: ``{"container_serial": ..., "tokens": [...]}`` in
         ``result.value``; ``tokens`` is only present when a template
         was used.
-    :status 400: invalid type, serial collision, or both ``template``
-        and ``template_name`` supplied.
+    :status 400: invalid type, serial collision, both ``template``
+        and ``template_name`` supplied, or ``change_pin_on_first_use``
+        of a token in a ``template`` of the container type is not a
+        boolean.
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -1432,7 +1434,8 @@ def get_template():
         {
           "templates": [
             {"name": "template1", "container_type": "smartphone",
-             "template_options": {"tokens": [{"type": "hotp", "genkey": true}, ...]}},
+             "template_options": {"tokens": [{"type": "hotp", "genkey": true,
+                                              "change_pin_on_first_use": false}, ...]}},
             {"name": "template2", "container_type": "yubikey", ...}
           ],
           "count": 25,
@@ -1478,10 +1481,16 @@ def create_template_with_name(container_type, template_name):
         (most importantly ``tokens`` — the list of token specs to
         create when a container is built from this template).
         Defaults to an empty dict.
+        If the optional boolean ``change_pin_on_first_use`` of a token is
+        ``true``, the PIN of the token must be changed on first use. The
+        default is ``false``. Then the policy ``change_pin_on_first_use``
+        decides, as for a single token enrollment.
     :jsonparam default: ``True`` to mark this template as the default
         for the container type.
     :status 200: ``{"template_id": <id>}`` in ``result.value``.
-    :status 400: ``template_options`` is not a dictionary.
+    :status 400: ``template_options`` is not a dictionary, a token
+        type is not supported for the container type or
+        ``change_pin_on_first_use`` of a token is not a boolean.
     """
     params = request.all_data
     template_options = get_optional(params, "template_options") or {}

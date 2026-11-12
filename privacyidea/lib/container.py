@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from datetime import timezone, datetime
 from collections.abc import Generator
 
-from flask import g
+from flask import g, Request
 from sqlalchemy import func, select, and_, false, true
 from sqlalchemy.sql import Select
 
@@ -610,6 +610,9 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
                 "container_serial": "CONT0001",
                 "template_tokens": [{"type": "hotp", ...}, ...]
             }
+    :raises EnrollmentError: If the type is missing or invalid or a container with the serial already exists
+    :raises ParameterError: If both template and template_name are given, or if the template has the container type
+        and change_pin_on_first_use of one of its tokens is not a boolean
     """
     ctype = params.get("type")
     if not ctype:
@@ -621,6 +624,10 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     template_name = params.get("template_name")
     if template_dict and template_name:
         raise ParameterError("Both template and template_name are given. Choose only one!")
+    if template_dict and template_dict.get("container_type") == ctype:
+        # Only a template of the container type is used. The check runs before the container is created.
+        for token in (template_dict.get("template_options") or {}).get("tokens") or []:
+            ContainerTemplateBase.check_change_pin_on_first_use(token)
 
     desc = params.get("description") or ""
     serial = params.get("container_serial")
@@ -695,13 +702,18 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     return res
 
 
-def create_container_tokens_from_template(container_serial: str, template_tokens: list, request,
+def create_container_tokens_from_template(container_serial: str, template_tokens: list, request: Request,
                                           user_role: str) -> dict[str, dict]:
     """
     Create tokens for the container from the given template. The token policies are checked and the enroll information
     is read from the policies for each token. The tokens owner and the enroll information are added to the request
     object to check the corresponding policies. All errors are caught and logged to be able to create the remaining
     tokens.
+
+    The post-policies apply as for a single token enrollment, for example change_pin_on_first_use for an admin. In
+    addition, the PIN of a token is marked to be changed on first use if its template entry sets
+    "change_pin_on_first_use" to True. This applies after the post-policies, so it also wins over a PIN set by a user
+    and over change_pin_every.
 
     :param container_serial: The serial of the container
     :param template_tokens: The template to create the tokens from as list of dictionaries where each dictionary
@@ -749,6 +761,7 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
         for token_info in template_tokens:
             token = None
             user = User()
+            change_pin_on_first_use = token_info.pop("change_pin_on_first_use", False)
             if user_role == "user" and request_user_original:
                 # Users are always assigned to the tokens, only admins can create tokens without a user
                 user = request_user_original
@@ -831,6 +844,10 @@ def create_container_tokens_from_template(container_serial: str, template_tokens
                 response = send_result(True, details=init_result[token.get_serial()])
                 check_verify_enrollment(request, response)
                 save_pin_change(request, response)
+                # Only True sets the PIN change. A stored template is not validated again when it is used, so it can
+                # hold another value, for example the string "false".
+                if change_pin_on_first_use is True:
+                    token.set_next_pin_change(diff="0d")
             except Exception as ex:
                 log.warning(f"Error checking post-policy for token {token_info} created from template: {ex}")
                 continue
@@ -1593,10 +1610,15 @@ def create_container_template(container_type: str, template_name: str, options: 
         ::
 
             {
-                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256"}, ...]
+                "tokens": [{"type": "hotp", "genkey": True, "hashlib": "sha256", "change_pin_on_first_use": False},
+                           ...]
             }
 
+    "change_pin_on_first_use" of a token is optional and must be a boolean. A missing value means False.
+
     :return: ID of the created template
+    :raises EnrollmentError: If the container type is invalid or a template with the name already exists
+    :raises ParameterError: If the options are invalid
     """
     # Check container type
     if container_type.lower() not in get_container_classes().keys():
